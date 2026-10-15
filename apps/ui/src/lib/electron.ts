@@ -89,7 +89,7 @@ export interface IdeationAPI {
   sendMessage: (
     sessionId: string,
     message: string,
-    options?: { imagePaths?: string[]; model?: string }
+    options?: { imagePaths?: string[]; model?: string; providerId?: string }
   ) => Promise<{ success: boolean; error?: string }>;
   stopSession: (sessionId: string) => Promise<{ success: boolean; error?: string }>;
 
@@ -793,7 +793,8 @@ export interface ElectronAPI {
       enhancementMode: string,
       model?: string,
       thinkingLevel?: string,
-      projectPath?: string
+      projectPath?: string,
+      providerId?: string
     ) => Promise<{
       success: boolean;
       enhancedText?: string;
@@ -812,7 +813,8 @@ export interface ElectronAPI {
       projectPath: string,
       prompt: string,
       model?: string,
-      branchName?: string
+      branchName?: string,
+      providerId?: string
     ) => Promise<{ success: boolean; error?: string }>;
     stop: () => Promise<{ success: boolean; error?: string }>;
     status: (projectPath: string) => Promise<{
@@ -877,7 +879,9 @@ export interface ElectronAPI {
       message: string,
       workingDirectory?: string,
       imagePaths?: string[],
-      model?: string
+      model?: string,
+      thinkingLevel?: string,
+      providerId?: string
     ) => Promise<{ success: boolean; error?: string }>;
     getHistory: (sessionId: string) => Promise<{
       success: boolean;

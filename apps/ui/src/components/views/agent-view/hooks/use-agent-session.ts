@@ -3,6 +3,7 @@ import { createLogger } from '@automaker/utils/logger';
 import type { PhaseModelEntry } from '@automaker/types';
 import { useAppStore } from '@/store/app-store';
 import { useShallow } from 'zustand/react/shallow';
+import { getHttpApiClient } from '@/lib/http-api-client';
 
 const logger = createLogger('AgentSession');
 
@@ -19,6 +20,7 @@ interface UseAgentSessionResult {
   handleSelectSession: (sessionId: string | null) => void;
   // Model selection persistence
   modelSelection: PhaseModelEntry;
+  modelSelectionReady: boolean;
   setModelSelection: (model: PhaseModelEntry) => void;
 }
 
@@ -42,9 +44,11 @@ export function useAgentSession({
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [modelSelection, setModelSelectionState] =
     useState<PhaseModelEntry>(DEFAULT_MODEL_SELECTION);
+  const [modelSelectionReady, setModelSelectionReady] = useState(false);
 
   // Track if initial session has been loaded
   const initialSessionLoadedRef = useRef(false);
+  const restoreVersion = useRef(0);
 
   // Use workingDirectory as the persistence key so sessions are scoped per worktree
   const persistenceKey = workingDirectory || projectPath;
@@ -54,12 +58,22 @@ export function useAgentSession({
    */
   const restoreModelForSession = useCallback(
     (sessionId: string) => {
+      const version = ++restoreVersion.current;
       const persistedModel = getAgentModelForSession(sessionId);
       if (persistedModel) {
         logger.debug('Restoring model selection for session:', sessionId, persistedModel);
         setModelSelectionState(persistedModel);
+        setModelSelectionReady(true);
       } else {
+        setModelSelectionReady(false);
         setModelSelectionState(DEFAULT_MODEL_SELECTION);
+        // A new browser/profile has no local selection; restore the server binding.
+        void getHttpApiClient().sessions.list().then((result) => {
+          if (version !== restoreVersion.current || !result.success) return;
+          const session = result.sessions?.find((item) => item.id === sessionId);
+          if (session?.model) setModelSelectionState({ model: session.model, providerId: session.providerId });
+          if (session) setModelSelectionReady(true);
+        }).catch(() => { /* Remain blocked until an explicit model choice or a successful restore. */ });
       }
     },
     [getAgentModelForSession]
@@ -69,6 +83,8 @@ export function useAgentSession({
   const handleSelectSession = useCallback(
     (sessionId: string | null) => {
       setCurrentSessionId(sessionId);
+      restoreVersion.current++;
+      setModelSelectionReady(false);
       // Persist the selection for this worktree/project
       if (persistenceKey) {
         setLastSelectedSession(persistenceKey, sessionId);
@@ -84,7 +100,9 @@ export function useAgentSession({
   // Wrapper for setModelSelection that also persists
   const setModelSelection = useCallback(
     (model: PhaseModelEntry) => {
+      restoreVersion.current++;
       setModelSelectionState(model);
+      setModelSelectionReady(true);
       // Persist model selection for current session.
       // If currentSessionId is null (no active session), we only update local state
       // and skip persistence — this is intentional because the model picker should be
@@ -106,6 +124,8 @@ export function useAgentSession({
     const persistenceKeyChanged = prevPersistenceKeyRef.current !== persistenceKey;
 
     if (persistenceKeyChanged) {
+      restoreVersion.current++;
+      setModelSelectionReady(false);
       // Reset state when switching worktree/project
       prevPersistenceKeyRef.current = persistenceKey;
       initialSessionLoadedRef.current = false;
@@ -139,6 +159,7 @@ export function useAgentSession({
     currentSessionId,
     handleSelectSession,
     modelSelection,
+    modelSelectionReady,
     setModelSelection,
   };
 }

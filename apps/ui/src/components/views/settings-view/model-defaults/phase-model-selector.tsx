@@ -4,6 +4,9 @@ import { useAppStore } from '@/store/app-store';
 import { useShallow } from 'zustand/react/shallow';
 import { useIsMobile } from '@/hooks/use-media-query';
 import { useOpencodeModels } from '@/hooks/queries';
+import { useDirectEndpoints } from '@/hooks/queries/use-direct-endpoints';
+import { isDirectModel, stripProviderPrefix } from '@automaker/types';
+import { DirectModelGroups } from '@/components/shared/direct-model-groups';
 import type {
   ModelAlias,
   CursorModelId,
@@ -211,6 +214,8 @@ export function PhaseModelSelector({
   // (which also uses React Query) are immediately reflected here via the shared cache,
   // without requiring a page refresh.
   const { data: dynamicOpencodeModels = [] } = useOpencodeModels();
+  const { data: directSettings } = useDirectEndpoints();
+  const directEndpoints = useMemo(() => (directSettings?.endpoints ?? []).map((status) => status.endpoint).filter((endpoint) => endpoint.enabled && endpoint.protocol === 'chat-completions'), [directSettings]);
 
   // Detect mobile devices to use inline expansion instead of nested popovers
   const isMobile = useIsMobile();
@@ -440,6 +445,12 @@ export function PhaseModelSelector({
       };
     }
 
+    if (isDirectModel(selectedModel)) {
+      const endpoint = directEndpoints.find((item) => item.id === selectedProviderId);
+      const model = endpoint?.models.find((item) => item.id === stripProviderPrefix(selectedModel));
+      return { id: selectedModel, label: model ? `${model.displayName} (${endpoint!.name})` : `${selectedModel} (endpoint unavailable)`, description: endpoint?.name ?? 'Choose a configured endpoint', provider: 'openai-compatible' as const, icon: OpenAIIcon };
+    }
+
     // Check ClaudeCompatibleProvider models (when providerId is set)
     if (selectedProviderId) {
       const provider = enabledProviders.find((p) => p.id === selectedProviderId);
@@ -522,6 +533,7 @@ export function PhaseModelSelector({
   }, [
     selectedModel,
     selectedProviderId,
+    directEndpoints,
     selectedThinkingLevel,
     selectedReasoningEffort,
     availableCursorModels,
@@ -2354,6 +2366,8 @@ export function PhaseModelSelector({
               {claude.map((model) => renderClaudeModelItem(model))}
             </CommandGroup>
           )}
+
+          {!disabledProviders.includes('openai-compatible') && <DirectModelGroups endpoints={directEndpoints} value={value} onSelect={(selection) => { onChange(selection); setOpen(false); }} />}
 
           {/* ClaudeCompatibleProvider Models - each provider as separate group */}
           {enabledProviders.map((provider) => {

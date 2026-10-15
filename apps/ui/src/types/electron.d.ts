@@ -79,6 +79,8 @@ export type StreamEvent =
     };
 
 export interface SessionListItem {
+  model?: string;
+  providerId?: string;
   id: string;
   name: string;
   projectPath: string;
@@ -109,7 +111,8 @@ export interface AgentAPI {
     workingDirectory?: string,
     imagePaths?: string[],
     model?: string,
-    thinkingLevel?: string
+    thinkingLevel?: string,
+    providerId?: string
   ) => Promise<{
     success: boolean;
     error?: string;
@@ -1890,6 +1893,7 @@ export interface GitAPI {
 
 // Model definition type
 export interface ModelDefinition {
+  providerId?: string;
   id: string;
   name: string;
   modelString: string;

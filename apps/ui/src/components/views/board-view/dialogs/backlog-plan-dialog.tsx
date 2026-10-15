@@ -117,7 +117,8 @@ export function BacklogPlanDialog({
       projectPath,
       prompt,
       effectiveModel,
-      currentBranch
+      currentBranch,
+      effectiveModelEntry.providerId
     );
     if (!result.success) {
       logger.error('Backlog plan generation failed to start', {

@@ -6,6 +6,7 @@
  */
 
 import { createLogger } from '@automaker/utils/logger';
+import type { OpenAICompatibleEndpoint, OpenAICompatibleEndpointStatus, DirectAgentSettings } from '@automaker/types';
 import type {
   ElectronAPI,
   FileResult,
@@ -2233,7 +2234,8 @@ export class HttpApiClient implements ElectronAPI {
       enhancementMode: string,
       model?: string,
       thinkingLevel?: string,
-      projectPath?: string
+      projectPath?: string,
+      providerId?: string
     ): Promise<EnhancePromptResult> =>
       this.post('/api/enhance-prompt', {
         originalText,
@@ -2241,6 +2243,7 @@ export class HttpApiClient implements ElectronAPI {
         model,
         thinkingLevel,
         projectPath,
+        providerId,
       }),
   };
 
@@ -2625,7 +2628,8 @@ export class HttpApiClient implements ElectronAPI {
       workingDirectory?: string,
       imagePaths?: string[],
       model?: string,
-      thinkingLevel?: string
+      thinkingLevel?: string,
+      providerId?: string
     ): Promise<{ success: boolean; error?: string }> =>
       this.post('/api/agent/send', {
         sessionId,
@@ -2634,6 +2638,7 @@ export class HttpApiClient implements ElectronAPI {
         imagePaths,
         model,
         thinkingLevel,
+        providerId,
       }),
 
     getHistory: (
@@ -2661,7 +2666,8 @@ export class HttpApiClient implements ElectronAPI {
       message: string,
       imagePaths?: string[],
       model?: string,
-      thinkingLevel?: string
+      thinkingLevel?: string,
+      providerId?: string
     ): Promise<{
       success: boolean;
       queuedPrompt?: {
@@ -2674,7 +2680,7 @@ export class HttpApiClient implements ElectronAPI {
       };
       error?: string;
     }> =>
-      this.post('/api/agent/queue/add', { sessionId, message, imagePaths, model, thinkingLevel }),
+      this.post('/api/agent/queue/add', { sessionId, message, imagePaths, model, thinkingLevel, providerId }),
 
     queueList: (
       sessionId: string
@@ -2900,6 +2906,15 @@ export class HttpApiClient implements ElectronAPI {
     }> => this.post('/api/settings/agents/discover', { projectPath, sources }),
   };
 
+  directEndpoints = {
+    list: (): Promise<{ success: boolean; endpoints: OpenAICompatibleEndpointStatus[]; agentSettings: DirectAgentSettings; error?: string }> => this.get('/api/settings/openai-compatible'),
+    save: (endpoint: OpenAICompatibleEndpoint, apiKey?: string, clearKey?: boolean): Promise<{ success: boolean; endpoints: OpenAICompatibleEndpointStatus[]; agentSettings: DirectAgentSettings; error?: string }> => this.put('/api/settings/openai-compatible/endpoint', { endpoint, apiKey, clearKey }),
+    remove: (providerId: string): Promise<{ success: boolean; endpoints: OpenAICompatibleEndpointStatus[]; agentSettings: DirectAgentSettings; error?: string }> => this.post('/api/settings/openai-compatible/remove', { providerId }),
+    saveAgent: (settings: DirectAgentSettings): Promise<{ success: boolean; endpoints: OpenAICompatibleEndpointStatus[]; agentSettings: DirectAgentSettings; error?: string }> => this.put('/api/settings/openai-compatible/agent', settings),
+    models: (providerId: string): Promise<{ success: boolean; models?: string[]; error?: string }> => this.post('/api/settings/openai-compatible/models', { providerId }),
+    test: (providerId: string, modelId: string, tools = false): Promise<{ success: boolean; verified?: boolean; error?: string }> => this.post('/api/settings/openai-compatible/test', { providerId, modelId, tools }),
+  };
+
   // Sessions API
   sessions = {
     list: (
@@ -3003,9 +3018,10 @@ export class HttpApiClient implements ElectronAPI {
       projectPath: string,
       prompt: string,
       model?: string,
-      branchName?: string
+      branchName?: string,
+      providerId?: string
     ): Promise<{ success: boolean; error?: string }> =>
-      this.post('/api/backlog-plan/generate', { projectPath, prompt, model, branchName }),
+      this.post('/api/backlog-plan/generate', { projectPath, prompt, model, branchName, providerId }),
 
     stop: (): Promise<{ success: boolean; error?: string }> =>
       this.post('/api/backlog-plan/stop', {}),

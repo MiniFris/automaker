@@ -7,6 +7,7 @@ import { AgentModelSelector } from '../shared/agent-model-selector';
 import type { PhaseModelEntry } from '@automaker/types';
 
 interface InputControlsProps {
+  selectionReady?: boolean;
   input: string;
   onInputChange: (value: string) => void;
   onSend: () => void;
@@ -32,6 +33,7 @@ interface InputControlsProps {
 }
 
 export function InputControls({
+  selectionReady = true,
   input,
   onInputChange,
   onSend,
@@ -57,7 +59,7 @@ export function InputControls({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      onSend();
+      if (selectionReady) onSend();
     }
   };
 
@@ -72,7 +74,7 @@ export function InputControls({
     adjustTextareaHeight();
   }, [input, adjustTextareaHeight]);
 
-  const canSend = (input.trim() || hasFiles) && isConnected;
+  const canSend = (input.trim() || hasFiles) && isConnected && selectionReady;
 
   return (
     <>

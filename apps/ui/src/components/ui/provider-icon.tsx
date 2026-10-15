@@ -439,6 +439,7 @@ export const PROVIDER_ICON_COMPONENTS: Record<
   opencode: OpenCodeIcon,
   gemini: GeminiIcon,
   copilot: CopilotIcon,
+  'openai-compatible': OpenAIIcon,
 };
 
 /**

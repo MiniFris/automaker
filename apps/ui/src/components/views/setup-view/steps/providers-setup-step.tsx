@@ -41,13 +41,15 @@ import {
 } from '@/components/ui/provider-icon';
 import { TerminalOutput } from '../components';
 import { useCliInstallation, useTokenSave } from '../hooks';
+import { DirectSettingsTab } from '@/components/views/settings-view/providers/direct-settings-tab';
+import { useDirectEndpoints } from '@/hooks/queries/use-direct-endpoints';
 
 interface ProvidersSetupStepProps {
   onNext: () => void;
   onBack: () => void;
 }
 
-type ProviderTab = 'claude' | 'cursor' | 'codex' | 'opencode' | 'gemini' | 'copilot';
+type ProviderTab = 'claude' | 'cursor' | 'codex' | 'opencode' | 'gemini' | 'copilot' | 'direct';
 
 // ============================================================================
 // Claude Content
@@ -1784,6 +1786,15 @@ function CopilotContent() {
 // Main Component
 // ============================================================================
 export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) {
+  const { data: directSettings } = useDirectEndpoints();
+  const hasConfiguredDirectEndpoint =
+    directSettings?.endpoints.some(
+      ({ endpoint, keyConfigured }) =>
+        endpoint.enabled &&
+        endpoint.protocol === 'chat-completions' &&
+        endpoint.models.length > 0 &&
+        keyConfigured
+    ) ?? false;
   const [activeTab, setActiveTab] = useState<ProviderTab>('claude');
   const [isInitialChecking, setIsInitialChecking] = useState(true);
   const hasCheckedRef = useRef(false);
@@ -1997,6 +2008,7 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
   const isCopilotAuthenticated = copilotCliStatus?.auth?.authenticated === true;
 
   const hasAtLeastOneProvider =
+    hasConfiguredDirectEndpoint ||
     isClaudeAuthenticated ||
     isCursorAuthenticated ||
     isCodexAuthenticated ||
@@ -2096,7 +2108,14 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
       )}
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ProviderTab)}>
-        <TabsList className="grid w-full grid-cols-6 h-auto p-1">
+        <TabsList className="flex w-full flex-wrap h-auto p-1">
+          <TabsTrigger
+            value="direct"
+            className="relative flex flex-col items-center gap-1 py-3 px-2"
+          >
+            <OpenAIIcon className="w-5 h-5" />
+            <span className="text-xs font-medium">Direct API (no CLI)</span>
+          </TabsTrigger>
           {providers.map((provider) => {
             const Icon = provider.icon;
             return (
@@ -2130,6 +2149,9 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
         </TabsList>
 
         <div className="mt-6">
+          <TabsContent value="direct" className="mt-0">
+            <DirectSettingsTab />
+          </TabsContent>
           <TabsContent value="claude" className="mt-0">
             <ClaudeContent />
           </TabsContent>

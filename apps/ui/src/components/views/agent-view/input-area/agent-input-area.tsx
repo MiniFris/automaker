@@ -12,6 +12,7 @@ interface QueueItem {
 }
 
 interface AgentInputAreaProps {
+  selectionReady?: boolean;
   input: string;
   onInputChange: (value: string) => void;
   onSend: () => void;
@@ -46,6 +47,7 @@ interface AgentInputAreaProps {
 }
 
 export function AgentInputArea({
+  selectionReady = true,
   input,
   onInputChange,
   onSend,
@@ -77,6 +79,7 @@ export function AgentInputArea({
 
   return (
     <div className="border-t border-border p-4 bg-card/50 backdrop-blur-sm">
+      {!selectionReady && <p role="status" className="mb-2 text-sm text-muted-foreground">Restoring the saved model. You can explicitly choose a model to continue.</p>}
       {/* Image Drop Zone (when visible) */}
       {showImageDropZone && (
         <ImageDropZone
@@ -109,6 +112,7 @@ export function AgentInputArea({
 
       {/* Input Controls */}
       <InputControls
+        selectionReady={selectionReady}
         input={input}
         onInputChange={onInputChange}
         onSend={onSend}
