@@ -18,6 +18,7 @@ import { ProviderFactory } from '../../../providers/provider-factory.js';
 import type { SettingsService } from '../../../services/settings-service.js';
 import { getErrorMessage, logError } from '../common.js';
 import { getPhaseModelWithOverrides } from '../../../lib/settings-helpers.js';
+import { prepareDirectExecution } from '../../../providers/openai-compatible/execution.js';
 
 const logger = createLogger('GeneratePRDescription');
 const execFileAsync = promisify(execFile);
@@ -351,7 +352,7 @@ export function createGeneratePRDescriptionHandler(
         provider: claudeCompatibleProvider,
         credentials,
       } = await getPhaseModelWithOverrides(
-        'commitMessageModel',
+        'prDescriptionModel',
         settingsService,
         worktreePath,
         '[GeneratePRDescription]'
@@ -376,7 +377,7 @@ export function createGeneratePRDescriptionHandler(
       logger.info(`Using ${aiProvider.getName()} provider for model: ${model}`);
 
       let responseText = '';
-      const stream = aiProvider.executeQuery({
+      const stream = aiProvider.executeQuery(await prepareDirectExecution({
         prompt: effectivePrompt,
         model: bareModel,
         cwd: worktreePath,
@@ -387,7 +388,7 @@ export function createGeneratePRDescriptionHandler(
         thinkingLevel,
         claudeCompatibleProvider,
         credentials,
-      });
+      }, settingsService, { model, providerId: phaseModelEntry.providerId }, 'text'));
 
       // Wrap with timeout
       for await (const msg of withTimeout(stream, AI_TIMEOUT_MS)) {

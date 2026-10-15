@@ -175,6 +175,7 @@ ${contentToAnalyze}`;
 
       // Use simpleQuery - provider abstraction handles routing to correct provider
       const result = await simpleQuery({
+        settingsService, providerId: phaseModelEntry.providerId,
         prompt,
         model,
         cwd,

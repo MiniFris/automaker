@@ -17,11 +17,12 @@ import type { SettingsService } from '../../../services/settings-service.js';
 export function createGenerateHandler(events: EventEmitter, settingsService?: SettingsService) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
-      const { projectPath, prompt, model, branchName } = req.body as {
+      const { projectPath, prompt, model, branchName, providerId } = req.body as {
         projectPath: string;
         prompt: string;
         model?: string;
         branchName?: string;
+        providerId?: string;
       };
 
       if (!projectPath) {
@@ -62,7 +63,8 @@ export function createGenerateHandler(events: EventEmitter, settingsService?: Se
         abortController,
         settingsService,
         model,
-        branchName
+        branchName,
+        providerId
       ).catch((error) => {
         // Just log - error event already emitted by generateBacklogPlan
         logError(error, 'Generate backlog plan failed (background)');

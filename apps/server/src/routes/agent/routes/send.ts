@@ -12,13 +12,14 @@ const logger = createLogger('Agent');
 export function createSendHandler(agentService: AgentService) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
-      const { sessionId, message, workingDirectory, imagePaths, model, thinkingLevel } =
+      const { sessionId, message, workingDirectory, imagePaths, model, providerId, thinkingLevel } =
         req.body as {
           sessionId: string;
           message: string;
           workingDirectory?: string;
           imagePaths?: string[];
           model?: string;
+          providerId?: string;
           thinkingLevel?: ThinkingLevel;
         };
 
@@ -50,6 +51,7 @@ export function createSendHandler(agentService: AgentService) {
           workingDirectory,
           imagePaths,
           model,
+          providerId,
           thinkingLevel,
         })
         .catch((error) => {
@@ -60,7 +62,7 @@ export function createSendHandler(agentService: AgentService) {
           // the HTTP response already returned 200. This is critical for
           // session-not-found errors where sendMessage() throws before it
           // can emit its own error event (no in-memory session to emit from).
-          agentService.emitSessionError(sessionId, errorMsg);
+          agentService.emitSessionError(sessionId, errorMsg, error);
 
           logError(error, 'Send message failed (background)');
         });

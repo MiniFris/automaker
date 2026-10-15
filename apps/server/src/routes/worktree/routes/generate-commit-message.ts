@@ -18,6 +18,7 @@ import { ProviderFactory } from '../../../providers/provider-factory.js';
 import type { SettingsService } from '../../../services/settings-service.js';
 import { getErrorMessage, logError } from '../common.js';
 import { getPhaseModelWithOverrides } from '../../../lib/settings-helpers.js';
+import { prepareDirectExecution } from '../../../providers/openai-compatible/execution.js';
 
 const logger = createLogger('GenerateCommitMessage');
 const execFileAsync = promisify(execFile);
@@ -210,7 +211,7 @@ export function createGenerateCommitMessageHandler(
       logger.info(`Using ${aiProvider.getName()} provider for model: ${model}`);
 
       let responseText = '';
-      const stream = aiProvider.executeQuery({
+      const stream = aiProvider.executeQuery(await prepareDirectExecution({
         prompt: effectivePrompt,
         model: bareModel,
         cwd: worktreePath,
@@ -221,7 +222,7 @@ export function createGenerateCommitMessageHandler(
         thinkingLevel, // Pass thinking level for extended thinking support
         claudeCompatibleProvider, // Pass provider for alternative endpoint configuration
         credentials, // Pass credentials for resolving 'credentials' apiKeySource
-      });
+      }, settingsService, { model, providerId: phaseModelEntry.providerId }, 'text'));
 
       // Wrap with timeout to prevent indefinite hangs
       for await (const msg of withTimeout(stream, AI_TIMEOUT_MS)) {
