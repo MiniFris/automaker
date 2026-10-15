@@ -39,6 +39,7 @@ import {
 import { extractXmlElements, extractImplementedFeatures } from '../lib/xml-extractor.js';
 import { createLogger, loadContextFiles, isAbortError } from '@automaker/utils';
 import { ProviderFactory } from '../providers/provider-factory.js';
+import { prepareDirectExecution } from '../providers/openai-compatible/execution.js';
 import type { SettingsService } from './settings-service.js';
 import type { FeatureLoader } from './feature-loader.js';
 import { createChatOptions, validateWorkingDirectory } from '../lib/sdk-options.js';
@@ -262,7 +263,7 @@ export class IdeationService {
         credentials, // Pass credentials for resolving 'credentials' apiKeySource
       };
 
-      const stream = provider.executeQuery(executeOptions);
+      const stream = provider.executeQuery(await prepareDirectExecution(executeOptions, this.settingsService, { model: modelId, providerId: options?.providerId }, 'text'));
 
       let responseText = '';
       const assistantMessage: IdeationMessage = {
@@ -756,7 +757,7 @@ export class IdeationService {
         credentials, // Pass credentials for resolving 'credentials' apiKeySource
       };
 
-      const stream = provider.executeQuery(executeOptions);
+      const stream = provider.executeQuery(await prepareDirectExecution(executeOptions, this.settingsService, { model: modelId, providerId: phaseResult.phaseModel.providerId }, 'text'));
 
       let responseText = '';
       for await (const msg of stream) {

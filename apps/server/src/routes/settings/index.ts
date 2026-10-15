@@ -24,6 +24,7 @@ import { createUpdateProjectHandler } from './routes/update-project.js';
 import { createMigrateHandler } from './routes/migrate.js';
 import { createStatusHandler } from './routes/status.js';
 import { createDiscoverAgentsHandler } from './routes/discover-agents.js';
+import { createOpenAICompatibleSettingsRoutes } from './openai-compatible.js';
 
 /**
  * Create settings router with all endpoints
@@ -47,6 +48,7 @@ import { createDiscoverAgentsHandler } from './routes/discover-agents.js';
  */
 export function createSettingsRoutes(settingsService: SettingsService): Router {
   const router = Router();
+  router.use('/openai-compatible', createOpenAICompatibleSettingsRoutes(settingsService));
 
   // Status endpoint (check if migration needed)
   router.get('/status', createStatusHandler(settingsService));

@@ -4,6 +4,7 @@
 
 import path from 'path';
 import type { Feature } from '@automaker/types';
+import { isDirectModel } from '@automaker/types';
 import { createLogger, classifyError, loadContextFiles, recordMemoryUsage } from '@automaker/utils';
 import { resolveModelString, DEFAULT_MODELS } from '@automaker/model-resolver';
 import { getFeatureDir } from '@automaker/platform';
@@ -279,7 +280,7 @@ ${feature.spec}
           description: feature.description ?? '',
         },
       });
-      const combinedSystemPrompt = filterClaudeMdFromContext(contextResult, autoLoadClaudeMd);
+      const combinedSystemPrompt = filterClaudeMdFromContext(contextResult, autoLoadClaudeMd && !isDirectModel(feature.model));
 
       if (options?.continuationPrompt) {
         prompt = options.continuationPrompt;

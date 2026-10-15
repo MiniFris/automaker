@@ -7,7 +7,7 @@ import path from 'path';
 import * as secureFs from '../lib/secure-fs.js';
 import type { EventEmitter } from '../lib/events.js';
 import type { ExecuteOptions, ThinkingLevel, ReasoningEffort } from '@automaker/types';
-import { stripProviderPrefix } from '@automaker/types';
+import { stripProviderPrefix, isDirectModel } from '@automaker/types';
 import {
   readImageAsBase64,
   buildPromptWithImages,
@@ -18,6 +18,7 @@ import {
 } from '@automaker/utils';
 import { ProviderFactory } from '../providers/provider-factory.js';
 import { createChatOptions, validateWorkingDirectory } from '../lib/sdk-options.js';
+import { prepareDirectExecution } from '../providers/openai-compatible/execution.js';
 import type { SettingsService } from './settings-service.js';
 import {
   getAutoLoadClaudeMdSetting,
@@ -29,6 +30,7 @@ import {
   getSubagentsConfiguration,
   getCustomSubagents,
   getProviderByModelId,
+  resolveProviderContext,
   getDefaultMaxTurnsSetting,
 } from '../lib/settings-helpers.js';
 
@@ -50,6 +52,7 @@ interface QueuedPrompt {
   message: string;
   imagePaths?: string[];
   model?: string;
+  providerId?: string;
   thinkingLevel?: ThinkingLevel;
   addedAt: string;
 }
@@ -60,6 +63,7 @@ interface Session {
   abortController: AbortController | null;
   workingDirectory: string;
   model?: string;
+  providerId?: string;
   thinkingLevel?: ThinkingLevel; // Thinking level for Claude models
   reasoningEffort?: ReasoningEffort; // Reasoning effort for Codex models
   sdkSessionId?: string; // Claude SDK session ID for conversation continuity
@@ -76,10 +80,12 @@ interface SessionMetadata {
   archived?: boolean;
   tags?: string[];
   model?: string;
+  providerId?: string;
   sdkSessionId?: string; // Claude SDK session ID for conversation continuity
 }
 
 export class AgentService {
+  private reportedErrors = new WeakSet<object>();
   private sessions = new Map<string, Session>();
   private stateDir: string;
   private metadataFile: string;
@@ -230,6 +236,8 @@ export class AgentService {
       abortController: null,
       workingDirectory: resolvedWorkingDirectory,
       sdkSessionId: sessionMetadata?.sdkSessionId,
+      model: sessionMetadata?.model,
+      providerId: sessionMetadata?.providerId,
       promptQueue,
     };
 
@@ -250,6 +258,7 @@ export class AgentService {
     workingDirectory,
     imagePaths,
     model,
+    providerId,
     thinkingLevel,
     reasoningEffort,
   }: {
@@ -258,6 +267,7 @@ export class AgentService {
     workingDirectory?: string;
     imagePaths?: string[];
     model?: string;
+    providerId?: string;
     thinkingLevel?: ThinkingLevel;
     reasoningEffort?: ReasoningEffort;
   }) {
@@ -282,8 +292,18 @@ export class AgentService {
 
     // Update session model, thinking level, and reasoning effort if provided
     if (model) {
+      if (model !== session.model) {
+        session.providerId = undefined;
+        session.thinkingLevel = undefined;
+        session.reasoningEffort = undefined;
+        session.sdkSessionId = undefined;
+      }
       session.model = model;
-      await this.updateSession(sessionId, { model });
+      if (providerId !== undefined) session.providerId = providerId;
+      await this.updateSession(sessionId, { model, providerId: session.providerId, sdkSessionId: session.sdkSessionId });
+    } else if (providerId !== undefined) {
+      session.providerId = providerId;
+      await this.updateSession(sessionId, { providerId });
     }
     if (thinkingLevel !== undefined) {
       session.thinkingLevel = thinkingLevel;
@@ -402,11 +422,9 @@ export class AgentService {
       let providerResolvedModel: string | undefined;
       const requestedModel = model || session.model;
       if (requestedModel && this.settingsService) {
-        const providerResult = await getProviderByModelId(
-          requestedModel,
-          this.settingsService,
-          '[AgentService]'
-        );
+        const providerResult = session.providerId
+          ? await resolveProviderContext(this.settingsService, requestedModel, session.providerId, '[AgentService]')
+          : await getProviderByModelId(requestedModel, this.settingsService, '[AgentService]');
         if (providerResult.provider) {
           claudeCompatibleProvider = providerResult.provider;
           providerResolvedModel = providerResult.resolvedModel;
@@ -431,7 +449,7 @@ export class AgentService {
 
       // When autoLoadClaudeMd is enabled, filter out CLAUDE.md to avoid duplication
       // (SDK handles CLAUDE.md via settingSources), but keep other context files like CODE_QUALITY.md
-      const contextFilesPrompt = filterClaudeMdFromContext(contextResult, autoLoadClaudeMd);
+      const contextFilesPrompt = filterClaudeMdFromContext(contextResult, autoLoadClaudeMd && !isDirectModel(requestedModel ?? ''));
 
       // Build combined system prompt with base prompt and context files
       const baseSystemPrompt = await this.getSystemPrompt();
@@ -579,7 +597,9 @@ export class AgentService {
       options.prompt = promptContent;
 
       // Execute via provider
-      const stream = provider.executeQuery(options);
+      const stream = provider.executeQuery(await prepareDirectExecution(options, this.settingsService, {
+        model: requestedModel ?? effectiveModel, providerId: session.providerId,
+      }));
 
       let currentAssistantMessage: Message | null = null;
       let responseText = '';
@@ -822,6 +842,7 @@ export class AgentService {
         message: errorMessage,
       });
 
+      if (error && typeof error === 'object') this.reportedErrors.add(error);
       throw error;
     }
   }
@@ -943,7 +964,8 @@ export class AgentService {
     name: string,
     projectPath?: string,
     workingDirectory?: string,
-    model?: string
+    model?: string,
+    providerId?: string
   ): Promise<SessionMetadata> {
     const sessionId = this.generateId();
     const metadata = await this.loadMetadata();
@@ -968,6 +990,7 @@ export class AgentService {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       model,
+      providerId,
     };
 
     metadata[sessionId] = session;
@@ -976,11 +999,15 @@ export class AgentService {
     return session;
   }
 
-  async setSessionModel(sessionId: string, model: string): Promise<boolean> {
-    const session = this.sessions.get(sessionId);
+  async setSessionModel(sessionId: string, model: string, providerId?: string): Promise<boolean> {
+    const session = await this.ensureSession(sessionId);
     if (session) {
       session.model = model;
-      await this.updateSession(sessionId, { model });
+      session.providerId = providerId;
+      session.sdkSessionId = undefined;
+      session.thinkingLevel = undefined;
+      session.reasoningEffort = undefined;
+      await this.updateSession(sessionId, { model, providerId, sdkSessionId: undefined });
       return true;
     }
     return false;
@@ -1062,6 +1089,7 @@ export class AgentService {
       message: string;
       imagePaths?: string[];
       model?: string;
+      providerId?: string;
       thinkingLevel?: ThinkingLevel;
     }
   ): Promise<{ success: boolean; queuedPrompt?: QueuedPrompt; error?: string }> {
@@ -1074,7 +1102,8 @@ export class AgentService {
       id: this.generateId(),
       message: prompt.message,
       imagePaths: prompt.imagePaths,
-      model: prompt.model,
+      model: prompt.model ?? session.model,
+      providerId: prompt.providerId ?? (prompt.model === undefined || prompt.model === session.model ? session.providerId : undefined),
       thinkingLevel: prompt.thinkingLevel,
       addedAt: new Date().toISOString(),
     };
@@ -1207,6 +1236,7 @@ export class AgentService {
         message: nextPrompt.message,
         imagePaths: nextPrompt.imagePaths,
         model: nextPrompt.model,
+        providerId: nextPrompt.providerId,
         thinkingLevel: nextPrompt.thinkingLevel,
       });
     } catch (error) {
@@ -1233,7 +1263,8 @@ export class AgentService {
    * even when sendMessage() throws before it can emit its own error event
    * (e.g., when the session is not found and no in-memory session exists).
    */
-  emitSessionError(sessionId: string, error: string): void {
+  emitSessionError(sessionId: string, error: string, originalError?: unknown): void {
+    if (originalError && typeof originalError === 'object' && this.reportedErrors.has(originalError)) return;
     this.events.emit('agent:stream', { sessionId, type: 'error', error });
   }
 

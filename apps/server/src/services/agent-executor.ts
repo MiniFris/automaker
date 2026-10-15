@@ -3,8 +3,8 @@
  */
 
 import path from 'path';
-import type { ExecuteOptions, ParsedTask } from '@automaker/types';
-import { isPipelineStatus } from '@automaker/types';
+import type { ExecuteOptions, ParsedTask, ProviderMessage } from '@automaker/types';
+import { isPipelineStatus, isDirectModel } from '@automaker/types';
 import { buildPromptWithImages, createLogger, isAuthenticationError } from '@automaker/utils';
 import { getFeatureDir } from '@automaker/platform';
 import * as secureFs from '../lib/secure-fs.js';
@@ -21,6 +21,7 @@ import {
   extractSummary,
 } from './spec-parser.js';
 import { getPromptCustomization } from '../lib/settings-helpers.js';
+import { prepareDirectExecution } from '../providers/openai-compatible/execution.js';
 import type {
   AgentExecutionOptions,
   AgentExecutionResult,
@@ -83,7 +84,6 @@ export class AgentExecutor {
       projectPath,
       abortController,
       branchName = null,
-      provider,
       effectiveBareModel,
       previousContent,
       planningMode = 'skip',
@@ -116,14 +116,14 @@ export class AgentExecutor {
       );
     }
 
-    const executeOptions: ExecuteOptions = {
+    const executeOptions: ExecuteOptions = await prepareDirectExecution({
       prompt: promptContent,
       model: effectiveBareModel,
       maxTurns: resolvedMaxTurns,
       cwd: workDir,
       allowedTools: sdkOptions?.allowedTools as string[] | undefined,
       abortController,
-      systemPrompt: sdkOptions?.systemPrompt,
+      systemPrompt: sdkOptions?.systemPrompt ?? (isDirectModel(options.model ?? effectiveBareModel) ? options.systemPrompt : undefined),
       settingSources: sdkOptions?.settingSources,
       mcpServers:
         mcpServers && Object.keys(mcpServers).length > 0
@@ -134,7 +134,8 @@ export class AgentExecutor {
       credentials,
       claudeCompatibleProvider,
       sdkSessionId,
-    };
+      ...(isDirectModel(options.model ?? effectiveBareModel) && { readOnly: planningMode !== 'skip' && requirePlanApproval }),
+    }, this.settingsService, { model: options.model ?? effectiveBareModel, providerId: options.providerId });
     const featureDirForOutput = getFeatureDir(projectPath, featureId);
     const outputPath = path.join(featureDirForOutput, 'agent-output.md');
     const rawOutputPath = path.join(featureDirForOutput, 'raw-output.jsonl');
@@ -144,6 +145,14 @@ export class AgentExecutor {
     let responseText = previousContent
       ? `${previousContent}\n\n---\n\n## Follow-up Session\n\n`
       : '';
+    const directToolResults: string[] = [];
+    // Keep tool output out of the planning/summary text and marker parser.
+    // This observer is local to a run, not mutable shared executor state.
+    options = { ...options, captureToolResult: (id, content) => {
+      directToolResults.push(`### ${id}\n\n\`\`\`json\n${content}\n\`\`\``);
+      this.eventBus.emitAutoModeEvent('auto_mode_progress', { featureId, projectPath, branchName, content: `Tool result ${id}: ${content}` });
+      scheduleWrite();
+    } };
     let specDetected = specAlreadyDetected,
       tasksCompleted = 0,
       aborted = false;
@@ -154,7 +163,7 @@ export class AgentExecutor {
     const writeToFile = async (): Promise<void> => {
       try {
         await secureFs.mkdir(path.dirname(outputPath), { recursive: true });
-        await secureFs.writeFile(outputPath, responseText);
+        await secureFs.writeFile(outputPath, responseText + (directToolResults.length ? `\n\n## Tool results\n\n${directToolResults.join('\n\n')}` : ''));
       } catch (error) {
         logger.error(`Failed to write agent output for ${featureId}:`, error);
       }
@@ -231,7 +240,7 @@ export class AgentExecutor {
     logger.info(`Starting stream for feature ${featureId}...`);
 
     try {
-      const stream = provider.executeQuery(executeOptions);
+      const stream = this.streamProvider(options, executeOptions);
       streamLoop: for await (const msg of stream) {
         if (msg.session_id && msg.session_id !== options.sdkSessionId) {
           options.sdkSessionId = msg.session_id;
@@ -439,7 +448,6 @@ export class AgentExecutor {
       projectPath,
       abortController,
       branchName = null,
-      provider,
       sdkOptions,
     } = options;
     logger.info(`Starting task execution for feature ${featureId} with ${tasks.length} tasks`);
@@ -485,8 +493,8 @@ export class AgentExecutor {
         `[executeTasksLoop] Feature ${featureId}, task ${task.id} (${taskIndex + 1}/${tasks.length}): ` +
           `maxTurns=${taskMaxTurns} (sdkOptions.maxTurns=${sdkOptions?.maxTurns ?? 'undefined'})`
       );
-      const taskStream = provider.executeQuery(
-        this.buildExecOpts(options, taskPrompt, taskMaxTurns)
+      const taskStream = this.streamProvider(options,
+        await this.buildExecOpts(options, taskPrompt, taskMaxTurns)
       );
       let taskOutput = '',
         taskStartDetected = false,
@@ -623,7 +631,6 @@ export class AgentExecutor {
       projectPath,
       branchName = null,
       planningMode = 'skip',
-      provider,
       sdkOptions,
     } = options;
     let responseText = initialResponseText,
@@ -718,8 +725,8 @@ export class AgentExecutor {
             version: planVersion,
           });
           let revText = '';
-          for await (const msg of provider.executeQuery(
-            this.buildExecOpts(options, revPrompt, sdkOptions?.maxTurns ?? DEFAULT_MAX_TURNS)
+          for await (const msg of this.streamProvider(options,
+            await this.buildExecOpts(options, revPrompt, sdkOptions?.maxTurns ?? DEFAULT_MAX_TURNS, true)
           )) {
             if (msg.session_id && msg.session_id !== options.sdkSessionId) {
               options.sdkSessionId = msg.session_id;
@@ -806,8 +813,21 @@ export class AgentExecutor {
     return { responseText, tasksCompleted };
   }
 
-  private buildExecOpts(o: AgentExecutionOptions, prompt: string, maxTurns: number) {
-    return {
+  private async *streamProvider(options: AgentExecutionOptions, query: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+    const names = new Map<string, string>();
+    for await (const message of options.provider.executeQuery(query)) {
+      if (isDirectModel(options.model ?? options.effectiveBareModel))
+        for (const block of message.message?.content ?? []) {
+          const id = block.tool_use_id ?? 'unknown';
+          if (block.type === 'tool_use') names.set(id, block.name ?? 'unknown');
+          if (block.type === 'tool_result') options.captureToolResult?.(`${names.get(id) ?? 'unknown'} (${id})`, typeof block.content === 'string' ? block.content : JSON.stringify(block.content));
+        }
+      yield message;
+    }
+  }
+
+  private async buildExecOpts(o: AgentExecutionOptions, prompt: string, maxTurns: number, readOnly = false): Promise<ExecuteOptions> {
+    return prepareDirectExecution({
       prompt,
       model: o.effectiveBareModel,
       maxTurns,
@@ -823,7 +843,8 @@ export class AgentExecutor {
       credentials: o.credentials,
       claudeCompatibleProvider: o.claudeCompatibleProvider,
       sdkSessionId: o.sdkSessionId,
-    };
+      ...(isDirectModel(o.model ?? o.effectiveBareModel) && { readOnly, systemPrompt: o.sdkOptions?.systemPrompt ?? o.systemPrompt }),
+    }, this.settingsService, { model: o.model ?? o.effectiveBareModel, providerId: o.providerId });
   }
 
   private async executeSingleAgentContinuation(
@@ -832,15 +853,15 @@ export class AgentExecutor {
     userFeedback: string | undefined,
     initialResponseText: string
   ): Promise<{ responseText: string }> {
-    const { featureId, branchName = null, provider } = options;
+    const { featureId, branchName = null } = options;
     logger.info(`No parsed tasks, using single-agent execution for feature ${featureId}`);
     const prompts = await getPromptCustomization(this.settingsService, '[AutoMode]');
     const contPrompt = prompts.taskExecution.continuationAfterApprovalTemplate
       .replace(/\{\{userFeedback\}\}/g, userFeedback || '')
       .replace(/\{\{approvedPlan\}\}/g, planContent);
     let responseText = initialResponseText;
-    for await (const msg of provider.executeQuery(
-      this.buildExecOpts(options, contPrompt, options.sdkOptions?.maxTurns ?? DEFAULT_MAX_TURNS)
+    for await (const msg of this.streamProvider(options,
+      await this.buildExecOpts(options, contPrompt, options.sdkOptions?.maxTurns ?? DEFAULT_MAX_TURNS)
     )) {
       if (msg.session_id && msg.session_id !== options.sdkSessionId) {
         options.sdkSessionId = msg.session_id;

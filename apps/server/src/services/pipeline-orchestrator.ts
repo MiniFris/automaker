@@ -3,6 +3,8 @@
  */
 
 import path from 'path';
+import { isDirectModel } from '@automaker/types';
+import { runDirectShellCommand } from '../providers/openai-compatible/execution.js';
 import type {
   Feature,
   PipelineStep,
@@ -87,7 +89,7 @@ export class PipelineOrchestrator {
       fsModule: secureFs as Parameters<typeof loadContextFiles>[0]['fsModule'],
       taskContext: { title: feature.title ?? '', description: feature.description ?? '' },
     });
-    const contextFilesPrompt = filterClaudeMdFromContext(contextResult, autoLoadClaudeMd);
+    const contextFilesPrompt = filterClaudeMdFromContext(contextResult, autoLoadClaudeMd && !isDirectModel(feature.model));
     const contextPath = path.join(getFeatureDir(projectPath, featureId), 'agent-output.md');
     let previousContext = '';
     try {
@@ -479,22 +481,25 @@ export class PipelineOrchestrator {
         return { success: false, message: 'Test execution aborted' };
       logger.info(`Running tests for ${featureId} (attempt ${attempt}/${maxTestAttempts})`);
 
-      const testResult = await this.testRunnerService.startTests(workDir, { command: testCommand });
-      if (!testResult.success || !testResult.result?.sessionId)
-        return {
-          success: false,
-          testsPassed: false,
-          message: testResult.error || 'Failed to start tests',
-        };
-
-      const completionResult = await this.waitForTestCompletion(
-        testResult.result.sessionId,
-        abortController.signal
-      );
-      if (completionResult.status === 'passed') return { success: true, testsPassed: true };
-
-      const sessionOutput = this.testRunnerService.getSessionOutput(testResult.result.sessionId);
-      const scrollback = sessionOutput.result?.output || '';
+      let scrollback: string;
+      if (isDirectModel(context.feature.model)) {
+        try {
+          const sandbox = await runDirectShellCommand(this.settingsService, workDir, testCommand, abortController.signal);
+          this.eventBus.emitAutoModeEvent('auto_mode_progress', { featureId, projectPath, content: sandbox.output });
+          if (sandbox.exitCode === 0) return { success: true, testsPassed: true };
+          scrollback = sandbox.output;
+        } catch (error) {
+          return { success: false, testsPassed: false, message: error instanceof Error ? error.message : 'Direct sandbox tests failed.' };
+        }
+      } else {
+        const testResult = await this.testRunnerService.startTests(workDir, { command: testCommand });
+        if (!testResult.success || !testResult.result?.sessionId)
+          return { success: false, testsPassed: false, message: testResult.error || 'Failed to start tests' };
+        const completionResult = await this.waitForTestCompletion(testResult.result.sessionId, abortController.signal);
+        if (completionResult.status === 'passed') return { success: true, testsPassed: true };
+        const sessionOutput = this.testRunnerService.getSessionOutput(testResult.result.sessionId);
+        scrollback = sessionOutput.result?.output || '';
+      }
       this.eventBus.emitAutoModeEvent('pipeline_test_failed', {
         featureId,
         attempt,
@@ -512,7 +517,7 @@ export class PipelineOrchestrator {
           abortController,
           projectPath,
           undefined,
-          undefined,
+          resolveModelString(context.feature.model, DEFAULT_MODELS.claude),
           {
             projectPath,
             planningMode: 'skip',

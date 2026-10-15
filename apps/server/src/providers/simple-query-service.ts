@@ -22,12 +22,17 @@ import type {
   ClaudeCompatibleProvider,
   Credentials,
 } from '@automaker/types';
-import { stripProviderPrefix } from '@automaker/types';
+import { stripProviderPrefix, isDirectModel } from '@automaker/types';
+import type { ExecuteOptions } from '@automaker/types';
+import type { SettingsService } from '../services/settings-service.js';
+import { prepareDirectExecution } from './openai-compatible/execution.js';
 
 /**
  * Options for simple query execution
  */
 export interface SimpleQueryOptions {
+  providerId?: string;
+  settingsService?: SettingsService | null;
   /** The prompt to send to the AI (can be text or multi-part content) */
   prompt: string | Array<{ type: string; text?: string; source?: object }>;
   /** Model to use (with or without provider prefix) */
@@ -124,7 +129,7 @@ export async function simpleQuery(options: SimpleQueryOptions): Promise<SimpleQu
   let structuredOutput: Record<string, unknown> | undefined;
 
   // Build provider options
-  const providerOptions = {
+  const providerOptions: ExecuteOptions = {
     prompt: options.prompt,
     model: bareModel,
     originalModel: model,
@@ -143,7 +148,8 @@ export async function simpleQuery(options: SimpleQueryOptions): Promise<SimpleQu
     credentials: options.credentials, // Pass credentials for resolving 'credentials' apiKeySource
   };
 
-  for await (const msg of provider.executeQuery(providerOptions)) {
+  const executeOptions = await prepareDirectExecution(providerOptions, options.settingsService, { model, providerId: options.providerId }, 'text');
+  for await (const msg of provider.executeQuery(executeOptions)) {
     // Handle error messages
     if (msg.type === 'error') {
       const errorMessage = msg.error || 'Provider returned an error';
@@ -209,7 +215,7 @@ export async function streamingQuery(options: StreamingQueryOptions): Promise<Si
   let structuredOutput: Record<string, unknown> | undefined;
 
   // Build provider options
-  const providerOptions = {
+  const providerOptions: ExecuteOptions = {
     prompt: options.prompt,
     model: bareModel,
     originalModel: model,
@@ -228,7 +234,8 @@ export async function streamingQuery(options: StreamingQueryOptions): Promise<Si
     credentials: options.credentials, // Pass credentials for resolving 'credentials' apiKeySource
   };
 
-  for await (const msg of provider.executeQuery(providerOptions)) {
+  const executeOptions = await prepareDirectExecution({ ...providerOptions, ...(isDirectModel(model) && { tools: options.allowedTools ?? ['Read', 'Glob', 'Grep'] }) }, options.settingsService, { model, providerId: options.providerId });
+  for await (const msg of provider.executeQuery(executeOptions)) {
     // Handle error messages
     if (msg.type === 'error') {
       const errorMessage = msg.error || 'Provider returned an error';

@@ -336,6 +336,7 @@ export class AutoModeServiceFacade {
             abortController,
             imagePaths,
             model: resolvedModel,
+            providerId: opts?.providerId as string | undefined,
             planningMode: opts?.planningMode as PlanningMode | undefined,
             requirePlanApproval: opts?.requirePlanApproval as boolean | undefined,
             previousContent: opts?.previousContent as string | undefined,

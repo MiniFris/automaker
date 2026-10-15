@@ -459,6 +459,13 @@ describe('recovery-service.ts', () => {
   });
 
   describe('resumeInterruptedFeatures', () => {
+    it('does not automatically replay direct runs with unknown tool outcomes', async () => {
+      vi.mocked(secureFs.readdir).mockResolvedValueOnce([{ name: 'direct-feature', isDirectory: () => true } as never]);
+      vi.mocked(utils.readJsonWithRecovery).mockResolvedValueOnce({ data: { id: 'direct-feature', model: 'direct-Vendor/Model:Tag', providerId: 'endpoint', status: 'interrupted' }, wasRecovered: false });
+      await service.resumeInterruptedFeatures('/test/project');
+      expect(mockExecuteFeature).not.toHaveBeenCalled(); expect(mockResumePipeline).not.toHaveBeenCalled();
+    });
+
     it('finds features with in_progress status', async () => {
       vi.mocked(secureFs.readdir).mockResolvedValueOnce([
         { name: 'feature-1', isDirectory: () => true } as any,
