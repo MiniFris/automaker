@@ -7,11 +7,55 @@ import {
   isCodexModel,
   isCopilotModel,
   isOpencodeModel,
+  isClaudeModel,
+  isDirectModel,
+  toDirectModelId,
+  getModelProvider,
+  addProviderPrefix,
+  normalizeModelString,
+  supportsStructuredOutput,
+  migrateModelId,
   PROVIDER_PREFIXES,
   type ModelProvider,
 } from '@automaker/types';
 
 describe('provider-utils.ts', () => {
+  describe('direct endpoint models', () => {
+    it.each([
+      'gpt-5.2',
+      'Qwen/Qwen3-Coder:latest',
+      'claude-sonnet-custom',
+      'gemini-pro',
+      'opencode-vendor/model',
+      'direct-model',
+    ])('preserves the exact API ID %s across routing and migration', (apiModelId) => {
+      const model = toDirectModelId(apiModelId);
+      expect(isDirectModel(model)).toBe(true);
+      expect(getModelProvider(model)).toBe('openai-compatible');
+      expect(isClaudeModel(model)).toBe(false);
+      expect(isOpencodeModel(model)).toBe(false);
+      expect(isCodexModel(model)).toBe(false);
+      expect(stripProviderPrefix(model)).toBe(apiModelId);
+      expect(normalizeModelString(model)).toBe(model);
+      expect(migrateModelId(model)).toBe(model);
+      expect(addProviderPrefix(model, 'openai-compatible')).toBe(model);
+      // Capability is determined by endpoint configuration, not the API model name.
+      expect(supportsStructuredOutput(model)).toBe(false);
+    });
+
+    it('adds a prefix to a bare model and handles absent input', () => {
+      expect(addProviderPrefix('Qwen/Qwen3', 'openai-compatible')).toBe('direct-Qwen/Qwen3');
+      expect(isDirectModel(null)).toBe(false);
+      expect(isDirectModel(undefined)).toBe(false);
+      expect(isDirectModel('gpt-5.2')).toBe(false);
+    });
+
+    it('does not change existing bare GPT or slash-ID routing', () => {
+      expect(getModelProvider('gpt-5.2')).toBe('codex');
+      expect(getModelProvider('vendor/model')).toBe('opencode');
+    });
+  });
+
   describe('validateBareModelId', () => {
     describe('without expectedProvider parameter', () => {
       it('should accept valid bare model IDs', () => {
@@ -274,6 +318,7 @@ describe('provider-utils.ts', () => {
   describe('PROVIDER_PREFIXES', () => {
     it('should contain all expected provider prefixes', () => {
       expect(PROVIDER_PREFIXES).toEqual({
+        'openai-compatible': 'direct-',
         cursor: 'cursor-',
         gemini: 'gemini-',
         codex: 'codex-',

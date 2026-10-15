@@ -16,9 +16,11 @@ import {
 } from './opencode-models.js';
 import { GEMINI_MODEL_MAP } from './gemini-models.js';
 import { COPILOT_MODEL_MAP } from './copilot-models.js';
+import { DIRECT_MODEL_PREFIX, isDirectModel } from './openai-compatible.js';
 
 /** Provider prefix constants */
 export const PROVIDER_PREFIXES = {
+  'openai-compatible': DIRECT_MODEL_PREFIX,
   cursor: 'cursor-',
   codex: 'codex-',
   opencode: 'opencode-',
@@ -80,6 +82,7 @@ export function isCursorModel(model: string | undefined | null): boolean {
  */
 export function isClaudeModel(model: string | undefined | null): boolean {
   if (!model || typeof model !== 'string') return false;
+  if (isDirectModel(model)) return false;
 
   // Check if it's a Claude model alias (haiku, sonnet, opus)
   if (model in CLAUDE_MODEL_MAP) {
@@ -179,6 +182,7 @@ export function isCopilotModel(model: string | undefined | null): boolean {
  */
 export function isOpencodeModel(model: string | undefined | null): boolean {
   if (!model || typeof model !== 'string') return false;
+  if (isDirectModel(model)) return false;
 
   // Canonical format: opencode- prefix for static models
   if (model.startsWith(PROVIDER_PREFIXES.opencode)) {
@@ -223,6 +227,7 @@ export function isOpencodeModel(model: string | undefined | null): boolean {
  * @returns The provider type, defaults to 'claude' for unknown models
  */
 export function getModelProvider(model: string | undefined | null): ModelProvider {
+  if (isDirectModel(model)) return 'openai-compatible';
   // Check Copilot first since it has a unique prefix
   if (isCopilotModel(model)) {
     return 'copilot';
@@ -284,6 +289,10 @@ export function stripProviderPrefix(model: string): string {
 export function addProviderPrefix(model: string, provider: ModelProvider): string {
   if (!model || typeof model !== 'string') return model;
 
+  if (provider === 'openai-compatible') {
+    return isDirectModel(model) ? model : `${DIRECT_MODEL_PREFIX}${model}`;
+  }
+
   if (provider === 'cursor') {
     if (!model.startsWith(PROVIDER_PREFIXES.cursor)) {
       return `${PROVIDER_PREFIXES.cursor}${model}`;
@@ -339,6 +348,7 @@ export function normalizeModelString(model: string | undefined | null): string {
     return RETIRED_OPENCODE_MODEL_MAP[model];
   }
   if (
+    isDirectModel(model) ||
     model.startsWith(PROVIDER_PREFIXES.cursor) ||
     model.startsWith(PROVIDER_PREFIXES.codex) ||
     model.startsWith(PROVIDER_PREFIXES.opencode) ||
@@ -397,6 +407,8 @@ export function normalizeModelString(model: string | undefined | null): string {
  * supportsStructuredOutput('gemini-2.5-pro') // false
  */
 export function supportsStructuredOutput(model: string | undefined | null): boolean {
+  // Direct endpoint capabilities must be resolved from its model configuration.
+  if (isDirectModel(model)) return false;
   // Exclude proxy providers first - they may have Claude/Codex in the model name
   // but route through different APIs that don't support structured output
   if (

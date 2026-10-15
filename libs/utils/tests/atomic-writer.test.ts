@@ -83,6 +83,13 @@ describe('atomic-writer.ts', () => {
       expect(renameCall[1]).toBe(path.resolve(filePath));
     });
 
+    it('creates private temporary files exclusively when a file mode is specified', async () => {
+      (secureFs.writeFile as unknown as MockInstance).mockResolvedValue(undefined);
+      (secureFs.rename as unknown as MockInstance).mockResolvedValue(undefined);
+      await atomicWriteJson(path.join(tempDir, 'credentials.json'), { key: 'fixture-only' }, { mode: 0o600 });
+      expect(secureFs.writeFile).toHaveBeenCalledWith(expect.any(String), expect.any(String), { encoding: 'utf-8', mode: 0o600, flag: 'wx' });
+    });
+
     it('should use custom indentation', async () => {
       const filePath = path.join(tempDir, 'test.json');
       const data = { key: 'value' };

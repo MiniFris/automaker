@@ -4,6 +4,8 @@
  */
 
 // Provider types
+export * from './openai-compatible.js';
+
 export type {
   ProviderConfig,
   ConversationMessage,

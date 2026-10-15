@@ -18,6 +18,7 @@ import { getAllCopilotModelIds, DEFAULT_COPILOT_MODEL } from './copilot-models.j
 import type { PromptCustomization } from './prompts.js';
 import type { CodexSandboxMode, CodexApprovalPolicy } from './codex.js';
 import type { ReasoningEffort } from './provider.js';
+import type { OpenAICompatibleEndpoint, DirectAgentSettings } from './openai-compatible.js';
 
 // Re-export ModelAlias for convenience
 export type { ModelAlias };
@@ -385,7 +386,14 @@ export function getDefaultThinkingLevel(model: string): ThinkingLevel {
 }
 
 /** ModelProvider - AI model provider for credentials and API key management */
-export type ModelProvider = 'claude' | 'cursor' | 'codex' | 'opencode' | 'gemini' | 'copilot';
+export type ModelProvider =
+  | 'claude'
+  | 'cursor'
+  | 'codex'
+  | 'opencode'
+  | 'gemini'
+  | 'copilot'
+  | 'openai-compatible';
 
 // ============================================================================
 // Claude-Compatible Providers - Configuration for Claude-compatible API endpoints
@@ -930,11 +938,11 @@ const DEFAULT_CODEX_ADDITIONAL_DIRS: string[] = [];
  */
 export interface PhaseModelEntry {
   /**
-   * Provider ID for Claude-compatible provider models.
+   * Provider ID for Claude-compatible providers or a direct OpenAI-compatible endpoint.
    * - undefined: Use native Anthropic API (no custom provider)
    * - string: Use the specified ClaudeCompatibleProvider by ID
    *
-   * Only required when using models from a ClaudeCompatibleProvider.
+   * Required for direct- models (never inferred by model name), and custom Claude providers.
    * Native Claude models (claude-haiku, claude-sonnet, claude-opus) and
    * other providers (Cursor, Codex, OpenCode) don't need this field.
    */
@@ -1512,6 +1520,10 @@ export interface GlobalSettings {
    * Models can be mixed across providers (e.g., use GLM for enhancements, Anthropic for generation).
    */
   claudeCompatibleProviders?: ClaudeCompatibleProvider[];
+  /** Direct endpoints. Missing in older settings files means no configured endpoints. */
+  openaiCompatibleEndpoints?: OpenAICompatibleEndpoint[];
+  /** Explicit server/operator-granted local tool policy; never accepted in a chat request. */
+  openaiCompatibleAgentSettings?: DirectAgentSettings;
 
   // Deprecated Claude API Profiles (kept for migration)
   /**
@@ -1548,6 +1560,8 @@ export interface GlobalSettings {
 export interface Credentials {
   /** Version number for schema migration */
   version: number;
+  /** Keys referenced by endpoint auth. Never include these in global settings DTOs. */
+  openaiCompatibleApiKeys?: Record<string, string>;
   /** API keys for various providers */
   apiKeys: {
     /** Anthropic Claude API key */
