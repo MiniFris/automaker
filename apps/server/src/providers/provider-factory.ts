@@ -13,6 +13,7 @@ import {
   isOpencodeModel,
   isGeminiModel,
   isCopilotModel,
+  isDirectModel,
   type ModelProvider,
 } from '@automaker/types';
 import * as fs from 'fs';
@@ -89,6 +90,7 @@ export class ProviderFactory {
       return 'claude' as ModelProvider; // Name only; getProviderForModel returns MockProvider
     }
     const lowerModel = model.toLowerCase();
+    if (isDirectModel(lowerModel)) return 'openai-compatible';
 
     // Get all registered providers sorted by priority (descending)
     const registrations = Array.from(providerRegistry.entries()).sort(
@@ -143,6 +145,9 @@ export class ProviderFactory {
     const provider = this.getProviderByName(providerName);
 
     if (!provider) {
+      if (providerName === 'openai-compatible') {
+        throw new Error('OpenAI-compatible provider is not registered.');
+      }
       // Fallback to claude if provider not found
       const claudeReg = providerRegistry.get('claude');
       if (claudeReg) {
@@ -162,6 +167,7 @@ export class ProviderFactory {
       return 'claude';
     }
     const lowerModel = modelId.toLowerCase();
+    if (isDirectModel(lowerModel)) return 'openai-compatible';
 
     // Get all registered providers sorted by priority (descending)
     const registrations = Array.from(providerRegistry.entries()).sort(
@@ -257,6 +263,8 @@ export class ProviderFactory {
    * @returns Whether the model supports vision (defaults to true if model not found)
    */
   static modelSupportsVision(modelId: string): boolean {
+    // Direct capabilities depend on the selected endpoint; vision is not implemented yet.
+    if (isDirectModel(modelId.toLowerCase())) return false;
     const provider = this.getProviderForModel(modelId);
     const models = provider.getAvailableModels();
 
@@ -298,6 +306,13 @@ import { CodexProvider } from './codex-provider.js';
 import { OpencodeProvider } from './opencode-provider.js';
 import { GeminiProvider } from './gemini-provider.js';
 import { CopilotProvider } from './copilot-provider.js';
+import { OpenAICompatibleProvider } from './openai-compatible-provider.js';
+
+registerProvider('openai-compatible', {
+  factory: () => new OpenAICompatibleProvider(),
+  canHandleModel: isDirectModel,
+  priority: 100,
+});
 
 // Register Claude provider
 registerProvider('claude', {

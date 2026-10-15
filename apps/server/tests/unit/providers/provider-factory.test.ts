@@ -6,6 +6,7 @@ import { CodexProvider } from '@/providers/codex-provider.js';
 import { OpencodeProvider } from '@/providers/opencode-provider.js';
 import { GeminiProvider } from '@/providers/gemini-provider.js';
 import { CopilotProvider } from '@/providers/copilot-provider.js';
+import { OpenAICompatibleProvider } from '@/providers/openai-compatible-provider.js';
 
 describe('provider-factory.ts', () => {
   let consoleSpy: any;
@@ -53,6 +54,16 @@ describe('provider-factory.ts', () => {
   });
 
   describe('getProviderForModel', () => {
+    it.each(['direct-Qwen/Qwen3-Coder:latest', 'direct-claude-sonnet-custom', 'direct-gpt-5.2'])(
+      'routes %s explicitly without falling back to an existing CLI',
+      (model) => {
+        expect(ProviderFactory.getProviderNameForModel(model)).toBe('openai-compatible');
+        expect(ProviderFactory.getProviderForModelName(model)).toBe('openai-compatible');
+        expect(ProviderFactory.getProviderForModel(model)).toBeInstanceOf(OpenAICompatibleProvider);
+        expect(ProviderFactory.modelSupportsVision(model)).toBe(false);
+      }
+    );
+
     describe('Claude models (claude-* prefix)', () => {
       it('should return ClaudeProvider for claude-opus-4-6', () => {
         const provider = ProviderFactory.getProviderForModel('claude-opus-4-6');
@@ -178,9 +189,9 @@ describe('provider-factory.ts', () => {
       expect(hasClaudeProvider).toBe(true);
     });
 
-    it('should return exactly 6 providers', () => {
+    it('should return exactly 7 providers', () => {
       const providers = ProviderFactory.getAllProviders();
-      expect(providers).toHaveLength(6);
+      expect(providers).toHaveLength(7);
     });
 
     it('should include CopilotProvider', () => {
@@ -232,7 +243,8 @@ describe('provider-factory.ts', () => {
       expect(keys).toContain('opencode');
       expect(keys).toContain('gemini');
       expect(keys).toContain('copilot');
-      expect(keys).toHaveLength(6);
+      expect(keys).toContain('openai-compatible');
+      expect(keys).toHaveLength(7);
     });
 
     it('should include cursor status', async () => {
