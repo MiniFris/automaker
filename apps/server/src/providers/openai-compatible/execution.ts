@@ -1,4 +1,11 @@
-import { isDirectModel, type DirectAgentSettings, type ExecuteOptions } from '@automaker/types';
+import {
+  isDirectModel,
+  providerModelTimeouts,
+  getModelProvider,
+  type DirectAgentSettings,
+  type ExecuteOptions,
+  type ModelTimeoutSettings,
+} from '@automaker/types';
 import type { SettingsService } from '../../services/settings-service.js';
 import { resolveOpenAICompatibleConnection } from './config.js';
 import { toolPolicy, ToolRegistry } from './tool-registry.js';
@@ -26,6 +33,22 @@ export function parseDirectAgentSettings(input: unknown): DirectAgentSettings {
   return { ...policy, ...(settings.limits && { limits: { ...settings.limits } }) };
 }
 
+function applyTimeoutLimits(
+  policy: DirectAgentSettings,
+  timeouts?: ModelTimeoutSettings
+): DirectAgentSettings {
+  if (timeouts?.agentTimeoutMs === undefined && timeouts?.toolTimeoutMs === undefined)
+    return policy;
+  return {
+    ...policy,
+    limits: {
+      ...policy.limits,
+      ...(timeouts.agentTimeoutMs !== undefined && { maxDurationMs: timeouts.agentTimeoutMs }),
+      ...(timeouts.toolTimeoutMs !== undefined && { toolTimeoutMs: timeouts.toolTimeoutMs }),
+    },
+  };
+}
+
 /** Bind agent providers to trusted runtime settings; Direct also resolves its explicit endpoint. */
 export async function prepareDirectExecution(
   options: ExecuteOptions,
@@ -39,23 +62,24 @@ export async function prepareDirectExecution(
   },
   mode: 'text' | 'agent' = 'agent'
 ): Promise<ExecuteOptions> {
+  const global = settings ? await settings.getGlobalSettings() : undefined;
+  const modelTimeouts = providerModelTimeouts(global, getModelProvider(selection.model));
+  if (settings) options = { ...options, modelTimeouts };
   if (!isDirectModel(selection.model))
     return mode === 'text' ? options : prepareCliExecution(options, settings, selection);
   if (!settings || typeof selection.providerId !== 'string' || !selection.providerId)
     throw new OpenAICompatibleError(
       'Direct models require an explicit configured endpoint providerId.'
     );
-  const [global, credentials] = await Promise.all([
-    settings.getGlobalSettings(),
-    settings.getCredentials(),
-  ]);
+  const credentials = await settings.getCredentials();
   const connection = resolveOpenAICompatibleConnection({
-    endpoints: global.openaiCompatibleEndpoints,
+    endpoints: global!.openaiCompatibleEndpoints,
+    modelTimeouts,
     credentials,
     model: selection.model,
     providerId: selection.providerId,
   });
-  let policy = parseDirectAgentSettings(global.openaiCompatibleAgentSettings ?? {});
+  let policy = parseDirectAgentSettings(global!.openaiCompatibleAgentSettings ?? {});
   let binding: import('@automaker/types').ExecutionEnvironmentBinding | undefined;
   let environment: ExecutionEnvironment | undefined;
   if (mode === 'agent' && options.tools?.length !== 0 && connection.model.capabilities.tools) {
@@ -88,6 +112,8 @@ export async function prepareDirectExecution(
       );
     }
   }
+  // Explicit endpoint values win, then global model timeouts, then existing agent limits/defaults.
+  policy = applyTimeoutLimits(policy, connection.timeouts);
   // Internal text helpers do not need access to local tools or runtime configuration.
   if (mode === 'text') policy.access = 'read-only';
   const store = new AgentCheckpointStore(settings.getDataDirectory());
@@ -137,6 +163,7 @@ export async function runDirectShellCommand(
       'Direct pipeline tests require server execution-environment settings.'
     );
   const global = await settings.getGlobalSettings();
+  const timeouts = providerModelTimeouts(global, 'openai-compatible');
   let policy = parseDirectAgentSettings(global.openaiCompatibleAgentSettings ?? {});
   const pinned = await new EnvironmentBindingStore(settings).bind({
     cwd,
@@ -149,12 +176,12 @@ export async function runDirectShellCommand(
     const environment = await boundRuntime(pinned.binding, settings);
     return environment.exec(command, abortSignal, {
       timeoutMs: Math.min(
-        policy.limits?.toolTimeoutMs ?? 180_000,
-        policy.limits?.maxDurationMs ?? 900_000
+        timeouts.toolTimeoutMs ?? policy.limits?.toolTimeoutMs ?? 180_000,
+        timeouts.agentTimeoutMs ?? policy.limits?.maxDurationMs ?? 900_000
       ),
     });
   }
-  policy = parseDirectAgentSettings(pinned.legacySettings ?? {});
+  policy = applyTimeoutLimits(parseDirectAgentSettings(pinned.legacySettings ?? {}), timeouts);
   if (!policy.shell)
     throw new OpenAICompatibleError(
       'Direct pipeline tests require a pinned local Docker image. Host execution is disabled.'

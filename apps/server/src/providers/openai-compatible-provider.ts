@@ -1,6 +1,7 @@
 import { Ajv, type ValidateFunction } from 'ajv';
 import path from 'node:path';
 import {
+  parseModelTimeoutSettings,
   type ExecuteOptions,
   type InstallationStatus,
   type ModelDefinition,
@@ -63,6 +64,7 @@ export class OpenAICompatibleProvider extends BaseProvider {
       const connection = options.openaiCompatibleConnection;
       if (!connection)
         throw new OpenAICompatibleError('A server-resolved endpoint connection is required.');
+      parseModelTimeoutSettings(connection.timeouts ?? {});
       // Revalidate the server-only boundary, including opaque model identity and capabilities.
       const endpoint = parseOpenAICompatibleEndpoint({
         id: connection.endpointId,
@@ -162,7 +164,8 @@ export class OpenAICompatibleProvider extends BaseProvider {
           workspace,
           [...new Set(names)],
           options.readOnly ?? false,
-          local ? undefined : policy
+          local ? undefined : policy,
+          limits.toolTimeoutMs
         );
       }
       const request: ChatCompletionRequest = {

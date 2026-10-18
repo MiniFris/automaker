@@ -391,12 +391,12 @@ export class ManagedSSH {
     };
     const timeout =
       operation === 'process'
-        ? Math.min((args as EnvironmentProcessRequest).timeoutMs ?? 600_000, 600_000) + 8000
+        ? Math.min(((args as EnvironmentProcessRequest).timeoutMs ?? 600_000) + 8000, 2_147_483_647)
         : operation === 'exec'
           ? Math.min(
-              (args as { options?: { timeoutMs?: number } }).options?.timeoutMs ?? 180000,
-              600000
-            ) + 8000
+              ((args as { options?: { timeoutMs?: number } }).options?.timeoutMs ?? 180000) + 8000,
+              2_147_483_647
+            )
           : 60000;
     signal.addEventListener('abort', cancel, { once: true });
     const stream = output ? new WorkerStream(output) : undefined;

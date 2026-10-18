@@ -75,19 +75,47 @@ describe('OpenAI-compatible endpoint configuration', () => {
     );
   });
 
-  it('parses a detached secret-free config with deterministic defaults', () => {
+  it('parses a detached secret-free config without materializing an inherited timeout', () => {
     const input = endpoint();
     const parsed = parseOpenAICompatibleEndpoint(input);
     expect(parsed).toEqual({
       ...input,
       baseUrl: 'http://localhost:8000/v1/',
-      timeoutMs: DEFAULT_DIRECT_TIMEOUT_MS,
       maxRetries: DEFAULT_DIRECT_MAX_RETRIES,
     });
     parsed.models[0].capabilities.tools = false;
     expect(input.models[0].capabilities.tools).toBe(true);
     expect(input.baseUrl).toBe('http://localhost:8000/v1');
+    expect(parsed).not.toHaveProperty('timeoutMs');
   });
+
+  it('inherits global timeouts and gives endpoint overrides precedence', () => {
+    const defaults = {
+      requestTimeoutMs: 180_000,
+      responseHeadersTimeoutMs: 45_000,
+      toolTimeoutMs: 20_000,
+    };
+    expect(resolve(endpoint(), { modelTimeouts: defaults })).toMatchObject({
+      timeoutMs: 180_000,
+      timeouts: defaults,
+    });
+    const configured = endpoint({
+      timeoutMs: 240_000,
+      timeouts: { responseHeadersTimeoutMs: 60_000 },
+    });
+    expect(resolve(configured, { modelTimeouts: defaults })).toMatchObject({
+      timeoutMs: 240_000,
+      timeouts: { ...defaults, responseHeadersTimeoutMs: 60_000 },
+    });
+    expect(defaults.responseHeadersTimeoutMs).toBe(45_000);
+  });
+
+  it.each([{ agentTimeoutMs: 0 }, { cliIdleTimeoutMs: 10 }, { requestTimeoutMs: 10 }])(
+    'rejects invalid or non-Direct endpoint timeout overrides (%#)',
+    (timeouts) => {
+      expect(() => parseOpenAICompatibleEndpoint({ ...endpoint(), timeouts })).toThrow('timeouts');
+    }
+  );
 
   it('accepts explicit Responses configuration and a discoverable empty catalog', () => {
     expect(

@@ -1,5 +1,8 @@
 import {
   isDirectModel,
+  DIRECT_TIMEOUT_KEYS,
+  DEFAULT_MODEL_TIMEOUTS,
+  parseModelTimeoutSettings,
   stripProviderPrefix,
   type Credentials,
   type OpenAICompatibleAuth,
@@ -7,9 +10,10 @@ import {
   type OpenAICompatibleEndpoint,
   type OpenAICompatibleModel,
   type ResolvedOpenAICompatibleConnection,
+  type ModelTimeoutSettings,
 } from '@automaker/types';
 
-export const DEFAULT_DIRECT_TIMEOUT_MS = 120_000;
+export const DEFAULT_DIRECT_TIMEOUT_MS = DEFAULT_MODEL_TIMEOUTS.requestTimeoutMs;
 export const DEFAULT_DIRECT_MAX_RETRIES = 2;
 
 /** Errors name configuration fields, never their values (which may contain secrets). */
@@ -123,7 +127,18 @@ export function parseOpenAICompatibleEndpoint(value: unknown): OpenAICompatibleE
   const endpoint = object(value, 'endpoint');
   fields(
     endpoint,
-    ['id', 'name', 'enabled', 'baseUrl', 'protocol', 'auth', 'timeoutMs', 'maxRetries', 'models'],
+    [
+      'id',
+      'name',
+      'enabled',
+      'baseUrl',
+      'protocol',
+      'auth',
+      'timeoutMs',
+      'timeouts',
+      'maxRetries',
+      'models',
+    ],
     'endpoint'
   );
   if (endpoint.protocol !== 'chat-completions' && endpoint.protocol !== 'responses')
@@ -138,11 +153,18 @@ export function parseOpenAICompatibleEndpoint(value: unknown): OpenAICompatibleE
       : integer(endpoint.maxRetries, 'maxRetries', 0);
   if (maxRetries > 5) invalid('maxRetries');
   const timeoutMs =
-    endpoint.timeoutMs === undefined
-      ? DEFAULT_DIRECT_TIMEOUT_MS
-      : integer(endpoint.timeoutMs, 'timeoutMs');
+    endpoint.timeoutMs === undefined ? undefined : integer(endpoint.timeoutMs, 'timeoutMs');
   // Node timers overflow above this value and would fire almost immediately.
-  if (timeoutMs > 2_147_483_647) invalid('timeoutMs');
+  if (timeoutMs !== undefined && timeoutMs > 2_147_483_647) invalid('timeoutMs');
+  let timeouts;
+  try {
+    timeouts =
+      endpoint.timeouts === undefined
+        ? undefined
+        : parseModelTimeoutSettings(endpoint.timeouts, DIRECT_TIMEOUT_KEYS);
+  } catch {
+    invalid('timeouts');
+  }
   return {
     id: text(endpoint.id, 'id'),
     name: text(endpoint.name, 'name'),
@@ -150,7 +172,8 @@ export function parseOpenAICompatibleEndpoint(value: unknown): OpenAICompatibleE
     baseUrl: normalizeOpenAICompatibleBaseUrl(endpoint.baseUrl),
     protocol: endpoint.protocol,
     auth: parseAuth(endpoint.auth),
-    timeoutMs,
+    ...(timeoutMs !== undefined && { timeoutMs }),
+    ...(timeouts !== undefined && { timeouts }),
     maxRetries,
     models,
   };
@@ -174,11 +197,16 @@ export function resolveOpenAICompatibleConnection(options: {
   model: string;
   credentials?: Pick<Credentials, 'openaiCompatibleApiKeys'>;
   env?: Readonly<Record<string, string | undefined>>;
+  modelTimeouts?: ModelTimeoutSettings;
 }): ResolvedOpenAICompatibleConnection {
   if (!isDirectModel(options.model)) invalid('model (direct- prefix required)');
   const matches = (options.endpoints ?? []).filter((item) => item.id === options.providerId);
   if (matches.length !== 1) invalid('providerId (missing or duplicate endpoint)');
   const endpoint = parseOpenAICompatibleEndpoint(matches[0]);
+  const timeouts = {
+    ...parseModelTimeoutSettings(options.modelTimeouts ?? {}),
+    ...endpoint.timeouts,
+  };
   if (!endpoint.enabled) invalid('providerId (endpoint disabled)');
   const model = endpoint.models.find((item) => item.id === stripProviderPrefix(options.model));
   if (!model) invalid('model (not configured on endpoint)');
@@ -204,7 +232,8 @@ export function resolveOpenAICompatibleConnection(options: {
     protocol: endpoint.protocol,
     ...(apiKey !== undefined && { apiKey }),
     model,
-    timeoutMs: endpoint.timeoutMs ?? DEFAULT_DIRECT_TIMEOUT_MS,
+    timeoutMs: endpoint.timeoutMs ?? timeouts.requestTimeoutMs ?? DEFAULT_DIRECT_TIMEOUT_MS,
+    ...(Object.keys(timeouts).length && { timeouts }),
     maxRetries: endpoint.maxRetries ?? DEFAULT_DIRECT_MAX_RETRIES,
   };
 }

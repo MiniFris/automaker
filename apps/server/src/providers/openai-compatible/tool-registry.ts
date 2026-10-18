@@ -55,13 +55,21 @@ export class ToolRegistry {
     workspace: ReadOnlyWorkspace | ExecutionEnvironment,
     names: string[],
     readOnly: boolean,
-    agent?: DirectAgentOptions
+    agent?: DirectAgentOptions,
+    toolTimeoutMs?: number
   ) {
     const environment = isIssuedEnvironment(workspace) ? workspace : undefined;
     const policy = toolPolicy(agent, readOnly);
     const ajv = new Ajv({ strict: true, ownProperties: true, logger: false });
     const available = environment
-      ? [...createEnvironmentTools(environment, readOnly), createTodoTool()]
+      ? [
+          ...createEnvironmentTools(
+            environment,
+            readOnly,
+            toolTimeoutMs ?? agent?.limits?.toolTimeoutMs
+          ),
+          createTodoTool(),
+        ]
       : [
           ...createReadTools(workspace as ReadOnlyWorkspace),
           createTodoTool(),
@@ -73,7 +81,8 @@ export class ToolRegistry {
                 createShellTool(
                   workspace as ReadOnlyWorkspace,
                   policy.shell,
-                  policy.access === 'workspace-write'
+                  policy.access === 'workspace-write',
+                  toolTimeoutMs ?? agent?.limits?.toolTimeoutMs
                 ),
               ]
             : []),

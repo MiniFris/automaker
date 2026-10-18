@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
+import { modelTimeout, MAX_MODEL_TIMEOUT_MS } from '@automaker/types';
 import type { ValidateFunction } from 'ajv';
 import type {
   DirectAgentCheckpoint,
@@ -30,8 +31,8 @@ export const DEFAULT_AGENT_LIMITS: Required<DirectAgentLimits> = {
 };
 const MAX_LIMITS: Required<DirectAgentLimits> = {
   maxToolCalls: 256,
-  maxDurationMs: 3_600_000,
-  toolTimeoutMs: 600_000,
+  maxDurationMs: MAX_MODEL_TIMEOUT_MS,
+  toolTimeoutMs: MAX_MODEL_TIMEOUT_MS,
   maxContextBytes: 4 * 1024 * 1024,
   maxOutputChars: 1024 * 1024,
   maxRepeatedCalls: 10,
@@ -191,7 +192,10 @@ export class AgentLoop {
           : state
       );
       const checkpointController = new AbortController();
-      const checkpointTimer = setTimeout(() => checkpointController.abort(), 1000);
+      const checkpointTimer = setTimeout(
+        () => checkpointController.abort(),
+        modelTimeout(connection.timeouts, 'checkpointTimeoutMs')
+      );
       try {
         await abortable(
           Promise.resolve(agent.onCheckpoint(snapshot)),

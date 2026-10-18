@@ -231,7 +231,8 @@ async function removeContainer(name: string): Promise<void> {
 export function createShellTool(
   workspace: ReadOnlyWorkspace,
   config: NonNullable<DirectAgentOptions['shell']>,
-  writable: boolean
+  writable: boolean,
+  timeoutMs = 65_000
 ): LocalTool {
   const executable = config.executable ?? 'sh';
   return {
@@ -307,7 +308,7 @@ export function createShellTool(
         runtimeTimer = setTimeout(() => {
           cancel();
           running?.child.kill('SIGKILL');
-        }, 65_000);
+        }, timeoutMs);
         const imageConfig = await invoke([
           'image',
           'inspect',

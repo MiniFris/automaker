@@ -14,7 +14,8 @@ const hash = { type: 'string', pattern: '^[a-f0-9]{64}$' };
 const digest = (data: Buffer) => createHash('sha256').update(data).digest('hex');
 export function createEnvironmentTools(
   environment: ExecutionEnvironment,
-  readOnly: boolean
+  readOnly: boolean,
+  toolTimeoutMs?: number
 ): LocalTool[] {
   const location =
     environment.type === 'local'
@@ -284,7 +285,10 @@ export function createEnvironmentTools(
       { command: { type: 'string', minLength: 1, maxLength: 16000 }, cwd: filePath },
       ['command'],
       async (args, signal) =>
-        environment.exec(args.command as string, signal, { cwd: args.cwd as string | undefined })
+        environment.exec(args.command as string, signal, {
+          cwd: args.cwd as string | undefined,
+          timeoutMs: toolTimeoutMs,
+        })
     ),
   ];
 }

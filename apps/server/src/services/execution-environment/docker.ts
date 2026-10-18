@@ -677,12 +677,12 @@ export class DockerExecutionEnvironment implements ExecutionEnvironment {
     const client = new AbortController();
     const timeout =
       operation === 'process'
-        ? Math.min((args as EnvironmentProcessRequest).timeoutMs ?? 600_000, 600_000) + 8000
+        ? Math.min(((args as EnvironmentProcessRequest).timeoutMs ?? 600_000) + 8000, 2_147_483_647)
         : operation === 'exec'
           ? Math.min(
-              (args as { options?: { timeoutMs?: number } }).options?.timeoutMs ?? 180_000,
-              600_000
-            ) + 8000
+              ((args as { options?: { timeoutMs?: number } }).options?.timeoutMs ?? 180_000) + 8000,
+              2_147_483_647
+            )
           : 60_000;
     const stream = output ? new WorkerStream(output) : undefined;
     const request = this.manager.runner(dockerArguments(this.binding.context, command), {

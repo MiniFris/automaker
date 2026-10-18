@@ -5,7 +5,7 @@ import type {
   OpenAICompatibleEndpointStatus,
   ResolvedOpenAICompatibleConnection,
 } from '@automaker/types';
-import { toDirectModelId } from '@automaker/types';
+import { toDirectModelId, modelTimeout, providerModelTimeouts } from '@automaker/types';
 import type { SettingsService } from '../../services/settings-service.js';
 import {
   normalizeOpenAICompatibleBaseUrl,
@@ -66,6 +66,7 @@ async function connection(
   return resolveOpenAICompatibleConnection({
     endpoints: [{ ...endpoint, enabled: true, models: [model] }],
     credentials,
+    modelTimeouts: providerModelTimeouts(global, 'openai-compatible'),
     providerId,
     model: toDirectModelId(model.id),
   });
@@ -81,7 +82,13 @@ export async function discoverDirectModels(
     response = await fetch(new URL('models', normalizeOpenAICompatibleBaseUrl(config.baseUrl)), {
       headers: config.apiKey ? { Authorization: `Bearer ${config.apiKey}` } : {},
       redirect: 'manual',
-      signal: AbortSignal.any([signal, AbortSignal.timeout(Math.min(config.timeoutMs, 30_000))]),
+      signal: AbortSignal.any([
+        signal,
+        AbortSignal.timeout(
+          config.timeouts?.modelDiscoveryTimeoutMs ??
+            Math.min(config.timeoutMs, modelTimeout(undefined, 'modelDiscoveryTimeoutMs'))
+        ),
+      ]),
     });
     if (!response.ok || !response.body)
       throw new OpenAICompatibleError(`Model catalog request failed (HTTP ${response.status}).`);
@@ -147,7 +154,9 @@ export function createOpenAICompatibleSettingsRoutes(settings: SettingsService):
         if (!res.writableEnded) controller.abort();
       };
       res.on('close', close);
-      const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(30_000)]);
+      // Network actions have their own saved deadlines. A hidden route-wide 30s timer
+      // must not shorten user-configured catalog/test timeouts.
+      const signal = controller.signal;
       try {
         res.json({ success: true, ...((await action(req.body ?? {}, signal)) as object) });
       } catch (error) {
@@ -260,7 +269,9 @@ export function createOpenAICompatibleSettingsRoutes(settings: SettingsService):
         {
           ...config,
           maxRetries: 0,
-          timeoutMs: Math.min(config.timeoutMs, 30_000),
+          timeoutMs:
+            config.timeouts?.connectionTestTimeoutMs ??
+            Math.min(config.timeoutMs, modelTimeout(undefined, 'connectionTestTimeoutMs')),
           model: {
             ...config.model,
             maxOutputTokens: Math.min(128, config.model.maxOutputTokens ?? 128),

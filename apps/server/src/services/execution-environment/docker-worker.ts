@@ -68,11 +68,11 @@ async function runProcess(request) {
   if(typeof request.command!=='string'||!request.command||request.command.includes('\0')||
     !Array.isArray(request.args)||request.args.some(arg=>typeof arg!=='string'||arg.includes('\0'))||
     (request.stdin!==undefined&&typeof request.stdin!=='string'))throw fail('INVALID_PROCESS','Invalid process request.');
-  const timer=setTimeout(()=>controller.abort(),Math.max(1,Math.min(request.timeoutMs??600000,600000)));
+  const timer=setTimeout(()=>controller.abort(),Math.max(1,Math.min(request.timeoutMs??600000,2147483647)));
   let idle;
   const resetIdle=()=>{
     clearTimeout(idle);
-    idle=setTimeout(()=>controller.abort(),Math.max(1,Math.min(request.idleTimeoutMs??120000,600000)));
+    idle=setTimeout(()=>controller.abort(),Math.max(1,Math.min(request.idleTimeoutMs??120000,2147483647)));
   };
   try {
     return await new Promise((done,reject)=>{
@@ -114,7 +114,7 @@ async function runProcess(request) {
 }
 async function execute(command, options = {}) {
   const maximum = Math.max(1, Math.min(options.maxOutputBytes ?? 12000, 1048576));
-  const timer = setTimeout(() => controller.abort(), Math.max(1, Math.min(options.timeoutMs ?? 180000, 600000)));
+  const timer = setTimeout(() => controller.abort(), Math.max(1, Math.min(options.timeoutMs ?? 180000, 2147483647)));
   try {
     return await new Promise((done, reject) => {
       const child = spawn('/bin/sh', ['-c', command], {

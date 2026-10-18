@@ -1,4 +1,9 @@
 import { setTimeout as delay } from 'node:timers/promises';
+import {
+  modelTimeout,
+  parseModelTimeoutSettings,
+  type ModelTimeoutSettings,
+} from '@automaker/types';
 import { TextDecoder } from 'node:util';
 import type { ReadableStream } from 'node:stream/web';
 import type {
@@ -232,15 +237,20 @@ async function readJsonBody(response: Response): Promise<unknown> {
   }
 }
 
-function retryDelay(response: Response, attempt: number): number | undefined {
+function retryDelay(
+  response: Response,
+  attempt: number,
+  timeouts: ModelTimeoutSettings
+): number | undefined {
   const header = response.headers.get('retry-after');
   if (header) {
     const seconds = Number(header);
     const ms = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(header) - Date.now();
     // Do not retry sooner than the endpoint asks. Long waits are surfaced to the caller.
-    if (Number.isFinite(ms) && ms >= 0) return ms <= 5000 ? Math.ceil(ms) : undefined;
+    if (Number.isFinite(ms) && ms >= 0)
+      return ms <= modelTimeout(timeouts, 'retryAfterMaxMs') ? Math.ceil(ms) : undefined;
   }
-  return Math.min(250 * 2 ** attempt, 2000);
+  return Math.min(250 * 2 ** attempt, modelTimeout(timeouts, 'retryBackoffMaxMs'));
 }
 
 /**
@@ -256,6 +266,12 @@ export async function* chatCompletion(
     throw new OpenAICompatibleError('Responses transport is not implemented yet.');
   }
   const baseUrl = normalizeOpenAICompatibleBaseUrl(connection.baseUrl);
+  let timeouts: ModelTimeoutSettings;
+  try {
+    timeouts = parseModelTimeoutSettings(connection.timeouts ?? {});
+  } catch {
+    throw new OpenAICompatibleError('Invalid timeout configuration.');
+  }
   if (
     !Number.isSafeInteger(connection.timeoutMs) ||
     connection.timeoutMs < 1 ||
@@ -299,7 +315,7 @@ export async function* chatCompletion(
     const timeout = setTimeout(() => controller.abort(), connection.timeoutMs);
     const headersTimeout = setTimeout(
       () => controller.abort(),
-      Math.min(30_000, connection.timeoutMs)
+      Math.min(modelTimeout(timeouts, 'responseHeadersTimeoutMs'), connection.timeoutMs)
     );
     let response: Response | undefined;
     let backoff: number | undefined;
@@ -318,7 +334,7 @@ export async function* chatCompletion(
       });
       clearTimeout(headersTimeout);
       if (RETRYABLE_STATUS.has(response.status) && attempt < connection.maxRetries) {
-        backoff = retryDelay(response, attempt);
+        backoff = retryDelay(response, attempt, timeouts);
       }
       if (backoff === undefined) {
         if (!response.ok) {

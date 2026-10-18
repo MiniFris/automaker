@@ -210,6 +210,79 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     expect(await prepareDirectExecution(legacy, null, { model: 'claude-sonnet' })).toBe(legacy);
   });
 
+  it('captures shared timeout settings for non-Direct text helpers without enabling tools', async () => {
+    await settings.updateGlobalSettings({
+      modelTimeouts: { cliIdleTimeoutMs: 600_000, requestTimeoutMs: 300_000 },
+    });
+    const prepared = await prepareDirectExecution(
+      { ...options(), model: 'claude-sonnet', tools: [] },
+      settings,
+      { model: 'claude-sonnet' },
+      'text'
+    );
+    expect(prepared.modelTimeouts).toEqual({
+      cliIdleTimeoutMs: 600_000,
+      requestTimeoutMs: 300_000,
+    });
+    expect(prepared.tools).toEqual([]);
+    expect(prepared.openaiCompatibleConnection).toBeUndefined();
+  });
+
+  it('uses the selected provider timeout record and retains endpoint precedence', async () => {
+    await settings.updateGlobalSettings({
+      modelTimeouts: { requestTimeoutMs: 1000, toolTimeoutMs: 1000 },
+      providerModelTimeouts: {
+        claude: { requestTimeoutMs: 2000 },
+        'openai-compatible': { requestTimeoutMs: 3000, toolTimeoutMs: 4000 },
+      },
+      openaiCompatibleEndpoints: [{ ...endpoint, timeouts: { toolTimeoutMs: 5000 } }],
+    });
+    const native = await prepareDirectExecution(
+      { ...options(), model: 'claude-sonnet' },
+      settings,
+      { model: 'claude-sonnet' },
+      'text'
+    );
+    expect(native.modelTimeouts).toEqual({ requestTimeoutMs: 2000 });
+    const direct = await prepareDirectExecution(options(), settings, {
+      model,
+      providerId: 'first',
+    });
+    expect(direct.openaiCompatibleConnection?.timeoutMs).toBe(3000);
+    expect(direct.openaiCompatibleAgent?.limits?.toolTimeoutMs).toBe(5000);
+  });
+
+  it('applies endpoint then global timeouts ahead of legacy agent limits', async () => {
+    await settings.updateGlobalSettings({
+      modelTimeouts: { requestTimeoutMs: 180_000, agentTimeoutMs: 900_000, toolTimeoutMs: 120_000 },
+      openaiCompatibleAgentSettings: { limits: { maxDurationMs: 60_000, toolTimeoutMs: 1000 } },
+      openaiCompatibleEndpoints: [
+        { ...endpoint, timeoutMs: 240_000, timeouts: { toolTimeoutMs: 180_000 } },
+      ],
+    });
+    const prepared = await prepareDirectExecution(options(), settings, {
+      model,
+      providerId: 'first',
+    });
+    expect(prepared.openaiCompatibleConnection?.timeoutMs).toBe(240_000);
+    expect(prepared.openaiCompatibleAgent?.limits).toMatchObject({
+      maxDurationMs: 900_000,
+      toolTimeoutMs: 180_000,
+    });
+    await settings.updateGlobalSettings({
+      modelTimeouts: {},
+      openaiCompatibleEndpoints: [endpoint],
+    });
+    const inherited = await prepareDirectExecution(options(), settings, {
+      model,
+      providerId: 'first',
+    });
+    expect(inherited.openaiCompatibleAgent?.limits).toMatchObject({
+      maxDurationMs: 60_000,
+      toolTimeoutMs: 1000,
+    });
+  });
+
   it('streams with a read-only tool allowlist and does not duplicate final text', async () => {
     handler = (_body, res) => {
       if (requests.length === 1) call(res, 'Read', { path: 'answer.txt' });
