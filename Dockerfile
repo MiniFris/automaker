@@ -199,6 +199,13 @@ ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 # Start server
 CMD ["node", "apps/server/dist/index.js"]
 
+# Opt-in controller image. The ordinary server target keeps its existing isolation.
+# Only CLI/buildx binaries are copied; no daemon is started inside Automaker.
+FROM docker:29-cli AS docker-client
+FROM server AS server-docker
+COPY --from=docker-client /usr/local/bin/docker /usr/local/bin/docker
+COPY --from=docker-client /usr/local/libexec/docker/cli-plugins/docker-buildx /usr/local/libexec/docker/cli-plugins/docker-buildx
+
 # =============================================================================
 # UI BUILD STAGE
 # =============================================================================
