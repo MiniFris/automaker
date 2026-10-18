@@ -17,6 +17,9 @@ import { promisify } from 'util';
 import type { Feature, PlanningMode, ThinkingLevel, ReasoningEffort } from '@automaker/types';
 import {
   DEFAULT_MAX_CONCURRENCY,
+  modelTimeout,
+  providerModelTimeouts,
+  getModelProvider,
   DEFAULT_MODELS,
   stripProviderPrefix,
   isPipelineStatus,
@@ -840,6 +843,13 @@ export class AutoModeServiceFacade {
       verificationLease.worktreePath = remote!.environment.cwd;
     }
     try {
+      const verificationTimeout = modelTimeout(
+        providerModelTimeouts(
+          await this.settingsService?.getGlobalSettings(),
+          getModelProvider(feature?.model)
+        ),
+        'verificationTimeoutMs'
+      );
       for (const check of verificationChecks) {
         try {
           if (remote) {
@@ -847,7 +857,7 @@ export class AutoModeServiceFacade {
               check.cmd,
               verificationLease!.abortController.signal,
               {
-                timeoutMs: 120000,
+                timeoutMs: verificationTimeout,
               }
             );
             results.push({
@@ -862,7 +872,7 @@ export class AutoModeServiceFacade {
           } else {
             const { stdout, stderr } = await execAsync(check.cmd, {
               cwd: workDir,
-              timeout: 120000,
+              timeout: verificationTimeout,
             });
             results.push({ check: check.name, passed: true, output: stdout || stderr });
           }

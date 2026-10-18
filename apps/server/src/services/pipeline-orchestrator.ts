@@ -3,7 +3,12 @@
  */
 
 import path from 'path';
-import { isDirectModel } from '@automaker/types';
+import {
+  isDirectModel,
+  modelTimeout,
+  providerModelTimeouts,
+  getModelProvider,
+} from '@automaker/types';
 import { runDirectShellCommand } from '../providers/openai-compatible/execution.js';
 import { FeatureWorkspaceService } from './execution-environment/feature-workspace.js';
 import { hasRemoteEnvironment } from '../providers/environment-execution.js';
@@ -599,7 +604,8 @@ export class PipelineOrchestrator {
           };
         const completionResult = await this.waitForTestCompletion(
           testResult.result.sessionId,
-          abortController.signal
+          abortController.signal,
+          context.feature.model
         );
         if (completionResult.status === 'passed') return { success: true, testsPassed: true };
         const sessionOutput = this.testRunnerService.getSessionOutput(testResult.result.sessionId);
@@ -648,8 +654,16 @@ export class PipelineOrchestrator {
   /** Wait for test completion */
   private async waitForTestCompletion(
     sessionId: string,
-    signal: AbortSignal
+    signal: AbortSignal,
+    model?: string
   ): Promise<{ status: TestRunStatus; exitCode: number | null; duration: number }> {
+    const timeoutMs = modelTimeout(
+      providerModelTimeouts(
+        await this.settingsService?.getGlobalSettings(),
+        getModelProvider(model)
+      ),
+      'pipelineTestTimeoutMs'
+    );
     return new Promise((resolve) => {
       const checkInterval = setInterval(() => {
         // Check for abort
@@ -681,8 +695,8 @@ export class PipelineOrchestrator {
           return;
         }
         clearInterval(checkInterval);
-        resolve({ status: 'failed', exitCode: null, duration: 600000 });
-      }, 600000);
+        resolve({ status: 'failed', exitCode: null, duration: timeoutMs });
+      }, timeoutMs);
     });
   }
 
