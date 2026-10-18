@@ -2,6 +2,17 @@
 
 Дата: 2026-10-15. Статус: этапы 1–4 завершены в границах Linux MVP; следующий — этап 5.
 
+Актуализация 2026-10-17: дальнейшая модель прав и Local/Docker/SSH вынесена в
+[отдельный план общих сред выполнения](execution-environments-plan.md).
+Direct-specific permissions UI заменён общими настройками. Для Direct работают
+явно подтверждённый Local, managed Docker и подготовленный SSH chat/runtime;
+SSH Kanban/AutoMode и feature Git/tests/hooks подключены в подэтапе 5.1;
+Cursor/Gemini/OpenCode CLI подключены в 5.2a; Claude/Codex/Copilot SDK — в 5.2b,
+остальные app services — следующий 5.3. [Матрица и CLI/SDK setup](execution-environments-cli.md).
+Legacy sandbox сохраняется только без явной новой настройки и для старых pinned
+запусков. Сохранить профиль недостаточно: требуется соответствующая подготовка/
+confirmation. Границы SSH описаны в [SSH guide](execution-environments-ssh.md).
+
 ## Цель
 
 Подключать произвольный OpenAI-compatible endpoint напрямую из backend Automaker,
@@ -453,3 +464,16 @@ DIRECT_AGENT_DOCKER_TEST_IMAGE=sha256:<full-local-image-id> \
   offline sandbox, без file deletions/mode changes и без full-access. PowerShell
   adapter пока не проверен на реальном pwsh image, native Windows не поддерживается.
   Дальше — этап 5: безопасное серверное разрешение endpoint/providerId и интеграция UI.
+- 2026-10-16: исправлена недоступность формы в основной странице настроек.
+  `ProviderTabs` не используется этой страницей: она отображает отдельные разделы
+  по `SettingsViewId`. Добавлены `direct-provider`, пункт **AI Providers →
+  Direct API (OpenAI-compatible)**, экспорт формы и её отображение в `SettingsView`.
+  Прямая ссылка: `/settings?view=direct-provider`. Регрессионный тест монтирует
+  реальный `SettingsView` с боковым меню и формой, проверяет переход, прямую ссылку
+  и раскрытие ранее свёрнутого меню. Предыдущий component/browser harness формы
+  не проверял её доступность из основной страницы настроек.
+  Проверки исправления: **18 UI-тестов прошли** (4 файла, в том числе 3 новых
+  регрессионных теста), production UI build, ESLint изменённых файлов и
+  `git diff --check` успешны. UI typecheck по-прежнему сообщает только две
+  существующие ошибки `branchName` в `board-view.tsx:1257,1298`.
+  Запущенные Docker-контейнеры не пересобирались и не перезапускались.
