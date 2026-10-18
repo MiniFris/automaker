@@ -219,7 +219,7 @@ describe.skipIf(process.platform !== 'linux')(
           })
         ).toMatchObject({
           success: false,
-          code: 'GIT_OPERATION_UNSUPPORTED',
+          code: action === 'start-dev' ? 'DEV_TARGET_CHANGED' : 'GIT_OPERATION_UNSUPPORTED',
         });
         expect(peer.commands.length).toBe(before);
       }

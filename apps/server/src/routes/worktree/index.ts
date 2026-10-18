@@ -74,6 +74,7 @@ import type { SettingsService } from '../../services/settings-service.js';
 import type { FeatureLoader } from '../../services/feature-loader.js';
 import { environmentGitDispatcher } from '../environment-git.js';
 import { environmentTestDispatcher } from '../environment-tests.js';
+import { environmentDevDispatcher } from '../environment-dev-server.js';
 
 export function createWorktreeRoutes(
   events: EventEmitter,
@@ -83,6 +84,7 @@ export function createWorktreeRoutes(
 ): Router {
   const router = Router();
   if (settingsService) {
+    router.use(environmentDevDispatcher(settingsService, events));
     router.use(environmentTestDispatcher(settingsService, events));
     router.use(environmentGitDispatcher(settingsService, 'worktree', isProjectBusy));
   }

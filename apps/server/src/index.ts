@@ -88,6 +88,11 @@ import { createEventHistoryRoutes } from './routes/event-history/index.js';
 import { getEventHistoryService } from './services/event-history-service.js';
 import { getTestRunnerService } from './services/test-runner-service.js';
 import { getManagedTestRunnerService } from './services/execution-environment/test-runner.js';
+import { getManagedDevServerService } from './services/execution-environment/dev-server.js';
+import {
+  previewApiGuard,
+  isPreviewApiRequest,
+} from './services/execution-environment/preview-policy.js';
 import { createProjectsRoutes } from './routes/projects/index.js';
 
 // Load environment variables
@@ -291,6 +296,7 @@ function isLocalOrigin(origin: string): boolean {
   }
 }
 
+app.use('/api', previewApiGuard);
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -578,6 +584,10 @@ function authenticateWebSocket(request: import('http').IncomingMessage): boolean
 
 // Handle HTTP upgrade requests manually to route to correct WebSocket server
 server.on('upgrade', (request, socket, head) => {
+  if (isPreviewApiRequest(request)) {
+    socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
+    return;
+  }
   const { pathname } = new URL(request.url || '', `http://${request.headers.host}`);
 
   // Authenticate all WebSocket connections
@@ -620,6 +630,13 @@ wss.on('connection', (ws: WebSocket) => {
     });
 
     if (ws.readyState === WebSocket.OPEN) {
+      if (ws.bufferedAmount > 1024 * 1024) {
+        ws.close(
+          4008,
+          'Event client is too slow. Reconnect and refresh state; commands are not replayed.'
+        );
+        return;
+      }
       const message = JSON.stringify({ type, payload });
       ws.send(message);
     } else {
@@ -987,6 +1004,7 @@ const gracefulShutdown = async (signal: string) => {
 
   terminalService.cleanup();
   await getManagedTestRunnerService(settingsService, events).cleanup();
+  await getManagedDevServerService(settingsService, events).cleanup();
   server.close(() => {
     clearTimeout(forceExitTimeout);
     logger.info('Server closed');

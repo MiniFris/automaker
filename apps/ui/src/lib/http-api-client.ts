@@ -2433,12 +2433,24 @@ export class HttpApiClient implements ElectronAPI {
     openInExternalTerminal: (worktreePath: string, terminalId?: string) =>
       this.post('/api/worktree/open-in-external-terminal', { worktreePath, terminalId }),
     initGit: (projectPath: string) => this.post('/api/worktree/init-git', { projectPath }),
-    startDevServer: (projectPath: string, worktreePath: string) =>
-      this.post('/api/worktree/start-dev', { projectPath, worktreePath }),
-    stopDevServer: (worktreePath: string) => this.post('/api/worktree/stop-dev', { worktreePath }),
+    startDevServer: async (projectPath: string, worktreePath: string) => {
+      const inspected = await this.executionEnvironments.inspectGit(worktreePath);
+      if (!inspected.success || !inspected.executionEnvironment)
+        throw new Error(
+          inspected.error || 'Cannot inspect the dev environment. No command was started.'
+        );
+      return this.post<Awaited<ReturnType<WorktreeAPI['startDevServer']>>>(
+        '/api/worktree/start-dev',
+        { projectPath, worktreePath, environmentTargetId: inspected.executionEnvironment.targetId }
+      );
+    },
+    stopDevServer: (worktreePath: string, sessionId?: string) =>
+      this.post('/api/worktree/stop-dev', { worktreePath, ...(sessionId && { sessionId }) }),
     listDevServers: () => this.post('/api/worktree/list-dev-servers', {}),
-    getDevServerLogs: (worktreePath: string): Promise<DevServerLogsResponse> =>
-      this.get(`/api/worktree/dev-server-logs?worktreePath=${encodeURIComponent(worktreePath)}`),
+    getDevServerLogs: (worktreePath: string, sessionId?: string): Promise<DevServerLogsResponse> =>
+      this.get(
+        `/api/worktree/dev-server-logs?worktreePath=${encodeURIComponent(worktreePath)}${sessionId ? '&sessionId=' + encodeURIComponent(sessionId) : ''}`
+      ),
     onDevServerLogEvent: (callback: (event: DevServerLogEvent) => void) => {
       const unsub0 = this.subscribeToEvent('dev-server:starting', (payload) =>
         callback({ type: 'dev-server:starting', payload: payload as DevServerStartingEvent })

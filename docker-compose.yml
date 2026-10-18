@@ -37,6 +37,9 @@ services:
     restart: unless-stopped
     ports:
       - '3008:3008'
+      # Managed preview gateways only; project containers keep their existing port configuration.
+      # Capability-authenticated. Local-only by default; remote/TLS setup: execution-environments-preview.md.
+      - '${AUTOMAKER_PREVIEW_PUBLISH_ADDRESS:-127.0.0.1}:3100-3119:3100-3119'
     environment:
       # Optional - Anthropic API key
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
