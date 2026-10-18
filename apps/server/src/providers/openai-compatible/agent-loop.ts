@@ -31,7 +31,7 @@ export const DEFAULT_AGENT_LIMITS: Required<DirectAgentLimits> = {
 const MAX_LIMITS: Required<DirectAgentLimits> = {
   maxToolCalls: 256,
   maxDurationMs: 3_600_000,
-  toolTimeoutMs: 60_000,
+  toolTimeoutMs: 600_000,
   maxContextBytes: 4 * 1024 * 1024,
   maxOutputChars: 1024 * 1024,
   maxRepeatedCalls: 10,
@@ -100,6 +100,7 @@ export class AgentLoop {
       signal?: AbortSignal;
       maxTurns?: number;
       agent?: DirectAgentOptions;
+      environmentBindingId?: string;
       validateOutput?: ValidateFunction;
     }
   ) {}
@@ -134,10 +135,14 @@ export class AgentLoop {
           outputChars: 0,
           elapsedMs: 0,
           messages: initialMessages,
+          ...(this.options.environmentBindingId && {
+            environmentBindingId: this.options.environmentBindingId,
+          }),
         };
     parseCheckpoint(state);
     if (
       state.endpointId !== connection.endpointId ||
+      state.environmentBindingId !== this.options.environmentBindingId ||
       state.modelId !== connection.model.id ||
       state.workspace !== this.options.workspace ||
       state.requestHash !== requestHash ||

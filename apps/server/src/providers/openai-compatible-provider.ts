@@ -14,6 +14,11 @@ import { AgentLoop, agentLimits } from './openai-compatible/agent-loop.js';
 import { AgentLimitError, abortable } from './openai-compatible/runtime.js';
 import { ToolRegistry, READ_TOOL_NAMES, toolPolicy } from './openai-compatible/tool-registry.js';
 import { ReadOnlyWorkspace } from './openai-compatible/workspace.js';
+import {
+  isIssuedEnvironment,
+  type ExecutionEnvironment,
+} from '../services/execution-environment/runtime.js';
+import { createEnvironmentTools } from './openai-compatible/environment-tools.js';
 
 function textContent(value: ExecuteOptions['prompt']): string {
   if (typeof value === 'string') return value;
@@ -43,8 +48,8 @@ function outputValidator(options: ExecuteOptions): ValidateFunction | undefined 
 }
 
 /**
- * Direct agent runtime. Mutating tools require a server-granted workspace-write profile.
- * Shell requires a pinned local Docker image; there is no host-shell fallback.
+ * Direct agent runtime. Explicit Local uses a server-issued environment capability.
+ * Legacy settings retain the restricted workspace / pinned Docker-shell backend.
  */
 export class OpenAICompatibleProvider extends BaseProvider {
   getName(): string {
@@ -77,15 +82,33 @@ export class OpenAICompatibleProvider extends BaseProvider {
       }
       if (connection.protocol !== 'chat-completions')
         throw new OpenAICompatibleError('Responses transport is not implemented yet.');
-      const policy = toolPolicy(options.openaiCompatibleAgent, options.readOnly);
-      const available = [
-        ...READ_TOOL_NAMES,
-        'TodoWrite',
-        ...(policy.access === 'workspace-write' ? ['Write', 'Edit'] : []),
-        ...(policy.shell ? [policy.shell.executable === 'pwsh' ? 'PowerShell' : 'Bash'] : []),
-      ];
+      const environment = options.executionEnvironmentRuntime;
+      if (environment !== undefined && !isIssuedEnvironment(environment))
+        throw new OpenAICompatibleError('An issued server execution environment is required.');
+      const local = isIssuedEnvironment(environment) ? environment : undefined;
+      const policy = local
+        ? {
+            access: options.readOnly ? ('read-only' as const) : ('workspace-write' as const),
+            shell: undefined,
+            environmentId: options.executionEnvironmentBinding?.id,
+          }
+        : toolPolicy(options.openaiCompatibleAgent, options.readOnly);
+      const available = local
+        ? [
+            ...createEnvironmentTools(local, options.readOnly ?? false).map(
+              (tool) => tool.definition.function.name
+            ),
+            'TodoWrite',
+          ]
+        : [
+            ...READ_TOOL_NAMES,
+            'TodoWrite',
+            ...(policy.access === 'workspace-write' ? ['Write', 'Edit'] : []),
+            ...(policy.shell ? [policy.shell.executable === 'pwsh' ? 'PowerShell' : 'Bash'] : []),
+          ];
       const names =
-        options.tools ?? (policy.access === 'workspace-write' ? available : READ_TOOL_NAMES);
+        options.tools ??
+        (local || policy.access === 'workspace-write' ? available : READ_TOOL_NAMES);
       if (!Array.isArray(names) || names.some((name) => !available.includes(name)))
         throw new OpenAICompatibleError('Requested local tool is unavailable in this mode.');
       if (names.length && !connection.model.capabilities.tools)
@@ -124,7 +147,7 @@ export class OpenAICompatibleProvider extends BaseProvider {
         messages.push({ role: message.role, content: textContent(message.content) });
       }
       messages.push({ role: 'user', content: textContent(options.prompt) });
-      let workspace: ReadOnlyWorkspace | undefined;
+      let workspace: ReadOnlyWorkspace | ExecutionEnvironment | undefined;
       let registry: ToolRegistry | undefined;
       if (names.length) {
         const timeoutSignal = AbortSignal.timeout(
@@ -133,12 +156,13 @@ export class OpenAICompatibleProvider extends BaseProvider {
         const signal = options.abortController
           ? AbortSignal.any([timeoutSignal, options.abortController.signal])
           : timeoutSignal;
-        workspace = await abortable(ReadOnlyWorkspace.create(options.cwd, signal), signal);
+        workspace =
+          local ?? (await abortable(ReadOnlyWorkspace.create(options.cwd, signal), signal));
         registry = new ToolRegistry(
           workspace,
           [...new Set(names)],
           options.readOnly ?? false,
-          policy
+          local ? undefined : policy
         );
       }
       const request: ChatCompletionRequest = {
@@ -159,12 +183,16 @@ export class OpenAICompatibleProvider extends BaseProvider {
       yield* new AgentLoop({
         connection: { ...connection, baseUrl: endpoint.baseUrl, model: endpoint.models[0] },
         request,
-        workspace: workspace?.root ?? path.resolve(options.cwd),
+        workspace:
+          local?.cwd ??
+          (workspace as ReadOnlyWorkspace | undefined)?.root ??
+          path.resolve(options.cwd),
         registry,
         policy,
         signal: options.abortController?.signal,
         maxTurns: options.maxTurns,
         agent: options.openaiCompatibleAgent,
+        environmentBindingId: options.executionEnvironmentBinding?.id,
         validateOutput: validate,
       }).run();
     } catch (error) {
@@ -195,7 +223,7 @@ export class OpenAICompatibleProvider extends BaseProvider {
     return (
       feature === 'text' ||
       feature === 'streaming' ||
-      (feature === 'tools' && process.platform === 'linux')
+      (feature === 'tools' && ['linux', 'darwin', 'win32'].includes(process.platform))
     );
   }
 }

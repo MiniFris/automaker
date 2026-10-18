@@ -26,6 +26,7 @@ const validate = new Ajv({ strict: true, ownProperties: true, logger: false }).c
     'messages',
   ],
   properties: {
+    environmentBindingId: { type: 'string', pattern: '^[a-f0-9]{64}$' },
     version: { const: 1 },
     sessionId: { type: 'string', pattern: uuid },
     endpointId: { type: 'string', minLength: 1 },

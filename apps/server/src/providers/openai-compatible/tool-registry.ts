@@ -8,6 +8,11 @@ import { OpenAICompatibleError } from './errors.js';
 import type { DirectAgentOptions } from '@automaker/types';
 import { createTodoTool, createWriteTools } from './write-tools.js';
 import { createShellTool } from './shell-tool.js';
+import {
+  isIssuedEnvironment,
+  type ExecutionEnvironment,
+} from '../../services/execution-environment/runtime.js';
+import { createEnvironmentTools } from './environment-tools.js';
 
 const MAX_OUTPUT_CHARS = 16_384;
 export const READ_TOOL_NAMES = ['Read', 'LS', 'Glob', 'Grep'];
@@ -47,21 +52,32 @@ export class ToolRegistry {
   private readonly tools = new Map<string, { tool: LocalTool; validate: ValidateFunction }>();
 
   constructor(
-    workspace: ReadOnlyWorkspace,
+    workspace: ReadOnlyWorkspace | ExecutionEnvironment,
     names: string[],
     readOnly: boolean,
     agent?: DirectAgentOptions
   ) {
+    const environment = isIssuedEnvironment(workspace) ? workspace : undefined;
     const policy = toolPolicy(agent, readOnly);
     const ajv = new Ajv({ strict: true, ownProperties: true, logger: false });
-    const available = [
-      ...createReadTools(workspace),
-      createTodoTool(),
-      ...(policy.access === 'workspace-write' ? createWriteTools(workspace) : []),
-      ...(policy.shell
-        ? [createShellTool(workspace, policy.shell, policy.access === 'workspace-write')]
-        : []),
-    ];
+    const available = environment
+      ? [...createEnvironmentTools(environment, readOnly), createTodoTool()]
+      : [
+          ...createReadTools(workspace as ReadOnlyWorkspace),
+          createTodoTool(),
+          ...(policy.access === 'workspace-write'
+            ? createWriteTools(workspace as ReadOnlyWorkspace)
+            : []),
+          ...(policy.shell
+            ? [
+                createShellTool(
+                  workspace as ReadOnlyWorkspace,
+                  policy.shell,
+                  policy.access === 'workspace-write'
+                ),
+              ]
+            : []),
+        ];
     for (const tool of available) {
       if (names.includes(tool.definition.function.name)) {
         this.tools.set(tool.definition.function.name, {
@@ -118,7 +134,11 @@ export class ToolRegistry {
       };
     } catch (error) {
       // A cancelled run must still tell the operator if its sandbox may be alive.
-      if (error instanceof ToolError && error.code === 'SANDBOX_CLEANUP_FAILED')
+      if (
+        error instanceof ToolError &&
+        (['SANDBOX_CLEANUP_FAILED', 'PROCESS_CLEANUP_FAILED'].includes(error.code) ||
+          error.code.startsWith('SSH_'))
+      )
         throw new OpenAICompatibleError(error.message);
       checkAbort(signal);
       if (error instanceof OpenAICompatibleError) throw error;
