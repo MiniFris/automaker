@@ -45,6 +45,9 @@ COPY apps/server/package*.json ./apps/server/
 # Install dependencies (--ignore-scripts to skip husky/prepare, then rebuild native modules)
 RUN npm ci --ignore-scripts && npm rebuild node-pty
 
+# Ensure nested workspace node_modules exists (npm may nest conflicting deps here; COPY below requires the path)
+RUN mkdir -p /app/apps/server/node_modules
+
 # Copy all source files
 COPY libs ./libs
 COPY apps/server ./apps/server
@@ -147,6 +150,9 @@ COPY --from=server-builder /app/apps/server/package*.json ./apps/server/
 
 # Copy node_modules (includes symlinks to libs)
 COPY --from=server-builder /app/node_modules ./node_modules
+
+# Copy nested workspace dependencies (e.g. ajv v8 for the OpenAI-compatible provider; not hoisted to root due to version conflict)
+COPY --from=server-builder /app/apps/server/node_modules ./apps/server/node_modules
 
 # Install Playwright Chromium browser for AI agent verification tests
 # This adds ~300MB to the image but enables automated testing mode out of the box
