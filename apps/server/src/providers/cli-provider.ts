@@ -43,6 +43,9 @@ import * as os from 'os';
 import * as path from 'path';
 import { BaseProvider } from './base-provider.js';
 import type { ExecuteOptions, ProviderConfig, ProviderMessage } from './types.js';
+import { remoteCliRuntime } from './environment-execution.js';
+import { environmentJSONL } from './environment-jsonl.js';
+import { ExecutionEnvironmentError } from '../services/execution-environment/runtime.js';
 
 /**
  * Spawn strategy for CLI tools on Windows
@@ -444,6 +447,20 @@ export abstract class CliProvider extends BaseProvider {
    * Build subprocess options based on detected strategy
    */
   protected buildSubprocessOptions(options: ExecuteOptions, cliArgs: string[]): SubprocessOptions {
+    if (remoteCliRuntime(options)) {
+      if (options.tools?.length === 0 || (options.readOnly && this.getName() !== 'cursor'))
+        throw new ExecutionEnvironmentError(
+          'REMOTE_PROVIDER_READ_ONLY_UNSUPPORTED',
+          'The selected CLI cannot enforce these tool restrictions. No process was started.'
+        );
+      return {
+        command: this.getCliName(),
+        args: cliArgs,
+        cwd: options.cwd,
+        abortController: options.abortController,
+        timeout: calculateReasoningTimeout(options.reasoningEffort, CLI_BASE_TIMEOUT_MS),
+      };
+    }
     this.ensureCliDetected();
 
     if (!this.cliPath) {
@@ -530,9 +547,10 @@ export abstract class CliProvider extends BaseProvider {
    * Subclasses can override for custom behavior.
    */
   async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
-    this.ensureCliDetected();
+    const runtime = remoteCliRuntime(options);
+    if (!runtime) this.ensureCliDetected();
 
-    if (!this.cliPath) {
+    if (!runtime && !this.cliPath) {
       throw new Error(`${this.getCliName()} CLI not found. ${this.getInstallInstructions()}`);
     }
 
@@ -545,7 +563,7 @@ export abstract class CliProvider extends BaseProvider {
     const subprocessOptions = this.buildSubprocessOptions(effectiveOptions, cliArgs);
 
     try {
-      for await (const rawEvent of spawnJSONLProcess(subprocessOptions)) {
+      for await (const rawEvent of this.streamProcess(options, subprocessOptions)) {
         const normalized = this.normalizeEvent(rawEvent);
         if (normalized) {
           yield normalized;
@@ -573,6 +591,14 @@ export abstract class CliProvider extends BaseProvider {
 
       throw error;
     }
+  }
+
+  protected streamProcess(
+    options: ExecuteOptions,
+    subprocess: SubprocessOptions
+  ): AsyncGenerator<unknown> {
+    const runtime = remoteCliRuntime(options);
+    return runtime ? environmentJSONL(runtime, subprocess) : spawnJSONLProcess(subprocess);
   }
 
   /**
