@@ -418,6 +418,11 @@ function EnvironmentEditor({
                 I understand and accept unrestricted Local execution for{' '}
                 {projectPath ? 'this project' : 'all projects using Local'}.
               </Label>
+              <p className="text-sm text-muted-foreground">
+                Check the box, then click Enable Local execution to save your confirmation on the
+                server. It persists across page reloads and container updates with the same data
+                volume and OS user.
+              </p>
               <Button
                 disabled={busy || !acceptedLocalRisk}
                 onClick={() =>

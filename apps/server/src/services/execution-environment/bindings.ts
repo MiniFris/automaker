@@ -66,6 +66,34 @@ export class EnvironmentBindingStore {
       `${fallback ? 'auto-fallback' : 'consent'}-${digest(scope)}.json`
     );
   }
+  /** Container hostnames change on recreation; consent belongs to the persisted installation. */
+  private async consentIdentity(create = false): Promise<string | undefined> {
+    if (process.env.IS_CONTAINERIZED !== 'true') return this.serverIdentity;
+    const file = path.join(this.directory, 'container-installation.json');
+    return serialized(file, async () => {
+      let installation = (await read(file)) as { version?: number; id?: string } | undefined;
+      if (installation === undefined && create) {
+        installation = { version: 1, id: randomUUID() };
+        await fs.mkdir(this.directory, { recursive: true });
+        await atomicWriteJson(file, installation, { mode: 0o600 });
+      }
+      if (installation === undefined) return undefined;
+      if (
+        installation?.version !== 1 ||
+        typeof installation.id !== 'string' ||
+        !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(
+          installation.id
+        )
+      )
+        throw new EnvironmentConfigurationError(
+          'Container installation identity is invalid. Inspect server state before retrying.'
+        );
+      const user = os.userInfo();
+      return digest(
+        `container\0${installation.id}\0${process.platform}\0${user.uid}\0${user.username}\0${path.resolve(this.settings.getDataDirectory())}`
+      );
+    });
+  }
   async configuration(projectPath?: string) {
     const global = await this.settings.getGlobalSettings();
     const project = projectPath ? await this.settings.getProjectSettings(projectPath) : undefined;
@@ -140,6 +168,7 @@ export class EnvironmentBindingStore {
   }
   async consent(projectPath?: string): Promise<LocalExecutionConsentStatus> {
     const projectScope = projectPath ? await fs.realpath(projectPath) : undefined;
+    const identity = await this.consentIdentity();
     let scope: 'global' | 'project' | null = null;
     let autoScope: 'global' | 'project' | null = null;
     for (const candidate of [
@@ -152,7 +181,9 @@ export class EnvironmentBindingStore {
           | undefined;
         if (
           grant?.version === 1 &&
-          grant.serverIdentity === this.serverIdentity &&
+          // Keep pre-upgrade grants valid only on the exact server that issued them.
+          (grant.serverIdentity === this.serverIdentity ||
+            (identity !== undefined && grant.serverIdentity === identity)) &&
           grant.scope === candidate.key
         ) {
           if (fallback) autoScope ??= candidate.scope;
@@ -190,13 +221,14 @@ export class EnvironmentBindingStore {
         });
     }
     const file = this.consentFile(scope, fallback);
+    const identity = await this.consentIdentity(true);
     await serialized(file, async () => {
       await fs.mkdir(this.directory, { recursive: true });
       await atomicWriteJson(
         file,
         {
           version: 1,
-          serverIdentity: this.serverIdentity,
+          serverIdentity: identity,
           scope,
           confirmedAt: new Date().toISOString(),
         },

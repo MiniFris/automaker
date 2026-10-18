@@ -53,13 +53,13 @@ describe('execution environment settings UI', () => {
       },
     };
     api.inspect.mockImplementation(async () => data);
-    api.confirmLocal.mockImplementation(async () => {
+    api.confirmLocal.mockImplementation(async (projectPath?: string) => {
       data = {
         ...data,
         localConsent: {
           warningVersion: 1,
           confirmed: true,
-          scope: 'global',
+          scope: projectPath ? 'project' : 'global',
           legacy: false,
           serverContainerized: false,
         },
@@ -156,6 +156,35 @@ describe('execution environment settings UI', () => {
     await waitFor(() => expect(api.revokeLocal).toHaveBeenCalledWith(undefined));
     expect(await screen.findByRole('button', { name: 'Enable Local execution' })).toBeDisabled();
   });
+  it.each([undefined, '/project-a'])(
+    'restores saved Local confirmation after a full page remount for %s',
+    async (projectPath) => {
+      localConfiguration();
+      await open(projectPath);
+      fireEvent.click(
+        screen.getByRole('checkbox', { name: /I understand and accept unrestricted Local/ })
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Enable Local execution' }));
+      const label = `Local access confirmed (${projectPath ? 'project' : 'global'} scope).`;
+      await screen.findByText(label);
+      cleanup();
+      client.clear();
+      client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      await open(projectPath);
+      expect(screen.getByText(label)).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: 'Enable Local execution' })
+      ).not.toBeInTheDocument();
+      expect(api.confirmLocal).toHaveBeenCalledTimes(1);
+      fireEvent.click(screen.getByRole('button', { name: 'Revoke Local confirmation' }));
+      await screen.findByRole('button', { name: 'Enable Local execution' });
+      cleanup();
+      client.clear();
+      await open(projectPath);
+      expect(screen.getByRole('button', { name: 'Enable Local execution' })).toBeDisabled();
+      expect(screen.queryByText(label)).not.toBeInTheDocument();
+    }
+  );
   it('does not offer to revoke an inherited global consent only for one project', async () => {
     localConfiguration();
     data.localConsent = { ...data.localConsent!, confirmed: true, scope: 'global' };

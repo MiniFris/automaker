@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SettingsService } from '@/services/settings-service.js';
 import { EnvironmentBindingStore } from '@/services/execution-environment/bindings.js';
 import { ManagedDocker } from '@/services/execution-environment/docker.js';
@@ -26,6 +26,7 @@ describe('server-owned environment grants and immutable bindings', () => {
     );
   });
   afterEach(async () => {
+    vi.unstubAllEnvs();
     await fs.rm(temporary, { recursive: true, force: true });
   });
   const local = { default: { mode: 'local' as const }, profiles: [] };
@@ -73,6 +74,106 @@ describe('server-owned environment grants and immutable bindings', () => {
       ).binding
     ).toEqual(first.binding);
     await expect(bind('session-b')).rejects.toThrow('No Local fallback');
+  });
+  it.each([false, true])(
+    'keeps container Local consent across hostname changes (project scope: %s)',
+    async (projectScoped) => {
+      vi.stubEnv('IS_CONTAINERIZED', 'true');
+      const hostname = vi.spyOn(os, 'hostname').mockReturnValue('container-before');
+      store = new EnvironmentBindingStore(settings);
+      const scope = projectScoped ? project : undefined;
+      await store.confirm(scope);
+      const first = await bind();
+      hostname.mockReturnValue('container-after');
+      const restarted = new EnvironmentBindingStore(
+        new SettingsService(settings.getDataDirectory())
+      );
+      expect(restarted.serverIdentity).not.toBe(store.serverIdentity);
+      expect(await restarted.consent(scope)).toMatchObject({
+        confirmed: true,
+        scope: projectScoped ? 'project' : 'global',
+      });
+      const renewed = await restarted.bind({
+        cwd: project,
+        projectPath: project,
+        key: 'session-a',
+        legacySettings: {},
+      });
+      expect(renewed.binding).toEqual({
+        ...first.binding,
+        serverIdentity: restarted.serverIdentity,
+      });
+      await restarted.revoke(scope);
+      expect((await new EnvironmentBindingStore(settings).consent(scope)).confirmed).toBe(false);
+    }
+  );
+  it('keeps Auto fallback consent across container recreation without granting explicit Local', async () => {
+    vi.stubEnv('IS_CONTAINERIZED', 'true');
+    const hostname = vi.spyOn(os, 'hostname').mockReturnValue('container-before');
+    store = new EnvironmentBindingStore(settings);
+    await settings.updateGlobalSettings({
+      executionEnvironment: { default: { mode: 'auto' }, profiles: [] },
+    });
+    await store.confirm(undefined, true);
+    hostname.mockReturnValue('container-after');
+    expect(await new EnvironmentBindingStore(settings).consent()).toMatchObject({
+      confirmed: false,
+      autoFallbackConfirmed: true,
+      autoFallbackScope: 'global',
+    });
+  });
+  it('does not carry container consent to a different OS user or host execution', async () => {
+    vi.stubEnv('IS_CONTAINERIZED', 'true');
+    await store.confirm();
+    const user = os.userInfo();
+    const userInfo = vi.spyOn(os, 'userInfo').mockReturnValue({ ...user, uid: user.uid + 1 });
+    expect((await new EnvironmentBindingStore(settings).consent()).confirmed).toBe(false);
+    userInfo.mockRestore();
+    vi.stubEnv('IS_CONTAINERIZED', 'false');
+    expect((await new EnvironmentBindingStore(settings).consent()).confirmed).toBe(false);
+  });
+  it('requires new confirmation if the persisted container identity is lost and fails closed if corrupt', async () => {
+    vi.stubEnv('IS_CONTAINERIZED', 'true');
+    await store.confirm();
+    const file = path.join(
+      settings.getDataDirectory(),
+      'execution-environments',
+      'container-installation.json'
+    );
+    if (process.platform !== 'win32') expect((await fs.stat(file)).mode & 0o777).toBe(0o600);
+    await fs.unlink(file);
+    expect((await store.consent()).confirmed).toBe(false);
+    await fs.writeFile(file, JSON.stringify({ version: 1, id: 'invalid' }));
+    await expect(store.consent()).rejects.toThrow('installation identity is invalid');
+  });
+  it('retains host identity checks outside containers', async () => {
+    vi.stubEnv('IS_CONTAINERIZED', 'false');
+    const hostname = vi.spyOn(os, 'hostname').mockReturnValue('host-before');
+    store = new EnvironmentBindingStore(settings);
+    await store.confirm();
+    hostname.mockReturnValue('host-after');
+    expect((await new EnvironmentBindingStore(settings).consent()).confirmed).toBe(false);
+  });
+  it('accepts old hostname-bound grants only on their original server, never after recreation', async () => {
+    vi.stubEnv('IS_CONTAINERIZED', 'true');
+    const hostname = vi.spyOn(os, 'hostname').mockReturnValue('container-before');
+    store = new EnvironmentBindingStore(settings);
+    await store.confirm();
+    const directory = path.join(settings.getDataDirectory(), 'execution-environments');
+    const file = path.join(
+      directory,
+      (await fs.readdir(directory)).find((name) => name.startsWith('consent-'))!
+    );
+    const grant = JSON.parse(await fs.readFile(file, 'utf8'));
+    await fs.writeFile(file, JSON.stringify({ ...grant, serverIdentity: store.serverIdentity }));
+    await fs.unlink(path.join(directory, 'container-installation.json'));
+    expect((await new EnvironmentBindingStore(settings).consent()).confirmed).toBe(true);
+    hostname.mockReturnValue('container-after');
+    const restarted = new EnvironmentBindingStore(settings);
+    expect((await restarted.consent()).confirmed).toBe(false);
+    await restarted.confirm();
+    hostname.mockReturnValue('container-next');
+    expect((await new EnvironmentBindingStore(settings).consent()).confirmed).toBe(true);
   });
   it('supports per-project confirmation without granting other projects access', async () => {
     await store.confirm(project);
