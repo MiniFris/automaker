@@ -17,6 +17,14 @@ const fake = (runProcess: NonNullable<ExecutionEnvironment['runProcess']>) =>
   ({ type: 'ssh', runProcess }) as ExecutionEnvironment;
 
 describe('remote provider streaming protocol', () => {
+  it('forwards configured process and idle budgets without a hidden ten-minute maximum', async () => {
+    const run = vi.fn<NonNullable<ExecutionEnvironment['runProcess']>>(async () => ({
+      exitCode: 0,
+    }));
+    const query = environmentJSONL(fake(run), { ...options, timeout: 900_000 }, 3_600_000);
+    expect((await query.next()).done).toBe(true);
+    expect(run.mock.calls[0][0]).toMatchObject({ timeoutMs: 3_600_000, idleTimeoutMs: 900_000 });
+  });
   it('decodes fragmented worker frames and keeps CLI JSON separate from the worker result', () => {
     const output = vi.fn();
     const stream = new WorkerStream(output);

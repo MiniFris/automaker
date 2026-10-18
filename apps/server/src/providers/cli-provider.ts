@@ -35,7 +35,7 @@ import {
   type SubprocessOptions,
   type WslCliResult,
 } from '@automaker/platform';
-import { calculateReasoningTimeout } from '@automaker/types';
+import { calculateReasoningTimeout, modelTimeout, MAX_MODEL_TIMEOUT_MS } from '@automaker/types';
 import { createLogger, isAbortError } from '@automaker/utils';
 import { execSync } from 'child_process';
 import * as fs from 'fs';
@@ -110,15 +110,6 @@ export interface CliDetectionResult {
 
 // Create logger for CLI operations
 const cliLogger = createLogger('CliProvider');
-
-/**
- * Base timeout for CLI operations in milliseconds.
- * CLI tools have longer startup and processing times compared to direct API calls,
- * so we use a higher base timeout (120s) than the default provider timeout (30s).
- * This is multiplied by reasoning effort multipliers when applicable.
- * @see calculateReasoningTimeout from @automaker/types
- */
-const CLI_BASE_TIMEOUT_MS = 120000;
 
 /**
  * Abstract base class for CLI-based providers
@@ -458,7 +449,13 @@ export abstract class CliProvider extends BaseProvider {
         args: cliArgs,
         cwd: options.cwd,
         abortController: options.abortController,
-        timeout: calculateReasoningTimeout(options.reasoningEffort, CLI_BASE_TIMEOUT_MS),
+        timeout: Math.min(
+          MAX_MODEL_TIMEOUT_MS,
+          calculateReasoningTimeout(
+            options.reasoningEffort,
+            modelTimeout(options.modelTimeouts, 'cliIdleTimeoutMs')
+          )
+        ),
       };
     }
     this.ensureCliDetected();
@@ -479,7 +476,13 @@ export abstract class CliProvider extends BaseProvider {
 
     // Calculate dynamic timeout based on reasoning effort.
     // This addresses GitHub issue #530 where reasoning models with 'xhigh' effort would timeout.
-    const timeout = calculateReasoningTimeout(options.reasoningEffort, CLI_BASE_TIMEOUT_MS);
+    const timeout = Math.min(
+      MAX_MODEL_TIMEOUT_MS,
+      calculateReasoningTimeout(
+        options.reasoningEffort,
+        modelTimeout(options.modelTimeouts, 'cliIdleTimeoutMs')
+      )
+    );
 
     // WSL strategy
     if (this.useWsl && this.wslCliPath) {
@@ -598,7 +601,13 @@ export abstract class CliProvider extends BaseProvider {
     subprocess: SubprocessOptions
   ): AsyncGenerator<unknown> {
     const runtime = remoteCliRuntime(options);
-    return runtime ? environmentJSONL(runtime, subprocess) : spawnJSONLProcess(subprocess);
+    return runtime
+      ? environmentJSONL(
+          runtime,
+          subprocess,
+          modelTimeout(options.modelTimeouts, 'remoteProcessTimeoutMs')
+        )
+      : spawnJSONLProcess(subprocess);
   }
 
   /**

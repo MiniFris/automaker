@@ -16,6 +16,7 @@ const heartbeat=setInterval(()=>send({kind:'heartbeat'}),10000);
 try{
  if(manifest.provider==='claude'){
   const env={...process.env,...(key.apiKey?{ANTHROPIC_API_KEY:key.apiKey}:{} )};
+  if(options.requestTimeoutMs!==undefined)env.API_TIMEOUT_MS=String(options.requestTimeoutMs);
   if(options.sandboxed)env.IS_SANDBOX='1';
   if(key.apiKey){delete env.CLAUDE_CODE_OAUTH_TOKEN;delete env.ANTHROPIC_AUTH_TOKEN;}
   const settings={model:options.model,cwd:process.cwd(),env,abortController:controller,maxTurns:options.maxTurns,

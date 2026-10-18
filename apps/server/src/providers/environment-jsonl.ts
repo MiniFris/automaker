@@ -1,4 +1,5 @@
 import { StringDecoder } from 'node:string_decoder';
+import { DEFAULT_MODEL_TIMEOUTS } from '@automaker/types';
 import type { SubprocessOptions } from '@automaker/platform';
 import type { ExecutionEnvironment } from '../services/execution-environment/runtime.js';
 import { ExecutionEnvironmentError } from '../services/execution-environment/runtime.js';
@@ -6,7 +7,8 @@ import { ExecutionEnvironmentError } from '../services/execution-environment/run
 /** Streams JSONL without shell expansion, environment forwarding, replay or unbounded buffering. */
 export async function* environmentJSONL(
   runtime: ExecutionEnvironment,
-  options: SubprocessOptions
+  options: SubprocessOptions,
+  processTimeoutMs: number = DEFAULT_MODEL_TIMEOUTS.remoteProcessTimeoutMs
 ): AsyncGenerator<unknown> {
   if (!runtime.runProcess)
     throw new ExecutionEnvironmentError('PROCESS_UNSUPPORTED', 'CLI streaming is unavailable.');
@@ -53,8 +55,8 @@ export async function* environmentJSONL(
         command: options.command,
         args: options.args,
         stdin: options.stdinData,
-        timeoutMs: 600_000,
-        idleTimeoutMs: options.timeout ?? 120_000,
+        timeoutMs: processTimeoutMs,
+        idleTimeoutMs: options.timeout ?? DEFAULT_MODEL_TIMEOUTS.cliIdleTimeoutMs,
       },
       signal,
       (stream, data) => {

@@ -8,6 +8,30 @@ import {
 import type { ExecuteOptions } from '@automaker/types';
 
 const result = { type: 'result', subtype: 'success', session_id: 'session' };
+it('passes saved process/idle/request timeouts to target-side SDK execution', async () => {
+  const run = vi.fn<NonNullable<ExecutionEnvironment['runProcess']>>(
+    async (request, _signal, output) => {
+      expect(request).toMatchObject({ timeoutMs: 3_600_000, idleTimeoutMs: 900_000 });
+      expect(JSON.parse(request.stdin!).options.requestTimeoutMs).toBe(600_000);
+      output(
+        'stdout',
+        Buffer.from(JSON.stringify({ kind: 'event', event: result }) + '\n{"kind":"complete"}\n')
+      );
+      return { exitCode: 0 };
+    }
+  );
+  const query = executeRemoteSdk('claude', {
+    ...options(run),
+    reasoningEffort: 'none',
+    modelTimeouts: {
+      remoteProcessTimeoutMs: 3_600_000,
+      cliIdleTimeoutMs: 900_000,
+      requestTimeoutMs: 600_000,
+    },
+  });
+  expect((await query.next()).value).toMatchObject(result);
+  expect((await query.next()).done).toBe(true);
+});
 function options(run: NonNullable<ExecutionEnvironment['runProcess']>): ExecuteOptions {
   const runtime = issueEnvironment({
     type: 'ssh',

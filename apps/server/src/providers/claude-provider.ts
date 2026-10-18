@@ -75,7 +75,8 @@ function isClaudeCompatibleProvider(config: ProviderConfig): config is ClaudeCom
  */
 function buildEnv(
   providerConfig?: ProviderConfig,
-  credentials?: Credentials
+  credentials?: Credentials,
+  requestTimeoutMs?: number
 ): Record<string, string | undefined> {
   const env: Record<string, string | undefined> = {};
 
@@ -169,6 +170,10 @@ function buildEnv(
     }
   }
 
+  // Existing connection-specific timeout wins over the shared model default.
+  if (!providerConfig?.timeoutMs && requestTimeoutMs !== undefined)
+    env['API_TIMEOUT_MS'] = String(requestTimeoutMs);
+
   // Always add system vars from process.env
   for (const key of SYSTEM_ENV_VARS) {
     if (process.env[key]) {
@@ -232,7 +237,7 @@ export class ClaudeProvider extends BaseProvider {
       // Pass only explicitly allowed environment variables to SDK
       // When a provider is active, uses provider settings (clean switch)
       // When no provider, uses direct Anthropic API (from process.env or CLI OAuth)
-      env: buildEnv(providerConfig, credentials),
+      env: buildEnv(providerConfig, credentials, options.modelTimeouts?.requestTimeoutMs),
       // Pass through allowedTools if provided by caller (decided by sdk-options.ts)
       ...(allowedTools && { allowedTools }),
       // Restrict available built-in tools if specified (tools: [] disables all tools)

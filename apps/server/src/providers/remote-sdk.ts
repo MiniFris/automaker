@@ -1,5 +1,10 @@
 import type { ExecuteOptions, ProviderMessage, RemoteSdkProvider } from '@automaker/types';
-import { calculateReasoningTimeout, getThinkingTokenBudget } from '@automaker/types';
+import {
+  calculateReasoningTimeout,
+  getThinkingTokenBudget,
+  modelTimeout,
+  MAX_MODEL_TIMEOUT_MS,
+} from '@automaker/types';
 import { ExecutionEnvironmentError } from '../services/execution-environment/runtime.js';
 import { providerManifest } from '../services/execution-environment/provider-catalog.js';
 import { remoteCliRuntime } from './environment-execution.js';
@@ -84,19 +89,30 @@ export async function* executeRemoteSdk(
           enableWebSearch: options.codexSettings.enableWebSearch,
         }
       : undefined,
+    requestTimeoutMs: options.modelTimeouts?.requestTimeoutMs,
   };
   let completed = false,
     result: ProviderMessage | undefined,
     sessionId: string | undefined;
   const tools = new Map<string, string>();
-  for await (const raw of environmentJSONL(runtime, {
-    command: 'node',
-    args: ['-e', REMOTE_SDK_WORKER],
-    cwd: runtime.cwd,
-    stdinData: JSON.stringify({ manifest: providerManifest(provider), options: sdkOptions }),
-    abortController: options.abortController,
-    timeout: calculateReasoningTimeout(options.reasoningEffort, 120_000),
-  })) {
+  for await (const raw of environmentJSONL(
+    runtime,
+    {
+      command: 'node',
+      args: ['-e', REMOTE_SDK_WORKER],
+      cwd: runtime.cwd,
+      stdinData: JSON.stringify({ manifest: providerManifest(provider), options: sdkOptions }),
+      abortController: options.abortController,
+      timeout: Math.min(
+        MAX_MODEL_TIMEOUT_MS,
+        calculateReasoningTimeout(
+          options.reasoningEffort,
+          modelTimeout(options.modelTimeouts, 'cliIdleTimeoutMs')
+        )
+      ),
+    },
+    modelTimeout(options.modelTimeouts, 'remoteProcessTimeoutMs')
+  )) {
     const frame = raw as {
       kind: string;
       event?: Record<string, unknown>;
