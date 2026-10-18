@@ -22,6 +22,7 @@ import { createCommitFeatureHandler } from './routes/commit-feature.js';
 import { createApprovePlanHandler } from './routes/approve-plan.js';
 import { createResumeInterruptedHandler } from './routes/resume-interrupted.js';
 import { createReconcileHandler } from './routes/reconcile.js';
+import { createMergeSSHFeatureHandler } from './routes/merge-ssh-feature.js';
 
 /**
  * Create auto-mode routes.
@@ -30,6 +31,16 @@ import { createReconcileHandler } from './routes/reconcile.js';
  */
 export function createAutoModeRoutes(autoModeService: AutoModeServiceCompat): Router {
   const router = Router();
+  router.post(
+    '/merge-environment-feature',
+    validatePathParams('projectPath'),
+    createMergeSSHFeatureHandler(autoModeService, true)
+  );
+  router.post(
+    '/merge-ssh-feature',
+    validatePathParams('projectPath'),
+    createMergeSSHFeatureHandler(autoModeService)
+  );
 
   // Auto loop control routes
   router.post('/start', validatePathParams('projectPath'), createStartHandler(autoModeService));

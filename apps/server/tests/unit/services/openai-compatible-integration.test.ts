@@ -18,6 +18,7 @@ import { TypedEventBus } from '@/services/typed-event-bus.js';
 import type { FeatureStateManager } from '@/services/feature-state-manager.js';
 import type { PlanApprovalService } from '@/services/plan-approval-service.js';
 import { PipelineOrchestrator } from '@/services/pipeline-orchestrator.js';
+import { EnvironmentBindingStore } from '@/services/execution-environment/bindings.js';
 
 type RequestBody = {
   model: string;
@@ -344,76 +345,90 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     expect(await fs.readFile(path.join(root, 'created.txt'), 'utf8')).toBe('created safely');
   });
 
-  it('keeps plan generation read-only, waits for approval, then grants configured write tools', async () => {
-    await settings.updateGlobalSettings({
-      openaiCompatibleAgentSettings: { access: 'workspace-write' },
-    });
-    const events = createEventEmitter();
-    const bus = new TypedEventBus(events);
-    const state = {
-      updateFeaturePlanSpec: vi.fn(),
-      updateTaskStatus: vi.fn(),
-    } as unknown as FeatureStateManager;
-    const executor = new AgentExecutor(bus, state, {} as PlanApprovalService, settings);
-    const waitForApproval = vi.fn(async () => {
-      expect(requests[0].body.tools?.some((tool) => tool.function.name === 'Write')).toBe(false);
-      await expect(fs.stat(path.join(root, 'approved.txt'))).rejects.toThrow();
-      return { approved: true };
-    });
-    handler = (_body, res) => {
-      if (requests.length === 1) finish(res, 'Plan: create approved.txt\n[SPEC_GENERATED]');
-      else if (requests.length === 2)
-        call(res, 'Write', {
-          path: 'approved.txt',
-          content: 'after approval',
-          expectedSha256: null,
-        });
-      else finish(res, '<summary>Created after approval</summary>');
-    };
-    const result = await executor.execute(
-      {
-        projectPath: root,
-        workDir: root,
-        featureId: 'planned-feature',
-        prompt: 'Make a plan first',
-        systemPrompt: 'PERSISTED_TASK_RULE',
-        model,
-        providerId: 'first',
-        effectiveBareModel: endpoint.models[0].id,
-        provider: ProviderFactory.getProviderForModel(model),
-        abortController: new AbortController(),
-        planningMode: 'spec',
-        requirePlanApproval: true,
-      },
-      {
-        waitForApproval,
-        saveFeatureSummary: vi.fn(),
-        updateFeatureSummary: vi.fn(),
-        buildTaskPrompt: vi.fn(() => 'Execute approved task'),
-      }
-    );
-    expect(result.aborted).toBe(false);
-    expect(waitForApproval).toHaveBeenCalledTimes(1);
-    expect(await fs.readFile(path.join(root, 'approved.txt'), 'utf8')).toBe('after approval');
-    const output = await fs.readFile(path.join(root, '.automaker/features/planned-feature/agent-output.md'), 'utf8');
-    expect(output.match(/## Tool results/g)).toHaveLength(1);
-    expect(output).toContain('"ok":true');
-    expect(output).not.toContain('first-private-key');
-    expect(requests.every((request) => request.auth === 'Bearer first-private-key')).toBe(true);
-    expect(
-      requests.every((request) =>
-        request.body.messages.some(
-          (message) => message.role === 'system' && message.content === 'PERSISTED_TASK_RULE'
+  it.each(['legacy', 'local'] as const)(
+    'keeps %s planning read-only, waits for approval, then uses the pinned environment',
+    async (runtime) => {
+      await settings.updateGlobalSettings({
+        openaiCompatibleAgentSettings: { access: 'workspace-write' },
+      });
+      if (runtime === 'local') await new EnvironmentBindingStore(settings).confirm(root);
+      const events = createEventEmitter();
+      const bus = new TypedEventBus(events);
+      const state = {
+        updateFeaturePlanSpec: vi.fn(),
+        updateTaskStatus: vi.fn(),
+      } as unknown as FeatureStateManager;
+      const executor = new AgentExecutor(bus, state, {} as PlanApprovalService, settings);
+      const waitForApproval = vi.fn(async () => {
+        expect(requests[0].body.tools?.some((tool) => tool.function.name === 'Write')).toBe(false);
+        await expect(fs.stat(path.join(root, 'approved.txt'))).rejects.toThrow();
+        if (runtime === 'local')
+          await settings.updateProjectSettings(root, { executionEnvironment: { mode: 'auto' } });
+        return { approved: true };
+      });
+      handler = (_body, res) => {
+        if (requests.length === 1) finish(res, 'Plan: create approved.txt\n[SPEC_GENERATED]');
+        else if (requests.length === 2)
+          call(res, 'Write', {
+            path: 'approved.txt',
+            content: 'after approval',
+            expectedSha256: null,
+          });
+        else finish(res, '<summary>Created after approval</summary>');
+      };
+      const result = await executor.execute(
+        {
+          projectPath: root,
+          workDir: root,
+          featureId: 'planned-feature',
+          prompt: 'Make a plan first',
+          systemPrompt: 'PERSISTED_TASK_RULE',
+          model,
+          providerId: 'first',
+          effectiveBareModel: endpoint.models[0].id,
+          provider: ProviderFactory.getProviderForModel(model),
+          abortController: new AbortController(),
+          planningMode: 'spec',
+          requirePlanApproval: true,
+        },
+        {
+          waitForApproval,
+          saveFeatureSummary: vi.fn(),
+          updateFeatureSummary: vi.fn(),
+          buildTaskPrompt: vi.fn(() => 'Execute approved task'),
+        }
+      );
+      expect(result.aborted).toBe(false);
+      expect(waitForApproval).toHaveBeenCalledTimes(1);
+      expect(await fs.readFile(path.join(root, 'approved.txt'), 'utf8')).toBe('after approval');
+      const output = await fs.readFile(
+        path.join(root, '.automaker/features/planned-feature/agent-output.md'),
+        'utf8'
+      );
+      expect(output.match(/## Tool results/g)).toHaveLength(1);
+      expect(output).toContain('"ok":true');
+      expect(output).not.toContain('first-private-key');
+      expect(requests.every((request) => request.auth === 'Bearer first-private-key')).toBe(true);
+      expect(
+        requests.every((request) =>
+          request.body.messages.some(
+            (message) => message.role === 'system' && message.content === 'PERSISTED_TASK_RULE'
+          )
         )
-      )
-    ).toBe(true);
-  });
+      ).toBe(true);
+    }
+  );
 
   it('does not report the same chat failure twice when the HTTP route handles its rejection', async () => {
-    const events = createEventEmitter(); const emitted: unknown[] = []; events.subscribe((_type, event) => emitted.push(event));
-    const service = new AgentService(settings.getDataDirectory(), events, settings); await service.initialize();
+    const events = createEventEmitter();
+    const emitted: unknown[] = [];
+    events.subscribe((_type, event) => emitted.push(event));
+    const service = new AgentService(settings.getDataDirectory(), events, settings);
+    await service.initialize();
     const session = await service.createSession('Invalid selection', root, root, model, 'missing');
-    const failure = await service.sendMessage({ sessionId: session.id, message: 'Do not fall back' }).catch((error: Error) => error);
+    const failure = await service
+      .sendMessage({ sessionId: session.id, message: 'Do not fall back' })
+      .catch((error: Error) => error);
     expect(failure).toBeInstanceOf(Error);
     service.emitSessionError(session.id, (failure as Error).message, failure);
     expect(emitted.filter((event) => (event as { type: string }).type === 'error')).toHaveLength(1);
@@ -568,23 +583,188 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     });
   });
 
+  it('requires server confirmation before any model request when Local is explicitly selected', async () => {
+    await settings.updateGlobalSettings({
+      executionEnvironment: { default: { mode: 'local' }, profiles: [] },
+      skipSandboxWarning: true,
+    });
+    await expect(
+      prepareDirectExecution(
+        { model: endpoint.models[0].id, prompt: 'Work', cwd: root },
+        settings,
+        { model, providerId: 'first' }
+      )
+    ).rejects.toThrow('explicit server-side');
+    expect(requests).toHaveLength(0);
+  });
+
+  it('runs binary file tools and a real local shell through the mock model without Docker', async () => {
+    await new EnvironmentBindingStore(settings).confirm(root);
+    handler = (_body, res) => {
+      if (requests.length === 1)
+        call(
+          res,
+          'Write',
+          { path: 'node_modules/pkg/data.bin', content: 'AP8BAg==', encoding: 'base64' },
+          'binary'
+        );
+      else if (requests.length === 2)
+        call(
+          res,
+          'Bash',
+          {
+            command:
+              'test -f node_modules/pkg/data.bin && printf 42 > result.txt && rm node_modules/pkg/data.bin',
+          },
+          'command'
+        );
+      else if (requests.length === 3) call(res, 'Read', { path: 'result.txt' }, 'read-result');
+      else finish(res, 'Local workflow finished');
+    };
+    const prepared = await prepareDirectExecution(
+      { model: endpoint.models[0].id, prompt: 'Work locally', cwd: root },
+      settings,
+      { model, providerId: 'first' }
+    );
+    const messages = [];
+    for await (const message of ProviderFactory.getProviderForModel(model).executeQuery(prepared))
+      messages.push(message);
+    expect(messages.at(-1)).toMatchObject({ type: 'result', subtype: 'success' });
+    expect(await fs.readFile(path.join(root, 'result.txt'), 'utf8')).toBe('42');
+    await expect(fs.stat(path.join(root, 'node_modules/pkg/data.bin'))).rejects.toThrow();
+    expect(requests[0].body.tools?.map((tool) => tool.function.name)).toEqual(
+      expect.arrayContaining(['Bash', 'Write', 'Delete', 'Mkdir'])
+    );
+  });
+
+  it('does not expose shell or writes in Local read-only planning', async () => {
+    await new EnvironmentBindingStore(settings).confirm(root);
+    const prepared = await prepareDirectExecution(
+      { model: endpoint.models[0].id, prompt: 'Plan only', cwd: root, readOnly: true },
+      settings,
+      { model, providerId: 'first' }
+    );
+    for await (const _message of ProviderFactory.getProviderForModel(model).executeQuery(
+      prepared
+    )) {
+      /* drain */
+    }
+    expect(requests[0].body.tools?.map((tool) => tool.function.name)).toEqual([
+      'Read',
+      'LS',
+      'Glob',
+      'Grep',
+      'TodoWrite',
+    ]);
+  });
+  it('rejects a JSON-shaped runtime grant before contacting the model', async () => {
+    await new EnvironmentBindingStore(settings).confirm(root);
+    const prepared = await prepareDirectExecution(
+      { model: endpoint.models[0].id, prompt: 'Work', cwd: root },
+      settings,
+      { model, providerId: 'first' }
+    );
+    const messages = [];
+    for await (const message of ProviderFactory.getProviderForModel(model).executeQuery({
+      ...prepared,
+      executionEnvironmentRuntime: { type: 'local', cwd: root, capabilities: { shell: true } },
+    }))
+      messages.push(message);
+    expect(messages.at(-1)).toMatchObject({ type: 'result', subtype: 'error_during_execution' });
+    expect(requests).toHaveLength(0);
+  });
+
+  it('restores a pinned Local chat after restart without switching to a new global Docker selection', async () => {
+    await new EnvironmentBindingStore(settings).confirm(root);
+    const first = new AgentService(settings.getDataDirectory(), createEventEmitter(), settings);
+    await first.initialize();
+    const session = await first.createSession('Pinned Local', root, root, model, 'first');
+    await first.sendMessage({
+      sessionId: session.id,
+      message: 'First local turn',
+      model,
+      workingDirectory: root,
+      providerId: 'first',
+    });
+    const original = (await first.listSessions()).find(
+      (item) => item.id === session.id
+    )!.executionEnvironment;
+    expect(original?.type).toBe('local');
+    await settings.updateProjectSettings(root, { executionEnvironment: { mode: 'auto' } });
+    const restarted = new AgentService(settings.getDataDirectory(), createEventEmitter(), settings);
+    await restarted.initialize();
+    await restarted.sendMessage({ sessionId: session.id, message: 'Continue pinned chat' });
+    expect(
+      (await restarted.listSessions()).find((item) => item.id === session.id)!.executionEnvironment
+    ).toEqual(original);
+    expect(requests).toHaveLength(2);
+  });
+
   function testPipeline() {
     const hostRunner = { startTests: vi.fn() };
-    const pipeline = new PipelineOrchestrator(new TypedEventBus(createEventEmitter()), {} as never, {} as never, hostRunner as never, {} as never, {} as never, settings, vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn());
-    const context = { projectPath: root, featureId: 'sandbox-tests', feature: { id: 'sandbox-tests', model, providerId: 'first' }, workDir: root, abortController: new AbortController(), maxTestAttempts: 1 } as never;
+    const pipeline = new PipelineOrchestrator(
+      new TypedEventBus(createEventEmitter()),
+      {} as never,
+      {} as never,
+      hostRunner as never,
+      {} as never,
+      {} as never,
+      settings,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+      vi.fn()
+    );
+    const context = {
+      projectPath: root,
+      featureId: 'sandbox-tests',
+      feature: { id: 'sandbox-tests', model, providerId: 'first' },
+      workDir: root,
+      abortController: new AbortController(),
+      maxTestAttempts: 1,
+    } as never;
     return { pipeline, hostRunner, context };
   }
 
   it('fails closed rather than running direct pipeline tests on the host without a sandbox', async () => {
     const { pipeline, hostRunner, context } = testPipeline();
-    expect(await pipeline.executeTestStep(context, 'must-not-run-on-host')).toMatchObject({ success: false, testsPassed: false, message: expect.stringContaining('Host execution is disabled') });
-    expect(hostRunner.startTests).not.toHaveBeenCalled(); expect(requests).toHaveLength(0);
+    expect(await pipeline.executeTestStep(context, 'must-not-run-on-host')).toMatchObject({
+      success: false,
+      testsPassed: false,
+      message: expect.stringContaining('Host execution is disabled'),
+    });
+    expect(hostRunner.startTests).not.toHaveBeenCalled();
+    expect(requests).toHaveLength(0);
+  });
+  it('uses the confirmed Local backend for direct pipeline tests, not the legacy test runner', async () => {
+    await new EnvironmentBindingStore(settings).confirm(root);
+    const { pipeline, hostRunner, context } = testPipeline();
+    expect(await pipeline.executeTestStep(context, 'test "$(cat answer.txt)" = "41"')).toEqual({
+      success: true,
+      testsPassed: true,
+    });
+    expect(hostRunner.startTests).not.toHaveBeenCalled();
+    expect(requests).toHaveLength(0);
   });
 
-  it.skipIf(!process.env.DIRECT_AGENT_DOCKER_TEST_IMAGE)('executes automatic direct pipeline tests only inside the configured real Docker sandbox', async () => {
-    await settings.updateGlobalSettings({ openaiCompatibleAgentSettings: { access: 'workspace-write', shell: { backend: 'docker', image: process.env.DIRECT_AGENT_DOCKER_TEST_IMAGE! } } });
-    const { pipeline, hostRunner, context } = testPipeline();
-    expect(await pipeline.executeTestStep(context, 'test "$(cat answer.txt)" = "41"')).toEqual({ success: true, testsPassed: true });
-    expect(hostRunner.startTests).not.toHaveBeenCalled(); expect(requests).toHaveLength(0);
-  }, 20_000);
+  it.skipIf(!process.env.DIRECT_AGENT_DOCKER_TEST_IMAGE)(
+    'executes automatic direct pipeline tests only inside the configured real Docker sandbox',
+    async () => {
+      await settings.updateGlobalSettings({
+        openaiCompatibleAgentSettings: {
+          access: 'workspace-write',
+          shell: { backend: 'docker', image: process.env.DIRECT_AGENT_DOCKER_TEST_IMAGE! },
+        },
+      });
+      const { pipeline, hostRunner, context } = testPipeline();
+      expect(await pipeline.executeTestStep(context, 'test "$(cat answer.txt)" = "41"')).toEqual({
+        success: true,
+        testsPassed: true,
+      });
+      expect(hostRunner.startTests).not.toHaveBeenCalled();
+      expect(requests).toHaveLength(0);
+    },
+    20_000
+  );
 });

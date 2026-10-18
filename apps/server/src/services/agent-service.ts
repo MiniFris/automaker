@@ -19,6 +19,9 @@ import {
 import { ProviderFactory } from '../providers/provider-factory.js';
 import { createChatOptions, validateWorkingDirectory } from '../lib/sdk-options.js';
 import { prepareDirectExecution } from '../providers/openai-compatible/execution.js';
+import { hasRemoteEnvironment } from '../providers/environment-execution.js';
+import { FeatureWorkspaceService } from './execution-environment/feature-workspace.js';
+import { isIssuedEnvironment } from './execution-environment/runtime.js';
 import type { SettingsService } from './settings-service.js';
 import {
   getAutoLoadClaudeMdSetting,
@@ -58,6 +61,7 @@ interface QueuedPrompt {
 }
 
 interface Session {
+  projectPath?: string;
   messages: Message[];
   isRunning: boolean;
   abortController: AbortController | null;
@@ -71,6 +75,7 @@ interface Session {
 }
 
 interface SessionMetadata {
+  executionEnvironment?: import('@automaker/types').ExecutionEnvironmentBinding;
   id: string;
   name: string;
   projectPath?: string;
@@ -143,6 +148,7 @@ export class AgentService {
         isRunning: false,
         abortController: null,
         workingDirectory: resolvedWorkingDirectory,
+        projectPath: resolvedWorkingDirectory,
         promptQueue: [],
       };
       this.sessions.set(sessionId, session);
@@ -235,6 +241,7 @@ export class AgentService {
       isRunning: false,
       abortController: null,
       workingDirectory: resolvedWorkingDirectory,
+      projectPath: sessionMetadata?.projectPath ?? resolvedWorkingDirectory,
       sdkSessionId: sessionMetadata?.sdkSessionId,
       model: sessionMetadata?.model,
       providerId: sessionMetadata?.providerId,
@@ -300,7 +307,11 @@ export class AgentService {
       }
       session.model = model;
       if (providerId !== undefined) session.providerId = providerId;
-      await this.updateSession(sessionId, { model, providerId: session.providerId, sdkSessionId: session.sdkSessionId });
+      await this.updateSession(sessionId, {
+        model,
+        providerId: session.providerId,
+        sdkSessionId: session.sdkSessionId,
+      });
     } else if (providerId !== undefined) {
       session.providerId = providerId;
       await this.updateSession(sessionId, { providerId });
@@ -423,7 +434,12 @@ export class AgentService {
       const requestedModel = model || session.model;
       if (requestedModel && this.settingsService) {
         const providerResult = session.providerId
-          ? await resolveProviderContext(this.settingsService, requestedModel, session.providerId, '[AgentService]')
+          ? await resolveProviderContext(
+              this.settingsService,
+              requestedModel,
+              session.providerId,
+              '[AgentService]'
+            )
           : await getProviderByModelId(requestedModel, this.settingsService, '[AgentService]');
         if (providerResult.provider) {
           claudeCompatibleProvider = providerResult.provider;
@@ -436,20 +452,36 @@ export class AgentService {
       }
 
       let combinedSystemPrompt: string | undefined;
+      const remoteContext =
+        this.settingsService &&
+        (await hasRemoteEnvironment(
+          this.settingsService,
+          session.projectPath ?? effectiveWorkDir,
+          `chat:${sessionId}`
+        ));
       // Load project context files (CLAUDE.md, CODE_QUALITY.md, etc.) and memory files
       // Use the user's message as task context for smart memory selection
-      const contextResult = await loadContextFiles({
-        projectPath: effectiveWorkDir,
-        fsModule: secureFs as Parameters<typeof loadContextFiles>[0]['fsModule'],
-        taskContext: {
-          title: message.substring(0, 200), // Use first 200 chars as title
-          description: message,
-        },
-      });
+      // Do not initialize/update controller memory before a managed runtime is bound.
+      // In SSH the controller copy is metadata, not source; Docker writes also use its runtime.
+      const contextResult = remoteContext
+        ? undefined
+        : await loadContextFiles({
+            projectPath: effectiveWorkDir,
+            fsModule: secureFs as Parameters<typeof loadContextFiles>[0]['fsModule'],
+            taskContext: {
+              title: message.substring(0, 200), // Use first 200 chars as title
+              description: message,
+            },
+          });
 
       // When autoLoadClaudeMd is enabled, filter out CLAUDE.md to avoid duplication
       // (SDK handles CLAUDE.md via settingSources), but keep other context files like CODE_QUALITY.md
-      const contextFilesPrompt = filterClaudeMdFromContext(contextResult, autoLoadClaudeMd && !isDirectModel(requestedModel ?? ''));
+      const contextFilesPrompt = contextResult
+        ? filterClaudeMdFromContext(
+            contextResult,
+            autoLoadClaudeMd && !isDirectModel(requestedModel ?? '')
+          )
+        : '';
 
       // Build combined system prompt with base prompt and context files
       const baseSystemPrompt = await this.getSystemPrompt();
@@ -546,7 +578,6 @@ export class AgentService {
       const modelForProvider = claudeCompatibleProvider
         ? (requestedModel ?? effectiveModel)
         : effectiveModel;
-      const provider = ProviderFactory.getProviderForModel(modelForProvider);
 
       // Strip provider prefix - providers should receive bare model IDs
       // CRITICAL: For custom providers (GLM, MiniMax), pass the provider's model ID (e.g. "GLM-4.7")
@@ -597,12 +628,48 @@ export class AgentService {
       options.prompt = promptContent;
 
       // Execute via provider
-      const stream = provider.executeQuery(await prepareDirectExecution(options, this.settingsService, {
-        model: requestedModel ?? effectiveModel, providerId: session.providerId,
-      }));
+      const prepared = await prepareDirectExecution(options, this.settingsService, {
+        model: requestedModel ?? effectiveModel,
+        providerId: session.providerId,
+        projectPath: session.projectPath ?? effectiveWorkDir,
+        runKey: `chat:${sessionId}`,
+      });
+      if (prepared.executionEnvironmentBinding)
+        await this.updateSession(sessionId, {
+          executionEnvironment: prepared.executionEnvironmentBinding,
+        });
+      const binding = prepared.executionEnvironmentBinding;
+      const runtime = prepared.executionEnvironmentRuntime;
+      const managedContext =
+        remoteContext && binding && isIssuedEnvironment(runtime) && this.settingsService
+          ? {
+              service: new FeatureWorkspaceService(this.settingsService),
+              run: { binding, environment: runtime },
+            }
+          : undefined;
+      const targetContext = managedContext
+        ? await managedContext.service.context(managedContext.run, prepared.abortController!.signal)
+        : undefined;
+      if (targetContext?.formattedPrompt) {
+        const base = prepared.systemPrompt;
+        prepared.systemPrompt =
+          typeof base === 'object'
+            ? {
+                ...base,
+                append: [base.append, targetContext.formattedPrompt].filter(Boolean).join('\n\n'),
+              }
+            : [base, targetContext.formattedPrompt].filter(Boolean).join('\n\n');
+      }
+      const provider =
+        prepared.executionEnvironmentBinding?.type === 'ssh' ||
+        prepared.executionEnvironmentBinding?.type === 'docker'
+          ? ProviderFactory.getProviderForModel(modelForProvider, { throwOnDisconnected: false })
+          : ProviderFactory.getProviderForModel(modelForProvider);
+      const stream = provider.executeQuery(prepared);
 
       let currentAssistantMessage: Message | null = null;
       let responseText = '';
+      let modelSucceeded = false;
       const toolUses: Array<{ name: string; input: unknown }> = [];
       const toolNamesById = new Map<string, string>();
 
@@ -697,6 +764,7 @@ export class AgentService {
             }
           }
         } else if (msg.type === 'result') {
+          modelSucceeded = msg.subtype === 'success';
           if (msg.subtype === 'success' && msg.result) {
             if (currentAssistantMessage) {
               currentAssistantMessage.content = msg.result;
@@ -784,6 +852,23 @@ export class AgentService {
         }
       }
 
+      if (managedContext && targetContext?.memoryFiles.length) {
+        try {
+          await managedContext.service
+            .memory(managedContext.run)
+            .recordUsage(
+              targetContext.memoryFiles,
+              responseText,
+              modelSucceeded,
+              prepared.abortController!.signal
+            );
+        } catch (error) {
+          this.logger.warn(
+            'Chat target memory statistics were not saved (no replay/fallback):',
+            error
+          );
+        }
+      }
       await this.saveSession(sessionId, session.messages);
 
       session.isRunning = false;
@@ -1103,7 +1188,11 @@ export class AgentService {
       message: prompt.message,
       imagePaths: prompt.imagePaths,
       model: prompt.model ?? session.model,
-      providerId: prompt.providerId ?? (prompt.model === undefined || prompt.model === session.model ? session.providerId : undefined),
+      providerId:
+        prompt.providerId ??
+        (prompt.model === undefined || prompt.model === session.model
+          ? session.providerId
+          : undefined),
       thinkingLevel: prompt.thinkingLevel,
       addedAt: new Date().toISOString(),
     };
@@ -1264,7 +1353,12 @@ export class AgentService {
    * (e.g., when the session is not found and no in-memory session exists).
    */
   emitSessionError(sessionId: string, error: string, originalError?: unknown): void {
-    if (originalError && typeof originalError === 'object' && this.reportedErrors.has(originalError)) return;
+    if (
+      originalError &&
+      typeof originalError === 'object' &&
+      this.reportedErrors.has(originalError)
+    )
+      return;
     this.events.emit('agent:stream', { sessionId, type: 'error', error });
   }
 

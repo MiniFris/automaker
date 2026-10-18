@@ -5,6 +5,10 @@ vi.mock('../../../../src/services/agent-executor.js');
 vi.mock('../../../../src/lib/settings-helpers.js');
 vi.mock('../../../../src/providers/provider-factory.js');
 vi.mock('../../../../src/lib/sdk-options.js');
+vi.mock('../../../../src/providers/environment-execution.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../../src/providers/environment-execution.js')>()),
+  hasRemoteEnvironment: vi.fn().mockResolvedValue(false),
+}));
 vi.mock('@automaker/model-resolver', () => ({
   resolveModelString: vi.fn((model, fallback) => model || fallback),
   DEFAULT_MODELS: { claude: 'claude-3-5-sonnet' },

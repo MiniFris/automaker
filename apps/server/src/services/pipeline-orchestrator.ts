@@ -5,6 +5,9 @@
 import path from 'path';
 import { isDirectModel } from '@automaker/types';
 import { runDirectShellCommand } from '../providers/openai-compatible/execution.js';
+import { FeatureWorkspaceService } from './execution-environment/feature-workspace.js';
+import { hasRemoteEnvironment } from '../providers/environment-execution.js';
+import { EnvironmentBindingStore } from './execution-environment/bindings.js';
 import type {
   Feature,
   PipelineStep,
@@ -73,23 +76,49 @@ export class PipelineOrchestrator {
   ) {}
 
   async executePipeline(ctx: PipelineContext): Promise<void> {
+    const remoteService = this.settingsService
+      ? new FeatureWorkspaceService(this.settingsService)
+      : undefined;
+    const remote = await remoteService?.prepare(
+      ctx.projectPath,
+      ctx.feature,
+      ctx.abortController.signal
+    );
     const {
       projectPath,
       featureId,
       feature,
       steps,
-      workDir,
       abortController,
       autoLoadClaudeMd,
       useClaudeCodeSystemPrompt,
     } = ctx;
+    const workDir = remote?.binding.cwd ?? ctx.workDir;
     const prompts = await getPromptCustomization(this.settingsService, '[AutoMode]');
-    const contextResult = await this.loadContextFilesFn({
-      projectPath,
-      fsModule: secureFs as Parameters<typeof loadContextFiles>[0]['fsModule'],
-      taskContext: { title: feature.title ?? '', description: feature.description ?? '' },
-    });
-    const contextFilesPrompt = filterClaudeMdFromContext(contextResult, autoLoadClaudeMd && !isDirectModel(feature.model));
+    const contextResult = remote
+      ? await remoteService!.context(remote, abortController.signal)
+      : await this.loadContextFilesFn({
+          projectPath,
+          fsModule: secureFs as Parameters<typeof loadContextFiles>[0]['fsModule'],
+          taskContext: { title: feature.title ?? '', description: feature.description ?? '' },
+        });
+    const contextFilesPrompt = filterClaudeMdFromContext(
+      contextResult,
+      !remote && autoLoadClaudeMd && !isDirectModel(feature.model)
+    );
+    const recordRemoteMemoryUsage = async (success: boolean) => {
+      if (!remote || !contextResult.memoryFiles.length) return;
+      try {
+        await remoteService!
+          .memory(remote)
+          .recordUsage(contextResult.memoryFiles, previousContext, success, abortController.signal);
+      } catch (error) {
+        logger.warn(
+          'Pipeline target memory statistics were not saved (no replay/fallback):',
+          error
+        );
+      }
+    };
     const contextPath = path.join(getFeatureDir(projectPath, featureId), 'agent-output.md');
     let previousContext = '';
     try {
@@ -140,6 +169,8 @@ export class PipelineOrchestrator {
           providerId: feature.providerId,
         }
       );
+      if (abortController.signal.aborted)
+        throw new globalThis.DOMException('Pipeline execution aborted', 'AbortError');
       try {
         previousContext = (await secureFs.readFile(contextPath, 'utf-8')) as string;
       } catch {
@@ -156,8 +187,24 @@ export class PipelineOrchestrator {
     }
     if (ctx.branchName) {
       const mergeResult = await this.attemptMerge(ctx);
-      if (!mergeResult.success && mergeResult.hasConflicts) return;
+      if (!mergeResult.success && (mergeResult.hasConflicts || remote)) {
+        if (remote) {
+          await this.updateFeatureStatusFn(
+            projectPath,
+            featureId,
+            mergeResult.hasConflicts ? 'merge_conflict' : 'waiting_approval'
+          );
+          this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+            featureId,
+            projectPath,
+            content: mergeResult.error || 'Remote integration needs review.',
+          });
+        }
+        await recordRemoteMemoryUsage(false);
+        return;
+      }
     }
+    await recordRemoteMemoryUsage(!feature.skipTests);
   }
 
   buildPipelineStepPrompt(
@@ -231,6 +278,13 @@ export class PipelineOrchestrator {
     useWorktrees: boolean,
     pipelineInfo: PipelineStatusInfo
   ): Promise<void> {
+    if (this.settingsService)
+      await new FeatureWorkspaceService(this.settingsService).prepare(
+        projectPath,
+        feature,
+        this.concurrencyManager.getRunningFeature(feature.id)?.abortController.signal ??
+          new AbortController().signal
+      );
     const featureId = feature.id;
     const contextPath = path.join(getFeatureDir(projectPath, featureId), 'agent-output.md');
     let hasContext = false;
@@ -286,6 +340,9 @@ export class PipelineOrchestrator {
     startFromStepIndex: number,
     pipelineConfig: PipelineConfig
   ): Promise<void> {
+    const remoteService = this.settingsService
+      ? new FeatureWorkspaceService(this.settingsService)
+      : undefined;
     const featureId = feature.id;
     const allSortedSteps = [...pipelineConfig.steps].sort((a, b) => a.order - b.order);
     if (startFromStepIndex < 0 || startFromStepIndex >= allSortedSteps.length)
@@ -355,19 +412,26 @@ export class PipelineOrchestrator {
     let pipelineCompleted = false;
 
     try {
+      const remote = await remoteService?.prepare(projectPath, feature, abortController.signal);
+      runningEntry.remoteWorkspace = !!remote;
       validateWorkingDirectory(projectPath);
       let worktreePath: string | null = null;
       const branchName = feature.branchName;
 
-      if (useWorktrees && branchName) {
+      if (!remote && useWorktrees && branchName) {
         worktreePath = await this.worktreeResolver.findWorktreeForBranch(projectPath, branchName);
         if (worktreePath) logger.info(`Using worktree for branch "${branchName}": ${worktreePath}`);
       }
 
-      const workDir = worktreePath ? path.resolve(worktreePath) : path.resolve(projectPath);
+      const workDir =
+        remote?.binding.cwd ??
+        (worktreePath ? path.resolve(worktreePath) : path.resolve(projectPath));
       validateWorkingDirectory(workDir);
-      runningEntry.worktreePath = worktreePath;
-      runningEntry.branchName = branchName ?? null;
+      runningEntry.worktreePath = remote?.environment.cwd ?? worktreePath;
+      runningEntry.branchName =
+        (remote?.binding.sshWorkspace ?? remote?.binding.featureWorkspace)?.baseBranch ??
+        branchName ??
+        null;
 
       this.eventBus.emitAutoModeEvent('auto_mode_feature_start', {
         featureId,
@@ -413,7 +477,11 @@ export class PipelineOrchestrator {
       const finalStatus = feature.skipTests ? 'waiting_approval' : 'verified';
 
       // Only update status if not already in a terminal state
-      if (reloadedFeature && reloadedFeature.status !== 'merge_conflict') {
+      if (
+        reloadedFeature &&
+        reloadedFeature.status !== 'merge_conflict' &&
+        !(remote && reloadedFeature.status === 'waiting_approval')
+      ) {
         await this.updateFeatureStatusFn(projectPath, featureId, finalStatus);
       }
       logger.info(`Pipeline resume completed for feature ${featureId}`);
@@ -482,20 +550,57 @@ export class PipelineOrchestrator {
       logger.info(`Running tests for ${featureId} (attempt ${attempt}/${maxTestAttempts})`);
 
       let scrollback: string;
-      if (isDirectModel(context.feature.model)) {
+      if (
+        isDirectModel(context.feature.model) ||
+        (this.settingsService &&
+          ((await hasRemoteEnvironment(
+            this.settingsService,
+            projectPath,
+            `feature:${projectPath}:${featureId}`
+          )) ||
+            !!(
+              await new EnvironmentBindingStore(this.settingsService).peek(
+                projectPath,
+                `feature:${projectPath}:${featureId}`
+              )
+            )?.featureWorkspace))
+      ) {
         try {
-          const sandbox = await runDirectShellCommand(this.settingsService, workDir, testCommand, abortController.signal);
-          this.eventBus.emitAutoModeEvent('auto_mode_progress', { featureId, projectPath, content: sandbox.output });
+          const sandbox = await runDirectShellCommand(
+            this.settingsService,
+            workDir,
+            testCommand,
+            abortController.signal,
+            { projectPath, runKey: `feature:${projectPath}:${featureId}` }
+          );
+          this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+            featureId,
+            projectPath,
+            content: sandbox.output,
+          });
           if (sandbox.exitCode === 0) return { success: true, testsPassed: true };
           scrollback = sandbox.output;
         } catch (error) {
-          return { success: false, testsPassed: false, message: error instanceof Error ? error.message : 'Direct sandbox tests failed.' };
+          return {
+            success: false,
+            testsPassed: false,
+            message: error instanceof Error ? error.message : 'Direct sandbox tests failed.',
+          };
         }
       } else {
-        const testResult = await this.testRunnerService.startTests(workDir, { command: testCommand });
+        const testResult = await this.testRunnerService.startTests(workDir, {
+          command: testCommand,
+        });
         if (!testResult.success || !testResult.result?.sessionId)
-          return { success: false, testsPassed: false, message: testResult.error || 'Failed to start tests' };
-        const completionResult = await this.waitForTestCompletion(testResult.result.sessionId, abortController.signal);
+          return {
+            success: false,
+            testsPassed: false,
+            message: testResult.error || 'Failed to start tests',
+          };
+        const completionResult = await this.waitForTestCompletion(
+          testResult.result.sessionId,
+          abortController.signal
+        );
         if (completionResult.status === 'passed') return { success: true, testsPassed: true };
         const sessionOutput = this.testRunnerService.getSessionOutput(testResult.result.sessionId);
         scrollback = sessionOutput.result?.output || '';
@@ -528,6 +633,7 @@ export class PipelineOrchestrator {
             reasoningEffort: context.feature.reasoningEffort,
             status: context.feature.status,
             providerId: context.feature.providerId,
+            branchName: context.feature.branchName,
           }
         );
       }
@@ -584,6 +690,26 @@ export class PipelineOrchestrator {
   async attemptMerge(context: PipelineContext): Promise<MergeResult> {
     const { projectPath, featureId, branchName, worktreePath, feature } = context;
     if (!branchName) return { success: false, error: 'No branch name for merge' };
+    if (this.settingsService) {
+      const service = new FeatureWorkspaceService(this.settingsService);
+      try {
+        const remote = await service.prepare(
+          projectPath,
+          feature,
+          context.abortController.signal,
+          false
+        );
+        if (remote) {
+          await service.merge(remote, context.abortController.signal);
+          return { success: true };
+        }
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Remote merge failed; inspect state.',
+        };
+      }
+    }
 
     logger.info(`Attempting auto-merge for feature ${featureId} (branch: ${branchName})`);
     try {
