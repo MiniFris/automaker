@@ -14,6 +14,10 @@ import path from 'path';
 import fs from 'fs/promises';
 import { parseOpenAICompatibleEndpoints } from '../providers/openai-compatible/config.js';
 import { parseDirectAgentSettings } from '../providers/openai-compatible/execution.js';
+import {
+  parseEnvironmentSettings,
+  parseEnvironmentSelection,
+} from './execution-environment/config.js';
 
 import {
   getGlobalSettingsPath,
@@ -554,6 +558,8 @@ export class SettingsService {
     // During auth transitions, the UI can briefly have default/empty state and accidentally
     // sync it, wiping persisted settings (especially `projects`).
     const sanitizedUpdates: Partial<GlobalSettings> = { ...updates };
+    if (Object.hasOwn(updates, 'executionEnvironment'))
+      sanitizedUpdates.executionEnvironment = parseEnvironmentSettings(updates.executionEnvironment);
     if (updates.openaiCompatibleAgentSettings !== undefined)
       sanitizedUpdates.openaiCompatibleAgentSettings = parseDirectAgentSettings(updates.openaiCompatibleAgentSettings);
     if (updates.openaiCompatibleEndpoints !== undefined) {
@@ -910,6 +916,15 @@ export class SettingsService {
     projectPath: string,
     updates: Partial<ProjectSettings>
   ): Promise<ProjectSettings> {
+    if (Object.hasOwn(updates, 'executionEnvironment')) {
+      updates = {
+        ...updates,
+        executionEnvironment:
+          updates.executionEnvironment == null
+            ? null
+            : parseEnvironmentSelection(updates.executionEnvironment),
+      };
+    }
     await ensureAutomakerDir(projectPath);
     const settingsPath = getProjectSettingsPath(projectPath);
 
