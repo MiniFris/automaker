@@ -158,6 +158,8 @@ export interface AgentDefinition {
  * Options for executing a query via a provider
  */
 export interface ExecuteOptions {
+  /** Resolved server settings, captured per request rather than on shared provider instances. */
+  modelTimeouts?: import('./model-timeouts.js').ModelTimeoutSettings;
   /** Internal server-issued environment. Never accept from an HTTP request body. */
   executionEnvironmentRuntime?: unknown;
   /** Immutable, non-secret run/session binding persisted by the server. */

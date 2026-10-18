@@ -33,6 +33,8 @@ export interface OpenAICompatibleEndpoint {
   protocol: OpenAICompatibleProtocol;
   auth: OpenAICompatibleAuth;
   timeoutMs?: number;
+  /** Per-endpoint overrides; omitted fields inherit global model timeout settings. */
+  timeouts?: import('./model-timeouts.js').DirectTimeoutSettings;
   maxRetries?: number;
   models: OpenAICompatibleModel[];
 }
@@ -53,6 +55,7 @@ export interface ResolvedOpenAICompatibleConnection {
   apiKey?: string;
   model: OpenAICompatibleModel;
   timeoutMs: number;
+  timeouts?: import('./model-timeouts.js').ModelTimeoutSettings;
   maxRetries: number;
 }
 

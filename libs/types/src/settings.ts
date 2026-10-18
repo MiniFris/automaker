@@ -1190,6 +1190,10 @@ export interface ChatSessionRef {
  * Format: JSON with version field for migration support.
  */
 export interface GlobalSettings {
+  /** @deprecated Read-only compatibility fallback for previously saved shared timeouts. */
+  modelTimeouts?: import('./model-timeouts.js').ModelTimeoutSettings;
+  /** Independent model deadlines per provider. */
+  providerModelTimeouts?: import('./model-timeouts.js').ProviderModelTimeoutSettings;
   /** Shared runtime configuration. Absent preserves legacy local execution. */
   executionEnvironment?: ExecutionEnvironmentSettings;
   /** Version number for schema migration */

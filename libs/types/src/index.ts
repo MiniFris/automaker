@@ -384,6 +384,7 @@ export { PR_STATES, validatePRState } from './worktree.js';
 // Terminal types
 export type { TerminalInfo } from './terminal.js';
 export * from './execution-environment.js';
+export * from './model-timeouts.js';
 
 // Test runner types
 export type { TestRunnerInfo } from './test-runner.js';
