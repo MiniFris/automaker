@@ -6,6 +6,8 @@
 
 import path from 'path';
 import { BaseProvider } from './base-provider.js';
+import { remoteCliRuntime } from './environment-execution.js';
+import { executeRemoteSdk } from './remote-sdk.js';
 import {
   spawnJSONLProcess,
   spawnProcess,
@@ -742,6 +744,10 @@ export class CodexProvider extends BaseProvider {
     // Validate that model doesn't have a provider prefix (except codex- which should already be stripped)
     // AgentService should strip prefixes before passing to providers
     validateBareModelId(options.model, 'CodexProvider', 'codex');
+    if (remoteCliRuntime(options)) {
+      yield* executeRemoteSdk('codex', options);
+      return;
+    }
 
     try {
       const mcpServers = options.mcpServers ?? {};
