@@ -71,6 +71,7 @@ export interface DirectAgentMessage {
 
 /** Server-local snapshot. Contains project text; never include it in UI settings or logs. */
 export interface DirectAgentCheckpoint {
+  environmentBindingId?: string;
   version: 1;
   sessionId: string;
   endpointId: string;

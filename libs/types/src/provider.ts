@@ -158,6 +158,10 @@ export interface AgentDefinition {
  * Options for executing a query via a provider
  */
 export interface ExecuteOptions {
+  /** Internal server-issued environment. Never accept from an HTTP request body. */
+  executionEnvironmentRuntime?: unknown;
+  /** Immutable, non-secret run/session binding persisted by the server. */
+  executionEnvironmentBinding?: import('./execution-environment.js').ExecutionEnvironmentBinding;
   /** Server-resolved direct endpoint. Contains a secret; never serialize to UI or logs. */
   openaiCompatibleConnection?: ResolvedOpenAICompatibleConnection;
   /** Server-local limits and checkpoint hooks for the direct agent. */

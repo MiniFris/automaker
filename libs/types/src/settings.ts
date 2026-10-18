@@ -19,6 +19,10 @@ import type { PromptCustomization } from './prompts.js';
 import type { CodexSandboxMode, CodexApprovalPolicy } from './codex.js';
 import type { ReasoningEffort } from './provider.js';
 import type { OpenAICompatibleEndpoint, DirectAgentSettings } from './openai-compatible.js';
+import type {
+  ExecutionEnvironmentSettings,
+  ExecutionEnvironmentSelection,
+} from './execution-environment.js';
 
 // Re-export ModelAlias for convenience
 export type { ModelAlias };
@@ -1186,6 +1190,8 @@ export interface ChatSessionRef {
  * Format: JSON with version field for migration support.
  */
 export interface GlobalSettings {
+  /** Shared runtime configuration. Absent preserves legacy local execution. */
+  executionEnvironment?: ExecutionEnvironmentSettings;
   /** Version number for schema migration */
   version: number;
 
@@ -1626,6 +1632,8 @@ export interface WorktreeInfo {
  * All fields are optional - missing values fall back to global settings.
  */
 export interface ProjectSettings {
+  /** Missing/null inherits global selection; profile IDs are resolved only globally. */
+  executionEnvironment?: ExecutionEnvironmentSelection | null;
   /** Version number for schema migration */
   version: number;
 

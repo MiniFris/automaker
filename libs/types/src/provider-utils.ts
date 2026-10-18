@@ -74,6 +74,16 @@ export function isCursorModel(model: string | undefined | null): boolean {
   return false;
 }
 
+/** CLI providers with an implemented Docker/SSH subprocess adapter (not SDK providers). */
+export function isRemoteCliModel(model: string | undefined | null): boolean {
+  return isCursorModel(model) || isGeminiModel(model) || isOpencodeModel(model);
+}
+
+/** SDK providers with a target-side Node runner; unknown names retain the Claude routing default. */
+export function isRemoteSdkModel(model: string | undefined | null): boolean {
+  return !!model && !isDirectModel(model) && !isRemoteCliModel(model);
+}
+
 /**
  * Check if a model string represents a Claude model
  *

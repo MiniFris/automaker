@@ -3,6 +3,7 @@
  */
 
 export interface AgentSession {
+  executionEnvironment?: import('./execution-environment.js').ExecutionEnvironmentBinding;
   id: string;
   name: string;
   projectPath: string;
