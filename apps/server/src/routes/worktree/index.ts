@@ -73,6 +73,7 @@ import { createUpdatePRNumberHandler } from './routes/update-pr-number.js';
 import type { SettingsService } from '../../services/settings-service.js';
 import type { FeatureLoader } from '../../services/feature-loader.js';
 import { environmentGitDispatcher } from '../environment-git.js';
+import { environmentTestDispatcher } from '../environment-tests.js';
 
 export function createWorktreeRoutes(
   events: EventEmitter,
@@ -82,6 +83,7 @@ export function createWorktreeRoutes(
 ): Router {
   const router = Router();
   if (settingsService) {
+    router.use(environmentTestDispatcher(settingsService, events));
     router.use(environmentGitDispatcher(settingsService, 'worktree', isProjectBusy));
   }
 

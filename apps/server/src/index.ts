@@ -87,6 +87,7 @@ import { getNotificationService } from './services/notification-service.js';
 import { createEventHistoryRoutes } from './routes/event-history/index.js';
 import { getEventHistoryService } from './services/event-history-service.js';
 import { getTestRunnerService } from './services/test-runner-service.js';
+import { getManagedTestRunnerService } from './services/execution-environment/test-runner.js';
 import { createProjectsRoutes } from './routes/projects/index.js';
 
 // Load environment variables
@@ -985,6 +986,7 @@ const gracefulShutdown = async (signal: string) => {
   await autoModeService.markAllRunningFeaturesInterrupted(`${signal} signal received`);
 
   terminalService.cleanup();
+  await getManagedTestRunnerService(settingsService, events).cleanup();
   server.close(() => {
     clearTimeout(forceExitTimeout);
     logger.info('Server closed');

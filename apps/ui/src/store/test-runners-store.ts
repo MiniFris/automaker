@@ -4,6 +4,7 @@
 
 import { create } from 'zustand';
 import type { TestRunStatus } from '@/types/electron';
+import type { ProjectGitEnvironment } from '@automaker/types';
 
 // ============================================================================
 // Types
@@ -13,6 +14,7 @@ import type { TestRunStatus } from '@/types/electron';
  * A test run session
  */
 export interface TestSession {
+  executionEnvironment?: ProjectGitEnvironment;
   /** Unique session ID */
   sessionId: string;
   /** Path to the worktree where tests are running */
@@ -113,21 +115,28 @@ export const useTestRunnersStore = create<TestRunnersState & TestRunnersActions>
   ...initialState,
 
   startSession: (session) => {
-    const newSession: TestSession = {
-      ...session,
-      output: '',
-    };
-
-    set((state) => ({
-      sessions: {
-        ...state.sessions,
-        [session.sessionId]: newSession,
-      },
-      activeSessionByWorktree: {
-        ...state.activeSessionByWorktree,
-        [session.worktreePath]: session.sessionId,
-      },
-    }));
+    set((state) => {
+      const existing = state.sessions[session.sessionId];
+      // A slow HTTP start response/mount fetch must not reset output or resurrect a finished run.
+      const incomingActive = session.status === 'running' || session.status === 'pending';
+      const existingFinished = existing && !['running', 'pending'].includes(existing.status);
+      const newSession: TestSession =
+        existingFinished && incomingActive
+          ? existing
+          : { ...existing, ...session, output: existing?.output ?? '' };
+      const activeSessionByWorktree = { ...state.activeSessionByWorktree };
+      if (['running', 'pending'].includes(newSession.status))
+        activeSessionByWorktree[session.worktreePath] = session.sessionId;
+      else if (activeSessionByWorktree[session.worktreePath] === session.sessionId)
+        delete activeSessionByWorktree[session.worktreePath];
+      return {
+        sessions: {
+          ...state.sessions,
+          [session.sessionId]: newSession,
+        },
+        activeSessionByWorktree,
+      };
+    });
   },
 
   appendOutput: (sessionId, content) => {
@@ -140,7 +149,7 @@ export const useTestRunnersStore = create<TestRunnersState & TestRunnersActions>
           ...state.sessions,
           [sessionId]: {
             ...session,
-            output: session.output + content,
+            output: (session.output + content).slice(-50000),
           },
         },
       };

@@ -2499,8 +2499,24 @@ export class HttpApiClient implements ElectronAPI {
       };
     },
     // Test runner methods
-    startTests: (worktreePath: string, options?: { projectPath?: string; testFile?: string }) =>
-      this.post('/api/worktree/start-tests', { worktreePath, ...options }),
+    startTests: async (
+      worktreePath: string,
+      options?: { projectPath?: string; testFile?: string }
+    ) => {
+      const inspected = await this.executionEnvironments.inspectGit(worktreePath);
+      if (!inspected.success || !inspected.executionEnvironment)
+        throw new Error(
+          inspected.error || 'Cannot inspect the test environment. No tests were started.'
+        );
+      return this.post<Awaited<ReturnType<WorktreeAPI['startTests']>>>(
+        '/api/worktree/start-tests',
+        {
+          worktreePath,
+          ...options,
+          environmentTargetId: inspected.executionEnvironment.targetId,
+        }
+      );
+    },
     stopTests: (sessionId: string) => this.post('/api/worktree/stop-tests', { sessionId }),
     getCommitLog: (worktreePath: string, limit?: number) =>
       this.post('/api/worktree/commit-log', { worktreePath, limit }),
