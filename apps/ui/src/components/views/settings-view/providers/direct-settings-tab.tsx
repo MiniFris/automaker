@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { DirectAgentSettings, OpenAICompatibleEndpoint } from '@automaker/types';
+import type { OpenAICompatibleEndpoint } from '@automaker/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +12,9 @@ import {
 
 const selectStyle = 'rounded-md border bg-background p-2 text-sm';
 function freshEndpoint(): OpenAICompatibleEndpoint {
-  const id = globalThis.crypto?.randomUUID?.() ?? `direct-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const id =
+    globalThis.crypto?.randomUUID?.() ??
+    `direct-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   return {
     id,
     name: 'Direct endpoint',
@@ -22,83 +24,6 @@ function freshEndpoint(): OpenAICompatibleEndpoint {
     auth: { type: 'credentials', credentialId: id },
     models: [],
   };
-}
-
-function AgentPolicyEditor({
-  settings,
-  save,
-}: {
-  settings: DirectAgentSettings;
-  save: (settings: DirectAgentSettings) => Promise<void>;
-}) {
-  const [access, setAccess] = useState(settings.access ?? 'read-only');
-  const [image, setImage] = useState(settings.shell?.image ?? '');
-  const [executable, setExecutable] = useState<'sh' | 'bash' | 'pwsh'>(
-    settings.shell?.executable ?? 'sh'
-  );
-  const [busy, setBusy] = useState(false);
-  const [toolTimeout, setToolTimeout] = useState(settings.limits?.toolTimeoutMs ?? 10_000);
-  return (
-    <section className="space-y-3 rounded-lg border p-4">
-      <h3 className="font-medium">Local agent permissions</h3>
-      <p className="text-sm text-muted-foreground">
-        Default: read-only. Workspace write explicitly permits the model to change project text
-        files. Shell requires Linux and a trusted local Docker image. No host-shell fallback, no
-        network, no full-access. Large/binary dependency trees and file deletion are not supported
-        yet.
-      </p>
-      <Label htmlFor="direct-agent-access">Access profile</Label>
-      <select
-        id="direct-agent-access"
-        className={selectStyle}
-        value={access}
-        onChange={(event) => setAccess(event.target.value as typeof access)}
-      >
-        <option value="read-only">Read-only</option>
-        <option value="workspace-write">Workspace write</option>
-      </select>
-      <Label htmlFor="direct-tool-timeout">Tool timeout (ms, up to 60000)</Label><Input id="direct-tool-timeout" type="number" min={1} max={60000} step={1} value={toolTimeout} onChange={(event) => setToolTimeout(Number(event.target.value))} />
-      <Label htmlFor="direct-agent-image">Docker image ID (optional; empty disables shell)</Label>
-      <Input
-        id="direct-agent-image"
-        placeholder="sha256:… (full local image ID)"
-        value={image}
-        onChange={(event) => setImage(event.target.value)}
-      />
-      <Label htmlFor="direct-agent-shell">Container interpreter</Label>
-      <select
-        id="direct-agent-shell"
-        className={selectStyle}
-        value={executable}
-        onChange={(event) => setExecutable(event.target.value as typeof executable)}
-      >
-        <option value="sh">sh</option>
-        <option value="bash">bash (must be installed in image)</option>
-        <option value="pwsh">pwsh (experimental, image required)</option>
-      </select>
-      <div>
-        <Button
-          disabled={busy}
-          onClick={async () => {
-            setBusy(true);
-            try {
-              await save({
-                access,
-                limits: { ...settings.limits, toolTimeoutMs: toolTimeout },
-                ...(image.trim() && {
-                  shell: { backend: 'docker', image: image.trim(), executable },
-                }),
-              });
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          Save agent permissions
-        </Button>
-      </div>
-    </section>
-  );
 }
 
 export function DirectSettingsTab() {
@@ -524,16 +449,14 @@ export function DirectSettingsTab() {
           </div>
         </fieldset>
       )}
-      <AgentPolicyEditor
-        key={JSON.stringify(data.agentSettings)}
-        settings={data.agentSettings}
-        save={async (settings) => {
-          await action(async () => {
-            refresh(await api.saveAgent(settings));
-            setMessage('Agent permissions saved.');
-          });
-        }}
-      />
+      <p className="text-sm text-muted-foreground">
+        Execution and access are configured in{' '}
+        <a className="underline" href="/settings?view=execution-environment">
+          Execution Environment
+        </a>
+        , with optional project overrides. Legacy Direct settings are retained for existing runs,
+        not automatically upgraded.
+      </p>
     </div>
   );
 }

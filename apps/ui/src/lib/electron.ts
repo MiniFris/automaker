@@ -555,6 +555,14 @@ export interface FeaturesAPI {
 }
 
 export interface AutoModeAPI {
+  mergeEnvironmentFeature: (
+    projectPath: string,
+    featureId: string
+  ) => Promise<{ success: boolean; error?: string }>;
+  mergeSSHFeature: (
+    projectPath: string,
+    featureId: string
+  ) => Promise<{ success: boolean; error?: string }>;
   start: (
     projectPath: string,
     branchName?: string | null,
@@ -3327,6 +3335,14 @@ function createMockAutoModeAPI(): AutoModeAPI {
       return { success: true };
     },
 
+    mergeEnvironmentFeature: async () => ({
+      success: false,
+      error: 'Environment merge requires the Automaker HTTP server.',
+    }),
+    mergeSSHFeature: async () => ({
+      success: false,
+      error: 'SSH merge requires the Automaker HTTP server.',
+    }),
     commitFeature: async (projectPath: string, featureId: string, worktreePath?: string) => {
       console.log('[Mock] Committing feature:', {
         projectPath,

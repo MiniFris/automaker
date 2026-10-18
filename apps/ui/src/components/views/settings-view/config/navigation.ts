@@ -49,6 +49,7 @@ export const GLOBAL_NAV_GROUPS: NavigationGroup[] = [
       { id: 'defaults', label: 'Feature Defaults', icon: FlaskConical },
       { id: 'model-defaults', label: 'Model Defaults', icon: Workflow },
       { id: 'worktrees', label: 'Worktrees', icon: GitBranch },
+      { id: 'execution-environment', label: 'Execution Environment', icon: SquareTerminal },
       { id: 'prompts', label: 'Prompt Customization', icon: MessageSquareText },
       { id: 'templates', label: 'Templates', icon: FileText },
       { id: 'api-keys', label: 'API Keys', icon: Key },
@@ -57,6 +58,7 @@ export const GLOBAL_NAV_GROUPS: NavigationGroup[] = [
         label: 'AI Providers',
         icon: Bot,
         subItems: [
+          { id: 'direct-provider', label: 'Direct API (OpenAI-compatible)', icon: OpenAIIcon },
           { id: 'claude-provider', label: 'Claude', icon: AnthropicIcon },
           { id: 'cursor-provider', label: 'Cursor', icon: CursorIcon },
           { id: 'codex-provider', label: 'Codex', icon: OpenAIIcon },

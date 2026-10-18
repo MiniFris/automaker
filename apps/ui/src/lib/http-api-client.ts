@@ -6,7 +6,22 @@
  */
 
 import { createLogger } from '@automaker/utils/logger';
-import type { OpenAICompatibleEndpoint, OpenAICompatibleEndpointStatus, DirectAgentSettings } from '@automaker/types';
+import type {
+  ExecutionEnvironmentSettings,
+  ExecutionEnvironmentSettingsResponse,
+  ExecutionEnvironmentSelection,
+  DockerConnectionDiagnostic,
+  DockerPreparationResult,
+  SSHHostKey,
+  SSHDiagnostic,
+  ProjectGitEnvironment,
+  DevServerEnvironmentMetadata,
+} from '@automaker/types';
+import type {
+  OpenAICompatibleEndpoint,
+  OpenAICompatibleEndpointStatus,
+  DirectAgentSettings,
+} from '@automaker/types';
 import type {
   ElectronAPI,
   FileResult,
@@ -610,14 +625,14 @@ type EventType =
  */
 
 /** Shared base for dev server events that carry URL/port information */
-interface DevServerUrlEvent {
+interface DevServerUrlEvent extends DevServerEnvironmentMetadata {
   worktreePath: string;
   url: string;
   port: number;
   timestamp: string;
 }
 
-export interface DevServerStartingEvent {
+export interface DevServerStartingEvent extends DevServerEnvironmentMetadata {
   worktreePath: string;
   timestamp: string;
 }
@@ -625,12 +640,13 @@ export interface DevServerStartingEvent {
 export type DevServerStartedEvent = DevServerUrlEvent;
 
 export interface DevServerOutputEvent {
+  sessionId?: string;
   worktreePath: string;
   content: string;
   timestamp: string;
 }
 
-export interface DevServerStoppedEvent {
+export interface DevServerStoppedEvent extends DevServerEnvironmentMetadata {
   worktreePath: string;
   port: number;
   exitCode: number | null;
@@ -653,6 +669,7 @@ export type DevServerLogEvent =
 export type TestRunStatus = 'pending' | 'running' | 'passed' | 'failed' | 'cancelled' | 'error';
 
 export interface TestRunnerStartedEvent {
+  executionEnvironment?: ProjectGitEnvironment;
   sessionId: string;
   worktreePath: string;
   /** The test command being run (from project settings) */
@@ -669,6 +686,8 @@ export interface TestRunnerOutputEvent {
 }
 
 export interface TestRunnerCompletedEvent {
+  executionEnvironment?: ProjectGitEnvironment;
+  error?: string;
   sessionId: string;
   worktreePath: string;
   /** The test command that was run */
@@ -690,7 +709,7 @@ export type TestRunnerEvent =
  */
 export interface DevServerLogsResponse {
   success: boolean;
-  result?: {
+  result?: DevServerEnvironmentMetadata & {
     worktreePath: string;
     port: number;
     url: string;
@@ -706,6 +725,8 @@ export interface DevServerLogsResponse {
 export interface TestLogsResponse {
   success: boolean;
   result?: {
+    executionEnvironment?: ProjectGitEnvironment;
+    error?: string;
     sessionId: string;
     worktreePath: string;
     /** The test command that was/is being run */
@@ -2200,6 +2221,20 @@ export class HttpApiClient implements ElectronAPI {
         imagePaths,
         useWorktrees,
       }),
+    mergeEnvironmentFeature: (
+      projectPath: string,
+      featureId: string
+    ): Promise<{ success: boolean; error?: string }> =>
+      this.post('/api/auto-mode/merge-environment-feature', {
+        projectPath,
+        featureId,
+        accepted: true,
+      }),
+    mergeSSHFeature: (
+      projectPath: string,
+      featureId: string
+    ): Promise<{ success: boolean; error?: string }> =>
+      this.post('/api/auto-mode/merge-ssh-feature', { projectPath, featureId, accepted: true }),
     commitFeature: (projectPath: string, featureId: string, worktreePath?: string) =>
       this.post('/api/auto-mode/commit-feature', {
         projectPath,
@@ -2680,7 +2715,14 @@ export class HttpApiClient implements ElectronAPI {
       };
       error?: string;
     }> =>
-      this.post('/api/agent/queue/add', { sessionId, message, imagePaths, model, thinkingLevel, providerId }),
+      this.post('/api/agent/queue/add', {
+        sessionId,
+        message,
+        imagePaths,
+        model,
+        thinkingLevel,
+        providerId,
+      }),
 
     queueList: (
       sessionId: string
@@ -2906,13 +2948,226 @@ export class HttpApiClient implements ElectronAPI {
     }> => this.post('/api/settings/agents/discover', { projectPath, sources }),
   };
 
+  executionEnvironments = {
+    inspectGit: (
+      path: string
+    ): Promise<{
+      success: boolean;
+      executionEnvironment?: import('@automaker/types').ProjectGitEnvironment;
+      error?: string;
+    }> => this.post('/api/git/environment', { projectPath: path }),
+    inspectProvider: (
+      projectPath: string,
+      provider: import('@automaker/types').RemoteSdkProvider
+    ): Promise<{
+      success: boolean;
+      status?: import('@automaker/types').RemoteProviderStatus;
+      error?: string;
+    }> =>
+      this.post('/api/settings/execution-environments/providers/inspect', {
+        projectPath,
+        provider,
+      }),
+    installProvider: (
+      projectPath: string,
+      provider: import('@automaker/types').RemoteSdkProvider,
+      targetId: string
+    ): Promise<{
+      success: boolean;
+      status?: import('@automaker/types').RemoteProviderStatus;
+      error?: string;
+    }> =>
+      this.post('/api/settings/execution-environments/providers/install', {
+        projectPath,
+        provider,
+        targetId,
+        accepted: true,
+      }),
+    saveProviderKey: (
+      projectPath: string,
+      provider: import('@automaker/types').RemoteSdkProvider,
+      targetId: string,
+      apiKey: string
+    ): Promise<{
+      success: boolean;
+      status?: import('@automaker/types').RemoteProviderStatus;
+      error?: string;
+    }> =>
+      this.post('/api/settings/execution-environments/providers/key', {
+        projectPath,
+        provider,
+        targetId,
+        apiKey,
+        accepted: true,
+      }),
+    clearProviderKey: (
+      projectPath: string,
+      provider: import('@automaker/types').RemoteSdkProvider,
+      targetId: string
+    ): Promise<{
+      success: boolean;
+      status?: import('@automaker/types').RemoteProviderStatus;
+      error?: string;
+    }> =>
+      this.post('/api/settings/execution-environments/providers/key', {
+        projectPath,
+        provider,
+        targetId,
+        clear: true,
+        accepted: true,
+      }),
+    inspectFeature: (
+      projectPath: string,
+      featureId: string
+    ): Promise<{
+      success: boolean;
+      binding?: import('@automaker/types').ExecutionEnvironmentBinding | null;
+      selectedType?: string;
+      error?: string;
+    }> =>
+      this.post('/api/settings/execution-environments/feature/inspect', { projectPath, featureId }),
+    scanSSH: (
+      profileId: string
+    ): Promise<{ success: boolean; hostKey?: SSHHostKey; error?: string }> =>
+      this.post('/api/settings/execution-environments/ssh/scan', { profileId }),
+    trustSSH: (
+      profileId: string,
+      fingerprint: string,
+      replace = false
+    ): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.post('/api/settings/execution-environments/ssh/trust', {
+        profileId,
+        fingerprint,
+        replace,
+        accepted: true,
+      }),
+    saveSSHKey: (
+      profileId: string,
+      privateKey: string,
+      passphrase?: string
+    ): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.post('/api/settings/execution-environments/ssh/key', {
+        profileId,
+        privateKey,
+        passphrase: passphrase || undefined,
+      }),
+    clearSSHKey: (profileId: string): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.post('/api/settings/execution-environments/ssh/key', { profileId, clear: true }),
+    checkSSH: (
+      profileId: string,
+      projectPath?: string
+    ): Promise<{ success: boolean; diagnostic?: SSHDiagnostic; error?: string }> =>
+      this.post('/api/settings/execution-environments/ssh/check', { profileId, projectPath }),
+    prepareSSH: (profileId: string): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.post('/api/settings/execution-environments/ssh/prepare', { profileId, accepted: true }),
+    prepareSSHProject: (
+      profileId: string,
+      projectPath: string,
+      source:
+        | { method: 'import' }
+        | { method: 'clone'; repositoryUrl: string }
+        | { method: 'existing'; remotePath: string }
+    ): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.post('/api/settings/execution-environments/ssh/project', {
+        profileId,
+        projectPath,
+        source,
+        accepted: true,
+      }),
+    recoverSSH: (
+      profileId: string,
+      projectPath: string
+    ): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.post('/api/settings/execution-environments/ssh/recover', {
+        profileId,
+        projectPath,
+        accepted: true,
+      }),
+    prepareDocker: (
+      projectPath?: string,
+      profileId?: string
+    ): Promise<{ success: boolean; preparation?: DockerPreparationResult; error?: string }> =>
+      this.post('/api/settings/execution-environments/docker/prepare', {
+        projectPath,
+        profileId,
+        accepted: true,
+      }),
+    confirmAutoFallback: (projectPath?: string): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.post('/api/settings/execution-environments/auto/confirm', {
+        projectPath,
+        accepted: true,
+        warningVersion: 1,
+      }),
+    revokeAutoFallback: (projectPath?: string): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.post('/api/settings/execution-environments/auto/revoke', { projectPath }),
+    confirmLocal: (projectPath?: string): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.post('/api/settings/execution-environments/local/confirm', {
+        projectPath,
+        accepted: true,
+        warningVersion: 1,
+      }),
+    revokeLocal: (projectPath?: string): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.post('/api/settings/execution-environments/local/revoke', { projectPath }),
+    inspect: (projectPath?: string): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.post('/api/settings/execution-environments/inspect', { projectPath }),
+    saveGlobal: (
+      settings: ExecutionEnvironmentSettings
+    ): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.put('/api/settings/execution-environments/global', { settings }),
+    saveProject: (
+      projectPath: string,
+      selection: ExecutionEnvironmentSelection | null
+    ): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.put('/api/settings/execution-environments/project', { projectPath, selection }),
+    checkDocker: (
+      profileId?: string
+    ): Promise<{ success: boolean; diagnostic?: DockerConnectionDiagnostic; error?: string }> =>
+      this.post('/api/settings/execution-environments/docker/check', { profileId }),
+  };
+
   directEndpoints = {
-    list: (): Promise<{ success: boolean; endpoints: OpenAICompatibleEndpointStatus[]; agentSettings: DirectAgentSettings; error?: string }> => this.get('/api/settings/openai-compatible'),
-    save: (endpoint: OpenAICompatibleEndpoint, apiKey?: string, clearKey?: boolean): Promise<{ success: boolean; endpoints: OpenAICompatibleEndpointStatus[]; agentSettings: DirectAgentSettings; error?: string }> => this.put('/api/settings/openai-compatible/endpoint', { endpoint, apiKey, clearKey }),
-    remove: (providerId: string): Promise<{ success: boolean; endpoints: OpenAICompatibleEndpointStatus[]; agentSettings: DirectAgentSettings; error?: string }> => this.post('/api/settings/openai-compatible/remove', { providerId }),
-    saveAgent: (settings: DirectAgentSettings): Promise<{ success: boolean; endpoints: OpenAICompatibleEndpointStatus[]; agentSettings: DirectAgentSettings; error?: string }> => this.put('/api/settings/openai-compatible/agent', settings),
-    models: (providerId: string): Promise<{ success: boolean; models?: string[]; error?: string }> => this.post('/api/settings/openai-compatible/models', { providerId }),
-    test: (providerId: string, modelId: string, tools = false): Promise<{ success: boolean; verified?: boolean; error?: string }> => this.post('/api/settings/openai-compatible/test', { providerId, modelId, tools }),
+    list: (): Promise<{
+      success: boolean;
+      endpoints: OpenAICompatibleEndpointStatus[];
+      agentSettings: DirectAgentSettings;
+      error?: string;
+    }> => this.get('/api/settings/openai-compatible'),
+    save: (
+      endpoint: OpenAICompatibleEndpoint,
+      apiKey?: string,
+      clearKey?: boolean
+    ): Promise<{
+      success: boolean;
+      endpoints: OpenAICompatibleEndpointStatus[];
+      agentSettings: DirectAgentSettings;
+      error?: string;
+    }> => this.put('/api/settings/openai-compatible/endpoint', { endpoint, apiKey, clearKey }),
+    remove: (
+      providerId: string
+    ): Promise<{
+      success: boolean;
+      endpoints: OpenAICompatibleEndpointStatus[];
+      agentSettings: DirectAgentSettings;
+      error?: string;
+    }> => this.post('/api/settings/openai-compatible/remove', { providerId }),
+    saveAgent: (
+      settings: DirectAgentSettings
+    ): Promise<{
+      success: boolean;
+      endpoints: OpenAICompatibleEndpointStatus[];
+      agentSettings: DirectAgentSettings;
+      error?: string;
+    }> => this.put('/api/settings/openai-compatible/agent', settings),
+    models: (
+      providerId: string
+    ): Promise<{ success: boolean; models?: string[]; error?: string }> =>
+      this.post('/api/settings/openai-compatible/models', { providerId }),
+    test: (
+      providerId: string,
+      modelId: string,
+      tools = false
+    ): Promise<{ success: boolean; verified?: boolean; error?: string }> =>
+      this.post('/api/settings/openai-compatible/test', { providerId, modelId, tools }),
   };
 
   // Sessions API
@@ -3021,7 +3276,13 @@ export class HttpApiClient implements ElectronAPI {
       branchName?: string,
       providerId?: string
     ): Promise<{ success: boolean; error?: string }> =>
-      this.post('/api/backlog-plan/generate', { projectPath, prompt, model, branchName, providerId }),
+      this.post('/api/backlog-plan/generate', {
+        projectPath,
+        prompt,
+        model,
+        branchName,
+        providerId,
+      }),
 
     stop: (): Promise<{ success: boolean; error?: string }> =>
       this.post('/api/backlog-plan/stop', {}),

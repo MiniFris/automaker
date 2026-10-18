@@ -8,7 +8,13 @@ import type {
   ZaiUsageResponse,
   GeminiUsageResponse,
 } from '@/store/app-store';
-import type { ParsedTask, FeatureStatusWithPipeline, MergeStateInfo } from '@automaker/types';
+import type {
+  ParsedTask,
+  FeatureStatusWithPipeline,
+  MergeStateInfo,
+  ProjectGitEnvironment,
+  DevServerEnvironmentMetadata,
+} from '@automaker/types';
 export type { MergeStateInfo } from '@automaker/types';
 
 export interface ImageAttachment {
@@ -79,6 +85,7 @@ export type StreamEvent =
     };
 
 export interface SessionListItem {
+  executionEnvironment?: import('@automaker/types').ExecutionEnvironmentBinding;
   model?: string;
   providerId?: string;
   id: string;
@@ -475,6 +482,14 @@ export interface SpecRegenerationAPI {
 }
 
 export interface AutoModeAPI {
+  mergeEnvironmentFeature: (
+    projectPath: string,
+    featureId: string
+  ) => Promise<{ success: boolean; error?: string }>;
+  mergeSSHFeature: (
+    projectPath: string,
+    featureId: string
+  ) => Promise<{ success: boolean; error?: string }>;
   start: (
     projectPath: string,
     branchName?: string | null,
@@ -1390,7 +1405,7 @@ export interface WorktreeAPI {
     worktreePath: string
   ) => Promise<{
     success: boolean;
-    result?: {
+    result?: DevServerEnvironmentMetadata & {
       worktreePath: string;
       port: number;
       url: string;
@@ -1400,7 +1415,10 @@ export interface WorktreeAPI {
   }>;
 
   // Stop a dev server for a worktree
-  stopDevServer: (worktreePath: string) => Promise<{
+  stopDevServer: (
+    worktreePath: string,
+    sessionId?: string
+  ) => Promise<{
     success: boolean;
     result?: {
       worktreePath: string;
@@ -1413,20 +1431,25 @@ export interface WorktreeAPI {
   listDevServers: () => Promise<{
     success: boolean;
     result?: {
-      servers: Array<{
-        worktreePath: string;
-        port: number;
-        url: string;
-        urlDetected: boolean;
-      }>;
+      servers: Array<
+        {
+          worktreePath: string;
+          port: number;
+          url: string;
+          urlDetected: boolean;
+        } & DevServerEnvironmentMetadata
+      >;
     };
     error?: string;
   }>;
 
   // Get buffered logs for a dev server
-  getDevServerLogs: (worktreePath: string) => Promise<{
+  getDevServerLogs: (
+    worktreePath: string,
+    sessionId?: string
+  ) => Promise<{
     success: boolean;
-    result?: {
+    result?: DevServerEnvironmentMetadata & {
       worktreePath: string;
       port: number;
       url: string;
@@ -1442,19 +1465,28 @@ export interface WorktreeAPI {
       event:
         | {
             type: 'dev-server:starting';
-            payload: { worktreePath: string; timestamp: string };
+            payload: DevServerEnvironmentMetadata & { worktreePath: string; timestamp: string };
           }
         | {
             type: 'dev-server:started';
-            payload: { worktreePath: string; port: number; url: string; timestamp: string };
+            payload: DevServerEnvironmentMetadata & {
+              worktreePath: string;
+              port: number;
+              url: string;
+              timestamp: string;
+            };
           }
         | {
             type: 'dev-server:output';
-            payload: { worktreePath: string; content: string; timestamp: string };
+            payload: DevServerEnvironmentMetadata & {
+              worktreePath: string;
+              content: string;
+              timestamp: string;
+            };
           }
         | {
             type: 'dev-server:stopped';
-            payload: {
+            payload: DevServerEnvironmentMetadata & {
               worktreePath: string;
               port: number;
               exitCode: number | null;
@@ -1464,7 +1496,7 @@ export interface WorktreeAPI {
           }
         | {
             type: 'dev-server:url-detected';
-            payload: {
+            payload: DevServerEnvironmentMetadata & {
               worktreePath: string;
               url: string;
               port: number;
@@ -1581,6 +1613,7 @@ export interface WorktreeAPI {
   ) => Promise<{
     success: boolean;
     result?: {
+      executionEnvironment?: ProjectGitEnvironment;
       sessionId: string;
       worktreePath: string;
       /** The test command being run (from project settings) */
@@ -1609,6 +1642,8 @@ export interface WorktreeAPI {
   ) => Promise<{
     success: boolean;
     result?: {
+      executionEnvironment?: ProjectGitEnvironment;
+      error?: string;
       sessionId: string;
       worktreePath: string;
       command: string;
@@ -1797,6 +1832,7 @@ export type TestRunStatus = 'pending' | 'running' | 'passed' | 'failed' | 'cance
 
 // Test runner event payloads
 export interface TestRunnerStartedEvent {
+  executionEnvironment?: ProjectGitEnvironment;
   sessionId: string;
   worktreePath: string;
   /** The test command being run (from project settings) */
@@ -1813,6 +1849,8 @@ export interface TestRunnerOutputEvent {
 }
 
 export interface TestRunnerCompletedEvent {
+  executionEnvironment?: ProjectGitEnvironment;
+  error?: string;
   sessionId: string;
   worktreePath: string;
   /** The test command that was run */

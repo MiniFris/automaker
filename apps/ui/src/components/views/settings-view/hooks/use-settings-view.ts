@@ -2,8 +2,10 @@ import { useState, useCallback } from 'react';
 
 export type SettingsViewId =
   | 'api-keys'
+  | 'execution-environment'
   | 'claude'
   | 'providers'
+  | 'direct-provider'
   | 'claude-provider'
   | 'cursor-provider'
   | 'codex-provider'
