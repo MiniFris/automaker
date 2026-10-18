@@ -26,6 +26,7 @@ import { createStatusHandler } from './routes/status.js';
 import { createDiscoverAgentsHandler } from './routes/discover-agents.js';
 import { createOpenAICompatibleSettingsRoutes } from './openai-compatible.js';
 import { createExecutionEnvironmentSettingsRoutes } from './execution-environments.js';
+import { createModelTimeoutSettingsRoutes } from './model-timeouts.js';
 
 /**
  * Create settings router with all endpoints
@@ -49,6 +50,7 @@ import { createExecutionEnvironmentSettingsRoutes } from './execution-environmen
  */
 export function createSettingsRoutes(settingsService: SettingsService): Router {
   const router = Router();
+  router.use('/model-timeouts', createModelTimeoutSettingsRoutes(settingsService));
   router.use('/execution-environments', createExecutionEnvironmentSettingsRoutes(settingsService));
   router.use('/openai-compatible', createOpenAICompatibleSettingsRoutes(settingsService));
 

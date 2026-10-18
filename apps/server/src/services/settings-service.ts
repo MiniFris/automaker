@@ -54,6 +54,10 @@ import {
 } from '../types/settings.js';
 import {
   DEFAULT_MAX_CONCURRENCY,
+  parseModelTimeoutSettings,
+  parseProviderModelTimeoutSettings,
+  type ModelTimeoutProvider,
+  type ModelTimeoutSettings,
   migrateModelId,
   migrateCursorModelIds,
   migrateOpencodeModelIds,
@@ -93,8 +97,15 @@ async function fileExists(filePath: string): Promise<boolean> {
 /**
  * Write settings atomically with backup support
  */
-async function writeSettingsJson(filePath: string, data: unknown, privateFile = false): Promise<void> {
-  await atomicWriteJson(filePath, data, { backupCount: DEFAULT_BACKUP_COUNT, ...(privateFile && { mode: 0o600 }) });
+async function writeSettingsJson(
+  filePath: string,
+  data: unknown,
+  privateFile = false
+): Promise<void> {
+  await atomicWriteJson(filePath, data, {
+    backupCount: DEFAULT_BACKUP_COUNT,
+    ...(privateFile && { mode: 0o600 }),
+  });
 }
 
 /**
@@ -111,9 +122,12 @@ async function writeSettingsJson(filePath: string, data: unknown, privateFile = 
  * Updates use deep merge for nested objects like keyboardShortcuts and apiKeys.
  */
 export class SettingsService {
+  private providerTimeoutWrites: Promise<unknown> = Promise.resolve();
   private dataDir: string;
 
-  getDataDirectory(): string { return this.dataDir; }
+  getDataDirectory(): string {
+    return this.dataDir;
+  }
 
   /**
    * Create a new SettingsService instance
@@ -546,8 +560,27 @@ export class SettingsService {
    * @param updates - Partial GlobalSettings to merge (only provided fields are updated)
    * @returns Promise resolving to complete updated GlobalSettings
    */
+  async updateProviderModelTimeouts(
+    provider: ModelTimeoutProvider,
+    timeouts: ModelTimeoutSettings
+  ): Promise<void> {
+    const parsed = parseProviderModelTimeoutSettings({ [provider]: timeouts });
+    const write = this.providerTimeoutWrites.then(async () => {
+      const global = await this.getGlobalSettings();
+      await this.updateGlobalSettings({
+        providerModelTimeouts: { ...global.providerModelTimeouts, ...parsed },
+      });
+    });
+    this.providerTimeoutWrites = write.catch(() => {});
+    await write;
+  }
+
   async updateGlobalSettings(updates: Partial<GlobalSettings>): Promise<GlobalSettings> {
-    if (['openaiCompatibleApiKeys', 'openaiCompatibleConnection', 'apiKey', 'credentials'].some((key) => Object.hasOwn(updates, key)))
+    if (
+      ['openaiCompatibleApiKeys', 'openaiCompatibleConnection', 'apiKey', 'credentials'].some(
+        (key) => Object.hasOwn(updates, key)
+      )
+    )
       throw new Error('Secrets must be updated through credentials, not global settings.');
     await ensureDataDir(this.dataDir);
     const settingsPath = getGlobalSettingsPath(this.dataDir);
@@ -558,10 +591,20 @@ export class SettingsService {
     // During auth transitions, the UI can briefly have default/empty state and accidentally
     // sync it, wiping persisted settings (especially `projects`).
     const sanitizedUpdates: Partial<GlobalSettings> = { ...updates };
+    if (Object.hasOwn(updates, 'modelTimeouts'))
+      sanitizedUpdates.modelTimeouts = parseModelTimeoutSettings(updates.modelTimeouts);
+    if (Object.hasOwn(updates, 'providerModelTimeouts'))
+      sanitizedUpdates.providerModelTimeouts = parseProviderModelTimeoutSettings(
+        updates.providerModelTimeouts
+      );
     if (Object.hasOwn(updates, 'executionEnvironment'))
-      sanitizedUpdates.executionEnvironment = parseEnvironmentSettings(updates.executionEnvironment);
+      sanitizedUpdates.executionEnvironment = parseEnvironmentSettings(
+        updates.executionEnvironment
+      );
     if (updates.openaiCompatibleAgentSettings !== undefined)
-      sanitizedUpdates.openaiCompatibleAgentSettings = parseDirectAgentSettings(updates.openaiCompatibleAgentSettings);
+      sanitizedUpdates.openaiCompatibleAgentSettings = parseDirectAgentSettings(
+        updates.openaiCompatibleAgentSettings
+      );
     if (updates.openaiCompatibleEndpoints !== undefined) {
       sanitizedUpdates.openaiCompatibleEndpoints = parseOpenAICompatibleEndpoints(
         updates.openaiCompatibleEndpoints
@@ -788,8 +831,14 @@ export class SettingsService {
   async updateCredentials(updates: Partial<Credentials>): Promise<Credentials> {
     if (updates.openaiCompatibleApiKeys !== undefined) {
       const keys = updates.openaiCompatibleApiKeys;
-      if (!keys || typeof keys !== 'object' || Array.isArray(keys) ||
-        Object.entries(keys).some(([id, key]) => !id || typeof key !== 'string' || /[\x00-\x1f\x7f]/.test(key)))
+      if (
+        !keys ||
+        typeof keys !== 'object' ||
+        Array.isArray(keys) ||
+        Object.entries(keys).some(
+          ([id, key]) => !id || typeof key !== 'string' || /[\x00-\x1f\x7f]/.test(key)
+        )
+      )
         throw new Error('Invalid OpenAI-compatible credentials.');
     }
     await ensureDataDir(this.dataDir);
