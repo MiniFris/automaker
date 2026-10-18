@@ -72,8 +72,9 @@ import {
   defaultDropAnimationSideEffects,
 } from '@dnd-kit/core';
 import { cn } from '@/lib/utils';
-import { apiFetch, apiGet, apiPost, apiDeleteRaw } from '@/lib/api-fetch';
+import { apiGet, apiPost, apiDeleteRaw } from '@/lib/api-fetch';
 import { getApiKey } from '@/lib/http-api-client';
+import { createEnvironmentTerminal } from '@/lib/terminal-session';
 
 const logger = createLogger('Terminal');
 
@@ -611,10 +612,7 @@ export function TerminalView({
           headers['X-Terminal-Token'] = terminalState.authToken;
         }
 
-        const response = await apiFetch('/api/terminal/sessions', 'POST', {
-          headers,
-          body: { cwd: initialCwd, cols: 80, rows: 24 },
-        });
+        const response = await createEnvironmentTerminal(initialCwd, headers);
         const data = await response.json();
 
         if (data.success) {
@@ -780,11 +778,8 @@ export function TerminalView({
         // Helper to create a new terminal session
         const createSession = async (): Promise<string | null> => {
           try {
-            const data = await apiPost<{ success: boolean; data?: { id: string } }>(
-              '/api/terminal/sessions',
-              { cwd: currentPath, cols: 80, rows: 24 },
-              { headers }
-            );
+            const response = await createEnvironmentTerminal(currentPath, headers);
+            const data = await response.json();
             return data.success && data.data ? data.data.id : null;
           } catch (err) {
             logger.error('Failed to create terminal session:', err);
@@ -809,8 +804,8 @@ export function TerminalView({
               }
             }
 
-            // If no saved session or it's gone, create a new one
-            if (!sessionId) {
+            // An expired session must not silently start a new shell / repeat its startup script.
+            if (!sessionId && !persisted.sessionId) {
               sessionId = await createSession();
             }
 
@@ -889,7 +884,7 @@ export function TerminalView({
 
         if (failedSessions > 0) {
           toast.error('Some terminals failed to restore', {
-            description: `${failedSessions} of ${totalSessions} terminal sessions could not be created. The server may be unavailable.`,
+            description: `${failedSessions} of ${totalSessions} sessions are unavailable. They were not recreated and commands were not replayed. Create a new terminal explicitly.`,
             duration: 5000,
           });
         } else if (reconnectedSessions > 0) {
@@ -1036,10 +1031,10 @@ export function TerminalView({
         headers['X-Terminal-Token'] = terminalState.authToken;
       }
 
-      const response = await apiFetch('/api/terminal/sessions', 'POST', {
-        headers,
-        body: { cwd: customCwd || currentProject?.path || undefined, cols: 80, rows: 24 },
-      });
+      const response = await createEnvironmentTerminal(
+        customCwd || currentProject?.path || undefined,
+        headers
+      );
       const data = await response.json();
 
       if (data.success) {
@@ -1100,10 +1095,10 @@ export function TerminalView({
         headers['X-Terminal-Token'] = terminalState.authToken;
       }
 
-      const response = await apiFetch('/api/terminal/sessions', 'POST', {
-        headers,
-        body: { cwd: worktreeCwd || currentProject?.path || undefined, cols: 80, rows: 24 },
-      });
+      const response = await createEnvironmentTerminal(
+        worktreeCwd || currentProject?.path || undefined,
+        headers
+      );
       const data = await response.json();
 
       if (data.success) {

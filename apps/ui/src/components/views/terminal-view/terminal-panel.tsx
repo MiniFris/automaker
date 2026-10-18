@@ -152,6 +152,8 @@ export function TerminalPanel({
   const linkProviderRef = useRef<{ dispose: () => void } | null>(null);
   const [isTerminalReady, setIsTerminalReady] = useState(false);
   const [shellName, setShellName] = useState('shell');
+  const [environmentLabel, setEnvironmentLabel] = useState('Connecting…');
+  const [runtimeCwd, setRuntimeCwd] = useState('');
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [isMac, setIsMac] = useState(false);
   const isMacRef = useRef(false);
@@ -1196,6 +1198,14 @@ export function TerminalPanel({
               }
               break;
             case 'connected': {
+              setEnvironmentLabel(
+                msg.executionEnvironment?.type === 'ssh'
+                  ? 'SSH'
+                  : msg.executionEnvironment?.type === 'docker'
+                    ? 'Docker'
+                    : 'Local / controller'
+              );
+              setRuntimeCwd(msg.executionEnvironment?.runtimeCwd || msg.cwd || '');
               logger.info(`Session connected: ${msg.shell} in ${msg.cwd}`);
               // Detect shell type from path
               const shellPath = (msg.shell || '').toLowerCase();
@@ -1220,6 +1230,7 @@ export function TerminalPanel({
               const initialCommand = runCommandOnConnectRef.current;
               if (
                 initialCommand &&
+                msg.allowInitialCommand === true &&
                 !hasRunInitialCommandRef.current &&
                 ws.readyState === WebSocket.OPEN
               ) {
@@ -2049,6 +2060,10 @@ export function TerminalPanel({
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
           <Terminal className="h-3 w-3 shrink-0 text-muted-foreground" />
           <span className="text-xs truncate text-foreground">{shellName}</span>
+          <span className="text-[10px] truncate text-muted-foreground" title={runtimeCwd}>
+            {environmentLabel}
+            {runtimeCwd ? ` · ${runtimeCwd}` : ''}
+          </span>
           {/* Branch name indicator - show when terminal was opened from worktree */}
           {branchName && (
             <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-brand-500/10 text-brand-500 shrink-0">

@@ -57,7 +57,7 @@ import { createSettingsRoutes } from './routes/settings/index.js';
 import { AgentService } from './services/agent-service.js';
 import { FeatureLoader } from './services/feature-loader.js';
 import { AutoModeServiceCompat } from './services/auto-mode/index.js';
-import { getTerminalService } from './services/terminal-service.js';
+import { getTerminalService, claimTerminalStartup } from './services/terminal-service.js';
 import { SettingsService } from './services/settings-service.js';
 import { createSpecRegenerationRoutes } from './routes/app-spec/index.js';
 import { createClaudeRoutes } from './routes/claude/index.js';
@@ -697,6 +697,7 @@ terminalWss.on('connection', (ws: WebSocket, req: import('http').IncomingMessage
   }
 
   logger.info(`Client connected to session ${sessionId}`);
+  const allowInitialCommand = claimTerminalStartup(session);
 
   // Track this connection
   if (!terminalConnections.has(sessionId)) {
@@ -711,6 +712,12 @@ terminalWss.on('connection', (ws: WebSocket, req: import('http').IncomingMessage
       sessionId,
       shell: session.shell,
       cwd: session.cwd,
+      executionEnvironment: session.executionEnvironment ?? {
+        type: 'local',
+        runtimeCwd: session.cwd,
+        legacy: true,
+      },
+      allowInitialCommand,
     })
   );
 
@@ -729,6 +736,13 @@ terminalWss.on('connection', (ws: WebSocket, req: import('http').IncomingMessage
   // NOW subscribe to terminal data (after scrollback is sent)
   const unsubscribeData = terminalService.onData((sid, data) => {
     if (sid === sessionId && ws.readyState === WebSocket.OPEN) {
+      if (ws.bufferedAmount > 1024 * 1024) {
+        ws.close(
+          4008,
+          'Terminal client is too slow. Reconnect to the same session; commands are not replayed.'
+        );
+        return;
+      }
       ws.send(JSON.stringify({ type: 'data', data }));
     }
   });

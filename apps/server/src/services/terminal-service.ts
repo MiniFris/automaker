@@ -14,6 +14,10 @@ import * as path from 'path';
 import * as secureFs from '../lib/secure-fs.js';
 import { createLogger } from '@automaker/utils';
 import type { SettingsService } from './settings-service.js';
+import type { ProjectGitEnvironment } from '@automaker/types';
+import { ProjectGitService } from './execution-environment/project-git.js';
+import { ManagedTerminalPty, type TerminalPty } from './execution-environment/terminal.js';
+import { ExecutionEnvironmentError } from './execution-environment/runtime.js';
 import { getTerminalThemeColors, getAllTerminalThemes } from '../lib/terminal-themes-data.js';
 import {
   getRcFilePath,
@@ -181,7 +185,9 @@ function buildEffectiveTerminalConfig(
 
 export interface TerminalSession {
   id: string;
-  pty: pty.IPty;
+  pty: TerminalPty;
+  executionEnvironment?: ProjectGitEnvironment;
+  initialCommandClaimed?: boolean;
   cwd: string;
   createdAt: Date;
   shell: string;
@@ -198,12 +204,23 @@ export interface TerminalOptions {
   cols?: number;
   rows?: number;
   env?: Record<string, string>;
+  environmentTargetId?: string;
 }
 
 type DataCallback = (sessionId: string, data: string) => void;
 type ExitCallback = (sessionId: string, exitCode: number) => void;
 
+/** First WebSocket only. Reconnects/remounts must never replay a startup command. */
+export function claimTerminalStartup(
+  session: Pick<TerminalSession, 'initialCommandClaimed'>
+): boolean {
+  const allowed = !session.initialCommandClaimed;
+  session.initialCommandClaimed = true;
+  return allowed;
+}
+
 export class TerminalService extends EventEmitter {
+  private pendingCreations = 0;
   private sessions: Map<string, TerminalSession> = new Map();
   private dataCallbacks: Set<DataCallback> = new Set();
   private exitCallbacks: Set<ExitCallback> = new Set();
@@ -229,7 +246,7 @@ export class TerminalService extends EventEmitter {
    * @param ptyProcess - The PTY process to kill
    * @param signal - The signal to send on Unix-like systems (default: 'SIGTERM')
    */
-  private killPtyProcess(ptyProcess: pty.IPty, signal: string = 'SIGTERM'): void {
+  private killPtyProcess(ptyProcess: TerminalPty, signal: string = 'SIGTERM'): void {
     if (this.isWindows) {
       ptyProcess.kill();
     } else {
@@ -433,6 +450,31 @@ export class TerminalService extends EventEmitter {
    * Returns null if the maximum session limit has been reached
    */
   async createSession(options: TerminalOptions = {}): Promise<TerminalSession | null> {
+    if (this.sessions.size + this.pendingCreations >= maxSessions) return null;
+    this.pendingCreations++;
+    try {
+      return await this.createSessionInternal(options);
+    } finally {
+      this.pendingCreations--;
+    }
+  }
+
+  private async createSessionInternal(options: TerminalOptions): Promise<TerminalSession | null> {
+    if (options.environmentTargetId && (!options.cwd || !this.settingsService))
+      throw new ExecutionEnvironmentError(
+        'TERMINAL_TARGET_CHANGED',
+        'A scoped terminal requires its controller workspace alias and server runtime settings.'
+      );
+    if (
+      (options.cols !== undefined &&
+        (!Number.isInteger(options.cols) || options.cols < 1 || options.cols > 1000)) ||
+      (options.rows !== undefined &&
+        (!Number.isInteger(options.rows) || options.rows < 1 || options.rows > 500))
+    )
+      throw new ExecutionEnvironmentError(
+        'TERMINAL_DIMENSIONS_INVALID',
+        'Invalid terminal dimensions.'
+      );
     // Check session limit
     if (this.sessions.size >= maxSessions) {
       logger.error(`Max sessions (${maxSessions}) reached, refusing new session`);
@@ -441,13 +483,62 @@ export class TerminalService extends EventEmitter {
 
     const id = `term-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
+    let executionEnvironment: ProjectGitEnvironment | undefined;
+    let effectiveCwd = options.cwd;
+    if (this.settingsService && options.cwd) {
+      const target = await new ProjectGitService(this.settingsService).resolve(options.cwd);
+      if (target) {
+        if (options.environmentTargetId !== target.environment.targetId)
+          throw new ExecutionEnvironmentError(
+            'TERMINAL_TARGET_CHANGED',
+            'Inspect the selected workspace before opening a terminal; its runtime target changed. No shell was started.'
+          );
+        if (target.runtime.type !== 'local') {
+          if (options.env && Object.keys(options.env).length)
+            throw new ExecutionEnvironmentError(
+              'TERMINAL_ENV_UNSUPPORTED',
+              'Controller terminal environment overrides are not forwarded to a managed terminal.'
+            );
+          const remote = await ManagedTerminalPty.open(target, this.settingsService, {
+            cols: options.cols ?? 80,
+            rows: options.rows ?? 24,
+            shell: options.shell,
+          });
+          return this.registerSession(
+            id,
+            remote.environment.runtimeCwd,
+            remote.shell,
+            remote.pty,
+            remote.environment
+          );
+        }
+        await new ProjectGitService(this.settingsService).run(
+          target,
+          'environment',
+          {},
+          AbortSignal.timeout(30000)
+        );
+        executionEnvironment = target.environment;
+        effectiveCwd = target.runtime.cwd;
+      } else if (options.environmentTargetId)
+        throw new ExecutionEnvironmentError(
+          'TERMINAL_TARGET_CHANGED',
+          'The previously inspected runtime is now Local. Inspect it again before starting a shell.'
+        );
+    }
+
     const { shell: detectedShell, args: detectedShellArgs } = this.detectShell();
     const shell = options.shell || detectedShell;
     let shellArgs = options.shell ? getShellArgsForPath(shell) : [...detectedShellArgs];
 
     // Validate and resolve working directory
     // Uses secureFs internally to enforce ALLOWED_ROOT_DIRECTORY
-    const cwd = await this.resolveWorkingDirectory(options.cwd);
+    const cwd = await this.resolveWorkingDirectory(effectiveCwd);
+    if (executionEnvironment && cwd !== effectiveCwd)
+      throw new ExecutionEnvironmentError(
+        'TERMINAL_TARGET_CHANGED',
+        'The pinned Local workspace is unavailable; no home-directory fallback was used.'
+      );
 
     // Build environment with some useful defaults
     // These settings ensure consistent terminal behavior across platforms
@@ -613,12 +704,23 @@ export class TerminalService extends EventEmitter {
       }
     }
 
+    return this.registerSession(id, cwd, shell, ptyProcess, executionEnvironment);
+  }
+
+  private registerSession(
+    id: string,
+    cwd: string,
+    shell: string,
+    ptyProcess: TerminalPty,
+    executionEnvironment?: ProjectGitEnvironment
+  ): TerminalSession {
     const session: TerminalSession = {
       id,
       pty: ptyProcess,
       cwd,
       createdAt: new Date(),
       shell,
+      executionEnvironment,
       scrollbackBuffer: '',
       outputBuffer: '',
       flushTimeout: null,
@@ -666,6 +768,8 @@ export class TerminalService extends EventEmitter {
 
       // Buffer output for throttled live delivery
       session.outputBuffer += data;
+      if (session.outputBuffer.length > MAX_SCROLLBACK_SIZE)
+        session.outputBuffer = session.outputBuffer.slice(-MAX_SCROLLBACK_SIZE);
 
       // Schedule flush if not already scheduled
       if (!session.flushTimeout) {
@@ -675,6 +779,12 @@ export class TerminalService extends EventEmitter {
 
     // Handle exit
     ptyProcess.onExit(({ exitCode }) => {
+      if (session.flushTimeout) clearTimeout(session.flushTimeout);
+      if (session.resizeDebounceTimeout) clearTimeout(session.resizeDebounceTimeout);
+      if (session.outputBuffer) {
+        this.dataCallbacks.forEach((cb) => cb(id, session.outputBuffer));
+        session.outputBuffer = '';
+      }
       const exitMessage =
         exitCode === undefined || exitCode === null
           ? 'Session terminated'
@@ -693,6 +803,7 @@ export class TerminalService extends EventEmitter {
    * Write data to a terminal session
    */
   write(sessionId: string, data: string): boolean {
+    if (typeof data !== 'string' || Buffer.byteLength(data) > 1024 * 1024) return false;
     const session = this.sessions.get(sessionId);
     if (!session) {
       logger.warn(`Session ${sessionId} not found`);
@@ -708,6 +819,15 @@ export class TerminalService extends EventEmitter {
    *                         Should be false for the initial resize so the first prompt isn't dropped.
    */
   resize(sessionId: string, cols: number, rows: number, suppressOutput: boolean = true): boolean {
+    if (
+      !Number.isInteger(cols) ||
+      !Number.isInteger(rows) ||
+      cols < 1 ||
+      cols > 1000 ||
+      rows < 1 ||
+      rows > 500
+    )
+      return false;
     const session = this.sessions.get(sessionId);
     if (!session) {
       logger.warn(`Session ${sessionId} not found for resize`);
@@ -716,7 +836,7 @@ export class TerminalService extends EventEmitter {
     try {
       // Only suppress output on subsequent resizes, not the initial one
       // This prevents the shell's first prompt from being dropped
-      if (suppressOutput) {
+      if (suppressOutput && !(session.pty instanceof ManagedTerminalPty)) {
         session.resizeInProgress = true;
         if (session.resizeDebounceTimeout) {
           clearTimeout(session.resizeDebounceTimeout);
@@ -727,7 +847,7 @@ export class TerminalService extends EventEmitter {
 
       // Clear resize flag after a delay (allow prompt to settle)
       // 150ms is enough for most prompts - longer causes sluggish feel
-      if (suppressOutput) {
+      if (suppressOutput && !(session.pty instanceof ManagedTerminalPty)) {
         session.resizeDebounceTimeout = setTimeout(() => {
           session.resizeInProgress = false;
           session.resizeDebounceTimeout = null;
@@ -750,6 +870,10 @@ export class TerminalService extends EventEmitter {
     const session = this.sessions.get(sessionId);
     if (!session) {
       return false;
+    }
+    if (session.pty instanceof ManagedTerminalPty) {
+      session.pty.kill(); // Retain identity until target confirms cleanup (or reports unknown).
+      return true;
     }
     try {
       // Clean up flush timeout
@@ -840,12 +964,14 @@ export class TerminalService extends EventEmitter {
     cwd: string;
     createdAt: Date;
     shell: string;
+    executionEnvironment?: ProjectGitEnvironment;
   }> {
     return Array.from(this.sessions.values()).map((s) => ({
       id: s.id,
       cwd: s.cwd,
       createdAt: s.createdAt,
       shell: s.shell,
+      executionEnvironment: s.executionEnvironment,
     }));
   }
 
