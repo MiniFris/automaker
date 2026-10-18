@@ -496,8 +496,16 @@ app.use(
 );
 app.use('/api/auto-mode', createAutoModeRoutes(autoModeService));
 app.use('/api/enhance-prompt', createEnhancePromptRoutes(settingsService));
-app.use('/api/worktree', createWorktreeRoutes(events, settingsService, featureLoader));
-app.use('/api/git', createGitRoutes());
+app.use(
+  '/api/worktree',
+  createWorktreeRoutes(events, settingsService, featureLoader, (projectPath) =>
+    autoModeService.isProjectRunning(projectPath)
+  )
+);
+app.use(
+  '/api/git',
+  createGitRoutes(settingsService, (projectPath) => autoModeService.isProjectRunning(projectPath))
+);
 app.use('/api/models', createModelsRoutes(settingsService));
 app.use('/api/spec-regeneration', createSpecRegenerationRoutes(events, settingsService));
 app.use('/api/running-agents', createRunningAgentsRoutes(autoModeService));

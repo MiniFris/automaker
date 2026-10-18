@@ -50,6 +50,7 @@ import {
 import { WorktreeDirectoryDropdown } from './components/worktree-directory-dropdown';
 import { GitDetailPanel } from './components/git-detail-panel';
 import { AddFeatureDialog } from '@/components/views/board-view/dialogs';
+import { SourceEditorEnvironmentGate } from '@/components/shared/source-editor-environment-gate';
 
 const logger = createLogger('FileEditorView');
 
@@ -119,6 +120,19 @@ interface FileEditorViewProps {
 }
 
 export function FileEditorView({ initialPath }: FileEditorViewProps) {
+  const projectPath = useAppStore((state) => state.currentProject?.path);
+  const worktreePath = useAppStore((state) =>
+    projectPath ? state.currentWorktreeByProject[projectPath]?.path : undefined
+  );
+  const alias = worktreePath ?? projectPath;
+  return (
+    <SourceEditorEnvironmentGate path={alias}>
+      <FileEditorContent key={alias} initialPath={initialPath} />
+    </SourceEditorEnvironmentGate>
+  );
+}
+
+function FileEditorContent({ initialPath }: FileEditorViewProps) {
   const { currentProject, defaultSkipTests, getCurrentWorktree, worktreesByProject } =
     useAppStore();
   const currentWorktree = useAppStore((s) =>

@@ -49,6 +49,7 @@ import { StashConfirmDialog } from '../dialogs/stash-confirm-dialog';
 import type { SelectRemoteOperation } from '../dialogs';
 import { TestLogsPanel } from '@/components/ui/test-logs-panel';
 import { getElectronAPI } from '@/lib/electron';
+import { GitEnvironmentStatus } from '@/components/shared/git-environment-status';
 
 // Stable empty array to avoid creating a new [] reference on every render
 // when pinnedWorktreeBranchesByProject[projectPath] is undefined
@@ -977,7 +978,8 @@ export function WorktreePanel({
     const selectedWorktree = worktrees.find((w) => isWorktreeSelected(w)) || mainWorktree;
 
     return (
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-glass/50 backdrop-blur-sm">
+      <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-border bg-glass/50 backdrop-blur-sm">
+        <GitEnvironmentStatus path={currentWorktreePath ?? projectPath} />
         <WorktreeMobileDropdown
           worktrees={worktrees}
           isWorktreeSelected={isWorktreeSelected}
@@ -1237,6 +1239,7 @@ export function WorktreePanel({
 
   return (
     <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 border-b border-border bg-glass/50 backdrop-blur-sm">
+      <GitEnvironmentStatus path={currentWorktreePath ?? projectPath} />
       <GitBranch className="w-4 h-4 text-muted-foreground shrink-0" />
       <span className="text-sm text-muted-foreground mr-2 shrink-0">Worktree:</span>
 

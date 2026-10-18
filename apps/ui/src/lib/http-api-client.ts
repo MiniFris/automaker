@@ -1045,11 +1045,23 @@ export class HttpApiClient implements ElectronAPI {
   private async post<T>(endpoint: string, body?: unknown, signal?: AbortSignal): Promise<T> {
     // Ensure API key is initialized before making request
     await waitForApiKeyInit();
+    let requestBody = body;
+    if (
+      (endpoint.startsWith('/api/git/') || endpoint.startsWith('/api/worktree/')) &&
+      body &&
+      typeof body === 'object'
+    ) {
+      const source = body as Record<string, unknown>;
+      const alias = source.worktreePath ?? source.projectPath;
+      const target = typeof alias === 'string' ? this.gitEnvironmentTargets.get(alias) : undefined;
+      if (target && source.environmentTargetId === undefined)
+        requestBody = { ...source, environmentTargetId: target };
+    }
     const response = await fetch(`${this.serverUrl}${endpoint}`, {
       method: 'POST',
       headers: this.getHeaders(),
       credentials: 'include', // Include cookies for session auth
-      body: body ? JSON.stringify(body) : undefined,
+      body: requestBody ? JSON.stringify(requestBody) : undefined,
       signal,
     });
 
@@ -1071,8 +1083,27 @@ export class HttpApiClient implements ElectronAPI {
       throw new Error(errorMessage);
     }
 
-    return response.json();
+    const data = await response.json();
+    if (endpoint.startsWith('/api/git/') || endpoint.startsWith('/api/worktree/')) {
+      const remember = (value: unknown) => {
+        const environment = value as { path?: unknown; targetId?: unknown } | undefined;
+        if (typeof environment?.path === 'string' && environment.targetId === '')
+          this.gitEnvironmentTargets.delete(environment.path);
+        if (
+          typeof environment?.path === 'string' &&
+          typeof environment.targetId === 'string' &&
+          /^[a-f0-9]{64}$/.test(environment.targetId)
+        )
+          this.gitEnvironmentTargets.set(environment.path, environment.targetId);
+      };
+      remember(data?.executionEnvironment);
+      if (Array.isArray(data?.worktrees))
+        for (const item of data.worktrees) remember(item.executionEnvironment);
+    }
+    return data;
   }
+
+  private readonly gitEnvironmentTargets = new Map<string, string>();
 
   async get<T>(endpoint: string): Promise<T> {
     // Ensure API key is initialized before making request
