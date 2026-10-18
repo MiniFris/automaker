@@ -13,7 +13,13 @@ const api = vi.hoisted(() => ({
   test: vi.fn(),
   saveAgent: vi.fn(),
 }));
-vi.mock('@/lib/http-api-client', () => ({ getHttpApiClient: () => ({ directEndpoints: api }) }));
+const timeouts = vi.hoisted(() => ({
+  getProvider: vi.fn().mockResolvedValue({ success: true, timeouts: {} }),
+  saveProvider: vi.fn(),
+}));
+vi.mock('@/lib/http-api-client', () => ({
+  getHttpApiClient: () => ({ directEndpoints: api, modelTimeouts: timeouts }),
+}));
 
 describe('direct provider settings UI / write-only secrets', () => {
   let client: QueryClient;
@@ -24,6 +30,7 @@ describe('direct provider settings UI / write-only secrets', () => {
     agentSettings: { access: 'read-only' as const },
   });
   beforeEach(() => {
+    timeouts.getProvider.mockResolvedValue({ success: true, timeouts: {} });
     endpoint = {
       id: 'local',
       name: 'Local endpoint',
@@ -69,6 +76,63 @@ describe('direct provider settings UI / write-only secrets', () => {
     await waitFor(() =>
       expect(api.save).toHaveBeenCalledWith(
         expect.objectContaining({ name: 'Renamed' }),
+        undefined,
+        undefined
+      )
+    );
+  });
+
+  it('has no shared control and does not duplicate connection fields in Direct task settings', async () => {
+    await open();
+    expect(screen.queryByText(/Shared model timeouts/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('Direct task timeouts'));
+    await screen.findByLabelText('Verification command timeout (seconds)');
+    expect(screen.getAllByLabelText('Request timeout (seconds)')).toHaveLength(1);
+    expect(screen.getAllByLabelText('Response headers timeout (seconds)')).toHaveLength(1);
+    expect(timeouts.getProvider).toHaveBeenCalledWith('openai-compatible');
+  });
+
+  it('edits endpoint timeout overrides in seconds while preserving the existing request field', async () => {
+    endpoint.timeoutMs = 120_000;
+    endpoint.timeouts = { responseHeadersTimeoutMs: 30_000 };
+    api.list.mockResolvedValue(dto());
+    await open();
+    expect(screen.getByLabelText('Request timeout (seconds)')).toHaveValue(120);
+    fireEvent.change(screen.getByLabelText('Request timeout (seconds)'), {
+      target: { value: '600' },
+    });
+    fireEvent.change(screen.getByLabelText('Response headers timeout (seconds)'), {
+      target: { value: '90' },
+    });
+    fireEvent.change(screen.getByLabelText('Agent duration timeout (seconds)'), {
+      target: { value: '7200' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save endpoint' }));
+    await waitFor(() =>
+      expect(api.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          timeoutMs: 600_000,
+          timeouts: { responseHeadersTimeoutMs: 90_000, agentTimeoutMs: 7_200_000 },
+        }),
+        undefined,
+        undefined
+      )
+    );
+  });
+
+  it('clears endpoint overrides to inherit instead of saving zero or a copied default', async () => {
+    endpoint.timeoutMs = 120_000;
+    endpoint.timeouts = { responseHeadersTimeoutMs: 30_000 };
+    api.list.mockResolvedValue(dto());
+    await open();
+    fireEvent.change(screen.getByLabelText('Request timeout (seconds)'), { target: { value: '' } });
+    fireEvent.change(screen.getByLabelText('Response headers timeout (seconds)'), {
+      target: { value: '' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save endpoint' }));
+    await waitFor(() =>
+      expect(api.save).toHaveBeenCalledWith(
+        expect.objectContaining({ timeoutMs: undefined, timeouts: undefined }),
         undefined,
         undefined
       )

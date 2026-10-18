@@ -1,6 +1,15 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { OpenAICompatibleEndpoint } from '@automaker/types';
+import {
+  DIRECT_TIMEOUT_KEYS,
+  WORKFLOW_TIMEOUT_KEYS,
+  parseModelTimeoutSettings,
+} from '@automaker/types';
+import {
+  ProviderModelTimeoutSettings,
+  ModelTimeoutFields,
+} from '@/components/shared/model-timeout-settings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -126,6 +135,11 @@ export function DirectSettingsTab() {
       <Button variant="outline" disabled={busy} onClick={() => edit(freshEndpoint())}>
         Add direct endpoint
       </Button>
+      <ProviderModelTimeoutSettings
+        provider="openai-compatible"
+        keys={WORKFLOW_TIMEOUT_KEYS}
+        title="Direct task timeouts"
+      />
       {draft && (
         <fieldset
           disabled={busy}
@@ -165,6 +179,38 @@ export function DirectSettingsTab() {
                 Responses (not implemented)
               </option>
             </select>
+          </div>
+          <ModelTimeoutFields
+            prefix="direct-timeout"
+            keys={['requestTimeoutMs', ...DIRECT_TIMEOUT_KEYS]}
+            value={{
+              ...draft.timeouts,
+              ...(draft.timeoutMs !== undefined && { requestTimeoutMs: draft.timeoutMs }),
+            }}
+            onChange={(value) => {
+              const { requestTimeoutMs, ...timeouts } = value;
+              update({
+                timeoutMs: requestTimeoutMs,
+                timeouts: Object.keys(timeouts).length ? timeouts : undefined,
+              });
+            }}
+          />
+          <div>
+            <Label htmlFor="direct-retries">Maximum HTTP retries</Label>
+            <Input
+              id="direct-retries"
+              type="number"
+              min={0}
+              max={5}
+              step={1}
+              value={draft.maxRetries ?? ''}
+              placeholder="Default: 2"
+              onChange={(event) =>
+                update({
+                  maxRetries: event.target.value === '' ? undefined : Number(event.target.value),
+                })
+              }
+            />
           </div>
           <label className="flex items-center gap-2">
             <input
@@ -427,6 +473,10 @@ export function DirectSettingsTab() {
               disabled={busy}
               onClick={() =>
                 void action(async () => {
+                  parseModelTimeoutSettings({
+                    ...draft.timeouts,
+                    ...(draft.timeoutMs !== undefined && { requestTimeoutMs: draft.timeoutMs }),
+                  });
                   refresh(await api.save(draft, apiKey || undefined, clearKey || undefined));
                   setApiKey('');
                   setClearKey(false);

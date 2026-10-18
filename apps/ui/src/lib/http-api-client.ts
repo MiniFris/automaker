@@ -16,6 +16,8 @@ import type {
   SSHDiagnostic,
   ProjectGitEnvironment,
   DevServerEnvironmentMetadata,
+  ModelTimeoutSettings,
+  ModelTimeoutProvider,
 } from '@automaker/types';
 import type {
   OpenAICompatibleEndpoint,
@@ -3182,6 +3184,24 @@ export class HttpApiClient implements ElectronAPI {
       profileId?: string
     ): Promise<{ success: boolean; diagnostic?: DockerConnectionDiagnostic; error?: string }> =>
       this.post('/api/settings/execution-environments/docker/check', { profileId }),
+  };
+
+  modelTimeouts = {
+    getProvider: (
+      provider: ModelTimeoutProvider
+    ): Promise<{ success: boolean; timeouts?: ModelTimeoutSettings; error?: string }> =>
+      this.get('/api/settings/model-timeouts/' + provider),
+    saveProvider: (
+      provider: ModelTimeoutProvider,
+      timeouts: ModelTimeoutSettings
+    ): Promise<{ success: boolean; timeouts?: ModelTimeoutSettings; error?: string }> =>
+      this.put('/api/settings/model-timeouts/' + provider, { timeouts }),
+    get: (): Promise<{ success: boolean; timeouts?: ModelTimeoutSettings; error?: string }> =>
+      this.get('/api/settings/model-timeouts'),
+    save: (
+      timeouts: ModelTimeoutSettings
+    ): Promise<{ success: boolean; timeouts?: ModelTimeoutSettings; error?: string }> =>
+      this.put('/api/settings/model-timeouts', { timeouts }),
   };
 
   directEndpoints = {

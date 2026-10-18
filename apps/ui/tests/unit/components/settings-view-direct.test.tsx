@@ -17,6 +17,7 @@ vi.mock('@/store/app-store', () => ({
 vi.mock('@/lib/http-api-client', () => ({
   getHttpApiClient: () => ({
     directEndpoints: { list: mocks.list },
+    modelTimeouts: { getProvider: async () => ({ success: true, timeouts: {} }) },
     executionEnvironments: { inspect: mocks.inspectEnvironment },
   }),
 }));

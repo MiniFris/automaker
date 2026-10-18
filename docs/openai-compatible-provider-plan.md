@@ -89,10 +89,12 @@ Tool call выполняет приложение, после чего возв�
   отключены. JSON и SSE ограничены 16 MiB на тело, SSE frame и tool arguments — 1 MiB,
   количество tool calls — 128. UTF-8 декодируется с проверкой целостности.
 - `timeoutMs` — deadline всей HTTP-попытки, включая чтение тела. Дополнительно
-  ожидание headers ограничено 30 секундами или меньшим `timeoutMs`. При выходе
+  ожидание headers по умолчанию ограничено 30 секундами или меньшим `timeoutMs`;
+  теперь этот лимит можно изменить в настройках таймаутов. При выходе
   потребителя из async generator response отменяется, timers/readers освобождаются.
 - Повторы: только HTTP 429/500/502/503/504, максимум `maxRetries` (0–5), до чтения
-  модельного ответа. Backoff ограничен; `Retry-After` учитывается до 5 секунд;
+  модельного ответа. Backoff ограничен; `Retry-After` по умолчанию учитывается до 5 секунд
+  (порог и backoff теперь настраиваются);
   более длительное ожидание возвращает HTTP-ошибку, а не повтор раньше указанного
   срока. Сетевые ошибки и частичный stream никогда не воспроизводятся автоматически.
 - SSE требует и terminal `finish_reason`, и `[DONE]`. `length`, `content_filter`,
@@ -178,17 +180,19 @@ for await (const message of provider.executeQuery({
   ошибкой: история и tool/result пары не обрезаются незаметно. Budget операционный,
   не денежный; точного учёта стоимости/общего количества model tokens пока нет.
 
-| Параметр                | По умолчанию | Максимум |
-| ----------------------- | -----------: | -------: |
-| ExecuteOptions.maxTurns |           12 |      100 |
-| maxToolCalls            |           64 |      256 |
-| maxDurationMs           |       300000 |  3600000 |
-| toolTimeoutMs           |        10000 |    60000 |
-| maxContextBytes         |      1048576 |  4194304 |
-| maxOutputChars          |       262144 |  1048576 |
-| maxRepeatedCalls        |            3 |       10 |
+| Параметр                | По умолчанию |   Максимум |
+| ----------------------- | -----------: | ---------: |
+| ExecuteOptions.maxTurns |           12 |        100 |
+| maxToolCalls            |           64 |        256 |
+| maxDurationMs           |       300000 | 2147483647 |
+| toolTimeoutMs           |        10000 | 2147483647 |
+| maxContextBytes         |      1048576 |    4194304 |
+| maxOutputChars          |       262144 |    1048576 |
+| maxRepeatedCalls        |            3 |         10 |
 
-Лимиты задаются через server-only `ExecuteOptions.openaiCompatibleAgent.limits`.
+Таймауты доступны в UI с глобальным наследованием и переопределением подключения:
+[Model timeouts](model-timeouts.md). Остальные лимиты задаются через server-only
+`ExecuteOptions.openaiCompatibleAgent.limits`.
 Дополнительно история ограничена 1024 сообщениями. Подготовка workspace ограничена
 меньшим из toolTimeoutMs/maxDurationMs; общий deadline AgentLoop включает модельные
 запросы, retries и инструменты. Отмена I/O кооперативная: run перестаёт ждать,

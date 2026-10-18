@@ -5,6 +5,7 @@ import { useAppStore } from '@/store/app-store';
 import { GeminiCliStatus, GeminiCliStatusSkeleton } from '../cli-status/gemini-cli-status';
 import { GeminiModelConfiguration } from './gemini-model-configuration';
 import { ProviderToggle } from './provider-toggle';
+import { ProviderModelTimeoutSettings } from '@/components/shared/model-timeout-settings';
 import { useGeminiCliStatus } from '@/hooks/queries';
 import { queryKeys } from '@/lib/query-keys';
 import type { CliStatus as SharedCliStatus } from '../shared/types';
@@ -105,6 +106,7 @@ export function GeminiSettingsTab() {
     <div className="space-y-6">
       {/* Provider Visibility Toggle */}
       <ProviderToggle provider="gemini" providerLabel="Gemini" />
+      <ProviderModelTimeoutSettings provider="gemini" />
 
       <GeminiCliStatus
         status={cliStatus}
