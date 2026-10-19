@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 import {
   MessageSquareText,
   Bot,
@@ -35,82 +36,134 @@ import type { TabConfig } from './types';
 export const TAB_CONFIGS: TabConfig[] = [
   {
     id: 'auto-mode',
-    label: 'Auto Mode',
+    get label() {
+      return translate('Auto Mode');
+    },
     icon: Bot,
-    title: 'Auto Mode Prompts',
+    get title() {
+      return translate('Auto Mode Prompts');
+    },
     category: 'autoMode',
     banner: {
       type: 'info',
-      title: 'Planning Mode Markers',
-      description:
-        'Planning prompts use special markers like [PLAN_GENERATED] and [SPEC_GENERATED] to control the Auto Mode workflow. These markers must be preserved for proper functionality.',
+      get title() {
+        return translate('Planning Mode Markers');
+      },
+      get description() {
+        return translate(
+          'Planning prompts use special markers like [PLAN_GENERATED] and [SPEC_GENERATED] to control the Auto Mode workflow. These markers must be preserved for proper functionality.'
+        );
+      },
     },
     fields: [
       {
         key: 'planningLite',
-        label: 'Planning: Lite Mode',
-        description: 'Quick planning outline without approval requirement',
+        get label() {
+          return translate('Planning: Lite Mode');
+        },
+        get description() {
+          return translate('Quick planning outline without approval requirement');
+        },
         defaultValue: DEFAULT_AUTO_MODE_PROMPTS.planningLite,
         critical: true,
       },
       {
         key: 'planningLiteWithApproval',
-        label: 'Planning: Lite with Approval',
-        description: 'Planning outline that waits for user approval',
+        get label() {
+          return translate('Planning: Lite with Approval');
+        },
+        get description() {
+          return translate('Planning outline that waits for user approval');
+        },
         defaultValue: DEFAULT_AUTO_MODE_PROMPTS.planningLiteWithApproval,
         critical: true,
       },
       {
         key: 'planningSpec',
-        label: 'Planning: Spec Mode',
-        description: 'Detailed specification with task breakdown',
+        get label() {
+          return translate('Planning: Spec Mode');
+        },
+        get description() {
+          return translate('Detailed specification with task breakdown');
+        },
         defaultValue: DEFAULT_AUTO_MODE_PROMPTS.planningSpec,
         critical: true,
       },
       {
         key: 'planningFull',
-        label: 'Planning: Full SDD Mode',
-        description: 'Comprehensive Software Design Document with phased implementation',
+        get label() {
+          return translate('Planning: Full SDD Mode');
+        },
+        get description() {
+          return translate('Comprehensive Software Design Document with phased implementation');
+        },
         defaultValue: DEFAULT_AUTO_MODE_PROMPTS.planningFull,
         critical: true,
       },
     ],
     sections: [
       {
-        title: 'Template Prompts',
+        get title() {
+          return translate('Template Prompts');
+        },
         banner: {
           type: 'info',
-          title: 'Template Variables',
-          description:
-            'Template prompts use Handlebars syntax for variable substitution. Available variables include {{featureId}}, {{title}}, {{description}}, etc.',
+          get title() {
+            return translate('Template Variables');
+          },
+          get description() {
+            return translate(
+              'Template prompts use Handlebars syntax for variable substitution. Available variables include {{featureId}}, {{title}}, {{description}}, etc.'
+            );
+          },
         },
         fields: [
           {
             key: 'featurePromptTemplate',
-            label: 'Feature Prompt Template',
-            description:
-              'Template for building feature implementation prompts. Variables: featureId, title, description, spec, imagePaths, dependencies, verificationInstructions',
+            get label() {
+              return translate('Feature Prompt Template');
+            },
+            get description() {
+              return translate(
+                'Template for building feature implementation prompts. Variables: featureId, title, description, spec, imagePaths, dependencies, verificationInstructions'
+              );
+            },
             defaultValue: DEFAULT_AUTO_MODE_PROMPTS.featurePromptTemplate,
           },
           {
             key: 'followUpPromptTemplate',
-            label: 'Follow-up Prompt Template',
-            description:
-              'Template for follow-up prompts when resuming work. Variables: featurePrompt, previousContext, followUpInstructions',
+            get label() {
+              return translate('Follow-up Prompt Template');
+            },
+            get description() {
+              return translate(
+                'Template for follow-up prompts when resuming work. Variables: featurePrompt, previousContext, followUpInstructions'
+              );
+            },
             defaultValue: DEFAULT_AUTO_MODE_PROMPTS.followUpPromptTemplate,
           },
           {
             key: 'continuationPromptTemplate',
-            label: 'Continuation Prompt Template',
-            description:
-              'Template for continuation prompts. Variables: featurePrompt, previousContext',
+            get label() {
+              return translate('Continuation Prompt Template');
+            },
+            get description() {
+              return translate(
+                'Template for continuation prompts. Variables: featurePrompt, previousContext'
+              );
+            },
             defaultValue: DEFAULT_AUTO_MODE_PROMPTS.continuationPromptTemplate,
           },
           {
             key: 'pipelineStepPromptTemplate',
-            label: 'Pipeline Step Prompt Template',
-            description:
-              'Template for pipeline step execution prompts. Variables: stepName, featurePrompt, previousContext, stepInstructions',
+            get label() {
+              return translate('Pipeline Step Prompt Template');
+            },
+            get description() {
+              return translate(
+                'Template for pipeline step execution prompts. Variables: stepName, featurePrompt, previousContext, stepInstructions'
+              );
+            },
             defaultValue: DEFAULT_AUTO_MODE_PROMPTS.pipelineStepPromptTemplate,
           },
         ],
@@ -119,45 +172,72 @@ export const TAB_CONFIGS: TabConfig[] = [
   },
   {
     id: 'agent',
-    label: 'Agent',
+    get label() {
+      return translate('Agent');
+    },
     icon: MessageSquareText,
-    title: 'Agent Runner Prompts',
+    get title() {
+      return translate('Agent Runner Prompts');
+    },
     category: 'agent',
     fields: [
       {
         key: 'systemPrompt',
-        label: 'System Prompt',
-        description: "Defines the AI's role and behavior in interactive chat sessions",
+        get label() {
+          return translate('System Prompt');
+        },
+        get description() {
+          return translate("Defines the AI's role and behavior in interactive chat sessions");
+        },
         defaultValue: DEFAULT_AGENT_PROMPTS.systemPrompt,
       },
     ],
   },
   {
     id: 'backlog-plan',
-    label: 'Backlog',
+    get label() {
+      return translate('Backlog');
+    },
     icon: KanbanSquare,
-    title: 'Backlog Planning Prompts',
+    get title() {
+      return translate('Backlog Planning Prompts');
+    },
     category: 'backlogPlan',
     banner: {
       type: 'warning',
-      title: 'Warning: Critical Prompts',
-      description:
-        'Backlog plan prompts require a strict JSON output format. Modifying these prompts incorrectly can break the backlog planning feature and potentially corrupt your feature data. Only customize if you fully understand the expected output structure.',
+      get title() {
+        return translate('Warning: Critical Prompts');
+      },
+      get description() {
+        return translate(
+          'Backlog plan prompts require a strict JSON output format. Modifying these prompts incorrectly can break the backlog planning feature and potentially corrupt your feature data. Only customize if you fully understand the expected output structure.'
+        );
+      },
     },
     fields: [
       {
         key: 'systemPrompt',
-        label: 'System Prompt',
-        description:
-          'Defines how the AI modifies the feature backlog (Plan button on Kanban board)',
+        get label() {
+          return translate('System Prompt');
+        },
+        get description() {
+          return translate(
+            'Defines how the AI modifies the feature backlog (Plan button on Kanban board)'
+          );
+        },
         defaultValue: DEFAULT_BACKLOG_PLAN_PROMPTS.systemPrompt,
         critical: true,
       },
       {
         key: 'userPromptTemplate',
-        label: 'User Prompt Template',
-        description:
-          'Template for the user prompt sent to the AI. Variables: currentFeatures, userRequest',
+        get label() {
+          return translate('User Prompt Template');
+        },
+        get description() {
+          return translate(
+            'Template for the user prompt sent to the AI. Variables: currentFeatures, userRequest'
+          );
+        },
         defaultValue: DEFAULT_BACKLOG_PLAN_PROMPTS.userPromptTemplate,
         critical: true,
       },
@@ -165,93 +245,149 @@ export const TAB_CONFIGS: TabConfig[] = [
   },
   {
     id: 'enhancement',
-    label: 'Enhancement',
+    get label() {
+      return translate('Enhancement');
+    },
     icon: Sparkles,
-    title: 'Enhancement Prompts',
+    get title() {
+      return translate('Enhancement Prompts');
+    },
     category: 'enhancement',
     fields: [
       {
         key: 'improveSystemPrompt',
-        label: 'Improve Mode',
-        description: 'Transform vague requests into clear, actionable tasks',
+        get label() {
+          return translate('Improve Mode');
+        },
+        get description() {
+          return translate('Transform vague requests into clear, actionable tasks');
+        },
         defaultValue: DEFAULT_ENHANCEMENT_PROMPTS.improveSystemPrompt,
       },
       {
         key: 'technicalSystemPrompt',
-        label: 'Technical Mode',
-        description: 'Add implementation details and technical specifications',
+        get label() {
+          return translate('Technical Mode');
+        },
+        get description() {
+          return translate('Add implementation details and technical specifications');
+        },
         defaultValue: DEFAULT_ENHANCEMENT_PROMPTS.technicalSystemPrompt,
       },
       {
         key: 'simplifySystemPrompt',
-        label: 'Simplify Mode',
-        description: 'Make verbose descriptions concise and focused',
+        get label() {
+          return translate('Simplify Mode');
+        },
+        get description() {
+          return translate('Make verbose descriptions concise and focused');
+        },
         defaultValue: DEFAULT_ENHANCEMENT_PROMPTS.simplifySystemPrompt,
       },
       {
         key: 'acceptanceSystemPrompt',
-        label: 'Acceptance Criteria Mode',
-        description: 'Add testable acceptance criteria to descriptions',
+        get label() {
+          return translate('Acceptance Criteria Mode');
+        },
+        get description() {
+          return translate('Add testable acceptance criteria to descriptions');
+        },
         defaultValue: DEFAULT_ENHANCEMENT_PROMPTS.acceptanceSystemPrompt,
       },
       {
         key: 'uxReviewerSystemPrompt',
-        label: 'User Experience Mode',
-        description: 'Review and enhance from a user experience and design perspective',
+        get label() {
+          return translate('User Experience Mode');
+        },
+        get description() {
+          return translate('Review and enhance from a user experience and design perspective');
+        },
         defaultValue: DEFAULT_ENHANCEMENT_PROMPTS.uxReviewerSystemPrompt,
       },
     ],
   },
   {
     id: 'commit-message',
-    label: 'Commit',
+    get label() {
+      return translate('Commit');
+    },
     icon: GitCommitHorizontal,
-    title: 'Commit Message Prompts',
+    get title() {
+      return translate('Commit Message Prompts');
+    },
     category: 'commitMessage',
     fields: [
       {
         key: 'systemPrompt',
-        label: 'System Prompt',
-        description:
-          'Instructions for generating git commit messages from diffs. The AI will receive the git diff and generate a conventional commit message.',
+        get label() {
+          return translate('System Prompt');
+        },
+        get description() {
+          return translate(
+            'Instructions for generating git commit messages from diffs. The AI will receive the git diff and generate a conventional commit message.'
+          );
+        },
         defaultValue: DEFAULT_COMMIT_MESSAGE_PROMPTS.systemPrompt,
       },
     ],
   },
   {
     id: 'title-generation',
-    label: 'Title',
+    get label() {
+      return translate('Title');
+    },
     icon: Type,
-    title: 'Title Generation Prompts',
+    get title() {
+      return translate('Title Generation Prompts');
+    },
     category: 'titleGeneration',
     fields: [
       {
         key: 'systemPrompt',
-        label: 'System Prompt',
-        description:
-          'Instructions for generating concise, descriptive feature titles from descriptions. Used when auto-generating titles for new features.',
+        get label() {
+          return translate('System Prompt');
+        },
+        get description() {
+          return translate(
+            'Instructions for generating concise, descriptive feature titles from descriptions. Used when auto-generating titles for new features.'
+          );
+        },
         defaultValue: DEFAULT_TITLE_GENERATION_PROMPTS.systemPrompt,
       },
     ],
   },
   {
     id: 'issue-validation',
-    label: 'Issues',
+    get label() {
+      return translate('Issues');
+    },
     icon: CheckCircle,
-    title: 'Issue Validation Prompts',
+    get title() {
+      return translate('Issue Validation Prompts');
+    },
     category: 'issueValidation',
     banner: {
       type: 'warning',
-      title: 'Warning: Critical Prompt',
-      description:
-        'The issue validation prompt guides the AI through a structured validation process and expects specific output format. Modifying this prompt incorrectly may affect validation accuracy.',
+      get title() {
+        return translate('Warning: Critical Prompt');
+      },
+      get description() {
+        return translate(
+          'The issue validation prompt guides the AI through a structured validation process and expects specific output format. Modifying this prompt incorrectly may affect validation accuracy.'
+        );
+      },
     },
     fields: [
       {
         key: 'systemPrompt',
-        label: 'System Prompt',
-        description:
-          'Instructions for validating GitHub issues against the codebase. Guides the AI to determine if issues are valid, invalid, or need clarification.',
+        get label() {
+          return translate('System Prompt');
+        },
+        get description() {
+          return translate(
+            'Instructions for validating GitHub issues against the codebase. Guides the AI to determine if issues are valid, invalid, or need clarification.'
+          );
+        },
         defaultValue: DEFAULT_ISSUE_VALIDATION_PROMPTS.systemPrompt,
         critical: true,
       },
@@ -259,23 +395,37 @@ export const TAB_CONFIGS: TabConfig[] = [
   },
   {
     id: 'ideation',
-    label: 'Ideation',
+    get label() {
+      return translate('Ideation');
+    },
     icon: Lightbulb,
-    title: 'Ideation Prompts',
+    get title() {
+      return translate('Ideation Prompts');
+    },
     category: 'ideation',
     fields: [
       {
         key: 'ideationSystemPrompt',
-        label: 'Ideation Chat System Prompt',
-        description:
-          'System prompt for AI-powered ideation chat conversations. Guides the AI to brainstorm and suggest feature ideas.',
+        get label() {
+          return translate('Ideation Chat System Prompt');
+        },
+        get description() {
+          return translate(
+            'System prompt for AI-powered ideation chat conversations. Guides the AI to brainstorm and suggest feature ideas.'
+          );
+        },
         defaultValue: DEFAULT_IDEATION_PROMPTS.ideationSystemPrompt,
       },
       {
         key: 'suggestionsSystemPrompt',
-        label: 'Suggestions System Prompt',
-        description:
-          'System prompt for generating structured feature suggestions. Used when generating batch suggestions from prompts.',
+        get label() {
+          return translate('Suggestions System Prompt');
+        },
+        get description() {
+          return translate(
+            'System prompt for generating structured feature suggestions. Used when generating batch suggestions from prompts.'
+          );
+        },
         defaultValue: DEFAULT_IDEATION_PROMPTS.suggestionsSystemPrompt,
         critical: true,
       },
@@ -283,28 +433,44 @@ export const TAB_CONFIGS: TabConfig[] = [
   },
   {
     id: 'app-spec',
-    label: 'App Spec',
+    get label() {
+      return translate('App Spec');
+    },
     icon: FileCode,
-    title: 'App Specification Prompts',
+    get title() {
+      return translate('App Specification Prompts');
+    },
     category: 'appSpec',
     fields: [
       {
         key: 'generateSpecSystemPrompt',
-        label: 'Generate Spec System Prompt',
-        description: 'System prompt for generating project specifications from overview',
+        get label() {
+          return translate('Generate Spec System Prompt');
+        },
+        get description() {
+          return translate('System prompt for generating project specifications from overview');
+        },
         defaultValue: DEFAULT_APP_SPEC_PROMPTS.generateSpecSystemPrompt,
       },
       {
         key: 'structuredSpecInstructions',
-        label: 'Structured Spec Instructions',
-        description: 'Instructions for structured specification output format',
+        get label() {
+          return translate('Structured Spec Instructions');
+        },
+        get description() {
+          return translate('Instructions for structured specification output format');
+        },
         defaultValue: DEFAULT_APP_SPEC_PROMPTS.structuredSpecInstructions,
         critical: true,
       },
       {
         key: 'generateFeaturesFromSpecPrompt',
-        label: 'Generate Features from Spec',
-        description: 'Prompt for generating features from a project specification',
+        get label() {
+          return translate('Generate Features from Spec');
+        },
+        get description() {
+          return translate('Prompt for generating features from a project specification');
+        },
         defaultValue: DEFAULT_APP_SPEC_PROMPTS.generateFeaturesFromSpecPrompt,
         critical: true,
       },
@@ -312,135 +478,222 @@ export const TAB_CONFIGS: TabConfig[] = [
   },
   {
     id: 'context-description',
-    label: 'Context',
+    get label() {
+      return translate('Context');
+    },
     icon: FileText,
-    title: 'Context Description Prompts',
+    get title() {
+      return translate('Context Description Prompts');
+    },
     category: 'contextDescription',
     fields: [
       {
         key: 'describeFilePrompt',
-        label: 'Describe File Prompt',
-        description: 'Prompt for generating descriptions of text files added as context',
+        get label() {
+          return translate('Describe File Prompt');
+        },
+        get description() {
+          return translate('Prompt for generating descriptions of text files added as context');
+        },
         defaultValue: DEFAULT_CONTEXT_DESCRIPTION_PROMPTS.describeFilePrompt,
       },
       {
         key: 'describeImagePrompt',
-        label: 'Describe Image Prompt',
-        description: 'Prompt for generating descriptions of images added as context',
+        get label() {
+          return translate('Describe Image Prompt');
+        },
+        get description() {
+          return translate('Prompt for generating descriptions of images added as context');
+        },
         defaultValue: DEFAULT_CONTEXT_DESCRIPTION_PROMPTS.describeImagePrompt,
       },
     ],
   },
   {
     id: 'suggestions',
-    label: 'Suggestions',
+    get label() {
+      return translate('Suggestions');
+    },
     icon: Wand2,
-    title: 'Suggestions Prompts',
+    get title() {
+      return translate('Suggestions Prompts');
+    },
     category: 'suggestions',
     fields: [
       {
         key: 'featuresPrompt',
-        label: 'Features Suggestion Prompt',
-        description: 'Prompt for analyzing the project and suggesting new features',
+        get label() {
+          return translate('Features Suggestion Prompt');
+        },
+        get description() {
+          return translate('Prompt for analyzing the project and suggesting new features');
+        },
         defaultValue: DEFAULT_SUGGESTIONS_PROMPTS.featuresPrompt,
       },
       {
         key: 'refactoringPrompt',
-        label: 'Refactoring Suggestion Prompt',
-        description: 'Prompt for identifying refactoring opportunities',
+        get label() {
+          return translate('Refactoring Suggestion Prompt');
+        },
+        get description() {
+          return translate('Prompt for identifying refactoring opportunities');
+        },
         defaultValue: DEFAULT_SUGGESTIONS_PROMPTS.refactoringPrompt,
       },
       {
         key: 'securityPrompt',
-        label: 'Security Suggestion Prompt',
-        description: 'Prompt for analyzing security vulnerabilities',
+        get label() {
+          return translate('Security Suggestion Prompt');
+        },
+        get description() {
+          return translate('Prompt for analyzing security vulnerabilities');
+        },
         defaultValue: DEFAULT_SUGGESTIONS_PROMPTS.securityPrompt,
       },
       {
         key: 'performancePrompt',
-        label: 'Performance Suggestion Prompt',
-        description: 'Prompt for identifying performance issues',
+        get label() {
+          return translate('Performance Suggestion Prompt');
+        },
+        get description() {
+          return translate('Prompt for identifying performance issues');
+        },
         defaultValue: DEFAULT_SUGGESTIONS_PROMPTS.performancePrompt,
       },
       {
         key: 'baseTemplate',
-        label: 'Base Template',
-        description: 'Base template applied to all suggestion types',
+        get label() {
+          return translate('Base Template');
+        },
+        get description() {
+          return translate('Base template applied to all suggestion types');
+        },
         defaultValue: DEFAULT_SUGGESTIONS_PROMPTS.baseTemplate,
       },
     ],
   },
   {
     id: 'task-execution',
-    label: 'Tasks',
+    get label() {
+      return translate('Tasks');
+    },
     icon: Cog,
-    title: 'Task Execution Prompts',
+    get title() {
+      return translate('Task Execution Prompts');
+    },
     category: 'taskExecution',
     banner: {
       type: 'info',
-      title: 'Template Variables',
-      description:
-        'Task execution prompts use Handlebars syntax for variable substitution. Variables include {{taskId}}, {{taskDescription}}, {{completedTasks}}, etc.',
+      get title() {
+        return translate('Template Variables');
+      },
+      get description() {
+        return translate(
+          'Task execution prompts use Handlebars syntax for variable substitution. Variables include {{taskId}}, {{taskDescription}}, {{completedTasks}}, etc.'
+        );
+      },
     },
     fields: [
       {
         key: 'taskPromptTemplate',
-        label: 'Task Prompt Template',
-        description: 'Template for building individual task execution prompts',
+        get label() {
+          return translate('Task Prompt Template');
+        },
+        get description() {
+          return translate('Template for building individual task execution prompts');
+        },
         defaultValue: DEFAULT_TASK_EXECUTION_PROMPTS.taskPromptTemplate,
       },
       {
         key: 'implementationInstructions',
-        label: 'Implementation Instructions',
-        description: 'Instructions appended to feature implementation prompts',
+        get label() {
+          return translate('Implementation Instructions');
+        },
+        get description() {
+          return translate('Instructions appended to feature implementation prompts');
+        },
         defaultValue: DEFAULT_TASK_EXECUTION_PROMPTS.implementationInstructions,
       },
       {
         key: 'playwrightVerificationInstructions',
-        label: 'Playwright Verification Instructions',
-        description: 'Instructions for automated Playwright verification (when enabled)',
+        get label() {
+          return translate('Playwright Verification Instructions');
+        },
+        get description() {
+          return translate('Instructions for automated Playwright verification (when enabled)');
+        },
         defaultValue: DEFAULT_TASK_EXECUTION_PROMPTS.playwrightVerificationInstructions,
       },
       {
         key: 'learningExtractionSystemPrompt',
-        label: 'Learning Extraction System Prompt',
-        description: 'System prompt for extracting learnings/ADRs from implementation output',
+        get label() {
+          return translate('Learning Extraction System Prompt');
+        },
+        get description() {
+          return translate(
+            'System prompt for extracting learnings/ADRs from implementation output'
+          );
+        },
         defaultValue: DEFAULT_TASK_EXECUTION_PROMPTS.learningExtractionSystemPrompt,
         critical: true,
       },
       {
         key: 'learningExtractionUserPromptTemplate',
-        label: 'Learning Extraction User Template',
-        description:
-          'User prompt template for learning extraction. Variables: featureTitle, implementationLog',
+        get label() {
+          return translate('Learning Extraction User Template');
+        },
+        get description() {
+          return translate(
+            'User prompt template for learning extraction. Variables: featureTitle, implementationLog'
+          );
+        },
         defaultValue: DEFAULT_TASK_EXECUTION_PROMPTS.learningExtractionUserPromptTemplate,
         critical: true,
       },
       {
         key: 'planRevisionTemplate',
-        label: 'Plan Revision Template',
-        description:
-          'Template for prompting plan revisions. Variables: planVersion, previousPlan, userFeedback',
+        get label() {
+          return translate('Plan Revision Template');
+        },
+        get description() {
+          return translate(
+            'Template for prompting plan revisions. Variables: planVersion, previousPlan, userFeedback'
+          );
+        },
         defaultValue: DEFAULT_TASK_EXECUTION_PROMPTS.planRevisionTemplate,
       },
       {
         key: 'continuationAfterApprovalTemplate',
-        label: 'Continuation After Approval Template',
-        description:
-          'Template for continuation after plan approval. Variables: userFeedback, approvedPlan',
+        get label() {
+          return translate('Continuation After Approval Template');
+        },
+        get description() {
+          return translate(
+            'Template for continuation after plan approval. Variables: userFeedback, approvedPlan'
+          );
+        },
         defaultValue: DEFAULT_TASK_EXECUTION_PROMPTS.continuationAfterApprovalTemplate,
       },
       {
         key: 'resumeFeatureTemplate',
-        label: 'Resume Feature Template',
-        description:
-          'Template for resuming interrupted features. Variables: featurePrompt, previousContext',
+        get label() {
+          return translate('Resume Feature Template');
+        },
+        get description() {
+          return translate(
+            'Template for resuming interrupted features. Variables: featurePrompt, previousContext'
+          );
+        },
         defaultValue: DEFAULT_TASK_EXECUTION_PROMPTS.resumeFeatureTemplate,
       },
       {
         key: 'projectAnalysisPrompt',
-        label: 'Project Analysis Prompt',
-        description: 'Prompt for AI-powered project analysis',
+        get label() {
+          return translate('Project Analysis Prompt');
+        },
+        get description() {
+          return translate('Prompt for AI-powered project analysis');
+        },
         defaultValue: DEFAULT_TASK_EXECUTION_PROMPTS.projectAnalysisPrompt,
       },
     ],

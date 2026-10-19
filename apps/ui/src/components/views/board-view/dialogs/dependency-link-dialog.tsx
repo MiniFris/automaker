@@ -1,4 +1,5 @@
 'use client';
+import { translate, useUiLocale } from '@/lib/i18n';
 
 import {
   Dialog,
@@ -32,6 +33,7 @@ export function DependencyLinkDialog({
   targetFeature,
   onLink,
 }: DependencyLinkDialogProps) {
+  useUiLocale();
   if (!draggedFeature || !targetFeature) return null;
 
   // Check if a dependency relationship already exists
@@ -49,10 +51,10 @@ export function DependencyLinkDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Link2 className="w-5 h-5" />
-            Link Features
+            {translate('Link Features')}
           </DialogTitle>
           <DialogDescription>
-            Create a dependency relationship between these features.
+            {translate('Create a dependency relationship between these features.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -60,7 +62,7 @@ export function DependencyLinkDialog({
           {/* Dragged feature */}
           <div className="p-3 rounded-lg border bg-muted/30">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-muted-foreground">Dragged Feature</span>
+              <span className="text-xs text-muted-foreground">{translate('Dragged Feature')}</span>
               <StatusBadge status={draggedFeature.status as FeatureStatusWithPipeline} size="sm" />
             </div>
             <div className="text-sm font-medium line-clamp-3 break-words">
@@ -77,7 +79,7 @@ export function DependencyLinkDialog({
           {/* Target feature */}
           <div className="p-3 rounded-lg border bg-muted/30">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-muted-foreground">Target Feature</span>
+              <span className="text-xs text-muted-foreground">{translate('Target Feature')}</span>
               <StatusBadge status={targetFeature.status as FeatureStatusWithPipeline} size="sm" />
             </div>
             <div className="text-sm font-medium line-clamp-3 break-words">
@@ -90,8 +92,8 @@ export function DependencyLinkDialog({
           {existingLink && (
             <div className="p-3 rounded-lg border border-yellow-500/50 bg-yellow-500/10 text-sm text-yellow-600 dark:text-yellow-400">
               {draggedDependsOnTarget
-                ? 'The dragged feature already depends on the target feature.'
-                : 'The target feature already depends on the dragged feature.'}
+                ? translate('The dragged feature already depends on the target feature.')
+                : translate('The target feature already depends on the dragged feature.')}
             </div>
           )}
         </div>
@@ -105,14 +107,14 @@ export function DependencyLinkDialog({
             className={cn('w-full', draggedDependsOnTarget && 'opacity-50 cursor-not-allowed')}
             title={
               draggedDependsOnTarget
-                ? 'This would create a circular dependency'
-                : 'Make target feature depend on dragged (dragged is parent)'
+                ? translate('This would create a circular dependency')
+                : translate('Make target feature depend on dragged (dragged is parent)')
             }
             data-testid="link-as-parent"
           >
             <ArrowUp className="w-4 h-4 mr-2" />
-            Set as Parent
-            <span className="text-xs ml-1 opacity-70">(target depends on this)</span>
+            {translate('Set as Parent')}
+            <span className="text-xs ml-1 opacity-70">{translate('(target depends on this)')}</span>
           </Button>
           {/* Set as Child - middle */}
           <Button
@@ -122,19 +124,19 @@ export function DependencyLinkDialog({
             className={cn('w-full', targetDependsOnDragged && 'opacity-50 cursor-not-allowed')}
             title={
               targetDependsOnDragged
-                ? 'This would create a circular dependency'
-                : 'Make dragged feature depend on target (target is parent)'
+                ? translate('This would create a circular dependency')
+                : translate('Make dragged feature depend on target (target is parent)')
             }
             data-testid="link-as-child"
           >
             <ArrowDown className="w-4 h-4 mr-2" />
-            Set as Child
-            <span className="text-xs ml-1 opacity-70">(depends on target)</span>
+            {translate('Set as Child')}
+            <span className="text-xs ml-1 opacity-70">{translate('(depends on target)')}</span>
           </Button>
           {/* Cancel - bottom */}
           <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full">
             <X className="w-4 h-4 mr-2" />
-            Cancel
+            {translate('Cancel')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { SkeletonPulse } from '@/components/ui/skeleton';
@@ -20,18 +21,19 @@ interface CliStatusProps {
 function getAuthMethodLabel(method: string): string {
   switch (method) {
     case 'api_key':
-      return 'API Key';
+      return translate('API Key');
     case 'api_key_env':
-      return 'API Key (Environment)';
+      return translate('API Key (Environment)');
     case 'cli_authenticated':
     case 'oauth':
-      return 'CLI Authentication';
+      return translate('CLI Authentication');
     default:
-      return method || 'Unknown';
+      return method || translate('Unknown');
   }
 }
 
 function CodexCliStatusSkeleton() {
+  useUiLocale();
   return (
     <div
       className={cn(
@@ -77,6 +79,7 @@ function CodexCliStatusSkeleton() {
 }
 
 export function CodexCliStatus({ status, authStatus, isChecking, onRefresh }: CliStatusProps) {
+  useUiLocale();
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isDeauthenticating, setIsDeauthenticating] = useState(false);
 
@@ -89,25 +92,25 @@ export function CodexCliStatus({ status, authStatus, isChecking, onRefresh }: Cl
         | (() => Promise<{ success: boolean; error?: string }>)
         | undefined;
       if (!authCodex) {
-        toast.error('Authentication Failed', {
-          description: 'Codex authentication is not available',
+        toast.error(translate('Authentication Failed'), {
+          description: translate('Codex authentication is not available'),
         });
         return;
       }
       const result = await authCodex();
 
       if (result.success) {
-        toast.success('Signed In', {
-          description: 'Successfully authenticated Codex CLI',
+        toast.success(translate('Signed In'), {
+          description: translate('Successfully authenticated Codex CLI'),
         });
         onRefresh();
       } else if (result.error) {
-        toast.error('Authentication Failed', {
+        toast.error(translate('Authentication Failed'), {
           description: result.error,
         });
       }
     } catch (error) {
-      toast.error('Authentication Failed', {
+      toast.error(translate('Authentication Failed'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     } finally {
@@ -124,26 +127,26 @@ export function CodexCliStatus({ status, authStatus, isChecking, onRefresh }: Cl
         | (() => Promise<{ success: boolean; error?: string }>)
         | undefined;
       if (!deauthCodex) {
-        toast.error('Sign Out Failed', {
-          description: 'Codex sign out is not available',
+        toast.error(translate('Sign Out Failed'), {
+          description: translate('Codex sign out is not available'),
         });
         return;
       }
       const result = await deauthCodex();
 
       if (result.success) {
-        toast.success('Signed Out', {
-          description: 'Successfully signed out from Codex CLI',
+        toast.success(translate('Signed Out'), {
+          description: translate('Successfully signed out from Codex CLI'),
         });
         // Refresh status after successful logout
         onRefresh();
       } else if (result.error) {
-        toast.error('Sign Out Failed', {
+        toast.error(translate('Sign Out Failed'), {
           description: result.error,
         });
       }
     } catch (error) {
-      toast.error('Sign Out Failed', {
+      toast.error(translate('Sign Out Failed'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     } finally {
@@ -168,7 +171,9 @@ export function CodexCliStatus({ status, authStatus, isChecking, onRefresh }: Cl
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500/20 to-brand-600/10 flex items-center justify-center border border-brand-500/20">
               <OpenAIIcon className="w-5 h-5 text-brand-500" />
             </div>
-            <h2 className="text-lg font-semibold text-foreground tracking-tight">Codex CLI</h2>
+            <h2 className="text-lg font-semibold text-foreground tracking-tight">
+              {translate('Codex CLI')}
+            </h2>
           </div>
           <Button
             variant="ghost"
@@ -176,7 +181,7 @@ export function CodexCliStatus({ status, authStatus, isChecking, onRefresh }: Cl
             onClick={onRefresh}
             disabled={isChecking}
             data-testid="refresh-codex-cli"
-            title="Refresh Codex CLI detection"
+            title={translate('Refresh Codex CLI detection')}
             className={cn(
               'h-9 w-9 rounded-lg',
               'hover:bg-accent/50 hover:scale-105',
@@ -187,7 +192,7 @@ export function CodexCliStatus({ status, authStatus, isChecking, onRefresh }: Cl
           </Button>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Codex CLI powers OpenAI models for coding and automation workflows.
+          {translate('Codex CLI powers OpenAI models for coding and automation workflows.')}
         </p>
       </div>
       <div className="p-6 space-y-4">
@@ -198,21 +203,26 @@ export function CodexCliStatus({ status, authStatus, isChecking, onRefresh }: Cl
                 <CheckCircle2 className="w-5 h-5 text-emerald-500" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-emerald-400">Codex CLI Installed</p>
+                <p className="text-sm font-medium text-emerald-400">
+                  {translate('Codex CLI Installed')}
+                </p>
                 <div className="text-xs text-emerald-400/70 mt-1.5 space-y-0.5">
                   {status.method && (
                     <p>
-                      Method: <span className="font-mono">{status.method}</span>
+                      {translate('Method: ')}
+                      <span className="font-mono">{status.method}</span>
                     </p>
                   )}
                   {status.version && (
                     <p>
-                      Version: <span className="font-mono">{status.version}</span>
+                      {translate('Version: ')}
+                      <span className="font-mono">{status.version}</span>
                     </p>
                   )}
                   {status.path && (
                     <p className="truncate" title={status.path}>
-                      Path: <span className="font-mono text-[10px]">{status.path}</span>
+                      {translate('Path: ')}
+                      <span className="font-mono text-[10px]">{status.path}</span>
                     </p>
                   )}
                 </div>
@@ -225,10 +235,12 @@ export function CodexCliStatus({ status, authStatus, isChecking, onRefresh }: Cl
                   <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-emerald-400">Authenticated</p>
+                  <p className="text-sm font-medium text-emerald-400">
+                    {translate('Authenticated')}
+                  </p>
                   <div className="text-xs text-emerald-400/70 mt-1.5">
                     <p>
-                      Method:{' '}
+                      {translate('Method:')}{' '}
                       <span className="font-mono">{getAuthMethodLabel(authStatus.method)}</span>
                     </p>
                   </div>
@@ -239,7 +251,7 @@ export function CodexCliStatus({ status, authStatus, isChecking, onRefresh }: Cl
                     disabled={isDeauthenticating}
                     className="mt-3 h-8 text-xs"
                   >
-                    {isDeauthenticating ? 'Signing Out...' : 'Sign Out'}
+                    {isDeauthenticating ? translate('Signing Out...') : translate('Sign Out')}
                   </Button>
                 </div>
               </div>
@@ -249,9 +261,11 @@ export function CodexCliStatus({ status, authStatus, isChecking, onRefresh }: Cl
                   <XCircle className="w-5 h-5 text-amber-500" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-amber-400">Not Authenticated</p>
+                  <p className="text-sm font-medium text-amber-400">
+                    {translate('Not Authenticated')}
+                  </p>
                   <p className="text-xs text-amber-400/70 mt-1">
-                    Click Sign In below to get authentication instructions.
+                    {translate('Click Sign In below to get authentication instructions.')}
                   </p>
                   <Button
                     variant="outline"
@@ -260,7 +274,7 @@ export function CodexCliStatus({ status, authStatus, isChecking, onRefresh }: Cl
                     disabled={isAuthenticating}
                     className="mt-3 h-8 text-xs"
                   >
-                    {isAuthenticating ? 'Requesting...' : 'Sign In'}
+                    {isAuthenticating ? translate('Requesting...') : translate('Sign In')}
                   </Button>
                 </div>
               </div>
@@ -277,21 +291,25 @@ export function CodexCliStatus({ status, authStatus, isChecking, onRefresh }: Cl
                 <AlertCircle className="w-5 h-5 text-amber-500" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-amber-400">Codex CLI Not Detected</p>
+                <p className="text-sm font-medium text-amber-400">
+                  {translate('Codex CLI Not Detected')}
+                </p>
                 <p className="text-xs text-amber-400/70 mt-1">
                   {status.recommendation ||
-                    'Install Codex CLI to unlock OpenAI models with tool support.'}
+                    translate('Install Codex CLI to unlock OpenAI models with tool support.')}
                 </p>
               </div>
             </div>
             {status.installCommands && (
               <div className="space-y-3">
-                <p className="text-xs font-medium text-foreground/80">Installation Commands:</p>
+                <p className="text-xs font-medium text-foreground/80">
+                  {translate('Installation Commands:')}
+                </p>
                 <div className="space-y-2">
                   {status.installCommands.npm && (
                     <div className="p-3 rounded-xl bg-accent/30 border border-border/50">
                       <p className="text-[10px] text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">
-                        npm
+                        {translate('npm')}
                       </p>
                       <code className="text-xs text-foreground/80 font-mono break-all">
                         {status.installCommands.npm}
@@ -301,7 +319,7 @@ export function CodexCliStatus({ status, authStatus, isChecking, onRefresh }: Cl
                   {status.installCommands.macos && (
                     <div className="p-3 rounded-xl bg-accent/30 border border-border/50">
                       <p className="text-[10px] text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">
-                        macOS/Linux
+                        {translate('macOS/Linux')}
                       </p>
                       <code className="text-xs text-foreground/80 font-mono break-all">
                         {status.installCommands.macos}
@@ -311,7 +329,7 @@ export function CodexCliStatus({ status, authStatus, isChecking, onRefresh }: Cl
                   {status.installCommands.windows && (
                     <div className="p-3 rounded-xl bg-accent/30 border border-border/50">
                       <p className="text-[10px] text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">
-                        Windows (PowerShell)
+                        {translate('Windows (PowerShell)')}
                       </p>
                       <code className="text-xs text-foreground/80 font-mono break-all">
                         {status.installCommands.windows}

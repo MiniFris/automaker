@@ -1,3 +1,6 @@
+import { formatCount } from '@/lib/i18n';
+import { getFormattingLocale } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Dialog,
@@ -81,16 +84,17 @@ function formatRelativeDate(dateStr: string): string {
   const diffWeeks = Math.floor(diffDays / 7);
   const diffMonths = Math.floor(diffDays / 30);
 
-  if (diffSecs < 60) return 'just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  if (diffWeeks < 5) return `${diffWeeks}w ago`;
-  if (diffMonths < 12) return `${diffMonths}mo ago`;
-  return date.toLocaleDateString();
+  if (diffSecs < 60) return translate('just now');
+  if (diffMins < 60) return translate('{value1}m ago', { value1: diffMins });
+  if (diffHours < 24) return translate('{value1}h ago', { value1: diffHours });
+  if (diffDays < 7) return translate('{value1}d ago', { value1: diffDays });
+  if (diffWeeks < 5) return translate('{value1}w ago', { value1: diffWeeks });
+  if (diffMonths < 12) return translate('{value1}mo ago', { value1: diffMonths });
+  return date.toLocaleDateString(getFormattingLocale());
 }
 
 function CopyHashButton({ hash }: { hash: string }) {
+  useUiLocale();
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async (e: React.MouseEvent) => {
@@ -100,7 +104,7 @@ function CopyHashButton({ hash }: { hash: string }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error('Failed to copy hash');
+      toast.error(translate('Failed to copy hash'));
     }
   };
 
@@ -108,7 +112,7 @@ function CopyHashButton({ hash }: { hash: string }) {
     <button
       onClick={handleCopy}
       className="inline-flex items-center gap-1 font-mono text-[11px] bg-muted hover:bg-muted/80 px-1.5 py-0.5 rounded cursor-pointer transition-colors"
-      title={`Copy full hash: ${hash}`}
+      title={translate('Copy full hash: {value1}', { value1: hash })}
     >
       {copied ? (
         <Check className="w-2.5 h-2.5 text-green-500" />
@@ -129,6 +133,7 @@ export function CherryPickDialog({
   onCherryPicked,
   onCreateConflictResolutionFeature,
 }: CherryPickDialogProps) {
+  useUiLocale();
   // Step management
   const [step, setStep] = useState<Step>('select-branch');
 
@@ -341,9 +346,12 @@ export function CherryPickDialog({
       const result = await api.worktree.cherryPick(worktree.path, orderedHashes);
 
       if (result.success) {
-        toast.success(`Cherry-picked ${orderedHashes.length} commit(s)`, {
-          description: `Successfully applied to ${worktree.branch}`,
-        });
+        toast.success(
+          translate('Cherry-picked {value1} commit(s)', { value1: orderedHashes.length }),
+          {
+            description: translate('Successfully applied to {value1}', { value1: worktree.branch }),
+          }
+        );
         onCherryPicked();
         onOpenChange(false);
       } else {
@@ -358,11 +366,13 @@ export function CherryPickDialog({
             targetWorktreePath: worktree.path,
           });
           setStep('conflict');
-          toast.error('Cherry-pick conflicts detected', {
-            description: 'The cherry-pick was aborted due to conflicts. No changes were applied.',
+          toast.error(translate('Cherry-pick conflicts detected'), {
+            description: translate(
+              'The cherry-pick was aborted due to conflicts. No changes were applied.'
+            ),
           });
         } else {
-          toast.error('Cherry-pick failed', {
+          toast.error(translate('Cherry-pick failed'), {
             description: result.error,
           });
         }
@@ -384,11 +394,13 @@ export function CherryPickDialog({
           targetWorktreePath: worktree.path,
         });
         setStep('conflict');
-        toast.error('Cherry-pick conflicts detected', {
-          description: 'The cherry-pick was aborted due to conflicts. No changes were applied.',
+        toast.error(translate('Cherry-pick conflicts detected'), {
+          description: translate(
+            'The cherry-pick was aborted due to conflicts. No changes were applied.'
+          ),
         });
       } else {
-        toast.error('Cherry-pick failed', {
+        toast.error(translate('Cherry-pick failed'), {
           description: errorMessage,
         });
       }
@@ -427,13 +439,14 @@ export function CherryPickDialog({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-orange-500" />
-              Cherry-Pick Conflicts Detected
+              {translate('Cherry-Pick Conflicts Detected')}
             </DialogTitle>
             <DialogDescription asChild>
               <div className="space-y-4">
                 <span className="block">
-                  There are conflicts when cherry-picking commits from{' '}
-                  <code className="font-mono bg-muted px-1 rounded">{selectedBranch}</code> into{' '}
+                  {translate('There are conflicts when cherry-picking commits from')}{' '}
+                  <code className="font-mono bg-muted px-1 rounded">{selectedBranch}</code>{' '}
+                  {translate(' into')}{' '}
                   <code className="font-mono bg-muted px-1 rounded">
                     {conflictInfo.targetBranch}
                   </code>
@@ -443,26 +456,27 @@ export function CherryPickDialog({
                 <div className="flex items-start gap-2 p-3 rounded-md bg-orange-500/10 border border-orange-500/20">
                   <AlertTriangle className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
                   <span className="text-orange-500 text-sm">
-                    The cherry-pick could not be completed automatically. You can create a feature
-                    task to resolve the conflicts in the{' '}
+                    {translate(
+                      'The cherry-pick could not be completed automatically. You can create a feature task to resolve the conflicts in the'
+                    )}{' '}
                     <code className="font-mono bg-muted px-0.5 rounded">
                       {conflictInfo.targetBranch}
                     </code>{' '}
-                    branch.
+                    {translate('branch.')}
                   </span>
                 </div>
 
                 <div className="mt-2 p-3 rounded-md bg-muted/50 border border-border">
                   <p className="text-sm text-muted-foreground">
-                    This will create a high-priority feature task that will:
+                    {translate('This will create a high-priority feature task that will:')}
                   </p>
                   <ul className="text-sm text-muted-foreground mt-2 list-disc list-inside space-y-1">
                     <li>
-                      Cherry-pick the selected commit(s) from{' '}
+                      {translate('Cherry-pick the selected commit(s) from')}{' '}
                       <code className="font-mono bg-muted px-0.5 rounded">{selectedBranch}</code>
                     </li>
-                    <li>Resolve any cherry-pick conflicts</li>
-                    <li>Ensure the code compiles and tests pass</li>
+                    <li>{translate('Resolve any cherry-pick conflicts')}</li>
+                    <li>{translate('Ensure the code compiles and tests pass')}</li>
                   </ul>
                 </div>
               </div>
@@ -471,17 +485,17 @@ export function CherryPickDialog({
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setStep('select-commits')}>
-              Back
+              {translate('Back')}
             </Button>
             <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              {translate('Cancel')}
             </Button>
             <Button
               onClick={handleCreateConflictResolutionFeature}
               className="bg-purple-600 hover:bg-purple-700 text-white"
             >
               <Wrench className="w-4 h-4 mr-2" />
-              Create Resolve Conflicts Feature
+              {translate('Create Resolve Conflicts Feature')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -497,11 +511,12 @@ export function CherryPickDialog({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Cherry className="w-5 h-5 text-foreground" />
-              Cherry Pick Commits
+              {translate('Cherry Pick Commits')}
             </DialogTitle>
             <DialogDescription>
-              Select commits from{' '}
-              <code className="font-mono bg-muted px-1 rounded">{selectedBranch}</code> to apply to{' '}
+              {translate('Select commits from')}{' '}
+              <code className="font-mono bg-muted px-1 rounded">{selectedBranch}</code>{' '}
+              {translate(' to apply to')}{' '}
               <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>
             </DialogDescription>
           </DialogHeader>
@@ -511,7 +526,9 @@ export function CherryPickDialog({
               {loadingCommits && (
                 <div className="flex items-center justify-center py-12">
                   <Spinner size="md" />
-                  <span className="ml-2 text-sm text-muted-foreground">Loading commits...</span>
+                  <span className="ml-2 text-sm text-muted-foreground">
+                    {translate('Loading commits...')}
+                  </span>
                 </div>
               )}
 
@@ -523,7 +540,9 @@ export function CherryPickDialog({
 
               {!loadingCommits && !commitsError && commits.length === 0 && (
                 <div className="flex items-center justify-center py-12">
-                  <p className="text-sm text-muted-foreground">No commits found on this branch</p>
+                  <p className="text-sm text-muted-foreground">
+                    {translate('No commits found on this branch')}
+                  </p>
                 </div>
               )}
 
@@ -583,7 +602,9 @@ export function CherryPickDialog({
                                 <Clock className="w-3 h-3" />
                                 <time
                                   dateTime={commit.date}
-                                  title={new Date(commit.date).toLocaleString()}
+                                  title={new Date(commit.date).toLocaleString(
+                                    getFormattingLocale()
+                                  )}
                                 >
                                   {formatRelativeDate(commit.date)}
                                 </time>
@@ -599,7 +620,7 @@ export function CherryPickDialog({
                                     <ChevronRight className="w-3 h-3" />
                                   )}
                                   <FileText className="w-3 h-3" />
-                                  {commit.files.length} file{commit.files.length !== 1 ? 's' : ''}
+                                  {formatCount(commit.files.length, 'file')}
                                 </button>
                               )}
                             </div>
@@ -642,12 +663,12 @@ export function CherryPickDialog({
                         {loadingMoreCommits ? (
                           <>
                             <Spinner size="sm" className="mr-2" />
-                            Loading...
+                            {translate('Loading...')}
                           </>
                         ) : (
                           <>
                             <ChevronDown className="w-3.5 h-3.5 mr-1.5" />
-                            Load More Commits
+                            {translate('Load More Commits')}
                           </>
                         )}
                       </Button>
@@ -666,10 +687,10 @@ export function CherryPickDialog({
                 setSelectedBranch('');
               }}
             >
-              Back
+              {translate('Back')}
             </Button>
             <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isCherryPicking}>
-              Cancel
+              {translate('Cancel')}
             </Button>
             <Button
               onClick={handleCherryPick}
@@ -678,12 +699,12 @@ export function CherryPickDialog({
               {isCherryPicking ? (
                 <>
                   <Spinner size="sm" variant="foreground" className="mr-2" />
-                  Cherry Picking...
+                  {translate('Cherry Picking...')}
                 </>
               ) : (
                 <>
                   <Cherry className="w-4 h-4 mr-2" />
-                  Cherry Pick
+                  {translate('Cherry Pick')}
                   {selectedCommitHashes.size > 0 ? ` (${selectedCommitHashes.size})` : ''}
                 </>
               )}
@@ -701,26 +722,26 @@ export function CherryPickDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Cherry className="w-5 h-5 text-foreground" />
-            Cherry Pick
+            {translate('Cherry Pick')}
           </DialogTitle>
           <DialogDescription asChild>
             <div className="space-y-4">
               <span className="block">
-                Select a branch to cherry-pick commits from into{' '}
+                {translate('Select a branch to cherry-pick commits from into')}{' '}
                 <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>
               </span>
 
               {loadingBranches ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Spinner size="sm" />
-                  Loading branches...
+                  {translate('Loading branches...')}
                 </div>
               ) : (
                 <>
                   {/* Remote selector - only show if there are remotes */}
                   {remotes.length > 0 && (
                     <div className="space-y-2">
-                      <Label className="text-sm text-foreground">Source</Label>
+                      <Label className="text-sm text-foreground">{translate('Source')}</Label>
                       <Select
                         value={selectedRemote}
                         onValueChange={(value) => {
@@ -729,10 +750,10 @@ export function CherryPickDialog({
                         }}
                       >
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select source..." />
+                          <SelectValue placeholder={translate('Select source...')} />
                         </SelectTrigger>
                         <SelectContent className="text-foreground">
-                          <SelectItem value="__local__">Local Branches</SelectItem>
+                          <SelectItem value="__local__">{translate('Local Branches')}</SelectItem>
                           {remotes.map((remote) => (
                             <SelectItem key={remote.name} value={remote.name}>
                               {remote.name} ({remote.url})
@@ -745,13 +766,15 @@ export function CherryPickDialog({
 
                   {/* Branch selector */}
                   <div className="space-y-2">
-                    <Label className="text-sm text-foreground">Branch</Label>
+                    <Label className="text-sm text-foreground">{translate('Branch')}</Label>
                     {branchOptions.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No other branches available</p>
+                      <p className="text-sm text-muted-foreground">
+                        {translate('No other branches available')}
+                      </p>
                     ) : (
                       <Select value={selectedBranch} onValueChange={setSelectedBranch}>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select a branch..." />
+                          <SelectValue placeholder={translate('Select a branch...')} />
                         </SelectTrigger>
                         <SelectContent className="text-foreground">
                           {branchOptions.map((branch) => (
@@ -771,11 +794,11 @@ export function CherryPickDialog({
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button onClick={handleProceedToCommits} disabled={!selectedBranch || loadingBranches}>
             <GitCommit className="w-4 h-4 mr-2" />
-            View Commits
+            {translate('View Commits')}
           </Button>
         </DialogFooter>
       </DialogContent>

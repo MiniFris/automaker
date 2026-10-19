@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useReactFlow, Panel } from '@xyflow/react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -17,6 +18,7 @@ export function GraphControls({
   onRunLayout,
   layoutDirection,
 }: GraphControlsProps) {
+  useUiLocale();
   const { zoomIn, zoomOut, fitView } = useReactFlow();
 
   return (
@@ -37,7 +39,7 @@ export function GraphControls({
               <ZoomIn className="w-4 h-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="right">Zoom In</TooltipContent>
+          <TooltipContent side="right">{translate('Zoom In')}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -51,7 +53,7 @@ export function GraphControls({
               <ZoomOut className="w-4 h-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="right">Zoom Out</TooltipContent>
+          <TooltipContent side="right">{translate('Zoom Out')}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -65,7 +67,7 @@ export function GraphControls({
               <Maximize2 className="w-4 h-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="right">Fit View</TooltipContent>
+          <TooltipContent side="right">{translate('Fit View')}</TooltipContent>
         </Tooltip>
 
         <div className="h-px bg-border my-1" />
@@ -85,7 +87,7 @@ export function GraphControls({
               <ArrowRight className="w-4 h-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="right">Horizontal Layout</TooltipContent>
+          <TooltipContent side="right">{translate('Horizontal Layout')}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -102,7 +104,7 @@ export function GraphControls({
               <ArrowDown className="w-4 h-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="right">Vertical Layout</TooltipContent>
+          <TooltipContent side="right">{translate('Vertical Layout')}</TooltipContent>
         </Tooltip>
 
         <div className="h-px bg-border my-1" />
@@ -119,7 +121,9 @@ export function GraphControls({
               {isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="right">{isLocked ? 'Unlock Nodes' : 'Lock Nodes'}</TooltipContent>
+          <TooltipContent side="right">
+            {isLocked ? translate('Unlock Nodes') : translate('Lock Nodes')}
+          </TooltipContent>
         </Tooltip>
       </div>
     </Panel>

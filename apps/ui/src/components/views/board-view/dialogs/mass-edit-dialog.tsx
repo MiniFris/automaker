@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
@@ -80,6 +81,7 @@ interface FieldWrapperProps {
 }
 
 function FieldWrapper({ label, isMixed, willApply, onApplyChange, children }: FieldWrapperProps) {
+  useUiLocale();
   return (
     <div
       className={cn(
@@ -104,7 +106,7 @@ function FieldWrapper({ label, isMixed, willApply, onApplyChange, children }: Fi
         {isMixed && (
           <span className="flex items-center gap-1 text-xs text-amber-500">
             <AlertCircle className="w-3 h-3" />
-            Mixed values
+            {translate('Mixed values')}
           </span>
         )}
       </div>
@@ -123,6 +125,7 @@ export function MassEditDialog({
   currentBranch,
   projectPath,
 }: MassEditDialogProps) {
+  useUiLocale();
   const [isApplying, setIsApplying] = useState(false);
 
   // Track which fields to apply
@@ -261,18 +264,21 @@ export function MassEditDialog({
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-2xl" data-testid="mass-edit-dialog">
         <DialogHeader>
-          <DialogTitle>Edit {selectedFeatures.length} Features</DialogTitle>
+          <DialogTitle>
+            {translate('Edit ')}
+            {selectedFeatures.length} {translate(' Features')}
+          </DialogTitle>
           <DialogDescription>
-            Select which settings to apply to all selected features.
+            {translate('Select which settings to apply to all selected features.')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="py-4 pr-4 space-y-4 max-h-[60vh] overflow-y-auto">
           {/* Model Selector */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium">AI Model</Label>
+            <Label className="text-sm font-medium">{translate('AI Model')}</Label>
             <p className="text-xs text-muted-foreground mb-2">
-              Select a specific model configuration
+              {translate('Select a specific model configuration')}
             </p>
             <PhaseModelSelector
               value={{ model, thinkingLevel, providerId }}
@@ -296,7 +302,7 @@ export function MassEditDialog({
 
           {/* Planning Mode */}
           <FieldWrapper
-            label="Planning Mode"
+            label={translate('Planning Mode')}
             isMixed={mixedValues.planningMode || mixedValues.requirePlanApproval}
             willApply={applyState.planningMode || applyState.requirePlanApproval}
             onApplyChange={(apply) =>
@@ -322,7 +328,7 @@ export function MassEditDialog({
 
           {/* Priority */}
           <FieldWrapper
-            label="Priority"
+            label={translate('Priority')}
             isMixed={mixedValues.priority}
             willApply={applyState.priority}
             onApplyChange={(apply) => setApplyState((prev) => ({ ...prev, priority: apply }))}
@@ -336,7 +342,7 @@ export function MassEditDialog({
 
           {/* Testing */}
           <FieldWrapper
-            label="Testing"
+            label={translate('Testing')}
             isMixed={mixedValues.skipTests}
             willApply={applyState.skipTests}
             onApplyChange={(apply) => setApplyState((prev) => ({ ...prev, skipTests: apply }))}
@@ -350,7 +356,7 @@ export function MassEditDialog({
 
           {/* Branch / Work Mode */}
           <FieldWrapper
-            label="Branch / Work Mode"
+            label={translate('Branch / Work Mode')}
             isMixed={mixedValues.branchName}
             willApply={applyState.branchName}
             onApplyChange={(apply) => setApplyState((prev) => ({ ...prev, branchName: apply }))}
@@ -369,7 +375,7 @@ export function MassEditDialog({
 
           {/* Pipeline Exclusion */}
           <FieldWrapper
-            label="Pipeline Steps"
+            label={translate('Pipeline Steps')}
             isMixed={mixedValues.excludedPipelineSteps}
             willApply={applyState.excludedPipelineSteps}
             onApplyChange={(apply) =>
@@ -387,7 +393,7 @@ export function MassEditDialog({
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={isApplying}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button
             onClick={handleApply}
@@ -395,7 +401,8 @@ export function MassEditDialog({
             loading={isApplying}
             data-testid="mass-edit-apply-button"
           >
-            Apply to {selectedFeatures.length} Features
+            {translate('Apply to ')}
+            {selectedFeatures.length} {translate(' Features')}
           </Button>
         </DialogFooter>
       </DialogContent>

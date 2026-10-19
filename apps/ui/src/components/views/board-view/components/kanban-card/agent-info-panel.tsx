@@ -1,3 +1,5 @@
+import { useLocalizedMemo } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { memo, useEffect, useState, useMemo, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Feature, ThinkingLevel, ReasoningEffort, ParsedTask } from '@/store/app-store';
@@ -79,11 +81,11 @@ function formatThinkingLevel(level: ThinkingLevel | undefined): string {
   if (!level || level === 'none') return '';
   const labels: Record<ThinkingLevel, string> = {
     none: '',
-    low: 'Low',
-    medium: 'Med',
-    high: 'High',
-    ultrathink: 'Ultra',
-    adaptive: 'Adaptive',
+    low: translate('Low'),
+    medium: translate('Med'),
+    high: translate('High'),
+    ultrathink: translate('Ultra'),
+    adaptive: translate('Adaptive'),
   };
   return labels[level];
 }
@@ -95,11 +97,11 @@ function formatReasoningEffort(effort: ReasoningEffort | undefined): string {
   if (!effort || effort === 'none') return '';
   const labels: Record<ReasoningEffort, string> = {
     none: '',
-    minimal: 'Min',
-    low: 'Low',
-    medium: 'Med',
-    high: 'High',
-    xhigh: 'XHigh',
+    minimal: translate('Min'),
+    low: translate('Low'),
+    medium: translate('Med'),
+    high: translate('High'),
+    xhigh: translate('XHigh'),
   };
   return labels[effort];
 }
@@ -119,6 +121,7 @@ export const AgentInfoPanel = memo(function AgentInfoPanel({
   summary,
   isActivelyRunning,
 }: AgentInfoPanelProps) {
+  useUiLocale();
   const queryClient = useQueryClient();
   const [isSummaryDialogOpen, setIsSummaryDialogOpen] = useState(false);
   const [isTodosExpanded, setIsTodosExpanded] = useState(false);
@@ -336,7 +339,7 @@ export const AgentInfoPanel = memo(function AgentInfoPanel({
   // Derive effective todos from planSpec.tasks when available, fallback to agentInfo.todos
   // Uses freshPlanSpec (from API) for accurate progress, with taskStatusMap for real-time updates
   const isFeatureFinished = feature.status === 'waiting_approval' || feature.status === 'verified';
-  const effectiveTodos = useMemo((): {
+  const effectiveTodos = useLocalizedMemo((): {
     content: string;
     status: 'pending' | 'in_progress' | 'completed';
     summary?: string | null;
@@ -557,7 +560,7 @@ export const AgentInfoPanel = memo(function AgentInfoPanel({
                 <ListTodo className="w-3 h-3" />
                 <span>
                   {effectiveTodos.filter((t) => t.status === 'completed').length}/
-                  {effectiveTodos.length} tasks
+                  {effectiveTodos.length} {translate(' tasks')}
                 </span>
               </div>
               <div
@@ -607,7 +610,9 @@ export const AgentInfoPanel = memo(function AgentInfoPanel({
                     onMouseDown={(e) => e.stopPropagation()}
                     className="text-[10px] text-muted-foreground/60 pl-4 hover:text-muted-foreground transition-colors cursor-pointer"
                   >
-                    {isTodosExpanded ? 'Show less' : `+${effectiveTodos.length - 3} more`}
+                    {isTodosExpanded
+                      ? translate('Show less')
+                      : translate('+{value1} more', { value1: effectiveTodos.length - 3 })}
                   </button>
                 )}
               </div>
@@ -631,10 +636,10 @@ export const AgentInfoPanel = memo(function AgentInfoPanel({
                       onPointerDown={(e) => e.stopPropagation()}
                       onMouseDown={(e) => e.stopPropagation()}
                       className="flex items-center gap-1 text-[10px] text-[var(--status-success)] min-w-0 hover:opacity-80 transition-opacity cursor-pointer"
-                      title="View full summary"
+                      title={translate('View full summary')}
                     >
                       <Sparkles className="w-3 h-3 shrink-0" />
-                      <span className="truncate font-medium">Summary</span>
+                      <span className="truncate font-medium">{translate('Summary')}</span>
                     </button>
                     <button
                       type="button"
@@ -645,7 +650,7 @@ export const AgentInfoPanel = memo(function AgentInfoPanel({
                       onPointerDown={(e) => e.stopPropagation()}
                       onMouseDown={(e) => e.stopPropagation()}
                       className="p-0.5 rounded-md hover:bg-muted/80 transition-colors text-muted-foreground/60 hover:text-muted-foreground shrink-0"
-                      title="View full summary"
+                      title={translate('View full summary')}
                       data-testid={`expand-summary-${feature.id}`}
                     >
                       <Expand className="w-3 h-3" />
@@ -664,12 +669,13 @@ export const AgentInfoPanel = memo(function AgentInfoPanel({
                 <div className="flex items-center gap-2 text-[10px] text-muted-foreground/60 pt-2 border-t border-border/30">
                   <span className="flex items-center gap-1">
                     <Wrench className="w-2.5 h-2.5" />
-                    {agentInfo?.toolCallCount ?? 0} tool calls
+                    {agentInfo?.toolCallCount ?? 0} {translate(' tool calls')}
                   </span>
                   {effectiveTodos.length > 0 && (
                     <span className="flex items-center gap-1">
                       <CheckCircle2 className="w-2.5 h-2.5 text-[var(--status-success)]" />
-                      {effectiveTodos.filter((t) => t.status === 'completed').length} tasks done
+                      {effectiveTodos.filter((t) => t.status === 'completed').length}{' '}
+                      {translate(' tasks done')}
                     </span>
                   )}
                 </div>

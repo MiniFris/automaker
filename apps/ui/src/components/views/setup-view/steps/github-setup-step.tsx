@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useCallback } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,7 @@ interface GitHubSetupStepProps {
 }
 
 export function GitHubSetupStep({ onNext, onBack, onSkip }: GitHubSetupStepProps) {
+  useUiLocale();
   const { ghCliStatus, setGhCliStatus } = useSetupStore();
   const [isChecking, setIsChecking] = useState(false);
 
@@ -61,22 +63,22 @@ export function GitHubSetupStep({ onNext, onBack, onSkip }: GitHubSetupStepProps
 
   const copyCommand = (command: string) => {
     navigator.clipboard.writeText(command);
-    toast.success('Command copied to clipboard');
+    toast.success(translate('Command copied to clipboard'));
   };
 
   const isReady = ghCliStatus?.installed && ghCliStatus?.authenticated;
 
   const getStatusBadge = () => {
     if (isChecking) {
-      return <StatusBadge status="checking" label="Checking..." />;
+      return <StatusBadge status="checking" label={translate('Checking...')} />;
     }
     if (ghCliStatus?.authenticated) {
-      return <StatusBadge status="authenticated" label="Ready" />;
+      return <StatusBadge status="authenticated" label={translate('Ready')} />;
     }
     if (ghCliStatus?.installed) {
-      return <StatusBadge status="unverified" label="Not Logged In" />;
+      return <StatusBadge status="unverified" label={translate('Not Logged In')} />;
     }
-    return <StatusBadge status="not_installed" label="Not Installed" />;
+    return <StatusBadge status="not_installed" label={translate('Not Installed')} />;
   };
 
   return (
@@ -85,8 +87,10 @@ export function GitHubSetupStep({ onNext, onBack, onSkip }: GitHubSetupStepProps
         <div className="w-16 h-16 rounded-xl bg-zinc-800 flex items-center justify-center mx-auto mb-4">
           <Github className="w-8 h-8 text-white" />
         </div>
-        <h2 className="text-2xl font-bold text-foreground mb-2">GitHub CLI Setup</h2>
-        <p className="text-muted-foreground">Optional - Used for creating pull requests</p>
+        <h2 className="text-2xl font-bold text-foreground mb-2">{translate('GitHub CLI Setup')}</h2>
+        <p className="text-muted-foreground">
+          {translate('Optional - Used for creating pull requests')}
+        </p>
       </div>
 
       {/* Info Banner */}
@@ -95,10 +99,11 @@ export function GitHubSetupStep({ onNext, onBack, onSkip }: GitHubSetupStepProps
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
             <div>
-              <p className="font-medium text-foreground">This step is optional</p>
+              <p className="font-medium text-foreground">{translate('This step is optional')}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                The GitHub CLI allows you to create pull requests directly from the app. Without it,
-                you can still create PRs manually in your browser.
+                {translate(
+                  'The GitHub CLI allows you to create pull requests directly from the app. Without it, you can still create PRs manually in your browser.'
+                )}
               </p>
             </div>
           </div>
@@ -111,7 +116,7 @@ export function GitHubSetupStep({ onNext, onBack, onSkip }: GitHubSetupStepProps
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <Github className="w-5 h-5" />
-              GitHub CLI Status
+              {translate('GitHub CLI Status')}
             </CardTitle>
             <div className="flex items-center gap-2">
               {getStatusBadge()}
@@ -123,9 +128,11 @@ export function GitHubSetupStep({ onNext, onBack, onSkip }: GitHubSetupStepProps
           <CardDescription>
             {ghCliStatus?.installed
               ? ghCliStatus.authenticated
-                ? `Logged in${ghCliStatus.user ? ` as ${ghCliStatus.user}` : ''}`
-                : 'Installed but not logged in'
-              : 'Not installed on your system'}
+                ? translate('Logged in{value1}', {
+                    value1: ghCliStatus.user ? ` as ${ghCliStatus.user}` : '',
+                  })
+                : translate('Installed but not logged in')
+              : translate('Not installed on your system')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -134,11 +141,14 @@ export function GitHubSetupStep({ onNext, onBack, onSkip }: GitHubSetupStepProps
             <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
               <div>
-                <p className="font-medium text-foreground">GitHub CLI is ready!</p>
+                <p className="font-medium text-foreground">{translate('GitHub CLI is ready!')}</p>
                 <p className="text-sm text-muted-foreground">
-                  You can create pull requests directly from the app.
+                  {translate('You can create pull requests directly from the app.')}
                   {ghCliStatus?.version && (
-                    <span className="ml-1">Version: {ghCliStatus.version}</span>
+                    <span className="ml-1">
+                      {translate('Version: ')}
+                      {ghCliStatus.version}
+                    </span>
                   )}
                 </p>
               </div>
@@ -151,18 +161,20 @@ export function GitHubSetupStep({ onNext, onBack, onSkip }: GitHubSetupStepProps
               <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30 border border-border">
                 <XCircle className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <p className="font-medium text-foreground">GitHub CLI not found</p>
+                  <p className="font-medium text-foreground">{translate('GitHub CLI not found')}</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Install the GitHub CLI to enable PR creation from the app.
+                    {translate('Install the GitHub CLI to enable PR creation from the app.')}
                   </p>
                 </div>
               </div>
 
               <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
-                <p className="font-medium text-foreground text-sm">Installation Commands:</p>
+                <p className="font-medium text-foreground text-sm">
+                  {translate('Installation Commands:')}
+                </p>
 
                 <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">macOS (Homebrew)</p>
+                  <p className="text-xs text-muted-foreground">{translate('macOS (Homebrew)')}</p>
                   <div className="flex items-center gap-2">
                     <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
                       brew install gh
@@ -178,7 +190,7 @@ export function GitHubSetupStep({ onNext, onBack, onSkip }: GitHubSetupStepProps
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">Windows (winget)</p>
+                  <p className="text-xs text-muted-foreground">{translate('Windows (winget)')}</p>
                   <div className="flex items-center gap-2">
                     <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
                       winget install GitHub.cli
@@ -194,7 +206,7 @@ export function GitHubSetupStep({ onNext, onBack, onSkip }: GitHubSetupStepProps
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">Linux (apt)</p>
+                  <p className="text-xs text-muted-foreground">{translate('Linux (apt)')}</p>
                   <div className="flex items-center gap-2">
                     <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground overflow-x-auto">
                       sudo apt install gh
@@ -215,7 +227,7 @@ export function GitHubSetupStep({ onNext, onBack, onSkip }: GitHubSetupStepProps
                   rel="noopener noreferrer"
                   className="inline-flex items-center text-sm text-brand-500 hover:underline mt-2"
                 >
-                  View all installation options
+                  {translate('View all installation options')}
                   <ExternalLink className="w-3 h-3 ml-1" />
                 </a>
               </div>
@@ -228,15 +240,19 @@ export function GitHubSetupStep({ onNext, onBack, onSkip }: GitHubSetupStepProps
               <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
                 <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <p className="font-medium text-foreground">GitHub CLI not logged in</p>
+                  <p className="font-medium text-foreground">
+                    {translate('GitHub CLI not logged in')}
+                  </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Run the login command to authenticate with GitHub.
+                    {translate('Run the login command to authenticate with GitHub.')}
                   </p>
                 </div>
               </div>
 
               <div className="space-y-2 p-4 rounded-lg bg-muted/30 border border-border">
-                <p className="text-sm text-muted-foreground">Run this command in your terminal:</p>
+                <p className="text-sm text-muted-foreground">
+                  {translate('Run this command in your terminal:')}
+                </p>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
                     gh auth login
@@ -254,7 +270,9 @@ export function GitHubSetupStep({ onNext, onBack, onSkip }: GitHubSetupStepProps
             <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
               <Spinner size="md" />
               <div>
-                <p className="font-medium text-foreground">Checking GitHub CLI status...</p>
+                <p className="font-medium text-foreground">
+                  {translate('Checking GitHub CLI status...')}
+                </p>
               </div>
             </div>
           )}
@@ -265,18 +283,18 @@ export function GitHubSetupStep({ onNext, onBack, onSkip }: GitHubSetupStepProps
       <div className="flex justify-between pt-4">
         <Button variant="ghost" onClick={onBack} className="text-muted-foreground">
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
+          {translate('Back')}
         </Button>
         <div className="flex gap-2">
           <Button variant="ghost" onClick={onSkip} className="text-muted-foreground">
-            {isReady ? 'Skip' : 'Skip for now'}
+            {isReady ? translate('Skip') : translate('Skip for now')}
           </Button>
           <Button
             onClick={onNext}
             className="bg-brand-500 hover:bg-brand-600 text-white"
             data-testid="github-next-button"
           >
-            {isReady ? 'Continue' : 'Continue without GitHub CLI'}
+            {isReady ? translate('Continue') : translate('Continue without GitHub CLI')}
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>

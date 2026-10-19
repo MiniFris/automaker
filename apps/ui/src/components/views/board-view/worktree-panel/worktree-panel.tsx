@@ -1,3 +1,5 @@
+import { useLocalizedMemo } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
@@ -77,6 +79,7 @@ export function WorktreePanel({
   branchCardCounts,
   refreshTrigger = 0,
 }: WorktreePanelProps) {
+  useUiLocale();
   const {
     isLoading,
     worktrees,
@@ -156,7 +159,7 @@ export function WorktreePanel({
   // Resolve pinned worktrees from explicit branch assignments
   // Shows exactly pinnedWorktreesCount slots, each with a specific worktree.
   // Main worktree is always slot 0. Other slots can be swapped by the user.
-  const pinnedWorktrees = useMemo(() => {
+  const pinnedWorktrees = useLocalizedMemo(() => {
     const mainWt = worktrees.find((w) => w.isMain);
     const otherWts = worktrees.filter((w) => !w.isMain);
 
@@ -276,9 +279,9 @@ export function WorktreePanel({
           if (result.success) {
             setAutoModeRunning(currentProject.id, branchName, false);
             const desc = branchName ? `worktree ${branchName}` : 'main branch';
-            toast.success(`Auto Mode stopped for ${desc}`);
+            toast.success(translate('Auto Mode stopped for {value1}', { value1: desc }));
           } else {
-            toast.error(result.error || 'Failed to stop Auto Mode');
+            toast.error(result.error || translate('Failed to stop Auto Mode'));
           }
         } else {
           const maxConcurrency = getMaxConcurrencyForWorktree(currentProject.id, branchName);
@@ -286,13 +289,13 @@ export function WorktreePanel({
           if (result.success) {
             setAutoModeRunning(currentProject.id, branchName, true, maxConcurrency);
             const desc = branchName ? `worktree ${branchName}` : 'main branch';
-            toast.success(`Auto Mode started for ${desc}`);
+            toast.success(translate('Auto Mode started for {value1}', { value1: desc }));
           } else {
-            toast.error(result.error || 'Failed to start Auto Mode');
+            toast.error(result.error || translate('Failed to start Auto Mode'));
           }
         }
       } catch (error) {
-        toast.error('Error toggling Auto Mode');
+        toast.error(translate('Error toggling Auto Mode'));
         console.error('Auto mode toggle error:', error);
       }
     },
@@ -371,8 +374,8 @@ export function WorktreePanel({
           event.status === 'passed' ? '✅' : event.status === 'failed' ? '❌' : '⏹️';
         const statusText =
           event.status === 'passed' ? 'passed' : event.status === 'failed' ? 'failed' : 'stopped';
-        toast(`${statusEmoji} Tests ${statusText}`, {
-          description: `Exit code: ${event.exitCode ?? 'N/A'}`,
+        toast(translate('{value1} Tests {value2}', { value1: statusEmoji, value2: statusText }), {
+          description: translate('Exit code: {value1}', { value1: event.exitCode ?? 'N/A' }),
           duration: 4000,
         });
       },
@@ -441,22 +444,22 @@ export function WorktreePanel({
       try {
         const api = getElectronAPI();
         if (!api?.worktree?.startTests) {
-          toast.error('Test runner API not available');
+          toast.error(translate('Test runner API not available'));
           return;
         }
 
         const result = await api.worktree.startTests(worktree.path, { projectPath });
         if (result.success) {
-          toast.success('Tests started', {
-            description: `Running tests in ${worktree.branch}`,
+          toast.success(translate('Tests started'), {
+            description: translate('Running tests in {value1}', { value1: worktree.branch }),
           });
         } else {
-          toast.error('Failed to start tests', {
+          toast.error(translate('Failed to start tests'), {
             description: result.error || 'Unknown error',
           });
         }
       } catch (error) {
-        toast.error('Failed to start tests', {
+        toast.error(translate('Failed to start tests'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
       } finally {
@@ -472,28 +475,28 @@ export function WorktreePanel({
       try {
         const session = testRunnersStore.getActiveSession(worktree.path);
         if (!session) {
-          toast.error('No active test session to stop');
+          toast.error(translate('No active test session to stop'));
           return;
         }
 
         const api = getElectronAPI();
         if (!api?.worktree?.stopTests) {
-          toast.error('Test runner API not available');
+          toast.error(translate('Test runner API not available'));
           return;
         }
 
         const result = await api.worktree.stopTests(session.sessionId);
         if (result.success) {
-          toast.success('Tests stopped', {
-            description: `Stopped tests in ${worktree.branch}`,
+          toast.success(translate('Tests stopped'), {
+            description: translate('Stopped tests in {value1}', { value1: worktree.branch }),
           });
         } else {
-          toast.error(result.error || 'Failed to stop tests', {
+          toast.error(result.error || translate('Failed to stop tests'), {
             description: result.error || 'Unknown error',
           });
         }
       } catch (error) {
-        toast.error('Failed to stop tests', {
+        toast.error(translate('Failed to stop tests'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
       }
@@ -630,13 +633,13 @@ export function WorktreePanel({
         );
 
         if (!result.success) {
-          toast.error('Failed to run init script', {
+          toast.error(translate('Failed to run init script'), {
             description: result.error,
           });
         }
         // Success feedback will come via WebSocket events (init-started, init-output, init-completed)
       } catch (error) {
-        toast.error('Failed to run init script', {
+        toast.error(translate('Failed to run init script'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
       }
@@ -700,13 +703,13 @@ export function WorktreePanel({
         const api = getHttpApiClient();
         const result = await api.worktree.abortOperation(worktree.path);
         if (result.success && result.result) {
-          toast.success(result.result.message || 'Operation aborted successfully');
+          toast.success(result.result.message || translate('Operation aborted successfully'));
           fetchWorktrees({ silent: true });
         } else {
-          toast.error(result.error || 'Failed to abort operation');
+          toast.error(result.error || translate('Failed to abort operation'));
         }
       } catch (error) {
-        toast.error('Failed to abort operation', {
+        toast.error(translate('Failed to abort operation'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
       }
@@ -721,13 +724,13 @@ export function WorktreePanel({
         const api = getHttpApiClient();
         const result = await api.worktree.continueOperation(worktree.path);
         if (result.success && result.result) {
-          toast.success(result.result.message || 'Operation continued successfully');
+          toast.success(result.result.message || translate('Operation continued successfully'));
           fetchWorktrees({ silent: true });
         } else {
-          toast.error(result.error || 'Failed to continue operation');
+          toast.error(result.error || translate('Failed to continue operation'));
         }
       } catch (error) {
-        toast.error('Failed to continue operation', {
+        toast.error(translate('Failed to continue operation'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
       }
@@ -934,7 +937,7 @@ export function WorktreePanel({
       try {
         const api = getElectronAPI();
         if (!api?.worktree?.push) {
-          toast.error('Push API not available');
+          toast.error(translate('Push API not available'));
           return;
         }
         const result = await api.worktree.push(worktree.path, false, remote);
@@ -943,10 +946,10 @@ export function WorktreePanel({
           fetchBranches(worktree.path);
           fetchWorktrees();
         } else {
-          toast.error(result.error || 'Failed to push changes');
+          toast.error(result.error || translate('Failed to push changes'));
         }
       } catch {
-        toast.error('Failed to push changes');
+        toast.error(translate('Failed to push changes'));
       }
     },
     [fetchBranches, fetchWorktrees]
@@ -1088,7 +1091,7 @@ export function WorktreePanel({
               size="sm"
               className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground shrink-0"
               onClick={onCreateWorktree}
-              title="Create new worktree"
+              title={translate('Create new worktree')}
             >
               <Plus className="w-4 h-4" />
             </Button>
@@ -1104,7 +1107,7 @@ export function WorktreePanel({
                 }
               }}
               disabled={isLoading}
-              title="Refresh worktrees"
+              title={translate('Refresh worktrees')}
             >
               {isLoading ? <Spinner size="xs" /> : <RefreshCw className="w-3.5 h-3.5" />}
             </Button>
@@ -1241,7 +1244,7 @@ export function WorktreePanel({
     <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 border-b border-border bg-glass/50 backdrop-blur-sm">
       <GitEnvironmentStatus path={currentWorktreePath ?? projectPath} />
       <GitBranch className="w-4 h-4 text-muted-foreground shrink-0" />
-      <span className="text-sm text-muted-foreground mr-2 shrink-0">Worktree:</span>
+      <span className="text-sm text-muted-foreground mr-2 shrink-0">{translate('Worktree:')}</span>
 
       {/* When only 1 pinned slot (main only) and there are other worktrees,
           use a compact dropdown to switch between them without highlighting main */}
@@ -1511,7 +1514,7 @@ export function WorktreePanel({
             size="sm"
             className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
             onClick={onCreateWorktree}
-            title="Create new worktree"
+            title={translate('Create new worktree')}
           >
             <Plus className="w-4 h-4" />
           </Button>
@@ -1527,7 +1530,7 @@ export function WorktreePanel({
               }
             }}
             disabled={isLoading}
-            title="Refresh worktrees"
+            title={translate('Refresh worktrees')}
           >
             {isLoading ? <Spinner size="xs" /> : <RefreshCw className="w-3.5 h-3.5" />}
           </Button>

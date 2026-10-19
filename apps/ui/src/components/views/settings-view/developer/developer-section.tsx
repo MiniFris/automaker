@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Code2 } from 'lucide-react';
@@ -6,16 +7,49 @@ import { useAppStore, type ServerLogLevel } from '@/store/app-store';
 import { toast } from 'sonner';
 
 const LOG_LEVEL_OPTIONS: { value: ServerLogLevel; label: string; description: string }[] = [
-  { value: 'error', label: 'Error', description: 'Only show error messages' },
-  { value: 'warn', label: 'Warning', description: 'Show warnings and errors' },
-  { value: 'info', label: 'Info', description: 'Show general information (default)' },
-  { value: 'debug', label: 'Debug', description: 'Show all messages including debug' },
+  {
+    value: 'error',
+    get label() {
+      return translate('Error');
+    },
+    get description() {
+      return translate('Only show error messages');
+    },
+  },
+  {
+    value: 'warn',
+    get label() {
+      return translate('Warning');
+    },
+    get description() {
+      return translate('Show warnings and errors');
+    },
+  },
+  {
+    value: 'info',
+    get label() {
+      return translate('Info');
+    },
+    get description() {
+      return translate('Show general information (default)');
+    },
+  },
+  {
+    value: 'debug',
+    get label() {
+      return translate('Debug');
+    },
+    get description() {
+      return translate('Show all messages including debug');
+    },
+  },
 ];
 
 // Check if we're in development mode
 const IS_DEV = import.meta.env.DEV;
 
 export function DeveloperSection() {
+  useUiLocale();
   const {
     serverLogLevel,
     setServerLogLevel,
@@ -39,27 +73,33 @@ export function DeveloperSection() {
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-600/10 flex items-center justify-center border border-purple-500/20">
             <Code2 className="w-5 h-5 text-purple-500" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground tracking-tight">Developer</h2>
+          <h2 className="text-lg font-semibold text-foreground tracking-tight">
+            {translate('Developer')}
+          </h2>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Advanced settings for debugging and development.
+          {translate('Advanced settings for debugging and development.')}
         </p>
       </div>
       <div className="p-6 space-y-6">
         {/* Server Log Level */}
         <div className="space-y-3">
-          <Label className="text-foreground font-medium">Server Log Level</Label>
+          <Label className="text-foreground font-medium">{translate('Server Log Level')}</Label>
           <p className="text-xs text-muted-foreground">
-            Control the verbosity of API server logs. Set to "Error" to only see error messages in
-            the server console.
+            {translate(
+              'Control the verbosity of API server logs. Set to "Error" to only see error messages in the server console.'
+            )}
           </p>
           <select
             value={serverLogLevel}
             onChange={(e) => {
               setServerLogLevel(e.target.value as ServerLogLevel);
-              toast.success(`Log level changed to ${e.target.value}`, {
-                description: 'Server logging verbosity updated',
-              });
+              toast.success(
+                translate('Log level changed to {value1}', { value1: e.target.value }),
+                {
+                  description: translate('Server logging verbosity updated'),
+                }
+              );
             }}
             className={cn(
               'w-full px-3 py-2 rounded-lg',
@@ -79,18 +119,25 @@ export function DeveloperSection() {
         {/* HTTP Request Logging */}
         <div className="flex items-center justify-between pt-4 border-t border-border/30">
           <div className="space-y-1">
-            <Label className="text-foreground font-medium">HTTP Request Logging</Label>
+            <Label className="text-foreground font-medium">
+              {translate('HTTP Request Logging')}
+            </Label>
             <p className="text-xs text-muted-foreground">
-              Log all HTTP requests (method, URL, status) to the server console.
+              {translate('Log all HTTP requests (method, URL, status) to the server console.')}
             </p>
           </div>
           <Switch
             checked={enableRequestLogging}
             onCheckedChange={(checked) => {
               setEnableRequestLogging(checked);
-              toast.success(checked ? 'Request logging enabled' : 'Request logging disabled', {
-                description: 'HTTP request logging updated',
-              });
+              toast.success(
+                checked
+                  ? translate('Request logging enabled')
+                  : translate('Request logging disabled'),
+                {
+                  description: translate('HTTP request logging updated'),
+                }
+              );
             }}
           />
         </div>
@@ -99,19 +146,27 @@ export function DeveloperSection() {
         {IS_DEV && (
           <div className="flex items-center justify-between pt-4 border-t border-border/30">
             <div className="space-y-1">
-              <Label className="text-foreground font-medium">React Query DevTools</Label>
+              <Label className="text-foreground font-medium">
+                {translate('React Query DevTools')}
+              </Label>
               <p className="text-xs text-muted-foreground">
-                Show React Query DevTools panel in the bottom-right corner for debugging queries and
-                cache.
+                {translate(
+                  'Show React Query DevTools panel in the bottom-right corner for debugging queries and cache.'
+                )}
               </p>
             </div>
             <Switch
               checked={showQueryDevtools}
               onCheckedChange={(checked) => {
                 setShowQueryDevtools(checked);
-                toast.success(checked ? 'Query DevTools enabled' : 'Query DevTools disabled', {
-                  description: 'React Query DevTools visibility updated',
-                });
+                toast.success(
+                  checked
+                    ? translate('Query DevTools enabled')
+                    : translate('Query DevTools disabled'),
+                  {
+                    description: translate('React Query DevTools visibility updated'),
+                  }
+                );
               }}
             />
           </div>

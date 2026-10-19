@@ -1,3 +1,5 @@
+import { formatCount } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import React, { useState, useRef, useCallback } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { cn } from '@/lib/utils';
@@ -39,6 +41,7 @@ export function FeatureImageUpload({
   className,
   disabled = false,
 }: FeatureImageUploadProps) {
+  useUiLocale();
   const [isDragOver, setIsDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -203,10 +206,15 @@ export function FeatureImageUpload({
             )}
           </div>
           <p className="text-sm text-muted-foreground">
-            {isDragOver && !disabled ? 'Drop images here' : 'Click or drag images here'}
+            {isDragOver && !disabled
+              ? translate('Drop images here')
+              : translate('Click or drag images here')}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Up to {maxFiles} images, max {Math.round(maxFileSize / (1024 * 1024))}MB each
+            {translate('Up to ')}
+            {maxFiles} {translate(' images, max ')}
+            {Math.round(maxFileSize / (1024 * 1024))}
+            {translate('MB each')}
           </p>
         </div>
       </div>
@@ -216,7 +224,7 @@ export function FeatureImageUpload({
         <div className="mt-3 space-y-2" data-testid="feature-image-previews">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-foreground">
-              {images.length} image{images.length > 1 ? 's' : ''} selected
+              {formatCount(images.length, 'image')} {translate(' selected')}
             </p>
             <button
               type="button"
@@ -224,7 +232,7 @@ export function FeatureImageUpload({
               className="text-xs text-muted-foreground hover:text-foreground"
               disabled={disabled}
             >
-              Clear all
+              {translate('Clear all')}
             </button>
           </div>
           <div className="flex flex-wrap gap-2">

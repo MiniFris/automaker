@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useEffect, useState, useCallback } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { useAppStore } from '@/store/app-store';
@@ -61,6 +62,7 @@ interface MemoryFile {
 }
 
 export function MemoryView() {
+  useUiLocale();
   const { currentProject } = useAppStore();
   const [memoryFiles, setMemoryFiles] = useState<MemoryFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<MemoryFile | null>(null);
@@ -302,7 +304,7 @@ export function MemoryView() {
   if (!currentProject) {
     return (
       <div className="flex-1 flex items-center justify-center" data-testid="memory-view-no-project">
-        <p className="text-muted-foreground">No project selected</p>
+        <p className="text-muted-foreground">{translate('No project selected')}</p>
       </div>
     );
   }
@@ -322,9 +324,9 @@ export function MemoryView() {
         <div className="flex items-center gap-3">
           <Brain className="w-5 h-5 text-muted-foreground" />
           <div>
-            <h1 className="text-xl font-bold">Memory Layer</h1>
+            <h1 className="text-xl font-bold">{translate('Memory Layer')}</h1>
             <p className="text-sm text-muted-foreground">
-              View and edit AI memory files for this project
+              {translate('View and edit AI memory files for this project')}
             </p>
           </div>
         </div>
@@ -338,7 +340,7 @@ export function MemoryView() {
               data-testid="refresh-memory-button"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
-              Refresh
+              {translate('Refresh')}
             </Button>
             <Button
               size="sm"
@@ -346,7 +348,7 @@ export function MemoryView() {
               data-testid="create-memory-button"
             >
               <FilePlus className="w-4 h-4 mr-2" />
-              Create Memory File
+              {translate('Create Memory File')}
             </Button>
           </div>
           {/* Tablet/Mobile: show trigger for actions panel */}
@@ -361,7 +363,7 @@ export function MemoryView() {
       <HeaderActionsPanel
         isOpen={showActionsPanel}
         onClose={() => setShowActionsPanel(false)}
-        title="Memory Actions"
+        title={translate('Memory Actions')}
       >
         <Button
           variant="outline"
@@ -373,7 +375,7 @@ export function MemoryView() {
           data-testid="refresh-memory-button-mobile"
         >
           <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh
+          {translate('Refresh')}
         </Button>
         <Button
           className="w-full justify-start"
@@ -384,7 +386,7 @@ export function MemoryView() {
           data-testid="create-memory-button-mobile"
         >
           <FilePlus className="w-4 h-4 mr-2" />
-          Create Memory File
+          {translate('Create Memory File')}
         </Button>
       </HeaderActionsPanel>
 
@@ -404,7 +406,8 @@ export function MemoryView() {
         >
           <div className="p-3 border-b border-border">
             <h2 className="text-sm font-semibold text-muted-foreground">
-              Memory Files ({memoryFiles.length})
+              {translate('Memory Files (')}
+              {memoryFiles.length})
             </h2>
           </div>
           <div className="flex-1 overflow-y-auto p-2" data-testid="memory-file-list">
@@ -412,9 +415,9 @@ export function MemoryView() {
               <div className="flex flex-col items-center justify-center h-full text-center p-4">
                 <Brain className="w-8 h-8 text-muted-foreground mb-2" />
                 <p className="text-sm text-muted-foreground">
-                  No memory files yet.
+                  {translate('No memory files yet.')}
                   <br />
-                  Create a memory file to get started.
+                  {translate('Create a memory file to get started.')}
                 </p>
               </div>
             ) : (
@@ -455,7 +458,7 @@ export function MemoryView() {
                           data-testid={`rename-memory-file-${file.name}`}
                         >
                           <Pencil className="w-4 h-4 mr-2" />
-                          Rename
+                          {translate('Rename')}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleDeleteFromList(file)}
@@ -463,7 +466,7 @@ export function MemoryView() {
                           data-testid={`delete-memory-file-${file.name}`}
                         >
                           <Trash2 className="w-4 h-4 mr-2" />
-                          Delete
+                          {translate('Delete')}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -494,8 +497,8 @@ export function MemoryView() {
                       size="sm"
                       onClick={() => setSelectedFile(null)}
                       className="shrink-0 -ml-1"
-                      aria-label="Back"
-                      title="Back"
+                      aria-label={translate('Back')}
+                      title={translate('Back')}
                     >
                       <ArrowLeft className="h-4 w-4" />
                     </Button>
@@ -510,18 +513,18 @@ export function MemoryView() {
                     size="sm"
                     onClick={() => setIsPreviewMode(!isPreviewMode)}
                     data-testid="toggle-preview-mode"
-                    aria-label={isPreviewMode ? 'Edit' : 'Preview'}
-                    title={isPreviewMode ? 'Edit' : 'Preview'}
+                    aria-label={isPreviewMode ? translate('Edit') : translate('Preview')}
+                    title={isPreviewMode ? translate('Edit') : translate('Preview')}
                   >
                     {isPreviewMode ? (
                       <>
                         <Pencil className="w-4 h-4" />
-                        {!isMobile && <span className="ml-2">Edit</span>}
+                        {!isMobile && <span className="ml-2">{translate('Edit')}</span>}
                       </>
                     ) : (
                       <>
                         <Eye className="w-4 h-4" />
-                        {!isMobile && <span className="ml-2">Preview</span>}
+                        {!isMobile && <span className="ml-2">{translate('Preview')}</span>}
                       </>
                     )}
                   </Button>
@@ -530,13 +533,17 @@ export function MemoryView() {
                     onClick={saveFile}
                     disabled={!hasChanges || isSaving}
                     data-testid="save-memory-file"
-                    aria-label="Save"
-                    title="Save"
+                    aria-label={translate('Save')}
+                    title={translate('Save')}
                   >
                     <Save className="w-4 h-4" />
                     {!isMobile && (
                       <span className="ml-2">
-                        {isSaving ? 'Saving...' : hasChanges ? 'Save' : 'Saved'}
+                        {isSaving
+                          ? translate('Saving...')
+                          : hasChanges
+                            ? translate('Save')
+                            : translate('Saved')}
                       </span>
                     )}
                   </Button>
@@ -548,8 +555,8 @@ export function MemoryView() {
                       onClick={() => setIsDeleteDialogOpen(true)}
                       className="text-red-500 hover:text-red-400 hover:border-red-500/50"
                       data-testid="delete-memory-file"
-                      aria-label="Delete"
-                      title="Delete"
+                      aria-label={translate('Delete')}
+                      title={translate('Delete')}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -569,7 +576,7 @@ export function MemoryView() {
                       className="w-full h-full p-4 font-mono text-sm bg-transparent resize-none focus:outline-none"
                       value={editedContent}
                       onChange={(e) => handleContentChange(e.target.value)}
-                      placeholder="Enter memory content here..."
+                      placeholder={translate('Enter memory content here...')}
                       spellCheck={false}
                       data-testid="memory-editor"
                     />
@@ -581,9 +588,11 @@ export function MemoryView() {
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
                 <Brain className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                <p className="text-foreground-secondary">Select a file to view or edit</p>
+                <p className="text-foreground-secondary">
+                  {translate('Select a file to view or edit')}
+                </p>
                 <p className="text-muted-foreground text-sm mt-1">
-                  Memory files help AI agents learn from past interactions
+                  {translate('Memory files help AI agents learn from past interactions')}
                 </p>
               </div>
             </div>
@@ -598,14 +607,14 @@ export function MemoryView() {
           className="w-[60vw] max-w-[60vw] max-h-[80vh] flex flex-col"
         >
           <DialogHeader>
-            <DialogTitle>Create Memory File</DialogTitle>
+            <DialogTitle>{translate('Create Memory File')}</DialogTitle>
             <DialogDescription>
-              Create a new memory file to store learnings and patterns for AI agents.
+              {translate('Create a new memory file to store learnings and patterns for AI agents.')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4 flex-1 overflow-auto">
             <div className="space-y-2">
-              <Label htmlFor="memory-filename">File Name</Label>
+              <Label htmlFor="memory-filename">{translate('File Name')}</Label>
               <Input
                 id="memory-filename"
                 value={newMemoryName}
@@ -616,12 +625,12 @@ export function MemoryView() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="memory-content">Content</Label>
+              <Label htmlFor="memory-content">{translate('Content')}</Label>
               <textarea
                 id="memory-content"
                 value={newMemoryContent}
                 onChange={(e) => setNewMemoryContent(e.target.value)}
-                placeholder="Enter your memory content here..."
+                placeholder={translate('Enter your memory content here...')}
                 className="w-full h-60 p-3 font-mono text-sm bg-background border border-border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                 spellCheck={false}
                 data-testid="new-memory-content"
@@ -637,14 +646,14 @@ export function MemoryView() {
                 setNewMemoryContent('');
               }}
             >
-              Cancel
+              {translate('Cancel')}
             </Button>
             <Button
               onClick={handleCreateMemory}
               disabled={!newMemoryName.trim()}
               data-testid="confirm-create-memory"
             >
-              Create
+              {translate('Create')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -654,14 +663,16 @@ export function MemoryView() {
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent data-testid="delete-memory-dialog">
           <DialogHeader>
-            <DialogTitle>Delete Memory File</DialogTitle>
+            <DialogTitle>{translate('Delete Memory File')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{selectedFile?.name}"? This action cannot be undone.
+              {translate('Are you sure you want to delete "')}
+              {selectedFile?.name}
+              {translate('"? This action cannot be undone.')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
+              {translate('Cancel')}
             </Button>
             <Button
               variant="destructive"
@@ -669,7 +680,7 @@ export function MemoryView() {
               className="bg-red-600 hover:bg-red-700"
               data-testid="confirm-delete-file"
             >
-              Delete
+              {translate('Delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -679,17 +690,20 @@ export function MemoryView() {
       <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
         <DialogContent data-testid="rename-memory-dialog">
           <DialogHeader>
-            <DialogTitle>Rename Memory File</DialogTitle>
-            <DialogDescription>Enter a new name for "{selectedFile?.name}".</DialogDescription>
+            <DialogTitle>{translate('Rename Memory File')}</DialogTitle>
+            <DialogDescription>
+              {translate('Enter a new name for "')}
+              {selectedFile?.name}".
+            </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <div className="space-y-2">
-              <Label htmlFor="rename-filename">File Name</Label>
+              <Label htmlFor="rename-filename">{translate('File Name')}</Label>
               <Input
                 id="rename-filename"
                 value={renameFileName}
                 onChange={(e) => setRenameFileName(e.target.value)}
-                placeholder="Enter new filename"
+                placeholder={translate('Enter new filename')}
                 data-testid="rename-file-input"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && renameFileName.trim()) {
@@ -707,14 +721,14 @@ export function MemoryView() {
                 setRenameFileName('');
               }}
             >
-              Cancel
+              {translate('Cancel')}
             </Button>
             <Button
               onClick={handleRenameFile}
               disabled={!renameFileName.trim() || renameFileName === selectedFile?.name}
               data-testid="confirm-rename-file"
             >
-              Rename
+              {translate('Rename')}
             </Button>
           </DialogFooter>
         </DialogContent>

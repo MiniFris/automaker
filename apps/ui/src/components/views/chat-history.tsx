@@ -1,3 +1,6 @@
+import { useLocalizedMemo } from '@/lib/i18n';
+import { getFormattingLocale } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { UIEvent } from 'react';
 import { useAppStore, ChatSession } from '@/store/app-store';
@@ -29,6 +32,7 @@ const CHAT_SESSION_OVERSCAN_COUNT = 6;
 const CHAT_SESSION_LIST_PADDING_PX = 8;
 
 export function ChatHistory() {
+  useUiLocale();
   const {
     chatSessions,
     currentProject,
@@ -72,7 +76,7 @@ export function ChatHistory() {
   }, [chatSessions, currentProjectId]);
 
   // Filter by search query and archived status
-  const filteredSessions = useMemo(() => {
+  const filteredSessions = useLocalizedMemo(() => {
     return projectSessions.filter((session) => {
       const matchesSearch = session.title.toLowerCase().includes(normalizedQuery);
       const matchesArchivedStatus = showArchived ? session.archived : !session.archived;
@@ -172,7 +176,7 @@ export function ChatHistory() {
 
   const handleDeleteSession = (sessionId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm('Are you sure you want to delete this chat session?')) {
+    if (confirm(translate('Are you sure you want to delete this chat session?'))) {
       deleteChatSession(sessionId);
     }
   };
@@ -190,7 +194,7 @@ export function ChatHistory() {
           <div className="flex items-center justify-between p-4 border-b border-white/10">
             <div className="flex items-center gap-2">
               <MessageSquare className="w-5 h-5" />
-              <h2 className="font-semibold">Chat History</h2>
+              <h2 className="font-semibold">{translate('Chat History')}</h2>
             </div>
             <Button variant="ghost" size="sm" onClick={() => setChatHistoryOpen(false)}>
               <ChevronLeft className="w-4 h-4" />
@@ -205,7 +209,7 @@ export function ChatHistory() {
               variant="outline"
             >
               <Plus className="w-4 h-4" />
-              New Chat
+              {translate('New Chat')}
             </Button>
           </div>
 
@@ -214,7 +218,7 @@ export function ChatHistory() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search chats..."
+                placeholder={translate('Search chats...')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -235,7 +239,7 @@ export function ChatHistory() {
               ) : (
                 <Archive className="w-4 h-4" />
               )}
-              {showArchived ? 'Show Active' : 'Show Archived'}
+              {showArchived ? translate('Show Active') : translate('Show Archived')}
               {showArchived && (
                 <Badge variant="outline" className="ml-auto">
                   {projectSessions.filter((s) => s.archived).length}
@@ -253,11 +257,11 @@ export function ChatHistory() {
             {sortedSessions.length === 0 ? (
               <div className="p-4 text-center text-muted-foreground">
                 {searchQuery ? (
-                  <>No chats match your search</>
+                  <>{translate('No chats match your search')}</>
                 ) : showArchived ? (
-                  <>No archived chats</>
+                  <>{translate('No archived chats')}</>
                 ) : (
-                  <>No active chats. Create your first chat to get started!</>
+                  <>{translate('No active chats. Create your first chat to get started!')}</>
                 )}
               </div>
             ) : (
@@ -286,10 +290,10 @@ export function ChatHistory() {
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-sm truncate">{session.title}</h3>
                         <p className="text-xs text-muted-foreground truncate">
-                          {session.messages.length} messages
+                          {session.messages.length} {translate(' messages')}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(session.updatedAt).toLocaleDateString()}
+                          {new Date(session.updatedAt).toLocaleDateString(getFormattingLocale())}
                         </p>
                       </div>
 
@@ -306,14 +310,14 @@ export function ChatHistory() {
                                 onClick={(e) => handleUnarchiveSession(session.id, e)}
                               >
                                 <ArchiveRestore className="w-4 h-4 mr-2" />
-                                Unarchive
+                                {translate('Unarchive')}
                               </DropdownMenuItem>
                             ) : (
                               <DropdownMenuItem
                                 onClick={(e) => handleArchiveSession(session.id, e)}
                               >
                                 <Archive className="w-4 h-4 mr-2" />
-                                Archive
+                                {translate('Archive')}
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuSeparator />
@@ -322,7 +326,7 @@ export function ChatHistory() {
                               className="text-destructive"
                             >
                               <Trash2 className="w-4 h-4 mr-2" />
-                              Delete
+                              {translate('Delete')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>

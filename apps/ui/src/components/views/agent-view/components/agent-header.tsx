@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Bot, PanelLeftClose, PanelLeft, Wrench, Trash2, GitBranch } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -26,6 +27,7 @@ export function AgentHeader({
   onClearChat,
   worktreeBranch,
 }: AgentHeaderProps) {
+  useUiLocale();
   return (
     <div className="flex items-center justify-between gap-2 px-3 py-3 sm:px-6 sm:py-4 border-b border-border bg-card/50 backdrop-blur-sm">
       <div className="flex items-center gap-2 sm:gap-4 min-w-0">
@@ -33,11 +35,11 @@ export function AgentHeader({
           <Bot className="w-5 h-5 text-primary" />
         </div>
         <div className="min-w-0">
-          <h1 className="text-lg font-semibold text-foreground">AI Agent</h1>
+          <h1 className="text-lg font-semibold text-foreground">{translate('AI Agent')}</h1>
           <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
             <span className="truncate">
               {projectName}
-              {currentSessionId && !isConnected && ' - Connecting...'}
+              {currentSessionId && !isConnected && translate(' - Connecting...')}
             </span>
             {worktreeBranch && (
               <span className="inline-flex items-center gap-1 text-xs bg-muted/50 px-2 py-0.5 rounded-full border border-border shrink-0">
@@ -63,11 +65,11 @@ export function AgentHeader({
             size="sm"
             onClick={onClearChat}
             disabled={isProcessing}
-            aria-label="Clear chat"
+            aria-label={translate('Clear chat')}
             className="text-muted-foreground hover:text-foreground h-8 w-8 p-0 sm:w-auto sm:px-3"
           >
             <Trash2 className="w-4 h-4 sm:mr-2" />
-            <span className="hidden sm:inline">Clear</span>
+            <span className="hidden sm:inline">{translate('Clear')}</span>
           </Button>
         )}
         <Button
@@ -75,7 +77,9 @@ export function AgentHeader({
           size="sm"
           onClick={onToggleSessionManager}
           className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-          aria-label={showSessionManager ? 'Hide sessions panel' : 'Show sessions panel'}
+          aria-label={
+            showSessionManager ? translate('Hide sessions panel') : translate('Show sessions panel')
+          }
         >
           {showSessionManager ? (
             <PanelLeftClose className="w-4 h-4" />

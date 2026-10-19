@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useLocalizedMemo } from '@/lib/i18n';
+
 import { Feature } from '@/store/app-store';
 
 export interface GraphFilterState {
@@ -136,7 +137,7 @@ export function useGraphFilter(
 ): GraphFilterResult {
   const { searchQuery, selectedCategories, selectedStatuses, isNegativeFilter } = filterState;
 
-  return useMemo(() => {
+  return useLocalizedMemo(() => {
     // Extract all unique categories
     const availableCategories = Array.from(
       new Set(features.map((f) => f.category).filter(Boolean))

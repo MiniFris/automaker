@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import * as React from 'react';
 import { GitBranch } from 'lucide-react';
 import { Autocomplete, AutocompleteOption } from '@/components/ui/autocomplete';
@@ -21,14 +22,15 @@ export function BranchAutocomplete({
   onChange,
   branches,
   branchCardCounts,
-  placeholder = 'Select a branch...',
+  placeholder = translate('Select a branch...'),
   className,
   disabled = false,
   error = false,
   allowCreate = true,
-  emptyMessage = 'No branches found.',
+  emptyMessage = translate('No branches found.'),
   'data-testid': testId,
 }: BranchAutocompleteProps) {
+  useUiLocale();
   // Always include "main" at the top of suggestions
   const branchOptions: AutocompleteOption[] = React.useMemo(() => {
     const branchSet = new Set(['main', ...branches]);
@@ -56,7 +58,9 @@ export function BranchAutocomplete({
       onChange={onChange}
       options={branchOptions}
       placeholder={placeholder}
-      searchPlaceholder={allowCreate ? 'Search or type new branch...' : 'Search branches...'}
+      searchPlaceholder={
+        allowCreate ? translate('Search or type new branch...') : translate('Search branches...')
+      }
       emptyMessage={emptyMessage}
       className={className}
       disabled={disabled}

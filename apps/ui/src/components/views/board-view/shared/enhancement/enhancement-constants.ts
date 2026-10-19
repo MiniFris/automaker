@@ -1,13 +1,24 @@
+import { translate } from '@/lib/i18n';
 import type { EnhancementMode } from '@automaker/types';
 export type { EnhancementMode } from '@automaker/types';
 
 /** Labels for enhancement modes displayed in the UI */
 export const ENHANCEMENT_MODE_LABELS: Record<EnhancementMode, string> = {
-  improve: 'Improve Clarity',
-  technical: 'Add Technical Details',
-  simplify: 'Simplify',
-  acceptance: 'Add Acceptance Criteria',
-  'ux-reviewer': 'User Experience',
+  get improve() {
+    return translate('Improve Clarity');
+  },
+  get technical() {
+    return translate('Add Technical Details');
+  },
+  get simplify() {
+    return translate('Simplify');
+  },
+  get acceptance() {
+    return translate('Add Acceptance Criteria');
+  },
+  get 'ux-reviewer'() {
+    return translate('User Experience');
+  },
 };
 
 /** Descriptions for enhancement modes (for tooltips/accessibility) */

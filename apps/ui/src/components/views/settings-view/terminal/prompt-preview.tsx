@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * Prompt Preview - Shows a live preview of the custom terminal prompt
  */
@@ -38,6 +39,7 @@ export function PromptPreview({
   promptThemeLabel,
   className,
 }: PromptPreviewProps) {
+  useUiLocale();
   const terminalTheme = getTerminalTheme(theme);
 
   const formatPath = (inputPath: string) => {
@@ -84,13 +86,13 @@ export function PromptPreview({
       return (
         <div className="font-mono text-sm leading-relaxed space-y-2">
           <div style={{ color: terminalTheme.magenta }}>
-            {promptThemeLabel ?? 'Oh My Posh theme'}
+            {promptThemeLabel ?? translate('Oh My Posh theme')}
           </div>
           <div className="text-xs text-muted-foreground">
-            Rendered by the oh-my-posh CLI in the terminal.
+            {translate('Rendered by the oh-my-posh CLI in the terminal.')}
           </div>
           <div className="text-xs text-muted-foreground">
-            Preview here stays generic to avoid misleading output.
+            {translate('Preview here stays generic to avoid misleading output.')}
           </div>
         </div>
       );
@@ -214,13 +216,13 @@ export function PromptPreview({
               )}
               {showPath && (
                 <>
-                  <span style={{ color: terminalTheme.foreground }}> in </span>
+                  <span style={{ color: terminalTheme.foreground }}> {translate(' in ')}</span>
                   <span style={{ color: terminalTheme.yellow }}>{path}</span>
                 </>
               )}
               {branch && (
                 <>
-                  <span style={{ color: terminalTheme.foreground }}> on </span>
+                  <span style={{ color: terminalTheme.foreground }}> {translate(' on ')}</span>
                   <span style={{ color: terminalTheme.magenta }}>
                     {branch}
                     {dirty}
@@ -276,7 +278,7 @@ export function PromptPreview({
         } as React.CSSProperties
       }
     >
-      <div className="mb-2 text-xs text-muted-foreground opacity-70">Preview</div>
+      <div className="mb-2 text-xs text-muted-foreground opacity-70">{translate('Preview')}</div>
       {renderPrompt()}
     </div>
   );

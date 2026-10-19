@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { memo, useCallback, useState } from 'react';
 import {
   MoreHorizontal,
@@ -87,6 +88,7 @@ const MenuItem = memo(function MenuItem({
   variant?: 'default' | 'destructive' | 'primary' | 'success' | 'warning';
   disabled?: boolean;
 }) {
+  useUiLocale();
   const variantClasses = {
     default: '',
     destructive: 'text-destructive focus:text-destructive focus:bg-destructive/10',
@@ -131,7 +133,7 @@ function getPrimaryAction(
     if (handlers.onForceStop) {
       return {
         icon: StopCircle,
-        label: 'Stop',
+        label: translate('Stop'),
         onClick: handlers.onForceStop,
         variant: 'destructive',
       };
@@ -152,7 +154,7 @@ function getPrimaryAction(
   ) {
     return {
       icon: StopCircle,
-      label: 'Stop',
+      label: translate('Stop'),
       onClick: handlers.onForceStop,
       variant: 'destructive',
     };
@@ -176,7 +178,7 @@ function getPrimaryAction(
   if (feature.status === 'in_progress' && !feature.error && handlers.onForceStop) {
     return {
       icon: StopCircle,
-      label: 'Stop',
+      label: translate('Stop'),
       onClick: handlers.onForceStop,
       variant: 'destructive',
     };
@@ -190,7 +192,7 @@ function getPrimaryAction(
   ) {
     return {
       icon: FileText,
-      label: 'Approve',
+      label: translate('Approve'),
       onClick: handlers.onApprovePlan,
       variant: 'warning',
     };
@@ -200,7 +202,7 @@ function getPrimaryAction(
   if (feature.status === 'in_progress' && handlers.onResume) {
     return {
       icon: RotateCcw,
-      label: 'Resume',
+      label: translate('Resume'),
       onClick: handlers.onResume,
       variant: 'success',
     };
@@ -210,7 +212,7 @@ function getPrimaryAction(
   if (feature.status === 'waiting_approval' && handlers.onManualVerify) {
     return {
       icon: CheckCircle2,
-      label: 'Verify',
+      label: translate('Verify'),
       onClick: handlers.onManualVerify,
       variant: 'success',
     };
@@ -220,7 +222,7 @@ function getPrimaryAction(
   if (feature.status === 'verified' && handlers.onComplete) {
     return {
       icon: Archive,
-      label: 'Complete',
+      label: translate('Complete'),
       onClick: handlers.onComplete,
       variant: 'primary',
     };
@@ -246,7 +248,7 @@ function getSecondaryActions(
   if (feature.status === 'waiting_approval' && handlers.onFollowUp) {
     actions.push({
       icon: Wand2,
-      label: 'Refine',
+      label: translate('Refine'),
       onClick: handlers.onFollowUp,
     });
   }
@@ -294,6 +296,7 @@ export const RowActions = memo(function RowActions({
   onOpenChange,
   className,
 }: RowActionsProps) {
+  useUiLocale();
   const [internalOpen, setInternalOpen] = useState(false);
 
   // Use controlled or uncontrolled state
@@ -388,7 +391,7 @@ export const RowActions = memo(function RowActions({
             data-testid={`row-actions-trigger-${feature.id}`}
           >
             <MoreHorizontal className="w-4 h-4" />
-            <span className="sr-only">Open actions menu</span>
+            <span className="sr-only">{translate('Open actions menu')}</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
@@ -398,23 +401,27 @@ export const RowActions = memo(function RowActions({
               {handlers.onViewOutput && (
                 <MenuItem
                   icon={FileText}
-                  label="View Logs"
+                  label={translate('View Logs')}
                   onClick={withClose(handlers.onViewOutput)}
                 />
               )}
               {feature.planSpec?.status === 'generated' && handlers.onApprovePlan && (
                 <MenuItem
                   icon={FileText}
-                  label="Approve Plan"
+                  label={translate('Approve Plan')}
                   onClick={withClose(handlers.onApprovePlan)}
                   variant="warning"
                 />
               )}
-              <MenuItem icon={Edit} label="Edit" onClick={withClose(handlers.onEdit)} />
+              <MenuItem
+                icon={Edit}
+                label={translate('Edit')}
+                onClick={withClose(handlers.onEdit)}
+              />
               {handlers.onSpawnTask && (
                 <MenuItem
                   icon={GitFork}
-                  label="Spawn Sub-Task"
+                  label={translate('Spawn Sub-Task')}
                   onClick={withClose(handlers.onSpawnTask)}
                 />
               )}
@@ -423,7 +430,7 @@ export const RowActions = memo(function RowActions({
                   <DropdownMenuSeparator />
                   <MenuItem
                     icon={StopCircle}
-                    label="Force Stop"
+                    label={translate('Force Stop')}
                     onClick={withClose(handlers.onForceStop)}
                     variant="destructive"
                   />
@@ -442,15 +449,19 @@ export const RowActions = memo(function RowActions({
               {handlers.onViewOutput && (
                 <MenuItem
                   icon={FileText}
-                  label="View Logs"
+                  label={translate('View Logs')}
                   onClick={withClose(handlers.onViewOutput)}
                 />
               )}
-              <MenuItem icon={Edit} label="Edit" onClick={withClose(handlers.onEdit)} />
+              <MenuItem
+                icon={Edit}
+                label={translate('Edit')}
+                onClick={withClose(handlers.onEdit)}
+              />
               {handlers.onSpawnTask && (
                 <MenuItem
                   icon={GitFork}
-                  label="Spawn Sub-Task"
+                  label={translate('Spawn Sub-Task')}
                   onClick={withClose(handlers.onSpawnTask)}
                 />
               )}
@@ -459,7 +470,7 @@ export const RowActions = memo(function RowActions({
                   <DropdownMenuSeparator />
                   <MenuItem
                     icon={StopCircle}
-                    label="Force Stop"
+                    label={translate('Force Stop')}
                     onClick={withClose(handlers.onForceStop)}
                     variant="destructive"
                   />
@@ -473,21 +484,31 @@ export const RowActions = memo(function RowActions({
             !isRunningTask &&
             (feature.status === 'backlog' || feature.status === 'merge_conflict') && (
               <>
-                <MenuItem icon={Edit} label="Edit" onClick={withClose(handlers.onEdit)} />
+                <MenuItem
+                  icon={Edit}
+                  label={translate('Edit')}
+                  onClick={withClose(handlers.onEdit)}
+                />
                 {handlers.onViewOutput && (
                   <MenuItem
                     icon={FileText}
-                    label="View Logs"
+                    label={translate('View Logs')}
                     onClick={withClose(handlers.onViewOutput)}
                   />
                 )}
                 {feature.planSpec?.content && handlers.onViewPlan && (
-                  <MenuItem icon={Eye} label="View Plan" onClick={withClose(handlers.onViewPlan)} />
+                  <MenuItem
+                    icon={Eye}
+                    label={translate('View Plan')}
+                    onClick={withClose(handlers.onViewPlan)}
+                  />
                 )}
                 {handlers.onImplement && (
                   <MenuItem
                     icon={feature.status === 'merge_conflict' ? RotateCcw : PlayCircle}
-                    label={feature.status === 'merge_conflict' ? 'Restart' : 'Make'}
+                    label={
+                      feature.status === 'merge_conflict' ? translate('Restart') : translate('Make')
+                    }
                     onClick={withClose(handlers.onImplement)}
                     variant="primary"
                   />
@@ -495,7 +516,7 @@ export const RowActions = memo(function RowActions({
                 {handlers.onSpawnTask && (
                   <MenuItem
                     icon={GitFork}
-                    label="Spawn Sub-Task"
+                    label={translate('Spawn Sub-Task')}
                     onClick={withClose(handlers.onSpawnTask)}
                   />
                 )}
@@ -507,7 +528,7 @@ export const RowActions = memo(function RowActions({
                         className="flex-1 pr-0 rounded-r-none"
                       >
                         <Copy className="w-4 h-4 mr-2" />
-                        Duplicate
+                        {translate('Duplicate')}
                       </DropdownMenuItem>
                       {handlers.onDuplicateAsChild && (
                         <DropdownMenuSubTrigger className="px-1 rounded-l-none border-l border-border/30 h-8" />
@@ -517,13 +538,13 @@ export const RowActions = memo(function RowActions({
                       <DropdownMenuSubContent>
                         <MenuItem
                           icon={GitFork}
-                          label="Duplicate as Child"
+                          label={translate('Duplicate as Child')}
                           onClick={withClose(handlers.onDuplicateAsChild)}
                         />
                         {handlers.onDuplicateAsChildMultiple && (
                           <MenuItem
                             icon={Repeat}
-                            label="Duplicate as Child ×N"
+                            label={translate('Duplicate as Child ×N')}
                             onClick={withClose(handlers.onDuplicateAsChildMultiple)}
                           />
                         )}
@@ -534,7 +555,7 @@ export const RowActions = memo(function RowActions({
                 <DropdownMenuSeparator />
                 <MenuItem
                   icon={Trash2}
-                  label="Delete"
+                  label={translate('Delete')}
                   onClick={withClose(handlers.onDelete)}
                   variant="destructive"
                 />
@@ -550,23 +571,27 @@ export const RowActions = memo(function RowActions({
                 {handlers.onViewOutput && (
                   <MenuItem
                     icon={FileText}
-                    label="View Logs"
+                    label={translate('View Logs')}
                     onClick={withClose(handlers.onViewOutput)}
                   />
                 )}
                 {feature.planSpec?.status === 'generated' && handlers.onApprovePlan && (
                   <MenuItem
                     icon={FileText}
-                    label="Approve Plan"
+                    label={translate('Approve Plan')}
                     onClick={withClose(handlers.onApprovePlan)}
                     variant="warning"
                   />
                 )}
-                <MenuItem icon={Edit} label="Edit" onClick={withClose(handlers.onEdit)} />
+                <MenuItem
+                  icon={Edit}
+                  label={translate('Edit')}
+                  onClick={withClose(handlers.onEdit)}
+                />
                 {handlers.onSpawnTask && (
                   <MenuItem
                     icon={GitFork}
-                    label="Spawn Sub-Task"
+                    label={translate('Spawn Sub-Task')}
                     onClick={withClose(handlers.onSpawnTask)}
                   />
                 )}
@@ -575,7 +600,7 @@ export const RowActions = memo(function RowActions({
                     <DropdownMenuSeparator />
                     <MenuItem
                       icon={StopCircle}
-                      label="Force Stop"
+                      label={translate('Force Stop')}
                       onClick={withClose(handlers.onForceStop)}
                       variant="destructive"
                     />
@@ -592,14 +617,14 @@ export const RowActions = memo(function RowActions({
                 {handlers.onViewOutput && (
                   <MenuItem
                     icon={FileText}
-                    label="View Logs"
+                    label={translate('View Logs')}
                     onClick={withClose(handlers.onViewOutput)}
                   />
                 )}
                 {feature.planSpec?.status === 'generated' && handlers.onApprovePlan && (
                   <MenuItem
                     icon={FileText}
-                    label="Approve Plan"
+                    label={translate('Approve Plan')}
                     onClick={withClose(handlers.onApprovePlan)}
                     variant="warning"
                   />
@@ -607,24 +632,28 @@ export const RowActions = memo(function RowActions({
                 {feature.skipTests && handlers.onManualVerify ? (
                   <MenuItem
                     icon={CheckCircle2}
-                    label="Verify"
+                    label={translate('Verify')}
                     onClick={withClose(handlers.onManualVerify)}
                     variant="success"
                   />
                 ) : handlers.onResume ? (
                   <MenuItem
                     icon={RotateCcw}
-                    label="Resume"
+                    label={translate('Resume')}
                     onClick={withClose(handlers.onResume)}
                     variant="success"
                   />
                 ) : null}
                 <DropdownMenuSeparator />
-                <MenuItem icon={Edit} label="Edit" onClick={withClose(handlers.onEdit)} />
+                <MenuItem
+                  icon={Edit}
+                  label={translate('Edit')}
+                  onClick={withClose(handlers.onEdit)}
+                />
                 {handlers.onSpawnTask && (
                   <MenuItem
                     icon={GitFork}
-                    label="Spawn Sub-Task"
+                    label={translate('Spawn Sub-Task')}
                     onClick={withClose(handlers.onSpawnTask)}
                   />
                 )}
@@ -636,7 +665,7 @@ export const RowActions = memo(function RowActions({
                         className="flex-1 pr-0 rounded-r-none"
                       >
                         <Copy className="w-4 h-4 mr-2" />
-                        Duplicate
+                        {translate('Duplicate')}
                       </DropdownMenuItem>
                       {handlers.onDuplicateAsChild && (
                         <DropdownMenuSubTrigger className="px-1 rounded-l-none border-l border-border/30 h-8" />
@@ -646,13 +675,13 @@ export const RowActions = memo(function RowActions({
                       <DropdownMenuSubContent>
                         <MenuItem
                           icon={GitFork}
-                          label="Duplicate as Child"
+                          label={translate('Duplicate as Child')}
                           onClick={withClose(handlers.onDuplicateAsChild)}
                         />
                         {handlers.onDuplicateAsChildMultiple && (
                           <MenuItem
                             icon={Repeat}
-                            label="Duplicate as Child ×N"
+                            label={translate('Duplicate as Child ×N')}
                             onClick={withClose(handlers.onDuplicateAsChildMultiple)}
                           />
                         )}
@@ -662,7 +691,7 @@ export const RowActions = memo(function RowActions({
                 )}
                 <MenuItem
                   icon={Trash2}
-                  label="Delete"
+                  label={translate('Delete')}
                   onClick={withClose(handlers.onDelete)}
                   variant="destructive"
                 />
@@ -675,34 +704,42 @@ export const RowActions = memo(function RowActions({
               {handlers.onViewOutput && (
                 <MenuItem
                   icon={FileText}
-                  label="View Logs"
+                  label={translate('View Logs')}
                   onClick={withClose(handlers.onViewOutput)}
                 />
               )}
               {handlers.onFollowUp && (
-                <MenuItem icon={Wand2} label="Refine" onClick={withClose(handlers.onFollowUp)} />
+                <MenuItem
+                  icon={Wand2}
+                  label={translate('Refine')}
+                  onClick={withClose(handlers.onFollowUp)}
+                />
               )}
               {feature.prUrl && (
                 <MenuItem
                   icon={ExternalLink}
-                  label="View PR"
+                  label={translate('View PR')}
                   onClick={withClose(() => window.open(feature.prUrl, '_blank'))}
                 />
               )}
               {handlers.onManualVerify && (
                 <MenuItem
                   icon={CheckCircle2}
-                  label={feature.prUrl ? 'Verify' : 'Mark as Verified'}
+                  label={feature.prUrl ? translate('Verify') : translate('Mark as Verified')}
                   onClick={withClose(handlers.onManualVerify)}
                   variant="success"
                 />
               )}
               <DropdownMenuSeparator />
-              <MenuItem icon={Edit} label="Edit" onClick={withClose(handlers.onEdit)} />
+              <MenuItem
+                icon={Edit}
+                label={translate('Edit')}
+                onClick={withClose(handlers.onEdit)}
+              />
               {handlers.onSpawnTask && (
                 <MenuItem
                   icon={GitFork}
-                  label="Spawn Sub-Task"
+                  label={translate('Spawn Sub-Task')}
                   onClick={withClose(handlers.onSpawnTask)}
                 />
               )}
@@ -714,7 +751,7 @@ export const RowActions = memo(function RowActions({
                       className="flex-1 pr-0 rounded-r-none"
                     >
                       <Copy className="w-4 h-4 mr-2" />
-                      Duplicate
+                      {translate('Duplicate')}
                     </DropdownMenuItem>
                     {handlers.onDuplicateAsChild && (
                       <DropdownMenuSubTrigger className="px-1 rounded-l-none border-l border-border/30 h-8" />
@@ -724,13 +761,13 @@ export const RowActions = memo(function RowActions({
                     <DropdownMenuSubContent>
                       <MenuItem
                         icon={GitFork}
-                        label="Duplicate as Child"
+                        label={translate('Duplicate as Child')}
                         onClick={withClose(handlers.onDuplicateAsChild)}
                       />
                       {handlers.onDuplicateAsChildMultiple && (
                         <MenuItem
                           icon={Repeat}
-                          label="Duplicate as Child ×N"
+                          label={translate('Duplicate as Child ×N')}
                           onClick={withClose(handlers.onDuplicateAsChildMultiple)}
                         />
                       )}
@@ -740,7 +777,7 @@ export const RowActions = memo(function RowActions({
               )}
               <MenuItem
                 icon={Trash2}
-                label="Delete"
+                label={translate('Delete')}
                 onClick={withClose(handlers.onDelete)}
                 variant="destructive"
               />
@@ -753,21 +790,21 @@ export const RowActions = memo(function RowActions({
               {handlers.onViewOutput && (
                 <MenuItem
                   icon={FileText}
-                  label="View Logs"
+                  label={translate('View Logs')}
                   onClick={withClose(handlers.onViewOutput)}
                 />
               )}
               {feature.prUrl && (
                 <MenuItem
                   icon={ExternalLink}
-                  label="View PR"
+                  label={translate('View PR')}
                   onClick={withClose(() => window.open(feature.prUrl, '_blank'))}
                 />
               )}
               {feature.worktree && (
                 <MenuItem
                   icon={GitBranch}
-                  label="View Branch"
+                  label={translate('View Branch')}
                   onClick={withClose(() => {})}
                   disabled
                 />
@@ -775,17 +812,21 @@ export const RowActions = memo(function RowActions({
               {handlers.onComplete && (
                 <MenuItem
                   icon={Archive}
-                  label="Complete"
+                  label={translate('Complete')}
                   onClick={withClose(handlers.onComplete)}
                   variant="primary"
                 />
               )}
               <DropdownMenuSeparator />
-              <MenuItem icon={Edit} label="Edit" onClick={withClose(handlers.onEdit)} />
+              <MenuItem
+                icon={Edit}
+                label={translate('Edit')}
+                onClick={withClose(handlers.onEdit)}
+              />
               {handlers.onSpawnTask && (
                 <MenuItem
                   icon={GitFork}
-                  label="Spawn Sub-Task"
+                  label={translate('Spawn Sub-Task')}
                   onClick={withClose(handlers.onSpawnTask)}
                 />
               )}
@@ -797,7 +838,7 @@ export const RowActions = memo(function RowActions({
                       className="flex-1 pr-0 rounded-r-none"
                     >
                       <Copy className="w-4 h-4 mr-2" />
-                      Duplicate
+                      {translate('Duplicate')}
                     </DropdownMenuItem>
                     {handlers.onDuplicateAsChild && (
                       <DropdownMenuSubTrigger className="px-1 rounded-l-none border-l border-border/30 h-8" />
@@ -807,13 +848,13 @@ export const RowActions = memo(function RowActions({
                     <DropdownMenuSubContent>
                       <MenuItem
                         icon={GitFork}
-                        label="Duplicate as Child"
+                        label={translate('Duplicate as Child')}
                         onClick={withClose(handlers.onDuplicateAsChild)}
                       />
                       {handlers.onDuplicateAsChildMultiple && (
                         <MenuItem
                           icon={Repeat}
-                          label="Duplicate as Child ×N"
+                          label={translate('Duplicate as Child ×N')}
                           onClick={withClose(handlers.onDuplicateAsChildMultiple)}
                         />
                       )}
@@ -823,7 +864,7 @@ export const RowActions = memo(function RowActions({
               )}
               <MenuItem
                 icon={Trash2}
-                label="Delete"
+                label={translate('Delete')}
                 onClick={withClose(handlers.onDelete)}
                 variant="destructive"
               />
@@ -836,15 +877,19 @@ export const RowActions = memo(function RowActions({
               {handlers.onViewOutput && (
                 <MenuItem
                   icon={FileText}
-                  label="View Logs"
+                  label={translate('View Logs')}
                   onClick={withClose(handlers.onViewOutput)}
                 />
               )}
-              <MenuItem icon={Edit} label="Edit" onClick={withClose(handlers.onEdit)} />
+              <MenuItem
+                icon={Edit}
+                label={translate('Edit')}
+                onClick={withClose(handlers.onEdit)}
+              />
               {handlers.onSpawnTask && (
                 <MenuItem
                   icon={GitFork}
-                  label="Spawn Sub-Task"
+                  label={translate('Spawn Sub-Task')}
                   onClick={withClose(handlers.onSpawnTask)}
                 />
               )}
@@ -856,7 +901,7 @@ export const RowActions = memo(function RowActions({
                       className="flex-1 pr-0 rounded-r-none"
                     >
                       <Copy className="w-4 h-4 mr-2" />
-                      Duplicate
+                      {translate('Duplicate')}
                     </DropdownMenuItem>
                     {handlers.onDuplicateAsChild && (
                       <DropdownMenuSubTrigger className="px-1 rounded-l-none border-l border-border/30 h-8" />
@@ -866,13 +911,13 @@ export const RowActions = memo(function RowActions({
                     <DropdownMenuSubContent>
                       <MenuItem
                         icon={GitFork}
-                        label="Duplicate as Child"
+                        label={translate('Duplicate as Child')}
                         onClick={withClose(handlers.onDuplicateAsChild)}
                       />
                       {handlers.onDuplicateAsChildMultiple && (
                         <MenuItem
                           icon={Repeat}
-                          label="Duplicate as Child ×N"
+                          label={translate('Duplicate as Child ×N')}
                           onClick={withClose(handlers.onDuplicateAsChildMultiple)}
                         />
                       )}
@@ -883,7 +928,7 @@ export const RowActions = memo(function RowActions({
               <DropdownMenuSeparator />
               <MenuItem
                 icon={Trash2}
-                label="Delete"
+                label={translate('Delete')}
                 onClick={withClose(handlers.onDelete)}
                 variant="destructive"
               />

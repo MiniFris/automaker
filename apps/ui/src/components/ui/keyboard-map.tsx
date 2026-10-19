@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import * as React from 'react';
 import {
   useAppStore,
@@ -83,32 +84,84 @@ const KEYBOARD_ROWS = [
 
 // Map shortcut names to human-readable labels
 const SHORTCUT_LABELS: Record<keyof KeyboardShortcuts, string> = {
-  board: 'Kanban Board',
-  graph: 'Graph View',
-  agent: 'Agent Runner',
-  spec: 'Spec Editor',
-  context: 'Context',
-  memory: 'Memory',
-  settings: 'Settings',
-  projectSettings: 'Project Settings',
-  terminal: 'Terminal',
-  ideation: 'Ideation',
-  notifications: 'Notifications',
-  githubIssues: 'GitHub Issues',
-  githubPrs: 'Pull Requests',
-  toggleSidebar: 'Toggle Sidebar',
-  addFeature: 'Add Feature',
-  addContextFile: 'Add Context File',
-  startNext: 'Start Next',
-  newSession: 'New Session',
-  openProject: 'Open Project',
-  projectPicker: 'Project Picker',
-  cyclePrevProject: 'Prev Project',
-  cycleNextProject: 'Next Project',
-  splitTerminalRight: 'Split Right',
-  splitTerminalDown: 'Split Down',
-  closeTerminal: 'Close Terminal',
-  newTerminalTab: 'New Tab',
+  get board() {
+    return translate('Kanban Board');
+  },
+  get graph() {
+    return translate('Graph View');
+  },
+  get agent() {
+    return translate('Agent Runner');
+  },
+  get spec() {
+    return translate('Spec Editor');
+  },
+  get context() {
+    return translate('Context');
+  },
+  get memory() {
+    return translate('Memory');
+  },
+  get settings() {
+    return translate('Settings');
+  },
+  get projectSettings() {
+    return translate('Project Settings');
+  },
+  get terminal() {
+    return translate('Terminal');
+  },
+  get ideation() {
+    return translate('Ideation');
+  },
+  get notifications() {
+    return translate('Notifications');
+  },
+  get githubIssues() {
+    return translate('GitHub Issues');
+  },
+  get githubPrs() {
+    return translate('Pull Requests');
+  },
+  get toggleSidebar() {
+    return translate('Toggle Sidebar');
+  },
+  get addFeature() {
+    return translate('Add Feature');
+  },
+  get addContextFile() {
+    return translate('Add Context File');
+  },
+  get startNext() {
+    return translate('Start Next');
+  },
+  get newSession() {
+    return translate('New Session');
+  },
+  get openProject() {
+    return translate('Open Project');
+  },
+  get projectPicker() {
+    return translate('Project Picker');
+  },
+  get cyclePrevProject() {
+    return translate('Prev Project');
+  },
+  get cycleNextProject() {
+    return translate('Next Project');
+  },
+  get splitTerminalRight() {
+    return translate('Split Right');
+  },
+  get splitTerminalDown() {
+    return translate('Split Down');
+  },
+  get closeTerminal() {
+    return translate('Close Terminal');
+  },
+  get newTerminalTab() {
+    return translate('New Tab');
+  },
 };
 
 // Categorize shortcuts for color coding
@@ -147,19 +200,25 @@ const CATEGORY_COLORS = {
     bg: 'bg-blue-500/20',
     border: 'border-blue-500/50',
     text: 'text-blue-400',
-    label: 'Navigation',
+    get label() {
+      return translate('Navigation');
+    },
   },
   ui: {
     bg: 'bg-purple-500/20',
     border: 'border-purple-500/50',
     text: 'text-purple-400',
-    label: 'UI Controls',
+    get label() {
+      return translate('UI Controls');
+    },
   },
   action: {
     bg: 'bg-green-500/20',
     border: 'border-green-500/50',
     text: 'text-green-400',
-    label: 'Actions',
+    get label() {
+      return translate('Actions');
+    },
   },
 };
 
@@ -170,6 +229,7 @@ interface KeyboardMapProps {
 }
 
 export function KeyboardMap({ onKeySelect, selectedKey, className }: KeyboardMapProps) {
+  useUiLocale();
   const { keyboardShortcuts } = useAppStore();
 
   // Merge with defaults to ensure new shortcuts are always shown
@@ -254,7 +314,7 @@ export function KeyboardMap({ onKeySelect, selectedKey, className }: KeyboardMap
             isBound && shortcuts.length > 0
               ? shortcuts.length === 1
                 ? (SHORTCUT_LABELS[shortcuts[0]]?.split(' ')[0] ?? shortcuts[0])
-                : `${shortcuts.length}x`
+                : translate('{value1}x', { value1: shortcuts.length })
               : '\u00A0' // Non-breaking space to maintain height
           }
         </span>
@@ -290,7 +350,7 @@ export function KeyboardMap({ onKeySelect, selectedKey, className }: KeyboardMap
                       {displayShortcut}
                     </kbd>
                     {mergedShortcuts[shortcut] !== DEFAULT_KEYBOARD_SHORTCUTS[shortcut] && (
-                      <span className="text-xs text-yellow-400">(custom)</span>
+                      <span className="text-xs text-yellow-400">{translate('(custom)')}</span>
                     )}
                   </div>
                 );
@@ -316,11 +376,11 @@ export function KeyboardMap({ onKeySelect, selectedKey, className }: KeyboardMap
         ))}
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-sidebar-accent/10 border border-sidebar-border" />
-          <span className="text-muted-foreground">Available</span>
+          <span className="text-muted-foreground">{translate('Available')}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-yellow-500" />
-          <span className="text-yellow-400">Modified</span>
+          <span className="text-yellow-400">{translate('Modified')}</span>
         </div>
       </div>
 
@@ -337,17 +397,17 @@ export function KeyboardMap({ onKeySelect, selectedKey, className }: KeyboardMap
       <div className="flex justify-center gap-6 text-xs text-muted-foreground">
         <span>
           <strong className="text-foreground">{Object.keys(keyboardShortcuts).length}</strong>{' '}
-          shortcuts configured
+          {translate('shortcuts configured')}
         </span>
         <span>
-          <strong className="text-foreground">{Object.keys(keyToShortcuts).length}</strong> keys in
-          use
+          <strong className="text-foreground">{Object.keys(keyToShortcuts).length}</strong>{' '}
+          {translate(' keys in use')}
         </span>
         <span>
           <strong className="text-foreground">
             {KEYBOARD_ROWS.flat().length - Object.keys(keyToShortcuts).length}
           </strong>{' '}
-          keys available
+          {translate('keys available')}
         </span>
       </div>
     </div>
@@ -360,6 +420,7 @@ interface ShortcutReferencePanelProps {
 }
 
 export function ShortcutReferencePanel({ editable = false }: ShortcutReferencePanelProps) {
+  useUiLocale();
   const { keyboardShortcuts, setKeyboardShortcut, resetKeyboardShortcuts } = useAppStore();
   const [editingShortcut, setEditingShortcut] = React.useState<keyof KeyboardShortcuts | null>(
     null
@@ -517,7 +578,7 @@ export function ShortcutReferencePanel({ editable = false }: ShortcutReferencePa
             data-testid="reset-all-shortcuts-button"
           >
             <RotateCcw className="w-3 h-3" />
-            Reset All to Defaults
+            {translate('Reset All to Defaults')}
           </Button>
         </div>
       )}
@@ -564,7 +625,7 @@ export function ShortcutReferencePanel({ editable = false }: ShortcutReferencePa
                                 htmlFor={`mod-cmd-${key}`}
                                 className="text-xs text-muted-foreground cursor-pointer"
                               >
-                                {isMac ? '⌘' : 'Ctrl'}
+                                {isMac ? '⌘' : translate('Ctrl')}
                               </Label>
                             </div>
                             <div className="flex items-center gap-1">
@@ -580,7 +641,7 @@ export function ShortcutReferencePanel({ editable = false }: ShortcutReferencePa
                                 htmlFor={`mod-alt-${key}`}
                                 className="text-xs text-muted-foreground cursor-pointer"
                               >
-                                {isMac ? '⌥' : 'Alt'}
+                                {isMac ? '⌥' : translate('Alt')}
                               </Label>
                             </div>
                             <div className="flex items-center gap-1">
@@ -609,7 +670,7 @@ export function ShortcutReferencePanel({ editable = false }: ShortcutReferencePa
                               'w-12 h-7 text-center font-mono text-xs uppercase',
                               shortcutError && 'border-red-500 focus-visible:ring-red-500'
                             )}
-                            placeholder="Key"
+                            placeholder={translate('Key')}
                             maxLength={1}
                             autoFocus
                             data-testid={`edit-shortcut-input-${key}`}
@@ -669,7 +730,8 @@ export function ShortcutReferencePanel({ editable = false }: ShortcutReferencePa
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent side="top">
-                                Reset to default ({DEFAULT_KEYBOARD_SHORTCUTS[key]})
+                                {translate('Reset to default (')}
+                                {DEFAULT_KEYBOARD_SHORTCUTS[key]})
                               </TooltipContent>
                             </Tooltip>
                           )}

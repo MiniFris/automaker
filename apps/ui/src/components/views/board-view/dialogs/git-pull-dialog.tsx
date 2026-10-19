@@ -1,3 +1,5 @@
+import { formatCount } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Dialog,
@@ -85,6 +87,7 @@ export function GitPullDialog({
   onCreateConflictResolutionFeature,
   onCommitMerge,
 }: GitPullDialogProps) {
+  useUiLocale();
   const [phase, setPhase] = useState<PullPhase>('checking');
   const [pullResult, setPullResult] = useState<PullResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -139,7 +142,7 @@ export function GitPullDialog({
     try {
       const api = getElectronAPI();
       if (!api?.worktree?.pull) {
-        setErrorMessage('Pull API not available');
+        setErrorMessage(translate('Pull API not available'));
         setPhase('error');
         return;
       }
@@ -148,7 +151,7 @@ export function GitPullDialog({
       const result = await api.worktree.pull(worktree.path, remote);
 
       if (!result.success) {
-        setErrorMessage(result.error || 'Failed to pull');
+        setErrorMessage(result.error || translate('Failed to pull'));
         setPhase('error');
         return;
       }
@@ -163,11 +166,13 @@ export function GitPullDialog({
       } else {
         // Unexpected response: success but no recognizable fields
         setPullResult(result.result ?? null);
-        setErrorMessage('Unexpected pull response');
+        setErrorMessage(translate('Unexpected pull response'));
         setPhase('error');
       }
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : 'Failed to check for changes');
+      setErrorMessage(
+        err instanceof Error ? err.message : translate('Failed to check for changes')
+      );
       setPhase('error');
     }
   }, [worktree, remote, handleSuccessfulPull]);
@@ -205,7 +210,7 @@ export function GitPullDialog({
     try {
       const api = getElectronAPI();
       if (!api?.worktree?.pull) {
-        setErrorMessage('Pull API not available');
+        setErrorMessage(translate('Pull API not available'));
         setPhase('error');
         return;
       }
@@ -214,7 +219,7 @@ export function GitPullDialog({
       const result = await api.worktree.pull(worktree.path, remote, true);
 
       if (!result.success) {
-        setErrorMessage(result.error || 'Failed to pull');
+        setErrorMessage(result.error || translate('Failed to pull'));
         setPhase('error');
         return;
       }
@@ -228,11 +233,11 @@ export function GitPullDialog({
       } else {
         // Unrecognized response: no pulled flag and no conflicts
         console.warn('handlePullWithStash: unrecognized response', result.result);
-        setErrorMessage('Unexpected pull response');
+        setErrorMessage(translate('Unexpected pull response'));
         setPhase('error');
       }
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : 'Failed to pull');
+      setErrorMessage(err instanceof Error ? err.message : translate('Failed to pull'));
       setPhase('error');
     }
   }, [worktree, remote, handleSuccessfulPull]);
@@ -257,8 +262,8 @@ export function GitPullDialog({
   const handleCommitMerge = useCallback(() => {
     if (!worktree || !onCommitMerge) {
       // No handler available — show feedback and bail without persisting preference
-      toast.error('Commit merge is not available', {
-        description: 'The commit merge action is not configured for this context.',
+      toast.error(translate('Commit merge is not available'), {
+        description: translate('The commit merge action is not configured for this context.'),
         duration: 4000,
       });
       return;
@@ -275,8 +280,8 @@ export function GitPullDialog({
     if (rememberChoice) {
       setMergePostAction('manual');
     }
-    toast.info('Merge left for manual review', {
-      description: 'Review the merged files and commit when ready.',
+    toast.info(translate('Merge left for manual review'), {
+      description: translate('Review the merged files and commit when ready.'),
       duration: 5000,
     });
     onPulled?.();
@@ -298,17 +303,17 @@ export function GitPullDialog({
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Download className="w-5 h-5" />
-                Pull Changes
+                {translate('Pull Changes')}
               </DialogTitle>
               <DialogDescription>
-                Checking for local changes on{' '}
+                {translate('Checking for local changes on')}{' '}
                 <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>...
               </DialogDescription>
             </DialogHeader>
             <div className="flex items-center justify-center py-8">
               <Spinner size="md" />
               <span className="ml-3 text-sm text-muted-foreground">
-                Fetching remote and checking status...
+                {translate('Fetching remote and checking status...')}
               </span>
             </div>
           </>
@@ -320,14 +325,14 @@ export function GitPullDialog({
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-amber-500" />
-                Local Changes Detected
+                {translate('Local Changes Detected')}
               </DialogTitle>
               <DialogDescription asChild>
                 <div className="space-y-3">
                   <span className="block">
-                    You have uncommitted changes on{' '}
-                    <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code> that
-                    need to be handled before pulling.
+                    {translate('You have uncommitted changes on')}{' '}
+                    <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>{' '}
+                    {translate(' that need to be handled before pulling.')}
                   </span>
 
                   {pullResult?.localChangedFiles && pullResult.localChangedFiles.length > 0 && (
@@ -350,18 +355,19 @@ export function GitPullDialog({
             <div className="flex items-start gap-2 p-3 rounded-md bg-blue-500/10 border border-blue-500/20">
               <Archive className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
               <span className="text-blue-500 text-sm">
-                Your changes will be automatically stashed before pulling and restored afterward. If
-                restoring causes conflicts, you&apos;ll be able to resolve them.
+                {translate(
+                  "Your changes will be automatically stashed before pulling and restored afterward. If restoring causes conflicts, you'll be able to resolve them."
+                )}
               </span>
             </div>
 
             <DialogFooter>
               <Button variant="ghost" onClick={handleClose}>
-                Cancel
+                {translate('Cancel')}
               </Button>
               <Button onClick={handlePullWithStash}>
                 <Archive className="w-4 h-4 mr-2" />
-                Stash & Pull
+                {translate('Stash & Pull')}
               </Button>
             </DialogFooter>
           </>
@@ -373,17 +379,21 @@ export function GitPullDialog({
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Download className="w-5 h-5 animate-pulse" />
-                Pulling Changes
+                {translate('Pulling Changes')}
               </DialogTitle>
               <DialogDescription>
                 {pullResult?.hasLocalChanges
-                  ? 'Stashing changes, pulling from remote, and restoring your changes...'
-                  : 'Pulling latest changes from remote...'}
+                  ? translate(
+                      'Stashing changes, pulling from remote, and restoring your changes...'
+                    )
+                  : translate('Pulling latest changes from remote...')}
               </DialogDescription>
             </DialogHeader>
             <div className="flex items-center justify-center py-8">
               <Spinner size="md" />
-              <span className="ml-3 text-sm text-muted-foreground">This may take a moment...</span>
+              <span className="ml-3 text-sm text-muted-foreground">
+                {translate('This may take a moment...')}
+              </span>
             </div>
           </>
         )}
@@ -394,12 +404,12 @@ export function GitPullDialog({
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-green-500" />
-                Pull Complete
+                {translate('Pull Complete')}
               </DialogTitle>
               <DialogDescription asChild>
                 <div className="space-y-2">
                   <span className="block">
-                    {pullResult?.message || 'Changes pulled successfully'}
+                    {pullResult?.message || translate('Changes pulled successfully')}
                   </span>
 
                   {pullResult?.stashed &&
@@ -408,7 +418,7 @@ export function GitPullDialog({
                       <div className="flex items-start gap-2 p-3 rounded-md bg-green-500/10 border border-green-500/20">
                         <Archive className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
                         <span className="text-green-600 dark:text-green-400 text-sm">
-                          Your stashed changes have been restored successfully.
+                          {translate('Your stashed changes have been restored successfully.')}
                         </span>
                       </div>
                     )}
@@ -419,7 +429,9 @@ export function GitPullDialog({
                         <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
                         <span className="text-amber-600 dark:text-amber-400 text-sm">
                           {pullResult?.message ??
-                            'Stash could not be restored. Your changes remain in the stash.'}
+                            translate(
+                              'Stash could not be restored. Your changes remain in the stash.'
+                            )}
                         </span>
                       </div>
                     )}
@@ -428,7 +440,7 @@ export function GitPullDialog({
             </DialogHeader>
 
             <DialogFooter>
-              <Button onClick={handleClose}>Done</Button>
+              <Button onClick={handleClose}>{translate('Done')}</Button>
             </DialogFooter>
           </>
         )}
@@ -439,21 +451,21 @@ export function GitPullDialog({
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <GitMerge className="w-5 h-5 text-purple-500" />
-                Merge Complete
+                {translate('Merge Complete')}
               </DialogTitle>
               <DialogDescription asChild>
                 <div className="space-y-3">
                   <span className="block">
-                    Pull resulted in a merge on{' '}
+                    {translate('Pull resulted in a merge on')}{' '}
                     <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>
                     {pullResult?.mergeAffectedFiles && pullResult.mergeAffectedFiles.length > 0 && (
                       <span>
                         {' '}
-                        affecting {pullResult.mergeAffectedFiles.length} file
-                        {pullResult.mergeAffectedFiles.length !== 1 ? 's' : ''}
+                        {translate('affecting ')}
+                        {formatCount(pullResult.mergeAffectedFiles.length, 'file')}
                       </span>
                     )}
-                    . How would you like to proceed?
+                    {translate('. How would you like to proceed?')}
                   </span>
 
                   {pullResult?.mergeAffectedFiles && pullResult.mergeAffectedFiles.length > 0 && (
@@ -463,7 +475,8 @@ export function GitPullDialog({
                         className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
                       >
                         <FileText className="w-3 h-3" />
-                        {showMergeFiles ? 'Hide' : 'Show'} affected files (
+                        {showMergeFiles ? translate('Hide') : translate('Show')}{' '}
+                        {translate(' affected files (')}
                         {pullResult.mergeAffectedFiles.length})
                       </button>
                       {showMergeFiles && (
@@ -488,23 +501,23 @@ export function GitPullDialog({
                       <div className="flex items-start gap-2 p-3 rounded-md bg-green-500/10 border border-green-500/20">
                         <Archive className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
                         <span className="text-green-600 dark:text-green-400 text-sm">
-                          Your stashed changes have been restored successfully.
+                          {translate('Your stashed changes have been restored successfully.')}
                         </span>
                       </div>
                     )}
 
                   <div className="mt-2 p-3 rounded-md bg-muted/50 border border-border">
                     <p className="text-sm text-muted-foreground font-medium mb-2">
-                      Choose how to proceed:
+                      {translate('Choose how to proceed:')}
                     </p>
                     <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
                       <li>
-                        <strong>Commit Merge</strong> &mdash; Open the commit dialog with a merge
-                        commit message
+                        <strong>{translate('Commit Merge')}</strong>{' '}
+                        {translate(' — Open the commit dialog with a merge commit message')}
                       </li>
                       <li>
-                        <strong>Review Manually</strong> &mdash; Leave the working tree as-is for
-                        manual review
+                        <strong>{translate('Review Manually')}</strong>{' '}
+                        {translate(' — Leave the working tree as-is for manual review')}
                       </li>
                     </ul>
                   </div>
@@ -521,17 +534,17 @@ export function GitPullDialog({
                   className="rounded border-border"
                 />
                 <Settings className="w-3 h-3" />
-                Remember my choice for future merges
+                {translate('Remember my choice for future merges')}
               </label>
               {(rememberChoice || mergePostAction) && (
                 <span className="text-xs text-muted-foreground ml-auto flex items-center gap-2">
                   <span className="opacity-70">
-                    Current:{' '}
+                    {translate('Current:')}{' '}
                     {mergePostAction === 'commit'
                       ? 'auto-commit'
                       : mergePostAction === 'manual'
-                        ? 'manual review'
-                        : 'ask every time'}
+                        ? translate('manual review')
+                        : translate('ask every time')}
                   </span>
                   <button
                     onClick={() => {
@@ -540,7 +553,7 @@ export function GitPullDialog({
                     }}
                     className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    Reset preference
+                    {translate('Reset preference')}
                   </button>
                 </span>
               )}
@@ -549,7 +562,7 @@ export function GitPullDialog({
             <DialogFooter className={cn('flex-col sm:flex-row gap-2')}>
               <Button variant="outline" onClick={handleMergeManually} className="w-full sm:w-auto">
                 <FileText className="w-4 h-4 mr-2" />
-                Review Manually
+                {translate('Review Manually')}
               </Button>
               {worktree && onCommitMerge && (
                 <Button
@@ -557,7 +570,7 @@ export function GitPullDialog({
                   className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white"
                 >
                   <GitCommitHorizontal className="w-4 h-4 mr-2" />
-                  Commit Merge
+                  {translate('Commit Merge')}
                 </Button>
               )}
             </DialogFooter>
@@ -570,20 +583,23 @@ export function GitPullDialog({
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-orange-500" />
-                Merge Conflicts Detected
+                {translate('Merge Conflicts Detected')}
               </DialogTitle>
               <DialogDescription asChild>
                 <div className="space-y-3">
                   <span className="block">
                     {pullResult?.conflictSource === 'stash'
-                      ? 'Pull succeeded but reapplying your stashed changes resulted in merge conflicts.'
-                      : 'The pull resulted in merge conflicts that need to be resolved.'}
+                      ? translate(
+                          'Pull succeeded but reapplying your stashed changes resulted in merge conflicts.'
+                        )
+                      : translate('The pull resulted in merge conflicts that need to be resolved.')}
                   </span>
 
                   {pullResult?.conflictFiles && pullResult.conflictFiles.length > 0 && (
                     <div className="space-y-1.5">
                       <span className="text-sm font-medium text-foreground">
-                        Conflicting files ({pullResult.conflictFiles.length}):
+                        {translate('Conflicting files (')}
+                        {pullResult.conflictFiles.length}):
                       </span>
                       <div className="border border-border rounded-lg overflow-hidden max-h-[200px] overflow-y-auto scrollbar-visible">
                         {pullResult.conflictFiles.map((file) => (
@@ -601,16 +617,18 @@ export function GitPullDialog({
 
                   <div className="mt-2 p-3 rounded-md bg-muted/50 border border-border">
                     <p className="text-sm text-muted-foreground font-medium mb-2">
-                      Choose how to resolve:
+                      {translate('Choose how to resolve:')}
                     </p>
                     <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
                       <li>
-                        <strong>Resolve with AI</strong> &mdash; Creates a task to analyze and
-                        resolve conflicts automatically
+                        <strong>{translate('Resolve with AI')}</strong>{' '}
+                        {translate(
+                          ' — Creates a task to analyze and resolve conflicts automatically'
+                        )}
                       </li>
                       <li>
-                        <strong>Resolve Manually</strong> &mdash; Leaves conflict markers in place
-                        for you to edit directly
+                        <strong>{translate('Resolve Manually')}</strong>{' '}
+                        {translate(' — Leaves conflict markers in place for you to edit directly')}
                       </li>
                     </ul>
                   </div>
@@ -622,8 +640,10 @@ export function GitPullDialog({
               <Button
                 variant="outline"
                 onClick={() => {
-                  toast.info('Conflict markers left in place', {
-                    description: 'Edit the conflicting files to resolve conflicts manually.',
+                  toast.info(translate('Conflict markers left in place'), {
+                    description: translate(
+                      'Edit the conflicting files to resolve conflicts manually.'
+                    ),
                     duration: 6000,
                   });
                   onPulled?.();
@@ -631,7 +651,7 @@ export function GitPullDialog({
                 }}
               >
                 <Wrench className="w-4 h-4 mr-2" />
-                Resolve Manually
+                {translate('Resolve Manually')}
               </Button>
               {onCreateConflictResolutionFeature && (
                 <Button
@@ -639,7 +659,7 @@ export function GitPullDialog({
                   className="bg-purple-600 hover:bg-purple-700 text-white"
                 >
                   <Sparkles className="w-4 h-4 mr-2" />
-                  Resolve with AI
+                  {translate('Resolve with AI')}
                 </Button>
               )}
             </DialogFooter>
@@ -652,12 +672,12 @@ export function GitPullDialog({
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <XCircle className="w-5 h-5 text-destructive" />
-                Pull Failed
+                {translate('Pull Failed')}
               </DialogTitle>
               <DialogDescription asChild>
                 <div className="space-y-2">
                   <span className="block">
-                    Failed to pull changes for{' '}
+                    {translate('Failed to pull changes for')}{' '}
                     <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>.
                   </span>
 
@@ -678,7 +698,7 @@ export function GitPullDialog({
 
             <DialogFooter>
               <Button variant="ghost" onClick={handleClose}>
-                Close
+                {translate('Close')}
               </Button>
               <Button
                 variant="outline"
@@ -687,7 +707,7 @@ export function GitPullDialog({
                   checkForLocalChanges();
                 }}
               >
-                Retry
+                {translate('Retry')}
               </Button>
             </DialogFooter>
           </>

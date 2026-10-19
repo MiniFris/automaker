@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { CircleDot, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -38,6 +39,7 @@ export function IssuesListHeader({
   compact = false,
   filterProps,
 }: IssuesListHeaderProps) {
+  useUiLocale();
   const totalIssues = openCount + closedCount;
 
   // Format the counts subtitle based on filter state
@@ -72,7 +74,7 @@ export function IssuesListHeader({
             <CircleDot className="h-5 w-5 text-green-500" />
           </div>
           <div>
-            <h1 className="text-lg font-bold">Issues</h1>
+            <h1 className="text-lg font-bold">{translate('Issues')}</h1>
             <p className="text-xs text-muted-foreground">{getCountsSubtitle()}</p>
           </div>
         </div>

@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -28,6 +29,7 @@ export function AncestorContextSection({
   selectedAncestorIds,
   onSelectionChange,
 }: AncestorContextSectionProps) {
+  useUiLocale();
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const toggleExpanded = (id: string) => {
@@ -74,9 +76,9 @@ export function AncestorContextSection({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Users className="w-4 h-4 text-muted-foreground" />
-          <Label className="text-sm font-medium">Ancestor Context</Label>
+          <Label className="text-sm font-medium">{translate('Ancestor Context')}</Label>
           <span className="text-xs text-muted-foreground">
-            ({selectedAncestorIds.size}/{totalCount} selected)
+            ({selectedAncestorIds.size}/{totalCount} {translate(' selected)')}
           </span>
         </div>
         <div className="flex items-center gap-1">
@@ -87,7 +89,7 @@ export function AncestorContextSection({
             onClick={selectAll}
             className="h-6 px-2 text-xs"
           >
-            All
+            {translate('All')}
           </Button>
           <Button
             type="button"
@@ -96,14 +98,15 @@ export function AncestorContextSection({
             onClick={selectNone}
             className="h-6 px-2 text-xs"
           >
-            None
+            {translate('None')}
           </Button>
         </div>
       </div>
 
       <p className="text-xs text-muted-foreground">
-        The parent task context will be included to help the AI understand the background.
-        Additional ancestors can optionally be included for more context.
+        {translate(
+          'The parent task context will be included to help the AI understand the background. Additional ancestors can optionally be included for more context.'
+        )}
       </p>
 
       <div className="space-y-1 max-h-[200px] overflow-y-auto border rounded-lg p-2 bg-muted/20">
@@ -167,7 +170,7 @@ export function AncestorContextSection({
                     {item.isParent && (
                       <span className="ml-2 inline-flex items-center gap-1 text-xs text-[var(--status-success)] font-medium">
                         <CheckCircle2 className="w-3 h-3" />
-                        Completed Parent
+                        {translate('Completed Parent')}
                       </span>
                     )}
                   </div>
@@ -176,19 +179,25 @@ export function AncestorContextSection({
                     <div className="mt-2 space-y-2 text-xs text-muted-foreground pl-5">
                       {item.description && (
                         <div>
-                          <span className="font-medium text-foreground">Description:</span>
+                          <span className="font-medium text-foreground">
+                            {translate('Description:')}
+                          </span>
                           <p className="mt-0.5 line-clamp-3">{item.description}</p>
                         </div>
                       )}
                       {'spec' in item && item.spec && (
                         <div>
-                          <span className="font-medium text-foreground">Specification:</span>
+                          <span className="font-medium text-foreground">
+                            {translate('Specification:')}
+                          </span>
                           <p className="mt-0.5 line-clamp-3">{item.spec}</p>
                         </div>
                       )}
                       {'summary' in item && item.summary && (
                         <div>
-                          <span className="font-medium text-foreground">Summary:</span>
+                          <span className="font-medium text-foreground">
+                            {translate('Summary:')}
+                          </span>
                           <p className="mt-0.5 line-clamp-3">{item.summary}</p>
                         </div>
                       )}
@@ -202,7 +211,7 @@ export function AncestorContextSection({
 
         {ancestors.length === 0 && (
           <p className="text-xs text-muted-foreground text-center py-2">
-            Parent task has no additional ancestors
+            {translate('Parent task has no additional ancestors')}
           </p>
         )}
       </div>

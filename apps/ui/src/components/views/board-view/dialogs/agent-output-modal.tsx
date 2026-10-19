@@ -1,3 +1,5 @@
+import { translate, useUiLocale } from '@/lib/i18n';
+import { getPipelineStepLabel } from '@/lib/workflow-labels';
 import { useEffect, useRef, useState, useMemo } from 'react';
 import {
   Dialog,
@@ -63,6 +65,7 @@ function PhaseEntryCard({
   isActive?: boolean;
   onClick?: () => void;
 }) {
+  useUiLocale();
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (onClick && (event.key === 'Enter' || event.key === ' ')) {
       event.preventDefault();
@@ -83,10 +86,14 @@ function PhaseEntryCard({
       tabIndex={onClick ? 0 : undefined}
     >
       <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/30">
-        <span className="text-sm font-semibold text-primary">{entry.phaseName}</span>
+        <span className="text-sm font-semibold text-primary">
+          {getPipelineStepLabel(entry.phaseName)}
+        </span>
         {hasMultiplePhases && (
           <span className="text-xs text-muted-foreground">
-            Step {index + 1} of {totalPhases}
+            {translate('Step ')}
+            {index + 1} {translate(' of ')}
+            {totalPhases}
           </span>
         )}
       </div>
@@ -107,6 +114,7 @@ function StepNavigator({
   activeIndex: number;
   onIndexChange: (index: number) => void;
 }) {
+  useUiLocale();
   if (phaseEntries.length <= 1) return null;
 
   return (
@@ -133,7 +141,7 @@ function StepNavigator({
                 : 'text-muted-foreground hover:text-foreground hover:bg-accent'
             )}
           >
-            {entry.phaseName}
+            {getPipelineStepLabel(entry.phaseName)}
           </button>
         ))}
       </div>
@@ -161,6 +169,7 @@ export function AgentOutputModal({
   projectPath: projectPathProp,
   branchName,
 }: AgentOutputModalProps) {
+  useUiLocale();
   const isBacklogPlan = featureId.startsWith('backlog-plan:');
 
   // Resolve project path - prefer prop, fallback to window.__currentProject
@@ -529,7 +538,7 @@ export function AgentOutputModal({
               {resolvedStatus !== 'verified' && resolvedStatus !== 'waiting_approval' && (
                 <Spinner size="md" />
               )}
-              Agent Output
+              {translate('Agent Output')}
             </DialogTitle>
             <div className="flex items-center gap-1 bg-muted rounded-lg p-1 overflow-x-auto">
               {summary && (
@@ -543,7 +552,7 @@ export function AgentOutputModal({
                   data-testid="view-mode-summary"
                 >
                   <ClipboardList className="w-3.5 h-3.5" />
-                  Summary
+                  {translate('Summary')}
                 </button>
               )}
               <button
@@ -556,7 +565,7 @@ export function AgentOutputModal({
                 data-testid="view-mode-parsed"
               >
                 <List className="w-3.5 h-3.5" />
-                Logs
+                {translate('Logs')}
               </button>
               <button
                 onClick={() => setViewMode('changes')}
@@ -568,7 +577,7 @@ export function AgentOutputModal({
                 data-testid="view-mode-changes"
               >
                 <GitBranch className="w-3.5 h-3.5" />
-                Changes
+                {translate('Changes')}
               </button>
               <button
                 onClick={() => setViewMode('raw')}
@@ -580,7 +589,7 @@ export function AgentOutputModal({
                 data-testid="view-mode-raw"
               >
                 <FileText className="w-3.5 h-3.5" />
-                Raw
+                {translate('Raw')}
               </button>
             </div>
           </div>
@@ -616,7 +625,7 @@ export function AgentOutputModal({
             ) : (
               <div className="flex items-center justify-center h-full text-muted-foreground">
                 <Spinner size="lg" className="mr-2" />
-                Loading...
+                {translate('Loading...')}
               </div>
             )}
           </div>
@@ -660,8 +669,8 @@ export function AgentOutputModal({
 
             <div className="text-xs text-muted-foreground text-center shrink-0">
               {summaryAutoScroll
-                ? 'Auto-scrolling enabled'
-                : 'Scroll to bottom to enable auto-scroll'}
+                ? translate('Auto-scrolling enabled')
+                : translate('Scroll to bottom to enable auto-scroll')}
             </div>
           </>
         ) : (
@@ -674,11 +683,11 @@ export function AgentOutputModal({
               {isLoading && !output ? (
                 <div className="flex items-center justify-center h-full text-muted-foreground">
                   <Spinner size="lg" className="mr-2" />
-                  Loading output...
+                  {translate('Loading output...')}
                 </div>
               ) : !output ? (
                 <div className="flex items-center justify-center h-full text-muted-foreground">
-                  No output yet. The agent will stream output here as it works.
+                  {translate('No output yet. The agent will stream output here as it works.')}
                 </div>
               ) : effectiveViewMode === 'parsed' ? (
                 <LogViewer output={output} />
@@ -691,8 +700,8 @@ export function AgentOutputModal({
 
             <div className="text-xs text-muted-foreground text-center shrink-0">
               {autoScrollRef.current
-                ? 'Auto-scrolling enabled'
-                : 'Scroll to bottom to enable auto-scroll'}
+                ? translate('Auto-scrolling enabled')
+                : translate('Scroll to bottom to enable auto-scroll')}
             </div>
           </>
         )}

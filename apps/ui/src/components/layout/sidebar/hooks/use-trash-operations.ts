@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 import { useState, useCallback } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { toast } from 'sonner';
@@ -23,12 +24,12 @@ export function useTrashOperations({
     (projectId: string) => {
       try {
         restoreTrashedProject(projectId);
-        toast.success('Project restored', {
-          description: 'Added back to your project list.',
+        toast.success(translate('Project restored'), {
+          description: translate('Added back to your project list.'),
         });
       } catch (error) {
         logger.error('Failed to restore project:', error);
-        toast.error('Failed to restore project', {
+        toast.error(translate('Failed to restore project'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
       }
@@ -51,12 +52,12 @@ export function useTrashOperations({
         }
 
         deleteTrashedProject(trashedProject.id);
-        toast.success('Project folder sent to system Trash', {
+        toast.success(translate('Project folder sent to system Trash'), {
           description: trashedProject.path,
         });
       } catch (error) {
         logger.error('Failed to delete project from disk:', error);
-        toast.error('Failed to delete project folder', {
+        toast.error(translate('Failed to delete project folder'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
       } finally {
@@ -70,10 +71,10 @@ export function useTrashOperations({
     setIsEmptyingTrash(true);
     try {
       emptyTrash();
-      toast.success('Recycle bin cleared');
+      toast.success(translate('Recycle bin cleared'));
     } catch (error) {
       logger.error('Failed to empty trash:', error);
-      toast.error('Failed to clear recycle bin', {
+      toast.error(translate('Failed to clear recycle bin'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     } finally {

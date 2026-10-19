@@ -1,3 +1,5 @@
+import { translate } from '@/lib/i18n';
+import { useUiLocale } from '@/lib/i18n';
 import type { CopilotModelId } from '@automaker/types';
 import { CopilotIcon } from '@/components/ui/provider-icon';
 import { COPILOT_MODEL_MAP } from '@automaker/types';
@@ -32,6 +34,7 @@ export function CopilotModelConfiguration({
   onDefaultModelChange,
   onModelToggle,
 }: CopilotModelConfigurationProps) {
+  useUiLocale();
   return (
     <BaseModelConfiguration<CopilotModelId>
       providerName="Copilot"
@@ -46,7 +49,7 @@ export function CopilotModelConfiguration({
       onModelToggle={onModelToggle}
       getFeatureBadge={(model) => {
         const copilotModel = model as CopilotModelInfo;
-        return copilotModel.supportsVision ? { show: true, label: 'Vision' } : null;
+        return copilotModel.supportsVision ? { show: true, label: translate('Vision') } : null;
       }}
     />
   );

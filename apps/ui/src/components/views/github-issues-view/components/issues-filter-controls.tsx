@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { ChevronDown, Tag, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -46,9 +47,15 @@ interface IssuesFilterControlsProps {
 
 /** Human-readable labels for state filter options */
 const STATE_FILTER_LABELS: Record<IssuesStateFilter, string> = {
-  open: 'Open',
-  closed: 'Closed',
-  all: 'All',
+  get open() {
+    return translate('Open issues');
+  },
+  get closed() {
+    return translate('Closed issues');
+  },
+  get all() {
+    return translate('All issues');
+  },
 };
 
 export function IssuesFilterControls({
@@ -61,6 +68,7 @@ export function IssuesFilterControls({
   compact = false,
   className,
 }: IssuesFilterControlsProps) {
+  useUiLocale();
   /**
    * Handles toggling a label in the selection.
    * If the label is already selected, it removes it; otherwise, it adds it.
@@ -95,7 +103,7 @@ export function IssuesFilterControls({
           disabled={disabled}
         >
           <SelectTrigger className={cn('h-8 text-sm', compact ? 'w-[90px]' : 'w-[110px]')}>
-            <SelectValue placeholder="State" />
+            <SelectValue placeholder={translate('State')} />
           </SelectTrigger>
           <SelectContent>
             {ISSUES_STATE_FILTER_OPTIONS.map((option) => (
@@ -116,7 +124,7 @@ export function IssuesFilterControls({
               disabled={disabled || !hasAvailableLabels}
             >
               <Tag className="h-3.5 w-3.5" />
-              <span>Labels</span>
+              <span>{translate('Labels')}</span>
               {hasSelectedLabels && (
                 <Badge variant="secondary" size="sm" className="ml-1 px-1.5 py-0">
                   {selectedLabels.length}
@@ -127,7 +135,7 @@ export function IssuesFilterControls({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-56 max-h-64 overflow-y-auto">
             <DropdownMenuLabel className="flex items-center justify-between">
-              <span>Filter by label</span>
+              <span>{translate('Filter by label')}</span>
               {hasSelectedLabels && (
                 <Button
                   variant="ghost"
@@ -136,7 +144,7 @@ export function IssuesFilterControls({
                   onClick={handleClearLabels}
                 >
                   <X className="h-3 w-3 mr-0.5" />
-                  Clear
+                  {translate('Clear')}
                 </Button>
               )}
             </DropdownMenuLabel>
@@ -152,7 +160,9 @@ export function IssuesFilterControls({
               </DropdownMenuCheckboxItem>
             ))}
             {!hasAvailableLabels && (
-              <div className="px-2 py-1.5 text-sm text-muted-foreground">No labels available</div>
+              <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                {translate('No labels available')}
+              </div>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
@@ -181,7 +191,7 @@ export function IssuesFilterControls({
               +
               {selectedLabels.length -
                 (compact ? VISIBLE_LABELS_LIMIT_COMPACT : VISIBLE_LABELS_LIMIT)}{' '}
-              more
+              {translate('more')}
             </Badge>
           )}
         </div>

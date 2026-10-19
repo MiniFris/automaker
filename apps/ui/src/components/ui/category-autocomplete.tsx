@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Tag } from 'lucide-react';
 import { Autocomplete } from '@/components/ui/autocomplete';
 
@@ -16,20 +17,21 @@ export function CategoryAutocomplete({
   value,
   onChange,
   suggestions,
-  placeholder = 'Select or type a category...',
+  placeholder = translate('Select or type a category...'),
   className,
   disabled = false,
   error = false,
   'data-testid': testId,
 }: CategoryAutocompleteProps) {
+  useUiLocale();
   return (
     <Autocomplete
       value={value}
       onChange={onChange}
       options={suggestions}
       placeholder={placeholder}
-      searchPlaceholder="Search or type new category..."
-      emptyMessage="No category found."
+      searchPlaceholder={translate('Search or type new category...')}
+      emptyMessage={translate('No category found.')}
       className={className}
       disabled={disabled}
       error={error}

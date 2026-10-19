@@ -1,3 +1,4 @@
+import { formatCount, translate, useUiLocale } from '@/lib/i18n';
 /**
  * WorktreeDirectoryDropdown
  *
@@ -34,6 +35,7 @@ interface WorktreeDirectoryDropdownProps {
 const EMPTY_WORKTREES: never[] = [];
 
 export function WorktreeDirectoryDropdown({ projectPath }: WorktreeDirectoryDropdownProps) {
+  useUiLocale();
   // Select primitive/stable values directly from the store to prevent infinite re-renders.
   // Computed selectors that return new arrays/objects on every call (e.g. via `?? []`)
   // are compared by reference, causing Zustand to force re-renders on every store update.
@@ -86,7 +88,7 @@ export function WorktreeDirectoryDropdown({ projectPath }: WorktreeDirectoryDrop
           variant="outline"
           size="sm"
           className="gap-1.5 max-w-[200px] text-xs"
-          title={`Working directory: ${selectedBranchName}`}
+          title={translate('Working directory: {value1}', { value1: selectedBranchName })}
         >
           <GitBranch className="w-3.5 h-3.5 shrink-0" />
           <span className="truncate">{displayName}</span>
@@ -95,7 +97,7 @@ export function WorktreeDirectoryDropdown({ projectPath }: WorktreeDirectoryDrop
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-[240px]">
         <DropdownMenuLabel className="text-xs text-muted-foreground">
-          Working Directory
+          {translate('Working Directory')}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
@@ -108,7 +110,7 @@ export function WorktreeDirectoryDropdown({ projectPath }: WorktreeDirectoryDrop
             <FolderRoot className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
             <div className="flex-1 min-w-0">
               <span className="truncate block text-sm">{mainWorktree.branch}</span>
-              <span className="text-xs text-muted-foreground">Main directory</span>
+              <span className="text-xs text-muted-foreground">{translate('Main directory')}</span>
             </div>
             {selectedIsMain && <Check className="w-3.5 h-3.5 shrink-0 text-primary" />}
           </DropdownMenuItem>
@@ -119,7 +121,7 @@ export function WorktreeDirectoryDropdown({ projectPath }: WorktreeDirectoryDrop
           <>
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-xs text-muted-foreground">
-              Worktrees
+              {translate('Worktrees')}
             </DropdownMenuLabel>
             {otherWorktrees.map((wt) => {
               const isSelected =
@@ -135,7 +137,9 @@ export function WorktreeDirectoryDropdown({ projectPath }: WorktreeDirectoryDrop
                     <span className="truncate block text-sm">{wt.branch}</span>
                     {wt.hasChanges && (
                       <span className="text-xs text-amber-500">
-                        {wt.changedFilesCount ?? ''} change{wt.changedFilesCount !== 1 ? 's' : ''}
+                        {wt.changedFilesCount === undefined
+                          ? translate('Uncommitted changes')
+                          : formatCount(wt.changedFilesCount, 'change')}
                       </span>
                     )}
                   </div>

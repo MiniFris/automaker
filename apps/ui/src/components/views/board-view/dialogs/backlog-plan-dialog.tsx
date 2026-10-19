@@ -1,3 +1,5 @@
+import { formatCount } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useEffect, useState, useCallback } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import {
@@ -66,6 +68,7 @@ export function BacklogPlanDialog({
   setIsGeneratingPlan,
   currentBranch,
 }: BacklogPlanDialogProps) {
+  useUiLocale();
   const logger = createLogger('BacklogPlanDialog');
   const [mode, setMode] = useState<DialogMode>('input');
   const [prompt, setPrompt] = useState('');
@@ -91,14 +94,14 @@ export function BacklogPlanDialog({
 
   const handleGenerate = useCallback(async () => {
     if (!prompt.trim()) {
-      toast.error('Please enter a prompt describing the changes you want');
+      toast.error(translate('Please enter a prompt describing the changes you want'));
       return;
     }
 
     const api = getElectronAPI();
     if (!api?.backlogPlan) {
       logger.warn('Backlog plan API not available');
-      toast.error('API not available');
+      toast.error(translate('API not available'));
       return;
     }
 
@@ -126,7 +129,7 @@ export function BacklogPlanDialog({
         projectPath,
       });
       setIsGeneratingPlan(false);
-      toast.error(result.error || 'Failed to start plan generation');
+      toast.error(result.error || translate('Failed to start plan generation'));
       return;
     }
 
@@ -135,7 +138,7 @@ export function BacklogPlanDialog({
       projectPath,
       model: effectiveModel,
     });
-    toast.info('Generating plan... This will be ready soon!', {
+    toast.info(translate('Generating plan... This will be ready soon!'), {
       duration: 3000,
     });
     setPrompt('');
@@ -160,13 +163,13 @@ export function BacklogPlanDialog({
     );
 
     if (selectedChangesList.length === 0) {
-      toast.error('Please select at least one change to apply');
+      toast.error(translate('Please select at least one change to apply'));
       return;
     }
 
     const api = getElectronAPI();
     if (!api?.backlogPlan) {
-      toast.error('API not available');
+      toast.error(translate('API not available'));
       return;
     }
 
@@ -192,12 +195,14 @@ export function BacklogPlanDialog({
       currentBranch ?? 'main'
     );
     if (result.success) {
-      toast.success(`Applied ${result.appliedChanges?.length || 0} changes`);
+      toast.success(
+        translate('Applied {value1} changes', { value1: result.appliedChanges?.length || 0 })
+      );
       setPendingPlanResult(null);
       onPlanApplied?.();
       onClose();
     } else {
-      toast.error(result.error || 'Failed to apply plan');
+      toast.error(result.error || translate('Failed to apply plan'));
       setMode('review');
     }
   }, [
@@ -267,11 +272,11 @@ export function BacklogPlanDialog({
   const getChangeLabel = (change: BacklogChange) => {
     switch (change.type) {
       case 'add':
-        return change.feature?.title || 'New Feature';
+        return change.feature?.title || translate('New Feature');
       case 'update':
-        return `Update: ${change.featureId}`;
+        return translate('Update: {value1}', { value1: change.featureId });
       case 'delete':
-        return `Delete: ${change.featureId}`;
+        return translate('Delete: {value1}', { value1: change.featureId });
     }
   };
 
@@ -281,23 +286,28 @@ export function BacklogPlanDialog({
         return (
           <div className="space-y-4">
             <div className="text-sm text-muted-foreground">
-              Describe the changes you want to make across your features. The AI will analyze your
-              current feature list and propose additions, updates, deletions, or restructuring.
+              {translate(
+                'Describe the changes you want to make across your features. The AI will analyze your current feature list and propose additions, updates, deletions, or restructuring.'
+              )}
             </div>
             <Textarea
-              placeholder="e.g., Refactor onboarding into smaller features, add a dashboard feature that depends on authentication, and remove the legacy tour task."
+              placeholder={translate(
+                'e.g., Refactor onboarding into smaller features, add a dashboard feature that depends on authentication, and remove the legacy tour task.'
+              )}
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               className="min-h-[150px] resize-none"
               autoFocus
             />
             <div className="text-xs text-muted-foreground">
-              The AI will automatically handle dependency graph updates when adding or removing
-              features.
+              {translate(
+                'The AI will automatically handle dependency graph updates when adding or removing features.'
+              )}
             </div>
             {isGeneratingPlan && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
-                <Spinner size="sm" />A plan is currently being generated in the background...
+                <Spinner size="sm" />
+                {translate('A plan is currently being generated in the background...')}
               </div>
             )}
           </div>
@@ -316,7 +326,7 @@ export function BacklogPlanDialog({
           <div className="space-y-4">
             {/* Summary */}
             <div className="rounded-lg border bg-muted/30 p-4">
-              <h4 className="font-medium mb-2">Summary</h4>
+              <h4 className="font-medium mb-2">{translate('Summary')}</h4>
               <p className="text-sm text-muted-foreground">{pendingPlanResult.summary}</p>
             </div>
 
@@ -324,17 +334,17 @@ export function BacklogPlanDialog({
             <div className="flex gap-4 text-sm">
               {additions.length > 0 && (
                 <span className="flex items-center gap-1 text-green-600">
-                  <Plus className="w-4 h-4" /> {additions.length} additions
+                  <Plus className="w-4 h-4" /> {additions.length} {translate(' additions')}
                 </span>
               )}
               {updates.length > 0 && (
                 <span className="flex items-center gap-1 text-yellow-600">
-                  <Pencil className="w-4 h-4" /> {updates.length} updates
+                  <Pencil className="w-4 h-4" /> {updates.length} {translate(' updates')}
                 </span>
               )}
               {deletions.length > 0 && (
                 <span className="flex items-center gap-1 text-red-600">
-                  <Trash2 className="w-4 h-4" /> {deletions.length} deletions
+                  <Trash2 className="w-4 h-4" /> {deletions.length} {translate(' deletions')}
                 </span>
               )}
             </div>
@@ -349,8 +359,8 @@ export function BacklogPlanDialog({
                 onCheckedChange={toggleAllChanges}
               />
               <label htmlFor="select-all" className="text-sm font-medium cursor-pointer">
-                {allSelected ? 'Deselect all' : 'Select all'} ({selectedChanges.size}/
-                {pendingPlanResult.changes.length})
+                {allSelected ? translate('Deselect all') : translate('Select all')} (
+                {selectedChanges.size}/{pendingPlanResult.changes.length})
               </label>
             </div>
 
@@ -397,7 +407,8 @@ export function BacklogPlanDialog({
                           {change.feature.dependencies &&
                             change.feature.dependencies.length > 0 && (
                               <p className="text-muted-foreground mt-1">
-                                Dependencies: {change.feature.dependencies.join(', ')}
+                                {translate('Dependencies: ')}
+                                {change.feature.dependencies.join(', ')}
                               </p>
                             )}
                         </div>
@@ -415,7 +426,7 @@ export function BacklogPlanDialog({
         return (
           <div className="flex flex-col items-center justify-center py-12">
             <Spinner size="xl" className="mb-4" />
-            <p className="text-muted-foreground">Applying changes...</p>
+            <p className="text-muted-foreground">{translate('Applying changes...')}</p>
           </div>
         );
     }
@@ -430,12 +441,12 @@ export function BacklogPlanDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wand2 className="w-5 h-5 text-primary" />
-            {mode === 'review' ? 'Review Plan' : 'Plan Feature Changes'}
+            {mode === 'review' ? translate('Review Plan') : translate('Plan Feature Changes')}
           </DialogTitle>
           <DialogDescription>
             {mode === 'review'
-              ? 'Select which changes to apply to your features'
-              : 'Use AI to add, update, remove, or restructure your features'}
+              ? translate('Select which changes to apply to your features')
+              : translate('Use AI to add, update, remove, or restructure your features')}
           </DialogDescription>
         </DialogHeader>
 
@@ -445,7 +456,7 @@ export function BacklogPlanDialog({
           {mode === 'input' && (
             <>
               <div className="flex items-center gap-2 mr-auto">
-                <span className="text-xs text-muted-foreground">Model:</span>
+                <span className="text-xs text-muted-foreground">{translate('Model:')}</span>
                 <ModelOverrideTrigger
                   currentModelEntry={effectiveModelEntry}
                   onModelChange={setModelOverride}
@@ -456,18 +467,18 @@ export function BacklogPlanDialog({
                 />
               </div>
               <Button variant="outline" onClick={onClose}>
-                Cancel
+                {translate('Cancel')}
               </Button>
               <Button onClick={handleGenerate} disabled={!prompt.trim() || isGeneratingPlan}>
                 {isGeneratingPlan ? (
                   <>
                     <Spinner size="sm" className="mr-2" />
-                    Generating...
+                    {translate('Generating...')}
                   </>
                 ) : (
                   <>
                     <Wand2 className="w-4 h-4 mr-2" />
-                    Apply Changes
+                    {translate('Apply Changes')}
                   </>
                 )}
               </Button>
@@ -477,14 +488,15 @@ export function BacklogPlanDialog({
           {mode === 'review' && (
             <>
               <Button variant="outline" onClick={handleDiscard}>
-                Discard
+                {translate('Discard')}
               </Button>
               <Button variant="outline" onClick={onClose}>
-                Review Later
+                {translate('Review Later')}
               </Button>
               <Button onClick={handleApply} disabled={selectedChanges.size === 0}>
                 <Check className="w-4 h-4 mr-2" />
-                Apply {selectedChanges.size} Change{selectedChanges.size !== 1 ? 's' : ''}
+                {translate('Apply ')}
+                {formatCount(selectedChanges.size, 'Change')}
               </Button>
             </>
           )}

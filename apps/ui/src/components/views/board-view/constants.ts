@@ -1,3 +1,5 @@
+import { translate } from '@/lib/i18n';
+import { getPipelineStepLabel } from '@/lib/workflow-labels';
 import type { Feature } from '@/store/app-store';
 import type { PipelineConfig, FeatureStatusWithPipeline } from '@automaker/types';
 
@@ -23,35 +25,66 @@ export interface EmptyStateConfig {
  */
 export const EMPTY_STATE_CONFIGS: Record<string, EmptyStateConfig> = {
   backlog: {
-    title: 'Ready for Ideas',
-    description:
-      'Add your first feature idea to get started using the button below, or let AI help generate ideas.',
+    get title() {
+      return translate('Ready for Ideas');
+    },
+    get description() {
+      return translate(
+        'Add your first feature idea to get started using the button below, or let AI help generate ideas.'
+      );
+    },
     icon: 'lightbulb',
     shortcutHint: 'Press',
     primaryAction: {
-      label: 'Use AI Suggestions',
+      get label() {
+        return translate('Use AI Suggestions');
+      },
       actionType: 'none',
     },
   },
   in_progress: {
-    title: 'Nothing in Progress',
-    description: 'Drag a feature from the backlog here or click implement to start working on it.',
+    get title() {
+      return translate('Nothing in Progress');
+    },
+    get description() {
+      return translate(
+        'Drag a feature from the backlog here or click implement to start working on it.'
+      );
+    },
     icon: 'play',
   },
   waiting_approval: {
-    title: 'No Items Awaiting Approval',
-    description: 'Features will appear here after implementation is complete and need your review.',
+    get title() {
+      return translate('No Items Awaiting Approval');
+    },
+    get description() {
+      return translate(
+        'Features will appear here after implementation is complete and need your review.'
+      );
+    },
     icon: 'clock',
   },
   verified: {
-    title: 'No Verified Features',
-    description: 'Approved features will appear here. They can then be completed and archived.',
+    get title() {
+      return translate('No Verified Features');
+    },
+    get description() {
+      return translate(
+        'Approved features will appear here. They can then be completed and archived.'
+      );
+    },
     icon: 'check',
   },
   // Pipeline step default configuration
   pipeline_default: {
-    title: 'Pipeline Step Empty',
-    description: 'Features will flow through this step during the automated pipeline process.',
+    get title() {
+      return translate('Pipeline Step Empty');
+    },
+    get description() {
+      return translate(
+        'Features will flow through this step during the automated pipeline process.'
+      );
+    },
     icon: 'sparkles',
   },
 };
@@ -76,10 +109,18 @@ export interface Column {
 
 // Base columns (start)
 const BASE_COLUMNS: Column[] = [
-  { id: 'backlog', title: 'Backlog', colorClass: 'bg-[var(--status-backlog)]' },
+  {
+    id: 'backlog',
+    get title() {
+      return translate('Backlog');
+    },
+    colorClass: 'bg-[var(--status-backlog)]',
+  },
   {
     id: 'in_progress',
-    title: 'In Progress',
+    get title() {
+      return translate('In Progress');
+    },
     colorClass: 'bg-[var(--status-in-progress)]',
   },
 ];
@@ -88,12 +129,16 @@ const BASE_COLUMNS: Column[] = [
 const END_COLUMNS: Column[] = [
   {
     id: 'waiting_approval',
-    title: 'Waiting Approval',
+    get title() {
+      return translate('Waiting Approval');
+    },
     colorClass: 'bg-[var(--status-waiting)]',
   },
   {
     id: 'verified',
-    title: 'Verified',
+    get title() {
+      return translate('Verified');
+    },
     colorClass: 'bg-[var(--status-success)]',
   },
 ];
@@ -119,7 +164,7 @@ export function getColumnsWithPipeline(pipelineConfig: PipelineConfig | null): C
     .filter((step) => step && step.id) // Only include valid steps with an id
     .map((step) => ({
       id: `pipeline_${step.id}` as FeatureStatusWithPipeline,
-      title: step.name || 'Pipeline Step',
+      title: getPipelineStepLabel(step.name),
       colorClass: step.colorClass || 'bg-[var(--status-in-progress)]',
       isPipelineStep: true,
       pipelineStepId: step.id,

@@ -1,3 +1,5 @@
+import { formatCount } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { createLogger } from '@automaker/utils/logger';
@@ -107,6 +109,7 @@ function TerminalTabButton({
   isDropTarget: boolean;
   isDraggingTab: boolean;
 }) {
+  useUiLocale();
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(tab.name);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -212,6 +215,7 @@ function TerminalTabButton({
 
 // New tab drop zone
 function NewTabDropZone({ isDropTarget }: { isDropTarget: boolean }) {
+  useUiLocale();
   const { setNodeRef, isOver } = useDroppable({
     id: 'new-tab-zone',
     data: { type: 'new-tab' },
@@ -252,6 +256,7 @@ export function TerminalView({
   nonce,
   initialCommand,
 }: TerminalViewProps) {
+  useUiLocale();
   const {
     terminalState,
     setTerminalUnlocked,
@@ -318,8 +323,11 @@ export function TerminalView({
       !hasShownHighRamWarningRef.current
     ) {
       hasShownHighRamWarningRef.current = true;
-      toast.warning('Many terminals open', {
-        description: `${serverSessionInfo.current} terminals open. Each uses system resources (processes, memory). Consider closing unused terminals.`,
+      toast.warning(translate('Many terminals open'), {
+        description: translate(
+          '{value1} terminals open. Each uses system resources (processes, memory). Consider closing unused terminals.',
+          { value1: serverSessionInfo.current }
+        ),
         duration: 8000,
       });
     }
@@ -503,10 +511,10 @@ export function TerminalView({
           setTerminalUnlocked(true);
         }
       } else {
-        setError(data.error || 'Failed to get terminal status');
+        setError(data.error || translate('Failed to get terminal status'));
       }
     } catch (err) {
-      setError('Failed to connect to server');
+      setError(translate('Failed to connect to server'));
       logger.error('Status fetch error:', err);
     } finally {
       setLoading(false);
@@ -640,7 +648,7 @@ export function TerminalView({
 
           // Show success toast with branch name if provided
           const displayName = initialBranch || initialCwd.split('/').pop() || initialCwd;
-          toast.success(`Terminal opened at ${displayName}`);
+          toast.success(translate('Terminal opened at {value1}', { value1: displayName }));
 
           // Refresh session count
           fetchServerSettings();
@@ -649,7 +657,7 @@ export function TerminalView({
           navigate({ to: '/terminal', search: {}, replace: true });
         } else {
           logger.error('Failed to create terminal for cwd:', data.error);
-          toast.error('Failed to create terminal', {
+          toast.error(translate('Failed to create terminal'), {
             description: data.error || 'Unknown error',
           });
           // Reset the handled ref so the same cwd can be retried
@@ -657,8 +665,8 @@ export function TerminalView({
         }
       } catch (err) {
         logger.error('Create terminal with cwd error:', err);
-        toast.error('Failed to create terminal', {
-          description: 'Could not connect to server',
+        toast.error(translate('Failed to create terminal'), {
+          description: translate('Could not connect to server'),
         });
         // Reset the handled ref so the same cwd can be retried
         initialCwdHandledRef.current = null;
@@ -883,20 +891,27 @@ export function TerminalView({
         }
 
         if (failedSessions > 0) {
-          toast.error('Some terminals failed to restore', {
-            description: `${failedSessions} of ${totalSessions} sessions are unavailable. They were not recreated and commands were not replayed. Create a new terminal explicitly.`,
+          toast.error(translate('Some terminals failed to restore'), {
+            description: translate(
+              '{value1} of {value2} sessions are unavailable. They were not recreated and commands were not replayed. Create a new terminal explicitly.',
+              { value1: failedSessions, value2: totalSessions }
+            ),
             duration: 5000,
           });
         } else if (reconnectedSessions > 0) {
-          toast.success('Terminals restored', {
-            description: `Reconnected to ${reconnectedSessions} existing session${reconnectedSessions > 1 ? 's' : ''}`,
+          toast.success(translate('Terminals restored'), {
+            description: translate('Reconnected to {value1}', {
+              value1: formatCount(reconnectedSessions, 'existing session'),
+            }),
             duration: 3000,
           });
         }
       } catch (err) {
         logger.error('Failed to restore terminal layout:', err);
-        toast.error('Failed to restore terminals', {
-          description: 'Could not restore terminal layout. Please try creating new terminals.',
+        toast.error(translate('Failed to restore terminals'), {
+          description: translate(
+            'Could not restore terminal layout. Please try creating new terminals.'
+          ),
           duration: 5000,
         });
       } finally {
@@ -1048,22 +1063,22 @@ export function TerminalView({
       } else {
         // Handle session limit error with a helpful toast
         if (response.status === 429 || data.error?.includes('Maximum')) {
-          toast.error('Terminal session limit reached', {
+          toast.error(translate('Terminal session limit reached'), {
             description:
               data.details ||
               `Please close unused terminals. Limit: ${data.maxSessions || 'unknown'}`,
           });
         } else {
           logger.error('Failed to create session:', data.error);
-          toast.error('Failed to create terminal', {
+          toast.error(translate('Failed to create terminal'), {
             description: data.error || 'Unknown error',
           });
         }
       }
     } catch (err) {
       logger.error('Create session error:', err);
-      toast.error('Failed to create terminal', {
-        description: 'Could not connect to server',
+      toast.error(translate('Failed to create terminal'), {
+        description: translate('Could not connect to server'),
       });
     } finally {
       isCreatingRef.current = false;
@@ -1122,13 +1137,13 @@ export function TerminalView({
 
         // Handle session limit error with a helpful toast
         if (response.status === 429 || data.error?.includes('Maximum')) {
-          toast.error('Terminal session limit reached', {
+          toast.error(translate('Terminal session limit reached'), {
             description:
               data.details ||
               `Please close unused terminals. Limit: ${data.maxSessions || 'unknown'}`,
           });
         } else {
-          toast.error('Failed to create terminal', {
+          toast.error(translate('Failed to create terminal'), {
             description: data.error || 'Unknown error',
           });
         }
@@ -1138,8 +1153,8 @@ export function TerminalView({
       // Remove the empty tab on error
       const { removeTerminalTab } = useAppStore.getState();
       removeTerminalTab(tabId);
-      toast.error('Failed to create terminal', {
-        description: 'Could not connect to server',
+      toast.error(translate('Failed to create terminal'), {
+        description: translate('Could not connect to server'),
       });
     } finally {
       isCreatingRef.current = false;
@@ -1571,11 +1586,11 @@ export function TerminalView({
         <div className="p-4 rounded-full bg-destructive/10 mb-4">
           <AlertCircle className="h-12 w-12 text-destructive" />
         </div>
-        <h2 className="text-lg font-medium mb-2">Terminal Unavailable</h2>
+        <h2 className="text-lg font-medium mb-2">{translate('Terminal Unavailable')}</h2>
         <p className="text-muted-foreground max-w-md mb-4">{error}</p>
         <Button variant="outline" onClick={fetchStatus}>
           <RefreshCw className="h-4 w-4 mr-2" />
-          Retry
+          {translate('Retry')}
         </Button>
       </div>
     );
@@ -1588,11 +1603,11 @@ export function TerminalView({
         <div className="p-4 rounded-full bg-muted/50 mb-4">
           <TerminalIcon className="h-12 w-12 text-muted-foreground" />
         </div>
-        <h2 className="text-lg font-medium mb-2">Terminal Disabled</h2>
+        <h2 className="text-lg font-medium mb-2">{translate('Terminal Disabled')}</h2>
         <p className="text-muted-foreground max-w-md">
-          Terminal access has been disabled. Set{' '}
-          <code className="px-1.5 py-0.5 rounded bg-muted">TERMINAL_ENABLED=true</code> in your
-          server .env file to enable it.
+          {translate('Terminal access has been disabled. Set')}{' '}
+          <code className="px-1.5 py-0.5 rounded bg-muted">TERMINAL_ENABLED=true</code>{' '}
+          {translate(' in your server .env file to enable it.')}
         </p>
       </div>
     );
@@ -1605,15 +1620,15 @@ export function TerminalView({
         <div className="p-4 rounded-full bg-muted/50 mb-4">
           <Lock className="h-12 w-12 text-muted-foreground" />
         </div>
-        <h2 className="text-lg font-medium mb-2">Terminal Protected</h2>
+        <h2 className="text-lg font-medium mb-2">{translate('Terminal Protected')}</h2>
         <p className="text-muted-foreground max-w-md mb-6">
-          Terminal access requires authentication. Enter the password to unlock.
+          {translate('Terminal access requires authentication. Enter the password to unlock.')}
         </p>
 
         <form onSubmit={handleAuth} className="w-full max-w-xs space-y-4">
           <Input
             type="password"
-            placeholder="Enter password"
+            placeholder={translate('Enter password')}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={authLoading}
@@ -1626,15 +1641,18 @@ export function TerminalView({
             ) : (
               <Unlock className="h-4 w-4 mr-2" />
             )}
-            Unlock Terminal
+            {translate('Unlock Terminal')}
           </Button>
         </form>
 
         {status.platform && (
           <p className="text-xs text-muted-foreground mt-6">
-            Platform: {status.platform.platform}
-            {status.platform.isWSL && ' (WSL)'}
-            {' | '}Shell: {status.platform.defaultShell}
+            {translate('Platform: ')}
+            {status.platform.platform}
+            {status.platform.isWSL && translate(' (WSL)')}
+            {' | '}
+            {translate('Shell: ')}
+            {status.platform.defaultShell}
           </p>
         )}
       </div>
@@ -1657,12 +1675,12 @@ export function TerminalView({
         <div className="p-4 rounded-full bg-brand-500/10 mb-4">
           <TerminalIcon className="h-12 w-12 text-brand-500" />
         </div>
-        <h2 className="text-lg font-medium mb-2">Terminal</h2>
+        <h2 className="text-lg font-medium mb-2">{translate('Terminal')}</h2>
         <p className="text-muted-foreground max-w-md mb-6">
-          Create a new terminal session to start executing commands.
+          {translate('Create a new terminal session to start executing commands.')}
           {currentProject && (
             <span className="block mt-2 text-sm">
-              Working directory:{' '}
+              {translate('Working directory:')}{' '}
               <code className="px-1.5 py-0.5 rounded bg-muted">{currentProject.path}</code>
             </span>
           )}
@@ -1683,7 +1701,7 @@ export function TerminalView({
             >
               <span className="flex items-center">
                 <GitBranch className="h-4 w-4 mr-2 shrink-0" />
-                Open Terminal in Worktree
+                {translate('Open Terminal in Worktree')}
               </span>
               {currentWorktreeBranch && (
                 <span className="text-xs opacity-70 truncate max-w-full px-2">
@@ -1699,15 +1717,18 @@ export function TerminalView({
             onClick={() => createTerminal()}
           >
             <Plus className="h-4 w-4 mr-2" />
-            New Terminal
+            {translate('New Terminal')}
           </Button>
         </div>
 
         {status?.platform && (
           <p className="text-xs text-muted-foreground mt-6">
-            Platform: {status.platform.platform}
-            {status.platform.isWSL && ' (WSL)'}
-            {' | '}Shell: {status.platform.defaultShell}
+            {translate('Platform: ')}
+            {status.platform.platform}
+            {status.platform.isWSL && translate(' (WSL)')}
+            {' | '}
+            {translate('Shell: ')}
+            {status.platform.defaultShell}
           </p>
         )}
       </div>
@@ -1749,7 +1770,7 @@ export function TerminalView({
               <button
                 className="flex items-center justify-center p-1.5 rounded-l hover:bg-accent text-muted-foreground hover:text-foreground"
                 onClick={() => createTerminalInNewTab()}
-                title="New Tab"
+                title={translate('New Tab')}
               >
                 <Plus className="h-4 w-4" />
               </button>
@@ -1757,7 +1778,7 @@ export function TerminalView({
                 <DropdownMenuTrigger asChild>
                   <button
                     className="flex items-center justify-center px-0.5 py-1.5 rounded-r hover:bg-accent text-muted-foreground hover:text-foreground border-l border-border"
-                    title="New Terminal Options"
+                    title={translate('New Terminal Options')}
                   >
                     <ChevronDown className="h-3 w-3" />
                   </button>
@@ -1765,7 +1786,7 @@ export function TerminalView({
                 <DropdownMenuContent align="start" side="bottom" className="w-56">
                   <DropdownMenuItem onClick={() => createTerminalInNewTab()} className="gap-2">
                     <Plus className="h-4 w-4" />
-                    New Tab
+                    {translate('New Tab')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -1776,7 +1797,7 @@ export function TerminalView({
                     className="gap-2"
                   >
                     <SplitSquareHorizontal className="h-4 w-4" />
-                    Split Right
+                    {translate('Split Right')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
@@ -1786,7 +1807,7 @@ export function TerminalView({
                     className="gap-2"
                   >
                     <SplitSquareVertical className="h-4 w-4" />
-                    Split Down
+                    {translate('Split Down')}
                   </DropdownMenuItem>
                   {/* Worktree options - show when project has worktrees */}
                   {(() => {
@@ -1800,7 +1821,7 @@ export function TerminalView({
                       <>
                         <DropdownMenuSeparator />
                         <DropdownMenuLabel className="text-xs text-muted-foreground">
-                          Open in Worktree
+                          {translate('Open in Worktree')}
                         </DropdownMenuLabel>
                         {mainWorktree && (
                           <DropdownMenuItem
@@ -1812,7 +1833,7 @@ export function TerminalView({
                             <FolderGit className="h-4 w-4" />
                             <span className="truncate">{mainWorktree.branch}</span>
                             <span className="ml-auto text-[10px] text-muted-foreground shrink-0">
-                              main
+                              {translate('main')}
                             </span>
                           </DropdownMenuItem>
                         )}
@@ -1844,7 +1865,7 @@ export function TerminalView({
                 const { cwd, branchName } = getActiveSessionWorktreeInfo();
                 createTerminal('horizontal', undefined, cwd, branchName);
               }}
-              title="Split Right"
+              title={translate('Split Right')}
             >
               <SplitSquareHorizontal className="h-4 w-4" />
             </Button>
@@ -1856,7 +1877,7 @@ export function TerminalView({
                 const { cwd, branchName } = getActiveSessionWorktreeInfo();
                 createTerminal('vertical', undefined, cwd, branchName);
               }}
-              title="Split Down"
+              title={translate('Split Down')}
             >
               <SplitSquareVertical className="h-4 w-4" />
             </Button>
@@ -1868,7 +1889,7 @@ export function TerminalView({
                   variant="ghost"
                   size="sm"
                   className="h-7 px-2 text-muted-foreground hover:text-foreground"
-                  title="Terminal Settings"
+                  title={translate('Terminal Settings')}
                 >
                   <Settings className="h-4 w-4" />
                 </Button>
@@ -1876,18 +1897,21 @@ export function TerminalView({
               <PopoverContent className="w-72" align="end">
                 <div className="space-y-4">
                   <div className="space-y-1">
-                    <h4 className="font-medium text-sm">Terminal Settings</h4>
+                    <h4 className="font-medium text-sm">{translate('Terminal Settings')}</h4>
                     <p className="text-xs text-muted-foreground">
-                      Configure global terminal appearance
+                      {translate('Configure global terminal appearance')}
                     </p>
                   </div>
 
                   {/* Default Font Size */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs font-medium">Default Font Size</Label>
+                      <Label className="text-xs font-medium">
+                        {translate('Default Font Size')}
+                      </Label>
                       <span className="text-xs text-muted-foreground">
-                        {terminalState.defaultFontSize}px
+                        {terminalState.defaultFontSize}
+                        {translate('px')}
                       </span>
                     </div>
                     <Slider
@@ -1897,8 +1921,8 @@ export function TerminalView({
                       step={1}
                       onValueChange={([value]) => setTerminalDefaultFontSize(value)}
                       onValueCommit={() => {
-                        toast.info('Font size changed', {
-                          description: 'New terminals will use this size',
+                        toast.info(translate('Font size changed'), {
+                          description: translate('New terminals will use this size'),
                         });
                       }}
                     />
@@ -1906,32 +1930,34 @@ export function TerminalView({
 
                   {/* Default Run Script */}
                   <div className="space-y-2">
-                    <Label className="text-xs font-medium">Run on New Terminal</Label>
+                    <Label className="text-xs font-medium">
+                      {translate('Run on New Terminal')}
+                    </Label>
                     <Input
                       value={terminalState.defaultRunScript}
                       onChange={(e) => setTerminalDefaultRunScript(e.target.value)}
-                      placeholder="e.g., claude"
+                      placeholder={translate('e.g., claude')}
                       className="h-7 text-xs"
                     />
                     <p className="text-[10px] text-muted-foreground">
-                      Command to run when creating a new terminal
+                      {translate('Command to run when creating a new terminal')}
                     </p>
                   </div>
 
                   {/* Font Family */}
                   <div className="space-y-2">
-                    <Label className="text-xs font-medium">Font Family</Label>
+                    <Label className="text-xs font-medium">{translate('Font Family')}</Label>
                     <Select
                       value={terminalState.fontFamily || DEFAULT_FONT_VALUE}
                       onValueChange={(value) => {
                         setTerminalFontFamily(value);
-                        toast.info('Font family changed', {
-                          description: 'Restart terminal for changes to take effect',
+                        toast.info(translate('Font family changed'), {
+                          description: translate('Restart terminal for changes to take effect'),
                         });
                       }}
                     >
                       <SelectTrigger className="w-full h-8 text-xs">
-                        <SelectValue placeholder="Default (Menlo / Monaco)" />
+                        <SelectValue placeholder={translate('Default (Menlo / Monaco)')} />
                       </SelectTrigger>
                       <SelectContent>
                         {TERMINAL_FONT_OPTIONS.map((option) => (
@@ -1953,9 +1979,10 @@ export function TerminalView({
                   {/* Scrollback */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs font-medium">Scrollback</Label>
+                      <Label className="text-xs font-medium">{translate('Scrollback')}</Label>
                       <span className="text-xs text-muted-foreground">
-                        {(terminalState.scrollbackLines / 1000).toFixed(0)}k lines
+                        {(terminalState.scrollbackLines / 1000).toFixed(0)}
+                        {translate('k lines')}
                       </span>
                     </div>
                     <Slider
@@ -1965,8 +1992,8 @@ export function TerminalView({
                       step={1000}
                       onValueChange={([value]) => setTerminalScrollbackLines(value)}
                       onValueCommit={() => {
-                        toast.info('Scrollback changed', {
-                          description: 'Restart terminal for changes to take effect',
+                        toast.info(translate('Scrollback changed'), {
+                          description: translate('Restart terminal for changes to take effect'),
                         });
                       }}
                     />
@@ -1975,7 +2002,7 @@ export function TerminalView({
                   {/* Line Height */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs font-medium">Line Height</Label>
+                      <Label className="text-xs font-medium">{translate('Line Height')}</Label>
                       <span className="text-xs text-muted-foreground">
                         {terminalState.lineHeight.toFixed(1)}
                       </span>
@@ -1987,8 +2014,8 @@ export function TerminalView({
                       step={0.1}
                       onValueChange={([value]) => setTerminalLineHeight(value)}
                       onValueCommit={() => {
-                        toast.info('Line height changed', {
-                          description: 'Restart terminal for changes to take effect',
+                        toast.info(translate('Line height changed'), {
+                          description: translate('Restart terminal for changes to take effect'),
                         });
                       }}
                     />
@@ -1997,14 +2024,14 @@ export function TerminalView({
                   {/* Background Color */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs font-medium">Background Color</Label>
+                      <Label className="text-xs font-medium">{translate('Background Color')}</Label>
                       {terminalState.customBackgroundColor && (
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-5 w-5"
                           onClick={() => setTerminalBackgroundColor(null)}
-                          title="Reset to theme default"
+                          title={translate('Reset to theme default')}
                         >
                           <RotateCcw className="h-3 w-3" />
                         </Button>
@@ -2031,7 +2058,7 @@ export function TerminalView({
                         value={terminalState.customBackgroundColor || '#000000'}
                         onChange={(e) => setTerminalBackgroundColor(e.target.value)}
                         className="w-10 h-7 p-0.5 cursor-pointer bg-transparent border-border/50 shrink-0"
-                        title="Pick a background color"
+                        title={translate('Pick a background color')}
                       />
                       <Input
                         type="text"
@@ -2053,14 +2080,14 @@ export function TerminalView({
                   {/* Foreground Color */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs font-medium">Foreground Color</Label>
+                      <Label className="text-xs font-medium">{translate('Foreground Color')}</Label>
                       {terminalState.customForegroundColor && (
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-5 w-5"
                           onClick={() => setTerminalForegroundColor(null)}
-                          title="Reset to theme default"
+                          title={translate('Reset to theme default')}
                         >
                           <RotateCcw className="h-3 w-3" />
                         </Button>
@@ -2088,7 +2115,7 @@ export function TerminalView({
                         value={terminalState.customForegroundColor || '#ffffff'}
                         onChange={(e) => setTerminalForegroundColor(e.target.value)}
                         className="w-10 h-7 p-0.5 cursor-pointer bg-transparent border-border/50 shrink-0"
-                        title="Pick a foreground color"
+                        title={translate('Pick a foreground color')}
                       />
                       <Input
                         type="text"
@@ -2110,16 +2137,23 @@ export function TerminalView({
                   {/* Screen Reader */}
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label className="text-xs font-medium">Screen Reader</Label>
-                      <p className="text-[10px] text-muted-foreground">Enable accessibility mode</p>
+                      <Label className="text-xs font-medium">{translate('Screen Reader')}</Label>
+                      <p className="text-[10px] text-muted-foreground">
+                        {translate('Enable accessibility mode')}
+                      </p>
                     </div>
                     <Switch
                       checked={terminalState.screenReaderMode}
                       onCheckedChange={(checked) => {
                         setTerminalScreenReaderMode(checked);
-                        toast.info(checked ? 'Screen reader enabled' : 'Screen reader disabled', {
-                          description: 'Restart terminal for changes to take effect',
-                        });
+                        toast.info(
+                          checked
+                            ? translate('Screen reader enabled')
+                            : translate('Screen reader disabled'),
+                          {
+                            description: translate('Restart terminal for changes to take effect'),
+                          }
+                        );
                       }}
                     />
                   </div>
@@ -2189,10 +2223,10 @@ export function TerminalView({
             renderPanelContent(activeTab.layout)
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
-              <p className="text-muted-foreground mb-4">This tab is empty</p>
+              <p className="text-muted-foreground mb-4">{translate('This tab is empty')}</p>
               <Button variant="outline" size="sm" onClick={() => createTerminal()}>
                 <Plus className="h-4 w-4 mr-2" />
-                New Terminal
+                {translate('New Terminal')}
               </Button>
             </div>
           )}
@@ -2212,7 +2246,11 @@ export function TerminalView({
           <div className="relative inline-flex items-center gap-2 px-3.5 py-2 bg-card border-2 border-brand-500 rounded-lg shadow-xl pointer-events-none overflow-hidden">
             <TerminalIcon className="h-4 w-4 text-brand-500 shrink-0" />
             <span className="text-sm font-medium text-foreground whitespace-nowrap">
-              {dragOverTabId === 'new' ? 'New tab' : dragOverTabId ? 'Move to tab' : 'Terminal'}
+              {dragOverTabId === 'new'
+                ? translate('New tab')
+                : dragOverTabId
+                  ? translate('Move to tab')
+                  : translate('Terminal')}
             </span>
           </div>
         ) : null}

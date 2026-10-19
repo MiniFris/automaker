@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 import type { ClaudeUsage } from '../types/usage-types';
 
 /**
@@ -52,11 +53,11 @@ export function getPaceStatusLabel(
 
   const diff = Math.round(actualPercentage - expectedPercentage);
 
-  if (diff === 0) return 'On pace';
+  if (diff === 0) return translate('On pace');
   // Using more than expected = behind pace (bad)
-  if (diff > 0) return `${Math.abs(diff)}% behind pace`;
+  if (diff > 0) return translate('{value1}% behind pace', { value1: Math.abs(diff) });
   // Using less than expected = ahead of pace (good)
-  return `${Math.abs(diff)}% ahead of pace`;
+  return translate('{value1}% ahead of pace', { value1: Math.abs(diff) });
 }
 
 /**

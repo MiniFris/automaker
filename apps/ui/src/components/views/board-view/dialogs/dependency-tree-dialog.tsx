@@ -1,4 +1,6 @@
 // @ts-nocheck - dependency tree visualization with recursive feature relationships
+import { translate, useUiLocale } from '@/lib/i18n';
+import { getWorkflowStatusLabel } from '@/lib/workflow-labels';
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Feature } from '@/store/app-store';
@@ -18,6 +20,7 @@ export function DependencyTreeDialog({
   feature,
   allFeatures,
 }: DependencyTreeDialogProps) {
+  useUiLocale();
   const [dependencyTree, setDependencyTree] = useState<{
     dependencies: Feature[];
     dependents: Feature[];
@@ -72,7 +75,7 @@ export function DependencyTreeDialog({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Dependency Tree</DialogTitle>
+          <DialogTitle>{translate('Dependency Tree')}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 mt-4">
@@ -80,25 +83,31 @@ export function DependencyTreeDialog({
           <div className="border-2 border-primary rounded-lg p-4 bg-primary/5">
             <div className="flex items-center gap-3 mb-2">
               {getStatusIcon(feature.status)}
-              <h3 className="font-semibold text-sm">Current Feature</h3>
+              <h3 className="font-semibold text-sm">{translate('Current Feature')}</h3>
               {getPriorityBadge(feature.priority)}
             </div>
             <p className="text-sm text-muted-foreground">{feature.description}</p>
-            <p className="text-xs text-muted-foreground/70 mt-2">Category: {feature.category}</p>
+            <p className="text-xs text-muted-foreground/70 mt-2">
+              {translate('Category: ')}
+              {feature.category}
+            </p>
           </div>
 
           {/* Dependencies (what this feature needs) */}
           <div>
             <div className="flex items-center gap-2 mb-3">
               <h3 className="font-semibold text-sm">
-                Dependencies ({dependencyTree.dependencies.length})
+                {translate('Dependencies (')}
+                {dependencyTree.dependencies.length})
               </h3>
-              <span className="text-xs text-muted-foreground">This feature requires:</span>
+              <span className="text-xs text-muted-foreground">
+                {translate('This feature requires:')}
+              </span>
             </div>
 
             {dependencyTree.dependencies.length === 0 ? (
               <div className="text-sm text-muted-foreground/70 italic border border-dashed rounded-lg p-4 text-center">
-                No dependencies - this feature can be started independently
+                {translate('No dependencies - this feature can be started independently')}
               </div>
             ) : (
               <div className="space-y-2">
@@ -132,7 +141,7 @@ export function DependencyTreeDialog({
                               : 'bg-muted text-muted-foreground'
                         )}
                       >
-                        {(dep.status || 'backlog').replace(/_/g, ' ')}
+                        {getWorkflowStatusLabel(dep.status || 'backlog')}
                       </span>
                     </div>
                   </div>
@@ -145,14 +154,17 @@ export function DependencyTreeDialog({
           <div>
             <div className="flex items-center gap-2 mb-3">
               <h3 className="font-semibold text-sm">
-                Dependents ({dependencyTree.dependents.length})
+                {translate('Dependents (')}
+                {dependencyTree.dependents.length})
               </h3>
-              <span className="text-xs text-muted-foreground">Features blocked by this:</span>
+              <span className="text-xs text-muted-foreground">
+                {translate('Features blocked by this:')}
+              </span>
             </div>
 
             {dependencyTree.dependents.length === 0 ? (
               <div className="text-sm text-muted-foreground/70 italic border border-dashed rounded-lg p-4 text-center">
-                No dependents - no other features are waiting on this one
+                {translate('No dependents - no other features are waiting on this one')}
               </div>
             ) : (
               <div className="space-y-2">
@@ -178,7 +190,7 @@ export function DependencyTreeDialog({
                               : 'bg-muted text-muted-foreground'
                         )}
                       >
-                        {(dependent.status || 'backlog').replace(/_/g, ' ')}
+                        {getWorkflowStatusLabel(dependent.status || 'backlog')}
                       </span>
                     </div>
                   </div>
@@ -195,11 +207,12 @@ export function DependencyTreeDialog({
               <AlertCircle className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
               <div className="text-sm">
                 <p className="font-medium text-yellow-700 dark:text-yellow-500">
-                  Incomplete Dependencies
+                  {translate('Incomplete Dependencies')}
                 </p>
                 <p className="text-yellow-600 dark:text-yellow-400 mt-1">
-                  This feature has dependencies that aren't completed yet. Consider completing them
-                  first for a smoother implementation.
+                  {translate(
+                    "This feature has dependencies that aren't completed yet. Consider completing them first for a smoother implementation."
+                  )}
                 </p>
               </div>
             </div>

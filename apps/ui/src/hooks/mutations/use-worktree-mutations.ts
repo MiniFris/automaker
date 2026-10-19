@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 /**
  * Worktree Mutations
  *
@@ -31,10 +32,10 @@ export function useCreateWorktree(projectPath: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.worktrees.all(projectPath) });
-      toast.success('Worktree created');
+      toast.success(translate('Worktree created'));
     },
     onError: (error: Error) => {
-      toast.error('Failed to create worktree', {
+      toast.error(translate('Failed to create worktree'), {
         description: error.message,
       });
     },
@@ -68,10 +69,10 @@ export function useDeleteWorktree(projectPath: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.worktrees.all(projectPath) });
-      toast.success('Worktree deleted');
+      toast.success(translate('Worktree deleted'));
     },
     onError: (error: Error) => {
-      toast.error('Failed to delete worktree', {
+      toast.error(translate('Failed to delete worktree'), {
         description: error.message,
       });
     },
@@ -107,10 +108,10 @@ export function useCommitWorktree() {
     onSuccess: (_, { worktreePath: _worktreePath }) => {
       // Invalidate all worktree queries since we don't know the project path
       queryClient.invalidateQueries({ queryKey: ['worktrees'] });
-      toast.success('Changes committed');
+      toast.success(translate('Changes committed'));
     },
     onError: (error: Error) => {
-      toast.error('Failed to commit changes', {
+      toast.error(translate('Failed to commit changes'), {
         description: error.message,
       });
     },
@@ -145,10 +146,10 @@ export function usePushWorktree() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['worktrees'] });
-      toast.success('Changes pushed to remote');
+      toast.success(translate('Changes pushed to remote'));
     },
     onError: (error: Error) => {
-      toast.error('Failed to push changes', {
+      toast.error(translate('Failed to push changes'), {
         description: error.message,
       });
     },
@@ -187,10 +188,10 @@ export function usePullWorktree() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['worktrees'] });
-      toast.success('Changes pulled from remote');
+      toast.success(translate('Changes pulled from remote'));
     },
     onError: (error: Error) => {
-      toast.error('Failed to pull changes', {
+      toast.error(translate('Failed to pull changes'), {
         description: error.message,
       });
     },
@@ -217,10 +218,10 @@ export function useSyncWorktree() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['worktrees'] });
-      toast.success('Branch synced with remote');
+      toast.success(translate('Branch synced with remote'));
     },
     onError: (error: Error) => {
-      toast.error('Failed to sync', {
+      toast.error(translate('Failed to sync'), {
         description: error.message,
       });
     },
@@ -255,12 +256,12 @@ export function useSetTracking() {
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['worktrees'] });
-      toast.success('Tracking branch set', {
+      toast.success(translate('Tracking branch set'), {
         description: result?.message,
       });
     },
     onError: (error: Error) => {
-      toast.error('Failed to set tracking branch', {
+      toast.error(translate('Failed to set tracking branch'), {
         description: error.message,
       });
     },
@@ -302,10 +303,10 @@ export function useCreatePullRequest() {
       queryClient.invalidateQueries({ queryKey: ['worktrees'] });
       queryClient.invalidateQueries({ queryKey: ['github', 'prs'] });
       if (result?.prUrl) {
-        toast.success('Pull request created', {
-          description: `PR #${result.prNumber} created`,
+        toast.success(translate('Pull request created'), {
+          description: translate('PR #{value1} created', { value1: result.prNumber }),
           action: {
-            label: 'Open',
+            label: translate('Open'),
             onClick: () => {
               const api = getElectronAPI();
               api.openExternalLink(result.prUrl!);
@@ -313,11 +314,11 @@ export function useCreatePullRequest() {
           },
         });
       } else if (result?.prAlreadyExisted) {
-        toast.info('Pull request already exists');
+        toast.info(translate('Pull request already exists'));
       }
     },
     onError: (error: Error) => {
-      toast.error('Failed to create pull request', {
+      toast.error(translate('Failed to create pull request'), {
         description: error.message,
       });
     },
@@ -363,10 +364,10 @@ export function useMergeWorktree(projectPath: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.worktrees.all(projectPath) });
       queryClient.invalidateQueries({ queryKey: queryKeys.features.all(projectPath) });
-      toast.success('Feature merged successfully');
+      toast.success(translate('Feature merged successfully'));
     },
     onError: (error: Error) => {
-      toast.error('Failed to merge feature', {
+      toast.error(translate('Failed to merge feature'), {
         description: error.message,
       });
     },
@@ -462,7 +463,7 @@ export function useSwitchBranch(options?: {
       queryClient.invalidateQueries({ queryKey: ['worktrees'] });
 
       if (data?.hasConflicts) {
-        toast.warning('Switched branch with conflicts', {
+        toast.warning(translate('Switched branch with conflicts'), {
           description: data.message,
           duration: 8000,
         });
@@ -474,7 +475,7 @@ export function useSwitchBranch(options?: {
         });
       } else {
         const desc = data?.stashedChanges ? 'Local changes were stashed and reapplied' : undefined;
-        toast.success('Switched branch', { description: desc });
+        toast.success(translate('Switched branch'), { description: desc });
       }
     },
     onError: (error: Error) => {
@@ -492,7 +493,7 @@ export function useSwitchBranch(options?: {
       ) {
         // Checkout failed AND the stash-pop produced conflicts — notify the UI so it
         // can create an AI-assisted board task to guide the user through resolution.
-        toast.error('Branch switch failed with stash conflicts', {
+        toast.error(translate('Branch switch failed with stash conflicts'), {
           description:
             enrichedError.stashPopConflictMessage ??
             'Stash pop resulted in conflicts. Please resolve the conflicts in your working tree.',
@@ -506,7 +507,7 @@ export function useSwitchBranch(options?: {
             'Stash pop resulted in conflicts. Please resolve the conflicts in your working tree.',
         });
       } else {
-        toast.error('Failed to switch branch', {
+        toast.error(translate('Failed to switch branch'), {
           description: error.message,
         });
       }
@@ -609,7 +610,7 @@ export function useCheckoutBranch(options?: {
       queryClient.invalidateQueries({ queryKey: ['worktrees'] });
 
       if (data?.hasConflicts) {
-        toast.warning('Branch created with conflicts', {
+        toast.warning(translate('Branch created with conflicts'), {
           description: data.message,
           duration: 8000,
         });
@@ -620,7 +621,7 @@ export function useCheckoutBranch(options?: {
         });
       } else {
         const desc = data?.stashedChanges ? 'Local changes were stashed and reapplied' : undefined;
-        toast.success('New branch created and checked out', { description: desc });
+        toast.success(translate('New branch created and checked out'), { description: desc });
       }
     },
     onError: (error: Error) => {
@@ -636,7 +637,7 @@ export function useCheckoutBranch(options?: {
         enrichedError.worktreePath &&
         enrichedError.branchName
       ) {
-        toast.error('Branch creation failed with stash conflicts', {
+        toast.error(translate('Branch creation failed with stash conflicts'), {
           description:
             enrichedError.stashPopConflictMessage ??
             'Stash pop resulted in conflicts. Please resolve the conflicts in your working tree.',
@@ -650,7 +651,7 @@ export function useCheckoutBranch(options?: {
             'Stash pop resulted in conflicts. Please resolve the conflicts in your working tree.',
         });
       } else {
-        toast.error('Failed to checkout branch', {
+        toast.error(translate('Failed to checkout branch'), {
           description: error.message,
         });
       }
@@ -681,7 +682,7 @@ export function useGeneratePRDescription() {
       return { title: result.title ?? '', body: result.body ?? '' };
     },
     onError: (error: Error) => {
-      toast.error('Failed to generate PR description', {
+      toast.error(translate('Failed to generate PR description'), {
         description: error.message,
       });
     },
@@ -705,7 +706,7 @@ export function useGenerateCommitMessage() {
       return result.message ?? '';
     },
     onError: (error: Error) => {
-      toast.error('Failed to generate commit message', {
+      toast.error(translate('Failed to generate commit message'), {
         description: error.message,
       });
     },
@@ -735,7 +736,7 @@ export function useOpenInEditor() {
       return result.result;
     },
     onError: (error: Error) => {
-      toast.error('Failed to open in editor', {
+      toast.error(translate('Failed to open in editor'), {
         description: error.message,
       });
     },
@@ -763,10 +764,10 @@ export function useInitGit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['worktrees'] });
       queryClient.invalidateQueries({ queryKey: ['github'] });
-      toast.success('Git repository initialized');
+      toast.success(translate('Git repository initialized'));
     },
     onError: (error: Error) => {
-      toast.error('Failed to initialize git', {
+      toast.error(translate('Failed to initialize git'), {
         description: error.message,
       });
     },
@@ -794,10 +795,10 @@ export function useSetInitScript(projectPath: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.worktrees.initScript(projectPath) });
-      toast.success('Init script saved');
+      toast.success(translate('Init script saved'));
     },
     onError: (error: Error) => {
-      toast.error('Failed to save init script', {
+      toast.error(translate('Failed to save init script'), {
         description: error.message,
       });
     },
@@ -825,10 +826,10 @@ export function useDeleteInitScript(projectPath: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.worktrees.initScript(projectPath) });
-      toast.success('Init script deleted');
+      toast.success(translate('Init script deleted'));
     },
     onError: (error: Error) => {
-      toast.error('Failed to delete init script', {
+      toast.error(translate('Failed to delete init script'), {
         description: error.message,
       });
     },

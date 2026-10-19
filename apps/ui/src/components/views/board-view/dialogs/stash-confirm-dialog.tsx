@@ -1,3 +1,4 @@
+import { formatCount, translate, useUiLocale } from '@/lib/i18n';
 /**
  * Dialog shown when uncommitted changes are detected before a branch operation.
  * Presents the user with options to:
@@ -51,6 +52,7 @@ export function StashConfirmDialog({
   onConfirm,
   isLoading = false,
 }: StashConfirmDialogProps) {
+  useUiLocale();
   const handleStashAndProceed = useCallback(() => {
     onConfirm('stash-and-proceed');
   }, [onConfirm]);
@@ -74,12 +76,12 @@ export function StashConfirmDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-amber-500" />
-            Uncommitted Changes Detected
+            {translate('Uncommitted Changes Detected')}
           </DialogTitle>
           <DialogDescription asChild>
             <div className="space-y-3">
               <span className="block">
-                You have uncommitted changes that may be affected when you{' '}
+                {translate('You have uncommitted changes that may be affected when you')}{' '}
                 <strong>{operationDescription}</strong>.
               </span>
 
@@ -88,21 +90,21 @@ export function StashConfirmDialog({
                 {staged.length > 0 && (
                   <FileSection
                     icon={<FileEdit className="w-3.5 h-3.5 text-green-500" />}
-                    label="Staged"
+                    label={translate('Staged')}
                     files={staged}
                   />
                 )}
                 {unstaged.length > 0 && (
                   <FileSection
                     icon={<XCircle className="w-3.5 h-3.5 text-orange-500" />}
-                    label="Unstaged"
+                    label={translate('Unstaged')}
                     files={unstaged}
                   />
                 )}
                 {untracked.length > 0 && (
                   <FileSection
                     icon={<FilePlus className="w-3.5 h-3.5 text-blue-500" />}
-                    label="Untracked"
+                    label={translate('Untracked')}
                     files={untracked}
                   />
                 )}
@@ -110,16 +112,16 @@ export function StashConfirmDialog({
 
               <div className="mt-2 p-3 rounded-md bg-muted/50 border border-border">
                 <p className="text-sm text-muted-foreground font-medium mb-2">
-                  Choose how to proceed:
+                  {translate('Choose how to proceed:')}
                 </p>
                 <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
                   <li>
-                    <strong>Stash & Proceed</strong> &mdash; Saves your changes, performs the
-                    operation, then restores them
+                    <strong>{translate('Stash & Proceed')}</strong>{' '}
+                    {translate(' — Saves your changes, performs the operation, then restores them')}
                   </li>
                   <li>
-                    <strong>Proceed Without Stashing</strong> &mdash; Carries your uncommitted
-                    changes into the new branch as-is
+                    <strong>{translate('Proceed Without Stashing')}</strong>{' '}
+                    {translate(' — Carries your uncommitted changes into the new branch as-is')}
                   </li>
                 </ul>
               </div>
@@ -129,15 +131,15 @@ export function StashConfirmDialog({
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={handleCancel} disabled={isLoading}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button variant="secondary" onClick={handleProceedWithoutStash} disabled={isLoading}>
             <FileQuestion className="w-4 h-4 mr-2" />
-            Proceed Without Stashing
+            {translate('Proceed Without Stashing')}
           </Button>
           <Button onClick={handleStashAndProceed} disabled={isLoading}>
             <Archive className="w-4 h-4 mr-2" />
-            Stash & Proceed
+            {translate('Stash & Proceed')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -155,6 +157,7 @@ function FileSection({
   label: string;
   files: string[];
 }) {
+  useUiLocale();
   const maxDisplay = 5;
   const displayFiles = files.slice(0, maxDisplay);
   const remaining = files.length - maxDisplay;
@@ -176,7 +179,8 @@ function FileSection({
         ))}
         {remaining > 0 && (
           <div className="px-3 py-1 text-xs text-muted-foreground border-b border-border last:border-b-0">
-            ...and {remaining} more {remaining === 1 ? 'file' : 'files'}
+            {translate('...and ')}
+            {formatCount(remaining, 'file')}
           </div>
         )}
       </div>

@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useCallback, type KeyboardEvent } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -37,6 +38,7 @@ function generateId(): string {
 }
 
 export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps) {
+  useUiLocale();
   // Fetch project settings using TanStack Query
   const { data: projectSettings, isLoading, isError } = useProjectSettings(project.path);
 
@@ -195,12 +197,13 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
             <ScrollText className="w-5 h-5 text-brand-500" />
           </div>
           <h2 className="text-lg font-semibold text-foreground tracking-tight">
-            Terminal Quick Scripts
+            {translate('Terminal Quick Scripts')}
           </h2>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Configure quick-access scripts that appear in the terminal header dropdown. Click any
-          script to run it instantly.
+          {translate(
+            'Configure quick-access scripts that appear in the terminal header dropdown. Click any script to run it instantly.'
+          )}
         </p>
       </div>
 
@@ -211,7 +214,7 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
           </div>
         ) : isError ? (
           <div className="flex items-center justify-center py-8 text-sm text-destructive">
-            Failed to load project settings. Please try again.
+            {translate('Failed to load project settings. Please try again.')}
           </div>
         ) : (
           <>
@@ -234,7 +237,7 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
                   {/* Drag handle */}
                   <div
                     className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground shrink-0 p-0.5"
-                    title="Drag to reorder"
+                    title={translate('Drag to reorder')}
                   >
                     <GripVertical className="w-4 h-4" />
                   </div>
@@ -244,7 +247,7 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
                     value={script.name}
                     onChange={(e) => handleUpdateScript(index, 'name', e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Script name"
+                    placeholder={translate('Script name')}
                     className="h-8 text-sm flex-[0.4] min-w-0"
                   />
 
@@ -253,7 +256,7 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
                     value={script.command}
                     onChange={(e) => handleUpdateScript(index, 'command', e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Command to run"
+                    placeholder={translate('Command to run')}
                     className="h-8 text-sm font-mono flex-[0.6] min-w-0"
                   />
 
@@ -263,7 +266,7 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
                     size="sm"
                     onClick={() => handleRemoveScript(index)}
                     className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive shrink-0"
-                    aria-label={`Remove ${script.name || 'script'}`}
+                    aria-label={translate('Remove {value1}', { value1: script.name || 'script' })}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
@@ -272,7 +275,7 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
 
               {scripts.length === 0 && (
                 <div className="text-center py-6 text-sm text-muted-foreground">
-                  No scripts configured. Add some below or use a preset.
+                  {translate('No scripts configured. Add some below or use a preset.')}
                 </div>
               )}
             </div>
@@ -280,7 +283,7 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
             {/* Add Script Button */}
             <Button variant="outline" size="sm" onClick={handleAddScript} className="gap-1.5">
               <Plus className="w-3.5 h-3.5" />
-              Add Script
+              {translate('Add Script')}
             </Button>
 
             {/* Divider */}
@@ -288,7 +291,9 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
 
             {/* Presets */}
             <div className="space-y-3">
-              <h3 className="text-sm font-medium text-foreground">Quick Add Presets</h3>
+              <h3 className="text-sm font-medium text-foreground">
+                {translate('Quick Add Presets')}
+              </h3>
               <div className="flex flex-wrap gap-1.5">
                 {SCRIPT_PRESETS.map((preset) => (
                   <Button
@@ -308,12 +313,15 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
             <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/20 border border-border/30">
               <Info className="w-4 h-4 text-brand-500 mt-0.5 shrink-0" />
               <div className="text-xs text-muted-foreground">
-                <p className="font-medium text-foreground mb-1">Terminal Quick Scripts</p>
+                <p className="font-medium text-foreground mb-1">
+                  {translate('Terminal Quick Scripts')}
+                </p>
                 <p>
-                  These scripts appear in the terminal header as a dropdown menu (the{' '}
-                  <ScrollText className="inline-block w-3 h-3 mx-0.5 align-middle" /> icon).
-                  Clicking a script will type the command into the active terminal and press Enter.
-                  Drag to reorder scripts.
+                  {translate('These scripts appear in the terminal header as a dropdown menu (the')}{' '}
+                  <ScrollText className="inline-block w-3 h-3 mx-0.5 align-middle" />{' '}
+                  {translate(
+                    ' icon). Clicking a script will type the command into the active terminal and press Enter. Drag to reorder scripts.'
+                  )}
                 </p>
               </div>
             </div>
@@ -328,7 +336,7 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
                 className="gap-1.5"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                Reset
+                {translate('Reset')}
               </Button>
               <Button
                 size="sm"
@@ -337,7 +345,7 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
                 className="gap-1.5"
               >
                 {isSaving ? <Spinner size="xs" /> : <Save className="w-3.5 h-3.5" />}
-                Save
+                {translate('Save')}
               </Button>
             </div>
           </>

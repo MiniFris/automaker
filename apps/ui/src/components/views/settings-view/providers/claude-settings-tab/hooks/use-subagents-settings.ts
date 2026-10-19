@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 /**
  * Subagents Settings Hook - Manages Subagents configuration state
  *
@@ -24,7 +25,9 @@ export function useSubagentsSettings() {
         {
           onSuccess: () => {
             useAppStore.setState({ enableSubagents: newEnabled });
-            toast.success(newEnabled ? 'Subagents enabled' : 'Subagents disabled');
+            toast.success(
+              newEnabled ? translate('Subagents enabled') : translate('Subagents disabled')
+            );
           },
         }
       );
@@ -39,7 +42,7 @@ export function useSubagentsSettings() {
         {
           onSuccess: () => {
             useAppStore.setState({ subagentsSources: newSources });
-            toast.success('Subagents sources updated');
+            toast.success(translate('Subagents sources updated'));
           },
         }
       );

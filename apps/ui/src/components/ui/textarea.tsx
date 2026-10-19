@@ -1,8 +1,10 @@
+import { useUiLocale } from '@/lib/i18n';
 import * as React from 'react';
 
 import { cn } from '@/lib/utils';
 
 function Textarea({ className, ...props }: React.ComponentProps<'textarea'>) {
+  useUiLocale();
   return (
     <textarea
       data-slot="textarea"

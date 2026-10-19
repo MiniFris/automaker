@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import {
   Dialog,
   DialogContent,
@@ -58,6 +59,7 @@ export function FollowUpDialog({
   promptHistory = [],
   onHistoryAdd,
 }: FollowUpDialogProps) {
+  useUiLocale();
   const handleClose = (openState: boolean) => {
     if (!openState) {
       onOpenChange(false);
@@ -77,12 +79,13 @@ export function FollowUpDialog({
         }}
       >
         <DialogHeader>
-          <DialogTitle>Follow-Up Prompt</DialogTitle>
+          <DialogTitle>{translate('Follow-Up Prompt')}</DialogTitle>
           <DialogDescription>
-            Send additional instructions to continue working on this feature.
+            {translate('Send additional instructions to continue working on this feature.')}
             {feature && (
               <span className="block mt-2 text-primary">
-                Feature: {feature.description.slice(0, 100)}
+                {translate('Feature: ')}
+                {feature.description.slice(0, 100)}
                 {feature.description.length > 100 ? '...' : ''}
               </span>
             )}
@@ -91,14 +94,14 @@ export function FollowUpDialog({
         <div className="space-y-4 py-4 overflow-y-auto flex-1 min-h-0">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="follow-up-prompt">Instructions</Label>
+              <Label htmlFor="follow-up-prompt">{translate('Instructions')}</Label>
               {/* Version History Button */}
               <EnhancementHistoryButton
                 history={promptHistory}
                 currentValue={prompt}
                 onRestore={onPromptChange}
                 valueAccessor={(entry) => entry.prompt}
-                title="Prompt History"
+                title={translate('Prompt History')}
                 restoreMessage="Prompt restored from history"
               />
             </div>
@@ -107,7 +110,7 @@ export function FollowUpDialog({
               onChange={onPromptChange}
               images={imagePaths}
               onImagesChange={onImagePathsChange}
-              placeholder="Describe what needs to be fixed or changed..."
+              placeholder={translate('Describe what needs to be fixed or changed...')}
               previewMap={previewMap}
               onPreviewMapChange={onPreviewMapChange}
             />
@@ -140,8 +143,9 @@ export function FollowUpDialog({
           />
 
           <p className="text-xs text-muted-foreground">
-            The agent will continue from where it left off, using the existing context. You can
-            attach screenshots to help explain the issue.
+            {translate(
+              'The agent will continue from where it left off, using the existing context. You can attach screenshots to help explain the issue.'
+            )}
           </p>
         </div>
         <DialogFooter>
@@ -151,7 +155,7 @@ export function FollowUpDialog({
               onOpenChange(false);
             }}
           >
-            Cancel
+            {translate('Cancel')}
           </Button>
           <HotkeyButton
             onClick={onSend}
@@ -161,7 +165,7 @@ export function FollowUpDialog({
             data-testid="confirm-follow-up"
           >
             <MessageSquare className="w-4 h-4 mr-2" />
-            Send Follow-Up
+            {translate('Send Follow-Up')}
           </HotkeyButton>
         </DialogFooter>
       </DialogContent>

@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 /**
  * Shared utilities for image and file handling across the UI
  */
@@ -94,7 +95,7 @@ export function extractBase64Data(dataUrl: string): string {
  * @returns Formatted string (e.g., "1.5 MB")
  */
 export function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 B';
+  if (bytes === 0) return translate('0 B');
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));

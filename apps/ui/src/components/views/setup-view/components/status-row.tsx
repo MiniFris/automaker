@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import { StatusBadge } from './status-badge';
 
 interface StatusRowProps {
@@ -8,6 +9,7 @@ interface StatusRowProps {
 }
 
 export function StatusRow({ label, status, statusLabel, metadata }: StatusRowProps) {
+  useUiLocale();
   return (
     <div className="flex items-center justify-between">
       <span className="text-sm text-foreground">{label}</span>

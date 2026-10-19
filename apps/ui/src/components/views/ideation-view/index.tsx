@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * IdeationView - Main view for brainstorming and idea management
  * Dashboard-first design with Generate Ideas flow
@@ -27,6 +28,7 @@ function IdeationBreadcrumbs({
   selectedCategory: IdeaCategory | null;
   onNavigate: (mode: IdeationMode, category?: IdeaCategory | null) => void;
 }) {
+  useUiLocale();
   const { getCategoryById } = useGuidedPrompts();
   const categoryInfo = selectedCategory ? getCategoryById(selectedCategory) : null;
 
@@ -41,7 +43,7 @@ function IdeationBreadcrumbs({
         onClick={() => onNavigate('dashboard')}
         className="hover:text-foreground transition-colors"
       >
-        Dashboard
+        {translate('Dashboard')}
       </button>
       <ChevronRight className="w-3 h-3" />
       {selectedCategory && categoryInfo ? (
@@ -50,13 +52,13 @@ function IdeationBreadcrumbs({
             onClick={() => onNavigate('prompts', null)}
             className="hover:text-foreground transition-colors"
           >
-            Generate Ideas
+            {translate('Generate Ideas')}
           </button>
           <ChevronRight className="w-3 h-3" />
           <span className="text-foreground">{categoryInfo.name}</span>
         </>
       ) : (
-        <span className="text-foreground">Generate Ideas</span>
+        <span className="text-foreground">{translate('Generate Ideas')}</span>
       )}
     </nav>
   );
@@ -95,6 +97,7 @@ function IdeationHeader({
   onDiscardAll: () => void;
   projectPath: string;
 }) {
+  useUiLocale();
   const { getCategoryById } = useGuidedPrompts();
   const showBackButton = currentMode === 'prompts';
 
@@ -126,7 +129,7 @@ function IdeationHeader({
         <div>
           <div className="flex items-center gap-2">
             <Lightbulb className="w-5 h-5 text-primary" />
-            <h1 className="text-xl font-bold">Ideation</h1>
+            <h1 className="text-xl font-bold">{translate('Ideation')}</h1>
           </div>
           {currentMode === 'dashboard' ? (
             <p className="text-sm text-muted-foreground">{subtitle}</p>
@@ -149,7 +152,8 @@ function IdeationHeader({
             disabled={isAcceptingAll}
           >
             <Trash2 className="w-4 h-4" />
-            Discard All ({discardAllCount})
+            {translate('Discard All (')}
+            {discardAllCount})
           </Button>
         )}
         {currentMode === 'dashboard' && acceptAllReady && (
@@ -160,13 +164,14 @@ function IdeationHeader({
             disabled={isAcceptingAll}
           >
             {isAcceptingAll ? <Spinner size="sm" /> : <CheckCheck className="w-4 h-4" />}
-            Accept All ({acceptAllCount})
+            {translate('Accept All (')}
+            {acceptAllCount})
           </Button>
         )}
         <div className="flex items-center gap-3">
           <Button onClick={onGenerateIdeas} className="gap-2">
             <Lightbulb className="w-4 h-4" />
-            Generate Ideas
+            {translate('Generate Ideas')}
           </Button>
           <IdeationSettingsPopover projectPath={projectPath} />
         </div>
@@ -181,6 +186,7 @@ function IdeationHeader({
  * for generating new ideas using AI-powered suggestions.
  */
 export function IdeationView() {
+  useUiLocale();
   const currentProject = useAppStore((s) => s.currentProject);
   const { currentMode, selectedCategory, setMode, setCategory } = useIdeationStore();
 
@@ -271,7 +277,7 @@ export function IdeationView() {
         data-testid="ideation-view"
       >
         <div className="text-center text-muted-foreground">
-          <p>Open a project to start brainstorming ideas</p>
+          <p>{translate('Open a project to start brainstorming ideas')}</p>
         </div>
       </div>
     );

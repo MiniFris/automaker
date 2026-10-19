@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useRef } from 'react';
 import { Columns2, Eye, Code2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -12,6 +13,7 @@ export function MarkdownViewToolbar({
   viewMode: MarkdownViewMode;
   onViewModeChange: (mode: MarkdownViewMode) => void;
 }) {
+  useUiLocale();
   return (
     <div className="flex items-center gap-0.5 bg-muted/50 rounded-md p-0.5">
       <button
@@ -22,10 +24,10 @@ export function MarkdownViewToolbar({
             ? 'bg-background text-foreground shadow-sm'
             : 'text-muted-foreground hover:text-foreground'
         )}
-        title="Editor only"
+        title={translate('Editor only')}
       >
         <Code2 className="w-3 h-3" />
-        <span>Edit</span>
+        <span>{translate('Edit')}</span>
       </button>
       <button
         onClick={() => onViewModeChange('split')}
@@ -35,10 +37,10 @@ export function MarkdownViewToolbar({
             ? 'bg-background text-foreground shadow-sm'
             : 'text-muted-foreground hover:text-foreground'
         )}
-        title="Split view"
+        title={translate('Split view')}
       >
         <Columns2 className="w-3 h-3" />
-        <span>Split</span>
+        <span>{translate('Split')}</span>
       </button>
       <button
         onClick={() => onViewModeChange('preview')}
@@ -48,10 +50,10 @@ export function MarkdownViewToolbar({
             ? 'bg-background text-foreground shadow-sm'
             : 'text-muted-foreground hover:text-foreground'
         )}
-        title="Preview only"
+        title={translate('Preview only')}
       >
         <Eye className="w-3 h-3" />
-        <span>Preview</span>
+        <span>{translate('Preview')}</span>
       </button>
     </div>
   );
@@ -65,6 +67,7 @@ export function MarkdownPreviewPanel({
   content: string;
   className?: string;
 }) {
+  useUiLocale();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   return (

@@ -1,3 +1,4 @@
+import { formatCount, translate, useUiLocale } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SkeletonPulse } from '@/components/ui/skeleton';
@@ -56,15 +57,15 @@ export interface OpencodeAuthStatus {
 function getAuthMethodLabel(method: OpencodeAuthMethod): string {
   switch (method) {
     case 'api_key':
-      return 'API Key';
+      return translate('API Key');
     case 'api_key_env':
-      return 'API Key (Environment)';
+      return translate('API Key (Environment)');
     case 'oauth':
-      return 'OAuth Authentication';
+      return translate('OAuth Authentication');
     case 'config_file':
-      return 'Configuration File';
+      return translate('Configuration File');
     default:
-      return method || 'Unknown';
+      return method || translate('Unknown');
   }
 }
 
@@ -77,6 +78,7 @@ interface OpencodeCliStatusProps {
 }
 
 export function OpencodeCliStatusSkeleton() {
+  useUiLocale();
   return (
     <div
       className={cn(
@@ -122,6 +124,7 @@ export function OpencodeCliStatusSkeleton() {
 }
 
 export function OpencodeModelConfigSkeleton() {
+  useUiLocale();
   return (
     <div
       className={cn(
@@ -186,6 +189,7 @@ export function OpencodeCliStatus({
   isChecking,
   onRefresh,
 }: OpencodeCliStatusProps) {
+  useUiLocale();
   const authenticatedProviders = providers.filter((p) => p.authenticated);
   if (!status) return <OpencodeCliStatusSkeleton />;
 
@@ -204,7 +208,9 @@ export function OpencodeCliStatus({
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500/20 to-brand-600/10 flex items-center justify-center border border-brand-500/20">
               <OpenCodeIcon className="w-5 h-5 text-brand-500" />
             </div>
-            <h2 className="text-lg font-semibold text-foreground tracking-tight">OpenCode CLI</h2>
+            <h2 className="text-lg font-semibold text-foreground tracking-tight">
+              {translate('OpenCode CLI')}
+            </h2>
           </div>
           <Button
             variant="ghost"
@@ -212,7 +218,7 @@ export function OpencodeCliStatus({
             onClick={onRefresh}
             disabled={isChecking}
             data-testid="refresh-opencode-cli"
-            title="Refresh OpenCode CLI detection"
+            title={translate('Refresh OpenCode CLI detection')}
             className={cn(
               'h-9 w-9 rounded-lg',
               'hover:bg-accent/50 hover:scale-105',
@@ -223,7 +229,9 @@ export function OpencodeCliStatus({
           </Button>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          OpenCode CLI provides multi-provider AI support with Claude, GPT, and Gemini models.
+          {translate(
+            'OpenCode CLI provides multi-provider AI support with Claude, GPT, and Gemini models.'
+          )}
         </p>
       </div>
       <div className="p-6 space-y-4">
@@ -234,21 +242,26 @@ export function OpencodeCliStatus({
                 <CheckCircle2 className="w-5 h-5 text-emerald-500" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-emerald-400">OpenCode CLI Installed</p>
+                <p className="text-sm font-medium text-emerald-400">
+                  {translate('OpenCode CLI Installed')}
+                </p>
                 <div className="text-xs text-emerald-400/70 mt-1.5 space-y-0.5">
                   {status.method && (
                     <p>
-                      Method: <span className="font-mono">{status.method}</span>
+                      {translate('Method: ')}
+                      <span className="font-mono">{status.method}</span>
                     </p>
                   )}
                   {status.version && (
                     <p>
-                      Version: <span className="font-mono">{status.version}</span>
+                      {translate('Version: ')}
+                      <span className="font-mono">{status.version}</span>
                     </p>
                   )}
                   {status.path && (
                     <p className="truncate" title={status.path}>
-                      Path: <span className="font-mono text-[10px]">{status.path}</span>
+                      {translate('Path: ')}
+                      <span className="font-mono text-[10px]">{status.path}</span>
                     </p>
                   )}
                 </div>
@@ -262,17 +275,19 @@ export function OpencodeCliStatus({
                   <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-emerald-400">Authenticated</p>
+                  <p className="text-sm font-medium text-emerald-400">
+                    {translate('Authenticated')}
+                  </p>
                   <div className="text-xs text-emerald-400/70 mt-1.5">
                     {authStatus?.authenticated && authStatus.method !== 'none' ? (
                       <p>
-                        Method:{' '}
+                        {translate('Method:')}{' '}
                         <span className="font-mono">{getAuthMethodLabel(authStatus.method)}</span>
                       </p>
                     ) : authenticatedProviders.length > 0 ? (
                       <p>
-                        Via {authenticatedProviders.length} connected provider
-                        {authenticatedProviders.length !== 1 ? 's' : ''}
+                        {translate('Via ')}
+                        {formatCount(authenticatedProviders.length, 'connected provider')}
                       </p>
                     ) : null}
                   </div>
@@ -284,13 +299,15 @@ export function OpencodeCliStatus({
                   <Bot className="w-5 h-5 text-blue-500" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-blue-400">OpenCode Free Tier Ready</p>
+                  <p className="text-sm font-medium text-blue-400">
+                    {translate('OpenCode Free Tier Ready')}
+                  </p>
                   <p className="text-xs text-blue-400/70 mt-1">
-                    Free OpenCode models work without login. Run{' '}
+                    {translate('Free OpenCode models work without login. Run')}{' '}
                     <code className="font-mono bg-blue-500/10 px-1 rounded">
                       opencode auth login
                     </code>{' '}
-                    to connect providers like GitHub Copilot, Google AI, etc.
+                    {translate('to connect providers like GitHub Copilot, Google AI, etc.')}
                   </p>
                 </div>
               </div>
@@ -304,8 +321,8 @@ export function OpencodeCliStatus({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-emerald-400">
-                    {authenticatedProviders.length} Dynamic Provider
-                    {authenticatedProviders.length !== 1 ? 's' : ''} Connected
+                    {formatCount(authenticatedProviders.length, 'Dynamic Provider')}{' '}
+                    {translate(' Connected')}
                   </p>
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {authenticatedProviders.map((provider) => (
@@ -317,18 +334,22 @@ export function OpencodeCliStatus({
                         {getProviderDisplayName(provider)}
                         {provider.authMethod && (
                           <span className="ml-1 text-emerald-400/60">
-                            ({provider.authMethod === 'oauth' ? 'OAuth' : 'Key'})
+                            (
+                            {provider.authMethod === 'oauth'
+                              ? translate('OAuth')
+                              : translate('Key')}
+                            )
                           </span>
                         )}
                       </Badge>
                     ))}
                   </div>
                   <p className="text-xs text-emerald-400/60 mt-2">
-                    Use{' '}
+                    {translate('Use')}{' '}
                     <code className="font-mono bg-emerald-500/10 px-1 rounded">
                       opencode auth login
                     </code>{' '}
-                    to add more providers.
+                    {translate('to add more providers.')}
                   </p>
                 </div>
               </div>
@@ -345,20 +366,25 @@ export function OpencodeCliStatus({
                 <AlertCircle className="w-5 h-5 text-amber-500" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-amber-400">OpenCode CLI Not Detected</p>
+                <p className="text-sm font-medium text-amber-400">
+                  {translate('OpenCode CLI Not Detected')}
+                </p>
                 <p className="text-xs text-amber-400/70 mt-1">
-                  {status.recommendation || 'Install OpenCode CLI to use multi-provider AI models.'}
+                  {status.recommendation ||
+                    translate('Install OpenCode CLI to use multi-provider AI models.')}
                 </p>
               </div>
             </div>
             {status.installCommands && (
               <div className="space-y-3">
-                <p className="text-xs font-medium text-foreground/80">Installation Commands:</p>
+                <p className="text-xs font-medium text-foreground/80">
+                  {translate('Installation Commands:')}
+                </p>
                 <div className="space-y-2">
                   {status.installCommands.npm && (
                     <div className="p-3 rounded-xl bg-accent/30 border border-border/50">
                       <p className="text-[10px] text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">
-                        npm
+                        {translate('npm')}
                       </p>
                       <code className="text-xs text-foreground/80 font-mono break-all">
                         {status.installCommands.npm}
@@ -368,7 +394,7 @@ export function OpencodeCliStatus({
                   {status.installCommands.macos && (
                     <div className="p-3 rounded-xl bg-accent/30 border border-border/50">
                       <p className="text-[10px] text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">
-                        macOS/Linux
+                        {translate('macOS/Linux')}
                       </p>
                       <code className="text-xs text-foreground/80 font-mono break-all">
                         {status.installCommands.macos}

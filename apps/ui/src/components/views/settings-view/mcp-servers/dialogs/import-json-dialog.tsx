@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { FileJson } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -27,40 +28,36 @@ export function ImportJsonDialog({
   onImport,
   onCancel,
 }: ImportJsonDialogProps) {
+  useUiLocale();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl" data-testid="mcp-import-dialog">
         <DialogHeader>
-          <DialogTitle>Import MCP Servers</DialogTitle>
+          <DialogTitle>{translate('Import MCP Servers')}</DialogTitle>
           <DialogDescription>
-            Paste JSON configuration in Claude Code format. Servers with duplicate names will be
-            skipped.
+            {translate(
+              'Paste JSON configuration in Claude Code format. Servers with duplicate names will be skipped.'
+            )}
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">
           <Textarea
             value={importJson}
             onChange={(e) => onImportJsonChange(e.target.value)}
-            placeholder={`{
-  "mcpServers": {
-    "server-name": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-name"],
-      "type": "stdio"
-    }
-  }
-}`}
+            placeholder={translate(
+              '{\n  "mcpServers": {\n    "server-name": {\n      "command": "npx",\n      "args": ["-y", "@modelcontextprotocol/server-name"],\n      "type": "stdio"\n    }\n  }\n}'
+            )}
             className="font-mono text-sm h-64"
             data-testid="mcp-import-textarea"
           />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onCancel}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button onClick={onImport} disabled={!importJson.trim()} data-testid="mcp-import-button">
             <FileJson className="w-4 h-4 mr-2" />
-            Import
+            {translate('Import')}
           </Button>
         </DialogFooter>
       </DialogContent>

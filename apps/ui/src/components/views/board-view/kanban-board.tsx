@@ -1,3 +1,5 @@
+import { translate, useLocalizedMemo } from '@/lib/i18n';
+import { useUiLocale } from '@/lib/i18n';
 import {
   memo,
   useMemo,
@@ -146,6 +148,7 @@ function VirtualizedList<Item extends VirtualListItem>({
   virtualizationThreshold,
   children,
 }: VirtualizedListProps<Item>) {
+  useUiLocale();
   const contentRef = useRef<HTMLDivElement>(null);
   const measurementsRef = useRef<Map<string, number>>(new Map());
   const scrollRafRef = useRef<number | null>(null);
@@ -329,8 +332,9 @@ export const KanbanBoard = memo(function KanbanBoard({
   isReadOnly = false,
   className,
 }: KanbanBoardProps) {
+  useUiLocale();
   // Generate columns including pipeline steps
-  const columns = useMemo(() => getColumnsWithPipeline(pipelineConfig), [pipelineConfig]);
+  const columns = useLocalizedMemo(() => getColumnsWithPipeline(pipelineConfig), [pipelineConfig]);
 
   // Get the keyboard shortcut for adding features
   const keyboardShortcuts = useAppStore((state) => state.keyboardShortcuts);
@@ -403,7 +407,7 @@ export const KanbanBoard = memo(function KanbanBoard({
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Complete All</p>
+                              <p>{translate('Complete All')}</p>
                             </TooltipContent>
                           </Tooltip>
                         )}
@@ -425,7 +429,10 @@ export const KanbanBoard = memo(function KanbanBoard({
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>Completed Features ({completedCount})</p>
+                            <p>
+                              {translate('Completed Features (')}
+                              {completedCount})
+                            </p>
                           </TooltipContent>
                         </Tooltip>
                       </div>
@@ -437,7 +444,7 @@ export const KanbanBoard = memo(function KanbanBoard({
                             size="sm"
                             className="h-6 w-6 p-0 rounded-r-none"
                             onClick={onAddFeature}
-                            title="Add Feature"
+                            title={translate('Add Feature')}
                             data-testid="add-feature-button"
                           >
                             <Plus className="w-3.5 h-3.5" />
@@ -447,7 +454,7 @@ export const KanbanBoard = memo(function KanbanBoard({
                             size="sm"
                             className="h-6 w-6 p-0 rounded-l-none border-l border-primary-foreground/20"
                             onClick={onQuickAdd}
-                            title="Quick Add Feature"
+                            title={translate('Quick Add Feature')}
                             data-testid="quick-add-feature-button"
                           >
                             <Zap className="w-3.5 h-3.5" />
@@ -460,20 +467,20 @@ export const KanbanBoard = memo(function KanbanBoard({
                           onClick={() => onToggleSelectionMode?.('backlog')}
                           title={
                             selectionTarget === 'backlog'
-                              ? 'Switch to Drag Mode'
-                              : 'Select Multiple'
+                              ? translate('Switch to Drag Mode')
+                              : translate('Select Multiple')
                           }
                           data-testid="selection-mode-button"
                         >
                           {selectionTarget === 'backlog' ? (
                             <>
                               <GripVertical className="w-3.5 h-3.5 mr-1" />
-                              Drag
+                              {translate('Drag')}
                             </>
                           ) : (
                             <>
                               <CheckSquare className="w-3.5 h-3.5 mr-1" />
-                              Select
+                              {translate('Select')}
                             </>
                           )}
                         </Button>
@@ -486,20 +493,20 @@ export const KanbanBoard = memo(function KanbanBoard({
                         onClick={() => onToggleSelectionMode?.('waiting_approval')}
                         title={
                           selectionTarget === 'waiting_approval'
-                            ? 'Switch to Drag Mode'
-                            : 'Select Multiple'
+                            ? translate('Switch to Drag Mode')
+                            : translate('Select Multiple')
                         }
                         data-testid="waiting-approval-selection-mode-button"
                       >
                         {selectionTarget === 'waiting_approval' ? (
                           <>
                             <GripVertical className="w-3.5 h-3.5 mr-1" />
-                            Drag
+                            {translate('Drag')}
                           </>
                         ) : (
                           <>
                             <CheckSquare className="w-3.5 h-3.5 mr-1" />
-                            Select
+                            {translate('Select')}
                           </>
                         )}
                       </Button>
@@ -509,7 +516,7 @@ export const KanbanBoard = memo(function KanbanBoard({
                         size="sm"
                         className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
                         onClick={onOpenPipelineSettings}
-                        title="Pipeline Settings"
+                        title={translate('Pipeline Settings')}
                         data-testid="pipeline-settings-button"
                       >
                         <Settings2 className="w-3.5 h-3.5" />
@@ -520,7 +527,7 @@ export const KanbanBoard = memo(function KanbanBoard({
                         size="sm"
                         className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
                         onClick={onOpenPipelineSettings}
-                        title="Edit Pipeline Step"
+                        title={translate('Edit Pipeline Step')}
                         data-testid="edit-pipeline-step-button"
                       >
                         <Settings2 className="w-3.5 h-3.5" />
@@ -563,8 +570,11 @@ export const KanbanBoard = memo(function KanbanBoard({
                             customConfig={
                               column.isPipelineStep
                                 ? {
-                                    title: `${column.title} Empty`,
-                                    description: `Features will appear here during the ${column.title.toLowerCase()} phase of the pipeline.`,
+                                    title: translate('{value1} Empty', { value1: column.title }),
+                                    description: translate(
+                                      'Features will appear here during the {value1} phase of the pipeline.',
+                                      { value1: column.title.toLowerCase() }
+                                    ),
                                   }
                                 : undefined
                             }

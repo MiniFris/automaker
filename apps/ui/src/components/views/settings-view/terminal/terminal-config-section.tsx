@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * Terminal Config Section - Custom terminal configurations with theme synchronization
  *
@@ -37,6 +38,7 @@ import { useGlobalSettings } from '@/hooks/queries/use-settings';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 export function TerminalConfigSection() {
+  useUiLocale();
   const PATH_DEPTH_MIN = 0;
   const PATH_DEPTH_MAX = 10;
   const ENV_VAR_UPDATE_DEBOUNCE_MS = 400;
@@ -144,7 +146,9 @@ export function TerminalConfigSection() {
       {
         onSuccess: () => {
           toast.success(
-            enabled ? 'Custom terminal configs enabled' : 'Custom terminal configs disabled',
+            enabled
+              ? translate('Custom terminal configs enabled')
+              : translate('Custom terminal configs disabled'),
             {
               description: enabled
                 ? 'New terminals will use custom prompts'
@@ -154,7 +158,7 @@ export function TerminalConfigSection() {
         },
         onError: (error) => {
           console.error('[TerminalConfig] Failed to update settings:', error);
-          toast.error('Failed to update terminal config', {
+          toast.error(translate('Failed to update terminal config'), {
             description: error instanceof Error ? error.message : 'Unknown error',
           });
         },
@@ -201,7 +205,7 @@ export function TerminalConfigSection() {
       {
         onError: (error) => {
           console.error('[TerminalConfig] Failed to update settings:', error);
-          toast.error('Failed to update terminal config', {
+          toast.error(translate('Failed to update terminal config'), {
             description: error instanceof Error ? error.message : 'Unknown error',
           });
         },
@@ -292,12 +296,13 @@ export function TerminalConfigSection() {
             <Wand2 className="w-5 h-5 text-purple-500" />
           </div>
           <h2 className="text-lg font-semibold text-foreground tracking-tight">
-            Custom Terminal Configurations
+            {translate('Custom Terminal Configurations')}
           </h2>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Generate custom shell prompts that automatically sync with your app theme. Opt-in feature
-          that creates configs in .automaker/terminal/ without modifying your existing RC files.
+          {translate(
+            'Generate custom shell prompts that automatically sync with your app theme. Opt-in feature that creates configs in .automaker/terminal/ without modifying your existing RC files.'
+          )}
         </p>
       </div>
 
@@ -305,9 +310,11 @@ export function TerminalConfigSection() {
         {/* Enable Toggle */}
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <Label className="text-foreground font-medium">Enable Custom Configurations</Label>
+            <Label className="text-foreground font-medium">
+              {translate('Enable Custom Configurations')}
+            </Label>
             <p className="text-xs text-muted-foreground">
-              Create theme-synced shell configs in .automaker/terminal/
+              {translate('Create theme-synced shell configs in .automaker/terminal/')}
             </p>
           </div>
           <Switch checked={terminalConfig.enabled} onCheckedChange={handleToggleEnabled} />
@@ -319,18 +326,19 @@ export function TerminalConfigSection() {
             <div className="rounded-lg border border-purple-500/20 bg-purple-500/5 p-3 flex gap-2">
               <Info className="h-4 w-4 text-purple-500 flex-shrink-0 mt-0.5" />
               <div className="text-xs text-foreground/80">
-                <strong>How it works:</strong> Custom configs are applied to new terminals only.
-                Your ~/.bashrc and ~/.zshrc are still loaded first. Close and reopen terminals to
-                see changes.
+                <strong>{translate('How it works:')}</strong>{' '}
+                {translate(
+                  ' Custom configs are applied to new terminals only. Your ~/.bashrc and ~/.zshrc are still loaded first. Close and reopen terminals to see changes.'
+                )}
               </div>
             </div>
 
             {/* Custom Prompt Toggle */}
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <Label className="text-foreground font-medium">Custom Prompt</Label>
+                <Label className="text-foreground font-medium">{translate('Custom Prompt')}</Label>
                 <p className="text-xs text-muted-foreground">
-                  Override default shell prompt with themed version
+                  {translate('Override default shell prompt with themed version')}
                 </p>
               </div>
               <Switch
@@ -343,7 +351,9 @@ export function TerminalConfigSection() {
               <>
                 {/* Prompt Format */}
                 <div className="space-y-3">
-                  <Label className="text-foreground font-medium">Prompt Theme (Oh My Posh)</Label>
+                  <Label className="text-foreground font-medium">
+                    {translate('Prompt Theme (Oh My Posh)')}
+                  </Label>
                   <Select value={activePromptThemeId} onValueChange={handlePromptThemeChange}>
                     <SelectTrigger>
                       <SelectValue />
@@ -351,9 +361,9 @@ export function TerminalConfigSection() {
                     <SelectContent>
                       <SelectItem value={PROMPT_THEME_CUSTOM_ID}>
                         <div className="space-y-0.5">
-                          <div>Custom</div>
+                          <div>{translate('Custom')}</div>
                           <div className="text-xs text-muted-foreground">
-                            Hand-tuned configuration
+                            {translate('Hand-tuned configuration')}
                           </div>
                         </div>
                       </SelectItem>
@@ -375,15 +385,18 @@ export function TerminalConfigSection() {
                   <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 flex gap-2">
                     <Info className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
                     <div className="text-xs text-foreground/80">
-                      <strong>{promptThemePreset?.label ?? 'Oh My Posh theme'}</strong> uses the
-                      oh-my-posh CLI for rendering. Ensure it&apos;s installed for the full theme.
-                      Prompt format and segment toggles are ignored while an OMP theme is selected.
+                      <strong>{promptThemePreset?.label ?? translate('Oh My Posh theme')}</strong>{' '}
+                      {translate(
+                        " uses the oh-my-posh CLI for rendering. Ensure it's installed for the full theme. Prompt format and segment toggles are ignored while an OMP theme is selected."
+                      )}
                     </div>
                   </div>
                 )}
 
                 <div className="space-y-3">
-                  <Label className="text-foreground font-medium">Prompt Format</Label>
+                  <Label className="text-foreground font-medium">
+                    {translate('Prompt Format')}
+                  </Label>
                   <Select
                     value={terminalConfig.promptFormat}
                     onValueChange={(value: 'standard' | 'minimal' | 'powerline' | 'starship') =>
@@ -397,31 +410,33 @@ export function TerminalConfigSection() {
                     <SelectContent>
                       <SelectItem value="standard">
                         <div className="space-y-0.5">
-                          <div>Standard</div>
+                          <div>{translate('Standard')}</div>
                           <div className="text-xs text-muted-foreground">
-                            [user@host] ~/path (main*) $
+                            {translate('[user@host] ~/path (main*) $')}
                           </div>
                         </div>
                       </SelectItem>
                       <SelectItem value="minimal">
                         <div className="space-y-0.5">
-                          <div>Minimal</div>
-                          <div className="text-xs text-muted-foreground">~/path (main*) $</div>
+                          <div>{translate('Minimal')}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {translate('~/path (main*) $')}
+                          </div>
                         </div>
                       </SelectItem>
                       <SelectItem value="powerline">
                         <div className="space-y-0.5">
-                          <div>Powerline</div>
+                          <div>{translate('Powerline')}</div>
                           <div className="text-xs text-muted-foreground">
-                            ┌─[user@host]─[~/path]─[main*]
+                            {translate('┌─[user@host]─[~/path]─[main*]')}
                           </div>
                         </div>
                       </SelectItem>
                       <SelectItem value="starship">
                         <div className="space-y-0.5">
-                          <div>Starship-Inspired</div>
+                          <div>{translate('Starship-Inspired')}</div>
                           <div className="text-xs text-muted-foreground">
-                            user@host in ~/path on main*
+                            {translate('user@host in ~/path on main*')}
                           </div>
                         </div>
                       </SelectItem>
@@ -434,7 +449,7 @@ export function TerminalConfigSection() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <GitBranch className="w-4 h-4 text-muted-foreground" />
-                      <Label className="text-sm">Show Git Branch</Label>
+                      <Label className="text-sm">{translate('Show Git Branch')}</Label>
                     </div>
                     <Switch
                       checked={terminalConfig.showGitBranch}
@@ -446,7 +461,9 @@ export function TerminalConfigSection() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">*</span>
-                      <Label className="text-sm">Show Git Status (dirty indicator)</Label>
+                      <Label className="text-sm">
+                        {translate('Show Git Status (dirty indicator)')}
+                      </Label>
                     </div>
                     <Switch
                       checked={terminalConfig.showGitStatus}
@@ -461,7 +478,7 @@ export function TerminalConfigSection() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Wand2 className="w-4 h-4 text-muted-foreground" />
-                      <Label className="text-sm">Show User & Host</Label>
+                      <Label className="text-sm">{translate('Show User & Host')}</Label>
                     </div>
                     <Switch
                       checked={terminalConfig.showUserHost}
@@ -473,7 +490,7 @@ export function TerminalConfigSection() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">~/</span>
-                      <Label className="text-sm">Show Path</Label>
+                      <Label className="text-sm">{translate('Show Path')}</Label>
                     </div>
                     <Switch
                       checked={terminalConfig.showPath}
@@ -485,7 +502,7 @@ export function TerminalConfigSection() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">⏱</span>
-                      <Label className="text-sm">Show Time</Label>
+                      <Label className="text-sm">{translate('Show Time')}</Label>
                     </div>
                     <Switch
                       checked={terminalConfig.showTime}
@@ -497,7 +514,7 @@ export function TerminalConfigSection() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">✗</span>
-                      <Label className="text-sm">Show Exit Status</Label>
+                      <Label className="text-sm">{translate('Show Exit Status')}</Label>
                     </div>
                     <Switch
                       checked={terminalConfig.showExitStatus}
@@ -508,7 +525,9 @@ export function TerminalConfigSection() {
 
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">Path Style</Label>
+                      <Label className="text-xs text-muted-foreground">
+                        {translate('Path Style')}
+                      </Label>
                       <Select
                         value={terminalConfig.pathStyle}
                         onValueChange={(value: 'full' | 'short' | 'basename') =>
@@ -520,15 +539,17 @@ export function TerminalConfigSection() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="full">Full</SelectItem>
-                          <SelectItem value="short">Short</SelectItem>
-                          <SelectItem value="basename">Basename</SelectItem>
+                          <SelectItem value="full">{translate('Full')}</SelectItem>
+                          <SelectItem value="short">{translate('Short')}</SelectItem>
+                          <SelectItem value="basename">{translate('Basename')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">Path Depth</Label>
+                      <Label className="text-xs text-muted-foreground">
+                        {translate('Path Depth')}
+                      </Label>
                       <Input
                         type="number"
                         min={PATH_DEPTH_MIN}
@@ -547,7 +568,7 @@ export function TerminalConfigSection() {
 
                 {/* Live Preview */}
                 <div className="space-y-3">
-                  <Label className="text-foreground font-medium">Preview</Label>
+                  <Label className="text-foreground font-medium">{translate('Preview')}</Label>
                   <PromptPreview
                     format={terminalConfig.promptFormat}
                     theme={theme}
@@ -569,9 +590,9 @@ export function TerminalConfigSection() {
             {/* Custom Aliases */}
             <div className="space-y-3">
               <div className="space-y-1">
-                <Label className="text-foreground font-medium">Custom Aliases</Label>
+                <Label className="text-foreground font-medium">{translate('Custom Aliases')}</Label>
                 <p className="text-xs text-muted-foreground">
-                  Add shell aliases (one per line, e.g., alias ll='ls -la')
+                  {translate("Add shell aliases (one per line, e.g., alias ll='ls -la')")}
                 </p>
               </div>
               <Textarea
@@ -587,15 +608,15 @@ export function TerminalConfigSection() {
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <Label className="text-foreground font-medium">
-                    Custom Environment Variables
+                    {translate('Custom Environment Variables')}
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Add custom env vars (alphanumeric + underscore only)
+                    {translate('Add custom env vars (alphanumeric + underscore only)')}
                   </p>
                 </div>
                 <Button variant="outline" size="sm" onClick={addEnvVar} className="h-8 gap-1.5">
                   <Plus className="w-3.5 h-3.5" />
-                  Add
+                  {translate('Add')}
                 </Button>
               </div>
 
@@ -617,7 +638,7 @@ export function TerminalConfigSection() {
                       <Input
                         value={envVar.value}
                         onChange={(e) => updateEnvVar(envVar.id, 'value', e.target.value)}
-                        placeholder="value"
+                        placeholder={translate('value')}
                         className="font-mono text-sm flex-[2]"
                       />
                       <Button
@@ -640,20 +661,24 @@ export function TerminalConfigSection() {
       <ConfirmDialog
         open={showEnableConfirm}
         onOpenChange={setShowEnableConfirm}
-        title="Enable custom terminal configurations"
-        description="Automaker will generate per-project shell configuration files for your terminal."
+        title={translate('Enable custom terminal configurations')}
+        description={translate(
+          'Automaker will generate per-project shell configuration files for your terminal.'
+        )}
         icon={Info}
-        confirmText="Enable"
+        confirmText={translate('Enable')}
         onConfirm={() => applyEnabledUpdate(true)}
       >
         <div className="space-y-3 text-sm text-muted-foreground">
           <ul className="list-disc space-y-1 pl-5">
-            <li>Creates shell config files in `.automaker/terminal/`</li>
-            <li>Applies prompts and colors that match your app theme</li>
-            <li>Leaves your existing `~/.bashrc` and `~/.zshrc` untouched</li>
+            <li>{translate('Creates shell config files in `.automaker/terminal/`')}</li>
+            <li>{translate('Applies prompts and colors that match your app theme')}</li>
+            <li>{translate('Leaves your existing `~/.bashrc` and `~/.zshrc` untouched')}</li>
           </ul>
           <p className="text-xs text-muted-foreground">
-            New terminal sessions will use the custom prompt; existing sessions are unchanged.
+            {translate(
+              'New terminal sessions will use the custom prompt; existing sessions are unchanged.'
+            )}
           </p>
         </div>
       </ConfirmDialog>

@@ -1,4 +1,5 @@
 'use client';
+import { translate, useUiLocale } from '@/lib/i18n';
 
 import { useState, useEffect, useCallback } from 'react';
 import { createLogger } from '@automaker/utils/logger';
@@ -34,6 +35,7 @@ export function TaskProgressPanel({
   className,
   defaultExpanded = true,
 }: TaskProgressPanelProps) {
+  useUiLocale();
   const [tasks, setTasks] = useState<TaskInfo[]>([]);
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [isLoading, setIsLoading] = useState(true);
@@ -199,9 +201,10 @@ export function TaskProgressPanel({
             )}
           </div>
           <div className="flex flex-col items-start gap-0.5">
-            <h3 className="font-semibold text-sm tracking-tight">Execution Plan</h3>
+            <h3 className="font-semibold text-sm tracking-tight">{translate('Execution Plan')}</h3>
             <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
-              {completedCount} of {totalCount} tasks completed
+              {completedCount} {translate(' of ')}
+              {totalCount} {translate(' tasks completed')}
             </span>
           </div>
         </div>
@@ -302,7 +305,7 @@ export function TaskProgressPanel({
                               variant="outline"
                               className="h-5 px-1.5 text-[10px] bg-primary/5 text-primary border-primary/20 animate-pulse"
                             >
-                              Active
+                              {translate('Active')}
                             </Badge>
                           )}
                         </div>

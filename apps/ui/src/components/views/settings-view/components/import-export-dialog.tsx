@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect } from 'react';
 import { Copy, Check, AlertCircle, Save } from 'lucide-react';
 import {
@@ -24,6 +25,7 @@ interface SettingsResponse {
 }
 
 export function ImportExportDialog({ open, onOpenChange }: ImportExportDialogProps) {
+  useUiLocale();
   const [jsonValue, setJsonValue] = useState('');
   const [originalValue, setOriginalValue] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -49,7 +51,7 @@ export function ImportExportDialog({ open, onOpenChange }: ImportExportDialogPro
         setParseError(null);
       }
     } catch (error) {
-      toast.error('Failed to load settings');
+      toast.error(translate('Failed to load settings'));
       console.error('Failed to load settings:', error);
     } finally {
       setIsLoading(false);
@@ -71,16 +73,16 @@ export function ImportExportDialog({ open, onOpenChange }: ImportExportDialogPro
     try {
       await navigator.clipboard.writeText(jsonValue);
       setCopied(true);
-      toast.success('Settings copied to clipboard');
+      toast.success(translate('Settings copied to clipboard'));
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error('Failed to copy to clipboard');
+      toast.error(translate('Failed to copy to clipboard'));
     }
   };
 
   const handleSave = async () => {
     if (parseError) {
-      toast.error('Please fix JSON syntax errors before saving');
+      toast.error(translate('Please fix JSON syntax errors before saving'));
       return;
     }
 
@@ -92,13 +94,15 @@ export function ImportExportDialog({ open, onOpenChange }: ImportExportDialogPro
         const formatted = JSON.stringify(response.settings, null, 2);
         setJsonValue(formatted);
         setOriginalValue(formatted);
-        toast.success('Settings saved successfully', {
-          description: 'Your changes have been applied. Some settings may require a refresh.',
+        toast.success(translate('Settings saved successfully'), {
+          description: translate(
+            'Your changes have been applied. Some settings may require a refresh.'
+          ),
         });
         onOpenChange(false);
       }
     } catch (error) {
-      toast.error('Failed to save settings');
+      toast.error(translate('Failed to save settings'));
       console.error('Failed to save settings:', error);
     } finally {
       setIsSaving(false);
@@ -116,10 +120,11 @@ export function ImportExportDialog({ open, onOpenChange }: ImportExportDialogPro
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-3xl lg:max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Import / Export Settings</DialogTitle>
+          <DialogTitle>{translate('Import / Export Settings')}</DialogTitle>
           <DialogDescription>
-            Copy your settings to transfer to another machine, or paste settings from another
-            installation.
+            {translate(
+              'Copy your settings to transfer to another machine, or paste settings from another installation.'
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -135,7 +140,7 @@ export function ImportExportDialog({ open, onOpenChange }: ImportExportDialogPro
                 className="gap-2"
               >
                 {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                {copied ? 'Copied!' : 'Copy'}
+                {copied ? translate('Copied!') : translate('Copy')}
               </Button>
               <Button
                 variant="outline"
@@ -144,13 +149,13 @@ export function ImportExportDialog({ open, onOpenChange }: ImportExportDialogPro
                 disabled={isLoading}
                 className="gap-2"
               >
-                Refresh
+                {translate('Refresh')}
               </Button>
             </div>
             <div className="flex items-center gap-2">
               {hasChanges && (
                 <Button variant="ghost" size="sm" onClick={handleReset} disabled={isSaving}>
-                  Discard
+                  {translate('Discard')}
                 </Button>
               )}
               <Button
@@ -161,7 +166,7 @@ export function ImportExportDialog({ open, onOpenChange }: ImportExportDialogPro
                 className="gap-2"
               >
                 <Save className="w-4 h-4" />
-                {isSaving ? 'Saving...' : 'Save Changes'}
+                {isSaving ? translate('Saving...') : translate('Save Changes')}
               </Button>
             </div>
           </div>
@@ -178,13 +183,13 @@ export function ImportExportDialog({ open, onOpenChange }: ImportExportDialogPro
           <div className="flex-1 min-h-0 overflow-hidden">
             {isLoading ? (
               <div className="flex items-center justify-center h-full text-muted-foreground">
-                Loading settings...
+                {translate('Loading settings...')}
               </div>
             ) : (
               <JsonSyntaxEditor
                 value={jsonValue}
                 onChange={handleJsonChange}
-                placeholder="Loading settings..."
+                placeholder={translate('Loading settings...')}
                 minHeight="350px"
                 maxHeight="450px"
                 data-testid="settings-json-editor"
@@ -194,7 +199,9 @@ export function ImportExportDialog({ open, onOpenChange }: ImportExportDialogPro
 
           {/* Help Text */}
           <p className="text-xs text-muted-foreground">
-            To import settings, paste the JSON content into the editor and click "Save Changes".
+            {translate(
+              'To import settings, paste the JSON content into the editor and click "Save Changes".'
+            )}
           </p>
         </div>
       </DialogContent>

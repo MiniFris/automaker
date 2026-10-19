@@ -1,3 +1,5 @@
+import { useLocalizedMemo } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Dialog,
@@ -68,6 +70,7 @@ export function CreatePRDialog({
   onCreated,
   defaultBaseBranch = 'main',
 }: CreatePRDialogProps) {
+  useUiLocale();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [baseBranch, setBaseBranch] = useState(defaultBaseBranch);
@@ -130,7 +133,7 @@ export function CreatePRDialog({
   // Filter branches by the active remote and strip remote prefixes for display.
   // Returns display names (e.g. "main") without remote prefix.
   // Also builds a map from display name → full ref (e.g. "origin/main") for PR creation.
-  const { branches, branchFullRefMap } = useMemo(() => {
+  const { branches, branchFullRefMap } = useLocalizedMemo(() => {
     if (!branchesData?.branches)
       return { branches: [], branchFullRefMap: new Map<string, string>() };
 
@@ -335,14 +338,14 @@ export function CreatePRDialog({
         if (result.body) {
           setBody(result.body);
         }
-        toast.success('PR description generated');
+        toast.success(translate('PR description generated'));
       } else {
-        toast.error('Failed to generate description', {
+        toast.error(translate('Failed to generate description'), {
           description: result.error || 'Unknown error',
         });
       }
     } catch (err) {
-      toast.error('Failed to generate description', {
+      toast.error(translate('Failed to generate description'), {
         description: err instanceof Error ? err.message : 'Unknown error',
       });
     } finally {
@@ -359,7 +362,7 @@ export function CreatePRDialog({
     try {
       const api = getElectronAPI();
       if (!api?.worktree?.createPR) {
-        setError('Worktree API not available');
+        setError(translate('Worktree API not available'));
         return;
       }
       // Resolve the display branch name to the full ref for the API call.
@@ -395,18 +398,20 @@ export function CreatePRDialog({
 
           // Show different message based on whether PR already existed
           if (result.result.prAlreadyExisted) {
-            toast.success('Pull request found!', {
-              description: `PR already exists for ${result.result.branch}`,
+            toast.success(translate('Pull request found!'), {
+              description: translate('PR already exists for {value1}', {
+                value1: result.result.branch,
+              }),
               action: {
-                label: 'View PR',
+                label: translate('View PR'),
                 onClick: () => window.open(result.result!.prUrl!, '_blank', 'noopener,noreferrer'),
               },
             });
           } else {
-            toast.success('Pull request created!', {
-              description: `PR created from ${result.result.branch}`,
+            toast.success(translate('Pull request created!'), {
+              description: translate('PR created from {value1}', { value1: result.result.branch }),
               action: {
-                label: 'View PR',
+                label: translate('View PR'),
                 onClick: () => window.open(result.result!.prUrl!, '_blank', 'noopener,noreferrer'),
               },
             });
@@ -426,7 +431,7 @@ export function CreatePRDialog({
               setShowBrowserFallback(true);
               // Mark operation as completed - branch was pushed successfully
               operationCompletedRef.current = true;
-              toast.success('Branch pushed', {
+              toast.success(translate('Branch pushed'), {
                 description: result.result.committed
                   ? `Commit ${result.result.commitHash} pushed to ${result.result.branch}`
                   : `Branch ${result.result.branch} pushed`,
@@ -454,7 +459,7 @@ export function CreatePRDialog({
               setShowBrowserFallback(true);
               // Mark operation as completed - branch was pushed even though PR creation failed
               operationCompletedRef.current = true;
-              toast.error('PR creation failed', {
+              toast.error(translate('PR creation failed'), {
                 description: errorMessage,
                 duration: 8000,
               });
@@ -465,7 +470,7 @@ export function CreatePRDialog({
           }
 
           // Show success toast for push
-          toast.success('Branch pushed', {
+          toast.success(translate('Branch pushed'), {
             description: result.result.committed
               ? `Commit ${result.result.commitHash} pushed to ${result.result.branch}`
               : `Branch ${result.result.branch} pushed`,
@@ -474,9 +479,10 @@ export function CreatePRDialog({
           // No browser URL available, just close
           if (!result.result.prCreated) {
             if (!hasBrowserUrl) {
-              toast.info('PR not created', {
-                description:
-                  'Could not determine repository URL. GitHub CLI (gh) may not be installed or authenticated.',
+              toast.info(translate('PR not created'), {
+                description: translate(
+                  'Could not determine repository URL. GitHub CLI (gh) may not be installed or authenticated.'
+                ),
                 duration: 8000,
               });
             }
@@ -485,10 +491,10 @@ export function CreatePRDialog({
           onOpenChange(false);
         }
       } else {
-        setError(result.error || 'Failed to create pull request');
+        setError(result.error || translate('Failed to create pull request'));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create PR');
+      setError(err instanceof Error ? err.message : translate('Failed to create PR'));
     } finally {
       setIsLoading(false);
     }
@@ -515,10 +521,11 @@ export function CreatePRDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <GitPullRequest className="w-5 h-5" />
-            Create Pull Request
+            {translate('Create Pull Request')}
           </DialogTitle>
           <DialogDescription className="break-words">
-            {worktree.hasChanges ? 'Push changes and create' : 'Create'} a pull request from{' '}
+            {worktree.hasChanges ? translate('Push changes and create') : translate('Create')}{' '}
+            {translate(' a pull request from')}{' '}
             <code className="font-mono bg-muted px-1 rounded break-all">{worktree.branch}</code>
           </DialogDescription>
         </DialogHeader>
@@ -529,8 +536,10 @@ export function CreatePRDialog({
               <GitPullRequest className="w-8 h-8 text-green-500" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold">Pull Request Created!</h3>
-              <p className="text-sm text-muted-foreground mt-1">Your PR is ready for review</p>
+              <h3 className="text-lg font-semibold">{translate('Pull Request Created!')}</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                {translate('Your PR is ready for review')}
+              </p>
             </div>
             <div className="flex gap-2 justify-center">
               <Button
@@ -538,10 +547,10 @@ export function CreatePRDialog({
                 className="gap-2"
               >
                 <ExternalLink className="w-4 h-4" />
-                View Pull Request
+                {translate('View Pull Request')}
               </Button>
               <Button variant="outline" onClick={handleClose}>
-                Close
+                {translate('Close')}
               </Button>
             </div>
           </div>
@@ -551,11 +560,11 @@ export function CreatePRDialog({
               <GitPullRequest className="w-8 h-8 text-blue-500" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold">Branch Pushed!</h3>
+              <h3 className="text-lg font-semibold">{translate('Branch Pushed!')}</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Your changes have been pushed to GitHub.
+                {translate('Your changes have been pushed to GitHub.')}
                 <br />
-                Click below to create a pull request in your browser.
+                {translate('Click below to create a pull request in your browser.')}
               </p>
             </div>
             <div className="space-y-3">
@@ -569,16 +578,17 @@ export function CreatePRDialog({
                 size="lg"
               >
                 <ExternalLink className="w-4 h-4" />
-                Create PR in Browser
+                {translate('Create PR in Browser')}
               </Button>
               <div className="p-2 bg-muted rounded text-xs break-all font-mono">{browserUrl}</div>
               <p className="text-xs text-muted-foreground">
-                Tip: Install the GitHub CLI (<code className="bg-muted px-1 rounded">gh</code>) to
-                create PRs directly from the app
+                {translate('Tip: Install the GitHub CLI (')}
+                <code className="bg-muted px-1 rounded">gh</code>
+                {translate(') to create PRs directly from the app')}
               </p>
               <DialogFooter className="mt-4">
                 <Button variant="outline" onClick={handleClose}>
-                  Close
+                  {translate('Close')}
                 </Button>
               </DialogFooter>
             </div>
@@ -589,24 +599,26 @@ export function CreatePRDialog({
               {worktree.hasChanges && (
                 <div className="grid gap-2">
                   <Label htmlFor="commit-message">
-                    Commit Message <span className="text-muted-foreground">(optional)</span>
+                    {translate('Commit Message ')}
+                    <span className="text-muted-foreground">{translate('(optional)')}</span>
                   </Label>
                   <Input
                     id="commit-message"
-                    placeholder="Leave empty to auto-generate"
+                    placeholder={translate('Leave empty to auto-generate')}
                     value={commitMessage}
                     onChange={(e) => setCommitMessage(e.target.value)}
                     className="font-mono text-sm"
                   />
                   <p className="text-xs text-muted-foreground">
-                    {worktree.changedFilesCount} uncommitted file(s) will be committed
+                    {worktree.changedFilesCount}{' '}
+                    {translate(' uncommitted file(s) will be committed')}
                   </p>
                 </div>
               )}
 
               <div className="grid gap-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="pr-title">PR Title</Label>
+                  <Label htmlFor="pr-title">{translate('PR Title')}</Label>
                   <div className="flex items-center gap-1">
                     <Button
                       variant="ghost"
@@ -616,19 +628,21 @@ export function CreatePRDialog({
                       className="h-6 px-2 text-xs"
                       title={
                         worktree.hasChanges
-                          ? 'Generate title and description from commits and uncommitted changes'
-                          : 'Generate title and description from commits'
+                          ? translate(
+                              'Generate title and description from commits and uncommitted changes'
+                            )
+                          : translate('Generate title and description from commits')
                       }
                     >
                       {isGeneratingDescription ? (
                         <>
                           <Spinner size="xs" className="mr-1" />
-                          Generating...
+                          {translate('Generating...')}
                         </>
                       ) : (
                         <>
                           <Sparkles className="w-3 h-3 mr-1" />
-                          Generate with AI
+                          {translate('Generate with AI')}
                         </>
                       )}
                     </Button>
@@ -652,13 +666,17 @@ export function CreatePRDialog({
 
               <div className="grid gap-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="pr-body">Description</Label>
+                  <Label htmlFor="pr-body">{translate('Description')}</Label>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
                     className="h-6 px-2 text-xs"
-                    title={isDescriptionExpanded ? 'Collapse description' : 'Expand description'}
+                    title={
+                      isDescriptionExpanded
+                        ? translate('Collapse description')
+                        : translate('Expand description')
+                    }
                   >
                     {isDescriptionExpanded ? (
                       <Minimize2 className="w-3 h-3" />
@@ -669,7 +687,7 @@ export function CreatePRDialog({
                 </div>
                 <Textarea
                   id="pr-body"
-                  placeholder="Describe the changes in this PR..."
+                  placeholder={translate('Describe the changes in this PR...')}
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
                   className={isDescriptionExpanded ? 'min-h-[300px]' : 'min-h-[80px]'}
@@ -681,7 +699,7 @@ export function CreatePRDialog({
                 {remotes.length > 1 && needsPush && (
                   <div className="grid gap-2">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="remote-select">Push to Remote</Label>
+                      <Label htmlFor="remote-select">{translate('Push to Remote')}</Label>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -694,12 +712,12 @@ export function CreatePRDialog({
                         ) : (
                           <RefreshCw className="w-3 h-3 mr-1" />
                         )}
-                        Refresh
+                        {translate('Refresh')}
                       </Button>
                     </div>
                     <Select value={selectedRemote} onValueChange={setSelectedRemote}>
                       <SelectTrigger id="remote-select">
-                        <SelectValue placeholder="Select a remote" />
+                        <SelectValue placeholder={translate('Select a remote')} />
                       </SelectTrigger>
                       <SelectContent>
                         {remotes.map((remote) => (
@@ -723,10 +741,10 @@ export function CreatePRDialog({
                 {/* Target remote selector - which remote to create PR against */}
                 {remotes.length > 1 && (
                   <div className="grid gap-2">
-                    <Label htmlFor="target-remote-select">Create PR Against</Label>
+                    <Label htmlFor="target-remote-select">{translate('Create PR Against')}</Label>
                     <Select value={selectedTargetRemote} onValueChange={setSelectedTargetRemote}>
                       <SelectTrigger id="target-remote-select">
-                        <SelectValue placeholder="Select target remote" />
+                        <SelectValue placeholder={translate('Select target remote')} />
                       </SelectTrigger>
                       <SelectContent>
                         {remotes.map((remote) => (
@@ -745,24 +763,26 @@ export function CreatePRDialog({
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground">
-                      The remote repository where the pull request will be created
+                      {translate('The remote repository where the pull request will be created')}
                     </p>
                   </div>
                 )}
 
                 <div className="grid gap-2">
-                  <Label htmlFor="base-branch">Base Remote Branch</Label>
+                  <Label htmlFor="base-branch">{translate('Base Remote Branch')}</Label>
                   <BranchAutocomplete
                     value={baseBranch}
                     onChange={setBaseBranch}
                     branches={branches}
-                    placeholder="Select base branch..."
+                    placeholder={translate('Select base branch...')}
                     disabled={isLoadingBranches || isLoadingRemotes}
                     allowCreate={false}
                     emptyMessage={
                       activeRemote
-                        ? `No branches found on remote "${activeRemote}".`
-                        : 'No matching branches found.'
+                        ? translate('No branches found on remote "{value1}".', {
+                            value1: activeRemote,
+                          })
+                        : translate('No matching branches found.')
                     }
                     data-testid="base-branch-autocomplete"
                   />
@@ -775,7 +795,7 @@ export function CreatePRDialog({
                       onCheckedChange={(checked) => setIsDraft(checked === true)}
                     />
                     <Label htmlFor="draft" className="cursor-pointer">
-                      Create as draft
+                      {translate('Create as draft')}
                     </Label>
                   </div>
                 </div>
@@ -786,18 +806,18 @@ export function CreatePRDialog({
 
             <DialogFooter className="shrink-0 pt-2 border-t">
               <Button variant="ghost" onClick={handleClose} disabled={isLoading}>
-                Cancel
+                {translate('Cancel')}
               </Button>
               <Button onClick={handleCreate} disabled={isLoading}>
                 {isLoading ? (
                   <>
                     <Spinner size="sm" className="mr-2" />
-                    Creating...
+                    {translate('Creating...')}
                   </>
                 ) : (
                   <>
                     <GitPullRequest className="w-4 h-4 mr-2" />
-                    Create PR
+                    {translate('Create PR')}
                   </>
                 )}
               </Button>

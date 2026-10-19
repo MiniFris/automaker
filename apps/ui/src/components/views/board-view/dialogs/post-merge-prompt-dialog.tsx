@@ -1,3 +1,5 @@
+import { formatCount } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * Post-Merge Prompt Dialog
  *
@@ -55,6 +57,7 @@ export function PostMergePromptDialog({
   savedPreference,
   onSavePreference,
 }: PostMergePromptDialogProps) {
+  useUiLocale();
   const [rememberChoice, setRememberChoice] = useState(false);
   const [showFiles, setShowFiles] = useState(false);
 
@@ -88,20 +91,21 @@ export function PostMergePromptDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <GitMerge className="w-5 h-5 text-purple-500" />
-            Merge Complete
+            {translate('Merge Complete')}
           </DialogTitle>
           <DialogDescription asChild>
             <div className="space-y-3">
               <span className="block">
-                A merge was successfully completed on{' '}
+                {translate('A merge was successfully completed on')}{' '}
                 <code className="font-mono bg-muted px-1 rounded">{branchName}</code>
                 {mergeFileCount > 0 && (
                   <span>
                     {' '}
-                    affecting {mergeFileCount} file{mergeFileCount !== 1 ? 's' : ''}
+                    {translate('affecting ')}
+                    {formatCount(mergeFileCount, 'file')}
                   </span>
                 )}
-                . How would you like to proceed?
+                {translate('. How would you like to proceed?')}
               </span>
 
               {mergeAffectedFiles && mergeAffectedFiles.length > 0 && (
@@ -111,7 +115,9 @@ export function PostMergePromptDialog({
                     className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
                   >
                     <FileText className="w-3 h-3" />
-                    {showFiles ? 'Hide' : 'Show'} affected files ({mergeAffectedFiles.length})
+                    {showFiles ? translate('Hide') : translate('Show')}{' '}
+                    {translate(' affected files (')}
+                    {mergeAffectedFiles.length})
                   </button>
                   {showFiles && (
                     <div className="mt-1.5 border border-border rounded-lg overflow-hidden max-h-[150px] overflow-y-auto scrollbar-visible">
@@ -131,16 +137,20 @@ export function PostMergePromptDialog({
 
               <div className="mt-2 p-3 rounded-md bg-muted/50 border border-border">
                 <p className="text-sm text-muted-foreground font-medium mb-2">
-                  Choose how to proceed:
+                  {translate('Choose how to proceed:')}
                 </p>
                 <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
                   <li>
-                    <strong>Commit Merge</strong> &mdash; Stage all merge files and open the commit
-                    dialog with a pre-populated merge commit message
+                    <strong>{translate('Commit Merge')}</strong>{' '}
+                    {translate(
+                      ' — Stage all merge files and open the commit dialog with a pre-populated merge commit message'
+                    )}
                   </li>
                   <li>
-                    <strong>Review Manually</strong> &mdash; Leave the working tree as-is so you can
-                    review changes and commit at your own pace
+                    <strong>{translate('Review Manually')}</strong>{' '}
+                    {translate(
+                      ' — Leave the working tree as-is so you can review changes and commit at your own pace'
+                    )}
                   </li>
                 </ul>
               </div>
@@ -158,14 +168,14 @@ export function PostMergePromptDialog({
                 className="rounded border-border"
               />
               <Settings className="w-3 h-3" />
-              Remember my choice for future merges
+              {translate('Remember my choice for future merges')}
             </label>
             {savedPreference && (
               <button
                 onClick={() => onSavePreference(null)}
                 className="text-xs text-muted-foreground hover:text-foreground transition-colors ml-auto"
               >
-                Reset preference
+                {translate('Reset preference')}
               </button>
             )}
           </div>
@@ -174,14 +184,14 @@ export function PostMergePromptDialog({
         <DialogFooter className={cn('flex-col sm:flex-row gap-2')}>
           <Button variant="outline" onClick={handleMergeManually} className="w-full sm:w-auto">
             <FileText className="w-4 h-4 mr-2" />
-            Review Manually
+            {translate('Review Manually')}
           </Button>
           <Button
             onClick={handleCommitMerge}
             className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white"
           >
             <GitCommitHorizontal className="w-4 h-4 mr-2" />
-            Commit Merge
+            {translate('Commit Merge')}
           </Button>
         </DialogFooter>
       </DialogContent>

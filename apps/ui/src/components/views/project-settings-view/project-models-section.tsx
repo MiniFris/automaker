@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState } from 'react';
 import { useAppStore } from '@/store/app-store';
 import { Button } from '@/components/ui/button';
@@ -22,67 +23,111 @@ interface PhaseConfig {
 const QUICK_TASKS: PhaseConfig[] = [
   {
     key: 'enhancementModel',
-    label: 'Feature Enhancement',
-    description: 'Improves feature names and descriptions',
+    get label() {
+      return translate('Feature Enhancement');
+    },
+    get description() {
+      return translate('Improves feature names and descriptions');
+    },
   },
   {
     key: 'fileDescriptionModel',
-    label: 'File Descriptions',
-    description: 'Generates descriptions for context files',
+    get label() {
+      return translate('File Descriptions');
+    },
+    get description() {
+      return translate('Generates descriptions for context files');
+    },
   },
   {
     key: 'imageDescriptionModel',
-    label: 'Image Descriptions',
-    description: 'Analyzes and describes context images',
+    get label() {
+      return translate('Image Descriptions');
+    },
+    get description() {
+      return translate('Analyzes and describes context images');
+    },
   },
   {
     key: 'commitMessageModel',
-    label: 'Commit Messages',
-    description: 'Generates git commit messages from diffs',
+    get label() {
+      return translate('Commit Messages');
+    },
+    get description() {
+      return translate('Generates git commit messages from diffs');
+    },
   },
 ];
 
 const VALIDATION_TASKS: PhaseConfig[] = [
   {
     key: 'validationModel',
-    label: 'GitHub Issue Validation',
-    description: 'Validates and improves GitHub issues',
+    get label() {
+      return translate('GitHub Issue Validation');
+    },
+    get description() {
+      return translate('Validates and improves GitHub issues');
+    },
   },
 ];
 
 const GENERATION_TASKS: PhaseConfig[] = [
   {
     key: 'specGenerationModel',
-    label: 'App Specification',
-    description: 'Generates full application specifications',
+    get label() {
+      return translate('App Specification');
+    },
+    get description() {
+      return translate('Generates full application specifications');
+    },
   },
   {
     key: 'featureGenerationModel',
-    label: 'Feature Generation',
-    description: 'Creates features from specifications',
+    get label() {
+      return translate('Feature Generation');
+    },
+    get description() {
+      return translate('Creates features from specifications');
+    },
   },
   {
     key: 'backlogPlanningModel',
-    label: 'Backlog Planning',
-    description: 'Reorganizes and prioritizes backlog',
+    get label() {
+      return translate('Backlog Planning');
+    },
+    get description() {
+      return translate('Reorganizes and prioritizes backlog');
+    },
   },
   {
     key: 'projectAnalysisModel',
-    label: 'Project Analysis',
-    description: 'Analyzes project structure for suggestions',
+    get label() {
+      return translate('Project Analysis');
+    },
+    get description() {
+      return translate('Analyzes project structure for suggestions');
+    },
   },
   {
     key: 'ideationModel',
-    label: 'Ideation',
-    description: 'Model for ideation view (generating AI suggestions)',
+    get label() {
+      return translate('Ideation');
+    },
+    get description() {
+      return translate('Model for ideation view (generating AI suggestions)');
+    },
   },
 ];
 
 const MEMORY_TASKS: PhaseConfig[] = [
   {
     key: 'memoryExtractionModel',
-    label: 'Memory Extraction',
-    description: 'Extracts learnings from completed agent sessions',
+    get label() {
+      return translate('Memory Extraction');
+    },
+    get description() {
+      return translate('Extracts learnings from completed agent sessions');
+    },
   },
 ];
 
@@ -90,6 +135,7 @@ const MEMORY_TASKS: PhaseConfig[] = [
  * Default feature model override section for per-project settings.
  */
 function FeatureDefaultModelOverrideSection({ project }: { project: Project }) {
+  useUiLocale();
   const {
     defaultFeatureModel: globalDefaultFeatureModel,
     setProjectDefaultFeatureModel,
@@ -145,9 +191,9 @@ function FeatureDefaultModelOverrideSection({ project }: { project: Project }) {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-foreground">Feature Defaults</h3>
+        <h3 className="text-sm font-medium text-foreground">{translate('Feature Defaults')}</h3>
         <p className="text-xs text-muted-foreground">
-          Default model for new feature cards in this project
+          {translate('Default model for new feature cards in this project')}
         </p>
       </div>
       <div className="space-y-3">
@@ -164,29 +210,33 @@ function FeatureDefaultModelOverrideSection({ project }: { project: Project }) {
               <div className="w-8 h-8 rounded-lg bg-brand-500/10 flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-brand-500" />
               </div>
-              <h4 className="text-sm font-medium text-foreground">Default Feature Model</h4>
+              <h4 className="text-sm font-medium text-foreground">
+                {translate('Default Feature Model')}
+              </h4>
               {hasOverride ? (
                 <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-brand-500/20 text-brand-500">
-                  Override
+                  {translate('Override')}
                 </span>
               ) : (
                 <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded bg-muted text-muted-foreground">
                   <Globe className="w-3 h-3" />
-                  Global
+                  {translate('Global')}
                 </span>
               )}
             </div>
             <p className="text-xs text-muted-foreground mt-1 ml-10">
-              Model and thinking level used when creating new feature cards
+              {translate('Model and thinking level used when creating new feature cards')}
             </p>
             {hasOverride && (
               <p className="text-xs text-brand-500 mt-1 ml-10">
-                Using: {getModelDisplayName(effectiveValue)}
+                {translate('Using: ')}
+                {getModelDisplayName(effectiveValue)}
               </p>
             )}
             {!hasOverride && (
               <p className="text-xs text-muted-foreground/70 mt-1 ml-10">
-                Using global: {getModelDisplayName(globalValue)}
+                {translate('Using global: ')}
+                {getModelDisplayName(globalValue)}
               </p>
             )}
           </div>
@@ -200,7 +250,7 @@ function FeatureDefaultModelOverrideSection({ project }: { project: Project }) {
                 className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
               >
                 <RotateCcw className="w-3.5 h-3.5 mr-1" />
-                Reset
+                {translate('Reset')}
               </Button>
             )}
             <PhaseModelSelector
@@ -231,6 +281,7 @@ function PhaseOverrideItem({
   globalValue: PhaseModelEntry;
   projectOverride?: PhaseModelEntry;
 }) {
+  useUiLocale();
   const { setProjectPhaseModelOverride, claudeCompatibleProviders } = useAppStore();
 
   const hasOverride = !!projectOverride;
@@ -290,24 +341,26 @@ function PhaseOverrideItem({
           <h4 className="text-sm font-medium text-foreground">{phase.label}</h4>
           {hasOverride ? (
             <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-brand-500/20 text-brand-500">
-              Override
+              {translate('Override')}
             </span>
           ) : (
             <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded bg-muted text-muted-foreground">
               <Globe className="w-3 h-3" />
-              Global
+              {translate('Global')}
             </span>
           )}
         </div>
         <p className="text-xs text-muted-foreground">{phase.description}</p>
         {hasOverride && (
           <p className="text-xs text-brand-500 mt-1">
-            Using: {getModelDisplayName(effectiveValue)}
+            {translate('Using: ')}
+            {getModelDisplayName(effectiveValue)}
           </p>
         )}
         {!hasOverride && (
           <p className="text-xs text-muted-foreground/70 mt-1">
-            Using global: {getModelDisplayName(globalValue)}
+            {translate('Using global: ')}
+            {getModelDisplayName(globalValue)}
           </p>
         )}
       </div>
@@ -321,7 +374,7 @@ function PhaseOverrideItem({
             className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
           >
             <RotateCcw className="w-3.5 h-3.5 mr-1" />
-            Reset
+            {translate('Reset')}
           </Button>
         )}
         <PhaseModelSelector
@@ -350,6 +403,7 @@ function PhaseGroup({
   phases: PhaseConfig[];
   project: Project;
 }) {
+  useUiLocale();
   const { phaseModels } = useAppStore();
   const projectOverrides = project.phaseModelOverrides || {};
 
@@ -378,6 +432,7 @@ function PhaseGroup({
  * Renders the per-project model overrides UI for all phase models.
  */
 export function ProjectModelsSection({ project }: ProjectModelsSectionProps) {
+  useUiLocale();
   const { clearAllProjectPhaseModelOverrides, claudeCompatibleProviders } = useAppStore();
   const [showBulkReplace, setShowBulkReplace] = useState(false);
 
@@ -415,10 +470,10 @@ export function ProjectModelsSection({ project }: ProjectModelsSectionProps) {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-foreground tracking-tight">
-                Model Overrides
+                {translate('Model Overrides')}
               </h2>
               <p className="text-sm text-muted-foreground/80">
-                Override AI models for this project only
+                {translate('Override AI models for this project only')}
               </p>
             </div>
           </div>
@@ -431,13 +486,14 @@ export function ProjectModelsSection({ project }: ProjectModelsSectionProps) {
                 className="gap-2"
               >
                 <Replace className="w-3.5 h-3.5" />
-                Bulk Replace
+                {translate('Bulk Replace')}
               </Button>
             )}
             {overrideCount > 0 && (
               <Button variant="outline" size="sm" onClick={handleClearAll} className="gap-2">
                 <RotateCcw className="w-3.5 h-3.5" />
-                Reset All ({overrideCount})
+                {translate('Reset All (')}
+                {overrideCount})
               </Button>
             )}
           </div>
@@ -456,10 +512,11 @@ export function ProjectModelsSection({ project }: ProjectModelsSectionProps) {
         <div className="p-3 rounded-lg bg-brand-500/5 border border-brand-500/20 text-sm text-muted-foreground">
           <div className="flex items-center gap-2 mb-1">
             <Check className="w-4 h-4 text-brand-500" />
-            <span className="font-medium text-foreground">Per-Phase Overrides</span>
+            <span className="font-medium text-foreground">{translate('Per-Phase Overrides')}</span>
           </div>
-          Override specific phases to use different models for this project. Phases without
-          overrides use the global settings.
+          {translate(
+            'Override specific phases to use different models for this project. Phases without overrides use the global settings.'
+          )}
         </div>
       </div>
 
@@ -470,32 +527,32 @@ export function ProjectModelsSection({ project }: ProjectModelsSectionProps) {
 
         {/* Quick Tasks */}
         <PhaseGroup
-          title="Quick Tasks"
-          subtitle="Fast models recommended for speed and cost savings"
+          title={translate('Quick Tasks')}
+          subtitle={translate('Fast models recommended for speed and cost savings')}
           phases={QUICK_TASKS}
           project={project}
         />
 
         {/* Validation Tasks */}
         <PhaseGroup
-          title="Validation Tasks"
-          subtitle="Smart models recommended for accuracy"
+          title={translate('Validation Tasks')}
+          subtitle={translate('Smart models recommended for accuracy')}
           phases={VALIDATION_TASKS}
           project={project}
         />
 
         {/* Generation Tasks */}
         <PhaseGroup
-          title="Generation Tasks"
-          subtitle="Powerful models recommended for quality output"
+          title={translate('Generation Tasks')}
+          subtitle={translate('Powerful models recommended for quality output')}
           phases={GENERATION_TASKS}
           project={project}
         />
 
         {/* Memory Tasks */}
         <PhaseGroup
-          title="Memory Tasks"
-          subtitle="Fast models recommended for learning extraction"
+          title={translate('Memory Tasks')}
+          subtitle={translate('Fast models recommended for learning extraction')}
           phases={MEMORY_TASKS}
           project={project}
         />

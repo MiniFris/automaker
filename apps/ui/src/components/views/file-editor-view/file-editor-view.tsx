@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useEffect, useCallback, useRef, useState, useMemo } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import {
@@ -120,6 +121,7 @@ interface FileEditorViewProps {
 }
 
 export function FileEditorView({ initialPath }: FileEditorViewProps) {
+  useUiLocale();
   const projectPath = useAppStore((state) => state.currentProject?.path);
   const worktreePath = useAppStore((state) =>
     projectPath ? state.currentWorktreeByProject[projectPath]?.path : undefined
@@ -133,6 +135,7 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
 }
 
 function FileEditorContent({ initialPath }: FileEditorViewProps) {
+  useUiLocale();
   const { currentProject, defaultSkipTests, getCurrentWorktree, worktreesByProject } =
     useAppStore();
   const currentWorktree = useAppStore((s) =>
@@ -758,7 +761,7 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
       textFilePaths?: Array<{ id: string; path: string; description?: string }>;
     }) => {
       if (!currentProject?.path) {
-        toast.error('No project selected');
+        toast.error(translate('No project selected'));
         return;
       }
 
@@ -797,10 +800,12 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
               queryKey: queryKeys.features.all(currentProject.path),
             });
             toast.success(
-              `Created feature: ${featureData.title || featureData.description.slice(0, 50)}`,
+              translate('Created feature: {value1}', {
+                value1: featureData.title || featureData.description.slice(0, 50),
+              }),
               {
                 action: {
-                  label: 'View Board',
+                  label: translate('View Board'),
                   onClick: () => navigate({ to: '/board' }),
                 },
               }
@@ -808,12 +813,12 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
             setShowAddFeatureDialog(false);
             setFeatureSelectionContext(undefined);
           } else {
-            toast.error(result.error || 'Failed to create feature');
+            toast.error(result.error || translate('Failed to create feature'));
           }
         }
       } catch (err) {
         logger.error('Create feature from editor error:', err);
-        toast.error(err instanceof Error ? err.message : 'Failed to create feature');
+        toast.error(err instanceof Error ? err.message : translate('Failed to create feature'));
       }
     },
     [currentProject?.path, currentBranch, queryClient, navigate]
@@ -948,7 +953,7 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
           await loadTree(undefined, { preserveExpanded: true });
           loadGitStatus();
         } else {
-          toast.error('Rename failed', { description: result?.error });
+          toast.error(translate('Rename failed'), { description: result?.error });
         }
       } catch (error) {
         logger.error('Failed to rename item:', error);
@@ -972,7 +977,7 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
       try {
         const api = getElectronAPI();
         if (!api.copyItem) {
-          toast.error('Copy not supported');
+          toast.error(translate('Copy not supported'));
           return;
         }
 
@@ -981,28 +986,30 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
         if (!result.success && result.exists) {
           // Ask for confirmation to overwrite
           const confirmed = window.confirm(
-            `"${destinationPath.split('/').pop()}" already exists at the destination. Do you want to replace it?`
+            translate('"{value1}" already exists at the destination. Do you want to replace it?', {
+              value1: destinationPath.split('/').pop(),
+            })
           );
           if (confirmed) {
             const retryResult = await api.copyItem(sourcePath, destinationPath, true);
             if (retryResult.success) {
-              toast.success('Copied successfully');
+              toast.success(translate('Copied successfully'));
               await loadTree(undefined, { preserveExpanded: true });
               loadGitStatus();
             } else {
-              toast.error('Copy failed', { description: retryResult.error });
+              toast.error(translate('Copy failed'), { description: retryResult.error });
             }
           }
         } else if (result.success) {
-          toast.success('Copied successfully');
+          toast.success(translate('Copied successfully'));
           await loadTree(undefined, { preserveExpanded: true });
           loadGitStatus();
         } else {
-          toast.error('Copy failed', { description: result.error });
+          toast.error(translate('Copy failed'), { description: result.error });
         }
       } catch (error) {
         logger.error('Failed to copy item:', error);
-        toast.error('Copy failed', {
+        toast.error(translate('Copy failed'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
       }
@@ -1016,7 +1023,7 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
       try {
         const api = getElectronAPI();
         if (!api.moveItem) {
-          toast.error('Move not supported');
+          toast.error(translate('Move not supported'));
           return;
         }
 
@@ -1025,12 +1032,14 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
         if (!result.success && result.exists) {
           // Ask for confirmation to overwrite
           const confirmed = window.confirm(
-            `"${destinationPath.split('/').pop()}" already exists at the destination. Do you want to replace it?`
+            translate('"{value1}" already exists at the destination. Do you want to replace it?', {
+              value1: destinationPath.split('/').pop(),
+            })
           );
           if (confirmed) {
             const retryResult = await api.moveItem(sourcePath, destinationPath, true);
             if (retryResult.success) {
-              toast.success('Moved successfully');
+              toast.success(translate('Moved successfully'));
               // Update open tabs that point to moved files
               const tab = tabs.find((t) => t.filePath === sourcePath);
               if (tab) {
@@ -1040,11 +1049,11 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
               await loadTree(undefined, { preserveExpanded: true });
               loadGitStatus();
             } else {
-              toast.error('Move failed', { description: retryResult.error });
+              toast.error(translate('Move failed'), { description: retryResult.error });
             }
           }
         } else if (result.success) {
-          toast.success('Moved successfully');
+          toast.success(translate('Moved successfully'));
           // Update open tabs that point to moved files
           const tab = tabs.find((t) => t.filePath === sourcePath);
           if (tab) {
@@ -1054,11 +1063,11 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
           await loadTree(undefined, { preserveExpanded: true });
           loadGitStatus();
         } else {
-          toast.error('Move failed', { description: result.error });
+          toast.error(translate('Move failed'), { description: result.error });
         }
       } catch (error) {
         logger.error('Failed to move item:', error);
-        toast.error('Move failed', {
+        toast.error(translate('Move failed'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
       }
@@ -1071,15 +1080,15 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
     try {
       const api = getElectronAPI();
       if (!api.downloadItem) {
-        toast.error('Download not supported');
+        toast.error(translate('Download not supported'));
         return;
       }
-      toast.info('Starting download...');
+      toast.info(translate('Starting download...'));
       await api.downloadItem(filePath);
-      toast.success('Download complete');
+      toast.success(translate('Download complete'));
     } catch (error) {
       logger.error('Failed to download item:', error);
-      toast.error('Download failed', {
+      toast.error(translate('Download failed'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     }
@@ -1297,7 +1306,9 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
       const tab = tabs.find((t) => t.id === tabId);
       if (tab?.isDirty) {
         const shouldClose = window.confirm(
-          `"${tab.fileName}" has unsaved changes. Are you sure you want to close it?`
+          translate('"{value1}" has unsaved changes. Are you sure you want to close it?', {
+            value1: tab.fileName,
+          })
         );
         if (!shouldClose) return;
       }
@@ -1312,7 +1323,14 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
     if (dirtyTabs.length > 0) {
       const fileList = dirtyTabs.map((t) => `  • ${t.fileName}`).join('\n');
       const shouldClose = window.confirm(
-        `${dirtyTabs.length} file${dirtyTabs.length > 1 ? 's have' : ' has'} unsaved changes:\n${fileList}\n\nAre you sure you want to close all tabs?`
+        translate(
+          '{value1} file{value2} unsaved changes:\n{value3}\n\nAre you sure you want to close all tabs?',
+          {
+            value1: dirtyTabs.length,
+            value2: dirtyTabs.length > 1 ? 's have' : ' has',
+            value3: fileList,
+          }
+        )
       );
       if (!shouldClose) return;
     }
@@ -1323,7 +1341,7 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
   if (!currentProject) {
     return (
       <div className="flex-1 flex items-center justify-center" data-testid="file-editor-no-project">
-        <p className="text-muted-foreground">No project selected</p>
+        <p className="text-muted-foreground">{translate('No project selected')}</p>
       </div>
     );
   }
@@ -1355,9 +1373,9 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
             <div className="flex-1 flex flex-col items-center justify-center gap-4 h-full">
               <Binary className="w-12 h-12 text-muted-foreground" />
               <div className="text-center">
-                <p className="text-lg font-medium">Binary File</p>
+                <p className="text-lg font-medium">{translate('Binary File')}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  This file cannot be displayed as text.
+                  {translate('This file cannot be displayed as text.')}
                 </p>
               </div>
             </div>
@@ -1368,10 +1386,13 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
             <div className="flex-1 flex flex-col items-center justify-center gap-4 h-full">
               <FileWarning className="w-12 h-12 text-yellow-500" />
               <div className="text-center">
-                <p className="text-lg font-medium">File Too Large</p>
+                <p className="text-lg font-medium">{translate('File Too Large')}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  This file is {(activeTab.fileSize / (1024 * 1024)).toFixed(1)}MB, which exceeds
-                  the {(maxFileSize / (1024 * 1024)).toFixed(0)}MB limit.
+                  {translate('This file is ')}
+                  {(activeTab.fileSize / (1024 * 1024)).toFixed(1)}
+                  {translate('MB, which exceeds the ')}
+                  {(maxFileSize / (1024 * 1024)).toFixed(0)}
+                  {translate('MB limit.')}
                 </p>
               </div>
             </div>
@@ -1443,12 +1464,12 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
           <div className="text-center">
             <p className="text-muted-foreground">
               {isMobile
-                ? 'Tap a file from the explorer to start editing'
-                : 'Select a file from the explorer to start editing'}
+                ? translate('Tap a file from the explorer to start editing')
+                : translate('Select a file from the explorer to start editing')}
             </p>
             {!isMobile && (
               <p className="text-xs text-muted-foreground/60 mt-1">
-                Ctrl+S to save &middot; Ctrl+F to search
+                {translate('Ctrl+S to save · Ctrl+F to search')}
               </p>
             )}
           </div>
@@ -1470,24 +1491,30 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
           <div className="flex items-center gap-3">
             <span>{getLanguageName(activeTab.filePath)}</span>
             <span>
-              Ln {activeTab.cursorLine}, Col {activeTab.cursorCol}
+              {translate('Ln ')}
+              {activeTab.cursorLine}
+              {translate(', Col ')}
+              {activeTab.cursorCol}
             </span>
             {activeTab.isDirty && (
               <span className="flex items-center gap-1 text-primary">
                 <Circle className="w-1.5 h-1.5 fill-current" />
-                Modified
+                {translate('Modified')}
               </span>
             )}
           </div>
           <div className="flex items-center gap-3">
             {gitBranch && (
-              <span className="flex items-center gap-1" title="Current branch">
+              <span className="flex items-center gap-1" title={translate('Current branch')}>
                 <span className="text-primary">{gitBranch}</span>
               </span>
             )}
-            <span>Spaces: {tabSize}</span>
-            {!isMobile && <span>{wordWrap ? 'Wrap' : 'No Wrap'}</span>}
-            <span>UTF-8</span>
+            <span>
+              {translate('Spaces: ')}
+              {tabSize}
+            </span>
+            {!isMobile && <span>{wordWrap ? translate('Wrap') : translate('No Wrap')}</span>}
+            <span>{translate('UTF-8')}</span>
           </div>
         </div>
       )}
@@ -1529,7 +1556,7 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
               size="sm"
               onClick={() => setMobileBrowserVisible(true)}
               className="p-1.5 -ml-1"
-              title="Show file explorer"
+              title={translate('Show file explorer')}
             >
               <PanelLeftOpen className="w-5 h-5" />
             </Button>
@@ -1538,7 +1565,7 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
             <FileCode2 className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-foreground">File Editor</h1>
+            <h1 className="text-lg font-semibold text-foreground">{translate('File Editor')}</h1>
             <p className="text-sm text-muted-foreground truncate max-w-[150px] md:max-w-none">
               {currentProject.name}
             </p>
@@ -1569,10 +1596,10 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
                 size="sm"
                 onClick={handleSearch}
                 className="hidden lg:flex"
-                title="Search in file (Ctrl+F)"
+                title={translate('Search in file (Ctrl+F)')}
               >
                 <Search className="w-4 h-4 mr-2" />
-                Search
+                {translate('Search')}
               </Button>
             )}
 
@@ -1582,14 +1609,19 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
             !activeTab.isTooLarge &&
             !(isMobile && mobileBrowserVisible) && (
               <div className="hidden lg:flex items-center gap-1">
-                <Button variant="outline" size="icon-sm" onClick={handleUndo} title="Undo (Ctrl+Z)">
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  onClick={handleUndo}
+                  title={translate('Undo (Ctrl+Z)')}
+                >
                   <Undo2 className="w-4 h-4" />
                 </Button>
                 <Button
                   variant="outline"
                   size="icon-sm"
                   onClick={handleRedo}
-                  title="Redo (Ctrl+Shift+Z)"
+                  title={translate('Redo (Ctrl+Shift+Z)')}
                 >
                   <Redo2 className="w-4 h-4" />
                 </Button>
@@ -1607,10 +1639,14 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
                 onClick={handleSave}
                 disabled={!activeTab.isDirty}
                 className="hidden lg:flex"
-                title={editorAutoSave ? 'Auto-save enabled (Ctrl+S)' : 'Save file (Ctrl+S)'}
+                title={
+                  editorAutoSave
+                    ? translate('Auto-save enabled (Ctrl+S)')
+                    : translate('Save file (Ctrl+S)')
+                }
               >
                 <Save className="w-4 h-4 mr-2" />
-                {editorAutoSave ? 'Auto' : 'Save'}
+                {editorAutoSave ? translate('Auto') : translate('Save')}
               </Button>
             )}
 
@@ -1624,10 +1660,14 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
                 size="sm"
                 onClick={() => setShowInlineDiff(!showInlineDiff)}
                 className="hidden lg:flex"
-                title={showInlineDiff ? 'Hide git diff highlighting' : 'Show git diff highlighting'}
+                title={
+                  showInlineDiff
+                    ? translate('Hide git diff highlighting')
+                    : translate('Show git diff highlighting')
+                }
               >
                 <Diff className="w-4 h-4 mr-2" />
-                Diff
+                {translate('Diff')}
               </Button>
             )}
 
@@ -1642,10 +1682,10 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
                 size="sm"
                 onClick={handleCreateFeatureFromSelection}
                 className="hidden lg:flex"
-                title="Create a board feature from the selected code"
+                title={translate('Create a board feature from the selected code')}
               >
                 <FolderKanban className="w-4 h-4 mr-2" />
-                Create Feature
+                {translate('Create Feature')}
               </Button>
             )}
 
@@ -1656,14 +1696,16 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
                 variant="ghost"
                 size="icon-sm"
                 className="hidden lg:flex text-muted-foreground hover:text-foreground"
-                title="Editor Settings"
+                title={translate('Editor Settings')}
               >
                 <Settings className="w-4 h-4" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-64 p-3" align="end" side="bottom">
               <div className="space-y-4">
-                <p className="text-xs font-semibold text-foreground">Editor Settings</p>
+                <p className="text-xs font-semibold text-foreground">
+                  {translate('Editor Settings')}
+                </p>
                 <EditorSettingsForm
                   editorFontSize={editorFontSize}
                   setEditorFontSize={setEditorFontSize}
@@ -1688,13 +1730,13 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
       <HeaderActionsPanel
         isOpen={showActionsPanel}
         onClose={() => setShowActionsPanel(false)}
-        title="Editor Actions"
+        title={translate('Editor Actions')}
       >
         {/* Markdown view mode toggle */}
         {isMarkdown && (
           <div className="flex flex-col gap-2">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              View Mode
+              {translate('View Mode')}
             </span>
             <MarkdownViewToolbar
               viewMode={markdownViewMode}
@@ -1714,7 +1756,7 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
             }}
           >
             <Search className="w-4 h-4 mr-2" />
-            Search in File
+            {translate('Search in File')}
           </Button>
         )}
 
@@ -1730,7 +1772,7 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
               }}
             >
               <Undo2 className="w-4 h-4 mr-2" />
-              Undo
+              {translate('Undo')}
             </Button>
             <Button
               variant="outline"
@@ -1741,7 +1783,7 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
               }}
             >
               <Redo2 className="w-4 h-4 mr-2" />
-              Redo
+              {translate('Redo')}
             </Button>
           </div>
         )}
@@ -1758,7 +1800,7 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
             }}
           >
             <Save className="w-4 h-4 mr-2" />
-            {editorAutoSave ? 'Save Now (Auto-save on)' : 'Save Changes'}
+            {editorAutoSave ? translate('Save Now (Auto-save on)') : translate('Save Changes')}
           </Button>
         )}
 
@@ -1774,7 +1816,7 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
             )}
           >
             <Diff className="w-4 h-4" />
-            <span>{showInlineDiff ? 'Hide Git Diff' : 'Show Git Diff'}</span>
+            <span>{showInlineDiff ? translate('Hide Git Diff') : translate('Show Git Diff')}</span>
           </button>
         )}
 
@@ -1789,7 +1831,7 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
             }}
           >
             <FolderKanban className="w-4 h-4 mr-2" />
-            Create Feature from Selection
+            {translate('Create Feature from Selection')}
           </Button>
         )}
 
@@ -1797,11 +1839,14 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
         {activeTab && !activeTab.isBinary && !activeTab.isTooLarge && (
           <div className="flex flex-col gap-1.5 p-3 rounded-lg bg-muted/30 border border-border">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              File Info
+              {translate('File Info')}
             </span>
             <div className="text-sm text-foreground">{getLanguageName(activeTab.filePath)}</div>
             <div className="text-xs text-muted-foreground">
-              Ln {activeTab.cursorLine}, Col {activeTab.cursorCol}
+              {translate('Ln ')}
+              {activeTab.cursorLine}
+              {translate(', Col ')}
+              {activeTab.cursorCol}
             </div>
           </div>
         )}
@@ -1809,7 +1854,7 @@ function FileEditorContent({ initialPath }: FileEditorViewProps) {
         {/* Editor Settings */}
         <div className="flex flex-col gap-3 p-3 rounded-lg bg-muted/30 border border-border">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Editor Settings
+            {translate('Editor Settings')}
           </span>
           <EditorSettingsForm
             editorFontSize={editorFontSize}

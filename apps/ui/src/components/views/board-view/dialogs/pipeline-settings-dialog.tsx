@@ -1,3 +1,5 @@
+import { translate, useUiLocale } from '@/lib/i18n';
+import { getPipelineStepLabel } from '@/lib/workflow-labels';
 import { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -29,6 +31,7 @@ export function PipelineSettingsDialog({
   pipelineConfig,
   onSave,
 }: PipelineSettingsDialogProps) {
+  useUiLocale();
   // Filter and validate steps to ensure all required properties exist
   const validateSteps = (steps: PipelineStep[] | undefined): PipelineStep[] => {
     if (!Array.isArray(steps)) return [];
@@ -140,10 +143,10 @@ export function PipelineSettingsDialog({
         steps: sortedEffectiveSteps.map((s, index) => ({ ...s, order: index })),
       };
       await onSave(config);
-      toast.success('Pipeline configuration saved');
+      toast.success(translate('Pipeline configuration saved'));
       onClose();
     } catch {
-      toast.error('Failed to save pipeline configuration');
+      toast.error(translate('Failed to save pipeline configuration'));
     } finally {
       setIsSubmitting(false);
     }
@@ -154,10 +157,11 @@ export function PipelineSettingsDialog({
       <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle>Pipeline Settings</DialogTitle>
+            <DialogTitle>{translate('Pipeline Settings')}</DialogTitle>
             <DialogDescription>
-              Configure custom pipeline steps that run after a feature completes "In Progress". Each
-              step will automatically prompt the agent with its instructions.
+              {translate(
+                'Configure custom pipeline steps that run after a feature completes "In Progress". Each step will automatically prompt the agent with its instructions.'
+              )}
             </DialogDescription>
           </DialogHeader>
 
@@ -199,7 +203,9 @@ export function PipelineSettingsDialog({
                     />
 
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{step.name || 'Unnamed Step'}</div>
+                      <div className="font-medium truncate">
+                        {step.name ? getPipelineStepLabel(step.name) : translate('Unnamed Step')}
+                      </div>
                       <div className="text-xs text-muted-foreground truncate">
                         {(step.instructions || '').substring(0, 100)}
                         {(step.instructions || '').length > 100 ? '...' : ''}
@@ -229,9 +235,9 @@ export function PipelineSettingsDialog({
               </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
-                <p>No pipeline steps configured.</p>
+                <p>{translate('No pipeline steps configured.')}</p>
                 <p className="text-sm">
-                  Add steps to create a custom workflow after features complete.
+                  {translate('Add steps to create a custom workflow after features complete.')}
                 </p>
               </div>
             )}
@@ -239,16 +245,16 @@ export function PipelineSettingsDialog({
             {/* Add Step Button */}
             <Button variant="outline" className="w-full" onClick={handleAddStep}>
               <Plus className="h-4 w-4 mr-2" />
-              Add Pipeline Step
+              {translate('Add Pipeline Step')}
             </Button>
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={onClose}>
-              Cancel
+              {translate('Cancel')}
             </Button>
             <Button onClick={handleSaveConfig} disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : 'Save Pipeline'}
+              {isSubmitting ? translate('Saving...') : translate('Save Pipeline')}
             </Button>
           </DialogFooter>
         </DialogContent>

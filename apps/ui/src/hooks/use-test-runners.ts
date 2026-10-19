@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 /**
  * useTestRunners - Hook for test runner lifecycle management
  *
@@ -192,7 +193,7 @@ export function useTestRunners(worktreePath?: string) {
         }
       } catch (err) {
         logger.error('Error loading test logs:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load test logs');
+        setError(err instanceof Error ? err.message : translate('Failed to load test logs'));
       } finally {
         setLoading(false);
       }
@@ -284,7 +285,7 @@ export function useTestRunners(worktreePath?: string) {
         setError(
           err instanceof Error
             ? err.message
-            : 'Managed test outcome is unconfirmed. No tests were replayed.'
+            : translate('Managed test outcome is unconfirmed. No tests were replayed.')
         );
       }
     };

@@ -1,6 +1,8 @@
+import { useUiLocale } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
 function Kbd({ className, ...props }: React.ComponentProps<'kbd'>) {
+  useUiLocale();
   return (
     <kbd
       data-slot="kbd"
@@ -16,6 +18,7 @@ function Kbd({ className, ...props }: React.ComponentProps<'kbd'>) {
 }
 
 function KbdGroup({ className, ...props }: React.ComponentProps<'span'>) {
+  useUiLocale();
   return (
     <span
       data-slot="kbd-group"

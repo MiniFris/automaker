@@ -1,3 +1,5 @@
+import { translate, useUiLocale } from '@/lib/i18n';
+import { getPipelineStepLabel } from '@/lib/workflow-labels';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { GitBranch, Workflow } from 'lucide-react';
@@ -24,6 +26,7 @@ export function PipelineExclusionControls({
   testIdPrefix = 'pipeline-exclusion',
   disabled = false,
 }: PipelineExclusionControlsProps) {
+  useUiLocale();
   const { data: pipelineConfig, isLoading } = usePipelineConfig(projectPath);
 
   // Sort steps by order
@@ -51,7 +54,7 @@ export function PipelineExclusionControls({
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <Workflow className="w-4 h-4 text-muted-foreground" />
-        <Label className="text-sm font-medium">Custom Pipeline Steps</Label>
+        <Label className="text-sm font-medium">{translate('Custom Pipeline Steps')}</Label>
       </div>
 
       <div className="space-y-2">
@@ -83,7 +86,7 @@ export function PipelineExclusionControls({
                     isIncluded ? 'text-foreground' : 'text-muted-foreground'
                   )}
                 >
-                  {step.name}
+                  {getPipelineStepLabel(step.name)}
                 </span>
               </div>
               <Switch
@@ -91,7 +94,12 @@ export function PipelineExclusionControls({
                 onCheckedChange={() => toggleStep(step.id)}
                 disabled={disabled}
                 data-testid={`${testIdPrefix}-step-${step.id}`}
-                aria-label={`${isIncluded ? 'Disable' : 'Enable'} ${step.name} pipeline step`}
+                aria-label={translate(
+                  isIncluded ? 'Disable {name} pipeline step' : 'Enable {name} pipeline step',
+                  {
+                    name: getPipelineStepLabel(step.name),
+                  }
+                )}
               />
             </div>
           );
@@ -101,12 +109,14 @@ export function PipelineExclusionControls({
       {allExcluded && (
         <p className="text-xs text-muted-foreground flex items-center gap-1.5">
           <GitBranch className="w-3.5 h-3.5" />
-          All pipeline steps disabled. Feature will skip directly to verification.
+          {translate('All pipeline steps disabled. Feature will skip directly to verification.')}
         </p>
       )}
 
       <p className="text-xs text-muted-foreground">
-        Enabled steps will run after implementation. Disable steps to skip them for this feature.
+        {translate(
+          'Enabled steps will run after implementation. Disable steps to skip them for this feature.'
+        )}
       </p>
     </div>
   );

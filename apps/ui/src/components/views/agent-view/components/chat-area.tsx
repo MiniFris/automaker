@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import type { ImageAttachment } from '@/store/app-store';
 import { MessageList } from './message-list';
 import { NoSessionState } from './empty-states';
@@ -32,6 +33,7 @@ export function ChatArea({
   onShowSessionManager,
   onCreateSession,
 }: ChatAreaProps) {
+  useUiLocale();
   if (!currentSessionId) {
     return (
       <NoSessionState

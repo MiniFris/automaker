@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Search, X } from 'lucide-react';
@@ -18,6 +19,7 @@ export function BoardSearchBar({
   creatingSpecProjectPath,
   currentProjectPath,
 }: BoardSearchBarProps) {
+  useUiLocale();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Focus search input when "/" is pressed
@@ -45,7 +47,7 @@ export function BoardSearchBar({
         <Input
           ref={searchInputRef}
           type="text"
-          placeholder="Search features by keyword..."
+          placeholder={translate('Search features by keyword...')}
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           className="pl-9 pr-12 border-border"
@@ -56,7 +58,7 @@ export function BoardSearchBar({
             onClick={() => onSearchChange('')}
             className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-sm hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
             data-testid="kanban-search-clear"
-            aria-label="Clear search"
+            aria-label={translate('Clear search')}
           >
             <X className="w-4 h-4" />
           </button>
@@ -73,12 +75,12 @@ export function BoardSearchBar({
       {isCreatingSpec && currentProjectPath === creatingSpecProjectPath && (
         <div
           className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-brand-500/10 border border-brand-500/20 shrink-0"
-          title="Creating App Specification"
+          title={translate('Creating App Specification')}
           data-testid="spec-creation-badge"
         >
           <Spinner size="xs" className="shrink-0" />
           <span className="text-xs font-medium text-brand-500 whitespace-nowrap">
-            Creating spec
+            {translate('Creating spec')}
           </span>
         </div>
       )}

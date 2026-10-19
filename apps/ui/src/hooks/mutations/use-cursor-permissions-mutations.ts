@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 /**
  * Cursor Permissions Mutation Hooks
  *
@@ -50,10 +51,10 @@ export function useApplyCursorProfile(projectPath?: string) {
       queryClient.invalidateQueries({
         queryKey: queryKeys.cursorPermissions.permissions(projectPath),
       });
-      toast.success(result.message || 'Profile applied');
+      toast.success(result.message || translate('Profile applied'));
     },
     onError: (error) => {
-      toast.error('Failed to apply profile', {
+      toast.error(translate('Failed to apply profile'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     },
@@ -85,10 +86,10 @@ export function useCopyCursorConfig() {
       return result;
     },
     onSuccess: () => {
-      toast.success('Config copied to clipboard');
+      toast.success(translate('Config copied to clipboard'));
     },
     onError: (error) => {
-      toast.error('Failed to copy config', {
+      toast.error(translate('Failed to copy config'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     },

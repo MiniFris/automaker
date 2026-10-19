@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useCallback, startTransition } from 'react';
 import {
   Folder,
@@ -79,6 +80,7 @@ export function ProjectSelectorWithOptions({
   setShowDeleteProjectDialog,
   setShowRemoveFromAutomakerDialog,
 }: ProjectSelectorWithOptionsProps) {
+  useUiLocale();
   const projects = useAppStore((s) => s.projects);
   const currentProject = useAppStore((s) => s.currentProject);
   const projectHistory = useAppStore((s) => s.projectHistory);
@@ -99,7 +101,7 @@ export function ProjectSelectorWithOptions({
       // so the project switch is not blocked by filesystem operations
       initializeProject(p.path).catch((error) => {
         console.error('Failed to initialize project during switch:', error);
-        toast.error('Failed to initialize project .automaker', {
+        toast.error(translate('Failed to initialize project .automaker'), {
           description: error instanceof Error ? error.message : String(error),
         });
       });
@@ -166,7 +168,7 @@ export function ProjectSelectorWithOptions({
             <div className="flex items-center gap-2.5 flex-1 min-w-0">
               <Folder className="h-4 w-4 text-brand-500 shrink-0" />
               <span className="text-sm font-medium truncate">
-                {currentProject?.name || 'Select Project'}
+                {currentProject?.name || translate('Select Project')}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -197,7 +199,7 @@ export function ProjectSelectorWithOptions({
               <input
                 ref={projectSearchInputRef}
                 type="text"
-                placeholder="Search projects..."
+                placeholder={translate('Search projects...')}
                 value={projectSearchQuery}
                 onChange={(e) => setProjectSearchQuery(e.target.value)}
                 className={cn(
@@ -214,7 +216,7 @@ export function ProjectSelectorWithOptions({
 
           {filteredProjects.length === 0 ? (
             <div className="px-2 py-6 text-center text-sm text-muted-foreground">
-              No projects found
+              {translate('No projects found')}
             </div>
           ) : (
             <DndContext
@@ -247,11 +249,11 @@ export function ProjectSelectorWithOptions({
           {/* Keyboard hint */}
           <div className="px-2 pt-2 mt-1.5 border-t border-border/50">
             <p className="text-[10px] text-muted-foreground text-center tracking-wide">
-              <span className="text-foreground/60">↑↓</span> navigate{' '}
+              <span className="text-foreground/60">↑↓</span> {translate(' navigate')}{' '}
               <span className="mx-1 text-foreground/30">|</span>{' '}
-              <span className="text-foreground/60">↵</span> select{' '}
+              <span className="text-foreground/60">↵</span> {translate(' select')}{' '}
               <span className="mx-1 text-foreground/30">|</span>{' '}
-              <span className="text-foreground/60">esc</span> close
+              <span className="text-foreground/60">{translate('esc')}</span> {translate(' close')}
             </p>
           </div>
         </DropdownMenuContent>
@@ -276,7 +278,7 @@ export function ProjectSelectorWithOptions({
                 'border border-border/50 hover:border-border',
                 'transition-all duration-200 ease-out titlebar-no-drag'
               )}
-              title="Project options"
+              title={translate('Project options')}
               data-testid="project-options-menu"
             >
               <MoreVertical className="w-4 h-4" />
@@ -287,7 +289,7 @@ export function ProjectSelectorWithOptions({
             <DropdownMenuSub>
               <DropdownMenuSubTrigger data-testid="project-theme-trigger">
                 <Palette className="w-4 h-4 mr-2" />
-                <span className="flex-1">Project Theme</span>
+                <span className="flex-1">{translate('Project Theme')}</span>
                 {currentProject.theme && (
                   <span className="text-[10px] text-muted-foreground ml-2 capitalize">
                     {currentProject.theme}
@@ -327,7 +329,7 @@ export function ProjectSelectorWithOptions({
                       className="mx-2"
                     >
                       <Monitor className="w-4 h-4 mr-2" />
-                      <span>Use Global</span>
+                      <span>{translate('Use Global')}</span>
                       <span className="text-[10px] text-muted-foreground ml-1 capitalize">
                         ({globalTheme})
                       </span>
@@ -341,7 +343,7 @@ export function ProjectSelectorWithOptions({
                     <div className="flex-1">
                       <div className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium text-muted-foreground">
                         <Moon className="w-3 h-3" />
-                        Dark
+                        {translate('Dark')}
                       </div>
                       <div className="space-y-0.5">
                         {PROJECT_DARK_THEMES.map((option) => (
@@ -358,7 +360,7 @@ export function ProjectSelectorWithOptions({
                     <div className="flex-1">
                       <div className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium text-muted-foreground">
                         <Sun className="w-3 h-3" />
-                        Light
+                        {translate('Light')}
                       </div>
                       <div className="space-y-0.5">
                         {PROJECT_LIGHT_THEMES.map((option) => (
@@ -381,25 +383,25 @@ export function ProjectSelectorWithOptions({
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel className="text-xs text-muted-foreground">
-                  Project History
+                  {translate('Project History')}
                 </DropdownMenuLabel>
                 <DropdownMenuItem onClick={cyclePrevProject} data-testid="cycle-prev-project">
                   <Undo2 className="w-4 h-4 mr-2" />
-                  <span className="flex-1">Previous</span>
+                  <span className="flex-1">{translate('Previous')}</span>
                   <span className="text-[10px] font-mono text-muted-foreground ml-2">
                     {formatShortcut(shortcuts.cyclePrevProject, true)}
                   </span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={cycleNextProject} data-testid="cycle-next-project">
                   <Redo2 className="w-4 h-4 mr-2" />
-                  <span className="flex-1">Next</span>
+                  <span className="flex-1">{translate('Next')}</span>
                   <span className="text-[10px] font-mono text-muted-foreground ml-2">
                     {formatShortcut(shortcuts.cycleNextProject, true)}
                   </span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={clearProjectHistory} data-testid="clear-project-history">
                   <RotateCcw className="w-4 h-4 mr-2" />
-                  <span>Clear history</span>
+                  <span>{translate('Clear history')}</span>
                 </DropdownMenuItem>
               </>
             )}
@@ -412,7 +414,7 @@ export function ProjectSelectorWithOptions({
               data-testid="remove-from-automaker"
             >
               <LogOut className="w-4 h-4 mr-2" />
-              <span>Remove from Automaker</span>
+              <span>{translate('Remove from Automaker')}</span>
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => setShowDeleteProjectDialog(true)}
@@ -420,7 +422,7 @@ export function ProjectSelectorWithOptions({
               data-testid="move-project-to-trash"
             >
               <Trash2 className="w-4 h-4 mr-2" />
-              <span>Move to Trash</span>
+              <span>{translate('Move to Trash')}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

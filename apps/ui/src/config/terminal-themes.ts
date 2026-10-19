@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 /**
  * Terminal themes that match the app themes
  * Each theme provides colors for xterm.js terminal emulator
@@ -59,7 +60,7 @@ export type TerminalFontOption = UIFontOption;
 export const TERMINAL_FONT_OPTIONS: readonly UIFontOption[] = UI_MONO_FONT_OPTIONS.map((option) => {
   // Replace the UI default label with terminal-specific default
   if (option.value === DEFAULT_FONT_VALUE) {
-    return { value: option.value, label: 'Default (Menlo / Monaco)' };
+    return { value: option.value, label: translate('Default (Menlo / Monaco)') };
   }
   return option;
 });

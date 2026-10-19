@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import { Spinner } from '@/components/ui/spinner';
 
 interface LoadingStateProps {
@@ -6,6 +7,7 @@ interface LoadingStateProps {
 }
 
 export function LoadingState({ message }: LoadingStateProps) {
+  useUiLocale();
   return (
     <div className="flex-1 flex flex-col items-center justify-center">
       <Spinner size="xl" />

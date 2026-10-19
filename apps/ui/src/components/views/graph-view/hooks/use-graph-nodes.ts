@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useLocalizedMemo } from '@/lib/i18n';
+
 import { Node, Edge } from '@xyflow/react';
 import { Feature } from '@/store/app-store';
 import { createFeatureMap, getBlockingDependenciesFromMap } from '@automaker/dependency-resolver';
@@ -86,7 +87,7 @@ export function useGraphNodes({
   renderMode = GRAPH_RENDER_MODE_FULL,
   enableEdgeAnimations = true,
 }: UseGraphNodesProps) {
-  const { nodes, edges } = useMemo(() => {
+  const { nodes, edges } = useLocalizedMemo(() => {
     const nodeList: TaskNode[] = [];
     const edgeList: DependencyEdge[] = [];
     const featureMap = createFeatureMap(features);

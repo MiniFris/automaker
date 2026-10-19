@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { createLogger } from '@automaker/utils/logger';
@@ -75,7 +76,9 @@ export function useCliInstallation({
             const currentStatus = getStoreState();
             if (currentStatus?.installed) {
               detected = true;
-              toast.success(`${cliType} CLI installed and detected successfully`);
+              toast.success(
+                translate('{value1} CLI installed and detected successfully', { value1: cliType })
+              );
               break;
             }
 
@@ -85,22 +88,23 @@ export function useCliInstallation({
           }
 
           if (!detected) {
-            toast.success(`${cliType} CLI installation completed`, {
-              description:
-                'The CLI was installed but may need a terminal restart to be detected. You can continue with authentication if you have a token.',
+            toast.success(translate('{value1} CLI installation completed', { value1: cliType }), {
+              description: translate(
+                'The CLI was installed but may need a terminal restart to be detected. You can continue with authentication if you have a token.'
+              ),
               duration: 7000,
             });
           }
         } else {
-          toast.success(`${cliType} CLI installed successfully`);
+          toast.success(translate('{value1} CLI installed successfully', { value1: cliType }));
           onSuccess?.();
         }
       } else {
-        toast.error('Installation failed', { description: result.error });
+        toast.error(translate('Installation failed'), { description: result.error });
       }
     } catch (error) {
       logger.error(`Failed to install ${cliType}:`, error);
-      toast.error('Installation failed');
+      toast.error(translate('Installation failed'));
     } finally {
       setIsInstalling(false);
     }

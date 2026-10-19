@@ -1,3 +1,5 @@
+import { translate } from '@/lib/i18n';
+import { useUiLocale } from '@/lib/i18n';
 import type { ReactNode } from 'react';
 import { LucideIcon } from 'lucide-react';
 import {
@@ -40,10 +42,11 @@ export function ConfirmDialog({
   icon: Icon,
   iconClassName = 'text-primary',
   children,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
+  confirmText = translate('Confirm'),
+  cancelText = translate('Cancel'),
   confirmVariant = 'default',
 }: ConfirmDialogProps) {
+  useUiLocale();
   const handleConfirm = () => {
     onConfirm();
     onOpenChange(false);

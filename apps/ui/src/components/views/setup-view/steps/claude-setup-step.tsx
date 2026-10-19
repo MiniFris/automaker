@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +46,7 @@ type VerificationStatus = 'idle' | 'verifying' | 'verified' | 'error';
 // 1. Have Claude CLI installed and authenticated (verified by running a test query)
 // 2. Provide an Anthropic API key manually
 export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps) {
+  useUiLocale();
   const {
     claudeCliStatus,
     claudeAuthStatus,
@@ -112,7 +114,7 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
         apiKeyValid: true,
       });
       setApiKeys({ ...apiKeys, anthropic: apiKey });
-      toast.success('API key saved successfully!');
+      toast.success(translate('API key saved successfully!'));
     },
   });
 
@@ -151,9 +153,9 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
         });
         // Show specific success message based on auth type
         if (authType === 'oauth') {
-          toast.success('Claude Code subscription detected and verified!');
+          toast.success(translate('Claude Code subscription detected and verified!'));
         } else {
-          toast.success('Claude CLI authentication verified!');
+          toast.success(translate('Claude CLI authentication verified!'));
         }
       } else {
         setCliVerificationStatus('error');
@@ -205,7 +207,7 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
           hasCredentialsFile: false,
           apiKeyValid: true,
         });
-        toast.success('API key authentication verified!');
+        toast.success(translate('API key authentication verified!'));
       } else {
         setApiKeyVerificationStatus('error');
         setApiKeyVerificationError(result.error || 'Authentication failed');
@@ -223,7 +225,7 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
     try {
       const api = getElectronAPI();
       if (!api.setup?.deleteApiKey) {
-        toast.error('Delete API not available');
+        toast.error(translate('Delete API not available'));
         return;
       }
 
@@ -239,9 +241,9 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
           method: 'none',
           hasCredentialsFile: claudeAuthStatus?.hasCredentialsFile || false,
         });
-        toast.success('API key deleted successfully');
+        toast.success(translate('API key deleted successfully'));
       } else {
-        toast.error(result.error || 'Failed to delete API key');
+        toast.error(result.error || translate('Failed to delete API key'));
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete API key';
@@ -266,7 +268,7 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
 
   const copyCommand = (command: string) => {
     navigator.clipboard.writeText(command);
-    toast.success('Command copied to clipboard');
+    toast.success(translate('Command copied to clipboard'));
   };
 
   // User is ready if either method is verified
@@ -281,34 +283,34 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
   // Helper to get status badge for CLI
   const getCliStatusBadge = () => {
     if (cliVerificationStatus === 'verified') {
-      return <StatusBadge status="authenticated" label="Verified" />;
+      return <StatusBadge status="authenticated" label={translate('Verified')} />;
     }
     if (cliVerificationStatus === 'error') {
-      return <StatusBadge status="error" label="Error" />;
+      return <StatusBadge status="error" label={translate('Error')} />;
     }
     if (isChecking) {
-      return <StatusBadge status="checking" label="Checking..." />;
+      return <StatusBadge status="checking" label={translate('Checking...')} />;
     }
     if (claudeCliStatus?.installed) {
       // Installed but not yet verified - show yellow unverified badge
-      return <StatusBadge status="unverified" label="Unverified" />;
+      return <StatusBadge status="unverified" label={translate('Unverified')} />;
     }
-    return <StatusBadge status="not_installed" label="Not Installed" />;
+    return <StatusBadge status="not_installed" label={translate('Not Installed')} />;
   };
 
   // Helper to get status badge for API Key
   const getApiKeyStatusBadge = () => {
     if (apiKeyVerificationStatus === 'verified') {
-      return <StatusBadge status="authenticated" label="Verified" />;
+      return <StatusBadge status="authenticated" label={translate('Verified')} />;
     }
     if (apiKeyVerificationStatus === 'error') {
-      return <StatusBadge status="error" label="Error" />;
+      return <StatusBadge status="error" label={translate('Error')} />;
     }
     if (hasApiKey) {
       // API key configured but not yet verified - show yellow unverified badge
-      return <StatusBadge status="unverified" label="Unverified" />;
+      return <StatusBadge status="unverified" label={translate('Unverified')} />;
     }
-    return <StatusBadge status="not_authenticated" label="Not Set" />;
+    return <StatusBadge status="not_authenticated" label={translate('Not Set')} />;
   };
 
   return (
@@ -317,8 +319,10 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
         <div className="w-16 h-16 rounded-xl bg-brand-500/10 flex items-center justify-center mx-auto mb-4">
           <AnthropicIcon className="w-8 h-8 text-brand-500" />
         </div>
-        <h2 className="text-2xl font-bold text-foreground mb-2">Claude Code Setup</h2>
-        <p className="text-muted-foreground">Configure for code generation</p>
+        <h2 className="text-2xl font-bold text-foreground mb-2">
+          {translate('Claude Code Setup')}
+        </h2>
+        <p className="text-muted-foreground">{translate('Configure for code generation')}</p>
       </div>
 
       {/* Requirements Info */}
@@ -327,14 +331,14 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <Info className="w-5 h-5" />
-              Authentication Methods
+              {translate('Authentication Methods')}
             </CardTitle>
             <Button variant="ghost" size="sm" onClick={checkStatus} disabled={isChecking}>
               {isChecking ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
             </Button>
           </div>
           <CardDescription>
-            Choose one of the following methods to authenticate with Claude:
+            {translate('Choose one of the following methods to authenticate with Claude:')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -352,8 +356,10 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
                       }`}
                     />
                     <div className="text-left">
-                      <p className="font-medium text-foreground">Claude CLI</p>
-                      <p className="text-sm text-muted-foreground">Use Claude Code subscription</p>
+                      <p className="font-medium text-foreground">{translate('Claude CLI')}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {translate('Use Claude Code subscription')}
+                      </p>
                     </div>
                   </div>
                   {getCliStatusBadge()}
@@ -365,11 +371,15 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
                   <div className="space-y-4 p-4 rounded-lg bg-muted/30 border border-border">
                     <div className="flex items-center gap-2">
                       <Download className="w-4 h-4 text-muted-foreground" />
-                      <p className="font-medium text-foreground">Install Claude CLI</p>
+                      <p className="font-medium text-foreground">
+                        {translate('Install Claude CLI')}
+                      </p>
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-sm text-muted-foreground">macOS / Linux</Label>
+                      <Label className="text-sm text-muted-foreground">
+                        {translate('macOS / Linux')}
+                      </Label>
                       <div className="flex items-center gap-2">
                         <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
                           curl -fsSL https://claude.ai/install.sh | bash
@@ -387,7 +397,9 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-sm text-muted-foreground">Windows</Label>
+                      <Label className="text-sm text-muted-foreground">
+                        {translate('Windows')}
+                      </Label>
                       <div className="flex items-center gap-2">
                         <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
                           irm https://claude.ai/install.ps1 | iex
@@ -413,12 +425,12 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
                       {isInstalling ? (
                         <>
                           <Spinner size="sm" variant="foreground" className="mr-2" />
-                          Installing...
+                          {translate('Installing...')}
                         </>
                       ) : (
                         <>
                           <Download className="w-4 h-4 mr-2" />
-                          Auto Install
+                          {translate('Auto Install')}
                         </>
                       )}
                     </Button>
@@ -428,7 +440,8 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
                 {/* CLI Version Info */}
                 {claudeCliStatus?.installed && claudeCliStatus?.version && (
                   <p className="text-sm text-muted-foreground">
-                    Version: {claudeCliStatus.version}
+                    {translate('Version: ')}
+                    {claudeCliStatus.version}
                   </p>
                 )}
 
@@ -437,8 +450,12 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
                   <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
                     <Spinner size="md" />
                     <div>
-                      <p className="font-medium text-foreground">Verifying CLI authentication...</p>
-                      <p className="text-sm text-muted-foreground">Running a test query</p>
+                      <p className="font-medium text-foreground">
+                        {translate('Verifying CLI authentication...')}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {translate('Running a test query')}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -449,13 +466,13 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
                     <div>
                       <p className="font-medium text-foreground">
                         {cliAuthType === 'oauth'
-                          ? 'Claude Code subscription verified!'
-                          : 'CLI Authentication verified!'}
+                          ? translate('Claude Code subscription verified!')
+                          : translate('CLI Authentication verified!')}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {cliAuthType === 'oauth'
-                          ? 'Your Claude Code subscription is active and ready to use.'
-                          : 'Your Claude CLI is working correctly.'}
+                          ? translate('Your Claude Code subscription is active and ready to use.')
+                          : translate('Your Claude CLI is working correctly.')}
                       </p>
                     </div>
                   </div>
@@ -465,12 +482,14 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
                   <div className="flex items-start gap-3 p-4 rounded-lg bg-red-500/10 border border-red-500/20">
                     <XCircle className="w-5 h-5 text-red-500 shrink-0" />
                     <div className="flex-1">
-                      <p className="font-medium text-foreground">Verification failed</p>
+                      <p className="font-medium text-foreground">
+                        {translate('Verification failed')}
+                      </p>
                       <p className="text-sm text-red-400 mt-1">{cliVerificationError}</p>
                       {cliVerificationError.includes('login') && (
                         <div className="mt-3 p-3 rounded bg-muted/50">
                           <p className="text-sm text-muted-foreground mb-2">
-                            Run this command in your terminal:
+                            {translate('Run this command in your terminal:')}
                           </p>
                           <div className="flex items-center gap-2">
                             <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
@@ -501,17 +520,17 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
                     {cliVerificationStatus === 'verifying' ? (
                       <>
                         <Spinner size="sm" className="mr-2" />
-                        Verifying...
+                        {translate('Verifying...')}
                       </>
                     ) : cliVerificationStatus === 'error' ? (
                       <>
                         <RefreshCw className="w-4 h-4 mr-2" />
-                        Retry Verification
+                        {translate('Retry Verification')}
                       </>
                     ) : (
                       <>
                         <ShieldCheck className="w-4 h-4 mr-2" />
-                        Verify CLI Authentication
+                        {translate('Verify CLI Authentication')}
                       </>
                     )}
                   </Button>
@@ -532,9 +551,11 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
                       }`}
                     />
                     <div className="text-left">
-                      <p className="font-medium text-foreground">Anthropic API Key</p>
+                      <p className="font-medium text-foreground">
+                        {translate('Anthropic API Key')}
+                      </p>
                       <p className="text-sm text-muted-foreground">
-                        Pay-per-use with your own API key
+                        {translate('Pay-per-use with your own API key')}
                       </p>
                     </div>
                   </div>
@@ -546,7 +567,7 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
                 <div className="space-y-4 p-4 rounded-lg bg-muted/30 border border-border">
                   <div className="space-y-2">
                     <Label htmlFor="anthropic-key" className="text-foreground">
-                      Anthropic API Key
+                      {translate('Anthropic API Key')}
                     </Label>
                     <Input
                       id="anthropic-key"
@@ -558,14 +579,14 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
                       data-testid="anthropic-api-key-input"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Don&apos;t have an API key?{' '}
+                      {translate("Don't have an API key?")}{' '}
                       <a
                         href="https://console.anthropic.com/settings/keys"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-brand-500 hover:underline"
                       >
-                        Get one from Anthropic Console
+                        {translate('Get one from Anthropic Console')}
                         <ExternalLink className="w-3 h-3 inline ml-1" />
                       </a>
                     </p>
@@ -581,10 +602,10 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
                       {isSavingApiKey ? (
                         <>
                           <Spinner size="sm" variant="foreground" className="mr-2" />
-                          Saving...
+                          {translate('Saving...')}
                         </>
                       ) : (
-                        'Save API Key'
+                        translate('Save API Key')
                       )}
                     </Button>
                     {hasApiKey && (
@@ -606,8 +627,12 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
                   <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
                     <Spinner size="md" />
                     <div>
-                      <p className="font-medium text-foreground">Verifying API key...</p>
-                      <p className="text-sm text-muted-foreground">Running a test query</p>
+                      <p className="font-medium text-foreground">
+                        {translate('Verifying API key...')}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {translate('Running a test query')}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -616,9 +641,11 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
                   <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
                     <CheckCircle2 className="w-5 h-5 text-green-500" />
                     <div>
-                      <p className="font-medium text-foreground">API Key verified!</p>
+                      <p className="font-medium text-foreground">
+                        {translate('API Key verified!')}
+                      </p>
                       <p className="text-sm text-muted-foreground">
-                        Your API key is working correctly.
+                        {translate('Your API key is working correctly.')}
                       </p>
                     </div>
                   </div>
@@ -628,7 +655,9 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
                   <div className="flex items-start gap-3 p-4 rounded-lg bg-red-500/10 border border-red-500/20">
                     <XCircle className="w-5 h-5 text-red-500 shrink-0" />
                     <div className="flex-1">
-                      <p className="font-medium text-foreground">Verification failed</p>
+                      <p className="font-medium text-foreground">
+                        {translate('Verification failed')}
+                      </p>
                       <p className="text-sm text-red-400 mt-1">{apiKeyVerificationError}</p>
                     </div>
                   </div>
@@ -645,17 +674,17 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
                     {apiKeyVerificationStatus === 'verifying' ? (
                       <>
                         <Spinner size="sm" className="mr-2" />
-                        Verifying...
+                        {translate('Verifying...')}
                       </>
                     ) : apiKeyVerificationStatus === 'error' ? (
                       <>
                         <RefreshCw className="w-4 h-4 mr-2" />
-                        Retry Verification
+                        {translate('Retry Verification')}
                       </>
                     ) : (
                       <>
                         <ShieldCheck className="w-4 h-4 mr-2" />
-                        Verify API Key
+                        {translate('Verify API Key')}
                       </>
                     )}
                   </Button>
@@ -670,11 +699,11 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
       <div className="flex justify-between pt-4">
         <Button variant="ghost" onClick={onBack} className="text-muted-foreground">
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
+          {translate('Back')}
         </Button>
         <div className="flex gap-2">
           <Button variant="ghost" onClick={onSkip} className="text-muted-foreground">
-            Skip for now
+            {translate('Skip for now')}
           </Button>
           <Button
             onClick={onNext}
@@ -682,7 +711,7 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
             className="bg-brand-500 hover:bg-brand-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
             data-testid="claude-next-button"
           >
-            Continue
+            {translate('Continue')}
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>

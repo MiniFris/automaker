@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import * as React from 'react';
 import { Check, ChevronsUpDown, LucideIcon } from 'lucide-react';
 
@@ -48,9 +49,9 @@ export function Autocomplete({
   value,
   onChange,
   options,
-  placeholder = 'Select an option...',
-  searchPlaceholder = 'Search...',
-  emptyMessage = 'No results found.',
+  placeholder = translate('Select an option...'),
+  searchPlaceholder = translate('Search...'),
+  emptyMessage = translate('No results found.'),
   className,
   disabled = false,
   error = false,
@@ -60,6 +61,7 @@ export function Autocomplete({
   'data-testid': testId,
   itemTestIdPrefix = 'option',
 }: AutocompleteProps) {
+  useUiLocale();
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState('');
   const [triggerWidth, setTriggerWidth] = React.useState<number>(0);
@@ -151,7 +153,8 @@ export function Autocomplete({
             <CommandEmpty>
               {isNewValue ? (
                 <div className="py-2 px-3 text-sm">
-                  Press enter to create <code className="bg-muted px-1 rounded">{inputValue}</code>
+                  {translate('Press enter to create ')}
+                  <code className="bg-muted px-1 rounded">{inputValue}</code>
                 </div>
               ) : (
                 emptyMessage
@@ -172,7 +175,9 @@ export function Autocomplete({
                 >
                   {Icon && <Icon className="w-4 h-4 mr-2" />}
                   {createLabel(inputValue)}
-                  <span className="ml-auto text-xs text-muted-foreground">(new)</span>
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    {translate('(new)')}
+                  </span>
                 </CommandItem>
               )}
               {filteredOptions.map((option) => (

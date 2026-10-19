@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle2 } from 'lucide-react';
 
@@ -8,6 +9,7 @@ interface ReadyStateCardProps {
 }
 
 export function ReadyStateCard({ title, description, variant = 'success' }: ReadyStateCardProps) {
+  useUiLocale();
   const variantClasses = {
     success: 'bg-green-500/5 border-green-500/20',
     info: 'bg-blue-500/5 border-blue-500/20',

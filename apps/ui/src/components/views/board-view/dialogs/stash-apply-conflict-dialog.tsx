@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * Dialog shown when a stash apply/pop operation results in merge conflicts.
  * Presents the user with two options:
@@ -32,9 +33,10 @@ export function StashApplyConflictDialog({
   conflictInfo,
   onResolveWithAI,
 }: StashApplyConflictDialogProps) {
+  useUiLocale();
   const handleResolveManually = useCallback(() => {
-    toast.info('Conflict markers left in place', {
-      description: 'Edit the conflicting files to resolve conflicts manually.',
+    toast.info(translate('Conflict markers left in place'), {
+      description: translate('Edit the conflicting files to resolve conflicts manually.'),
       duration: 6000,
     });
     onOpenChange(false);
@@ -57,22 +59,23 @@ export function StashApplyConflictDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-orange-500" />
-            Merge Conflicts Detected
+            {translate('Merge Conflicts Detected')}
           </DialogTitle>
           <DialogDescription asChild>
             <div className="space-y-3">
               <span className="block">
-                Stash{' '}
-                <code className="font-mono bg-muted px-1 rounded">{conflictInfo.stashRef}</code> was{' '}
-                {operationLabel} on branch{' '}
+                {translate('Stash')}{' '}
+                <code className="font-mono bg-muted px-1 rounded">{conflictInfo.stashRef}</code>{' '}
+                {translate(' was')} {operationLabel} {translate(' on branch')}{' '}
                 <code className="font-mono bg-muted px-1 rounded">{conflictInfo.branchName}</code>{' '}
-                but resulted in merge conflicts.
+                {translate('but resulted in merge conflicts.')}
               </span>
 
               {conflictInfo.conflictFiles.length > 0 && (
                 <div className="space-y-1.5">
                   <span className="text-sm font-medium text-foreground">
-                    Conflicting files ({conflictInfo.conflictFiles.length}):
+                    {translate('Conflicting files (')}
+                    {conflictInfo.conflictFiles.length}):
                   </span>
                   <div className="border border-border rounded-lg overflow-hidden max-h-[200px] overflow-y-auto scrollbar-visible">
                     {conflictInfo.conflictFiles.map((file) => (
@@ -90,16 +93,16 @@ export function StashApplyConflictDialog({
 
               <div className="mt-2 p-3 rounded-md bg-muted/50 border border-border">
                 <p className="text-sm text-muted-foreground font-medium mb-2">
-                  Choose how to resolve:
+                  {translate('Choose how to resolve:')}
                 </p>
                 <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
                   <li>
-                    <strong>Resolve with AI</strong> &mdash; Creates a task to analyze and resolve
-                    conflicts automatically
+                    <strong>{translate('Resolve with AI')}</strong>{' '}
+                    {translate(' — Creates a task to analyze and resolve conflicts automatically')}
                   </li>
                   <li>
-                    <strong>Resolve Manually</strong> &mdash; Leaves conflict markers in place for
-                    you to edit directly
+                    <strong>{translate('Resolve Manually')}</strong>{' '}
+                    {translate(' — Leaves conflict markers in place for you to edit directly')}
                   </li>
                 </ul>
               </div>
@@ -110,7 +113,7 @@ export function StashApplyConflictDialog({
         <DialogFooter>
           <Button variant="outline" onClick={handleResolveManually}>
             <Wrench className="w-4 h-4 mr-2" />
-            Resolve Manually
+            {translate('Resolve Manually')}
           </Button>
           {onResolveWithAI && (
             <Button
@@ -118,7 +121,7 @@ export function StashApplyConflictDialog({
               className="bg-purple-600 hover:bg-purple-700 text-white"
             >
               <Sparkles className="w-4 h-4 mr-2" />
-              Resolve with AI
+              {translate('Resolve with AI')}
             </Button>
           )}
         </DialogFooter>

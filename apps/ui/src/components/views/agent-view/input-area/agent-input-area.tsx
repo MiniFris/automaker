@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { ImageDropZone } from '@/components/ui/image-drop-zone';
 import type { ImageAttachment, TextFileAttachment } from '@/store/app-store';
 import type { PhaseModelEntry } from '@automaker/types';
@@ -75,11 +76,16 @@ export function AgentInputArea({
   onClearQueue,
   inputRef,
 }: AgentInputAreaProps) {
+  useUiLocale();
   const hasFiles = selectedImages.length > 0 || selectedTextFiles.length > 0;
 
   return (
     <div className="border-t border-border p-4 bg-card/50 backdrop-blur-sm">
-      {!selectionReady && <p role="status" className="mb-2 text-sm text-muted-foreground">Restoring the saved model. You can explicitly choose a model to continue.</p>}
+      {!selectionReady && (
+        <p role="status" className="mb-2 text-sm text-muted-foreground">
+          {translate('Restoring the saved model. You can explicitly choose a model to continue.')}
+        </p>
+      )}
       {/* Image Drop Zone (when visible) */}
       {showImageDropZone && (
         <ImageDropZone

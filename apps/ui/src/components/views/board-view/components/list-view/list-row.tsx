@@ -1,4 +1,5 @@
 // @ts-nocheck - BaseFeature index signature causes property access type errors
+import { translate, useUiLocale } from '@/lib/i18n';
 import { memo, useCallback, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -40,6 +41,7 @@ const IndicatorBadges = memo(function IndicatorBadges({
   blockingDependencies?: string[];
   isCurrentAutoTask?: boolean;
 }) {
+  useUiLocale();
   const hasError = feature.error && !isCurrentAutoTask;
   const isBlocked =
     blockingDependencies.length > 0 && !feature.error && feature.status === 'backlog';
@@ -102,7 +104,10 @@ const IndicatorBadges = memo(function IndicatorBadges({
     badges.push({
       key: 'blocked',
       icon: Lock,
-      tooltip: `Blocked by ${blockingDependencies.length} incomplete ${blockingDependencies.length === 1 ? 'dependency' : 'dependencies'}`,
+      tooltip: translate('Blocked by {value1} incomplete {value2}', {
+        value1: blockingDependencies.length,
+        value2: blockingDependencies.length === 1 ? 'dependency' : 'dependencies',
+      }),
       colorClass: 'text-orange-500',
       bgClass: 'bg-orange-500/15',
       borderClass: 'border-orange-500/30',
@@ -113,7 +118,7 @@ const IndicatorBadges = memo(function IndicatorBadges({
     badges.push({
       key: 'manual',
       icon: Hand,
-      tooltip: 'Manual verification required',
+      tooltip: translate('Manual verification required'),
       colorClass: 'text-[var(--status-warning)]',
       bgClass: 'bg-[var(--status-warning)]/15',
       borderClass: 'border-[var(--status-warning)]/30',
@@ -124,7 +129,7 @@ const IndicatorBadges = memo(function IndicatorBadges({
     badges.push({
       key: 'plan-approval',
       icon: FileCheck,
-      tooltip: 'Plan ready for review - tap to approve',
+      tooltip: translate('Plan ready for review - tap to approve'),
       colorClass: 'text-purple-500',
       bgClass: 'bg-purple-500/15',
       borderClass: 'border-purple-500/30',
@@ -134,7 +139,7 @@ const IndicatorBadges = memo(function IndicatorBadges({
     badges.push({
       key: 'plan',
       icon: FileText,
-      tooltip: 'Has implementation plan',
+      tooltip: translate('Has implementation plan'),
       colorClass: 'text-[var(--status-info)]',
       bgClass: 'bg-[var(--status-info)]/15',
       borderClass: 'border-[var(--status-info)]/30',
@@ -145,7 +150,7 @@ const IndicatorBadges = memo(function IndicatorBadges({
     badges.push({
       key: 'just-finished',
       icon: Sparkles,
-      tooltip: 'Agent just finished working on this feature',
+      tooltip: translate('Agent just finished working on this feature'),
       colorClass: 'text-[var(--status-success)]',
       bgClass: 'bg-[var(--status-success)]/15',
       borderClass: 'border-[var(--status-success)]/30',
@@ -219,6 +224,7 @@ export const ListRow = memo(function ListRow({
   blockingDependencies = [],
   className,
 }: ListRowProps) {
+  useUiLocale();
   // A row should display as "actively running" if it's in the runningAutoTasks list
   // AND in an execution-compatible status. However, there's a race window where a feature
   // is tracked as running but its status hasn't caught up yet (still 'backlog', 'ready',
@@ -294,7 +300,9 @@ export const ListRow = memo(function ListRow({
               'h-4 w-4 rounded border-border text-primary cursor-pointer',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1'
             )}
-            aria-label={`Select ${feature.title || feature.description}`}
+            aria-label={translate('Select {value1}', {
+              value1: feature.title || feature.description,
+            })}
             data-testid={`list-row-checkbox-${feature.id}`}
           />
         </div>
@@ -361,10 +369,10 @@ export const ListRow = memo(function ListRow({
             )}
             title={
               feature.priority === 1
-                ? 'High Priority'
+                ? translate('High Priority')
                 : feature.priority === 2
-                  ? 'Medium Priority'
-                  : 'Low Priority'
+                  ? translate('Medium Priority')
+                  : translate('Low Priority')
             }
           >
             {feature.priority === 1 ? 'H' : feature.priority === 2 ? 'M' : 'L'}

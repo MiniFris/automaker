@@ -1,4 +1,5 @@
 // @ts-nocheck - GitHub issues view with issue selection and feature creation flow
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useCallback, useMemo } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { CircleDot, RefreshCw, SearchX } from 'lucide-react';
@@ -30,6 +31,7 @@ import { DEFAULT_ISSUES_FILTER_STATE } from './github-issues-view/types';
 const logger = createLogger('GitHubIssuesView');
 
 export function GitHubIssuesView() {
+  useUiLocale();
   const [selectedIssue, setSelectedIssue] = useState<GitHubIssue | null>(null);
   const [validationResult, setValidationResult] = useState<IssueValidationResult | null>(null);
   const [showValidationDialog, setShowValidationDialog] = useState(false);
@@ -191,7 +193,7 @@ export function GitHubIssuesView() {
       textFilePaths?: Array<{ id: string; path: string; description?: string }>;
     }) => {
       if (!currentProject?.path) {
-        toast.error('No project selected');
+        toast.error(translate('No project selected'));
         return;
       }
 
@@ -230,17 +232,19 @@ export function GitHubIssuesView() {
               queryKey: queryKeys.features.all(currentProject.path),
             });
             toast.success(
-              `Created feature: ${featureData.title || featureData.description.slice(0, 50)}`
+              translate('Created feature: {value1}', {
+                value1: featureData.title || featureData.description.slice(0, 50),
+              })
             );
             setShowAddFeatureDialog(false);
             setCreateFeatureIssue(null);
           } else {
-            toast.error(result.error || 'Failed to create feature');
+            toast.error(result.error || translate('Failed to create feature'));
           }
         }
       } catch (err) {
         logger.error('Create feature from issue error:', err);
-        toast.error(err instanceof Error ? err.message : 'Failed to create feature');
+        toast.error(err instanceof Error ? err.message : translate('Failed to create feature'));
       }
     },
     [currentProject?.path, currentBranch, queryClient, createFeatureIssue]
@@ -249,7 +253,7 @@ export function GitHubIssuesView() {
   const handleConvertToTask = useCallback(
     async (issue: GitHubIssue, validation: IssueValidationResult) => {
       if (!currentProject?.path) {
-        toast.error('No project selected');
+        toast.error(translate('No project selected'));
         return;
       }
 
@@ -303,14 +307,14 @@ export function GitHubIssuesView() {
             queryClient.invalidateQueries({
               queryKey: queryKeys.features.all(currentProject.path),
             });
-            toast.success(`Created task: ${issue.title}`);
+            toast.success(translate('Created task: {value1}', { value1: issue.title }));
           } else {
-            toast.error(result.error || 'Failed to create task');
+            toast.error(result.error || translate('Failed to create task'));
           }
         }
       } catch (err) {
         logger.error('Convert to task error:', err);
-        toast.error(err instanceof Error ? err.message : 'Failed to create task');
+        toast.error(err instanceof Error ? err.message : translate('Failed to create task'));
       }
     },
     [currentProject?.path, currentBranch, queryClient]
@@ -321,7 +325,9 @@ export function GitHubIssuesView() {
   }
 
   if (error) {
-    return <ErrorState error={error} title="Failed to Load Issues" onRetry={refresh} />;
+    return (
+      <ErrorState error={error} title={translate('Failed to Load Issues')} onRetry={refresh} />
+    );
   }
 
   const totalIssues = filteredOpenIssues.length + filteredClosedIssues.length;
@@ -370,12 +376,12 @@ export function GitHubIssuesView() {
                 )}
               </div>
               <h2 className="text-base font-medium mb-2">
-                {isFilteredEmpty ? 'No Matching Issues' : 'No Issues'}
+                {isFilteredEmpty ? translate('No Matching Issues') : translate('No Issues')}
               </h2>
               <p className="text-sm text-muted-foreground mb-4">
                 {isFilteredEmpty
-                  ? 'No issues match your current filters.'
-                  : 'This repository has no issues yet.'}
+                  ? translate('No issues match your current filters.')
+                  : translate('This repository has no issues yet.')}
               </p>
               {isFilteredEmpty && (
                 <Button
@@ -384,7 +390,7 @@ export function GitHubIssuesView() {
                   onClick={handleClearFilters}
                   className="text-xs"
                 >
-                  Clear Filters
+                  {translate('Clear Filters')}
                 </Button>
               )}
             </div>
@@ -408,7 +414,8 @@ export function GitHubIssuesView() {
               {filteredClosedIssues.length > 0 && (
                 <>
                   <div className="px-4 py-2 bg-muted/30 text-xs font-medium text-muted-foreground">
-                    Closed Issues ({filteredClosedIssues.length})
+                    {translate('Closed Issues (')}
+                    {filteredClosedIssues.length})
                   </div>
                   {filteredClosedIssues.map((issue) => (
                     <IssueRow
@@ -490,11 +497,14 @@ export function GitHubIssuesView() {
             setPendingRevalidateOptions(null);
           }
         }}
-        title="Re-validate Issue"
-        description={`Are you sure you want to re-validate issue #${selectedIssue?.number}? This will run a new AI analysis and replace the existing validation result.`}
+        title={translate('Re-validate Issue')}
+        description={translate(
+          'Are you sure you want to re-validate issue #{value1}? This will run a new AI analysis and replace the existing validation result.',
+          { value1: selectedIssue?.number }
+        )}
         icon={RefreshCw}
         iconClassName="text-primary"
-        confirmText="Re-validate"
+        confirmText={translate('Re-validate')}
         onConfirm={() => {
           if (selectedIssue && pendingRevalidateOptions) {
             logger.info('Revalidating with options:', {

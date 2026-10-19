@@ -1,4 +1,6 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useLocalizedMemo } from '@/lib/i18n';
+import { translate } from '@/lib/i18n';
+import { useState, useEffect } from 'react';
 import type { NavigateOptions } from '@tanstack/react-router';
 import {
   FileText,
@@ -103,30 +105,30 @@ export function useNavigation({
   }, [currentProject?.path]);
 
   // Build navigation sections
-  const navSections: NavSection[] = useMemo(() => {
+  const navSections: NavSection[] = useLocalizedMemo(() => {
     const allToolsItems: NavItem[] = [
       {
         id: 'ideation',
-        label: 'Ideation',
+        label: translate('Ideation'),
         icon: Lightbulb,
         shortcut: shortcuts.ideation,
       },
       {
         id: 'spec',
-        label: 'Spec Editor',
+        label: translate('Spec Editor'),
         icon: FileText,
         shortcut: shortcuts.spec,
         isLoading: isSpecGenerating,
       },
       {
         id: 'context',
-        label: 'Context',
+        label: translate('Context'),
         icon: BookOpen,
         shortcut: shortcuts.context,
       },
       {
         id: 'memory',
-        label: 'Memory',
+        label: translate('Memory'),
         icon: Brain,
         shortcut: shortcuts.memory,
       },
@@ -147,24 +149,24 @@ export function useNavigation({
     const projectItems: NavItem[] = [
       {
         id: 'board',
-        label: 'Kanban Board',
+        label: translate('Kanban Board'),
         icon: LayoutGrid,
         shortcut: shortcuts.board,
       },
       {
         id: 'graph',
-        label: 'Graph View',
+        label: translate('Graph View'),
         icon: Network,
         shortcut: shortcuts.graph,
       },
       {
         id: 'file-editor',
-        label: 'File Editor',
+        label: translate('File Editor'),
         icon: Folder,
       },
       {
         id: 'agent',
-        label: 'Agent Runner',
+        label: translate('Agent Runner'),
         icon: Bot,
         shortcut: shortcuts.agent,
       },
@@ -174,7 +176,7 @@ export function useNavigation({
     if (!hideTerminal) {
       projectItems.push({
         id: 'terminal',
-        label: 'Terminal',
+        label: translate('Terminal'),
         icon: Terminal,
         shortcut: shortcuts.terminal,
       });
@@ -187,7 +189,7 @@ export function useNavigation({
         items: [
           {
             id: 'overview',
-            label: 'Dashboard',
+            label: translate('Dashboard'),
             icon: Home,
           },
         ],
@@ -215,14 +217,14 @@ export function useNavigation({
         items: [
           {
             id: 'github-issues',
-            label: 'Issues',
+            label: translate('Issues'),
             icon: CircleDot,
             shortcut: shortcuts.githubIssues,
             count: unviewedValidationsCount,
           },
           {
             id: 'github-prs',
-            label: 'Pull Requests',
+            label: translate('Pull Requests'),
             icon: GitPullRequest,
             shortcut: shortcuts.githubPrs,
           },
@@ -238,14 +240,14 @@ export function useNavigation({
       items: [
         {
           id: 'notifications',
-          label: 'Notifications',
+          label: translate('Notifications'),
           icon: Bell,
           shortcut: shortcuts.notifications,
           count: unreadNotificationsCount,
         },
         {
           id: 'project-settings',
-          label: 'Project Settings',
+          label: translate('Project Settings'),
           icon: Settings,
           shortcut: shortcuts.projectSettings,
         },
@@ -265,21 +267,21 @@ export function useNavigation({
   ]);
 
   // Build keyboard shortcuts for navigation
-  const navigationShortcuts: KeyboardShortcut[] = useMemo(() => {
+  const navigationShortcuts: KeyboardShortcut[] = useLocalizedMemo(() => {
     const shortcutsList: KeyboardShortcut[] = [];
 
     // Sidebar toggle shortcut - always available
     shortcutsList.push({
       key: shortcuts.toggleSidebar,
       action: () => toggleSidebar(),
-      description: 'Toggle sidebar',
+      description: translate('Toggle sidebar'),
     });
 
     // Open project shortcut - opens the folder selection dialog directly
     shortcutsList.push({
       key: shortcuts.openProject,
       action: () => handleOpenFolder(),
-      description: 'Open folder selection dialog',
+      description: translate('Open folder selection dialog'),
     });
 
     // Project cycling shortcuts - only when we have project history
@@ -287,12 +289,12 @@ export function useNavigation({
       shortcutsList.push({
         key: shortcuts.cyclePrevProject,
         action: () => cyclePrevProject(),
-        description: 'Cycle to previous project (MRU)',
+        description: translate('Cycle to previous project (MRU)'),
       });
       shortcutsList.push({
         key: shortcuts.cycleNextProject,
         action: () => cycleNextProject(),
-        description: 'Cycle to next project (LRU)',
+        description: translate('Cycle to next project (LRU)'),
       });
     }
 
@@ -305,7 +307,7 @@ export function useNavigation({
               key: item.shortcut,
               // Cast to router path type; ids are constrained to known routes
               action: () => navigate({ to: `/${item.id}` as unknown as '/' }),
-              description: `Navigate to ${item.label}`,
+              description: translate('Navigate to {value1}', { value1: item.label }),
             });
           }
         });
@@ -315,7 +317,7 @@ export function useNavigation({
       shortcutsList.push({
         key: shortcuts.settings,
         action: () => navigate({ to: '/settings' }),
-        description: 'Navigate to Global Settings',
+        description: translate('Navigate to Global Settings'),
       });
     }
 

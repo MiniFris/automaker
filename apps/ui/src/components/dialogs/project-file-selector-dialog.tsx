@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   FolderOpen,
@@ -57,9 +58,12 @@ export function ProjectFileSelectorDialog({
   onSelect,
   projectPath,
   existingFiles = [],
-  title = 'Select Files to Copy',
-  description = 'Browse your project and select files or directories to copy into new worktrees.',
+  title = translate('Select Files to Copy'),
+  description = translate(
+    'Browse your project and select files or directories to copy into new worktrees.'
+  ),
 }: ProjectFileSelectorDialogProps) {
+  useUiLocale();
   const { isMac } = useOSDetection();
   const [currentRelativePath, setCurrentRelativePath] = useState('');
   const [parentRelativePath, setParentRelativePath] = useState<string | null>(null);
@@ -109,11 +113,13 @@ export function ProjectFileSelectorDialog({
           setEntries(result.entries);
           setWarning(result.warning || '');
         } else {
-          setError(result.error || 'Failed to browse directory');
+          setError(result.error || translate('Failed to browse directory'));
         }
       } catch (err) {
         if (isCancelled()) return;
-        setError(err instanceof Error ? err.message : 'Failed to load directory contents');
+        setError(
+          err instanceof Error ? err.message : translate('Failed to load directory contents')
+        );
       } finally {
         if (!isCancelled()) {
           setLoading(false);
@@ -244,7 +250,7 @@ export function ProjectFileSelectorDialog({
               onClick={handleGoBack}
               className="h-7 w-7 shrink-0"
               disabled={loading || parentRelativePath === null}
-              aria-label="Go back"
+              aria-label={translate('Go back')}
             >
               <ArrowLeft className="w-4 h-4" />
             </Button>
@@ -261,7 +267,7 @@ export function ProjectFileSelectorDialog({
                 )}
                 disabled={loading}
               >
-                Project Root
+                {translate('Project Root')}
               </button>
               {breadcrumbs.map((crumb) => (
                 <span key={crumb.path} className="flex items-center gap-1 shrink-0">
@@ -289,7 +295,7 @@ export function ProjectFileSelectorDialog({
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Filter files and directories..."
+              placeholder={translate('Filter files and directories...')}
               className="h-8 text-xs pl-8 pr-8"
               disabled={loading}
             />
@@ -308,13 +314,14 @@ export function ProjectFileSelectorDialog({
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-brand-500/10 border border-brand-500/20 text-xs">
               <Check className="w-3.5 h-3.5 text-brand-500" />
               <span className="text-brand-500 font-medium">
-                {selectedCount} {selectedCount === 1 ? 'item' : 'items'} selected
+                {selectedCount} {selectedCount === 1 ? translate('item') : translate('items')}{' '}
+                {translate(' selected')}
               </span>
               <button
                 onClick={() => setSelectedPaths(new Set())}
                 className="ml-auto text-muted-foreground hover:text-foreground transition-colors"
               >
-                Clear
+                {translate('Clear')}
               </button>
             </div>
           )}
@@ -323,7 +330,7 @@ export function ProjectFileSelectorDialog({
           <div className="flex-1 overflow-y-auto border border-sidebar-border rounded-md scrollbar-styled">
             {loading && (
               <div className="flex items-center justify-center h-full p-4">
-                <div className="text-xs text-muted-foreground">Loading...</div>
+                <div className="text-xs text-muted-foreground">{translate('Loading...')}</div>
               </div>
             )}
 
@@ -342,7 +349,9 @@ export function ProjectFileSelectorDialog({
             {!loading && !error && filteredEntries.length === 0 && (
               <div className="flex items-center justify-center h-full p-4">
                 <div className="text-xs text-muted-foreground">
-                  {searchQuery ? 'No matching files or directories' : 'This directory is empty'}
+                  {searchQuery
+                    ? translate('No matching files or directories')
+                    : translate('This directory is empty')}
                 </div>
               </div>
             )}
@@ -371,7 +380,7 @@ export function ProjectFileSelectorDialog({
                         onCheckedChange={() => handleToggleSelect(entry)}
                         disabled={isConfigured}
                         className="shrink-0"
-                        aria-label={`Select ${entry.name}`}
+                        aria-label={translate('Select {value1}', { value1: entry.name })}
                       />
 
                       {/* Icon */}
@@ -396,7 +405,7 @@ export function ProjectFileSelectorDialog({
                       {/* Already configured badge */}
                       {isConfigured && (
                         <span className="text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded shrink-0">
-                          Already added
+                          {translate('Already added')}
                         </span>
                       )}
 
@@ -408,7 +417,7 @@ export function ProjectFileSelectorDialog({
                             handleNavigateInto(entry);
                           }}
                           className="opacity-60 sm:opacity-0 sm:group-hover:opacity-100 p-0.5 rounded hover:bg-accent/50 transition-all shrink-0"
-                          title={`Open ${entry.name}`}
+                          title={translate('Open {value1}', { value1: entry.name })}
                         >
                           <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
                         </button>
@@ -421,26 +430,31 @@ export function ProjectFileSelectorDialog({
           </div>
 
           <div className="text-[10px] text-muted-foreground">
-            Select files or directories to copy into new worktrees. Directories are copied
-            recursively. Click the arrow to browse into a directory.
+            {translate(
+              'Select files or directories to copy into new worktrees. Directories are copied recursively. Click the arrow to browse into a directory.'
+            )}
           </div>
         </div>
 
         <DialogFooter className="border-t border-border pt-3 gap-2 mt-1">
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button
             size="sm"
             onClick={handleConfirmSelection}
             disabled={selectedCount === 0 || loading}
-            title={`Add ${selectedCount} selected items (${isMac ? '⌘' : 'Ctrl'}+Enter)`}
+            title={translate('Add {value1} selected items ({value2}+Enter)', {
+              value1: selectedCount,
+              value2: isMac ? '⌘' : 'Ctrl',
+            })}
           >
             <Check className="w-3.5 h-3.5 mr-1.5" />
-            Add {selectedCount > 0 ? `${selectedCount} ` : ''}
-            {selectedCount === 1 ? 'Item' : 'Items'}
+            {translate('Add ')}
+            {selectedCount > 0 ? `${selectedCount} ` : ''}
+            {selectedCount === 1 ? translate('Item') : translate('Items')}
             <KbdGroup className="ml-1">
-              <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd>
+              <Kbd>{isMac ? '⌘' : translate('Ctrl')}</Kbd>
               <Kbd>↵</Kbd>
             </KbdGroup>
           </Button>

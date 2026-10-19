@@ -1,4 +1,5 @@
 // @ts-nocheck - GitHub issue validation with Electron API integration and async state
+import { translate } from '@/lib/i18n';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import {
@@ -150,14 +151,20 @@ export function useIssueValidation({
           });
 
           // Show toast notification
-          toast.success(`Issue #${event.issueNumber} validated: ${event.result.verdict}`, {
-            description:
-              event.result.verdict === 'valid'
-                ? 'Issue is ready to be converted to a task'
-                : event.result.verdict === 'invalid'
-                  ? 'Issue may have problems'
-                  : 'Issue needs clarification',
-          });
+          toast.success(
+            translate('Issue #{value1} validated: {value2}', {
+              value1: event.issueNumber,
+              value2: event.result.verdict,
+            }),
+            {
+              description:
+                event.result.verdict === 'valid'
+                  ? 'Issue is ready to be converted to a task'
+                  : event.result.verdict === 'invalid'
+                    ? 'Issue may have problems'
+                    : 'Issue needs clarification',
+            }
+          );
 
           // Play audio notification (if not muted)
           if (!muteDoneSound) {
@@ -188,9 +195,12 @@ export function useIssueValidation({
             next.delete(event.issueNumber);
             return next;
           });
-          toast.error(`Validation failed for issue #${event.issueNumber}`, {
-            description: event.error,
-          });
+          toast.error(
+            translate('Validation failed for issue #{value1}', { value1: event.issueNumber }),
+            {
+              description: event.error,
+            }
+          );
           if (
             selectedIssueRef.current?.number === event.issueNumber &&
             showValidationDialogRef.current
@@ -229,13 +239,15 @@ export function useIssueValidation({
       const { forceRevalidate = false, model, modelEntry, comments, linkedPRs } = options;
 
       if (!currentProject?.path) {
-        toast.error('No project selected');
+        toast.error(translate('No project selected'));
         return;
       }
 
       // Check if already validating this issue
       if (validatingIssues.has(issue.number) || validateIssueMutation.isPending) {
-        toast.info(`Validation already in progress for issue #${issue.number}`);
+        toast.info(
+          translate('Validation already in progress for issue #{value1}', { value1: issue.number })
+        );
         return;
       }
 

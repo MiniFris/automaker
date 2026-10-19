@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { FileText, FilePlus2 } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
@@ -20,6 +21,7 @@ export function SpecEmptyState({
   errorMessage,
   onCreateClick,
 }: SpecEmptyStateProps) {
+  useUiLocale();
   const isProcessing = isCreating || isRegenerating;
   const phaseLabel = PHASE_LABELS[currentPhase] || currentPhase;
 
@@ -30,7 +32,7 @@ export function SpecEmptyState({
         <div className="flex items-center gap-3">
           <FileText className="w-5 h-5 text-muted-foreground" />
           <div>
-            <h1 className="text-xl font-bold">App Specification</h1>
+            <h1 className="text-xl font-bold">{translate('App Specification')}</h1>
             <p className="text-sm text-muted-foreground">{projectPath}/.automaker/app_spec.txt</p>
           </div>
         </div>
@@ -42,7 +44,9 @@ export function SpecEmptyState({
             </div>
             <div className="flex flex-col gap-1 min-w-0">
               <span className="text-sm font-semibold text-primary leading-tight tracking-tight">
-                {isCreating ? 'Generating Specification' : 'Regenerating Specification'}
+                {isCreating
+                  ? translate('Generating Specification')
+                  : translate('Regenerating Specification')}
               </span>
               {currentPhase && (
                 <span className="text-xs text-muted-foreground/90 leading-tight font-medium">
@@ -54,7 +58,10 @@ export function SpecEmptyState({
         )}
         {errorMessage && (
           <div className="flex items-center gap-2 text-destructive">
-            <span className="text-sm font-medium">Error: {errorMessage}</span>
+            <span className="text-sm font-medium">
+              {translate('Error: ')}
+              {errorMessage}
+            </span>
           </div>
         )}
       </div>
@@ -75,7 +82,7 @@ export function SpecEmptyState({
             {isCreating ? (
               <>
                 <div className="mb-4">
-                  <span>Generating App Specification</span>
+                  <span>{translate('Generating App Specification')}</span>
                 </div>
                 {currentPhase && (
                   <div className="px-6 py-3.5 rounded-xl bg-linear-to-r from-primary/15 to-primary/5 border border-primary/30 shadow-lg backdrop-blur-md inline-flex items-center justify-center">
@@ -86,19 +93,25 @@ export function SpecEmptyState({
                 )}
               </>
             ) : (
-              'No App Specification Found'
+              translate('No App Specification Found')
             )}
           </h2>
           <p className="text-muted-foreground mb-6">
             {isCreating
               ? currentPhase === 'feature_generation'
-                ? 'The app specification has been created! Now generating features from the implementation roadmap...'
-                : "We're analyzing your project and generating a comprehensive specification. This may take a few moments..."
-              : "Create an app specification to help our system understand your project. We'll analyze your codebase and generate a comprehensive spec based on your description."}
+                ? translate(
+                    'The app specification has been created! Now generating features from the implementation roadmap...'
+                  )
+                : translate(
+                    "We're analyzing your project and generating a comprehensive specification. This may take a few moments..."
+                  )
+              : translate(
+                  "Create an app specification to help our system understand your project. We'll analyze your codebase and generate a comprehensive spec based on your description."
+                )}
           </p>
           {errorMessage && (
             <div className="mb-4 p-3 rounded-md bg-destructive/10 border border-destructive/20">
-              <p className="text-sm text-destructive font-medium">Error:</p>
+              <p className="text-sm text-destructive font-medium">{translate('Error:')}</p>
               <p className="text-sm text-destructive">{errorMessage}</p>
             </div>
           )}
@@ -106,7 +119,7 @@ export function SpecEmptyState({
             <div className="flex gap-2 justify-center">
               <Button size="lg" onClick={onCreateClick}>
                 <FilePlus2 className="w-5 h-5 mr-2" />
-                Create app_spec
+                {translate('Create app_spec')}
               </Button>
             </div>
           )}

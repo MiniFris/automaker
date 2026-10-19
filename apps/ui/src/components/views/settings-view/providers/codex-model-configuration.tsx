@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -29,58 +30,104 @@ interface CodexModelInfo {
 const CODEX_MODEL_INFO: Record<CodexModelId, CodexModelInfo> = {
   'codex-gpt-5.3-codex': {
     id: 'codex-gpt-5.3-codex',
-    label: 'GPT-5.3-Codex',
-    description: 'Latest frontier agentic coding model',
+    get label() {
+      return 'GPT-5.3-Codex';
+    },
+    get description() {
+      return translate('Latest frontier agentic coding model');
+    },
   },
   'codex-gpt-5.3-codex-spark': {
     id: 'codex-gpt-5.3-codex-spark',
-    label: 'GPT-5.3-Codex-Spark',
-    description: 'Near-instant real-time coding model, 1000+ tokens/sec',
+    get label() {
+      return 'GPT-5.3-Codex-Spark';
+    },
+    get description() {
+      return translate('Near-instant real-time coding model, 1000+ tokens/sec');
+    },
   },
   'codex-gpt-5.2-codex': {
     id: 'codex-gpt-5.2-codex',
-    label: 'GPT-5.2-Codex',
-    description: 'Frontier agentic coding model',
+    get label() {
+      return 'GPT-5.2-Codex';
+    },
+    get description() {
+      return translate('Frontier agentic coding model');
+    },
   },
   'codex-gpt-5.1-codex-max': {
     id: 'codex-gpt-5.1-codex-max',
-    label: 'GPT-5.1-Codex-Max',
-    description: 'Codex-optimized flagship for deep and fast reasoning',
+    get label() {
+      return 'GPT-5.1-Codex-Max';
+    },
+    get description() {
+      return translate('Codex-optimized flagship for deep and fast reasoning');
+    },
   },
   'codex-gpt-5.1-codex-mini': {
     id: 'codex-gpt-5.1-codex-mini',
-    label: 'GPT-5.1-Codex-Mini',
-    description: 'Optimized for codex. Cheaper, faster, but less capable',
+    get label() {
+      return 'GPT-5.1-Codex-Mini';
+    },
+    get description() {
+      return translate('Optimized for codex. Cheaper, faster, but less capable');
+    },
   },
   'codex-gpt-5.1-codex': {
     id: 'codex-gpt-5.1-codex',
-    label: 'GPT-5.1-Codex',
-    description: 'Original GPT-5.1 Codex agentic coding model',
+    get label() {
+      return 'GPT-5.1-Codex';
+    },
+    get description() {
+      return translate('Original GPT-5.1 Codex agentic coding model');
+    },
   },
   'codex-gpt-5-codex': {
     id: 'codex-gpt-5-codex',
-    label: 'GPT-5-Codex',
-    description: 'Original GPT-5 Codex model',
+    get label() {
+      return 'GPT-5-Codex';
+    },
+    get description() {
+      return translate('Original GPT-5 Codex model');
+    },
   },
   'codex-gpt-5-codex-mini': {
     id: 'codex-gpt-5-codex-mini',
-    label: 'GPT-5-Codex-Mini',
-    description: 'Smaller, cheaper GPT-5 Codex variant',
+    get label() {
+      return 'GPT-5-Codex-Mini';
+    },
+    get description() {
+      return translate('Smaller, cheaper GPT-5 Codex variant');
+    },
   },
   'codex-gpt-5.2': {
     id: 'codex-gpt-5.2',
-    label: 'GPT-5.2',
-    description: 'Latest frontier model with improvements across knowledge, reasoning and coding',
+    get label() {
+      return 'GPT-5.2';
+    },
+    get description() {
+      return translate(
+        'Latest frontier model with improvements across knowledge, reasoning and coding'
+      );
+    },
   },
   'codex-gpt-5.1': {
     id: 'codex-gpt-5.1',
-    label: 'GPT-5.1',
-    description: 'Great for coding and agentic tasks across domains',
+    get label() {
+      return 'GPT-5.1';
+    },
+    get description() {
+      return translate('Great for coding and agentic tasks across domains');
+    },
   },
   'codex-gpt-5': {
     id: 'codex-gpt-5',
-    label: 'GPT-5',
-    description: 'Base GPT-5 model via Codex',
+    get label() {
+      return 'GPT-5';
+    },
+    get description() {
+      return translate('Base GPT-5 model via Codex');
+    },
   },
 };
 
@@ -91,6 +138,7 @@ export function CodexModelConfiguration({
   onDefaultModelChange,
   onModelToggle,
 }: CodexModelConfigurationProps) {
+  useUiLocale();
   const availableModels = Object.values(CODEX_MODEL_INFO);
 
   return (
@@ -108,16 +156,16 @@ export function CodexModelConfiguration({
             <OpenAIIcon className="w-5 h-5 text-brand-500" />
           </div>
           <h2 className="text-lg font-semibold text-foreground tracking-tight">
-            Model Configuration
+            {translate('Model Configuration')}
           </h2>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Configure which Codex models are available in the feature modal
+          {translate('Configure which Codex models are available in the feature modal')}
         </p>
       </div>
       <div className="p-6 space-y-6">
         <div className="space-y-2">
-          <Label>Default Model</Label>
+          <Label>{translate('Default Model')}</Label>
           <Select
             value={codexDefaultModel}
             onValueChange={(v) => onDefaultModelChange(v as CodexModelId)}
@@ -133,7 +181,7 @@ export function CodexModelConfiguration({
                     <span>{model.label}</span>
                     {supportsReasoningEffort(model.id) && (
                       <Badge variant="outline" className="text-xs">
-                        Thinking
+                        {translate('Thinking')}
                       </Badge>
                     )}
                   </div>
@@ -144,7 +192,7 @@ export function CodexModelConfiguration({
         </div>
 
         <div className="space-y-3">
-          <Label>Available Models</Label>
+          <Label>{translate('Available Models')}</Label>
           <div className="grid gap-3">
             {availableModels.map((model) => {
               const isEnabled = enabledCodexModels.includes(model.id);
@@ -166,16 +214,18 @@ export function CodexModelConfiguration({
                         <span className="text-sm font-medium">{model.label}</span>
                         {supportsReasoningEffort(model.id) && (
                           <Badge variant="outline" className="text-xs">
-                            Thinking
+                            {translate('Thinking')}
                           </Badge>
                         )}
                         {isDefault && (
                           <Badge variant="secondary" className="text-xs">
-                            Default
+                            {translate('Default')}
                           </Badge>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground">{model.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {translate(model.description)}
+                      </p>
                     </div>
                   </div>
                 </div>

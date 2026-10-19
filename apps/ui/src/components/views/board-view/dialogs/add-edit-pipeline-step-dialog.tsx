@@ -1,3 +1,5 @@
+import { translate, useUiLocale } from '@/lib/i18n';
+import { getPipelineStepLabel } from '@/lib/workflow-labels';
 import { useState, useRef, useEffect } from 'react';
 import {
   Dialog,
@@ -19,15 +21,69 @@ import { STEP_TEMPLATES } from './pipeline-step-templates';
 
 // Color options for pipeline columns
 const COLOR_OPTIONS = [
-  { value: 'bg-blue-500/20', label: 'Blue', preview: 'bg-blue-500' },
-  { value: 'bg-purple-500/20', label: 'Purple', preview: 'bg-purple-500' },
-  { value: 'bg-green-500/20', label: 'Green', preview: 'bg-green-500' },
-  { value: 'bg-orange-500/20', label: 'Orange', preview: 'bg-orange-500' },
-  { value: 'bg-red-500/20', label: 'Red', preview: 'bg-red-500' },
-  { value: 'bg-pink-500/20', label: 'Pink', preview: 'bg-pink-500' },
-  { value: 'bg-cyan-500/20', label: 'Cyan', preview: 'bg-cyan-500' },
-  { value: 'bg-amber-500/20', label: 'Amber', preview: 'bg-amber-500' },
-  { value: 'bg-indigo-500/20', label: 'Indigo', preview: 'bg-indigo-500' },
+  {
+    value: 'bg-blue-500/20',
+    get label() {
+      return translate('Blue');
+    },
+    preview: 'bg-blue-500',
+  },
+  {
+    value: 'bg-purple-500/20',
+    get label() {
+      return translate('Purple');
+    },
+    preview: 'bg-purple-500',
+  },
+  {
+    value: 'bg-green-500/20',
+    get label() {
+      return translate('Green');
+    },
+    preview: 'bg-green-500',
+  },
+  {
+    value: 'bg-orange-500/20',
+    get label() {
+      return translate('Orange');
+    },
+    preview: 'bg-orange-500',
+  },
+  {
+    value: 'bg-red-500/20',
+    get label() {
+      return translate('Red');
+    },
+    preview: 'bg-red-500',
+  },
+  {
+    value: 'bg-pink-500/20',
+    get label() {
+      return translate('Pink');
+    },
+    preview: 'bg-pink-500',
+  },
+  {
+    value: 'bg-cyan-500/20',
+    get label() {
+      return translate('Cyan');
+    },
+    preview: 'bg-cyan-500',
+  },
+  {
+    value: 'bg-amber-500/20',
+    get label() {
+      return translate('Amber');
+    },
+    preview: 'bg-amber-500',
+  },
+  {
+    value: 'bg-indigo-500/20',
+    get label() {
+      return translate('Indigo');
+    },
+    preview: 'bg-indigo-500',
+  },
 ];
 
 interface AddEditPipelineStepDialogProps {
@@ -45,6 +101,7 @@ export function AddEditPipelineStepDialog({
   existingStep,
   defaultOrder,
 }: AddEditPipelineStepDialogProps) {
+  useUiLocale();
   const isEditing = !!existingStep;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -77,7 +134,9 @@ export function AddEditPipelineStepDialog({
       setInstructions(template.instructions);
       setColorClass(template.colorClass);
       setSelectedTemplate(templateId);
-      toast.success(`Loaded "${template.name}" template`);
+      toast.success(
+        translate('Loaded "{value1}" template', { value1: getPipelineStepLabel(template.name) })
+      );
     }
   };
 
@@ -92,9 +151,9 @@ export function AddEditPipelineStepDialog({
     try {
       const content = await file.text();
       setInstructions(content);
-      toast.success('Instructions loaded from file');
+      toast.success(translate('Instructions loaded from file'));
     } catch {
-      toast.error('Failed to load file');
+      toast.error(translate('Failed to load file'));
     }
 
     // Reset the input so the same file can be selected again
@@ -105,12 +164,12 @@ export function AddEditPipelineStepDialog({
 
   const handleSave = () => {
     if (!name.trim()) {
-      toast.error('Step name is required');
+      toast.error(translate('Step name is required'));
       return;
     }
 
     if (!instructions.trim()) {
-      toast.error('Step instructions are required');
+      toast.error(translate('Step instructions are required'));
       return;
     }
 
@@ -138,11 +197,15 @@ export function AddEditPipelineStepDialog({
         />
 
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit Pipeline Step' : 'Add Pipeline Step'}</DialogTitle>
+          <DialogTitle>
+            {isEditing ? translate('Edit Pipeline Step') : translate('Add Pipeline Step')}
+          </DialogTitle>
           <DialogDescription>
             {isEditing
-              ? 'Modify the step configuration below.'
-              : 'Configure a new step for your pipeline. Choose a template to get started quickly, or create from scratch.'}
+              ? translate('Modify the step configuration below.')
+              : translate(
+                  'Configure a new step for your pipeline. Choose a template to get started quickly, or create from scratch.'
+                )}
           </DialogDescription>
         </DialogHeader>
 
@@ -150,7 +213,9 @@ export function AddEditPipelineStepDialog({
           {/* Template Quick Start - Only show for new steps */}
           {!isEditing && (
             <div className="space-y-3">
-              <Label className="text-sm font-medium">Quick Start from Template</Label>
+              <Label className="text-sm font-medium">
+                {translate('Quick Start from Template')}
+              </Label>
               <div className="flex flex-wrap gap-2">
                 {STEP_TEMPLATES.map((template) => (
                   <button
@@ -167,12 +232,12 @@ export function AddEditPipelineStepDialog({
                     <div
                       className={cn('w-2 h-2 rounded-full', template.colorClass.replace('/20', ''))}
                     />
-                    {template.name}
+                    {getPipelineStepLabel(template.name)}
                   </button>
                 ))}
               </div>
               <p className="text-xs text-muted-foreground">
-                Click a template to pre-fill the form, then customize as needed.
+                {translate('Click a template to pre-fill the form, then customize as needed.')}
               </p>
             </div>
           )}
@@ -183,11 +248,12 @@ export function AddEditPipelineStepDialog({
           {/* Step Name */}
           <div className="space-y-2">
             <Label htmlFor="step-name">
-              Step Name <span className="text-destructive">*</span>
+              {translate('Step Name ')}
+              <span className="text-destructive">*</span>
             </Label>
             <Input
               id="step-name"
-              placeholder="e.g., Code Review, Testing, Documentation"
+              placeholder={translate('e.g., Code Review, Testing, Documentation')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoFocus={isEditing}
@@ -196,7 +262,7 @@ export function AddEditPipelineStepDialog({
 
           {/* Color Selection */}
           <div className="space-y-2">
-            <Label>Column Color</Label>
+            <Label>{translate('Column Color')}</Label>
             <div className="flex flex-wrap gap-2">
               {COLOR_OPTIONS.map((color) => (
                 <button
@@ -220,33 +286,39 @@ export function AddEditPipelineStepDialog({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="step-instructions">
-                Agent Instructions <span className="text-destructive">*</span>
+                {translate('Agent Instructions ')}
+                <span className="text-destructive">*</span>
               </Label>
               <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={handleFileUpload}>
                 <Upload className="h-3 w-3 mr-1" />
-                Load from file
+                {translate('Load from file')}
               </Button>
             </div>
             <Textarea
               id="step-instructions"
-              placeholder="Instructions for the agent to follow during this pipeline step. Use markdown formatting for best results."
+              placeholder={translate(
+                'Instructions for the agent to follow during this pipeline step. Use markdown formatting for best results.'
+              )}
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
               rows={10}
               className="font-mono text-sm"
             />
             <p className="text-xs text-muted-foreground">
-              These instructions will be sent to the agent when this step runs. Be specific about
-              what you want the agent to review, check, or modify.
+              {translate(
+                'These instructions will be sent to the agent when this step runs. Be specific about what you want the agent to review, check, or modify.'
+              )}
             </p>
           </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {translate('Cancel')}
           </Button>
-          <Button onClick={handleSave}>{isEditing ? 'Update Step' : 'Add to Pipeline'}</Button>
+          <Button onClick={handleSave}>
+            {isEditing ? translate('Update Step') : translate('Add to Pipeline')}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Code } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -30,6 +31,7 @@ export function JsonEditDialog({
   onSave,
   onCancel,
 }: JsonEditDialogProps) {
+  useUiLocale();
   return (
     <Dialog
       open={open}
@@ -43,24 +45,25 @@ export function JsonEditDialog({
     >
       <DialogContent className="max-w-2xl" data-testid="mcp-json-edit-dialog">
         <DialogHeader>
-          <DialogTitle>Edit Server Configuration</DialogTitle>
+          <DialogTitle>{translate('Edit Server Configuration')}</DialogTitle>
           <DialogDescription>
-            Edit the raw JSON configuration for "{server?.name}". Changes will be validated before
-            saving.
+            {translate('Edit the raw JSON configuration for "')}
+            {server?.name}
+            {translate('". Changes will be validated before saving.')}
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">
           <Textarea
             value={jsonValue}
             onChange={(e) => onJsonValueChange(e.target.value)}
-            placeholder="Server configuration JSON..."
+            placeholder={translate('Server configuration JSON...')}
             className="font-mono text-sm h-80"
             data-testid="mcp-json-edit-textarea"
           />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onCancel}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button
             onClick={onSave}
@@ -68,7 +71,7 @@ export function JsonEditDialog({
             data-testid="mcp-json-edit-save-button"
           >
             <Code className="w-4 h-4 mr-2" />
-            Save JSON
+            {translate('Save JSON')}
           </Button>
         </DialogFooter>
       </DialogContent>

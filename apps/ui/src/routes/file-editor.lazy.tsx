@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import { createLazyFileRoute, useSearch } from '@tanstack/react-router';
 import { FileEditorView } from '@/components/views/file-editor-view/file-editor-view';
 
@@ -6,6 +7,7 @@ export const Route = createLazyFileRoute('/file-editor')({
 });
 
 function RouteComponent() {
+  useUiLocale();
   const { path } = useSearch({ from: '/file-editor' });
   return <FileEditorView initialPath={path} />;
 }

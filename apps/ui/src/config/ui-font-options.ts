@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 /**
  * Font options for per-project font customization
  *
@@ -20,27 +21,122 @@ export interface UIFontOption {
  * 'default' value means "use the theme default" (Geist Sans for all themes)
  */
 export const UI_SANS_FONT_OPTIONS: readonly UIFontOption[] = [
-  { value: DEFAULT_FONT_VALUE, label: 'Default (Geist Sans)' },
+  {
+    value: DEFAULT_FONT_VALUE,
+    get label() {
+      return translate('Default (Geist Sans)');
+    },
+  },
   // Sans fonts (alphabetical)
-  { value: 'Inter, system-ui, sans-serif', label: 'Inter' },
-  { value: 'Lato, system-ui, sans-serif', label: 'Lato' },
-  { value: 'Montserrat, system-ui, sans-serif', label: 'Montserrat' },
-  { value: "'Open Sans', system-ui, sans-serif", label: 'Open Sans' },
-  { value: 'Poppins, system-ui, sans-serif', label: 'Poppins' },
-  { value: 'Raleway, system-ui, sans-serif', label: 'Raleway' },
-  { value: 'Roboto, system-ui, sans-serif', label: 'Roboto' },
-  { value: "'Source Sans 3', system-ui, sans-serif", label: 'Source Sans' },
-  { value: "'Work Sans', system-ui, sans-serif", label: 'Work Sans' },
-  { value: "'Zed Sans', system-ui, sans-serif", label: 'Zed Sans' },
+  {
+    value: 'Inter, system-ui, sans-serif',
+    get label() {
+      return translate('Inter');
+    },
+  },
+  {
+    value: 'Lato, system-ui, sans-serif',
+    get label() {
+      return translate('Lato');
+    },
+  },
+  {
+    value: 'Montserrat, system-ui, sans-serif',
+    get label() {
+      return translate('Montserrat');
+    },
+  },
+  {
+    value: "'Open Sans', system-ui, sans-serif",
+    get label() {
+      return translate('Open Sans');
+    },
+  },
+  {
+    value: 'Poppins, system-ui, sans-serif',
+    get label() {
+      return translate('Poppins');
+    },
+  },
+  {
+    value: 'Raleway, system-ui, sans-serif',
+    get label() {
+      return translate('Raleway');
+    },
+  },
+  {
+    value: 'Roboto, system-ui, sans-serif',
+    get label() {
+      return translate('Roboto');
+    },
+  },
+  {
+    value: "'Source Sans 3', system-ui, sans-serif",
+    get label() {
+      return translate('Source Sans');
+    },
+  },
+  {
+    value: "'Work Sans', system-ui, sans-serif",
+    get label() {
+      return translate('Work Sans');
+    },
+  },
+  {
+    value: "'Zed Sans', system-ui, sans-serif",
+    get label() {
+      return translate('Zed Sans');
+    },
+  },
   // Monospace fonts (alphabetical, for users who prefer mono UI)
-  { value: "'Cascadia Code', monospace", label: 'Cascadia Code' },
-  { value: "'Fira Code', monospace", label: 'Fira Code' },
-  { value: "'IBM Plex Mono', monospace", label: 'IBM Plex Mono' },
-  { value: 'Inconsolata, monospace', label: 'Inconsolata' },
-  { value: 'Iosevka, monospace', label: 'Iosevka' },
-  { value: "'JetBrains Mono', monospace", label: 'JetBrains Mono' },
-  { value: "'Source Code Pro', monospace", label: 'Source Code Pro' },
-  { value: "'Zed Mono', monospace", label: 'Zed Mono' },
+  {
+    value: "'Cascadia Code', monospace",
+    get label() {
+      return translate('Cascadia Code');
+    },
+  },
+  {
+    value: "'Fira Code', monospace",
+    get label() {
+      return translate('Fira Code');
+    },
+  },
+  {
+    value: "'IBM Plex Mono', monospace",
+    get label() {
+      return translate('IBM Plex Mono');
+    },
+  },
+  {
+    value: 'Inconsolata, monospace',
+    get label() {
+      return translate('Inconsolata');
+    },
+  },
+  {
+    value: 'Iosevka, monospace',
+    get label() {
+      return translate('Iosevka');
+    },
+  },
+  {
+    value: "'JetBrains Mono', monospace",
+    get label() {
+      return translate('JetBrains Mono');
+    },
+  },
+  {
+    value: "'Source Code Pro', monospace",
+    get label() {
+      return translate('Source Code Pro');
+    },
+  },
+  {
+    value: "'Zed Mono', monospace",
+    get label() {
+      return translate('Zed Mono');
+    },
+  },
 ] as const;
 
 /**
@@ -50,18 +146,68 @@ export const UI_SANS_FONT_OPTIONS: readonly UIFontOption[] = [
  * Many of these support ligatures for coding symbols (-> => != etc.)
  */
 export const UI_MONO_FONT_OPTIONS: readonly UIFontOption[] = [
-  { value: DEFAULT_FONT_VALUE, label: 'Default (Geist Mono)' },
+  {
+    value: DEFAULT_FONT_VALUE,
+    get label() {
+      return translate('Default (Geist Mono)');
+    },
+  },
   // Bundled fonts (alphabetical)
-  { value: "'Cascadia Code', monospace", label: 'Cascadia Code' },
-  { value: "'Fira Code', monospace", label: 'Fira Code' },
-  { value: "'IBM Plex Mono', monospace", label: 'IBM Plex Mono' },
-  { value: 'Inconsolata, monospace', label: 'Inconsolata' },
-  { value: 'Iosevka, monospace', label: 'Iosevka' },
-  { value: "'JetBrains Mono', monospace", label: 'JetBrains Mono' },
-  { value: "'Source Code Pro', monospace", label: 'Source Code Pro' },
-  { value: "'Zed Mono', monospace", label: 'Zed Mono' },
+  {
+    value: "'Cascadia Code', monospace",
+    get label() {
+      return translate('Cascadia Code');
+    },
+  },
+  {
+    value: "'Fira Code', monospace",
+    get label() {
+      return translate('Fira Code');
+    },
+  },
+  {
+    value: "'IBM Plex Mono', monospace",
+    get label() {
+      return translate('IBM Plex Mono');
+    },
+  },
+  {
+    value: 'Inconsolata, monospace',
+    get label() {
+      return translate('Inconsolata');
+    },
+  },
+  {
+    value: 'Iosevka, monospace',
+    get label() {
+      return translate('Iosevka');
+    },
+  },
+  {
+    value: "'JetBrains Mono', monospace",
+    get label() {
+      return translate('JetBrains Mono');
+    },
+  },
+  {
+    value: "'Source Code Pro', monospace",
+    get label() {
+      return translate('Source Code Pro');
+    },
+  },
+  {
+    value: "'Zed Mono', monospace",
+    get label() {
+      return translate('Zed Mono');
+    },
+  },
   // System fonts
-  { value: 'Menlo, Monaco, monospace', label: 'Menlo / Monaco (macOS)' },
+  {
+    value: 'Menlo, Monaco, monospace',
+    get label() {
+      return translate('Menlo / Monaco (macOS)');
+    },
+  },
 ] as const;
 
 /**

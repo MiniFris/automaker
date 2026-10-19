@@ -1,3 +1,5 @@
+import { getFormattingLocale } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useMemo } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -32,34 +34,50 @@ function formatResetTime(unixTimestamp: number): string {
   // If less than 1 hour, show minutes
   if (diff < 3600000) {
     const mins = Math.ceil(diff / 60000);
-    return `Resets in ${mins}m`;
+    return translate('Resets in {value1}m', { value1: mins });
   }
 
   // If less than 24 hours, show hours and minutes
   if (diff < 86400000) {
     const hours = Math.floor(diff / 3600000);
     const mins = Math.ceil((diff % 3600000) / 60000);
-    return `Resets in ${hours}h ${mins > 0 ? `${mins}m` : ''}`;
+    return translate('Resets in {value1}h {value2}', {
+      value1: hours,
+      value2: mins > 0 ? `${mins}m` : '',
+    });
   }
 
   // Otherwise show date
-  return `Resets ${date.toLocaleDateString()} at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  return translate('Resets {value1} at {value2}', {
+    value1: date.toLocaleDateString(getFormattingLocale()),
+    value2: date.toLocaleTimeString(getFormattingLocale(), { hour: '2-digit', minute: '2-digit' }),
+  });
 }
 
 // Helper to format window duration
 function getWindowLabel(durationMins: number): { title: string; subtitle: string } {
   if (durationMins < 60) {
-    return { title: `${durationMins}min Window`, subtitle: 'Rate limit' };
+    return {
+      title: translate('{value1}min Window', { value1: durationMins }),
+      subtitle: translate('Rate limit'),
+    };
   }
   if (durationMins < 1440) {
     const hours = Math.round(durationMins / 60);
-    return { title: `${hours}h Window`, subtitle: 'Rate limit' };
+    return {
+      title: translate('{value1}h Window', { value1: hours }),
+      subtitle: translate('Rate limit'),
+    };
   }
   const days = Math.round(durationMins / 1440);
-  return { title: `${days}d Window`, subtitle: 'Rate limit' };
+  return {
+    title: translate('{value1}d Window', { value1: days }),
+    subtitle: translate('Rate limit'),
+  };
 }
 
 export function CodexUsagePopover() {
+  useUiLocale();
   const codexAuthStatus = useSetupStore((state) => state.codexAuthStatus);
   const [open, setOpen] = useState(false);
 
@@ -120,7 +138,7 @@ export function CodexUsagePopover() {
         <div
           className="absolute top-0 h-full w-0.5 bg-foreground/60"
           style={{ left: `${pacePercentage}%` }}
-          title={`Expected: ${Math.round(pacePercentage)}%`}
+          title={translate('Expected: {value1}%', { value1: Math.round(pacePercentage) })}
         />
       )}
     </div>
@@ -143,6 +161,7 @@ export function CodexUsagePopover() {
     stale?: boolean;
     pacePercentage?: number | null;
   }) => {
+    useUiLocale();
     const isValidPercentage =
       typeof percentage === 'number' && !isNaN(percentage) && isFinite(percentage);
     const safePercentage = isValidPercentage ? percentage : 0;
@@ -181,7 +200,7 @@ export function CodexUsagePopover() {
               </span>
             </div>
           ) : (
-            <span className="text-xs text-muted-foreground">N/A</span>
+            <span className="text-xs text-muted-foreground">{translate('N/A')}</span>
           )}
         </div>
         <ProgressBar
@@ -229,7 +248,7 @@ export function CodexUsagePopover() {
 
   const trigger = (
     <Button variant="ghost" size="sm" className="h-9 gap-3 bg-secondary border border-border px-3">
-      <span className="text-sm font-medium">Codex</span>
+      <span className="text-sm font-medium">{translate('Codex')}</span>
       {codexUsage && codexUsage.rateLimits && (
         <div
           className={cn(
@@ -257,7 +276,7 @@ export function CodexUsagePopover() {
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-secondary/10">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold">Codex Usage</span>
+            <span className="text-sm font-semibold">{translate('Codex Usage')}</span>
           </div>
           {error && error.code !== ERROR_CODES.NOT_AVAILABLE && (
             <Button
@@ -278,27 +297,29 @@ export function CodexUsagePopover() {
               <AlertTriangle className="w-8 h-8 text-yellow-500/80" />
               <div className="space-y-1 flex flex-col items-center">
                 <p className="text-sm font-medium">
-                  {error.code === ERROR_CODES.NOT_AVAILABLE ? 'Usage not available' : error.message}
+                  {error.code === ERROR_CODES.NOT_AVAILABLE
+                    ? translate('Usage not available')
+                    : error.message}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {error.code === ERROR_CODES.API_BRIDGE_UNAVAILABLE ? (
-                    'Ensure the Electron bridge is running or restart the app'
+                    translate('Ensure the Electron bridge is running or restart the app')
                   ) : error.code === ERROR_CODES.NOT_AVAILABLE ? (
                     <>
-                      Codex CLI doesn't provide usage statistics. Check{' '}
+                      {translate("Codex CLI doesn't provide usage statistics. Check")}{' '}
                       <a
                         href="https://platform.openai.com/usage"
                         target="_blank"
                         rel="noreferrer"
                         className="underline hover:text-foreground"
                       >
-                        OpenAI dashboard
+                        {translate('OpenAI dashboard')}
                       </a>{' '}
-                      for usage details.
+                      {translate('for usage details.')}
                     </>
                   ) : (
                     <>
-                      Make sure Codex CLI is installed and authenticated via{' '}
+                      {translate('Make sure Codex CLI is installed and authenticated via')}{' '}
                       <code className="font-mono bg-muted px-1 rounded">codex login</code>
                     </>
                   )}
@@ -309,7 +330,7 @@ export function CodexUsagePopover() {
             // Loading state
             <div className="flex flex-col items-center justify-center py-8 space-y-2">
               <Spinner size="lg" />
-              <p className="text-xs text-muted-foreground">Loading usage data...</p>
+              <p className="text-xs text-muted-foreground">{translate('Loading usage data...')}</p>
             </div>
           ) : codexUsage.rateLimits ? (
             <>
@@ -352,7 +373,7 @@ export function CodexUsagePopover() {
               {codexUsage.rateLimits.planType && (
                 <div className="rounded-xl border border-border/40 bg-secondary/20 p-3">
                   <p className="text-xs text-muted-foreground">
-                    Plan:{' '}
+                    {translate('Plan:')}{' '}
                     <span className="text-foreground font-medium">
                       {codexUsage.rateLimits.planType.charAt(0).toUpperCase() +
                         codexUsage.rateLimits.planType.slice(1)}
@@ -364,7 +385,7 @@ export function CodexUsagePopover() {
           ) : (
             <div className="flex flex-col items-center justify-center py-6 text-center">
               <AlertTriangle className="w-8 h-8 text-yellow-500/80" />
-              <p className="text-sm font-medium mt-3">No usage data available</p>
+              <p className="text-sm font-medium mt-3">{translate('No usage data available')}</p>
             </div>
           )}
         </div>
@@ -377,10 +398,13 @@ export function CodexUsagePopover() {
             rel="noreferrer"
             className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
           >
-            OpenAI Dashboard <ExternalLink className="w-2.5 h-2.5" />
+            {translate('OpenAI Dashboard ')}
+            <ExternalLink className="w-2.5 h-2.5" />
           </a>
 
-          <span className="text-[10px] text-muted-foreground">Updates every minute</span>
+          <span className="text-[10px] text-muted-foreground">
+            {translate('Updates every minute')}
+          </span>
         </div>
       </PopoverContent>
     </Popover>

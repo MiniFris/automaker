@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ interface DataManagementSectionProps {
 }
 
 export function DataManagementSection({ project }: DataManagementSectionProps) {
+  useUiLocale();
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
 
@@ -36,20 +38,24 @@ export function DataManagementSection({ project }: DataManagementSectionProps) {
               <Database className="w-5 h-5 text-brand-500" />
             </div>
             <h2 className="text-lg font-semibold text-foreground tracking-tight">
-              Data Management
+              {translate('Data Management')}
             </h2>
           </div>
           <p className="text-sm text-muted-foreground/80 ml-12">
-            Export and import features to backup your data or share with other projects.
+            {translate(
+              'Export and import features to backup your data or share with other projects.'
+            )}
           </p>
         </div>
         <div className="p-6 space-y-6">
           {/* Export Section */}
           <div className="space-y-3">
             <div>
-              <h3 className="text-sm font-medium text-foreground">Export Features</h3>
+              <h3 className="text-sm font-medium text-foreground">
+                {translate('Export Features')}
+              </h3>
               <p className="text-xs text-muted-foreground mt-1">
-                Download all features as a JSON or YAML file for backup or sharing.
+                {translate('Download all features as a JSON or YAML file for backup or sharing.')}
               </p>
             </div>
             <Button
@@ -59,7 +65,7 @@ export function DataManagementSection({ project }: DataManagementSectionProps) {
               data-testid="export-features-button"
             >
               <Download className="w-4 h-4" />
-              Export Features
+              {translate('Export Features')}
             </Button>
           </div>
 
@@ -69,9 +75,11 @@ export function DataManagementSection({ project }: DataManagementSectionProps) {
           {/* Import Section */}
           <div className="space-y-3">
             <div>
-              <h3 className="text-sm font-medium text-foreground">Import Features</h3>
+              <h3 className="text-sm font-medium text-foreground">
+                {translate('Import Features')}
+              </h3>
               <p className="text-xs text-muted-foreground mt-1">
-                Import features from a previously exported JSON or YAML file.
+                {translate('Import features from a previously exported JSON or YAML file.')}
               </p>
             </div>
             <Button
@@ -81,7 +89,7 @@ export function DataManagementSection({ project }: DataManagementSectionProps) {
               data-testid="import-features-button"
             >
               <Upload className="w-4 h-4" />
-              Import Features
+              {translate('Import Features')}
             </Button>
           </div>
         </div>

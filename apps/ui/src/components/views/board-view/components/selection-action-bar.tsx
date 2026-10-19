@@ -1,3 +1,5 @@
+import { formatCount } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Pencil, X, CheckSquare, Trash2, CheckCircle2, Loader2 } from 'lucide-react';
@@ -34,6 +36,7 @@ export function SelectionActionBar({
   onSelectAll,
   mode = 'backlog',
 }: SelectionActionBarProps) {
+  useUiLocale();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showVerifyDialog, setShowVerifyDialog] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -82,9 +85,9 @@ export function SelectionActionBar({
         <span className="text-sm font-medium text-foreground">
           {selectedCount === 0
             ? mode === 'waiting_approval'
-              ? 'Select features to verify'
-              : 'Select features to edit'
-            : `${selectedCount} feature${selectedCount !== 1 ? 's' : ''} selected`}
+              ? translate('Select features to verify')
+              : translate('Select features to edit')
+            : translate('{value1} selected', { value1: formatCount(selectedCount, 'feature') })}
         </span>
 
         <div className="h-4 w-px bg-border" />
@@ -101,7 +104,7 @@ export function SelectionActionBar({
                 data-testid="selection-edit-button"
               >
                 <Pencil className="w-4 h-4 mr-1.5" />
-                Edit Selected
+                {translate('Edit Selected')}
               </Button>
 
               <Button
@@ -113,7 +116,7 @@ export function SelectionActionBar({
                 data-testid="selection-delete-button"
               >
                 <Trash2 className="w-4 h-4 mr-1.5" />
-                Delete
+                {translate('Delete')}
               </Button>
             </>
           )}
@@ -128,7 +131,7 @@ export function SelectionActionBar({
               data-testid="selection-verify-button"
             >
               <CheckCircle2 className="w-4 h-4 mr-1.5" />
-              Verify Selected
+              {translate('Verify Selected')}
             </Button>
           )}
 
@@ -141,7 +144,8 @@ export function SelectionActionBar({
               data-testid="selection-select-all-button"
             >
               <CheckSquare className="w-4 h-4 mr-1.5" />
-              Select All ({totalCount})
+              {translate('Select All (')}
+              {totalCount})
             </Button>
           )}
 
@@ -153,7 +157,7 @@ export function SelectionActionBar({
             data-testid="selection-clear-button"
           >
             <X className="w-4 h-4 mr-1.5" />
-            Clear
+            {translate('Clear')}
           </Button>
         </div>
       </div>
@@ -164,13 +168,13 @@ export function SelectionActionBar({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
               <Trash2 className="w-5 h-5" />
-              Delete Selected Features?
+              {translate('Delete Selected Features?')}
             </DialogTitle>
             <DialogDescription>
-              Are you sure you want to permanently delete {selectedCount} feature
-              {selectedCount !== 1 ? 's' : ''}?
+              {translate('Are you sure you want to permanently delete ')}
+              {formatCount(selectedCount, 'feature')}?
               <span className="block mt-2 text-destructive font-medium">
-                This action cannot be undone.
+                {translate('This action cannot be undone.')}
               </span>
             </DialogDescription>
           </DialogHeader>
@@ -180,7 +184,7 @@ export function SelectionActionBar({
               onClick={() => setShowDeleteDialog(false)}
               data-testid="cancel-bulk-delete-button"
             >
-              Cancel
+              {translate('Cancel')}
             </Button>
             <Button
               variant="destructive"
@@ -188,7 +192,7 @@ export function SelectionActionBar({
               data-testid="confirm-bulk-delete-button"
             >
               <Trash2 className="w-4 h-4 mr-2" />
-              Delete
+              {translate('Delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -205,13 +209,13 @@ export function SelectionActionBar({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-green-600">
               <CheckCircle2 className="w-5 h-5" />
-              Verify Selected Features?
+              {translate('Verify Selected Features?')}
             </DialogTitle>
             <DialogDescription>
-              Are you sure you want to mark {selectedCount} feature
-              {selectedCount !== 1 ? 's' : ''} as verified?
+              {translate('Are you sure you want to mark ')}
+              {formatCount(selectedCount, 'feature')} {translate(' as verified?')}
               <span className="block mt-2 text-muted-foreground">
-                This will move them to the Verified column.
+                {translate('This will move them to the Verified column.')}
               </span>
             </DialogDescription>
           </DialogHeader>
@@ -222,7 +226,7 @@ export function SelectionActionBar({
               disabled={isVerifying}
               data-testid="cancel-bulk-verify-button"
             >
-              Cancel
+              {translate('Cancel')}
             </Button>
             <Button
               className="bg-green-600 hover:bg-green-700"
@@ -235,7 +239,7 @@ export function SelectionActionBar({
               ) : (
                 <CheckCircle2 className="w-4 h-4 mr-2" />
               )}
-              {isVerifying ? 'Verifying...' : 'Verify'}
+              {isVerifying ? translate('Verifying...') : translate('Verify')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { SkeletonPulse } from '@/components/ui/skeleton';
@@ -20,23 +21,24 @@ interface CliStatusProps {
 function getAuthMethodLabel(method: string): string {
   switch (method) {
     case 'oauth_token':
-      return 'OAuth Token (Subscription)';
+      return translate('OAuth Token (Subscription)');
     case 'oauth_token_env':
-      return 'OAuth Token (Environment)';
+      return translate('OAuth Token (Environment)');
     case 'api_key':
-      return 'API Key';
+      return translate('API Key');
     case 'api_key_env':
-      return 'API Key (Environment)';
+      return translate('API Key (Environment)');
     case 'credentials_file':
-      return 'Credentials File';
+      return translate('Credentials File');
     case 'cli_authenticated':
-      return 'CLI Authentication';
+      return translate('CLI Authentication');
     default:
-      return method || 'Unknown';
+      return method || translate('Unknown');
   }
 }
 
 function ClaudeCliStatusSkeleton() {
+  useUiLocale();
   return (
     <div
       className={cn(
@@ -82,6 +84,7 @@ function ClaudeCliStatusSkeleton() {
 }
 
 export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: CliStatusProps) {
+  useUiLocale();
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isDeauthenticating, setIsDeauthenticating] = useState(false);
 
@@ -94,25 +97,25 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
         | (() => Promise<{ success: boolean; error?: string }>)
         | undefined;
       if (!authClaude) {
-        toast.error('Authentication Failed', {
-          description: 'Claude authentication is not available',
+        toast.error(translate('Authentication Failed'), {
+          description: translate('Claude authentication is not available'),
         });
         return;
       }
       const result = await authClaude();
 
       if (result.success) {
-        toast.success('Signed In', {
-          description: 'Successfully authenticated Claude CLI',
+        toast.success(translate('Signed In'), {
+          description: translate('Successfully authenticated Claude CLI'),
         });
         onRefresh();
       } else if (result.error) {
-        toast.error('Authentication Failed', {
+        toast.error(translate('Authentication Failed'), {
           description: result.error,
         });
       }
     } catch (error) {
-      toast.error('Authentication Failed', {
+      toast.error(translate('Authentication Failed'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     } finally {
@@ -129,26 +132,26 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
         | (() => Promise<{ success: boolean; error?: string }>)
         | undefined;
       if (!deauthClaude) {
-        toast.error('Sign Out Failed', {
-          description: 'Claude sign out is not available',
+        toast.error(translate('Sign Out Failed'), {
+          description: translate('Claude sign out is not available'),
         });
         return;
       }
       const result = await deauthClaude();
 
       if (result.success) {
-        toast.success('Signed Out', {
-          description: 'Successfully signed out from Claude CLI',
+        toast.success(translate('Signed Out'), {
+          description: translate('Successfully signed out from Claude CLI'),
         });
         // Refresh status after successful logout
         onRefresh();
       } else if (result.error) {
-        toast.error('Sign Out Failed', {
+        toast.error(translate('Sign Out Failed'), {
           description: result.error,
         });
       }
     } catch (error) {
-      toast.error('Sign Out Failed', {
+      toast.error(translate('Sign Out Failed'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     } finally {
@@ -174,7 +177,7 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
               <AnthropicIcon className="w-5 h-5 text-brand-500" />
             </div>
             <h2 className="text-lg font-semibold text-foreground tracking-tight">
-              Claude Code CLI
+              {translate('Claude Code CLI')}
             </h2>
           </div>
           <Button
@@ -183,7 +186,7 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
             onClick={onRefresh}
             disabled={isChecking}
             data-testid="refresh-claude-cli"
-            title="Refresh Claude CLI detection"
+            title={translate('Refresh Claude CLI detection')}
             className={cn(
               'h-9 w-9 rounded-lg',
               'hover:bg-accent/50 hover:scale-105',
@@ -194,8 +197,9 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
           </Button>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Claude Code CLI provides better performance for long-running tasks, especially with
-          ultrathink.
+          {translate(
+            'Claude Code CLI provides better performance for long-running tasks, especially with ultrathink.'
+          )}
         </p>
       </div>
       <div className="p-6 space-y-4">
@@ -206,21 +210,26 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
                 <CheckCircle2 className="w-5 h-5 text-emerald-500" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-emerald-400">Claude Code CLI Installed</p>
+                <p className="text-sm font-medium text-emerald-400">
+                  {translate('Claude Code CLI Installed')}
+                </p>
                 <div className="text-xs text-emerald-400/70 mt-1.5 space-y-0.5">
                   {status.method && (
                     <p>
-                      Method: <span className="font-mono">{status.method}</span>
+                      {translate('Method: ')}
+                      <span className="font-mono">{status.method}</span>
                     </p>
                   )}
                   {status.version && (
                     <p>
-                      Version: <span className="font-mono">{status.version}</span>
+                      {translate('Version: ')}
+                      <span className="font-mono">{status.version}</span>
                     </p>
                   )}
                   {status.path && (
                     <p className="truncate" title={status.path}>
-                      Path: <span className="font-mono text-[10px]">{status.path}</span>
+                      {translate('Path: ')}
+                      <span className="font-mono text-[10px]">{status.path}</span>
                     </p>
                   )}
                 </div>
@@ -233,10 +242,12 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
                   <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-emerald-400">Authenticated</p>
+                  <p className="text-sm font-medium text-emerald-400">
+                    {translate('Authenticated')}
+                  </p>
                   <div className="text-xs text-emerald-400/70 mt-1.5">
                     <p>
-                      Method:{' '}
+                      {translate('Method:')}{' '}
                       <span className="font-mono">{getAuthMethodLabel(authStatus.method)}</span>
                     </p>
                   </div>
@@ -247,7 +258,7 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
                     disabled={isDeauthenticating}
                     className="mt-3 h-8 text-xs"
                   >
-                    {isDeauthenticating ? 'Signing Out...' : 'Sign Out'}
+                    {isDeauthenticating ? translate('Signing Out...') : translate('Sign Out')}
                   </Button>
                 </div>
               </div>
@@ -257,9 +268,11 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
                   <XCircle className="w-5 h-5 text-amber-500" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-amber-400">Not Authenticated</p>
+                  <p className="text-sm font-medium text-amber-400">
+                    {translate('Not Authenticated')}
+                  </p>
                   <p className="text-xs text-amber-400/70 mt-1">
-                    Click Sign In below to get authentication instructions.
+                    {translate('Click Sign In below to get authentication instructions.')}
                   </p>
                   <Button
                     variant="outline"
@@ -268,7 +281,7 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
                     disabled={isAuthenticating}
                     className="mt-3 h-8 text-xs"
                   >
-                    {isAuthenticating ? 'Requesting...' : 'Sign In'}
+                    {isAuthenticating ? translate('Requesting...') : translate('Sign In')}
                   </Button>
                 </div>
               </div>
@@ -285,21 +298,27 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
                 <AlertCircle className="w-5 h-5 text-amber-500" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-amber-400">Claude Code CLI Not Detected</p>
+                <p className="text-sm font-medium text-amber-400">
+                  {translate('Claude Code CLI Not Detected')}
+                </p>
                 <p className="text-xs text-amber-400/70 mt-1">
                   {status.recommendation ||
-                    'Consider installing Claude Code CLI for optimal performance with ultrathink.'}
+                    translate(
+                      'Consider installing Claude Code CLI for optimal performance with ultrathink.'
+                    )}
                 </p>
               </div>
             </div>
             {status.installCommands && (
               <div className="space-y-3">
-                <p className="text-xs font-medium text-foreground/80">Installation Commands:</p>
+                <p className="text-xs font-medium text-foreground/80">
+                  {translate('Installation Commands:')}
+                </p>
                 <div className="space-y-2">
                   {status.installCommands.npm && (
                     <div className="p-3 rounded-xl bg-accent/30 border border-border/50">
                       <p className="text-[10px] text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">
-                        npm
+                        {translate('npm')}
                       </p>
                       <code className="text-xs text-foreground/80 font-mono break-all">
                         {status.installCommands.npm}
@@ -309,7 +328,7 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
                   {status.installCommands.macos && (
                     <div className="p-3 rounded-xl bg-accent/30 border border-border/50">
                       <p className="text-[10px] text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">
-                        macOS/Linux
+                        {translate('macOS/Linux')}
                       </p>
                       <code className="text-xs text-foreground/80 font-mono break-all">
                         {status.installCommands.macos}
@@ -319,7 +338,7 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
                   {status.installCommands.windows && (
                     <div className="p-3 rounded-xl bg-accent/30 border border-border/50">
                       <p className="text-[10px] text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">
-                        Windows (PowerShell)
+                        {translate('Windows (PowerShell)')}
                       </p>
                       <code className="text-xs text-foreground/80 font-mono break-all">
                         {status.installCommands.windows}

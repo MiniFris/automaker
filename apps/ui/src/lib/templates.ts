@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 /**
  * Starter Kit Templates
  *
@@ -19,8 +20,11 @@ export const starterTemplates: StarterTemplate[] = [
   {
     id: 'automaker-starter-kit',
     name: 'Automaker Starter Kit',
-    description:
-      'An online community and training platform template for aspiring full stack engineers. Master frontend and backend development, build real-world projects, and launch your software engineering career.',
+    get description() {
+      return translate(
+        'An online community and training platform template for aspiring full stack engineers. Master frontend and backend development, build real-world projects, and launch your software engineering career.'
+      );
+    },
     repoUrl: 'https://github.com/webdevcody/automaker-starter-kit',
     techStack: [
       'TanStack Start',
@@ -49,8 +53,11 @@ export const starterTemplates: StarterTemplate[] = [
   {
     id: 'agentic-jumpstart',
     name: 'Agentic Jumpstart',
-    description:
-      'A starter template for building agentic AI applications with a pre-configured development environment including database setup, Docker support, and TypeScript configuration.',
+    get description() {
+      return translate(
+        'A starter template for building agentic AI applications with a pre-configured development environment including database setup, Docker support, and TypeScript configuration.'
+      );
+    },
     repoUrl: 'https://github.com/webdevcody/agentic-jumpstart-starter-kit',
     techStack: ['TypeScript', 'Vite', 'Drizzle ORM', 'Docker', 'PostCSS'],
     features: [
@@ -66,8 +73,11 @@ export const starterTemplates: StarterTemplate[] = [
   {
     id: 'full-stack-campus',
     name: 'Full Stack Campus',
-    description:
-      'A feature-driven development template for building community platforms. Includes authentication, Stripe payments, file uploads, and real-time features using TanStack Start.',
+    get description() {
+      return translate(
+        'A feature-driven development template for building community platforms. Includes authentication, Stripe payments, file uploads, and real-time features using TanStack Start.'
+      );
+    },
     repoUrl: 'https://github.com/webdevcody/full-stack-campus',
     techStack: [
       'TanStack Start',

@@ -1,4 +1,6 @@
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useLocalizedMemo } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { useAppStore } from '@/store/app-store';
 import { getElectronAPI } from '@/lib/electron';
@@ -79,6 +81,7 @@ interface ContextMetadata {
 }
 
 export function ContextView() {
+  useUiLocale();
   const { currentProject } = useAppStore();
   const shortcuts = useKeyboardShortcutsConfig();
   const [contextFiles, setContextFiles] = useState<ContextFile[]>([]);
@@ -119,12 +122,12 @@ export function ContextView() {
   const isMobile = useIsMobile();
 
   // Keyboard shortcuts for this view
-  const contextShortcuts: KeyboardShortcut[] = useMemo(
+  const contextShortcuts: KeyboardShortcut[] = useLocalizedMemo(
     () => [
       {
         key: shortcuts.addContextFile,
         action: () => setIsCreateMarkdownOpen(true),
-        description: 'Create new markdown file',
+        description: translate('Create new markdown file'),
       },
     ],
     [shortcuts]
@@ -292,14 +295,14 @@ export function ContextView() {
 
       const message =
         result.error || `Automaker couldn't generate a description for “${fileName}”.`;
-      toast.error('Failed to generate description', { description: message });
+      toast.error(translate('Failed to generate description'), { description: message });
     } catch (error) {
       logger.error('Failed to generate description:', error);
       const message =
         error instanceof Error
           ? error.message
           : 'An unexpected error occurred while generating the description.';
-      toast.error('Failed to generate description', { description: message });
+      toast.error(translate('Failed to generate description'), { description: message });
     }
     return undefined;
   };
@@ -417,7 +420,7 @@ export function ContextView() {
       generateDescriptionAsync(imagePathForDescription || filePath, fileName, isImage);
     } catch (error) {
       logger.error('Failed to upload file:', error);
-      toast.error('Failed to upload file', {
+      toast.error(translate('Failed to upload file'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     } finally {
@@ -513,7 +516,7 @@ export function ContextView() {
       setNewMarkdownName('');
       setNewMarkdownDescription('');
       setNewMarkdownContent('');
-      toast.error('Failed to create markdown file', {
+      toast.error(translate('Failed to create markdown file'), {
         description: error instanceof Error ? error.message : 'Unknown error occurred',
       });
     }
@@ -669,7 +672,7 @@ export function ContextView() {
         className="flex-1 flex items-center justify-center"
         data-testid="context-view-no-project"
       >
-        <p className="text-muted-foreground">No project selected</p>
+        <p className="text-muted-foreground">{translate('No project selected')}</p>
       </div>
     );
   }
@@ -699,9 +702,9 @@ export function ContextView() {
         <div className="flex items-center gap-3">
           <BookOpen className="w-5 h-5 text-muted-foreground" />
           <div>
-            <h1 className="text-xl font-bold">Context Files</h1>
+            <h1 className="text-xl font-bold">{translate('Context Files')}</h1>
             <p className="text-sm text-muted-foreground">
-              Add context files to include in AI prompts
+              {translate('Add context files to include in AI prompts')}
             </p>
           </div>
         </div>
@@ -716,7 +719,7 @@ export function ContextView() {
               data-testid="import-file-button"
             >
               <FileUp className="w-4 h-4 mr-2" />
-              Import File
+              {translate('Import File')}
             </Button>
             <HotkeyButton
               size="sm"
@@ -726,7 +729,7 @@ export function ContextView() {
               data-testid="create-markdown-button"
             >
               <FilePlus className="w-4 h-4 mr-2" />
-              Create Markdown
+              {translate('Create Markdown')}
             </HotkeyButton>
           </div>
           {/* Tablet/Mobile: show trigger for actions panel */}
@@ -741,7 +744,7 @@ export function ContextView() {
       <HeaderActionsPanel
         isOpen={showActionsPanel}
         onClose={() => setShowActionsPanel(false)}
-        title="Context Actions"
+        title={translate('Context Actions')}
       >
         <Button
           variant="outline"
@@ -754,7 +757,7 @@ export function ContextView() {
           data-testid="import-file-button-mobile"
         >
           <FileUp className="w-4 h-4 mr-2" />
-          Import File
+          {translate('Import File')}
         </Button>
         <Button
           className="w-full justify-start"
@@ -765,7 +768,7 @@ export function ContextView() {
           data-testid="create-markdown-button-mobile"
         >
           <FilePlus className="w-4 h-4 mr-2" />
-          Create Markdown
+          {translate('Create Markdown')}
         </Button>
       </HeaderActionsPanel>
 
@@ -785,9 +788,9 @@ export function ContextView() {
           <div className="absolute inset-0 bg-primary/10 z-50 flex items-center justify-center pointer-events-none">
             <div className="flex flex-col items-center text-primary">
               <Upload className="w-12 h-12 mb-2" />
-              <span className="text-lg font-medium">Drop files to upload</span>
+              <span className="text-lg font-medium">{translate('Drop files to upload')}</span>
               <span className="text-sm text-muted-foreground">
-                Files will be analyzed automatically
+                {translate('Files will be analyzed automatically')}
               </span>
             </div>
           </div>
@@ -798,7 +801,10 @@ export function ContextView() {
           <div className="absolute inset-0 bg-background/80 z-50 flex items-center justify-center">
             <div className="flex flex-col items-center">
               <Spinner size="xl" className="mb-2" />
-              <span className="text-sm font-medium">Uploading {uploadingFileName}...</span>
+              <span className="text-sm font-medium">
+                {translate('Uploading ')}
+                {uploadingFileName}...
+              </span>
             </div>
           </div>
         )}
@@ -817,7 +823,8 @@ export function ContextView() {
         >
           <div className="p-3 border-b border-border">
             <h2 className="text-sm font-semibold text-muted-foreground">
-              Context Files ({contextFiles.length})
+              {translate('Context Files (')}
+              {contextFiles.length})
             </h2>
           </div>
           <div className="flex-1 overflow-y-auto p-2" data-testid="context-file-list">
@@ -825,9 +832,9 @@ export function ContextView() {
               <div className="flex flex-col items-center justify-center h-full text-center p-4">
                 <Upload className="w-8 h-8 text-muted-foreground mb-2" />
                 <p className="text-sm text-muted-foreground">
-                  No context files yet.
+                  {translate('No context files yet.')}
                   <br />
-                  Drop files here or use the buttons above.
+                  {translate('Drop files here or use the buttons above.')}
                 </p>
               </div>
             ) : (
@@ -856,7 +863,7 @@ export function ContextView() {
                         {isGenerating ? (
                           <span className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Spinner size="xs" />
-                            Generating description...
+                            {translate('Generating description...')}
                           </span>
                         ) : file.description ? (
                           <span className="truncate text-xs text-muted-foreground block">
@@ -872,7 +879,7 @@ export function ContextView() {
                               'p-1 hover:bg-accent rounded transition-opacity',
                               isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                             )}
-                            aria-label={`Actions for ${file.name}`}
+                            aria-label={translate('Actions for {value1}', { value1: file.name })}
                             aria-haspopup="menu"
                             data-testid={`context-file-menu-${file.name}`}
                           >
@@ -889,7 +896,7 @@ export function ContextView() {
                             data-testid={`rename-context-file-${file.name}`}
                           >
                             <Pencil className="w-4 h-4 mr-2" />
-                            Rename
+                            {translate('Rename')}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleDeleteFromList(file)}
@@ -897,7 +904,7 @@ export function ContextView() {
                             data-testid={`delete-context-file-${file.name}`}
                           >
                             <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
+                            {translate('Delete')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -929,8 +936,8 @@ export function ContextView() {
                       size="sm"
                       onClick={() => setSelectedFile(null)}
                       className="shrink-0 -ml-1"
-                      aria-label="Back"
-                      title="Back"
+                      aria-label={translate('Back')}
+                      title={translate('Back')}
                     >
                       <ArrowLeft className="h-4 w-4" />
                     </Button>
@@ -950,18 +957,18 @@ export function ContextView() {
                       size="sm"
                       onClick={() => setIsPreviewMode(!isPreviewMode)}
                       data-testid="toggle-preview-mode"
-                      aria-label={isPreviewMode ? 'Edit' : 'Preview'}
-                      title={isPreviewMode ? 'Edit' : 'Preview'}
+                      aria-label={isPreviewMode ? translate('Edit') : translate('Preview')}
+                      title={isPreviewMode ? translate('Edit') : translate('Preview')}
                     >
                       {isPreviewMode ? (
                         <>
                           <Pencil className="w-4 h-4" />
-                          {!isMobile && <span className="ml-2">Edit</span>}
+                          {!isMobile && <span className="ml-2">{translate('Edit')}</span>}
                         </>
                       ) : (
                         <>
                           <Eye className="w-4 h-4" />
-                          {!isMobile && <span className="ml-2">Preview</span>}
+                          {!isMobile && <span className="ml-2">{translate('Preview')}</span>}
                         </>
                       )}
                     </Button>
@@ -972,13 +979,17 @@ export function ContextView() {
                       onClick={saveFile}
                       disabled={!hasChanges || isSaving}
                       data-testid="save-context-file"
-                      aria-label="Save"
-                      title="Save"
+                      aria-label={translate('Save')}
+                      title={translate('Save')}
                     >
                       <Save className="w-4 h-4" />
                       {!isMobile && (
                         <span className="ml-2">
-                          {isSaving ? 'Saving...' : hasChanges ? 'Save' : 'Saved'}
+                          {isSaving
+                            ? translate('Saving...')
+                            : hasChanges
+                              ? translate('Save')
+                              : translate('Saved')}
                         </span>
                       )}
                     </Button>
@@ -991,8 +1002,8 @@ export function ContextView() {
                       onClick={() => setIsDeleteDialogOpen(true)}
                       className="text-red-500 hover:text-red-400 hover:border-red-500/50"
                       data-testid="delete-context-file"
-                      aria-label="Delete"
-                      title="Delete"
+                      aria-label={translate('Delete')}
+                      title={translate('Delete')}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -1006,18 +1017,18 @@ export function ContextView() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                        Description
+                        {translate('Description')}
                       </span>
                       {generatingDescriptions.has(selectedFile.name) ? (
                         <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
                           <Spinner size="sm" />
-                          <span>Generating description with AI...</span>
+                          <span>{translate('Generating description with AI...')}</span>
                         </div>
                       ) : selectedFile.description ? (
                         <p className="text-sm mt-1">{selectedFile.description}</p>
                       ) : (
                         <p className="text-sm text-muted-foreground mt-1 italic">
-                          No description. Click edit to add one.
+                          {translate('No description. Click edit to add one.')}
                         </p>
                       )}
                     </div>
@@ -1057,7 +1068,7 @@ export function ContextView() {
                       className="w-full h-full p-4 font-mono text-sm bg-transparent resize-none focus:outline-none"
                       value={editedContent}
                       onChange={(e) => handleContentChange(e.target.value)}
-                      placeholder="Enter context content here..."
+                      placeholder={translate('Enter context content here...')}
                       spellCheck={false}
                       data-testid="context-editor"
                     />
@@ -1069,8 +1080,12 @@ export function ContextView() {
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
                 <File className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                <p className="text-foreground-secondary">Select a file to view or edit</p>
-                <p className="text-muted-foreground text-sm mt-1">Or drop files here to add them</p>
+                <p className="text-foreground-secondary">
+                  {translate('Select a file to view or edit')}
+                </p>
+                <p className="text-muted-foreground text-sm mt-1">
+                  {translate('Or drop files here to add them')}
+                </p>
               </div>
             </div>
           )}
@@ -1084,14 +1099,14 @@ export function ContextView() {
           className="w-[60vw] max-w-[60vw] max-h-[80vh] flex flex-col"
         >
           <DialogHeader>
-            <DialogTitle>Create Markdown Context</DialogTitle>
+            <DialogTitle>{translate('Create Markdown Context')}</DialogTitle>
             <DialogDescription>
-              Create a new markdown file to add context for AI prompts.
+              {translate('Create a new markdown file to add context for AI prompts.')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4 flex-1 overflow-auto">
             <div className="space-y-2">
-              <Label htmlFor="markdown-filename">File Name</Label>
+              <Label htmlFor="markdown-filename">{translate('File Name')}</Label>
               <Input
                 id="markdown-filename"
                 value={newMarkdownName}
@@ -1103,19 +1118,19 @@ export function ContextView() {
 
             <div className="space-y-2">
               <Label htmlFor="markdown-description">
-                Description (for AI to understand the context)
+                {translate('Description (for AI to understand the context)')}
               </Label>
               <Input
                 id="markdown-description"
                 value={newMarkdownDescription}
                 onChange={(e) => setNewMarkdownDescription(e.target.value)}
-                placeholder="e.g., Coding style guidelines for this project"
+                placeholder={translate('e.g., Coding style guidelines for this project')}
                 data-testid="new-markdown-description"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="markdown-content">Content</Label>
+              <Label htmlFor="markdown-content">{translate('Content')}</Label>
               <textarea
                 id="markdown-content"
                 value={newMarkdownContent}
@@ -1147,7 +1162,7 @@ export function ContextView() {
                   e.preventDefault();
                   e.stopPropagation();
                 }}
-                placeholder="Enter your markdown content here..."
+                placeholder={translate('Enter your markdown content here...')}
                 className="w-full h-60 p-3 font-mono text-sm bg-background border border-border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                 spellCheck={false}
                 data-testid="new-markdown-content"
@@ -1164,7 +1179,7 @@ export function ContextView() {
                 setNewMarkdownContent('');
               }}
             >
-              Cancel
+              {translate('Cancel')}
             </Button>
             <HotkeyButton
               onClick={handleCreateMarkdown}
@@ -1173,7 +1188,7 @@ export function ContextView() {
               hotkeyActive={isCreateMarkdownOpen}
               data-testid="confirm-create-markdown"
             >
-              Create
+              {translate('Create')}
             </HotkeyButton>
           </DialogFooter>
         </DialogContent>
@@ -1183,14 +1198,16 @@ export function ContextView() {
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent data-testid="delete-context-dialog">
           <DialogHeader>
-            <DialogTitle>Delete Context File</DialogTitle>
+            <DialogTitle>{translate('Delete Context File')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{selectedFile?.name}"? This action cannot be undone.
+              {translate('Are you sure you want to delete "')}
+              {selectedFile?.name}
+              {translate('"? This action cannot be undone.')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
+              {translate('Cancel')}
             </Button>
             <Button
               variant="destructive"
@@ -1198,7 +1215,7 @@ export function ContextView() {
               className="bg-red-600 hover:bg-red-700"
               data-testid="confirm-delete-file"
             >
-              Delete
+              {translate('Delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1208,17 +1225,20 @@ export function ContextView() {
       <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
         <DialogContent data-testid="rename-context-dialog">
           <DialogHeader>
-            <DialogTitle>Rename Context File</DialogTitle>
-            <DialogDescription>Enter a new name for "{selectedFile?.name}".</DialogDescription>
+            <DialogTitle>{translate('Rename Context File')}</DialogTitle>
+            <DialogDescription>
+              {translate('Enter a new name for "')}
+              {selectedFile?.name}".
+            </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <div className="space-y-2">
-              <Label htmlFor="rename-filename">File Name</Label>
+              <Label htmlFor="rename-filename">{translate('File Name')}</Label>
               <Input
                 id="rename-filename"
                 value={renameFileName}
                 onChange={(e) => setRenameFileName(e.target.value)}
-                placeholder="Enter new filename"
+                placeholder={translate('Enter new filename')}
                 data-testid="rename-file-input"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && renameFileName.trim()) {
@@ -1236,14 +1256,14 @@ export function ContextView() {
                 setRenameFileName('');
               }}
             >
-              Cancel
+              {translate('Cancel')}
             </Button>
             <Button
               onClick={handleRenameFile}
               disabled={!renameFileName.trim() || renameFileName === selectedFile?.name}
               data-testid="confirm-rename-file"
             >
-              Rename
+              {translate('Rename')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1253,20 +1273,21 @@ export function ContextView() {
       <Dialog open={isEditDescriptionOpen} onOpenChange={setIsEditDescriptionOpen}>
         <DialogContent data-testid="edit-description-dialog">
           <DialogHeader>
-            <DialogTitle>Edit Description</DialogTitle>
+            <DialogTitle>{translate('Edit Description')}</DialogTitle>
             <DialogDescription>
-              Update the description for "{editDescriptionFileName}". This helps AI understand the
-              context.
+              {translate('Update the description for "')}
+              {editDescriptionFileName}
+              {translate('". This helps AI understand the context.')}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-description">Description</Label>
+              <Label htmlFor="edit-description">{translate('Description')}</Label>
               <Textarea
                 id="edit-description"
                 value={editDescriptionValue}
                 onChange={(e) => setEditDescriptionValue(e.target.value)}
-                placeholder="e.g., API documentation for authentication endpoints..."
+                placeholder={translate('e.g., API documentation for authentication endpoints...')}
                 className="min-h-[100px]"
                 data-testid="edit-description-input"
               />
@@ -1281,10 +1302,10 @@ export function ContextView() {
                 setEditDescriptionFileName('');
               }}
             >
-              Cancel
+              {translate('Cancel')}
             </Button>
             <Button onClick={handleSaveDescription} data-testid="confirm-save-description">
-              Save
+              {translate('Save')}
             </Button>
           </DialogFooter>
         </DialogContent>

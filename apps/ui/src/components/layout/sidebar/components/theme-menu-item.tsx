@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import { memo } from 'react';
 import { DropdownMenuRadioItem } from '@/components/ui/dropdown-menu';
 import type { ThemeMenuItemProps } from '../types';
@@ -7,6 +8,7 @@ export const ThemeMenuItem = memo(function ThemeMenuItem({
   onPreviewEnter,
   onPreviewLeave,
 }: ThemeMenuItemProps) {
+  useUiLocale();
   const Icon = option.icon;
   return (
     <DropdownMenuRadioItem

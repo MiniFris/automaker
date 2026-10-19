@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Panel } from '@xyflow/react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -30,15 +31,41 @@ const statusDisplayConfig: Record<
   StatusFilterValue,
   { label: string; icon: typeof Play; colorClass: string }
 > = {
-  running: { label: 'Running', icon: Play, colorClass: 'text-[var(--status-in-progress)]' },
-  paused: { label: 'Paused', icon: Pause, colorClass: 'text-[var(--status-warning)]' },
-  backlog: { label: 'Backlog', icon: Clock, colorClass: 'text-muted-foreground' },
+  running: {
+    get label() {
+      return translate('Running');
+    },
+    icon: Play,
+    colorClass: 'text-[var(--status-in-progress)]',
+  },
+  paused: {
+    get label() {
+      return translate('Paused');
+    },
+    icon: Pause,
+    colorClass: 'text-[var(--status-warning)]',
+  },
+  backlog: {
+    get label() {
+      return translate('Backlog');
+    },
+    icon: Clock,
+    colorClass: 'text-muted-foreground',
+  },
   waiting_approval: {
-    label: 'Waiting Approval',
+    get label() {
+      return translate('Waiting Approval');
+    },
     icon: CircleDot,
     colorClass: 'text-[var(--status-waiting)]',
   },
-  verified: { label: 'Verified', icon: CheckCircle2, colorClass: 'text-[var(--status-success)]' },
+  verified: {
+    get label() {
+      return translate('Verified');
+    },
+    icon: CheckCircle2,
+    colorClass: 'text-[var(--status-success)]',
+  },
 };
 
 interface GraphFilterControlsProps {
@@ -64,6 +91,7 @@ export function GraphFilterControls({
   onNegativeFilterChange,
   onClearFilters,
 }: GraphFilterControlsProps) {
+  useUiLocale();
   const { selectedCategories, selectedStatuses, isNegativeFilter } = filterState;
 
   const handleCategoryToggle = (category: string) => {
@@ -100,18 +128,18 @@ export function GraphFilterControls({
 
   const categoryButtonLabel =
     selectedCategories.length === 0
-      ? 'All Categories'
+      ? translate('All Categories')
       : selectedCategories.length === 1
         ? selectedCategories[0]
-        : `${selectedCategories.length} Categories`;
+        : translate('Categories: {count}', { count: selectedCategories.length });
 
   const statusButtonLabel =
     selectedStatuses.length === 0
-      ? 'All Statuses'
+      ? translate('All Statuses')
       : selectedStatuses.length === 1
         ? statusDisplayConfig[selectedStatuses[0] as StatusFilterValue]?.label ||
           selectedStatuses[0]
-        : `${selectedStatuses.length} Statuses`;
+        : translate('Statuses: {count}', { count: selectedStatuses.length });
 
   return (
     <Panel position="top-left" className="flex items-center gap-2">
@@ -124,7 +152,7 @@ export function GraphFilterControls({
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
           <Input
             type="text"
-            placeholder="Search tasks..."
+            placeholder={translate('Search tasks...')}
             value={searchQuery}
             onChange={(e) => onSearchQueryChange(e.target.value)}
             className="h-8 w-48 pl-8 pr-8 text-sm bg-background/50"
@@ -133,7 +161,7 @@ export function GraphFilterControls({
             <button
               onClick={() => onSearchQueryChange('')}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              aria-label="Clear search"
+              aria-label={translate('Clear search')}
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -162,7 +190,7 @@ export function GraphFilterControls({
                 </Button>
               </PopoverTrigger>
             </TooltipTrigger>
-            <TooltipContent>Filter by Category</TooltipContent>
+            <TooltipContent>{translate('Filter by Category')}</TooltipContent>
           </Tooltip>
           <PopoverContent
             align="start"
@@ -170,7 +198,9 @@ export function GraphFilterControls({
             onOpenAutoFocus={(e) => e.preventDefault()}
           >
             <div className="space-y-2">
-              <div className="text-xs font-medium text-muted-foreground px-2 py-1">Categories</div>
+              <div className="text-xs font-medium text-muted-foreground px-2 py-1">
+                {translate('Categories')}
+              </div>
 
               {/* Select All option */}
               <div
@@ -186,8 +216,8 @@ export function GraphFilterControls({
                 />
                 <span className="text-sm font-medium">
                   {selectedCategories.length === availableCategories.length
-                    ? 'Deselect All'
-                    : 'Select All'}
+                    ? translate('Deselect All')
+                    : translate('Select All')}
                 </span>
               </div>
 
@@ -197,7 +227,7 @@ export function GraphFilterControls({
               <div className="max-h-48 overflow-y-auto space-y-0.5">
                 {availableCategories.length === 0 ? (
                   <div className="text-xs text-muted-foreground px-2 py-2">
-                    No categories available
+                    {translate('No categories available')}
                   </div>
                 ) : (
                   availableCategories.map((category) => (
@@ -238,7 +268,7 @@ export function GraphFilterControls({
                 </Button>
               </PopoverTrigger>
             </TooltipTrigger>
-            <TooltipContent>Filter by Status</TooltipContent>
+            <TooltipContent>{translate('Filter by Status')}</TooltipContent>
           </Tooltip>
           <PopoverContent
             align="start"
@@ -246,7 +276,9 @@ export function GraphFilterControls({
             onOpenAutoFocus={(e) => e.preventDefault()}
           >
             <div className="space-y-2">
-              <div className="text-xs font-medium text-muted-foreground px-2 py-1">Status</div>
+              <div className="text-xs font-medium text-muted-foreground px-2 py-1">
+                {translate('Status')}
+              </div>
 
               {/* Select All option */}
               <div
@@ -259,8 +291,8 @@ export function GraphFilterControls({
                 />
                 <span className="text-sm font-medium">
                   {selectedStatuses.length === STATUS_FILTER_OPTIONS.length
-                    ? 'Deselect All'
-                    : 'Select All'}
+                    ? translate('Deselect All')
+                    : translate('Select All')}
                 </span>
               </div>
 
@@ -302,8 +334,8 @@ export function GraphFilterControls({
                 onClick={() => onNegativeFilterChange(!isNegativeFilter)}
                 aria-label={
                   isNegativeFilter
-                    ? 'Switch to show matching nodes'
-                    : 'Switch to hide matching nodes'
+                    ? translate('Switch to show matching nodes')
+                    : translate('Switch to hide matching nodes')
                 }
                 aria-pressed={isNegativeFilter}
                 className={cn(
@@ -316,27 +348,27 @@ export function GraphFilterControls({
                 {isNegativeFilter ? (
                   <>
                     <EyeOff className="w-3.5 h-3.5" />
-                    <span>Hide</span>
+                    <span>{translate('Hide')}</span>
                   </>
                 ) : (
                   <>
                     <Eye className="w-3.5 h-3.5" />
-                    <span>Show</span>
+                    <span>{translate('Show')}</span>
                   </>
                 )}
               </button>
               <Switch
                 checked={isNegativeFilter}
                 onCheckedChange={onNegativeFilterChange}
-                aria-label="Toggle between show and hide filter modes"
+                aria-label={translate('Toggle between show and hide filter modes')}
                 className="h-5 w-9 data-[state=checked]:bg-orange-500"
               />
             </div>
           </TooltipTrigger>
           <TooltipContent>
             {isNegativeFilter
-              ? 'Negative filter: Highlighting non-matching nodes'
-              : 'Positive filter: Highlighting matching nodes'}
+              ? translate('Negative filter: Highlighting non-matching nodes')
+              : translate('Positive filter: Highlighting matching nodes')}
           </TooltipContent>
         </Tooltip>
 
@@ -351,12 +383,12 @@ export function GraphFilterControls({
                   size="sm"
                   className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
                   onClick={onClearFilters}
-                  aria-label="Clear all filters"
+                  aria-label={translate('Clear all filters')}
                 >
                   <X className="w-4 h-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Clear All Filters</TooltipContent>
+              <TooltipContent>{translate('Clear All Filters')}</TooltipContent>
             </Tooltip>
           </>
         )}

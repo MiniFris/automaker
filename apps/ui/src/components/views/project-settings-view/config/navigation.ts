@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 import type { LucideIcon } from 'lucide-react';
 import {
   User,
@@ -18,13 +19,67 @@ export interface ProjectNavigationItem {
 }
 
 export const PROJECT_SETTINGS_NAV_ITEMS: ProjectNavigationItem[] = [
-  { id: 'identity', label: 'Identity', icon: User },
-  { id: 'worktrees', label: 'Worktrees', icon: GitBranch },
-  { id: 'execution-environment', label: 'Execution Environment', icon: Terminal },
-  { id: 'commands-scripts', label: 'Commands & Scripts', icon: Terminal },
-  { id: 'theme', label: 'Theme', icon: Palette },
-  { id: 'claude', label: 'Models', icon: Workflow },
-  { id: 'data', label: 'Data', icon: Database },
-  { id: 'orphaned', label: 'Orphaned Features', icon: Unlink },
-  { id: 'danger', label: 'Danger Zone', icon: AlertTriangle },
+  {
+    id: 'identity',
+    get label() {
+      return translate('Identity');
+    },
+    icon: User,
+  },
+  {
+    id: 'worktrees',
+    get label() {
+      return translate('Worktrees');
+    },
+    icon: GitBranch,
+  },
+  {
+    id: 'execution-environment',
+    get label() {
+      return translate('Execution Environment');
+    },
+    icon: Terminal,
+  },
+  {
+    id: 'commands-scripts',
+    get label() {
+      return translate('Commands & Scripts');
+    },
+    icon: Terminal,
+  },
+  {
+    id: 'theme',
+    get label() {
+      return translate('Theme');
+    },
+    icon: Palette,
+  },
+  {
+    id: 'claude',
+    get label() {
+      return translate('Models');
+    },
+    icon: Workflow,
+  },
+  {
+    id: 'data',
+    get label() {
+      return translate('Data');
+    },
+    icon: Database,
+  },
+  {
+    id: 'orphaned',
+    get label() {
+      return translate('Orphaned Features');
+    },
+    icon: Unlink,
+  },
+  {
+    id: 'danger',
+    get label() {
+      return translate('Danger Zone');
+    },
+    icon: AlertTriangle,
+  },
 ];

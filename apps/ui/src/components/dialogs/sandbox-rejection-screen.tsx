@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * Sandbox Rejection Screen
  *
@@ -9,6 +10,7 @@ import { ShieldX, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export function SandboxRejectionScreen() {
+  useUiLocale();
   const handleReload = () => {
     // Clear the rejection state and reload
     sessionStorage.removeItem('automaker-sandbox-denied');
@@ -25,15 +27,18 @@ export function SandboxRejectionScreen() {
         </div>
 
         <div className="space-y-2">
-          <h1 className="text-2xl font-semibold">Access Denied</h1>
+          <h1 className="text-2xl font-semibold">{translate('Access Denied')}</h1>
           <p className="text-muted-foreground">
-            You declined to accept the risks of running Automaker outside a sandbox environment.
+            {translate(
+              'You declined to accept the risks of running Automaker outside a sandbox environment.'
+            )}
           </p>
         </div>
 
         <p className="text-sm text-muted-foreground">
-          For safer operation, consider running Automaker in Docker. See the README for
-          instructions.
+          {translate(
+            'For safer operation, consider running Automaker in Docker. See the README for instructions.'
+          )}
         </p>
 
         <div className="pt-2">
@@ -44,7 +49,7 @@ export function SandboxRejectionScreen() {
             data-testid="sandbox-retry"
           >
             <RefreshCw className="w-4 h-4" />
-            Reload &amp; Try Again
+            {translate('Reload & Try Again')}
           </Button>
         </div>
       </div>

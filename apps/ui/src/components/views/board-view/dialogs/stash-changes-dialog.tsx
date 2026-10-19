@@ -1,3 +1,6 @@
+import { useLocalizedMemo } from '@/lib/i18n';
+import { formatCount } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Dialog,
@@ -65,21 +68,21 @@ const getFileIcon = (status: string) => {
 const getStatusLabel = (status: string) => {
   switch (status) {
     case 'A':
-      return 'Added';
+      return translate('Added');
     case '?':
-      return 'Untracked';
+      return translate('Untracked');
     case 'D':
-      return 'Deleted';
+      return translate('Deleted');
     case 'M':
-      return 'Modified';
+      return translate('Modified');
     case 'U':
-      return 'Updated';
+      return translate('Updated');
     case 'R':
-      return 'Renamed';
+      return translate('Renamed');
     case 'C':
-      return 'Copied';
+      return translate('Copied');
     default:
-      return 'Changed';
+      return translate('Changed');
   }
 };
 
@@ -112,6 +115,7 @@ function DiffLine({
   content: string;
   lineNumber?: { old?: number; new?: number };
 }) {
+  useUiLocale();
   const bgClass = {
     context: 'bg-transparent',
     addition: 'bg-green-500/10',
@@ -165,6 +169,7 @@ export function StashChangesDialog({
   worktree,
   onStashed,
 }: StashChangesDialogProps) {
+  useUiLocale();
   const [message, setMessage] = useState('');
   const [isStashing, setIsStashing] = useState(false);
 
@@ -180,7 +185,7 @@ export function StashChangesDialog({
   const parsedDiffs = useMemo(() => parseDiff(diffContent), [diffContent]);
 
   // Create a map of file path to parsed diff for quick lookup
-  const diffsByFile = useMemo(() => {
+  const diffsByFile = useLocalizedMemo(() => {
     const map = new Map<string, ParsedFileDiff>();
     for (const diff of parsedDiffs) {
       map.set(diff.filePath, diff);
@@ -276,22 +281,22 @@ export function StashChangesDialog({
 
       if (result.success && result.result) {
         if (result.result.stashed) {
-          toast.success('Changes stashed', {
+          toast.success(translate('Changes stashed'), {
             description: result.result.message || 'Your changes have been stashed',
           });
           setMessage('');
           onOpenChange(false);
           onStashed?.();
         } else {
-          toast.info('No changes to stash');
+          toast.info(translate('No changes to stash'));
         }
       } else {
-        toast.error('Failed to stash changes', {
+        toast.error(translate('Failed to stash changes'), {
           description: result.error || 'Unknown error',
         });
       }
     } catch (err) {
-      toast.error('Failed to stash changes', {
+      toast.error(translate('Failed to stash changes'), {
         description: err instanceof Error ? err.message : 'Unknown error',
       });
     } finally {
@@ -330,10 +335,10 @@ export function StashChangesDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Archive className="w-5 h-5" />
-            Stash Changes
+            {translate('Stash Changes')}
           </DialogTitle>
           <DialogDescription>
-            Stash uncommitted changes on{' '}
+            {translate('Stash uncommitted changes on')}{' '}
             <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>
           </DialogDescription>
         </DialogHeader>
@@ -343,12 +348,12 @@ export function StashChangesDialog({
           <div className="flex flex-col min-h-0">
             <div className="flex items-center justify-between mb-1.5">
               <Label className="text-sm font-medium flex items-center gap-2">
-                Files to stash
+                {translate('Files to stash')}
                 {isLoadingDiffs ? (
                   <Spinner size="sm" />
                 ) : (
                   <span className="text-xs text-muted-foreground font-normal">
-                    ({selectedFiles.size}/{files.length} selected)
+                    ({selectedFiles.size}/{files.length} {translate(' selected)')}
                   </span>
                 )}
               </Label>
@@ -357,7 +362,7 @@ export function StashChangesDialog({
                   onClick={handleToggleAll}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {allSelected ? 'Deselect all' : 'Select all'}
+                  {allSelected ? translate('Deselect all') : translate('Select all')}
                 </button>
               )}
             </div>
@@ -365,11 +370,13 @@ export function StashChangesDialog({
             {isLoadingDiffs ? (
               <div className="flex items-center justify-center py-6 text-muted-foreground border border-border rounded-lg">
                 <Spinner size="sm" className="mr-2" />
-                <span className="text-sm">Loading changes...</span>
+                <span className="text-sm">{translate('Loading changes...')}</span>
               </div>
             ) : loadDiffsError ? (
               <div className="flex flex-col items-center justify-center py-6 gap-2 border border-border rounded-lg">
-                <span className="text-sm text-destructive">Failed to load changes</span>
+                <span className="text-sm text-destructive">
+                  {translate('Failed to load changes')}
+                </span>
                 <Button
                   variant="outline"
                   size="sm"
@@ -378,12 +385,12 @@ export function StashChangesDialog({
                     loadDiffs(cancelled);
                   }}
                 >
-                  Retry
+                  {translate('Retry')}
                 </Button>
               </div>
             ) : files.length === 0 ? (
               <div className="flex items-center justify-center py-6 text-muted-foreground border border-border rounded-lg">
-                <span className="text-sm">No changes detected</span>
+                <span className="text-sm">{translate('No changes detected')}</span>
               </div>
             ) : (
               <div className="border border-border rounded-lg overflow-hidden max-h-[300px] overflow-y-auto scrollbar-visible">
@@ -478,11 +485,11 @@ export function StashChangesDialog({
                       {isExpanded && !fileDiff && (
                         <div className="px-4 py-3 text-xs text-muted-foreground bg-background border-t border-border">
                           {file.status === '?' ? (
-                            <span>New file - diff preview not available</span>
+                            <span>{translate('New file - diff preview not available')}</span>
                           ) : file.status === 'D' ? (
-                            <span>File deleted</span>
+                            <span>{translate('File deleted')}</span>
                           ) : (
-                            <span>Diff content not available</span>
+                            <span>{translate('Diff content not available')}</span>
                           )}
                         </div>
                       )}
@@ -496,18 +503,19 @@ export function StashChangesDialog({
           {/* Stash Message */}
           <div className="space-y-2">
             <label htmlFor="stash-message" className="text-sm font-medium">
-              Stash message <span className="text-muted-foreground">(optional)</span>
+              {translate('Stash message ')}
+              <span className="text-muted-foreground">{translate('(optional)')}</span>
             </label>
             <Input
               id="stash-message"
-              placeholder="e.g., Work in progress on login page"
+              placeholder={translate('e.g., Work in progress on login page')}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               disabled={isStashing}
               autoFocus
             />
             <p className="text-xs text-muted-foreground">
-              A descriptive message helps identify this stash later. Press{' '}
+              {translate('A descriptive message helps identify this stash later. Press')}{' '}
               <kbd className="px-1 py-0.5 text-[10px] bg-muted rounded border">
                 {typeof navigator !== 'undefined' &&
                 (
@@ -517,31 +525,31 @@ export function StashChangesDialog({
                   ''
                 ).includes('Mac')
                   ? '⌘'
-                  : 'Ctrl'}
-                +Enter
+                  : translate('Ctrl')}
+                {translate('+Enter')}
               </kbd>{' '}
-              to stash.
+              {translate('to stash.')}
             </p>
           </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isStashing}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button onClick={handleStash} disabled={isStashing || selectedFiles.size === 0}>
             {isStashing ? (
               <>
                 <Spinner size="xs" className="mr-2" />
-                Stashing...
+                {translate('Stashing...')}
               </>
             ) : (
               <>
                 <Archive className="w-4 h-4 mr-2" />
-                Stash
+                {translate('Stash')}
                 {selectedFiles.size > 0 && selectedFiles.size < files.length
-                  ? ` (${selectedFiles.size} file${selectedFiles.size > 1 ? 's' : ''})`
-                  : ' Changes'}
+                  ? translate(' ({value1})', { value1: formatCount(selectedFiles.size, 'file') })
+                  : translate(' Changes')}
               </>
             )}
           </Button>

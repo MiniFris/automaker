@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useCallback, startTransition } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { ChevronsUpDown, Folder, Plus, FolderOpen, LogOut } from 'lucide-react';
@@ -36,6 +37,7 @@ export function SidebarHeader({
   onProjectContextMenu,
   setShowRemoveFromAutomakerDialog,
 }: SidebarHeaderProps) {
+  useUiLocale();
   const navigate = useNavigate();
   const projects = useAppStore((s) => s.projects);
   const setCurrentProject = useAppStore((s) => s.setCurrentProject);
@@ -125,7 +127,7 @@ export function SidebarHeader({
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 256 256"
                 role="img"
-                aria-label="Automaker Logo"
+                aria-label={translate('Automaker Logo')}
                 className="size-8 group-hover:rotate-12 transition-transform duration-300 ease-out"
               >
                 <defs>
@@ -157,7 +159,7 @@ export function SidebarHeader({
             </button>
           </TooltipTrigger>
           <TooltipContent side="right" sideOffset={8}>
-            Go to Dashboard
+            {translate('Go to Dashboard')}
           </TooltipContent>
         </Tooltip>
 
@@ -190,7 +192,9 @@ export function SidebarHeader({
                 data-testid="collapsed-project-dropdown-content"
               >
                 <div className="px-2 py-1.5">
-                  <span className="text-xs font-medium text-muted-foreground">Projects</span>
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {translate('Projects')}
+                  </span>
                 </div>
                 {projects.map((project, index) => {
                   const isActive = currentProject?.id === project.id;
@@ -236,7 +240,7 @@ export function SidebarHeader({
                   data-testid="collapsed-new-project-dropdown-item"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  <span>New Project</span>
+                  <span>{translate('New Project')}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => {
@@ -247,7 +251,7 @@ export function SidebarHeader({
                   data-testid="collapsed-open-project-dropdown-item"
                 >
                   <FolderOpen className="w-4 h-4 mr-2" />
-                  <span>Open Project</span>
+                  <span>{translate('Open Project')}</span>
                 </DropdownMenuItem>
                 {currentProject && (
                   <>
@@ -261,7 +265,7 @@ export function SidebarHeader({
                       data-testid="collapsed-remove-from-automaker-dropdown-item"
                     >
                       <LogOut className="w-4 h-4 mr-2" />
-                      <span>Remove from Automaker</span>
+                      <span>{translate('Remove from Automaker')}</span>
                     </DropdownMenuItem>
                   </>
                 )}
@@ -287,14 +291,14 @@ export function SidebarHeader({
         <button
           onClick={handleLogoClick}
           className="group flex items-center shrink-0 titlebar-no-drag"
-          title="Go to Dashboard"
+          title={translate('Go to Dashboard')}
           data-testid="logo-button"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 256 256"
             role="img"
-            aria-label="Automaker Logo"
+            aria-label={translate('Automaker Logo')}
             className="h-8 w-8 group-hover:rotate-12 transition-transform duration-300 ease-out"
           >
             <defs>
@@ -353,7 +357,9 @@ export function SidebarHeader({
               data-testid="project-dropdown-content"
             >
               <div className="px-2 py-1.5">
-                <span className="text-xs font-medium text-muted-foreground">Projects</span>
+                <span className="text-xs font-medium text-muted-foreground">
+                  {translate('Projects')}
+                </span>
               </div>
               {projects.map((project, index) => {
                 const isActive = currentProject?.id === project.id;
@@ -396,7 +402,7 @@ export function SidebarHeader({
                 data-testid="new-project-dropdown-item"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                <span>New Project</span>
+                <span>{translate('New Project')}</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => {
@@ -407,7 +413,7 @@ export function SidebarHeader({
                 data-testid="open-project-dropdown-item"
               >
                 <FolderOpen className="w-4 h-4 mr-2" />
-                <span>Open Project</span>
+                <span>{translate('Open Project')}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -419,7 +425,7 @@ export function SidebarHeader({
                 data-testid="remove-from-automaker-dropdown-item"
               >
                 <LogOut className="w-4 h-4 mr-2" />
-                <span>Remove from Automaker</span>
+                <span>{translate('Remove from Automaker')}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -435,7 +441,7 @@ export function SidebarHeader({
               data-testid="new-project-button"
             >
               <Plus className="w-4 h-4" />
-              <span>New Project</span>
+              <span>{translate('New Project')}</span>
             </button>
             <button
               onClick={onOpenFolder}
@@ -447,7 +453,7 @@ export function SidebarHeader({
               data-testid="open-project-button"
             >
               <FolderOpen className="w-4 h-4" />
-              <span>Open</span>
+              <span>{translate('Open')}</span>
             </button>
           </div>
         )}

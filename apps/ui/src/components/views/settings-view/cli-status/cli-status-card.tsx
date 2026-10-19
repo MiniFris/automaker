@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
@@ -25,6 +26,7 @@ export function CliStatusCard({
   icon: Icon,
   fallbackRecommendation,
 }: CliStatusCardProps) {
+  useUiLocale();
   if (!status) return null;
 
   return (
@@ -50,7 +52,7 @@ export function CliStatusCard({
             onClick={onRefresh}
             disabled={isChecking}
             data-testid={refreshTestId}
-            title={`Refresh ${title} detection`}
+            title={translate('Refresh {value1} detection', { value1: title })}
             className={cn(
               'h-9 w-9 rounded-lg',
               'hover:bg-accent/50 hover:scale-105',
@@ -70,21 +72,26 @@ export function CliStatusCard({
                 <CheckCircle2 className="w-5 h-5 text-emerald-500" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-emerald-400">{title} Installed</p>
+                <p className="text-sm font-medium text-emerald-400">
+                  {title} {translate(' Installed')}
+                </p>
                 <div className="text-xs text-emerald-400/70 mt-1.5 space-y-0.5">
                   {status.method && (
                     <p>
-                      Method: <span className="font-mono">{status.method}</span>
+                      {translate('Method: ')}
+                      <span className="font-mono">{status.method}</span>
                     </p>
                   )}
                   {status.version && (
                     <p>
-                      Version: <span className="font-mono">{status.version}</span>
+                      {translate('Version: ')}
+                      <span className="font-mono">{status.version}</span>
                     </p>
                   )}
                   {status.path && (
                     <p className="truncate" title={status.path}>
-                      Path: <span className="font-mono text-[10px]">{status.path}</span>
+                      {translate('Path: ')}
+                      <span className="font-mono text-[10px]">{status.path}</span>
                     </p>
                   )}
                 </div>
@@ -101,7 +108,9 @@ export function CliStatusCard({
                 <AlertCircle className="w-5 h-5 text-amber-500" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-amber-400">{title} Not Detected</p>
+                <p className="text-sm font-medium text-amber-400">
+                  {title} {translate(' Not Detected')}
+                </p>
                 <p className="text-xs text-amber-400/70 mt-1">
                   {status.recommendation || fallbackRecommendation}
                 </p>
@@ -109,12 +118,14 @@ export function CliStatusCard({
             </div>
             {status.installCommands && (
               <div className="space-y-3">
-                <p className="text-xs font-medium text-foreground/80">Installation Commands:</p>
+                <p className="text-xs font-medium text-foreground/80">
+                  {translate('Installation Commands:')}
+                </p>
                 <div className="space-y-2">
                   {status.installCommands.npm && (
                     <div className="p-3 rounded-xl bg-accent/30 border border-border/50">
                       <p className="text-[10px] text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">
-                        npm
+                        {translate('npm')}
                       </p>
                       <code className="text-xs text-foreground/80 font-mono break-all">
                         {status.installCommands.npm}
@@ -124,7 +135,7 @@ export function CliStatusCard({
                   {status.installCommands.macos && (
                     <div className="p-3 rounded-xl bg-accent/30 border border-border/50">
                       <p className="text-[10px] text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">
-                        macOS/Linux
+                        {translate('macOS/Linux')}
                       </p>
                       <code className="text-xs text-foreground/80 font-mono break-all">
                         {status.installCommands.macos}
@@ -134,7 +145,7 @@ export function CliStatusCard({
                   {status.installCommands.windows && (
                     <div className="p-3 rounded-xl bg-accent/30 border border-border/50">
                       <p className="text-[10px] text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">
-                        Windows (PowerShell)
+                        {translate('Windows (PowerShell)')}
                       </p>
                       <code className="text-xs text-foreground/80 font-mono break-all">
                         {status.installCommands.windows}

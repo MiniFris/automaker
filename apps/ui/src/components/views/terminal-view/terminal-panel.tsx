@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { createLogger } from '@automaker/utils/logger';
@@ -138,6 +139,7 @@ export function TerminalPanel({
   onToggleMaximize,
   branchName,
 }: TerminalPanelProps) {
+  useUiLocale();
   const navigate = useNavigate();
   const terminalRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -350,8 +352,8 @@ export function TerminalPanel({
 
     const selection = terminal.getSelection();
     if (!selection) {
-      toast.error('Nothing to copy', {
-        description: 'Select some text first',
+      toast.error(translate('Nothing to copy'), {
+        description: translate('Select some text first'),
       });
       return false;
     }
@@ -361,18 +363,18 @@ export function TerminalPanel({
       const cleanText = stripAnsi(selection);
       const success = await writeToClipboard(cleanText);
       if (success) {
-        toast.success('Copied to clipboard');
+        toast.success(translate('Copied to clipboard'));
         return true;
       } else {
-        toast.error('Copy failed', {
-          description: 'Could not access clipboard',
+        toast.error(translate('Copy failed'), {
+          description: translate('Could not access clipboard'),
         });
         return false;
       }
     } catch (err) {
       logger.error('Copy failed:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      toast.error('Copy failed', {
+      toast.error(translate('Copy failed'), {
         description: errorMessage.includes('permission')
           ? 'Clipboard permission denied'
           : 'Could not access clipboard',
@@ -437,22 +439,22 @@ export function TerminalPanel({
     try {
       const text = await readFromClipboard();
       if (!text) {
-        toast.error('Nothing to paste', {
-          description: 'Clipboard is empty',
+        toast.error(translate('Nothing to paste'), {
+          description: translate('Clipboard is empty'),
         });
         return;
       }
 
       if (wsRef.current.readyState !== WebSocket.OPEN) {
-        toast.error('Terminal not connected');
+        toast.error(translate('Terminal not connected'));
         return;
       }
 
       // Warn for large pastes
       if (text.length >= LARGE_PASTE_WARNING_THRESHOLD) {
         const sizeMB = (text.length / (1024 * 1024)).toFixed(1);
-        toast.warning(`Large paste (${sizeMB}MB)`, {
-          description: 'Sending in chunks, this may take a moment...',
+        toast.warning(translate('Large paste ({value1}MB)', { value1: sizeMB }), {
+          description: translate('Sending in chunks, this may take a moment...'),
           duration: 3000,
         });
       }
@@ -461,7 +463,7 @@ export function TerminalPanel({
     } catch (err) {
       logger.error('Paste failed:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      toast.error('Paste failed', {
+      toast.error(translate('Paste failed'), {
         description: errorMessage.includes('permission')
           ? 'Clipboard permission denied'
           : errorMessage.includes('not supported')
@@ -858,9 +860,10 @@ export function TerminalPanel({
                   if (projectPath) {
                     absolutePath = `${projectPath}/${clickedPath}`.replace(/\/+/g, '/');
                   } else {
-                    toast.warning('Cannot open relative path', {
-                      description:
-                        'No project selected. Open a project to click relative file paths.',
+                    toast.warning(translate('Cannot open relative path'), {
+                      description: translate(
+                        'No project selected. Open a project to click relative file paths.'
+                      ),
                     });
                     return;
                   }
@@ -871,11 +874,13 @@ export function TerminalPanel({
                 try {
                   const result = await api.openInEditor?.(absolutePath, clickedLine, clickedCol);
                   if (result && !result.success) {
-                    toast.error('Failed to open in editor', { description: result.error });
+                    toast.error(translate('Failed to open in editor'), {
+                      description: result.error,
+                    });
                   }
                 } catch (error) {
                   logger.error('Failed to open file:', error);
-                  toast.error('Failed to open file', {
+                  toast.error(translate('Failed to open file'), {
                     description: error instanceof Error ? error.message : 'Unknown error',
                   });
                 }
@@ -1276,8 +1281,8 @@ export function TerminalPanel({
 
         if (event.code === 4001) {
           setConnectionStatus('auth_failed');
-          toast.error('Terminal authentication expired', {
-            description: 'Please unlock the terminal again to reconnect.',
+          toast.error(translate('Terminal authentication expired'), {
+            description: translate('Please unlock the terminal again to reconnect.'),
             duration: 5000,
           });
           return;
@@ -1295,14 +1300,15 @@ export function TerminalPanel({
           // This allows automatic cleanup of stale sessions (e.g., after server restart)
           if (onSessionInvalidRef.current) {
             onSessionInvalidRef.current();
-            toast.info('Terminal session expired', {
-              description:
-                'The session was automatically removed. Create a new terminal to continue.',
+            toast.info(translate('Terminal session expired'), {
+              description: translate(
+                'The session was automatically removed. Create a new terminal to continue.'
+              ),
               duration: 5000,
             });
           } else {
-            toast.error('Terminal session not found', {
-              description: 'The session may have expired. Please create a new terminal.',
+            toast.error(translate('Terminal session not found'), {
+              description: translate('The session may have expired. Please create a new terminal.'),
               duration: 5000,
             });
           }
@@ -1313,10 +1319,10 @@ export function TerminalPanel({
 
         if (reconnectAttemptsRef.current > MAX_RECONNECT_ATTEMPTS) {
           setConnectionStatus('disconnected');
-          toast.error('Terminal disconnected', {
-            description: 'Maximum reconnection attempts reached. Click to retry.',
+          toast.error(translate('Terminal disconnected'), {
+            description: translate('Maximum reconnection attempts reached. Click to retry.'),
             action: {
-              label: 'Retry',
+              label: translate('Retry'),
               onClick: () => {
                 reconnectAttemptsRef.current = 0;
                 setConnectionStatus('reconnecting');
@@ -1920,8 +1926,8 @@ export function TerminalPanel({
         const file = files[i];
         if (ACCEPTED_IMAGE_TYPES.includes(file.type)) {
           if (file.size > MAX_IMAGE_SIZE) {
-            toast.error(`Image too large: ${file.name}`, {
-              description: 'Maximum size is 10MB',
+            toast.error(translate('Image too large: {value1}', { value1: file.name }), {
+              description: translate('Maximum size is 10MB'),
             });
             continue;
           }
@@ -1930,8 +1936,8 @@ export function TerminalPanel({
       }
 
       if (imageFiles.length === 0) {
-        toast.error('No valid images found', {
-          description: 'Drop PNG, JPG, GIF, or WebP images',
+        toast.error(translate('No valid images found'), {
+          description: translate('Drop PNG, JPG, GIF, or WebP images'),
         });
         return;
       }
@@ -1946,11 +1952,11 @@ export function TerminalPanel({
           if (savedPath) {
             savedPaths.push(savedPath);
           } else {
-            toast.error(`Failed to save: ${file.name}`);
+            toast.error(translate('Failed to save: {value1}', { value1: file.name }));
           }
         } catch (error) {
           logger.error('Error processing image:', error);
-          toast.error(`Error processing: ${file.name}`);
+          toast.error(translate('Error processing: {value1}', { value1: file.name }));
         }
       }
 
@@ -1966,12 +1972,12 @@ export function TerminalPanel({
         wsRef.current.send(JSON.stringify({ type: 'input', data: formattedPaths }));
         toast.success(
           savedPaths.length === 1
-            ? 'Image path inserted'
-            : `${savedPaths.length} image paths inserted`,
-          { description: 'Press Enter to send' }
+            ? translate('Image path inserted')
+            : translate('{value1} image paths inserted', { value1: savedPaths.length }),
+          { description: translate('Press Enter to send') }
         );
       } else {
-        toast.error('Terminal not connected');
+        toast.error(translate('Terminal not connected'));
       }
     },
     [isProcessingImage, fileToBase64, saveImageToTemp]
@@ -2016,7 +2022,7 @@ export function TerminalPanel({
       {isOver && isDropTarget && (
         <div className="absolute inset-0 bg-green-500/10 z-10 pointer-events-none flex items-center justify-center">
           <div className="px-3 py-2 bg-green-500/90 rounded-md text-white text-sm font-medium">
-            Drop to swap
+            {translate('Drop to swap')}
           </div>
         </div>
       )}
@@ -2028,12 +2034,14 @@ export function TerminalPanel({
             {isProcessingImage ? (
               <>
                 <Spinner size="lg" />
-                <span className="text-sm font-medium">Processing...</span>
+                <span className="text-sm font-medium">{translate('Processing...')}</span>
               </>
             ) : (
               <>
                 <ImageIcon className="h-6 w-6" />
-                <span className="text-sm font-medium">Drop image for Claude Code</span>
+                <span className="text-sm font-medium">
+                  {translate('Drop image for Claude Code')}
+                </span>
               </>
             )}
           </div>
@@ -2051,7 +2059,7 @@ export function TerminalPanel({
             'p-1 rounded cursor-grab active:cursor-grabbing mr-1 transition-colors text-muted-foreground hover:text-foreground hover:bg-accent',
             isDragging && 'cursor-grabbing'
           )}
-          title="Drag to swap terminals"
+          title={translate('Drag to swap terminals')}
         >
           <GripHorizontal className="h-3 w-3" />
         </button>
@@ -2079,25 +2087,26 @@ export function TerminalPanel({
                 resetZoom();
               }}
               className="text-[10px] px-1 rounded transition-colors text-muted-foreground hover:text-foreground hover:bg-accent"
-              title="Click to reset zoom (Ctrl+0)"
+              title={translate('Click to reset zoom (Ctrl+0)')}
             >
-              {fontSize}px
+              {fontSize}
+              {translate('px')}
             </button>
           )}
           {connectionStatus === 'reconnecting' && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-500 flex items-center gap-1">
               <Spinner size="xs" />
-              Reconnecting...
+              {translate('Reconnecting...')}
             </span>
           )}
           {connectionStatus === 'disconnected' && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-destructive/20 text-destructive">
-              Disconnected
+              {translate('Disconnected')}
             </span>
           )}
           {connectionStatus === 'auth_failed' && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-destructive/20 text-destructive">
-              Auth Failed
+              {translate('Auth Failed')}
             </span>
           )}
           {processExitCode !== null && (
@@ -2109,7 +2118,8 @@ export function TerminalPanel({
                   : 'bg-yellow-500/20 text-yellow-500'
               )}
             >
-              Exited ({processExitCode})
+              {translate('Exited (')}
+              {processExitCode})
             </span>
           )}
         </div>
@@ -2125,7 +2135,7 @@ export function TerminalPanel({
               e.stopPropagation();
               zoomOut();
             }}
-            title="Zoom Out (Ctrl+-)"
+            title={translate('Zoom Out (Ctrl+-)')}
             disabled={fontSize <= MIN_FONT_SIZE}
           >
             <ZoomOut className="h-3 w-3" />
@@ -2138,7 +2148,7 @@ export function TerminalPanel({
               e.stopPropagation();
               zoomIn();
             }}
-            title="Zoom In (Ctrl++)"
+            title={translate('Zoom In (Ctrl++)')}
             disabled={fontSize >= MAX_FONT_SIZE}
           >
             <ZoomIn className="h-3 w-3" />
@@ -2162,7 +2172,7 @@ export function TerminalPanel({
                 size="icon"
                 className="h-5 w-5 text-muted-foreground hover:text-foreground"
                 onClick={(e) => e.stopPropagation()}
-                title="Terminal Settings"
+                title={translate('Terminal Settings')}
               >
                 <Settings className="h-3 w-3" />
               </Button>
@@ -2176,8 +2186,11 @@ export function TerminalPanel({
               <div className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label className="text-xs font-medium">Font Size</Label>
-                    <span className="text-xs text-muted-foreground">{fontSize}px</span>
+                    <Label className="text-xs font-medium">{translate('Font Size')}</Label>
+                    <span className="text-xs text-muted-foreground">
+                      {fontSize}
+                      {translate('px')}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Slider
@@ -2194,7 +2207,7 @@ export function TerminalPanel({
                       className="h-6 w-6 shrink-0"
                       onClick={() => resetZoom()}
                       disabled={fontSize === DEFAULT_FONT_SIZE}
-                      title="Reset to default"
+                      title={translate('Reset to default')}
                     >
                       <RotateCcw className="h-3 w-3" />
                     </Button>
@@ -2202,31 +2215,31 @@ export function TerminalPanel({
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs font-medium">Run on New Terminal</Label>
+                  <Label className="text-xs font-medium">{translate('Run on New Terminal')}</Label>
                   <Input
                     value={defaultRunScript}
                     onChange={(e) => setTerminalDefaultRunScript(e.target.value)}
-                    placeholder="e.g., claude"
+                    placeholder={translate('e.g., claude')}
                     className="h-7 text-xs"
                   />
                   <p className="text-[10px] text-muted-foreground">
-                    Command to run when creating a new terminal
+                    {translate('Command to run when creating a new terminal')}
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs font-medium">Font Family</Label>
+                  <Label className="text-xs font-medium">{translate('Font Family')}</Label>
                   <Select
                     value={fontFamily || DEFAULT_FONT_VALUE}
                     onValueChange={(value) => {
                       setTerminalFontFamily(value);
-                      toast.info('Font family changed', {
-                        description: 'Restart terminal for changes to take effect',
+                      toast.info(translate('Font family changed'), {
+                        description: translate('Restart terminal for changes to take effect'),
                       });
                     }}
                   >
                     <SelectTrigger className="w-full h-8 text-xs">
-                      <SelectValue placeholder="Default (Menlo / Monaco)" />
+                      <SelectValue placeholder={translate('Default (Menlo / Monaco)')} />
                     </SelectTrigger>
                     <SelectContent>
                       {TERMINAL_FONT_OPTIONS.map((option) => (
@@ -2247,9 +2260,10 @@ export function TerminalPanel({
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label className="text-xs font-medium">Scrollback</Label>
+                    <Label className="text-xs font-medium">{translate('Scrollback')}</Label>
                     <span className="text-xs text-muted-foreground">
-                      {(scrollbackLines / 1000).toFixed(0)}k lines
+                      {(scrollbackLines / 1000).toFixed(0)}
+                      {translate('k lines')}
                     </span>
                   </div>
                   <Slider
@@ -2261,8 +2275,8 @@ export function TerminalPanel({
                       setTerminalScrollbackLines(value);
                     }}
                     onValueCommit={() => {
-                      toast.info('Scrollback changed', {
-                        description: 'Restart terminal for changes to take effect',
+                      toast.info(translate('Scrollback changed'), {
+                        description: translate('Restart terminal for changes to take effect'),
                       });
                     }}
                     className="flex-1"
@@ -2271,7 +2285,7 @@ export function TerminalPanel({
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label className="text-xs font-medium">Line Height</Label>
+                    <Label className="text-xs font-medium">{translate('Line Height')}</Label>
                     <span className="text-xs text-muted-foreground">{lineHeight.toFixed(1)}</span>
                   </div>
                   <Slider
@@ -2283,8 +2297,8 @@ export function TerminalPanel({
                       setTerminalLineHeight(value);
                     }}
                     onValueCommit={() => {
-                      toast.info('Line height changed', {
-                        description: 'Restart terminal for changes to take effect',
+                      toast.info(translate('Line height changed'), {
+                        description: translate('Restart terminal for changes to take effect'),
                       });
                     }}
                     className="flex-1"
@@ -2293,23 +2307,30 @@ export function TerminalPanel({
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label className="text-xs font-medium">Screen Reader</Label>
-                    <p className="text-[10px] text-muted-foreground">Enable accessibility mode</p>
+                    <Label className="text-xs font-medium">{translate('Screen Reader')}</Label>
+                    <p className="text-[10px] text-muted-foreground">
+                      {translate('Enable accessibility mode')}
+                    </p>
                   </div>
                   <Switch
                     checked={screenReaderMode}
                     onCheckedChange={(checked) => {
                       setTerminalScreenReaderMode(checked);
-                      toast.info(checked ? 'Screen reader enabled' : 'Screen reader disabled', {
-                        description: 'Restart terminal for changes to take effect',
-                      });
+                      toast.info(
+                        checked
+                          ? translate('Screen reader enabled')
+                          : translate('Screen reader disabled'),
+                        {
+                          description: translate('Restart terminal for changes to take effect'),
+                        }
+                      );
                     }}
                   />
                 </div>
 
                 <div className="text-[10px] text-muted-foreground border-t pt-2">
-                  <p>Zoom: Ctrl++ / Ctrl+- / Ctrl+0</p>
-                  <p>Or use Ctrl+scroll wheel</p>
+                  <p>{translate('Zoom: Ctrl++ / Ctrl+- / Ctrl+0')}</p>
+                  <p>{translate('Or use Ctrl+scroll wheel')}</p>
                 </div>
               </div>
             </PopoverContent>
@@ -2326,7 +2347,7 @@ export function TerminalPanel({
               e.stopPropagation();
               onSplitHorizontal();
             }}
-            title="Split Right (Alt+D)"
+            title={translate('Split Right (Alt+D)')}
           >
             <SplitSquareHorizontal className="h-3 w-3" />
           </Button>
@@ -2338,7 +2359,7 @@ export function TerminalPanel({
               e.stopPropagation();
               onSplitVertical();
             }}
-            title="Split Down (Alt+S)"
+            title={translate('Split Down (Alt+S)')}
           >
             <SplitSquareVertical className="h-3 w-3" />
           </Button>
@@ -2351,7 +2372,7 @@ export function TerminalPanel({
                 e.stopPropagation();
                 onToggleMaximize();
               }}
-              title={isMaximized ? 'Restore' : 'Maximize'}
+              title={isMaximized ? translate('Restore') : translate('Maximize')}
             >
               {isMaximized ? <Minimize2 className="h-3 w-3" /> : <Maximize2 className="h-3 w-3" />}
             </Button>
@@ -2364,7 +2385,7 @@ export function TerminalPanel({
               e.stopPropagation();
               onClose();
             }}
-            title="Close Terminal (Alt+W)"
+            title={translate('Close Terminal (Alt+W)')}
           >
             <X className="h-3 w-3" />
           </Button>
@@ -2402,7 +2423,7 @@ export function TerminalPanel({
                 closeSearch();
               }
             }}
-            placeholder="Search..."
+            placeholder={translate('Search...')}
             className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-w-0"
           />
           <Button
@@ -2411,7 +2432,7 @@ export function TerminalPanel({
             className="h-5 w-5 text-muted-foreground hover:text-foreground shrink-0"
             onClick={searchPrevious}
             disabled={!searchQuery}
-            title="Previous Match (Shift+Enter)"
+            title={translate('Previous Match (Shift+Enter)')}
           >
             <ChevronUp className="h-3.5 w-3.5" />
           </Button>
@@ -2421,7 +2442,7 @@ export function TerminalPanel({
             className="h-5 w-5 text-muted-foreground hover:text-foreground shrink-0"
             onClick={searchNext}
             disabled={!searchQuery}
-            title="Next Match (Enter)"
+            title={translate('Next Match (Enter)')}
           >
             <ChevronDown className="h-3.5 w-3.5" />
           </Button>
@@ -2430,7 +2451,7 @@ export function TerminalPanel({
             size="icon"
             className="h-5 w-5 text-muted-foreground hover:text-foreground shrink-0"
             onClick={closeSearch}
-            title="Close (Escape)"
+            title={translate('Close (Escape)')}
           >
             <X className="h-3.5 w-3.5" />
           </Button>
@@ -2486,7 +2507,9 @@ export function TerminalPanel({
           <div className="absolute inset-0 z-30 flex flex-col">
             {/* Header bar with copy/done actions */}
             <div className="flex items-center justify-between px-3 py-2 bg-brand-500/95 backdrop-blur-sm text-white shrink-0">
-              <span className="text-xs font-medium">Touch &amp; hold to select text</span>
+              <span className="text-xs font-medium">
+                {translate('Touch & hold to select text')}
+              </span>
               <div className="flex items-center gap-2">
                 <button
                   className="px-3 py-1.5 text-xs font-medium rounded-md bg-white/20 hover:bg-white/30 active:scale-95 transition-all touch-manipulation"
@@ -2496,21 +2519,21 @@ export function TerminalPanel({
                     if (selectedText) {
                       const success = await writeToClipboard(selectedText);
                       if (success) {
-                        toast.success('Copied to clipboard');
+                        toast.success(translate('Copied to clipboard'));
                       } else {
-                        toast.error('Copy failed');
+                        toast.error(translate('Copy failed'));
                       }
                     } else {
                       const success = await writeToClipboard(selectModeText);
                       if (success) {
-                        toast.success('Copied all text to clipboard');
+                        toast.success(translate('Copied all text to clipboard'));
                       } else {
-                        toast.error('Copy failed');
+                        toast.error(translate('Copy failed'));
                       }
                     }
                   }}
                 >
-                  Copy
+                  {translate('Copy')}
                 </button>
                 <button
                   className="px-3 py-1.5 text-xs font-medium rounded-md bg-white/20 hover:bg-white/30 active:scale-95 transition-all touch-manipulation"
@@ -2519,7 +2542,7 @@ export function TerminalPanel({
                     setSelectModeText('');
                   }}
                 >
-                  Done
+                  {translate('Done')}
                 </button>
               </div>
             </div>
@@ -2542,7 +2565,7 @@ export function TerminalPanel({
                 } as React.CSSProperties
               }
             >
-              {selectModeText || 'No terminal content to select.'}
+              {selectModeText || translate('No terminal content to select.')}
             </div>
           </div>
         )}
@@ -2558,10 +2581,10 @@ export function TerminalPanel({
             e.stopPropagation();
             scrollToBottom();
           }}
-          title="Jump to bottom"
+          title={translate('Jump to bottom')}
         >
           <ArrowDown className="h-3.5 w-3.5" />
-          <span className="text-xs">Bottom</span>
+          <span className="text-xs">{translate('Bottom')}</span>
         </Button>
       )}
 
@@ -2570,7 +2593,7 @@ export function TerminalPanel({
         <div
           ref={contextMenuRef}
           role="menu"
-          aria-label="Terminal context menu"
+          aria-label={translate('Terminal context menu')}
           className="fixed z-50 min-w-[160px] rounded-md border border-border bg-popover p-1 shadow-md animate-in fade-in-0 zoom-in-95"
           style={{ left: contextMenu.x, top: contextMenu.y }}
           onClick={(e) => e.stopPropagation()}
@@ -2587,8 +2610,10 @@ export function TerminalPanel({
             onClick={() => handleContextMenuAction('copy')}
           >
             <Copy className="h-4 w-4" />
-            <span className="flex-1 text-left">Copy</span>
-            <span className="text-xs text-muted-foreground">{isMac ? '⌘C' : 'Ctrl+C'}</span>
+            <span className="flex-1 text-left">{translate('Copy')}</span>
+            <span className="text-xs text-muted-foreground">
+              {isMac ? translate('⌘C') : translate('Ctrl+C')}
+            </span>
           </button>
           <button
             role="menuitem"
@@ -2602,8 +2627,10 @@ export function TerminalPanel({
             onClick={() => handleContextMenuAction('paste')}
           >
             <ClipboardPaste className="h-4 w-4" />
-            <span className="flex-1 text-left">Paste</span>
-            <span className="text-xs text-muted-foreground">{isMac ? '⌘V' : 'Ctrl+V'}</span>
+            <span className="flex-1 text-left">{translate('Paste')}</span>
+            <span className="text-xs text-muted-foreground">
+              {isMac ? translate('⌘V') : translate('Ctrl+V')}
+            </span>
           </button>
           <div role="separator" className="my-1 h-px bg-border" />
           <button
@@ -2618,8 +2645,10 @@ export function TerminalPanel({
             onClick={() => handleContextMenuAction('selectAll')}
           >
             <CheckSquare className="h-4 w-4" />
-            <span className="flex-1 text-left">Select All</span>
-            <span className="text-xs text-muted-foreground">{isMac ? '⌘A' : 'Ctrl+A'}</span>
+            <span className="flex-1 text-left">{translate('Select All')}</span>
+            <span className="text-xs text-muted-foreground">
+              {isMac ? translate('⌘A') : translate('Ctrl+A')}
+            </span>
           </button>
           <button
             role="menuitem"
@@ -2633,7 +2662,7 @@ export function TerminalPanel({
             onClick={() => handleContextMenuAction('clear')}
           >
             <Trash2 className="h-4 w-4" />
-            <span className="flex-1 text-left">Clear</span>
+            <span className="flex-1 text-left">{translate('Clear')}</span>
           </button>
         </div>
       )}

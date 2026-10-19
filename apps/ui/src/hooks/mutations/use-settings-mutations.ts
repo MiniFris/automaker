@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 /**
  * Settings Mutations
  *
@@ -52,11 +53,11 @@ export function useUpdateGlobalSettings(options: UpdateGlobalSettingsOptions = {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.global() });
       if (showSuccessToast) {
-        toast.success('Settings saved');
+        toast.success(translate('Settings saved'));
       }
     },
     onError: (error: Error) => {
-      toast.error('Failed to save settings', {
+      toast.error(translate('Failed to save settings'), {
         description: error.message,
       });
     },
@@ -116,10 +117,10 @@ export function useUpdateProjectSettings(projectPath?: string) {
       if (path) {
         queryClient.invalidateQueries({ queryKey: queryKeys.settings.project(path) });
       }
-      toast.success('Project settings saved');
+      toast.success(translate('Project settings saved'));
     },
     onError: (error: Error) => {
-      toast.error('Failed to save project settings', {
+      toast.error(translate('Failed to save project settings'), {
         description: error.message,
       });
     },
@@ -149,10 +150,10 @@ export function useSaveCredentials() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.credentials() });
       queryClient.invalidateQueries({ queryKey: queryKeys.cli.apiKeys() });
-      toast.success('Credentials saved');
+      toast.success(translate('Credentials saved'));
     },
     onError: (error: Error) => {
-      toast.error('Failed to save credentials', {
+      toast.error(translate('Failed to save credentials'), {
         description: error.message,
       });
     },

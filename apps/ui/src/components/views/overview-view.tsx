@@ -1,3 +1,5 @@
+import { getFormattingLocale } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * OverviewView - Multi-project dashboard showing status across all projects
  *
@@ -41,6 +43,7 @@ import {
 const logger = createLogger('OverviewView');
 
 export function OverviewView() {
+  useUiLocale();
   const navigate = useNavigate();
   const { overview, isLoading, error, refresh } = useMultiProjectStatus(15000); // Refresh every 15s
   const { upsertAndSetCurrentProject } = useAppStore();
@@ -55,7 +58,7 @@ export function OverviewView() {
       try {
         const initResult = await initializeProject(path);
         if (!initResult.success) {
-          toast.error('Failed to initialize project', {
+          toast.error(translate('Failed to initialize project'), {
             description: initResult.error || 'Unknown error occurred',
           });
           return;
@@ -63,11 +66,13 @@ export function OverviewView() {
 
         upsertAndSetCurrentProject(path, name);
 
-        toast.success('Project opened', { description: `Opened ${name}` });
+        toast.success(translate('Project opened'), {
+          description: translate('Opened {value1}', { value1: name }),
+        });
         navigate({ to: '/board' });
       } catch (error) {
         logger.error('[Overview] Failed to open project:', error);
-        toast.error('Failed to open project', {
+        toast.error(translate('Failed to open project'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
       }
@@ -124,7 +129,7 @@ export function OverviewView() {
 
         const initResult = await initializeProject(projectPath);
         if (!initResult.success) {
-          toast.error('Failed to initialize project', {
+          toast.error(translate('Failed to initialize project'), {
             description: initResult.error || 'Unknown error occurred',
           });
           return;
@@ -144,11 +149,13 @@ export function OverviewView() {
         upsertAndSetCurrentProject(projectPath, projectName);
         setShowNewProjectModal(false);
 
-        toast.success('Project created', { description: `Created ${projectName}` });
+        toast.success(translate('Project created'), {
+          description: translate('Created {value1}', { value1: projectName }),
+        });
         navigate({ to: '/board' });
       } catch (error) {
         logger.error('Failed to create project:', error);
-        toast.error('Failed to create project', {
+        toast.error(translate('Failed to create project'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
       } finally {
@@ -170,7 +177,7 @@ export function OverviewView() {
         );
 
         if (!cloneResult.success || !cloneResult.projectPath) {
-          toast.error('Failed to clone template', {
+          toast.error(translate('Failed to clone template'), {
             description: cloneResult.error || 'Unknown error occurred',
           });
           return;
@@ -178,7 +185,7 @@ export function OverviewView() {
 
         const initResult = await initializeProject(cloneResult.projectPath);
         if (!initResult.success) {
-          toast.error('Failed to initialize project', {
+          toast.error(translate('Failed to initialize project'), {
             description: initResult.error || 'Unknown error occurred',
           });
           return;
@@ -187,13 +194,16 @@ export function OverviewView() {
         upsertAndSetCurrentProject(cloneResult.projectPath, projectName);
         setShowNewProjectModal(false);
 
-        toast.success('Project created from template', {
-          description: `Created ${projectName} from ${template.name}`,
+        toast.success(translate('Project created from template'), {
+          description: translate('Created {value1} from {value2}', {
+            value1: projectName,
+            value2: template.name,
+          }),
         });
         navigate({ to: '/board' });
       } catch (error) {
         logger.error('Failed to create from template:', error);
-        toast.error('Failed to create project', {
+        toast.error(translate('Failed to create project'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
       } finally {
@@ -211,7 +221,7 @@ export function OverviewView() {
         const cloneResult = await httpClient.templates.clone(repoUrl, projectName, parentDir);
 
         if (!cloneResult.success || !cloneResult.projectPath) {
-          toast.error('Failed to clone repository', {
+          toast.error(translate('Failed to clone repository'), {
             description: cloneResult.error || 'Unknown error occurred',
           });
           return;
@@ -219,7 +229,7 @@ export function OverviewView() {
 
         const initResult = await initializeProject(cloneResult.projectPath);
         if (!initResult.success) {
-          toast.error('Failed to initialize project', {
+          toast.error(translate('Failed to initialize project'), {
             description: initResult.error || 'Unknown error occurred',
           });
           return;
@@ -228,11 +238,13 @@ export function OverviewView() {
         upsertAndSetCurrentProject(cloneResult.projectPath, projectName);
         setShowNewProjectModal(false);
 
-        toast.success('Project created from repository', { description: `Created ${projectName}` });
+        toast.success(translate('Project created from repository'), {
+          description: translate('Created {value1}', { value1: projectName }),
+        });
         navigate({ to: '/board' });
       } catch (error) {
         logger.error('Failed to create from custom URL:', error);
-        toast.error('Failed to create project', {
+        toast.error(translate('Failed to create project'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
       } finally {
@@ -260,9 +272,15 @@ export function OverviewView() {
                 <LayoutDashboard className="w-4 h-4 text-brand-500" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold text-foreground">Automaker Dashboard</h1>
+                <h1 className="text-lg font-semibold text-foreground">
+                  {translate('Automaker Dashboard')}
+                </h1>
                 <p className="text-xs text-muted-foreground">
-                  {overview ? `${overview.aggregate.projectCounts.total} projects` : 'Loading...'}
+                  {overview
+                    ? translate('{value1} projects', {
+                        value1: overview.aggregate.projectCounts.total,
+                      })
+                    : translate('Loading...')}
                 </p>
               </div>
             </div>
@@ -277,11 +295,11 @@ export function OverviewView() {
               className="gap-2"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
+              {translate('Refresh')}
             </Button>
             <Button variant="outline" size="sm" onClick={handleOpenProject} className="gap-2">
               <FolderOpen className="w-4 h-4" />
-              Open Project
+              {translate('Open Project')}
             </Button>
             <Button
               size="sm"
@@ -289,7 +307,7 @@ export function OverviewView() {
               className="gap-2 bg-brand-500 hover:bg-brand-600 text-white"
             >
               <Plus className="w-4 h-4" />
-              New Project
+              {translate('New Project')}
             </Button>
           </div>
         </div>
@@ -302,7 +320,9 @@ export function OverviewView() {
           <div className="flex items-center justify-center h-64">
             <div className="flex flex-col items-center gap-4">
               <Spinner size="lg" />
-              <p className="text-sm text-muted-foreground">Loading project overview...</p>
+              <p className="text-sm text-muted-foreground">
+                {translate('Loading project overview...')}
+              </p>
             </div>
           </div>
         )}
@@ -315,10 +335,12 @@ export function OverviewView() {
                 <XCircle className="w-6 h-6 text-red-500" />
               </div>
               <div>
-                <h3 className="font-medium text-foreground mb-1">Failed to load overview</h3>
+                <h3 className="font-medium text-foreground mb-1">
+                  {translate('Failed to load overview')}
+                </h3>
                 <p className="text-sm text-muted-foreground mb-4">{error}</p>
                 <Button variant="outline" size="sm" onClick={refresh}>
-                  Try again
+                  {translate('Try again')}
                 </Button>
               </div>
             </div>
@@ -339,7 +361,7 @@ export function OverviewView() {
                     <p className="text-2xl font-bold text-foreground">
                       {overview.aggregate.projectCounts.total}
                     </p>
-                    <p className="text-xs text-muted-foreground">Projects</p>
+                    <p className="text-xs text-muted-foreground">{translate('Projects')}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -353,7 +375,7 @@ export function OverviewView() {
                     <p className="text-2xl font-bold text-foreground">
                       {overview.aggregate.featureCounts.running}
                     </p>
-                    <p className="text-xs text-muted-foreground">Running</p>
+                    <p className="text-xs text-muted-foreground">{translate('Running')}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -367,7 +389,7 @@ export function OverviewView() {
                     <p className="text-2xl font-bold text-foreground">
                       {overview.aggregate.featureCounts.pending}
                     </p>
-                    <p className="text-xs text-muted-foreground">Pending</p>
+                    <p className="text-xs text-muted-foreground">{translate('Pending')}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -381,7 +403,7 @@ export function OverviewView() {
                     <p className="text-2xl font-bold text-foreground">
                       {overview.aggregate.featureCounts.completed}
                     </p>
-                    <p className="text-xs text-muted-foreground">Completed</p>
+                    <p className="text-xs text-muted-foreground">{translate('Completed')}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -395,7 +417,7 @@ export function OverviewView() {
                     <p className="text-2xl font-bold text-foreground">
                       {overview.aggregate.featureCounts.failed}
                     </p>
-                    <p className="text-xs text-muted-foreground">Failed</p>
+                    <p className="text-xs text-muted-foreground">{translate('Failed')}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -409,7 +431,7 @@ export function OverviewView() {
                     <p className="text-2xl font-bold text-foreground">
                       {overview.aggregate.projectsWithAutoModeRunning}
                     </p>
-                    <p className="text-xs text-muted-foreground">Auto-mode</p>
+                    <p className="text-xs text-muted-foreground">{translate('Auto-mode')}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -420,11 +442,14 @@ export function OverviewView() {
               {/* Left column: Project cards */}
               <div className="lg:col-span-2 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-foreground">All Projects</h2>
+                  <h2 className="text-lg font-semibold text-foreground">
+                    {translate('All Projects')}
+                  </h2>
                   {overview.aggregate.totalUnreadNotifications > 0 && (
                     <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                       <Bell className="w-4 h-4" />
-                      {overview.aggregate.totalUnreadNotifications} unread notifications
+                      {overview.aggregate.totalUnreadNotifications}{' '}
+                      {translate(' unread notifications')}
                     </div>
                   )}
                 </div>
@@ -433,12 +458,14 @@ export function OverviewView() {
                   <Card className="bg-card/60">
                     <CardContent className="py-12 text-center">
                       <Folder className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                      <h3 className="font-medium text-foreground mb-1">No projects yet</h3>
+                      <h3 className="font-medium text-foreground mb-1">
+                        {translate('No projects yet')}
+                      </h3>
                       <p className="text-sm text-muted-foreground mb-4">
-                        Create or open a project to get started
+                        {translate('Create or open a project to get started')}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Use the sidebar to create or open a project
+                        {translate('Use the sidebar to create or open a project')}
                       </p>
                     </CardContent>
                   </Card>
@@ -458,10 +485,10 @@ export function OverviewView() {
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
                       <Bot className="w-4 h-4 text-green-500" />
-                      Running Agents
+                      {translate('Running Agents')}
                       {overview.aggregate.projectsWithAutoModeRunning > 0 && (
                         <span className="text-xs font-normal text-muted-foreground ml-auto">
-                          {overview.aggregate.projectsWithAutoModeRunning} active
+                          {overview.aggregate.projectsWithAutoModeRunning} {translate(' active')}
                         </span>
                       )}
                     </CardTitle>
@@ -476,7 +503,7 @@ export function OverviewView() {
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
                       <Activity className="w-4 h-4 text-brand-500" />
-                      Recent Activity
+                      {translate('Recent Activity')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-0">
@@ -488,8 +515,8 @@ export function OverviewView() {
 
             {/* Footer timestamp */}
             <div className="text-center text-xs text-muted-foreground pt-4">
-              Last updated:{' '}
-              {new Date(overview.generatedAt).toLocaleTimeString(undefined, {
+              {translate('Last updated:')}{' '}
+              {new Date(overview.generatedAt).toLocaleTimeString(getFormattingLocale(), {
                 hour: '2-digit',
                 minute: '2-digit',
                 second: '2-digit',

@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import type { SpecOutput } from '@automaker/spec-parser';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,10 +28,11 @@ interface SpecViewModeProps {
 }
 
 function StatusBadge({ status }: { status: 'completed' | 'in_progress' | 'pending' }) {
+  useUiLocale();
   const variants = {
-    completed: { variant: 'success' as const, icon: CheckCircle2, label: 'Completed' },
-    in_progress: { variant: 'warning' as const, icon: Clock, label: 'In Progress' },
-    pending: { variant: 'muted' as const, icon: Circle, label: 'Pending' },
+    completed: { variant: 'success' as const, icon: CheckCircle2, label: translate('Completed') },
+    in_progress: { variant: 'warning' as const, icon: Clock, label: translate('In Progress') },
+    pending: { variant: 'muted' as const, icon: Circle, label: translate('Pending') },
   };
 
   const { variant, icon: Icon, label } = variants[status];
@@ -44,6 +46,7 @@ function StatusBadge({ status }: { status: 'completed' | 'in_progress' | 'pendin
 }
 
 export function SpecViewMode({ spec }: SpecViewModeProps) {
+  useUiLocale();
   return (
     <ScrollArea className="h-full">
       <div className="p-4 space-y-6 max-w-4xl mx-auto">
@@ -58,7 +61,7 @@ export function SpecViewMode({ spec }: SpecViewModeProps) {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               <Cpu className="w-5 h-5 text-primary" />
-              Technology Stack
+              {translate('Technology Stack')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -77,7 +80,7 @@ export function SpecViewMode({ spec }: SpecViewModeProps) {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               <Lightbulb className="w-5 h-5 text-primary" />
-              Core Capabilities
+              {translate('Core Capabilities')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -98,7 +101,7 @@ export function SpecViewMode({ spec }: SpecViewModeProps) {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <ListChecks className="w-5 h-5 text-primary" />
-                Implemented Features
+                {translate('Implemented Features')}
                 <Badge variant="outline" className="ml-2">
                   {spec.implemented_features.length}
                 </Badge>
@@ -121,7 +124,7 @@ export function SpecViewMode({ spec }: SpecViewModeProps) {
                           <div className="space-y-1">
                             <p className="text-sm font-medium flex items-center gap-1">
                               <FolderOpen className="w-4 h-4" />
-                              File Locations:
+                              {translate('File Locations:')}
                             </p>
                             <ul className="text-sm text-muted-foreground space-y-1">
                               {feature.file_locations.map((loc, locIndex) => (
@@ -150,7 +153,7 @@ export function SpecViewMode({ spec }: SpecViewModeProps) {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <ScrollText className="w-5 h-5 text-primary" />
-                Additional Requirements
+                {translate('Additional Requirements')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -172,7 +175,7 @@ export function SpecViewMode({ spec }: SpecViewModeProps) {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Wrench className="w-5 h-5 text-primary" />
-                Development Guidelines
+                {translate('Development Guidelines')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -194,7 +197,7 @@ export function SpecViewMode({ spec }: SpecViewModeProps) {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <MapIcon className="w-5 h-5 text-primary" />
-                Implementation Roadmap
+                {translate('Implementation Roadmap')}
               </CardTitle>
             </CardHeader>
             <CardContent>

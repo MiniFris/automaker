@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Sparkles, Clock } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import {
@@ -30,6 +31,7 @@ export function RegenerateSpecDialog({
   isRegenerating,
   isGeneratingFeatures = false,
 }: RegenerateSpecDialogProps) {
+  useUiLocale();
   const selectedOption = FEATURE_COUNT_OPTIONS.find((o) => o.value === featureCount);
   const isDisabled = isRegenerating || isGeneratingFeatures;
 
@@ -44,26 +46,29 @@ export function RegenerateSpecDialog({
     >
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Regenerate App Specification</DialogTitle>
+          <DialogTitle>{translate('Regenerate App Specification')}</DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            We will regenerate your app spec based on a short project definition and the current
-            tech stack found in your project. The agent will analyze your codebase to understand
-            your existing technologies and create a comprehensive specification.
+            {translate(
+              'We will regenerate your app spec based on a short project definition and the current tech stack found in your project. The agent will analyze your codebase to understand your existing technologies and create a comprehensive specification.'
+            )}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4 overflow-y-auto">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Describe your project</label>
+            <label className="text-sm font-medium">{translate('Describe your project')}</label>
             <p className="text-xs text-muted-foreground">
-              Provide a clear description of what your app should do. Be as detailed as you want -
-              the more context you provide, the more comprehensive the spec will be.
+              {translate(
+                'Provide a clear description of what your app should do. Be as detailed as you want - the more context you provide, the more comprehensive the spec will be.'
+              )}
             </p>
             <textarea
               className="w-full h-40 p-3 rounded-md border border-border bg-background font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
               value={projectDefinition}
               onChange={(e) => onProjectDefinitionChange(e.target.value)}
-              placeholder="e.g., A task management app where users can create projects, add tasks with due dates, assign tasks to team members, track progress with a kanban board, and receive notifications for upcoming deadlines..."
+              placeholder={translate(
+                'e.g., A task management app where users can create projects, add tasks with due dates, assign tasks to team members, track progress with a kanban board, and receive notifications for upcoming deadlines...'
+              )}
               disabled={isDisabled}
             />
           </div>
@@ -80,12 +85,12 @@ export function RegenerateSpecDialog({
                 htmlFor="regenerate-analyze-project"
                 className={`text-sm font-medium ${isDisabled ? '' : 'cursor-pointer'}`}
               >
-                Analyze current project for additional context
+                {translate('Analyze current project for additional context')}
               </label>
               <p className="text-xs text-muted-foreground">
-                If checked, the agent will research your existing codebase to understand the tech
-                stack. If unchecked, defaults to TanStack Start, Drizzle ORM, PostgreSQL, shadcn/ui,
-                Tailwind CSS, and React.
+                {translate(
+                  'If checked, the agent will research your existing codebase to understand the tech stack. If unchecked, defaults to TanStack Start, Drizzle ORM, PostgreSQL, shadcn/ui, Tailwind CSS, and React.'
+                )}
               </p>
             </div>
           </div>
@@ -102,11 +107,12 @@ export function RegenerateSpecDialog({
                 htmlFor="regenerate-generate-features"
                 className={`text-sm font-medium ${isDisabled ? '' : 'cursor-pointer'}`}
               >
-                Generate feature list
+                {translate('Generate feature list')}
               </label>
               <p className="text-xs text-muted-foreground">
-                Automatically create features in the features folder from the implementation roadmap
-                after the spec is regenerated.
+                {translate(
+                  'Automatically create features in the features folder from the implementation roadmap after the spec is regenerated.'
+                )}
               </p>
             </div>
           </div>
@@ -114,7 +120,7 @@ export function RegenerateSpecDialog({
           {/* Feature Count Selection - only shown when generateFeatures is enabled */}
           {generateFeatures && (
             <div className="space-y-2 pt-2 pl-7">
-              <label className="text-sm font-medium">Number of Features</label>
+              <label className="text-sm font-medium">{translate('Number of Features')}</label>
               <div className="flex gap-2">
                 {FEATURE_COUNT_OPTIONS.map((option) => (
                   <Button
@@ -149,7 +155,7 @@ export function RegenerateSpecDialog({
         <DialogFooter>
           <div className="flex gap-2">
             <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isDisabled}>
-              Cancel
+              {translate('Cancel')}
             </Button>
             <HotkeyButton
               onClick={onRegenerate}
@@ -160,12 +166,12 @@ export function RegenerateSpecDialog({
               {isRegenerating ? (
                 <>
                   <Spinner size="sm" className="mr-2" />
-                  Regenerating...
+                  {translate('Regenerating...')}
                 </>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4 mr-2" />
-                  Regenerate Spec
+                  {translate('Regenerate Spec')}
                 </>
               )}
             </HotkeyButton>

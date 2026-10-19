@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import ReactMarkdown, { Components } from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
@@ -14,6 +15,7 @@ interface MarkdownProps {
  * Renders a tasks code block as a proper task list with checkboxes
  */
 function TasksBlock({ content }: { content: string }) {
+  useUiLocale();
   const lines = content.split('\n');
 
   return (
@@ -98,6 +100,7 @@ const markdownComponents: Components = {
  * Supports raw HTML elements including images
  */
 export function Markdown({ children, className }: MarkdownProps) {
+  useUiLocale();
   return (
     <div
       className={cn(

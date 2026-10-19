@@ -1,3 +1,5 @@
+import { useLocalizedMemo } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useMemo } from 'react';
 import { useAppStore } from '@/store/app-store';
 import { Button } from '@/components/ui/button';
@@ -35,18 +37,42 @@ interface ProjectBulkReplaceDialogProps {
 
 // Phase display names for preview
 const PHASE_LABELS: Record<PhaseModelKey, string> = {
-  enhancementModel: 'Feature Enhancement',
-  fileDescriptionModel: 'File Descriptions',
-  imageDescriptionModel: 'Image Descriptions',
-  commitMessageModel: 'Commit Messages',
-  validationModel: 'GitHub Issue Validation',
-  specGenerationModel: 'App Specification',
-  featureGenerationModel: 'Feature Generation',
-  backlogPlanningModel: 'Backlog Planning',
-  projectAnalysisModel: 'Project Analysis',
-  ideationModel: 'Ideation',
-  memoryExtractionModel: 'Memory Extraction',
-  prDescriptionModel: 'PR Description',
+  get enhancementModel() {
+    return translate('Feature Enhancement');
+  },
+  get fileDescriptionModel() {
+    return translate('File Descriptions');
+  },
+  get imageDescriptionModel() {
+    return translate('Image Descriptions');
+  },
+  get commitMessageModel() {
+    return translate('Commit Messages');
+  },
+  get validationModel() {
+    return translate('GitHub Issue Validation');
+  },
+  get specGenerationModel() {
+    return translate('App Specification');
+  },
+  get featureGenerationModel() {
+    return translate('Feature Generation');
+  },
+  get backlogPlanningModel() {
+    return translate('Backlog Planning');
+  },
+  get projectAnalysisModel() {
+    return translate('Project Analysis');
+  },
+  get ideationModel() {
+    return translate('Ideation');
+  },
+  get memoryExtractionModel() {
+    return translate('Memory Extraction');
+  },
+  get prDescriptionModel() {
+    return translate('PR Description');
+  },
 };
 
 const ALL_PHASES = Object.keys(PHASE_LABELS) as PhaseModelKey[];
@@ -67,6 +93,7 @@ export function ProjectBulkReplaceDialog({
   onOpenChange,
   project,
 }: ProjectBulkReplaceDialogProps) {
+  useUiLocale();
   const {
     phaseModels,
     setProjectPhaseModelOverride,
@@ -209,7 +236,7 @@ export function ProjectBulkReplaceDialog({
   };
 
   // Generate preview of changes
-  const preview = useMemo(() => {
+  const preview = useLocalizedMemo(() => {
     // Default feature model entry (first in the list)
     const globalDefaultFeature = defaultFeatureModel ?? DEFAULT_GLOBAL_SETTINGS.defaultFeatureModel;
     const currentDefaultFeature = projectDefaultFeatureModel || globalDefaultFeature;
@@ -227,7 +254,6 @@ export function ProjectBulkReplaceDialog({
     });
 
     return [defaultFeaturePreview, ...phasePreview];
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- generatePreviewItem is stable helper
   }, [
     phaseModels,
     projectOverrides,
@@ -277,20 +303,21 @@ export function ProjectBulkReplaceDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Bulk Replace Models (Project Override)</DialogTitle>
+          <DialogTitle>{translate('Bulk Replace Models (Project Override)')}</DialogTitle>
           <DialogDescription>
-            Set project-level overrides for all phases to use models from a specific provider. This
-            only affects this project.
+            {translate(
+              'Set project-level overrides for all phases to use models from a specific provider. This only affects this project.'
+            )}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
           {/* Provider selector */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Target Provider</label>
+            <label className="text-sm font-medium">{translate('Target Provider')}</label>
             <Select value={selectedProvider} onValueChange={setSelectedProvider}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select provider" />
+                <SelectValue placeholder={translate('Select provider')} />
               </SelectTrigger>
               <SelectContent>
                 {providerOptions.map((option) => (
@@ -314,7 +341,7 @@ export function ProjectBulkReplaceDialog({
             <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-sm">
               <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
                 <AlertCircle className="w-4 h-4" />
-                <span>This provider has no models configured.</span>
+                <span>{translate('This provider has no models configured.')}</span>
               </div>
             </div>
           )}
@@ -325,7 +352,7 @@ export function ProjectBulkReplaceDialog({
               <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
                 <AlertCircle className="w-4 h-4" />
                 <span>
-                  This provider is missing mappings for:{' '}
+                  {translate('This provider is missing mappings for:')}{' '}
                   {[
                     !providerModelCoverage.hasHaiku && 'Haiku',
                     !providerModelCoverage.hasSonnet && 'Sonnet',
@@ -342,20 +369,25 @@ export function ProjectBulkReplaceDialog({
           {providerHasModels && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Preview Changes</label>
+                <label className="text-sm font-medium">{translate('Preview Changes')}</label>
                 <span className="text-xs text-muted-foreground">
-                  {changeCount} of {preview.length} will be overridden
+                  {changeCount} {translate(' of ')}
+                  {preview.length} {translate(' will be overridden')}
                 </span>
               </div>
               <div className="border rounded-lg overflow-hidden max-h-[300px] overflow-y-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-muted/50 sticky top-0">
                     <tr>
-                      <th className="text-left p-2 font-medium text-muted-foreground">Phase</th>
-                      <th className="text-left p-2 font-medium text-muted-foreground">Current</th>
+                      <th className="text-left p-2 font-medium text-muted-foreground">
+                        {translate('Phase')}
+                      </th>
+                      <th className="text-left p-2 font-medium text-muted-foreground">
+                        {translate('Current')}
+                      </th>
                       <th className="p-2"></th>
                       <th className="text-left p-2 font-medium text-muted-foreground">
-                        New Override
+                        {translate('New Override')}
                       </th>
                     </tr>
                   </thead>
@@ -373,7 +405,7 @@ export function ProjectBulkReplaceDialog({
                           {label}
                           {key === DEFAULT_FEATURE_MODEL_KEY && (
                             <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-brand-500/20 text-brand-500">
-                              Feature Default
+                              {translate('Feature Default')}
                             </span>
                           )}
                         </td>
@@ -401,10 +433,11 @@ export function ProjectBulkReplaceDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button onClick={handleApply} disabled={!providerHasModels || changeCount === 0}>
-            Apply Overrides ({changeCount})
+            {translate('Apply Overrides (')}
+            {changeCount})
           </Button>
         </DialogFooter>
       </DialogContent>

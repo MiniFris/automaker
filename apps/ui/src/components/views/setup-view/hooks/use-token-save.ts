@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { getElectronAPI } from '@/lib/electron';
@@ -16,7 +17,7 @@ export function useTokenSave({ provider, onSuccess }: UseTokenSaveOptions) {
   const saveToken = useCallback(
     async (tokenValue: string) => {
       if (!tokenValue.trim()) {
-        toast.error('Please enter a valid token');
+        toast.error(translate('Please enter a valid token'));
         return false;
       }
 
@@ -31,22 +32,22 @@ export function useTokenSave({ provider, onSuccess }: UseTokenSaveOptions) {
 
           if (result.success) {
             const tokenType = provider.includes('oauth') ? 'subscription token' : 'API key';
-            toast.success(`${tokenType} saved successfully`);
+            toast.success(translate('{value1} saved successfully', { value1: tokenType }));
             onSuccess?.();
             return true;
           } else {
-            toast.error('Failed to save token', { description: result.error });
+            toast.error(translate('Failed to save token'), { description: result.error });
             return false;
           }
         } else {
           // Web mode fallback - just show success
-          toast.success('Token saved');
+          toast.success(translate('Token saved'));
           onSuccess?.();
           return true;
         }
       } catch (error) {
         logger.error(`Failed to save ${provider}:`, error);
-        toast.error('Failed to save token');
+        toast.error(translate('Failed to save token'));
         return false;
       } finally {
         setIsSaving(false);

@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useAppStore } from '@/store/app-store';
 import type { ModelProvider } from '@automaker/types';
 import { Switch } from '@/components/ui/switch';
@@ -10,6 +11,7 @@ interface ProviderToggleProps {
 }
 
 export function ProviderToggle({ provider, providerLabel }: ProviderToggleProps) {
+  useUiLocale();
   const { disabledProviders, toggleProviderDisabled } = useAppStore();
   const isDisabled = disabledProviders.includes(provider);
 
@@ -22,11 +24,18 @@ export function ProviderToggle({ provider, providerLabel }: ProviderToggleProps)
           <Eye className="w-4 h-4 text-primary" />
         )}
         <div>
-          <Label className="text-sm font-medium">Show {providerLabel} in model dropdowns</Label>
+          <Label className="text-sm font-medium">
+            {translate('Show ')}
+            {providerLabel} {translate(' in model dropdowns')}
+          </Label>
           <p className="text-xs text-muted-foreground mt-0.5">
             {isDisabled
-              ? `${providerLabel} models are hidden from all model selectors`
-              : `${providerLabel} models appear in model selection dropdowns`}
+              ? translate('{value1} models are hidden from all model selectors', {
+                  value1: providerLabel,
+                })
+              : translate('{value1} models appear in model selection dropdowns', {
+                  value1: providerLabel,
+                })}
           </p>
         </div>
       </div>

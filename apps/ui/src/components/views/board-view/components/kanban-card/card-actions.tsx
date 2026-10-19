@@ -1,4 +1,5 @@
 // @ts-nocheck - optional callback prop typing with feature status narrowing
+import { translate, useUiLocale } from '@/lib/i18n';
 import { memo } from 'react';
 import { Feature } from '@/store/app-store';
 import { Button } from '@/components/ui/button';
@@ -54,6 +55,7 @@ export const CardActions = memo(function CardActions({
   onViewPlan,
   onApprovePlan,
 }: CardActionsProps) {
+  useUiLocale();
   const showBacklogLogsButton = hasContext && !!onViewOutput;
 
   // Hide all actions when in selection mode
@@ -79,7 +81,7 @@ export const CardActions = memo(function CardActions({
               data-testid={`approve-plan-running-${feature.id}`}
             >
               <FileText className="w-3 h-3 mr-1 shrink-0" />
-              <span className="truncate">Approve Plan</span>
+              <span className="truncate">{translate('Approve Plan')}</span>
             </Button>
           )}
           {onViewOutput && (
@@ -95,7 +97,7 @@ export const CardActions = memo(function CardActions({
               data-testid={`view-output-${feature.id}`}
             >
               <FileText className="w-3 h-3 mr-1 shrink-0" />
-              <span className="truncate">Logs</span>
+              <span className="truncate">{translate('Logs')}</span>
               {shortcutKey && (
                 <span
                   className="ml-1.5 px-1 py-0.5 text-[9px] font-mono rounded bg-foreground/10"
@@ -145,7 +147,7 @@ export const CardActions = memo(function CardActions({
                     data-testid={`view-output-${feature.id}`}
                   >
                     <FileText className="w-3 h-3 mr-1 shrink-0" />
-                    <span className="truncate">Logs</span>
+                    <span className="truncate">{translate('Logs')}</span>
                     {shortcutKey && (
                       <span
                         className="ml-1.5 px-1 py-0.5 text-[9px] font-mono rounded bg-foreground/10"
@@ -186,7 +188,7 @@ export const CardActions = memo(function CardActions({
                     data-testid={`approve-plan-${feature.id}`}
                   >
                     <FileText className="w-3 h-3 mr-1" />
-                    Approve Plan
+                    {translate('Approve Plan')}
                   </Button>
                 )}
                 {feature.skipTests && onManualVerify ? (
@@ -202,7 +204,7 @@ export const CardActions = memo(function CardActions({
                     data-testid={`manual-verify-${feature.id}`}
                   >
                     <CheckCircle2 className="w-3 h-3 mr-1" />
-                    Verify
+                    {translate('Verify')}
                   </Button>
                 ) : onResume ? (
                   <Button
@@ -217,7 +219,7 @@ export const CardActions = memo(function CardActions({
                     data-testid={`resume-feature-${feature.id}`}
                   >
                     <RotateCcw className="w-3 h-3 mr-1" />
-                    Resume
+                    {translate('Resume')}
                   </Button>
                 ) : onVerify ? (
                   <Button
@@ -232,7 +234,7 @@ export const CardActions = memo(function CardActions({
                     data-testid={`verify-feature-${feature.id}`}
                   >
                     <CheckCircle2 className="w-3 h-3 mr-1" />
-                    Verify
+                    {translate('Verify')}
                   </Button>
                 ) : null}
                 {onViewOutput && !feature.skipTests && (
@@ -270,7 +272,7 @@ export const CardActions = memo(function CardActions({
               data-testid={`view-output-verified-${feature.id}`}
             >
               <FileText className="w-3 h-3 mr-1 shrink-0" />
-              <span className="truncate">Logs</span>
+              <span className="truncate">{translate('Logs')}</span>
             </Button>
           )}
           {/* Complete button */}
@@ -287,7 +289,7 @@ export const CardActions = memo(function CardActions({
               data-testid={`complete-${feature.id}`}
             >
               <Archive className="w-3 h-3 mr-1 shrink-0" />
-              <span className="truncate">Complete</span>
+              <span className="truncate">{translate('Complete')}</span>
             </Button>
           )}
         </>
@@ -308,7 +310,7 @@ export const CardActions = memo(function CardActions({
               data-testid={`follow-up-${feature.id}`}
             >
               <Wand2 className="w-3 h-3 mr-1 shrink-0" />
-              <span className="truncate">Refine</span>
+              <span className="truncate">{translate('Refine')}</span>
             </Button>
           )}
           {/* Show Verify button if PR was created (changes are committed), otherwise show Mark as Verified button */}
@@ -325,7 +327,7 @@ export const CardActions = memo(function CardActions({
               data-testid={`verify-${feature.id}`}
             >
               <CheckCircle2 className="w-3 h-3 mr-1" />
-              Verify
+              {translate('Verify')}
             </Button>
           ) : onManualVerify ? (
             <Button
@@ -340,7 +342,7 @@ export const CardActions = memo(function CardActions({
               data-testid={`mark-as-verified-${feature.id}`}
             >
               <CheckCircle2 className="w-3 h-3 mr-1" />
-              Mark as Verified
+              {translate('Mark as Verified')}
             </Button>
           ) : null}
         </>
@@ -367,7 +369,7 @@ export const CardActions = memo(function CardActions({
                 data-testid={`view-output-${feature.id}`}
               >
                 <FileText className="w-3 h-3 mr-1 shrink-0" />
-                <span className="truncate">Logs</span>
+                <span className="truncate">{translate('Logs')}</span>
                 {shortcutKey && (
                   <span
                     className="ml-1.5 px-1 py-0.5 text-[9px] font-mono rounded bg-foreground/10"
@@ -414,7 +416,7 @@ export const CardActions = memo(function CardActions({
               data-testid={`edit-backlog-${feature.id}`}
             >
               <Edit className="w-3 h-3 mr-1" />
-              Edit
+              {translate('Edit')}
             </Button>
             {showBacklogLogsButton && (
               <Button
@@ -427,7 +429,7 @@ export const CardActions = memo(function CardActions({
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
                 data-testid={`view-output-backlog-${feature.id}`}
-                title="View Logs"
+                title={translate('View Logs')}
               >
                 <FileText className="w-3 h-3" />
               </Button>
@@ -443,7 +445,7 @@ export const CardActions = memo(function CardActions({
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
                 data-testid={`view-plan-${feature.id}`}
-                title="View Plan"
+                title={translate('View Plan')}
               >
                 <Eye className="w-3 h-3" />
               </Button>
@@ -465,7 +467,7 @@ export const CardActions = memo(function CardActions({
                 ) : (
                   <PlayCircle className="w-3 h-3 mr-1" />
                 )}
-                {feature.status === 'merge_conflict' ? 'Restart' : 'Make'}
+                {feature.status === 'merge_conflict' ? translate('Restart') : translate('Make')}
               </Button>
             )}
           </>

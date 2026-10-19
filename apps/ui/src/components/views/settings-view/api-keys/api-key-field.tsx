@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,6 +11,7 @@ interface ApiKeyFieldProps {
 }
 
 export function ApiKeyField({ config }: ApiKeyFieldProps) {
+  useUiLocale();
   const {
     label,
     inputId,
@@ -72,12 +74,12 @@ export function ApiKeyField({ config }: ApiKeyFieldProps) {
           {testButton.loading ? (
             <>
               <Spinner size="sm" className="mr-2" />
-              Testing...
+              {translate('Testing...')}
             </>
           ) : (
             <>
               <Zap className="w-4 h-4 mr-2" />
-              Test
+              {translate('Test')}
             </>
           )}
         </Button>

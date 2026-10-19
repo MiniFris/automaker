@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import {
   Select,
   SelectContent,
@@ -24,6 +25,7 @@ interface FontSelectorProps {
  * Reusable font selector component with live preview styling
  */
 export function FontSelector({ id, value, options, placeholder, onChange }: FontSelectorProps) {
+  useUiLocale();
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger id={id} className="w-full">

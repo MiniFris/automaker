@@ -1,3 +1,5 @@
+import { useLocalizedMemo } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { memo, useMemo, useCallback, useState } from 'react';
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -98,6 +100,7 @@ const StatusGroupHeader = memo(function StatusGroupHeader({
   isExpanded: boolean;
   onToggle: () => void;
 }) {
+  useUiLocale();
   return (
     <button
       type="button"
@@ -147,6 +150,7 @@ const EmptyState = memo(function EmptyState({
   templates?: FeatureTemplate[];
   shortcut?: string;
 }) {
+  useUiLocale();
   // Only show AddFeatureButton if all required handlers are provided
   const canShowSplitButton = onAddFeature && onQuickAdd && onTemplateSelect;
 
@@ -158,7 +162,7 @@ const EmptyState = memo(function EmptyState({
       )}
       data-testid="list-view-empty"
     >
-      <p className="text-sm mb-4">No features to display</p>
+      <p className="text-sm mb-4">{translate('No features to display')}</p>
       {canShowSplitButton ? (
         <AddFeatureButton
           onAddFeature={onAddFeature}
@@ -171,7 +175,7 @@ const EmptyState = memo(function EmptyState({
       ) : onAddFeature ? (
         <Button variant="default" size="sm" onClick={onAddFeature}>
           <Plus className="w-4 h-4 mr-2" />
-          Add Feature
+          {translate('Add Feature')}
         </Button>
       ) : null}
     </div>
@@ -233,6 +237,7 @@ export const ListView = memo(function ListView({
   className,
   sortNewestCardOnTop = false,
 }: ListViewProps) {
+  useUiLocale();
   // Track collapsed state for each status group
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
@@ -247,7 +252,7 @@ export const ListView = memo(function ListView({
   );
 
   // Generate status groups from columnFeaturesMap
-  const statusGroups = useMemo<StatusGroup[]>(() => {
+  const statusGroups = useLocalizedMemo<StatusGroup[]>(() => {
     // Effective sort config: when sortNewestCardOnTop is enabled, sort by createdAt desc
     const effectiveSortConfig: SortConfig = sortNewestCardOnTop
       ? { column: 'createdAt', direction: 'desc' }
@@ -455,7 +460,7 @@ export const ListView = memo(function ListView({
     <div
       className={cn('flex flex-col h-full bg-background', className)}
       role="table"
-      aria-label="Features list"
+      aria-label={translate('Features list')}
       data-testid="list-view"
     >
       {/* Table header */}

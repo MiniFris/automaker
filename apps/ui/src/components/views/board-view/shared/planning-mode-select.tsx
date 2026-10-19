@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Zap, ClipboardList, FileText, ScrollText } from 'lucide-react';
 import {
   Select,
@@ -26,29 +27,45 @@ interface PlanningModeSelectProps {
 const modes = [
   {
     value: 'skip' as const,
-    label: 'Skip',
-    description: 'Direct implementation, no upfront planning',
+    get label() {
+      return translate('Skip');
+    },
+    get description() {
+      return translate('Direct implementation, no upfront planning');
+    },
     icon: Zap,
     color: 'text-emerald-500',
   },
   {
     value: 'lite' as const,
-    label: 'Lite',
-    description: 'Think through approach, create task list',
+    get label() {
+      return translate('Lite');
+    },
+    get description() {
+      return translate('Think through approach, create task list');
+    },
     icon: ClipboardList,
     color: 'text-blue-500',
   },
   {
     value: 'spec' as const,
-    label: 'Spec',
-    description: 'Generate spec with acceptance criteria',
+    get label() {
+      return translate('Spec');
+    },
+    get description() {
+      return translate('Generate spec with acceptance criteria');
+    },
     icon: FileText,
     color: 'text-purple-500',
   },
   {
     value: 'full' as const,
-    label: 'Full',
-    description: 'Comprehensive spec with phased plan',
+    get label() {
+      return translate('Full');
+    },
+    get description() {
+      return translate('Comprehensive spec with phased plan');
+    },
     icon: ScrollText,
     color: 'text-amber-500',
   },
@@ -85,6 +102,7 @@ export function PlanningModeSelect({
   disabled = false,
   compact = false,
 }: PlanningModeSelectProps) {
+  useUiLocale();
   const selectedMode = modes.find((m) => m.value === mode);
 
   // Disable approval checkbox for skip mode (lite supports approval)
@@ -152,7 +170,7 @@ export function PlanningModeSelect({
               isApprovalDisabled ? 'cursor-not-allowed text-muted-foreground' : 'cursor-pointer'
             )}
           >
-            Require plan approval before execution
+            {translate('Require plan approval before execution')}
           </Label>
         </div>
       )}

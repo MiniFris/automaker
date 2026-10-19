@@ -1,3 +1,5 @@
+import { getFormattingLocale } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -40,32 +42,47 @@ function formatResetTime(unixTimestamp: number, isMilliseconds = false): string 
 
   // Guard against past timestamps: clamp negative diffs to a friendly fallback
   if (diff <= 0) {
-    return 'Resets now';
+    return translate('Resets now');
   }
 
   if (diff < 3600000) {
     const mins = Math.max(0, Math.ceil(diff / 60000));
-    return `Resets in ${mins}m`;
+    return translate('Resets in {value1}m', { value1: mins });
   }
   if (diff < 86400000) {
     const hours = Math.max(0, Math.floor(diff / 3600000));
     const mins = Math.max(0, Math.ceil((diff % 3600000) / 60000));
-    return `Resets in ${hours}h ${mins > 0 ? `${mins}m` : ''}`;
+    return translate('Resets in {value1}h {value2}', {
+      value1: hours,
+      value2: mins > 0 ? `${mins}m` : '',
+    });
   }
-  return `Resets ${date.toLocaleDateString()} at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  return translate('Resets {value1} at {value2}', {
+    value1: date.toLocaleDateString(getFormattingLocale()),
+    value2: date.toLocaleTimeString(getFormattingLocale(), { hour: '2-digit', minute: '2-digit' }),
+  });
 }
 
 // Helper to format window duration for Codex
 function getCodexWindowLabel(durationMins: number): { title: string; subtitle: string } {
   if (durationMins < 60) {
-    return { title: `${durationMins}min Window`, subtitle: 'Rate limit' };
+    return {
+      title: translate('{value1}min Window', { value1: durationMins }),
+      subtitle: translate('Rate limit'),
+    };
   }
   if (durationMins < 1440) {
     const hours = Math.round(durationMins / 60);
-    return { title: `${hours}h Window`, subtitle: 'Rate limit' };
+    return {
+      title: translate('{value1}h Window', { value1: hours }),
+      subtitle: translate('Rate limit'),
+    };
   }
   const days = Math.round(durationMins / 1440);
-  return { title: `${days}d Window`, subtitle: 'Rate limit' };
+  return {
+    title: translate('{value1}d Window', { value1: days }),
+    subtitle: translate('Rate limit'),
+  };
 }
 
 // Helper to format large numbers with K/M suffixes
@@ -79,10 +96,11 @@ function formatNumber(num: number): string {
   if (num >= 1_000) {
     return `${(num / 1_000).toFixed(1)}K`;
   }
-  return num.toLocaleString();
+  return num.toLocaleString(getFormattingLocale());
 }
 
 export function UsagePopover() {
+  useUiLocale();
   const claudeAuthStatus = useSetupStore((state) => state.claudeAuthStatus);
   const codexAuthStatus = useSetupStore((state) => state.codexAuthStatus);
   const zaiAuthStatus = useSetupStore((state) => state.zaiAuthStatus);
@@ -267,7 +285,7 @@ export function UsagePopover() {
         <div
           className="absolute top-0 h-full w-0.5 bg-foreground/60"
           style={{ left: `${pacePercentage}%` }}
-          title={`Expected: ${Math.round(pacePercentage)}%`}
+          title={translate('Expected: {value1}%', { value1: Math.round(pacePercentage) })}
         />
       )}
     </div>
@@ -290,6 +308,7 @@ export function UsagePopover() {
     stale?: boolean;
     pacePercentage?: number | null;
   }) => {
+    useUiLocale();
     const isValidPercentage =
       typeof percentage === 'number' && !isNaN(percentage) && isFinite(percentage);
     const safePercentage = isValidPercentage ? percentage : 0;
@@ -328,7 +347,7 @@ export function UsagePopover() {
               </span>
             </div>
           ) : (
-            <span className="text-xs text-muted-foreground">N/A</span>
+            <span className="text-xs text-muted-foreground">{translate('N/A')}</span>
           )}
         </div>
         <ProgressBar
@@ -398,7 +417,9 @@ export function UsagePopover() {
           icon: AnthropicIcon,
           percentage: claudeSessionPercentage,
           isStale: isClaudeStale,
-          title: `Session usage (${CLAUDE_SESSION_WINDOW_HOURS}h window)`,
+          title: translate('Session usage ({value1}h window)', {
+            value1: CLAUDE_SESSION_WINDOW_HOURS,
+          }),
         }
       : activeTab === 'codex'
         ? {
@@ -411,14 +432,14 @@ export function UsagePopover() {
               icon: ZaiIcon,
               percentage: zaiMaxPercentage,
               isStale: isZaiStale,
-              title: `Usage (z.ai)`,
+              title: translate('Usage (z.ai)'),
             }
           : activeTab === 'gemini'
             ? {
                 icon: GeminiIcon,
                 percentage: geminiMaxPercentage,
                 isStale: isGeminiStale,
-                title: `Usage (Gemini)`,
+                title: translate('Usage (Gemini)'),
               }
             : null;
 
@@ -430,7 +451,7 @@ export function UsagePopover() {
       {(claudeUsage || codexUsage || zaiUsage || geminiUsage) && ProviderIcon && (
         <ProviderIcon className={cn('w-4 h-4', statusColor)} />
       )}
-      <span className="text-sm font-medium">Usage</span>
+      <span className="text-sm font-medium">{translate('Usage')}</span>
       {(claudeUsage || codexUsage || zaiUsage || geminiUsage) && indicatorInfo && (
         <div
           title={indicatorInfo.title}
@@ -486,13 +507,13 @@ export function UsagePopover() {
               {showClaudeTab && (
                 <TabsTrigger value="claude" className="gap-2">
                   <AnthropicIcon className="w-3.5 h-3.5" />
-                  Claude
+                  {translate('Claude')}
                 </TabsTrigger>
               )}
               {showCodexTab && (
                 <TabsTrigger value="codex" className="gap-2">
                   <OpenAIIcon className="w-3.5 h-3.5" />
-                  Codex
+                  {translate('Codex')}
                 </TabsTrigger>
               )}
               {showZaiTab && (
@@ -504,7 +525,7 @@ export function UsagePopover() {
               {showGeminiTab && (
                 <TabsTrigger value="gemini" className="gap-2">
                   <GeminiIcon className="w-3.5 h-3.5" />
-                  Gemini
+                  {translate('Gemini')}
                 </TabsTrigger>
               )}
             </TabsList>
@@ -516,7 +537,7 @@ export function UsagePopover() {
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-secondary/10">
               <div className="flex items-center gap-2">
                 <AnthropicIcon className="w-4 h-4" />
-                <span className="text-sm font-semibold">Claude Usage</span>
+                <span className="text-sm font-semibold">{translate('Claude Usage')}</span>
               </div>
               {claudeError && (
                 <Button
@@ -539,15 +560,16 @@ export function UsagePopover() {
                     <p className="text-sm font-medium">{claudeError.message}</p>
                     <p className="text-xs text-muted-foreground">
                       {claudeError.code === ERROR_CODES.API_BRIDGE_UNAVAILABLE ? (
-                        'Ensure the Electron bridge is running or restart the app'
+                        translate('Ensure the Electron bridge is running or restart the app')
                       ) : claudeError.code === ERROR_CODES.TRUST_PROMPT ? (
                         <>
-                          Run <code className="font-mono bg-muted px-1 rounded">claude</code> in
-                          your terminal and approve access to continue
+                          {translate('Run ')}
+                          <code className="font-mono bg-muted px-1 rounded">claude</code>{' '}
+                          {translate(' in your terminal and approve access to continue')}
                         </>
                       ) : (
                         <>
-                          Make sure Claude CLI is installed and authenticated via{' '}
+                          {translate('Make sure Claude CLI is installed and authenticated via')}{' '}
                           <code className="font-mono bg-muted px-1 rounded">claude login</code>
                         </>
                       )}
@@ -557,13 +579,15 @@ export function UsagePopover() {
               ) : !claudeUsage ? (
                 <div className="flex flex-col items-center justify-center py-8 space-y-2">
                   <Spinner size="lg" />
-                  <p className="text-xs text-muted-foreground">Loading usage data...</p>
+                  <p className="text-xs text-muted-foreground">
+                    {translate('Loading usage data...')}
+                  </p>
                 </div>
               ) : (
                 <>
                   <UsageCard
-                    title="Session Usage"
-                    subtitle="5-hour rolling window"
+                    title={translate('Session Usage')}
+                    subtitle={translate('5-hour rolling window')}
                     percentage={claudeUsage.sessionPercentage}
                     resetText={claudeUsage.sessionResetText}
                     isPrimary={true}
@@ -573,15 +597,15 @@ export function UsagePopover() {
                   <div className="grid grid-cols-2 gap-3">
                     <UsageCard
                       title="Sonnet"
-                      subtitle="Weekly"
+                      subtitle={translate('Weekly')}
                       percentage={claudeUsage.sonnetWeeklyPercentage}
                       resetText={claudeUsage.sonnetResetText}
                       stale={isClaudeStale}
                       pacePercentage={getExpectedWeeklyPacePercentage(claudeUsage.weeklyResetTime)}
                     />
                     <UsageCard
-                      title="Weekly"
-                      subtitle="All models"
+                      title={translate('Weekly')}
+                      subtitle={translate('All models')}
                       percentage={claudeUsage.weeklyPercentage}
                       resetText={claudeUsage.weeklyResetText}
                       stale={isClaudeStale}
@@ -591,7 +615,7 @@ export function UsagePopover() {
 
                   {claudeUsage.costLimit && claudeUsage.costLimit > 0 && (
                     <UsageCard
-                      title="Extra Usage"
+                      title={translate('Extra Usage')}
                       subtitle={`${claudeUsage.costUsed ?? 0} / ${claudeUsage.costLimit} ${claudeUsage.costCurrency ?? ''}`}
                       percentage={
                         claudeUsage.costLimit > 0
@@ -613,9 +637,12 @@ export function UsagePopover() {
                 rel="noreferrer"
                 className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
               >
-                Claude Status <ExternalLink className="w-2.5 h-2.5" />
+                {translate('Claude Status ')}
+                <ExternalLink className="w-2.5 h-2.5" />
               </a>
-              <span className="text-[10px] text-muted-foreground">Updates every minute</span>
+              <span className="text-[10px] text-muted-foreground">
+                {translate('Updates every minute')}
+              </span>
             </div>
           </TabsContent>
 
@@ -625,7 +652,7 @@ export function UsagePopover() {
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-secondary/10">
               <div className="flex items-center gap-2">
                 <OpenAIIcon className="w-4 h-4" />
-                <span className="text-sm font-semibold">Codex Usage</span>
+                <span className="text-sm font-semibold">{translate('Codex Usage')}</span>
               </div>
               {codexError && codexError.code !== ERROR_CODES.NOT_AVAILABLE && (
                 <Button
@@ -647,28 +674,28 @@ export function UsagePopover() {
                   <div className="space-y-1 flex flex-col items-center">
                     <p className="text-sm font-medium">
                       {codexError.code === ERROR_CODES.NOT_AVAILABLE
-                        ? 'Usage not available'
+                        ? translate('Usage not available')
                         : codexError.message}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {codexError.code === ERROR_CODES.API_BRIDGE_UNAVAILABLE ? (
-                        'Ensure the Electron bridge is running or restart the app'
+                        translate('Ensure the Electron bridge is running or restart the app')
                       ) : codexError.code === ERROR_CODES.NOT_AVAILABLE ? (
                         <>
-                          Codex CLI doesn't provide usage statistics. Check{' '}
+                          {translate("Codex CLI doesn't provide usage statistics. Check")}{' '}
                           <a
                             href="https://platform.openai.com/usage"
                             target="_blank"
                             rel="noreferrer"
                             className="underline hover:text-foreground"
                           >
-                            OpenAI dashboard
+                            {translate('OpenAI dashboard')}
                           </a>{' '}
-                          for usage details.
+                          {translate('for usage details.')}
                         </>
                       ) : (
                         <>
-                          Make sure Codex CLI is installed and authenticated via{' '}
+                          {translate('Make sure Codex CLI is installed and authenticated via')}{' '}
                           <code className="font-mono bg-muted px-1 rounded">codex login</code>
                         </>
                       )}
@@ -678,7 +705,9 @@ export function UsagePopover() {
               ) : !codexUsage ? (
                 <div className="flex flex-col items-center justify-center py-8 space-y-2">
                   <Spinner size="lg" />
-                  <p className="text-xs text-muted-foreground">Loading usage data...</p>
+                  <p className="text-xs text-muted-foreground">
+                    {translate('Loading usage data...')}
+                  </p>
                 </div>
               ) : codexUsage.rateLimits ? (
                 <>
@@ -725,7 +754,7 @@ export function UsagePopover() {
                   {codexUsage.rateLimits.planType && (
                     <div className="rounded-xl border border-border/40 bg-secondary/20 p-3">
                       <p className="text-xs text-muted-foreground">
-                        Plan:{' '}
+                        {translate('Plan:')}{' '}
                         <span className="text-foreground font-medium">
                           {codexUsage.rateLimits.planType.charAt(0).toUpperCase() +
                             codexUsage.rateLimits.planType.slice(1)}
@@ -737,7 +766,7 @@ export function UsagePopover() {
               ) : (
                 <div className="flex flex-col items-center justify-center py-6 text-center">
                   <AlertTriangle className="w-8 h-8 text-yellow-500/80" />
-                  <p className="text-sm font-medium mt-3">No usage data available</p>
+                  <p className="text-sm font-medium mt-3">{translate('No usage data available')}</p>
                 </div>
               )}
             </div>
@@ -750,9 +779,12 @@ export function UsagePopover() {
                 rel="noreferrer"
                 className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
               >
-                OpenAI Dashboard <ExternalLink className="w-2.5 h-2.5" />
+                {translate('OpenAI Dashboard ')}
+                <ExternalLink className="w-2.5 h-2.5" />
               </a>
-              <span className="text-[10px] text-muted-foreground">Updates every minute</span>
+              <span className="text-[10px] text-muted-foreground">
+                {translate('Updates every minute')}
+              </span>
             </div>
           </TabsContent>
 
@@ -762,7 +794,7 @@ export function UsagePopover() {
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-secondary/10">
               <div className="flex items-center gap-2">
                 <ZaiIcon className="w-4 h-4" />
-                <span className="text-sm font-semibold">z.ai Usage</span>
+                <span className="text-sm font-semibold">{translate('z.ai Usage')}</span>
               </div>
               {zaiError && zaiError.code !== ERROR_CODES.NOT_AVAILABLE && (
                 <Button
@@ -784,19 +816,20 @@ export function UsagePopover() {
                   <div className="space-y-1 flex flex-col items-center">
                     <p className="text-sm font-medium">
                       {zaiError.code === ERROR_CODES.NOT_AVAILABLE
-                        ? 'z.ai not configured'
+                        ? translate('z.ai not configured')
                         : zaiError.message}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {zaiError.code === ERROR_CODES.API_BRIDGE_UNAVAILABLE ? (
-                        'Ensure the Electron bridge is running or restart the app'
+                        translate('Ensure the Electron bridge is running or restart the app')
                       ) : zaiError.code === ERROR_CODES.NOT_AVAILABLE ? (
                         <>
-                          Set <code className="font-mono bg-muted px-1 rounded">Z_AI_API_KEY</code>{' '}
-                          environment variable to enable z.ai usage tracking
+                          {translate('Set ')}
+                          <code className="font-mono bg-muted px-1 rounded">Z_AI_API_KEY</code>{' '}
+                          {translate('environment variable to enable z.ai usage tracking')}
                         </>
                       ) : (
-                        <>Check your z.ai API key configuration</>
+                        <>{translate('Check your z.ai API key configuration')}</>
                       )}
                     </p>
                   </div>
@@ -804,15 +837,20 @@ export function UsagePopover() {
               ) : !zaiUsage ? (
                 <div className="flex flex-col items-center justify-center py-8 space-y-2">
                   <Spinner size="lg" />
-                  <p className="text-xs text-muted-foreground">Loading usage data...</p>
+                  <p className="text-xs text-muted-foreground">
+                    {translate('Loading usage data...')}
+                  </p>
                 </div>
               ) : zaiUsage.quotaLimits &&
                 (zaiUsage.quotaLimits.tokens || zaiUsage.quotaLimits.mcp) ? (
                 <>
                   {zaiUsage.quotaLimits.tokens && (
                     <UsageCard
-                      title="Token Quota"
-                      subtitle={`${formatNumber(zaiUsage.quotaLimits.tokens.used)} / ${formatNumber(zaiUsage.quotaLimits.tokens.limit)} tokens`}
+                      title={translate('Token Quota')}
+                      subtitle={translate('{value1} / {value2} tokens', {
+                        value1: formatNumber(zaiUsage.quotaLimits.tokens.used),
+                        value2: formatNumber(zaiUsage.quotaLimits.tokens.limit),
+                      })}
                       percentage={zaiUsage.quotaLimits.tokens.usedPercent}
                       resetText={
                         zaiUsage.quotaLimits.tokens.nextResetTime
@@ -826,8 +864,11 @@ export function UsagePopover() {
 
                   {zaiUsage.quotaLimits.mcp && (
                     <UsageCard
-                      title="MCP Quota"
-                      subtitle={`${formatNumber(zaiUsage.quotaLimits.mcp.used)} / ${formatNumber(zaiUsage.quotaLimits.mcp.limit)} calls`}
+                      title={translate('MCP Quota')}
+                      subtitle={translate('{value1} / {value2} calls', {
+                        value1: formatNumber(zaiUsage.quotaLimits.mcp.used),
+                        value2: formatNumber(zaiUsage.quotaLimits.mcp.limit),
+                      })}
                       percentage={zaiUsage.quotaLimits.mcp.usedPercent}
                       resetText={
                         zaiUsage.quotaLimits.mcp.nextResetTime
@@ -841,7 +882,7 @@ export function UsagePopover() {
                   {zaiUsage.quotaLimits.planType && zaiUsage.quotaLimits.planType !== 'unknown' && (
                     <div className="rounded-xl border border-border/40 bg-secondary/20 p-3">
                       <p className="text-xs text-muted-foreground">
-                        Plan:{' '}
+                        {translate('Plan:')}{' '}
                         <span className="text-foreground font-medium">
                           {zaiUsage.quotaLimits.planType.charAt(0).toUpperCase() +
                             zaiUsage.quotaLimits.planType.slice(1)}
@@ -853,7 +894,7 @@ export function UsagePopover() {
               ) : (
                 <div className="flex flex-col items-center justify-center py-6 text-center">
                   <AlertTriangle className="w-8 h-8 text-yellow-500/80" />
-                  <p className="text-sm font-medium mt-3">No usage data available</p>
+                  <p className="text-sm font-medium mt-3">{translate('No usage data available')}</p>
                 </div>
               )}
             </div>
@@ -866,9 +907,12 @@ export function UsagePopover() {
                 rel="noreferrer"
                 className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
               >
-                z.ai <ExternalLink className="w-2.5 h-2.5" />
+                {translate('z.ai ')}
+                <ExternalLink className="w-2.5 h-2.5" />
               </a>
-              <span className="text-[10px] text-muted-foreground">Updates every minute</span>
+              <span className="text-[10px] text-muted-foreground">
+                {translate('Updates every minute')}
+              </span>
             </div>
           </TabsContent>
 
@@ -878,7 +922,7 @@ export function UsagePopover() {
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-secondary/10">
               <div className="flex items-center gap-2">
                 <GeminiIcon className="w-4 h-4" />
-                <span className="text-sm font-semibold">Gemini Usage</span>
+                <span className="text-sm font-semibold">{translate('Gemini Usage')}</span>
               </div>
               {geminiError && geminiError.code !== ERROR_CODES.NOT_AVAILABLE && (
                 <Button
@@ -900,20 +944,20 @@ export function UsagePopover() {
                   <div className="space-y-1 flex flex-col items-center">
                     <p className="text-sm font-medium">
                       {geminiError.code === ERROR_CODES.NOT_AVAILABLE
-                        ? 'Gemini not configured'
+                        ? translate('Gemini not configured')
                         : geminiError.message}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {geminiError.code === ERROR_CODES.API_BRIDGE_UNAVAILABLE ? (
-                        'Ensure the Electron bridge is running or restart the app'
+                        translate('Ensure the Electron bridge is running or restart the app')
                       ) : geminiError.code === ERROR_CODES.NOT_AVAILABLE ? (
                         <>
-                          Run{' '}
+                          {translate('Run')}{' '}
                           <code className="font-mono bg-muted px-1 rounded">gemini auth login</code>{' '}
-                          to authenticate with your Google account
+                          {translate('to authenticate with your Google account')}
                         </>
                       ) : (
-                        <>Check your Gemini CLI configuration</>
+                        <>{translate('Check your Gemini CLI configuration')}</>
                       )}
                     </p>
                   </div>
@@ -921,7 +965,9 @@ export function UsagePopover() {
               ) : !geminiUsage ? (
                 <div className="flex flex-col items-center justify-center py-8 space-y-2">
                   <Spinner size="lg" />
-                  <p className="text-xs text-muted-foreground">Loading usage data...</p>
+                  <p className="text-xs text-muted-foreground">
+                    {translate('Loading usage data...')}
+                  </p>
                 </div>
               ) : geminiUsage.authenticated ? (
                 <>
@@ -930,8 +976,8 @@ export function UsagePopover() {
                     <div className="grid grid-cols-2 gap-3">
                       {geminiUsage.flashQuota && (
                         <UsageCard
-                          title="Flash"
-                          subtitle="Flash models"
+                          title={translate('Flash')}
+                          subtitle={translate('Flash models')}
                           percentage={geminiUsage.flashQuota.usedPercent}
                           resetText={geminiUsage.flashQuota.resetText}
                           stale={isGeminiStale}
@@ -939,8 +985,8 @@ export function UsagePopover() {
                       )}
                       {geminiUsage.proQuota && (
                         <UsageCard
-                          title="Pro"
-                          subtitle="Pro models"
+                          title={translate('Pro')}
+                          subtitle={translate('Pro models')}
                           percentage={geminiUsage.proQuota.usedPercent}
                           resetText={geminiUsage.proQuota.resetText}
                           stale={isGeminiStale}
@@ -955,17 +1001,19 @@ export function UsagePopover() {
                           <CheckCircle className="w-5 h-5 text-emerald-500" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-emerald-400">Connected</p>
+                          <p className="text-sm font-medium text-emerald-400">
+                            {translate('Connected')}
+                          </p>
                           <p className="text-xs text-emerald-400/70 mt-0.5">
-                            Authenticated via{' '}
+                            {translate('Authenticated via')}{' '}
                             <span className="font-mono">
                               {geminiUsage.authMethod === 'cli_login'
-                                ? 'CLI Login'
+                                ? translate('CLI Login')
                                 : geminiUsage.authMethod === 'api_key_env'
-                                  ? 'API Key (Environment)'
+                                  ? translate('API Key (Environment)')
                                   : geminiUsage.authMethod === 'api_key'
-                                    ? 'API Key'
-                                    : 'Unknown'}
+                                    ? translate('API Key')
+                                    : translate('Unknown')}
                             </span>
                           </p>
                         </div>
@@ -974,9 +1022,12 @@ export function UsagePopover() {
                       <div className="rounded-xl border border-border/40 bg-secondary/20 p-3">
                         <p className="text-xs text-muted-foreground">
                           {geminiUsage.error ? (
-                            <>Quota API: {geminiUsage.error}</>
+                            <>
+                              {translate('Quota API: ')}
+                              {geminiUsage.error}
+                            </>
                           ) : (
-                            <>No usage yet or quota data unavailable</>
+                            <>{translate('No usage yet or quota data unavailable')}</>
                           )}
                         </p>
                       </div>
@@ -986,10 +1037,11 @@ export function UsagePopover() {
               ) : (
                 <div className="flex flex-col items-center justify-center py-6 text-center">
                   <AlertTriangle className="w-8 h-8 text-yellow-500/80" />
-                  <p className="text-sm font-medium mt-3">Not authenticated</p>
+                  <p className="text-sm font-medium mt-3">{translate('Not authenticated')}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Run <code className="font-mono bg-muted px-1 rounded">gemini auth login</code>{' '}
-                    to authenticate
+                    {translate('Run ')}
+                    <code className="font-mono bg-muted px-1 rounded">gemini auth login</code>{' '}
+                    {translate('to authenticate')}
                   </p>
                 </div>
               )}
@@ -1003,9 +1055,12 @@ export function UsagePopover() {
                 rel="noreferrer"
                 className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
               >
-                Google AI <ExternalLink className="w-2.5 h-2.5" />
+                {translate('Google AI ')}
+                <ExternalLink className="w-2.5 h-2.5" />
               </a>
-              <span className="text-[10px] text-muted-foreground">Updates every minute</span>
+              <span className="text-[10px] text-muted-foreground">
+                {translate('Updates every minute')}
+              </span>
             </div>
           </TabsContent>
         </Tabs>

@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -50,6 +51,7 @@ const logger = createLogger('EventHooks');
 type TabType = 'hooks' | 'endpoints' | 'history';
 
 export function EventHooksSection() {
+  useUiLocale();
   const { eventHooks, setEventHooks, ntfyEndpoints, setNtfyEndpoints } = useAppStore();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingHook, setEditingHook] = useState<EventHook | null>(null);
@@ -74,7 +76,7 @@ export function EventHooksSection() {
       await setEventHooks(eventHooks.filter((h) => h.id !== hookId));
     } catch (error) {
       logger.error('Failed to delete event hook:', error);
-      toast.error('Failed to delete event hook');
+      toast.error(translate('Failed to delete event hook'));
     }
   };
 
@@ -83,7 +85,7 @@ export function EventHooksSection() {
       await setEventHooks(eventHooks.map((h) => (h.id === hookId ? { ...h, enabled } : h)));
     } catch (error) {
       logger.error('Failed to toggle event hook:', error);
-      toast.error('Failed to update event hook');
+      toast.error(translate('Failed to update event hook'));
     }
   };
 
@@ -100,7 +102,7 @@ export function EventHooksSection() {
       setEditingHook(null);
     } catch (error) {
       logger.error('Failed to save event hook:', error);
-      toast.error('Failed to save event hook');
+      toast.error(translate('Failed to save event hook'));
     }
   };
 
@@ -118,10 +120,10 @@ export function EventHooksSection() {
   const handleDeleteEndpoint = async (endpointId: string) => {
     try {
       await setNtfyEndpoints(ntfyEndpoints.filter((e) => e.id !== endpointId));
-      toast.success('Endpoint deleted');
+      toast.success(translate('Endpoint deleted'));
     } catch (error) {
       logger.error('Failed to delete ntfy endpoint:', error);
-      toast.error('Failed to delete endpoint');
+      toast.error(translate('Failed to delete endpoint'));
     }
   };
 
@@ -132,7 +134,7 @@ export function EventHooksSection() {
       );
     } catch (error) {
       logger.error('Failed to toggle ntfy endpoint:', error);
-      toast.error('Failed to update endpoint');
+      toast.error(translate('Failed to update endpoint'));
     }
   };
 
@@ -141,17 +143,17 @@ export function EventHooksSection() {
       if (editingEndpoint) {
         // Update existing
         await setNtfyEndpoints(ntfyEndpoints.map((e) => (e.id === endpoint.id ? endpoint : e)));
-        toast.success('Endpoint updated');
+        toast.success(translate('Endpoint updated'));
       } else {
         // Add new
         await setNtfyEndpoints([...ntfyEndpoints, endpoint]);
-        toast.success('Endpoint added');
+        toast.success(translate('Endpoint added'));
       }
       setEndpointDialogOpen(false);
       setEditingEndpoint(null);
     } catch (error) {
       logger.error('Failed to save ntfy endpoint:', error);
-      toast.error('Failed to save endpoint');
+      toast.error(translate('Failed to save endpoint'));
     }
   };
 
@@ -184,22 +186,24 @@ export function EventHooksSection() {
               <Webhook className="w-5 h-5 text-brand-500" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-foreground tracking-tight">Event Hooks</h2>
+              <h2 className="text-lg font-semibold text-foreground tracking-tight">
+                {translate('Event Hooks')}
+              </h2>
               <p className="text-sm text-muted-foreground/80">
-                Run custom commands or send notifications when events occur
+                {translate('Run custom commands or send notifications when events occur')}
               </p>
             </div>
           </div>
           {activeTab === 'hooks' && (
             <Button onClick={handleAddHook} size="sm" className="gap-2">
               <Plus className="w-4 h-4" />
-              Add Hook
+              {translate('Add Hook')}
             </Button>
           )}
           {activeTab === 'endpoints' && (
             <Button onClick={handleAddEndpoint} size="sm" className="gap-2">
               <Plus className="w-4 h-4" />
-              Add Endpoint
+              {translate('Add Endpoint')}
             </Button>
           )}
         </div>
@@ -211,15 +215,15 @@ export function EventHooksSection() {
           <TabsList className="grid w-full max-w-sm grid-cols-3">
             <TabsTrigger value="hooks" className="gap-2">
               <Webhook className="w-4 h-4" />
-              Hooks
+              {translate('Hooks')}
             </TabsTrigger>
             <TabsTrigger value="endpoints" className="gap-2">
               <Bell className="w-4 h-4" />
-              Endpoints
+              {translate('Endpoints')}
             </TabsTrigger>
             <TabsTrigger value="history" className="gap-2">
               <History className="w-4 h-4" />
-              History
+              {translate('History')}
             </TabsTrigger>
           </TabsList>
         </div>
@@ -230,9 +234,9 @@ export function EventHooksSection() {
             {eventHooks.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Webhook className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">No event hooks configured</p>
+                <p className="text-sm">{translate('No event hooks configured')}</p>
                 <p className="text-xs mt-1">
-                  Add hooks to run commands or send webhooks when features complete
+                  {translate('Add hooks to run commands or send webhooks when features complete')}
                 </p>
               </div>
             ) : (
@@ -264,7 +268,7 @@ export function EventHooksSection() {
           {/* Variable reference */}
           <div className="px-6 pb-6">
             <div className="rounded-lg bg-muted/30 p-4 text-xs text-muted-foreground">
-              <p className="font-medium mb-2">Available variables:</p>
+              <p className="font-medium mb-2">{translate('Available variables:')}</p>
               <code className="text-[10px] leading-relaxed">
                 {'{{featureId}}'} {'{{featureName}}'} {'{{projectPath}}'} {'{{projectName}}'}{' '}
                 {'{{error}}'} {'{{errorType}}'} {'{{timestamp}}'} {'{{eventType}}'}
@@ -279,8 +283,10 @@ export function EventHooksSection() {
             {ntfyEndpoints.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Bell className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">No ntfy endpoints configured</p>
-                <p className="text-xs mt-1">Add endpoints to send push notifications via ntfy.sh</p>
+                <p className="text-sm">{translate('No ntfy endpoints configured')}</p>
+                <p className="text-xs mt-1">
+                  {translate('Add endpoints to send push notifications via ntfy.sh')}
+                </p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -300,10 +306,11 @@ export function EventHooksSection() {
           {/* Help text */}
           <div className="px-6 pb-6">
             <div className="rounded-lg bg-muted/30 p-4 text-xs text-muted-foreground">
-              <p className="font-medium mb-2">About ntfy.sh:</p>
+              <p className="font-medium mb-2">{translate('About ntfy.sh:')}</p>
               <p className="mb-2">
-                ntfy.sh is a simple pub-sub notification service. Create a topic and subscribe via
-                web, mobile app, or API.
+                {translate(
+                  'ntfy.sh is a simple pub-sub notification service. Create a topic and subscribe via web, mobile app, or API.'
+                )}
               </p>
               <a
                 href="https://ntfy.sh"
@@ -353,6 +360,7 @@ interface HookCardProps {
 }
 
 function HookCard({ hook, ntfyEndpoints, onEdit, onDelete, onToggle }: HookCardProps) {
+  useUiLocale();
   const isShell = hook.action.type === 'shell';
   const isHttp = hook.action.type === 'http';
   const isNtfy = hook.action.type === 'ntfy';
@@ -393,7 +401,12 @@ function HookCard({ hook, ntfyEndpoints, onEdit, onDelete, onToggle }: HookCardP
       {/* Info */}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">
-          {hook.name || (isShell ? 'Shell Command' : isHttp ? 'HTTP Webhook' : 'Ntfy Notification')}
+          {hook.name ||
+            (isShell
+              ? translate('Shell Command')
+              : isHttp
+                ? translate('HTTP Webhook')
+                : translate('Ntfy Notification'))}
         </p>
         <p className="text-xs text-muted-foreground truncate">
           {isShell
@@ -431,6 +444,7 @@ interface EndpointCardProps {
 }
 
 function EndpointCard({ endpoint, onEdit, onDelete, onToggle }: EndpointCardProps) {
+  useUiLocale();
   return (
     <div
       data-testid="endpoint-card"
@@ -456,7 +470,7 @@ function EndpointCard({ endpoint, onEdit, onDelete, onToggle }: EndpointCardProp
       {/* Auth badge */}
       {endpoint.authType !== 'none' && (
         <div className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">
-          {endpoint.authType === 'basic' ? 'Basic Auth' : 'Token'}
+          {endpoint.authType === 'basic' ? translate('Basic Auth') : translate('Token')}
         </div>
       )}
 
@@ -465,14 +479,17 @@ function EndpointCard({ endpoint, onEdit, onDelete, onToggle }: EndpointCardProp
         <Switch
           checked={endpoint.enabled}
           onCheckedChange={onToggle}
-          aria-label={`${endpoint.enabled ? 'Disable' : 'Enable'} endpoint ${endpoint.name}`}
+          aria-label={translate('{value1} endpoint {value2}', {
+            value1: endpoint.enabled ? 'Disable' : 'Enable',
+            value2: endpoint.name,
+          })}
         />
         <Button
           variant="ghost"
           size="icon"
           className="h-8 w-8"
           onClick={onEdit}
-          aria-label={`Edit endpoint ${endpoint.name}`}
+          aria-label={translate('Edit endpoint {value1}', { value1: endpoint.name })}
         >
           <Pencil className="w-4 h-4" />
         </Button>
@@ -481,7 +498,7 @@ function EndpointCard({ endpoint, onEdit, onDelete, onToggle }: EndpointCardProp
           size="icon"
           className="h-8 w-8 text-destructive hover:text-destructive"
           onClick={onDelete}
-          aria-label={`Delete endpoint ${endpoint.name}`}
+          aria-label={translate('Delete endpoint {value1}', { value1: endpoint.name })}
         >
           <Trash2 className="w-4 h-4" />
         </Button>
@@ -504,6 +521,7 @@ function NtfyEndpointDialog({
   editingEndpoint,
   onSave,
 }: NtfyEndpointDialogProps) {
+  useUiLocale();
   const [name, setName] = useState('');
   const [serverUrl, setServerUrl] = useState('https://ntfy.sh');
   const [topic, setTopic] = useState('');
@@ -600,27 +618,29 @@ function NtfyEndpointDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editingEndpoint ? 'Edit Ntfy Endpoint' : 'Add Ntfy Endpoint'}</DialogTitle>
+          <DialogTitle>
+            {editingEndpoint ? translate('Edit Ntfy Endpoint') : translate('Add Ntfy Endpoint')}
+          </DialogTitle>
           <DialogDescription>
-            Configure an ntfy.sh server to receive push notifications.
+            {translate('Configure an ntfy.sh server to receive push notifications.')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           {/* Name */}
           <div className="space-y-2">
-            <Label htmlFor="endpoint-name">Name *</Label>
+            <Label htmlFor="endpoint-name">{translate('Name *')}</Label>
             <Input
               id="endpoint-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Personal Phone"
+              placeholder={translate('Personal Phone')}
             />
           </div>
 
           {/* Server URL */}
           <div className="space-y-2">
-            <Label htmlFor="endpoint-server">Server URL</Label>
+            <Label htmlFor="endpoint-server">{translate('Server URL')}</Label>
             <Input
               id="endpoint-server"
               value={serverUrl}
@@ -628,13 +648,13 @@ function NtfyEndpointDialog({
               placeholder="https://ntfy.sh"
             />
             <p className="text-xs text-muted-foreground">
-              Default is ntfy.sh. Use custom URL for self-hosted servers.
+              {translate('Default is ntfy.sh. Use custom URL for self-hosted servers.')}
             </p>
           </div>
 
           {/* Topic */}
           <div className="space-y-2">
-            <Label htmlFor="endpoint-topic">Topic *</Label>
+            <Label htmlFor="endpoint-topic">{translate('Topic *')}</Label>
             <Input
               id="endpoint-topic"
               value={topic}
@@ -642,13 +662,15 @@ function NtfyEndpointDialog({
               placeholder="my-automaker-notifications"
             />
             <p className="text-xs text-muted-foreground">
-              Topic name (no spaces). This acts like a channel for your notifications.
+              {translate(
+                'Topic name (no spaces). This acts like a channel for your notifications.'
+              )}
             </p>
           </div>
 
           {/* Authentication */}
           <div className="space-y-2">
-            <Label htmlFor="endpoint-auth">Authentication</Label>
+            <Label htmlFor="endpoint-auth">{translate('Authentication')}</Label>
             <Select
               value={authType}
               onValueChange={(v) => setAuthType(v as NtfyAuthenticationType)}
@@ -657,9 +679,9 @@ function NtfyEndpointDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">None (public topic)</SelectItem>
-                <SelectItem value="basic">Username & Password</SelectItem>
-                <SelectItem value="token">Access Token</SelectItem>
+                <SelectItem value="none">{translate('None (public topic)')}</SelectItem>
+                <SelectItem value="basic">{translate('Username & Password')}</SelectItem>
+                <SelectItem value="token">{translate('Access Token')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -668,22 +690,22 @@ function NtfyEndpointDialog({
           {authType === 'basic' && (
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="endpoint-username">Username</Label>
+                <Label htmlFor="endpoint-username">{translate('Username')}</Label>
                 <Input
                   id="endpoint-username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="username"
+                  placeholder={translate('username')}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="endpoint-password">Password</Label>
+                <Label htmlFor="endpoint-password">{translate('Password')}</Label>
                 <Input
                   id="endpoint-password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="password"
+                  placeholder={translate('password')}
                 />
               </div>
             </div>
@@ -691,7 +713,7 @@ function NtfyEndpointDialog({
 
           {authType === 'token' && (
             <div className="space-y-2">
-              <Label htmlFor="endpoint-token">Access Token</Label>
+              <Label htmlFor="endpoint-token">{translate('Access Token')}</Label>
               <Input
                 id="endpoint-token"
                 type="password"
@@ -704,32 +726,32 @@ function NtfyEndpointDialog({
 
           {/* Default Tags */}
           <div className="space-y-2">
-            <Label htmlFor="endpoint-tags">Default Tags (optional)</Label>
+            <Label htmlFor="endpoint-tags">{translate('Default Tags (optional)')}</Label>
             <Input
               id="endpoint-tags"
               value={defaultTags}
               onChange={(e) => setDefaultTags(e.target.value)}
-              placeholder="warning,skull"
+              placeholder={translate('warning,skull')}
             />
             <p className="text-xs text-muted-foreground">
-              Comma-separated tags or emoji shortcodes (e.g., warning, partypopper)
+              {translate('Comma-separated tags or emoji shortcodes (e.g., warning, partypopper)')}
             </p>
           </div>
 
           {/* Default Emoji */}
           <div className="space-y-2">
-            <Label htmlFor="endpoint-emoji">Default Emoji (optional)</Label>
+            <Label htmlFor="endpoint-emoji">{translate('Default Emoji (optional)')}</Label>
             <Input
               id="endpoint-emoji"
               value={defaultEmoji}
               onChange={(e) => setDefaultEmoji(e.target.value)}
-              placeholder="tada"
+              placeholder={translate('tada')}
             />
           </div>
 
           {/* Default Click URL */}
           <div className="space-y-2">
-            <Label htmlFor="endpoint-click">Default Click URL (optional)</Label>
+            <Label htmlFor="endpoint-click">{translate('Default Click URL (optional)')}</Label>
             <Input
               id="endpoint-click"
               value={defaultClickUrl}
@@ -737,23 +759,25 @@ function NtfyEndpointDialog({
               placeholder="http://localhost:3007"
             />
             <p className="text-xs text-muted-foreground">
-              URL to open when notification is clicked. Auto-linked to project/feature if available.
+              {translate(
+                'URL to open when notification is clicked. Auto-linked to project/feature if available.'
+              )}
             </p>
           </div>
 
           {/* Enabled toggle */}
           <div className="flex items-center justify-between">
-            <Label htmlFor="endpoint-enabled">Enabled</Label>
+            <Label htmlFor="endpoint-enabled">{translate('Enabled')}</Label>
             <Switch id="endpoint-enabled" checked={enabled} onCheckedChange={setEnabled} />
           </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button onClick={handleSave} disabled={!isValid}>
-            {editingEndpoint ? 'Save Changes' : 'Add Endpoint'}
+            {editingEndpoint ? translate('Save Changes') : translate('Add Endpoint')}
           </Button>
         </DialogFooter>
       </DialogContent>

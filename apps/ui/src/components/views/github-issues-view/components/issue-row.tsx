@@ -1,3 +1,4 @@
+import { formatCount, translate, useUiLocale } from '@/lib/i18n';
 import {
   Circle,
   CheckCircle2,
@@ -22,6 +23,7 @@ export function IssueRow({
   cachedValidation,
   isValidating,
 }: IssueRowProps) {
+  useUiLocale();
   // Check if validation exists and calculate staleness
   const validationHoursSince = cachedValidation
     ? (Date.now() - new Date(cachedValidation.validatedAt).getTime()) / (1000 * 60 * 60)
@@ -58,7 +60,9 @@ export function IssueRow({
 
         <div className="flex items-center gap-2 mt-1 flex-wrap">
           <span className="text-xs text-muted-foreground">
-            #{issue.number} opened {formatDate(issue.createdAt)} by {issue.author.login}
+            #{issue.number} {translate(' opened ')}
+            {formatDate(issue.createdAt)} {translate(' by ')}
+            {issue.author.login}
           </span>
         </div>
 
@@ -82,7 +86,7 @@ export function IssueRow({
           {issue.linkedPRs && issue.linkedPRs.length > 0 && (
             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-purple-500/10 text-purple-500 border border-purple-500/20">
               <GitPullRequest className="h-3 w-3" />
-              {issue.linkedPRs.length} PR{issue.linkedPRs.length > 1 ? 's' : ''}
+              {formatCount(issue.linkedPRs.length, 'pull request')}
             </span>
           )}
 
@@ -98,7 +102,7 @@ export function IssueRow({
           {isValidating && (
             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-primary/10 text-primary border border-primary/20 animate-in fade-in duration-200">
               <Spinner size="xs" />
-              Analyzing...
+              {translate('Analyzing...')}
             </span>
           )}
 
@@ -106,7 +110,7 @@ export function IssueRow({
           {!isValidating && hasUnviewedValidation && (
             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 animate-in fade-in duration-200">
               <Sparkles className="h-3 w-3" />
-              Analysis Ready
+              {translate('Analysis Ready')}
             </span>
           )}
 
@@ -114,7 +118,7 @@ export function IssueRow({
           {!isValidating && hasViewedValidation && (
             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-green-500/10 text-green-500 border border-green-500/20">
               <CheckCircle className="h-3 w-3" />
-              Validated
+              {translate('Validated')}
             </span>
           )}
         </div>

@@ -1,4 +1,6 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useLocalizedMemo } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
+import { useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -51,6 +53,7 @@ interface OrphanedFeaturesSectionProps {
 }
 
 export function OrphanedFeaturesSection({ project }: OrphanedFeaturesSectionProps) {
+  useUiLocale();
   const [scanning, setScanning] = useState(false);
   const [scanned, setScanned] = useState(false);
   const [orphanedFeatures, setOrphanedFeatures] = useState<OrphanedFeatureInfo[]>([]);
@@ -72,7 +75,7 @@ export function OrphanedFeaturesSection({ project }: OrphanedFeaturesSectionProp
   const someSelected = selectedIds.size > 0 && selectedIds.size < orphanedFeatures.length;
   const hasSelection = selectedIds.size > 0;
 
-  const selectedLabels = useMemo(() => {
+  const selectedLabels = useLocalizedMemo(() => {
     return orphanedFeatures
       .filter((o) => selectedIds.has(o.feature.id))
       .map((o) => o.feature.title || o.feature.description?.slice(0, 60) || o.feature.id);
@@ -108,17 +111,21 @@ export function OrphanedFeaturesSection({ project }: OrphanedFeaturesSectionProp
         setOrphanedFeatures(result.orphanedFeatures);
         setScanned(true);
         if (result.orphanedFeatures.length === 0) {
-          toast.success('No orphaned features found');
+          toast.success(translate('No orphaned features found'));
         } else {
-          toast.info(`Found ${result.orphanedFeatures.length} orphaned feature(s)`);
+          toast.info(
+            translate('Found {value1} orphaned feature(s)', {
+              value1: result.orphanedFeatures.length,
+            })
+          );
         }
       } else {
-        toast.error('Failed to scan for orphaned features', {
+        toast.error(translate('Failed to scan for orphaned features'), {
           description: result.error,
         });
       }
     } catch (error) {
-      toast.error('Failed to scan for orphaned features', {
+      toast.error(translate('Failed to scan for orphaned features'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     } finally {
@@ -168,14 +175,14 @@ export function OrphanedFeaturesSection({ project }: OrphanedFeaturesSectionProp
             'worktree-created': 'Worktree created successfully',
             moved: 'Feature moved successfully',
           };
-          toast.success(messages[result.action ?? action] ?? 'Resolved');
+          toast.success(messages[result.action ?? action] ?? translate('Resolved'));
         } else {
-          toast.error('Failed to resolve orphaned feature', {
+          toast.error(translate('Failed to resolve orphaned feature'), {
             description: result.error,
           });
         }
       } catch (error) {
-        toast.error('Failed to resolve orphaned feature', {
+        toast.error(translate('Failed to resolve orphaned feature'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
       } finally {
@@ -226,18 +233,27 @@ export function OrphanedFeaturesSection({ project }: OrphanedFeaturesSectionProp
                 : 'moved';
           if (result.failedCount && result.failedCount > 0) {
             toast.warning(
-              `${result.resolvedCount} feature(s) ${actionLabel}, ${result.failedCount} failed`
+              translate('{value1} feature(s) {value2}, {value3} failed', {
+                value1: result.resolvedCount,
+                value2: actionLabel,
+                value3: result.failedCount,
+              })
             );
           } else {
-            toast.success(`${result.resolvedCount} feature(s) ${actionLabel}`);
+            toast.success(
+              translate('{value1} feature(s) {value2}', {
+                value1: result.resolvedCount,
+                value2: actionLabel,
+              })
+            );
           }
         } else {
-          toast.error('Failed to resolve orphaned features', {
+          toast.error(translate('Failed to resolve orphaned features'), {
             description: result.error,
           });
         }
       } catch (error) {
-        toast.error('Failed to resolve orphaned features', {
+        toast.error(translate('Failed to resolve orphaned features'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
       } finally {
@@ -294,17 +310,18 @@ export function OrphanedFeaturesSection({ project }: OrphanedFeaturesSectionProp
               <Unlink className="w-5 h-5 text-amber-500" />
             </div>
             <h2 className="text-lg font-semibold text-foreground tracking-tight">
-              Orphaned Features
+              {translate('Orphaned Features')}
             </h2>
             {scanned && orphanedFeatures.length > 0 && (
               <span className="ml-auto inline-flex items-center rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-medium text-amber-500 border border-amber-500/25">
-                {orphanedFeatures.length} found
+                {orphanedFeatures.length} {translate(' found')}
               </span>
             )}
           </div>
           <p className="text-sm text-muted-foreground/80 ml-12">
-            Detect features whose git branches no longer exist. You can delete them, create a new
-            worktree, or move them to an existing branch.
+            {translate(
+              'Detect features whose git branches no longer exist. You can delete them, create a new worktree, or move them to an existing branch.'
+            )}
           </p>
         </div>
 
@@ -312,9 +329,11 @@ export function OrphanedFeaturesSection({ project }: OrphanedFeaturesSectionProp
           {/* Scan Button */}
           <div className="space-y-3">
             <div>
-              <h3 className="text-sm font-medium text-foreground">Scan for Orphaned Features</h3>
+              <h3 className="text-sm font-medium text-foreground">
+                {translate('Scan for Orphaned Features')}
+              </h3>
               <p className="text-xs text-muted-foreground mt-1">
-                Check all features for missing git branches.
+                {translate('Check all features for missing git branches.')}
               </p>
             </div>
             <Button
@@ -325,7 +344,11 @@ export function OrphanedFeaturesSection({ project }: OrphanedFeaturesSectionProp
               data-testid="scan-orphaned-features-button"
             >
               <Search className="w-4 h-4" />
-              {scanning ? 'Scanning...' : scanned ? 'Rescan' : 'Scan for Orphans'}
+              {scanning
+                ? translate('Scanning...')
+                : scanned
+                  ? translate('Rescan')
+                  : translate('Scan for Orphans')}
             </Button>
           </div>
 
@@ -339,9 +362,9 @@ export function OrphanedFeaturesSection({ project }: OrphanedFeaturesSectionProp
                   <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-emerald-500/10 flex items-center justify-center">
                     <GitBranch className="w-6 h-6 text-emerald-500" />
                   </div>
-                  <p className="text-sm font-medium text-foreground">All clear</p>
+                  <p className="text-sm font-medium text-foreground">{translate('All clear')}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    No orphaned features detected.
+                    {translate('No orphaned features detected.')}
                   </p>
                 </div>
               ) : (
@@ -362,12 +385,16 @@ export function OrphanedFeaturesSection({ project }: OrphanedFeaturesSectionProp
                           <Square className="w-4 h-4" />
                         )}
                         <span>
-                          {allSelected ? 'Deselect all' : `Select all (${orphanedFeatures.length})`}
+                          {allSelected
+                            ? translate('Deselect all')
+                            : translate('Select all ({value1})', {
+                                value1: orphanedFeatures.length,
+                              })}
                         </span>
                       </button>
                       {hasSelection && (
                         <span className="text-xs text-muted-foreground">
-                          {selectedIds.size} selected
+                          {selectedIds.size} {translate(' selected')}
                         </span>
                       )}
                     </div>
@@ -387,7 +414,8 @@ export function OrphanedFeaturesSection({ project }: OrphanedFeaturesSectionProp
                           data-testid="bulk-create-worktree"
                         >
                           <GitBranch className="w-3.5 h-3.5" />
-                          Create Worktrees ({selectedIds.size})
+                          {translate('Create Worktrees (')}
+                          {selectedIds.size})
                         </Button>
                         <Button
                           variant="outline"
@@ -398,7 +426,8 @@ export function OrphanedFeaturesSection({ project }: OrphanedFeaturesSectionProp
                           data-testid="bulk-move-to-branch"
                         >
                           <ArrowRight className="w-3.5 h-3.5" />
-                          Move ({selectedIds.size})
+                          {translate('Move (')}
+                          {selectedIds.size})
                         </Button>
                         <Button
                           variant="outline"
@@ -414,7 +443,8 @@ export function OrphanedFeaturesSection({ project }: OrphanedFeaturesSectionProp
                           data-testid="bulk-delete-orphans"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
-                          Delete ({selectedIds.size})
+                          {translate('Delete (')}
+                          {selectedIds.size})
                         </Button>
                       </div>
                     )}
@@ -453,7 +483,7 @@ export function OrphanedFeaturesSection({ project }: OrphanedFeaturesSectionProp
                               </p>
                               <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
                                 <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />
-                                Missing branch:{' '}
+                                {translate('Missing branch:')}{' '}
                                 <code className="px-1.5 py-0.5 rounded bg-muted/50 font-mono text-[11px]">
                                   {missingBranch}
                                 </code>
@@ -473,7 +503,7 @@ export function OrphanedFeaturesSection({ project }: OrphanedFeaturesSectionProp
                               data-testid={`create-worktree-${feature.id}`}
                             >
                               <GitBranch className="w-3.5 h-3.5" />
-                              Create Worktree
+                              {translate('Create Worktree')}
                             </Button>
                             <Button
                               variant="outline"
@@ -489,7 +519,7 @@ export function OrphanedFeaturesSection({ project }: OrphanedFeaturesSectionProp
                               data-testid={`move-orphan-${feature.id}`}
                             >
                               <ArrowRight className="w-3.5 h-3.5" />
-                              Move to Branch
+                              {translate('Move to Branch')}
                             </Button>
                             <Button
                               variant="outline"
@@ -509,7 +539,7 @@ export function OrphanedFeaturesSection({ project }: OrphanedFeaturesSectionProp
                               data-testid={`delete-orphan-${feature.id}`}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
-                              Delete
+                              {translate('Delete')}
                             </Button>
                           </div>
                         </div>
@@ -529,40 +559,45 @@ export function OrphanedFeaturesSection({ project }: OrphanedFeaturesSectionProp
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
               <Trash2 className="w-5 h-5" />
-              Delete{' '}
+              {translate('Delete')}{' '}
               {deleteConfirm && deleteConfirm.featureIds.length > 1
-                ? `${deleteConfirm.featureIds.length} Orphaned Features`
-                : 'Orphaned Feature'}
+                ? translate('{value1} Orphaned Features', {
+                    value1: deleteConfirm.featureIds.length,
+                  })
+                : translate('Orphaned Feature')}
             </DialogTitle>
             <DialogDescription>
               {deleteConfirm && deleteConfirm.featureIds.length > 1 ? (
                 <>
-                  Are you sure you want to permanently delete these{' '}
-                  {deleteConfirm.featureIds.length} features?
+                  {translate('Are you sure you want to permanently delete these')}{' '}
+                  {deleteConfirm.featureIds.length} {translate(' features?')}
                   <span className="block mt-2 max-h-32 overflow-y-auto space-y-1">
                     {deleteConfirm.labels.map((label, i) => (
                       <span key={i} className="block text-sm font-medium text-foreground">
-                        &bull; {label}
+                        {translate('• ')}
+                        {label}
                       </span>
                     ))}
                   </span>
                 </>
               ) : (
                 <>
-                  Are you sure you want to permanently delete this feature?
+                  {translate('Are you sure you want to permanently delete this feature?')}
                   <span className="block mt-2 font-medium text-foreground">
-                    &quot;{deleteConfirm?.labels[0]}&quot;
+                    {translate('"')}
+                    {deleteConfirm?.labels[0]}
+                    {translate('"')}
                   </span>
                 </>
               )}
               <span className="block mt-2 text-destructive font-medium">
-                This action cannot be undone.
+                {translate('This action cannot be undone.')}
               </span>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setDeleteConfirm(null)}>
-              Cancel
+              {translate('Cancel')}
             </Button>
             <Button
               variant="destructive"
@@ -579,7 +614,7 @@ export function OrphanedFeaturesSection({ project }: OrphanedFeaturesSectionProp
               }}
             >
               <Trash2 className="w-4 h-4 mr-2" />
-              Delete
+              {translate('Delete')}
               {deleteConfirm && deleteConfirm.featureIds.length > 1
                 ? ` (${deleteConfirm.featureIds.length})`
                 : ''}
@@ -594,35 +629,43 @@ export function OrphanedFeaturesSection({ project }: OrphanedFeaturesSectionProp
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ArrowRight className="w-5 h-5 text-brand-500" />
-              Move to Branch
+              {translate('Move to Branch')}
             </DialogTitle>
             <DialogDescription>
               {moveDialog && moveDialog.featureIds.length > 1 ? (
                 <>
-                  Select where to move {moveDialog.featureIds.length} features. The branch reference
-                  will be updated and the features will be set to pending.
+                  {translate('Select where to move ')}
+                  {moveDialog.featureIds.length}{' '}
+                  {translate(
+                    ' features. The branch reference will be updated and the features will be set to pending.'
+                  )}
                 </>
               ) : (
                 <>
-                  Select where to move this feature. The branch reference will be updated and the
-                  feature will be set to pending.
+                  {translate(
+                    'Select where to move this feature. The branch reference will be updated and the feature will be set to pending.'
+                  )}
                 </>
               )}
             </DialogDescription>
           </DialogHeader>
 
           <div className="py-4">
-            <label className="text-sm font-medium text-foreground mb-2 block">Target Branch</label>
+            <label className="text-sm font-medium text-foreground mb-2 block">
+              {translate('Target Branch')}
+            </label>
             <Select
               value={selectedBranch}
               onValueChange={setSelectedBranch}
               disabled={loadingWorktrees}
             >
               <SelectTrigger className="w-full" data-testid="move-target-branch-select">
-                <SelectValue placeholder="Select a branch..." />
+                <SelectValue placeholder={translate('Select a branch...')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__main__">Main worktree (clear branch reference)</SelectItem>
+                <SelectItem value="__main__">
+                  {translate('Main worktree (clear branch reference)')}
+                </SelectItem>
                 {worktrees
                   .filter((w) => !w.isMain && w.branch)
                   .map((w) => (
@@ -634,18 +677,22 @@ export function OrphanedFeaturesSection({ project }: OrphanedFeaturesSectionProp
             </Select>
             <p className="text-xs text-muted-foreground mt-2">
               {selectedBranch === '__main__'
-                ? 'The branch reference will be cleared and the feature will use the main worktree.'
-                : `The feature will be associated with the "${selectedBranch}" branch.`}
+                ? translate(
+                    'The branch reference will be cleared and the feature will use the main worktree.'
+                  )
+                : translate('The feature will be associated with the "{value1}" branch.', {
+                    value1: selectedBranch,
+                  })}
             </p>
           </div>
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setMoveDialog(null)}>
-              Cancel
+              {translate('Cancel')}
             </Button>
             <Button loading={isBulkResolving} onClick={handleMoveConfirm}>
               <ArrowRight className="w-4 h-4 mr-2" />
-              Move
+              {translate('Move')}
               {moveDialog && moveDialog.featureIds.length > 1
                 ? ` (${moveDialog.featureIds.length})`
                 : ''}
