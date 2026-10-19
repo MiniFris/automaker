@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { memo, useCallback } from 'react';
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -27,7 +28,9 @@ interface ColumnDef {
 export const LIST_COLUMNS: ColumnDef[] = [
   {
     id: 'title',
-    label: 'Title',
+    get label() {
+      return translate('Title');
+    },
     sortable: true,
     width: 'flex-1',
     minWidth: 'min-w-0',
@@ -35,7 +38,9 @@ export const LIST_COLUMNS: ColumnDef[] = [
   },
   {
     id: 'priority',
-    label: 'Priority',
+    get label() {
+      return translate('Priority');
+    },
     sortable: true,
     width: 'w-20',
     minWidth: 'min-w-[60px]',
@@ -66,6 +71,7 @@ export interface ListHeaderProps {
  * SortIcon displays the current sort state for a column
  */
 function SortIcon({ column, sortConfig }: { column: SortColumn; sortConfig: SortConfig }) {
+  useUiLocale();
   if (sortConfig.column !== column) {
     // Not sorted by this column - show neutral indicator
     return (
@@ -93,6 +99,7 @@ const SortableColumnHeader = memo(function SortableColumnHeader({
   sortConfig: SortConfig;
   onSortChange: (column: SortColumn) => void;
 }) {
+  useUiLocale();
   const handleClick = useCallback(() => {
     onSortChange(column.id);
   }, [column.id, onSortChange]);
@@ -142,6 +149,7 @@ const SortableColumnHeader = memo(function SortableColumnHeader({
  * StaticColumnHeader renders a non-sortable header cell
  */
 const StaticColumnHeader = memo(function StaticColumnHeader({ column }: { column: ColumnDef }) {
+  useUiLocale();
   return (
     <div
       role="columnheader"
@@ -205,6 +213,7 @@ export const ListHeader = memo(function ListHeader({
   columns = LIST_COLUMNS,
   className,
 }: ListHeaderProps) {
+  useUiLocale();
   return (
     <div
       role="row"
@@ -234,7 +243,7 @@ export const ListHeader = memo(function ListHeader({
               'h-4 w-4 rounded border-border text-primary cursor-pointer',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1'
             )}
-            aria-label={allSelected ? 'Deselect all' : 'Select all'}
+            aria-label={allSelected ? translate('Deselect all') : translate('Select all')}
             data-testid="list-header-select-all"
           />
         </div>
@@ -258,10 +267,10 @@ export const ListHeader = memo(function ListHeader({
       <div
         role="columnheader"
         className="w-[80px] px-3 py-2 text-xs font-medium text-muted-foreground shrink-0"
-        aria-label="Actions"
+        aria-label={translate('Actions')}
         data-testid="list-header-actions"
       >
-        <span className="sr-only">Actions</span>
+        <span className="sr-only">{translate('Actions')}</span>
       </div>
     </div>
   );

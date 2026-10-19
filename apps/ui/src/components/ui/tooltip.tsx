@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import * as React from 'react';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 
@@ -29,6 +30,7 @@ function TooltipTrigger({
   children?: React.ReactNode;
   asChild?: boolean;
 }) {
+  useUiLocale();
   return (
     <TooltipTriggerPrimitive asChild={asChild} {...props}>
       {children}

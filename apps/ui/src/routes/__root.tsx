@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { createRootRoute, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState, useCallback, useDeferredValue, useRef } from 'react';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
@@ -181,6 +182,7 @@ function selectAutoOpenProject(
 }
 
 function RootLayoutContent() {
+  useUiLocale();
   const location = useLocation();
 
   // IMPORTANT: Use individual selectors instead of bare useAppStore() to prevent
@@ -1098,7 +1100,7 @@ function RootLayoutContent() {
             Matches the HTML app shell in index.html for a seamless HTML→React transition. */}
         <div
           role="status"
-          aria-label="Loading"
+          aria-label={translate('Loading')}
           className="h-4 w-4 animate-spin rounded-full border-2 border-foreground/10 border-t-foreground/50"
         />
       </main>
@@ -1110,7 +1112,7 @@ function RootLayoutContent() {
   if (!isAuthenticated) {
     return (
       <main className="flex h-full items-center justify-center" data-testid="app-container">
-        <LoadingState message="Redirecting..." />
+        <LoadingState message={translate('Redirecting...')} />
       </main>
     );
   }
@@ -1118,7 +1120,7 @@ function RootLayoutContent() {
   if (shouldBlockForSettings) {
     return (
       <main className="flex h-full items-center justify-center" data-testid="app-container">
-        <LoadingState message="Loading settings..." />
+        <LoadingState message={translate('Loading settings...')} />
       </main>
     );
   }
@@ -1126,7 +1128,7 @@ function RootLayoutContent() {
   if (shouldAutoOpen) {
     return (
       <main className="flex h-full items-center justify-center" data-testid="app-container">
-        <LoadingState message="Opening project..." />
+        <LoadingState message={translate('Opening project...')} />
       </main>
     );
   }
@@ -1195,6 +1197,7 @@ function RootLayoutContent() {
 }
 
 function RootLayout() {
+  useUiLocale();
   // Hide devtools on compact screens (mobile/tablet) to avoid overlap with UI controls
   const isCompact = useIsCompact();
   // Get the user's preference for showing devtools from the app store

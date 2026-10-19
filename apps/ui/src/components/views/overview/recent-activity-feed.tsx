@@ -1,3 +1,5 @@
+import { getFormattingLocale } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * RecentActivityFeed - Timeline of recent activity across all projects
  *
@@ -25,67 +27,93 @@ const activityTypeConfig: Record<
   feature_created: {
     icon: Info,
     defaultColor: 'text-blue-500',
-    label: 'Feature created',
+    get label() {
+      return translate('Feature created');
+    },
   },
   feature_completed: {
     icon: CheckCircle2,
     defaultColor: 'text-blue-500',
-    label: 'Feature completed',
+    get label() {
+      return translate('Feature completed');
+    },
   },
   feature_verified: {
     icon: CheckCircle2,
     defaultColor: 'text-purple-500',
-    label: 'Feature verified',
+    get label() {
+      return translate('Feature verified');
+    },
   },
   feature_failed: {
     icon: XCircle,
     defaultColor: 'text-red-500',
-    label: 'Feature failed',
+    get label() {
+      return translate('Feature failed');
+    },
   },
   feature_started: {
     icon: Play,
     defaultColor: 'text-green-500',
-    label: 'Feature started',
+    get label() {
+      return translate('Feature started');
+    },
   },
   auto_mode_started: {
     icon: Bot,
     defaultColor: 'text-green-500',
-    label: 'Auto-mode started',
+    get label() {
+      return translate('Auto-mode started');
+    },
   },
   auto_mode_stopped: {
     icon: Bot,
     defaultColor: 'text-muted-foreground',
-    label: 'Auto-mode stopped',
+    get label() {
+      return translate('Auto-mode stopped');
+    },
   },
   ideation_session_started: {
     icon: Play,
     defaultColor: 'text-brand-500',
-    label: 'Ideation session started',
+    get label() {
+      return translate('Ideation session started');
+    },
   },
   ideation_session_ended: {
     icon: Info,
     defaultColor: 'text-muted-foreground',
-    label: 'Ideation session ended',
+    get label() {
+      return translate('Ideation session ended');
+    },
   },
   idea_created: {
     icon: Info,
     defaultColor: 'text-brand-500',
-    label: 'Idea created',
+    get label() {
+      return translate('Idea created');
+    },
   },
   idea_converted: {
     icon: CheckCircle2,
     defaultColor: 'text-green-500',
-    label: 'Idea converted to feature',
+    get label() {
+      return translate('Idea converted to feature');
+    },
   },
   notification_created: {
     icon: AlertTriangle,
     defaultColor: 'text-yellow-500',
-    label: 'Notification',
+    get label() {
+      return translate('Notification');
+    },
   },
   project_opened: {
     icon: Info,
     defaultColor: 'text-blue-500',
-    label: 'Project opened',
+    get label() {
+      return translate('Project opened');
+    },
   },
 };
 
@@ -104,14 +132,15 @@ function formatRelativeTime(timestamp: string): string {
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return 'just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
+  if (diffMins < 1) return translate('just now');
+  if (diffMins < 60) return translate('{value1}m ago', { value1: diffMins });
+  if (diffHours < 24) return translate('{value1}h ago', { value1: diffHours });
+  if (diffDays < 7) return translate('{value1}d ago', { value1: diffDays });
+  return date.toLocaleDateString(getFormattingLocale());
 }
 
 export function RecentActivityFeed({ activities, maxItems = 10 }: RecentActivityFeedProps) {
+  useUiLocale();
   const navigate = useNavigate();
   const { upsertAndSetCurrentProject } = useAppStore();
 
@@ -127,7 +156,7 @@ export function RecentActivityFeed({ activities, maxItems = 10 }: RecentActivity
         const initResult = await initializeProject(projectPath);
 
         if (!initResult.success) {
-          toast.error('Failed to initialize project', {
+          toast.error(translate('Failed to initialize project'), {
             description: initResult.error || 'Unknown error',
           });
           return;
@@ -148,7 +177,7 @@ export function RecentActivityFeed({ activities, maxItems = 10 }: RecentActivity
           navigate({ to: '/board' });
         }
       } catch (error) {
-        toast.error('Failed to navigate to activity', {
+        toast.error(translate('Failed to navigate to activity'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
       }
@@ -170,7 +199,7 @@ export function RecentActivityFeed({ activities, maxItems = 10 }: RecentActivity
     return (
       <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
         <Clock className="w-8 h-8 mb-2 opacity-50" />
-        <p className="text-sm">No recent activity</p>
+        <p className="text-sm">{translate('No recent activity')}</p>
       </div>
     );
   }
@@ -190,7 +219,11 @@ export function RecentActivityFeed({ activities, maxItems = 10 }: RecentActivity
             className="group flex items-start gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
             onClick={() => handleActivityClick(activity)}
             onKeyDown={(e) => handleActivityKeyDown(e, activity)}
-            aria-label={`${config.label}: ${activity.featureName || activity.message} in ${activity.projectName}`}
+            aria-label={translate('{value1}: {value2} in {value3}', {
+              value1: config.label,
+              value2: activity.featureName || activity.message,
+              value3: activity.projectName,
+            })}
             data-testid={`activity-item-${activity.id}`}
           >
             {/* Icon */}

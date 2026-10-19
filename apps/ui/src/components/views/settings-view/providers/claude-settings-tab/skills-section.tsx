@@ -1,3 +1,5 @@
+import { formatCount } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * Skills Section - UI for managing Skills configuration
  *
@@ -13,6 +15,7 @@ import { Zap, Globe, FolderOpen, ExternalLink, Sparkles } from 'lucide-react';
 import { useSkillsSettings } from './hooks/use-skills-settings';
 
 export function SkillsSection() {
+  useUiLocale();
   const { enabled, sources, updateEnabled, updateSources, isLoading } = useSkillsSettings();
 
   const toggleSource = (source: 'user' | 'project') => {
@@ -40,15 +43,15 @@ export function SkillsSection() {
           </div>
           <div>
             <h3 className="font-semibold text-base flex items-center gap-2">
-              Skills
+              {translate('Skills')}
               {enabled && (
                 <span className="text-xs font-normal px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-500">
-                  {sources.length} source{sources.length !== 1 ? 's' : ''} active
+                  {formatCount(sources.length, 'source')} {translate(' active')}
                 </span>
               )}
             </h3>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Filesystem-based capabilities Claude invokes autonomously
+              {translate('Filesystem-based capabilities Claude invokes autonomously')}
             </p>
           </div>
         </div>
@@ -66,7 +69,7 @@ export function SkillsSection() {
         {enabled && (
           <div className="space-y-3">
             <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-              Load Skills from
+              {translate('Load Skills from')}
             </Label>
             <div className="grid gap-2">
               {/* User Skills Option */}
@@ -90,9 +93,9 @@ export function SkillsSection() {
                   <Globe className="w-4 h-4 text-muted-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <span className="text-sm font-medium">User Skills</span>
+                  <span className="text-sm font-medium">{translate('User Skills')}</span>
                   <span className="block text-xs text-muted-foreground mt-0.5 truncate">
-                    ~/.claude/skills/ — Available across all projects
+                    {translate('~/.claude/skills/ — Available across all projects')}
                   </span>
                 </div>
               </label>
@@ -118,9 +121,9 @@ export function SkillsSection() {
                   <FolderOpen className="w-4 h-4 text-muted-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <span className="text-sm font-medium">Project Skills</span>
+                  <span className="text-sm font-medium">{translate('Project Skills')}</span>
                   <span className="block text-xs text-muted-foreground mt-0.5 truncate">
-                    .claude/skills/ — Version-controlled with project
+                    <code>.claude/skills/</code> — {translate('Version-controlled with project')}
                   </span>
                 </div>
               </label>
@@ -136,10 +139,13 @@ export function SkillsSection() {
                 <Sparkles className="w-3.5 h-3.5 text-brand-500" />
               </div>
               <div className="text-xs text-muted-foreground space-y-1">
-                <p className="font-medium text-foreground/80">Auto-Discovery</p>
+                <p className="font-medium text-foreground/80">{translate('Auto-Discovery')}</p>
                 <p>
-                  Skills are automatically discovered when agents start. Define skills as{' '}
-                  <code className="text-xs bg-muted px-1 rounded">SKILL.md</code> files.
+                  {translate(
+                    'Skills are automatically discovered when agents start. Define skills as'
+                  )}{' '}
+                  <code className="text-xs bg-muted px-1 rounded">SKILL.md</code>{' '}
+                  {translate(' files.')}
                 </p>
               </div>
             </div>
@@ -150,7 +156,7 @@ export function SkillsSection() {
               className="flex items-center gap-2 text-xs text-brand-500 hover:text-brand-400 transition-colors"
             >
               <ExternalLink className="w-3.5 h-3.5" />
-              View Skills documentation
+              {translate('View Skills documentation')}
             </a>
           </div>
         )}
@@ -159,8 +165,10 @@ export function SkillsSection() {
         {!enabled && (
           <div className="text-center py-6 text-muted-foreground">
             <Zap className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="text-sm">Skills are disabled</p>
-            <p className="text-xs mt-1">Enable to load filesystem-based capabilities</p>
+            <p className="text-sm">{translate('Skills are disabled')}</p>
+            <p className="text-xs mt-1">
+              {translate('Enable to load filesystem-based capabilities')}
+            </p>
           </div>
         )}
       </div>

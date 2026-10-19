@@ -1,3 +1,5 @@
+import { formatCount } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   File,
@@ -87,23 +89,23 @@ function getGitStatusLabel(status: string | undefined): string {
   if (!status) return '';
   switch (status) {
     case 'M':
-      return 'Modified';
+      return translate('Modified');
     case 'A':
-      return 'Added';
+      return translate('Added');
     case 'D':
-      return 'Deleted';
+      return translate('Deleted');
     case '?':
-      return 'Untracked';
+      return translate('Untracked');
     case '!':
-      return 'Ignored';
+      return translate('Ignored');
     case 'S':
-      return 'Staged';
+      return translate('Staged');
     case 'R':
-      return 'Renamed';
+      return translate('Renamed');
     case 'C':
-      return 'Copied';
+      return translate('Copied');
     case 'U':
-      return 'Conflicted';
+      return translate('Conflicted');
     default:
       return status;
   }
@@ -181,6 +183,7 @@ function InlineInput({
   onCancel: () => void;
   placeholder?: string;
 }) {
+  useUiLocale();
   const [value, setValue] = useState(defaultValue || '');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -212,7 +215,7 @@ function InlineInput({
     }
     if (!isValidFileName(trimmed)) {
       // Invalid name — surface error, keep editing so the user can fix it
-      setErrorMessage('Invalid name: avoid /, \\, ".", or ".."');
+      setErrorMessage(translate('Invalid name: avoid /, \\, ".", or ".."'));
       inputRef.current?.focus();
       return;
     }
@@ -301,6 +304,7 @@ function TreeNode({
   onDragDropMove?: (sourcePaths: string[], targetFolderPath: string) => Promise<void>;
   effectivePath?: string;
 }) {
+  useUiLocale();
   const {
     expandedFolders,
     enhancedGitStatusMap,
@@ -364,7 +368,10 @@ function TreeNode({
   const handleDelete = async () => {
     const itemType = node.isDirectory ? 'folder' : 'file';
     const confirmed = window.confirm(
-      `Are you sure you want to delete "${node.name}"? This ${itemType} will be moved to trash.`
+      translate(
+        'Are you sure you want to delete "{value1}"? This {value2} will be moved to trash.',
+        { value1: node.name, value2: itemType }
+      )
     );
     if (confirmed) {
       await onDeleteItem(node.path, node.isDirectory);
@@ -523,7 +530,9 @@ function TreeNode({
             <>
               <span
                 className="text-[10px] font-medium shrink-0 px-1 py-0 rounded-full bg-muted text-muted-foreground"
-                title={`${folderRollup.count} changed file${folderRollup.count !== 1 ? 's' : ''}`}
+                title={translate('{value1}', {
+                  value1: formatCount(folderRollup.count, 'changed file'),
+                })}
               >
                 {folderRollup.count}
               </span>
@@ -570,17 +579,17 @@ function TreeNode({
                 <>
                   <span
                     className="w-1.5 h-1.5 rounded-l-full bg-green-500"
-                    title="Staged changes"
+                    title={translate('Staged changes')}
                   />
                   <span
                     className="w-1.5 h-1.5 rounded-r-full bg-yellow-500"
-                    title="Unstaged changes"
+                    title={translate('Unstaged changes')}
                   />
                 </>
               ) : isConflicted ? (
                 <span
                   className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"
-                  title="Conflicted"
+                  title={translate('Conflicted')}
                 />
               ) : (
                 <span
@@ -615,7 +624,7 @@ function TreeNode({
                   menuOpen && 'opacity-100'
                 )}
                 data-testid={`file-tree-menu-${node.name}`}
-                aria-label={`Actions for ${node.name}`}
+                aria-label={translate('Actions for {value1}', { value1: node.name })}
               >
                 <MoreVertical className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
@@ -633,7 +642,7 @@ function TreeNode({
                     className="gap-2"
                   >
                     <FilePlus className="w-4 h-4" />
-                    <span>New File</span>
+                    <span>{translate('New File')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={(e) => {
@@ -644,7 +653,7 @@ function TreeNode({
                     className="gap-2"
                   >
                     <FolderPlus className="w-4 h-4" />
-                    <span>New Folder</span>
+                    <span>{translate('New Folder')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                 </>
@@ -659,7 +668,7 @@ function TreeNode({
                 className="gap-2"
               >
                 <ClipboardCopy className="w-4 h-4" />
-                <span>Copy Path</span>
+                <span>{translate('Copy Path')}</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={(e) => {
@@ -669,7 +678,7 @@ function TreeNode({
                 className="gap-2"
               >
                 <Copy className="w-4 h-4" />
-                <span>Copy Name</span>
+                <span>{translate('Copy Name')}</span>
               </DropdownMenuItem>
 
               <DropdownMenuSeparator />
@@ -682,8 +691,10 @@ function TreeNode({
                     try {
                       const parentPath = node.path.substring(0, node.path.lastIndexOf('/')) || '/';
                       const destPath = await openFileBrowser({
-                        title: `Copy "${node.name}" To...`,
-                        description: 'Select the destination folder for the copy operation',
+                        title: translate('Copy "{value1}" To...', { value1: node.name }),
+                        description: translate(
+                          'Select the destination folder for the copy operation'
+                        ),
                         initialPath: parentPath,
                       });
                       if (destPath) {
@@ -696,7 +707,7 @@ function TreeNode({
                   className="gap-2"
                 >
                   <FolderInput className="w-4 h-4" />
-                  <span>Copy To...</span>
+                  <span>{translate('Copy To...')}</span>
                 </DropdownMenuItem>
               )}
 
@@ -708,8 +719,10 @@ function TreeNode({
                     try {
                       const parentPath = node.path.substring(0, node.path.lastIndexOf('/')) || '/';
                       const destPath = await openFileBrowser({
-                        title: `Move "${node.name}" To...`,
-                        description: 'Select the destination folder for the move operation',
+                        title: translate('Move "{value1}" To...', { value1: node.name }),
+                        description: translate(
+                          'Select the destination folder for the move operation'
+                        ),
                         initialPath: parentPath,
                       });
                       if (destPath) {
@@ -722,7 +735,7 @@ function TreeNode({
                   className="gap-2"
                 >
                   <FolderOutput className="w-4 h-4" />
-                  <span>Move To...</span>
+                  <span>{translate('Move To...')}</span>
                 </DropdownMenuItem>
               )}
 
@@ -736,7 +749,10 @@ function TreeNode({
                   className="gap-2"
                 >
                   <Download className="w-4 h-4" />
-                  <span>Download{node.isDirectory ? ' as ZIP' : ''}</span>
+                  <span>
+                    {translate('Download')}
+                    {node.isDirectory ? translate(' as ZIP') : ''}
+                  </span>
                 </DropdownMenuItem>
               )}
 
@@ -751,7 +767,7 @@ function TreeNode({
                 className="gap-2"
               >
                 <Pencil className="w-4 h-4" />
-                <span>Rename</span>
+                <span>{translate('Rename')}</span>
               </DropdownMenuItem>
 
               {/* Delete */}
@@ -763,7 +779,7 @@ function TreeNode({
                 className="gap-2 text-destructive focus:text-destructive focus:bg-destructive/10"
               >
                 <Trash2 className="w-4 h-4" />
-                <span>Delete</span>
+                <span>{translate('Delete')}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -846,6 +862,7 @@ export function FileTree({
   onDragDropMove,
   effectivePath,
 }: FileTreeProps) {
+  useUiLocale();
   const {
     fileTree,
     showHiddenFiles,
@@ -903,28 +920,28 @@ export function FileTree({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Explorer
+              {translate('Explorer')}
             </span>
           </div>
           <div className="flex items-center gap-0.5">
             <button
               onClick={() => setIsCreatingFile(true)}
               className="p-1 hover:bg-accent rounded"
-              title="New file"
+              title={translate('New file')}
             >
               <FilePlus className="w-3.5 h-3.5 text-muted-foreground" />
             </button>
             <button
               onClick={() => setIsCreatingFolder(true)}
               className="p-1 hover:bg-accent rounded"
-              title="New folder"
+              title={translate('New folder')}
             >
               <FolderPlus className="w-3.5 h-3.5 text-muted-foreground" />
             </button>
             <button
               onClick={() => setShowHiddenFiles(!showHiddenFiles)}
               className="p-1 hover:bg-accent rounded"
-              title={showHiddenFiles ? 'Hide dotfiles' : 'Show dotfiles'}
+              title={showHiddenFiles ? translate('Hide dotfiles') : translate('Show dotfiles')}
             >
               {showHiddenFiles ? (
                 <Eye className="w-3.5 h-3.5 text-muted-foreground" />
@@ -932,7 +949,11 @@ export function FileTree({
                 <EyeOff className="w-3.5 h-3.5 text-muted-foreground" />
               )}
             </button>
-            <button onClick={onRefresh} className="p-1 hover:bg-accent rounded" title="Refresh">
+            <button
+              onClick={onRefresh}
+              className="p-1 hover:bg-accent rounded"
+              title={translate('Refresh')}
+            >
               <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
             </button>
           </div>
@@ -983,7 +1004,7 @@ export function FileTree({
 
         {filteredTree.length === 0 ? (
           <div className="flex items-center justify-center py-8">
-            <p className="text-xs text-muted-foreground">No files found</p>
+            <p className="text-xs text-muted-foreground">{translate('No files found')}</p>
           </div>
         ) : (
           filteredTree.map((node) => (

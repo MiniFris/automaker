@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 
 import * as React from 'react';
@@ -37,6 +38,7 @@ const Accordion = React.forwardRef<HTMLDivElement, AccordionProps>(
     },
     ref
   ) => {
+    useUiLocale();
     const [internalValue, setInternalValue] = React.useState<string | string[]>(() => {
       if (value !== undefined) return value;
       if (defaultValue !== undefined) return defaultValue;
@@ -110,6 +112,7 @@ interface AccordionItemProps extends React.HTMLAttributes<HTMLDivElement> {
 
 const AccordionItem = React.forwardRef<HTMLDivElement, AccordionItemProps>(
   ({ className, value, children, ...props }, ref) => {
+    useUiLocale();
     const accordionContext = React.useContext(AccordionContext);
 
     if (!accordionContext) {
@@ -143,6 +146,7 @@ interface AccordionTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonEle
 
 const AccordionTrigger = React.forwardRef<HTMLButtonElement, AccordionTriggerProps>(
   ({ className, children, ...props }, ref) => {
+    useUiLocale();
     const accordionContext = React.useContext(AccordionContext);
     const itemContext = React.useContext(AccordionItemContext);
 
@@ -181,6 +185,7 @@ interface AccordionContentProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 const AccordionContent = React.forwardRef<HTMLDivElement, AccordionContentProps>(
   ({ className, children, ...props }, ref) => {
+    useUiLocale();
     const itemContext = React.useContext(AccordionItemContext);
     const contentRef = React.useRef<HTMLDivElement>(null);
     const [height, setHeight] = React.useState<number | undefined>(undefined);

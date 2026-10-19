@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useCallback, useState, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import {
   ReactFlow,
@@ -133,6 +134,7 @@ function GraphCanvasInner({
   projectPath,
   worktreeSelector,
 }: GraphCanvasProps) {
+  useUiLocale();
   const [isLocked, setIsLocked] = useState(false);
   const [layoutDirection, setLayoutDirection] = useState<'LR' | 'TB'>('LR');
   const { setViewport, getViewport, fitView } = useReactFlow();
@@ -564,7 +566,7 @@ function GraphCanvasInner({
                   data-testid="graph-plan-button"
                 >
                   <Wand2 className="w-4 h-4" />
-                  Plan
+                  {translate('Plan')}
                 </Button>
                 {onPlanUseSelectedWorktreeBranchChange &&
                   planUseSelectedWorktreeBranch !== undefined && (
@@ -582,7 +584,7 @@ function GraphCanvasInner({
               className="gap-1.5 w-full sm:w-auto"
             >
               <Plus className="w-4 h-4" />
-              Add Feature
+              {translate('Add Feature')}
             </Button>
           </div>
         </Panel>
@@ -596,13 +598,13 @@ function GraphCanvasInner({
             >
               <SearchX className="w-10 h-10 text-muted-foreground" />
               <div className="text-center">
-                <p className="text-sm font-medium">No matching tasks</p>
+                <p className="text-sm font-medium">{translate('No matching tasks')}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Try adjusting your filters or search query
+                  {translate('Try adjusting your filters or search query')}
                 </p>
               </div>
               <Button variant="outline" size="sm" onClick={handleClearFilters} className="mt-1">
-                Clear Filters
+                {translate('Clear Filters')}
               </Button>
             </div>
           </Panel>
@@ -614,6 +616,7 @@ function GraphCanvasInner({
 
 // Wrap with provider for hooks to work
 export function GraphCanvas(props: GraphCanvasProps) {
+  useUiLocale();
   return (
     <ReactFlowProvider>
       <GraphCanvasInner {...props} />

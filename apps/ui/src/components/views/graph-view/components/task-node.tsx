@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import type { NodeProps } from '@xyflow/react';
@@ -35,28 +36,36 @@ type TaskNodeProps = NodeProps & {
 const statusConfig = {
   backlog: {
     icon: Clock,
-    label: 'Backlog',
+    get label() {
+      return translate('Backlog');
+    },
     colorClass: 'text-muted-foreground',
     borderClass: 'border-border',
     bgClass: 'bg-card',
   },
   in_progress: {
     icon: Play,
-    label: 'In Progress',
+    get label() {
+      return translate('In Progress');
+    },
     colorClass: 'text-[var(--status-in-progress)]',
     borderClass: 'border-[var(--status-in-progress)]',
     bgClass: 'bg-[var(--status-in-progress-bg)]',
   },
   waiting_approval: {
     icon: Pause,
-    label: 'Waiting Approval',
+    get label() {
+      return translate('Waiting Approval');
+    },
     colorClass: 'text-[var(--status-waiting)]',
     borderClass: 'border-[var(--status-waiting)]',
     bgClass: 'bg-[var(--status-warning-bg)]',
   },
   verified: {
     icon: CheckCircle2,
-    label: 'Verified',
+    get label() {
+      return translate('Verified');
+    },
     colorClass: 'text-[var(--status-success)]',
     borderClass: 'border-[var(--status-success)]',
     bgClass: 'bg-[var(--status-success-bg)]',
@@ -64,9 +73,24 @@ const statusConfig = {
 };
 
 const priorityConfig = {
-  1: { label: 'High', colorClass: 'bg-[var(--status-error)] text-white' },
-  2: { label: 'Medium', colorClass: 'bg-[var(--status-warning)] text-black' },
-  3: { label: 'Low', colorClass: 'bg-[var(--status-info)] text-white' },
+  1: {
+    get label() {
+      return translate('High');
+    },
+    colorClass: 'bg-[var(--status-error)] text-white',
+  },
+  2: {
+    get label() {
+      return translate('Medium');
+    },
+    colorClass: 'bg-[var(--status-warning)] text-black',
+  },
+  3: {
+    get label() {
+      return translate('Low');
+    },
+    colorClass: 'bg-[var(--status-info)] text-white',
+  },
 };
 
 // Helper function to get border style with opacity (like KanbanCard does)
@@ -88,6 +112,7 @@ function getCardBorderStyle(
 }
 
 export const TaskNode = memo(function TaskNode({ data, selected }: TaskNodeProps) {
+  useUiLocale();
   // Handle pipeline statuses by treating them like in_progress
   // Treat completed (archived) as verified for display
   const status = data.status || 'backlog';
@@ -194,13 +219,13 @@ export const TaskNode = memo(function TaskNode({ data, selected }: TaskNodeProps
             {data.isRunning && (
               <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
                 <span className="inline-flex w-1.5 h-1.5 rounded-full bg-[var(--status-in-progress)]" />
-                Running
+                {translate('Running')}
               </div>
             )}
             {isStopped && (
               <div className="mt-2 flex items-center gap-2 text-[10px] text-[var(--status-warning)]">
                 <span className="inline-flex w-1.5 h-1.5 rounded-full bg-[var(--status-warning)]" />
-                Paused
+                {translate('Paused')}
               </div>
             )}
           </div>
@@ -293,7 +318,10 @@ export const TaskNode = memo(function TaskNode({ data, selected }: TaskNodeProps
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-xs max-w-[200px]">
-                  <p>Blocked by {data.blockingDependencies.length} dependencies</p>
+                  <p>
+                    {translate('Blocked by ')}
+                    {data.blockingDependencies.length} {translate(' dependencies')}
+                  </p>
                 </TooltipContent>
               </Tooltip>
             )}
@@ -321,7 +349,7 @@ export const TaskNode = memo(function TaskNode({ data, selected }: TaskNodeProps
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-xs max-w-[200px]">
-                  <p>Task paused - click menu to resume</p>
+                  <p>{translate('Task paused - click menu to resume')}</p>
                 </TooltipContent>
               </Tooltip>
             )}
@@ -357,7 +385,7 @@ export const TaskNode = memo(function TaskNode({ data, selected }: TaskNodeProps
                   }}
                 >
                   <Terminal className="w-3 h-3 mr-2" />
-                  View Agent Logs
+                  {translate('View Agent Logs')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-xs cursor-pointer"
@@ -367,7 +395,7 @@ export const TaskNode = memo(function TaskNode({ data, selected }: TaskNodeProps
                   }}
                 >
                   <Eye className="w-3 h-3 mr-2" />
-                  View Details
+                  {translate('View Details')}
                 </DropdownMenuItem>
                 {data.status === 'backlog' && !data.isBlocked && (
                   <DropdownMenuItem
@@ -378,7 +406,7 @@ export const TaskNode = memo(function TaskNode({ data, selected }: TaskNodeProps
                     }}
                   >
                     <Play className="w-3 h-3 mr-2" />
-                    Start Task
+                    {translate('Start Task')}
                   </DropdownMenuItem>
                 )}
                 {data.isRunning && (
@@ -390,7 +418,7 @@ export const TaskNode = memo(function TaskNode({ data, selected }: TaskNodeProps
                     }}
                   >
                     <Pause className="w-3 h-3 mr-2" />
-                    Stop Task
+                    {translate('Stop Task')}
                   </DropdownMenuItem>
                 )}
                 {isStopped && (
@@ -402,7 +430,7 @@ export const TaskNode = memo(function TaskNode({ data, selected }: TaskNodeProps
                     }}
                   >
                     <RotateCcw className="w-3 h-3 mr-2" />
-                    Resume Task
+                    {translate('Resume Task')}
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem
@@ -413,7 +441,7 @@ export const TaskNode = memo(function TaskNode({ data, selected }: TaskNodeProps
                   }}
                 >
                   <GitFork className="w-3 h-3 mr-2" />
-                  Spawn Sub-Task
+                  {translate('Spawn Sub-Task')}
                 </DropdownMenuItem>
                 {!data.isRunning && (
                   <DropdownMenuItem
@@ -424,7 +452,7 @@ export const TaskNode = memo(function TaskNode({ data, selected }: TaskNodeProps
                     }}
                   >
                     <Trash2 className="w-3 h-3 mr-2" />
-                    Delete Task
+                    {translate('Delete Task')}
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
@@ -460,7 +488,7 @@ export const TaskNode = memo(function TaskNode({ data, selected }: TaskNodeProps
               <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                 <div className="h-full bg-[var(--status-in-progress)] rounded-full animate-progress-indeterminate" />
               </div>
-              <span className="text-[10px] text-muted-foreground">Running...</span>
+              <span className="text-[10px] text-muted-foreground">{translate('Running...')}</span>
             </div>
           )}
 
@@ -470,7 +498,9 @@ export const TaskNode = memo(function TaskNode({ data, selected }: TaskNodeProps
               <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                 <div className="h-full w-1/2 bg-[var(--status-warning)] rounded-full" />
               </div>
-              <span className="text-[10px] text-[var(--status-warning)] font-medium">Paused</span>
+              <span className="text-[10px] text-[var(--status-warning)] font-medium">
+                {translate('Paused')}
+              </span>
             </div>
           )}
 

@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, Wrench } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -19,6 +20,7 @@ interface MCPToolsListProps {
 }
 
 export function MCPToolsList({ tools, isLoading, error, className }: MCPToolsListProps) {
+  useUiLocale();
   const [expandedTools, setExpandedTools] = useState<Set<string>>(new Set());
 
   const toggleTool = (toolName: string) => {
@@ -36,7 +38,7 @@ export function MCPToolsList({ tools, isLoading, error, className }: MCPToolsLis
   if (isLoading) {
     return (
       <div className={cn('text-sm text-muted-foreground animate-pulse', className)}>
-        Loading tools...
+        {translate('Loading tools...')}
       </div>
     );
   }
@@ -48,7 +50,7 @@ export function MCPToolsList({ tools, isLoading, error, className }: MCPToolsLis
   if (!tools || tools.length === 0) {
     return (
       <div className={cn('text-sm text-muted-foreground italic', className)}>
-        No tools available
+        {translate('No tools available')}
       </div>
     );
   }

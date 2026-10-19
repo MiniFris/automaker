@@ -1,3 +1,5 @@
+import { formatCount } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Check, CircleDot, Globe, GitPullRequest, FlaskConical, AlertTriangle } from 'lucide-react';
@@ -73,6 +75,7 @@ export function WorktreeDropdownItem({
   testSessionInfo,
   onSelect,
 }: WorktreeDropdownItemProps) {
+  useUiLocale();
   const { hasChanges, changedFilesCount, pr } = worktree;
 
   // Truncate long branch names using shared utility
@@ -119,7 +122,7 @@ export function WorktreeDropdownItem({
         {/* Main badge */}
         {worktree.isMain && (
           <span className="text-[10px] px-1 py-0.5 rounded bg-muted text-muted-foreground shrink-0">
-            main
+            {translate('main')}
           </span>
         )}
       </div>
@@ -140,7 +143,11 @@ export function WorktreeDropdownItem({
               'inline-flex items-center justify-center h-4 min-w-[1rem] px-1 text-[10px] font-medium rounded border',
               getChangesBadgeStyles()
             )}
-            title={`${changedFilesCount ?? 'Some'} uncommitted file${changedFilesCount !== 1 ? 's' : ''}`}
+            title={
+              changedFilesCount === undefined
+                ? translate('Uncommitted changes')
+                : formatCount(changedFilesCount, 'uncommitted file')
+            }
           >
             <CircleDot className="w-2.5 h-2.5 mr-0.5" />
             {changedFilesCount ?? '!'}
@@ -151,7 +158,9 @@ export function WorktreeDropdownItem({
         {devServerRunning && devServerInfo?.urlDetected !== false && (
           <span
             className="inline-flex items-center justify-center h-4 w-4 text-green-500"
-            title={`Dev server running on port ${devServerInfo?.port}`}
+            title={translate('Dev server running on port {value1}', {
+              value1: devServerInfo?.port,
+            })}
           >
             <Globe className="w-3 h-3" />
           </span>
@@ -161,7 +170,7 @@ export function WorktreeDropdownItem({
         {devServerStarting && (
           <span
             className="inline-flex items-center justify-center h-4 w-4 text-amber-500"
-            title="Dev server starting..."
+            title={translate('Dev server starting...')}
           >
             <Spinner size="xs" variant="primary" />
           </span>
@@ -171,7 +180,7 @@ export function WorktreeDropdownItem({
         {isTestRunning && (
           <span
             className="inline-flex items-center justify-center h-4 w-4 text-blue-500"
-            title="Tests Running"
+            title={translate('Tests Running')}
           >
             <FlaskConical className="w-3 h-3 animate-pulse" />
           </span>
@@ -184,7 +193,7 @@ export function WorktreeDropdownItem({
               'inline-flex items-center justify-center h-4 w-4',
               getTestStatusStyles(testSessionInfo.status)
             )}
-            title={`Last test: ${testSessionInfo.status}`}
+            title={translate('Last test: {value1}', { value1: testSessionInfo.status })}
           >
             <FlaskConical className="w-3 h-3" />
           </span>
@@ -192,7 +201,10 @@ export function WorktreeDropdownItem({
 
         {/* Auto mode indicator */}
         {isAutoModeRunning && (
-          <span className="flex items-center justify-center h-4 px-0.5" title="Auto Mode Running">
+          <span
+            className="flex items-center justify-center h-4 px-0.5"
+            title={translate('Auto Mode Running')}
+          >
             <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
           </span>
         )}
@@ -204,7 +216,12 @@ export function WorktreeDropdownItem({
               'inline-flex items-center justify-center h-4 min-w-[1rem] px-1 text-[10px] font-medium rounded border',
               getConflictBadgeStyles()
             )}
-            title={`${getConflictTypeLabel(worktree.conflictType)} conflicts${worktree.conflictFiles?.length ? ` (${worktree.conflictFiles.length} files)` : ''}`}
+            title={translate('{value1} conflicts{value2}', {
+              value1: getConflictTypeLabel(worktree.conflictType),
+              value2: worktree.conflictFiles?.length
+                ? ` (${worktree.conflictFiles.length} files)`
+                : '',
+            })}
           >
             <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />
             {getConflictTypeLabel(worktree.conflictType)}
@@ -218,7 +235,7 @@ export function WorktreeDropdownItem({
               'inline-flex items-center gap-0.5 h-4 px-1 text-[10px] font-medium rounded border',
               getPRBadgeStyles(pr.state)
             )}
-            title={`PR #${pr.number}: ${pr.title}`}
+            title={translate('PR #{value1}: {value2}', { value1: pr.number, value2: pr.title })}
           >
             <GitPullRequest className="w-2.5 h-2.5" />#{pr.number}
           </span>

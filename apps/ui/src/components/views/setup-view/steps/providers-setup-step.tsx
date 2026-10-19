@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,6 +56,7 @@ type ProviderTab = 'claude' | 'cursor' | 'codex' | 'opencode' | 'gemini' | 'copi
 // Claude Content
 // ============================================================================
 function ClaudeContent() {
+  useUiLocale();
   const {
     claudeCliStatus,
     claudeAuthStatus,
@@ -107,7 +109,7 @@ function ClaudeContent() {
           method: 'cli_authenticated',
           hasCredentialsFile: currentAuthStatus?.hasCredentialsFile || false,
         });
-        toast.success('Claude CLI authenticated!');
+        toast.success(translate('Claude CLI authenticated!'));
       } else if (hasLimitReachedError) {
         setVerificationError('Rate limit reached. Please try again later.');
       } else if (result.error) {
@@ -141,7 +143,7 @@ function ClaudeContent() {
         });
 
         if (result.installed) {
-          toast.success('Claude CLI installed!');
+          toast.success(translate('Claude CLI installed!'));
           // Auto-verify if CLI is installed
           setIsChecking(false);
           await verifyAuth();
@@ -178,7 +180,7 @@ function ClaudeContent() {
         apiKeyValid: true,
       });
       setApiKeys({ ...apiKeys, anthropic: apiKey });
-      toast.success('API key saved successfully!');
+      toast.success(translate('API key saved successfully!'));
     },
   });
 
@@ -187,7 +189,7 @@ function ClaudeContent() {
     try {
       const api = getElectronAPI();
       if (!api.setup?.deleteApiKey) {
-        toast.error('Delete API not available');
+        toast.error(translate('Delete API not available'));
         return;
       }
       const result = await api.setup.deleteApiKey('anthropic');
@@ -203,10 +205,10 @@ function ClaudeContent() {
         });
         // Reset verification guard so next check can verify again
         hasVerifiedRef.current = false;
-        toast.success('API key deleted successfully');
+        toast.success(translate('API key deleted successfully'));
       }
     } catch {
-      toast.error('Failed to delete API key');
+      toast.error(translate('Failed to delete API key'));
     } finally {
       setIsDeletingApiKey(false);
     }
@@ -222,7 +224,7 @@ function ClaudeContent() {
 
   const copyCommand = (command: string) => {
     navigator.clipboard.writeText(command);
-    toast.success('Command copied to clipboard');
+    toast.success(translate('Command copied to clipboard'));
   };
 
   const hasApiKey =
@@ -239,7 +241,7 @@ function ClaudeContent() {
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <AnthropicIcon className="w-5 h-5" />
-            Claude CLI Status
+            {translate('Claude CLI Status')}
           </CardTitle>
           <Button
             variant="ghost"
@@ -253,11 +255,13 @@ function ClaudeContent() {
         <CardDescription>
           {claudeCliStatus?.installed
             ? claudeAuthStatus?.authenticated
-              ? `Authenticated${claudeCliStatus.version ? ` (v${claudeCliStatus.version})` : ''}`
+              ? translate('Authenticated{value1}', {
+                  value1: claudeCliStatus.version ? ` (v${claudeCliStatus.version})` : '',
+                })
               : isVerifying
-                ? 'Verifying authentication...'
-                : 'Installed but not authenticated'
-            : 'Not installed on your system'}
+                ? translate('Verifying authentication...')
+                : translate('Installed but not authenticated')
+            : translate('Not installed on your system')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -267,16 +271,19 @@ function ClaudeContent() {
             <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
               <div>
-                <p className="font-medium text-foreground">CLI Installed</p>
+                <p className="font-medium text-foreground">{translate('CLI Installed')}</p>
                 <p className="text-sm text-muted-foreground">
-                  {claudeCliStatus?.version && `Version: ${claudeCliStatus.version}`}
+                  {claudeCliStatus?.version &&
+                    translate('Version: {value1}', { value1: claudeCliStatus.version })}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
               <p className="font-medium text-foreground">
-                {isCliAuthenticated ? 'CLI Authenticated' : 'API Key Configured'}
+                {isCliAuthenticated
+                  ? translate('CLI Authenticated')
+                  : translate('API Key Configured')}
               </p>
             </div>
           </div>
@@ -287,7 +294,9 @@ function ClaudeContent() {
           <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
             <Spinner size="md" />
             <p className="font-medium text-foreground">
-              {isChecking ? 'Checking Claude CLI status...' : 'Verifying authentication...'}
+              {isChecking
+                ? translate('Checking Claude CLI status...')
+                : translate('Verifying authentication...')}
             </p>
           </div>
         )}
@@ -298,16 +307,20 @@ function ClaudeContent() {
             <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30 border border-border">
               <XCircle className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium text-foreground">Claude CLI not found</p>
+                <p className="font-medium text-foreground">{translate('Claude CLI not found')}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Install Claude CLI to use Claude Code subscription.
+                  {translate('Install Claude CLI to use Claude Code subscription.')}
                 </p>
               </div>
             </div>
             <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
-              <p className="font-medium text-foreground text-sm">Install Claude CLI:</p>
+              <p className="font-medium text-foreground text-sm">
+                {translate('Install Claude CLI:')}
+              </p>
               <div className="space-y-2">
-                <Label className="text-sm text-muted-foreground">macOS / Linux</Label>
+                <Label className="text-sm text-muted-foreground">
+                  {translate('macOS / Linux')}
+                </Label>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground overflow-x-auto">
                     curl -fsSL https://claude.ai/install.sh | bash
@@ -330,12 +343,12 @@ function ClaudeContent() {
                 {isInstalling ? (
                   <>
                     <Spinner size="sm" variant="foreground" className="mr-2" />
-                    Installing...
+                    {translate('Installing...')}
                   </>
                 ) : (
                   <>
                     <Download className="w-4 h-4 mr-2" />
-                    Auto Install
+                    {translate('Auto Install')}
                   </>
                 )}
               </Button>
@@ -353,9 +366,10 @@ function ClaudeContent() {
               <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
                 <CheckCircle2 className="w-5 h-5 text-green-500" />
                 <div>
-                  <p className="font-medium text-foreground">CLI Installed</p>
+                  <p className="font-medium text-foreground">{translate('CLI Installed')}</p>
                   <p className="text-sm text-muted-foreground">
-                    {claudeCliStatus?.version && `Version: ${claudeCliStatus.version}`}
+                    {claudeCliStatus?.version &&
+                      translate('Version: {value1}', { value1: claudeCliStatus.version })}
                   </p>
                 </div>
               </div>
@@ -365,7 +379,9 @@ function ClaudeContent() {
                 <div className="flex items-start gap-3 p-4 rounded-lg bg-red-500/10 border border-red-500/20">
                   <XCircle className="w-5 h-5 text-red-500 shrink-0" />
                   <div>
-                    <p className="font-medium text-foreground">Authentication failed</p>
+                    <p className="font-medium text-foreground">
+                      {translate('Authentication failed')}
+                    </p>
                     <p className="text-sm text-red-400 mt-1">{verificationError}</p>
                   </div>
                 </div>
@@ -375,10 +391,13 @@ function ClaudeContent() {
               <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
                 <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <p className="font-medium text-foreground">Claude CLI not authenticated</p>
+                  <p className="font-medium text-foreground">
+                    {translate('Claude CLI not authenticated')}
+                  </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Run <code className="bg-muted px-1 rounded">claude login</code> in your terminal
-                    or provide an API key below.
+                    {translate('Run ')}
+                    <code className="bg-muted px-1 rounded">claude login</code>{' '}
+                    {translate(' in your terminal or provide an API key below.')}
                   </p>
                 </div>
               </div>
@@ -389,13 +408,15 @@ function ClaudeContent() {
                   <AccordionTrigger className="hover:no-underline">
                     <div className="flex items-center gap-3">
                       <Key className="w-5 h-5 text-muted-foreground" />
-                      <span className="font-medium">Use Anthropic API Key instead</span>
+                      <span className="font-medium">
+                        {translate('Use Anthropic API Key instead')}
+                      </span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="pt-4 space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="anthropic-key" className="text-foreground">
-                        Anthropic API Key
+                        {translate('Anthropic API Key')}
                       </Label>
                       <Input
                         id="anthropic-key"
@@ -406,14 +427,14 @@ function ClaudeContent() {
                         className="bg-input border-border text-foreground"
                       />
                       <p className="text-xs text-muted-foreground">
-                        Don&apos;t have an API key?{' '}
+                        {translate("Don't have an API key?")}{' '}
                         <a
                           href="https://console.anthropic.com/settings/keys"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-brand-500 hover:underline"
                         >
-                          Get one from Anthropic Console
+                          {translate('Get one from Anthropic Console')}
                           <ExternalLink className="w-3 h-3 inline ml-1" />
                         </a>
                       </p>
@@ -427,7 +448,7 @@ function ClaudeContent() {
                         {isSavingApiKey ? (
                           <Spinner size="sm" variant="foreground" />
                         ) : (
-                          'Save API Key'
+                          translate('Save API Key')
                         )}
                       </Button>
                       {hasApiKey && (
@@ -459,6 +480,7 @@ function ClaudeContent() {
 // Cursor Content
 // ============================================================================
 function CursorContent() {
+  useUiLocale();
   const { cursorCliStatus, setCursorCliStatus } = useSetupStore();
   const [isChecking, setIsChecking] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -480,7 +502,7 @@ function CursorContent() {
           loginCommand: result.loginCommand,
         });
         if (result.auth?.authenticated) {
-          toast.success('Cursor CLI is ready!');
+          toast.success(translate('Cursor CLI is ready!'));
         }
       }
     } catch {
@@ -499,7 +521,7 @@ function CursorContent() {
 
   const copyCommand = (command: string) => {
     navigator.clipboard.writeText(command);
-    toast.success('Command copied to clipboard');
+    toast.success(translate('Command copied to clipboard'));
   };
 
   const handleLogin = async () => {
@@ -507,7 +529,7 @@ function CursorContent() {
     try {
       const loginCommand = cursorCliStatus?.loginCommand || 'cursor-agent login';
       await navigator.clipboard.writeText(loginCommand);
-      toast.info('Login command copied! Paste in terminal to authenticate.');
+      toast.info(translate('Login command copied! Paste in terminal to authenticate.'));
 
       let attempts = 0;
       pollIntervalRef.current = setInterval(async () => {
@@ -529,7 +551,7 @@ function CursorContent() {
               auth: result.auth,
             });
             setIsLoggingIn(false);
-            toast.success('Successfully logged in to Cursor!');
+            toast.success(translate('Successfully logged in to Cursor!'));
           }
         } catch {
           // Ignore
@@ -540,11 +562,11 @@ function CursorContent() {
             pollIntervalRef.current = null;
           }
           setIsLoggingIn(false);
-          toast.error('Login timed out. Please try again.');
+          toast.error(translate('Login timed out. Please try again.'));
         }
       }, 2000);
     } catch {
-      toast.error('Failed to start login process');
+      toast.error(translate('Failed to start login process'));
       setIsLoggingIn(false);
     }
   };
@@ -557,7 +579,7 @@ function CursorContent() {
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <CursorIcon className="w-5 h-5" />
-            Cursor CLI Status
+            {translate('Cursor CLI Status')}
           </CardTitle>
           <Button variant="ghost" size="sm" onClick={checkStatus} disabled={isChecking}>
             {isChecking ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
@@ -566,9 +588,11 @@ function CursorContent() {
         <CardDescription>
           {cursorCliStatus?.installed
             ? cursorCliStatus.auth?.authenticated
-              ? `Authenticated${cursorCliStatus.version ? ` (v${cursorCliStatus.version})` : ''}`
-              : 'Installed but not authenticated'
-            : 'Not installed on your system'}
+              ? translate('Authenticated{value1}', {
+                  value1: cursorCliStatus.version ? ` (v${cursorCliStatus.version})` : '',
+                })
+              : translate('Installed but not authenticated')
+            : translate('Not installed on your system')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -577,15 +601,16 @@ function CursorContent() {
             <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
               <div>
-                <p className="font-medium text-foreground">CLI Installed</p>
+                <p className="font-medium text-foreground">{translate('CLI Installed')}</p>
                 <p className="text-sm text-muted-foreground">
-                  {cursorCliStatus?.version && `Version: ${cursorCliStatus.version}`}
+                  {cursorCliStatus?.version &&
+                    translate('Version: {value1}', { value1: cursorCliStatus.version })}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
-              <p className="font-medium text-foreground">Authenticated</p>
+              <p className="font-medium text-foreground">{translate('Authenticated')}</p>
             </div>
           </div>
         )}
@@ -595,14 +620,14 @@ function CursorContent() {
             <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30 border border-border">
               <XCircle className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium text-foreground">Cursor CLI not found</p>
+                <p className="font-medium text-foreground">{translate('Cursor CLI not found')}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Install Cursor IDE to use Cursor AI agent.
+                  {translate('Install Cursor IDE to use Cursor AI agent.')}
                 </p>
               </div>
             </div>
             <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
-              <p className="font-medium text-foreground text-sm">Install Cursor:</p>
+              <p className="font-medium text-foreground text-sm">{translate('Install Cursor:')}</p>
               <div className="flex items-center gap-2">
                 <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground overflow-x-auto">
                   {cursorCliStatus?.installCommand || 'npm install -g @anthropic/cursor-agent'}
@@ -629,9 +654,10 @@ function CursorContent() {
             <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
               <div>
-                <p className="font-medium text-foreground">CLI Installed</p>
+                <p className="font-medium text-foreground">{translate('CLI Installed')}</p>
                 <p className="text-sm text-muted-foreground">
-                  {cursorCliStatus?.version && `Version: ${cursorCliStatus.version}`}
+                  {cursorCliStatus?.version &&
+                    translate('Version: {value1}', { value1: cursorCliStatus.version })}
                 </p>
               </div>
             </div>
@@ -639,9 +665,11 @@ function CursorContent() {
             <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
               <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium text-foreground">Cursor CLI not authenticated</p>
+                <p className="font-medium text-foreground">
+                  {translate('Cursor CLI not authenticated')}
+                </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Run the login command to authenticate.
+                  {translate('Run the login command to authenticate.')}
                 </p>
               </div>
             </div>
@@ -666,10 +694,10 @@ function CursorContent() {
                 {isLoggingIn ? (
                   <>
                     <Spinner size="sm" variant="foreground" className="mr-2" />
-                    Waiting for login...
+                    {translate('Waiting for login...')}
                   </>
                 ) : (
-                  'Copy Command & Wait for Login'
+                  translate('Copy Command & Wait for Login')
                 )}
               </Button>
             </div>
@@ -679,7 +707,9 @@ function CursorContent() {
         {isChecking && (
           <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
             <Spinner size="md" />
-            <p className="font-medium text-foreground">Checking Cursor CLI status...</p>
+            <p className="font-medium text-foreground">
+              {translate('Checking Cursor CLI status...')}
+            </p>
           </div>
         )}
       </CardContent>
@@ -691,6 +721,7 @@ function CursorContent() {
 // Codex Content
 // ============================================================================
 function CodexContent() {
+  useUiLocale();
   const { codexCliStatus, codexAuthStatus, setCodexCliStatus, setCodexAuthStatus } =
     useSetupStore();
   const { setApiKeys, apiKeys } = useAppStore();
@@ -725,7 +756,7 @@ function CodexContent() {
             authenticated: true,
             method,
           });
-          toast.success('Codex CLI is ready!');
+          toast.success(translate('Codex CLI is ready!'));
         }
       }
     } catch {
@@ -744,7 +775,7 @@ function CodexContent() {
 
   const copyCommand = (command: string) => {
     navigator.clipboard.writeText(command);
-    toast.success('Command copied to clipboard');
+    toast.success(translate('Command copied to clipboard'));
   };
 
   const handleSaveApiKey = async () => {
@@ -753,17 +784,17 @@ function CodexContent() {
     try {
       const api = getElectronAPI();
       if (!api.setup?.saveApiKey) {
-        toast.error('Save API not available');
+        toast.error(translate('Save API not available'));
         return;
       }
       const result = await api.setup.saveApiKey('openai', apiKey);
       if (result.success) {
         setApiKeys({ ...apiKeys, openai: apiKey });
         setCodexAuthStatus({ authenticated: true, method: 'api_key' });
-        toast.success('API key saved successfully!');
+        toast.success(translate('API key saved successfully!'));
       }
     } catch {
-      toast.error('Failed to save API key');
+      toast.error(translate('Failed to save API key'));
     } finally {
       setIsSaving(false);
     }
@@ -773,7 +804,7 @@ function CodexContent() {
     setIsLoggingIn(true);
     try {
       await navigator.clipboard.writeText('codex login');
-      toast.info('Login command copied! Paste in terminal to authenticate.');
+      toast.info(translate('Login command copied! Paste in terminal to authenticate.'));
 
       let attempts = 0;
       pollIntervalRef.current = setInterval(async () => {
@@ -789,7 +820,7 @@ function CodexContent() {
             }
             setCodexAuthStatus({ authenticated: true, method: 'cli_authenticated' });
             setIsLoggingIn(false);
-            toast.success('Successfully logged in to Codex!');
+            toast.success(translate('Successfully logged in to Codex!'));
           }
         } catch {
           // Ignore
@@ -800,11 +831,11 @@ function CodexContent() {
             pollIntervalRef.current = null;
           }
           setIsLoggingIn(false);
-          toast.error('Login timed out. Please try again.');
+          toast.error(translate('Login timed out. Please try again.'));
         }
       }, 2000);
     } catch {
-      toast.error('Failed to start login process');
+      toast.error(translate('Failed to start login process'));
       setIsLoggingIn(false);
     }
   };
@@ -817,7 +848,7 @@ function CodexContent() {
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <OpenAIIcon className="w-5 h-5" />
-            Codex CLI Status
+            {translate('Codex CLI Status')}
           </CardTitle>
           <Button variant="ghost" size="sm" onClick={checkStatus} disabled={isChecking}>
             {isChecking ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
@@ -826,9 +857,11 @@ function CodexContent() {
         <CardDescription>
           {codexCliStatus?.installed
             ? codexAuthStatus?.authenticated
-              ? `Authenticated${codexCliStatus.version ? ` (v${codexCliStatus.version})` : ''}`
-              : 'Installed but not authenticated'
-            : 'Not installed on your system'}
+              ? translate('Authenticated{value1}', {
+                  value1: codexCliStatus.version ? ` (v${codexCliStatus.version})` : '',
+                })
+              : translate('Installed but not authenticated')
+            : translate('Not installed on your system')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -837,16 +870,19 @@ function CodexContent() {
             <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
               <div>
-                <p className="font-medium text-foreground">CLI Installed</p>
+                <p className="font-medium text-foreground">{translate('CLI Installed')}</p>
                 <p className="text-sm text-muted-foreground">
-                  {codexCliStatus?.version && `Version: ${codexCliStatus.version}`}
+                  {codexCliStatus?.version &&
+                    translate('Version: {value1}', { value1: codexCliStatus.version })}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
               <p className="font-medium text-foreground">
-                {codexAuthStatus?.method === 'api_key' ? 'API Key Configured' : 'Authenticated'}
+                {codexAuthStatus?.method === 'api_key'
+                  ? translate('API Key Configured')
+                  : translate('Authenticated')}
               </p>
             </div>
           </div>
@@ -857,14 +893,16 @@ function CodexContent() {
             <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30 border border-border">
               <XCircle className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium text-foreground">Codex CLI not found</p>
+                <p className="font-medium text-foreground">{translate('Codex CLI not found')}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Install the Codex CLI to use OpenAI models.
+                  {translate('Install the Codex CLI to use OpenAI models.')}
                 </p>
               </div>
             </div>
             <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
-              <p className="font-medium text-foreground text-sm">Install Codex CLI:</p>
+              <p className="font-medium text-foreground text-sm">
+                {translate('Install Codex CLI:')}
+              </p>
               <div className="flex items-center gap-2">
                 <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground overflow-x-auto">
                   npm install -g @openai/codex
@@ -887,9 +925,10 @@ function CodexContent() {
             <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
               <div>
-                <p className="font-medium text-foreground">CLI Installed</p>
+                <p className="font-medium text-foreground">{translate('CLI Installed')}</p>
                 <p className="text-sm text-muted-foreground">
-                  {codexCliStatus?.version && `Version: ${codexCliStatus.version}`}
+                  {codexCliStatus?.version &&
+                    translate('Version: {value1}', { value1: codexCliStatus.version })}
                 </p>
               </div>
             </div>
@@ -897,9 +936,11 @@ function CodexContent() {
             <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
               <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium text-foreground">Codex CLI not authenticated</p>
+                <p className="font-medium text-foreground">
+                  {translate('Codex CLI not authenticated')}
+                </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Run the login command or provide an API key below.
+                  {translate('Run the login command or provide an API key below.')}
                 </p>
               </div>
             </div>
@@ -909,7 +950,7 @@ function CodexContent() {
                 <AccordionTrigger className="hover:no-underline">
                   <div className="flex items-center gap-3">
                     <Terminal className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium">Codex CLI Login</span>
+                    <span className="font-medium">{translate('Codex CLI Login')}</span>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="pt-4 space-y-4">
@@ -929,10 +970,10 @@ function CodexContent() {
                     {isLoggingIn ? (
                       <>
                         <Spinner size="sm" variant="foreground" className="mr-2" />
-                        Waiting for login...
+                        {translate('Waiting for login...')}
                       </>
                     ) : (
-                      'Copy Command & Wait for Login'
+                      translate('Copy Command & Wait for Login')
                     )}
                   </Button>
                 </AccordionContent>
@@ -942,7 +983,7 @@ function CodexContent() {
                 <AccordionTrigger className="hover:no-underline">
                   <div className="flex items-center gap-3">
                     <Key className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium">OpenAI API Key</span>
+                    <span className="font-medium">{translate('OpenAI API Key')}</span>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="pt-4 space-y-4">
@@ -961,7 +1002,7 @@ function CodexContent() {
                         rel="noopener noreferrer"
                         className="text-brand-500 hover:underline"
                       >
-                        Get an API key from OpenAI
+                        {translate('Get an API key from OpenAI')}
                         <ExternalLink className="w-3 h-3 inline ml-1" />
                       </a>
                     </p>
@@ -971,7 +1012,11 @@ function CodexContent() {
                     disabled={isSaving || !apiKey.trim()}
                     className="w-full bg-brand-500 hover:bg-brand-600 text-white"
                   >
-                    {isSaving ? <Spinner size="sm" variant="foreground" /> : 'Save API Key'}
+                    {isSaving ? (
+                      <Spinner size="sm" variant="foreground" />
+                    ) : (
+                      translate('Save API Key')
+                    )}
                   </Button>
                 </AccordionContent>
               </AccordionItem>
@@ -982,7 +1027,9 @@ function CodexContent() {
         {isChecking && (
           <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
             <Spinner size="md" />
-            <p className="font-medium text-foreground">Checking Codex CLI status...</p>
+            <p className="font-medium text-foreground">
+              {translate('Checking Codex CLI status...')}
+            </p>
           </div>
         )}
       </CardContent>
@@ -994,6 +1041,7 @@ function CodexContent() {
 // OpenCode Content
 // ============================================================================
 function OpencodeContent() {
+  useUiLocale();
   const { opencodeCliStatus, setOpencodeCliStatus } = useSetupStore();
   const [isChecking, setIsChecking] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -1020,7 +1068,7 @@ function OpencodeContent() {
           loginCommand: 'opencode auth login',
         });
         if (result.auth?.authenticated) {
-          toast.success('OpenCode CLI is ready!');
+          toast.success(translate('OpenCode CLI is ready!'));
         }
       }
     } catch {
@@ -1039,7 +1087,7 @@ function OpencodeContent() {
 
   const copyCommand = (command: string) => {
     navigator.clipboard.writeText(command);
-    toast.success('Command copied to clipboard');
+    toast.success(translate('Command copied to clipboard'));
   };
 
   const handleLogin = async () => {
@@ -1047,7 +1095,7 @@ function OpencodeContent() {
     try {
       const loginCommand = opencodeCliStatus?.loginCommand || 'opencode auth login';
       await navigator.clipboard.writeText(loginCommand);
-      toast.info('Login command copied! Paste in terminal to authenticate.');
+      toast.info(translate('Login command copied! Paste in terminal to authenticate.'));
 
       let attempts = 0;
       pollIntervalRef.current = setInterval(async () => {
@@ -1069,7 +1117,7 @@ function OpencodeContent() {
               auth: result.auth,
             });
             setIsLoggingIn(false);
-            toast.success('Successfully logged in to OpenCode!');
+            toast.success(translate('Successfully logged in to OpenCode!'));
           }
         } catch {
           // Ignore
@@ -1080,11 +1128,11 @@ function OpencodeContent() {
             pollIntervalRef.current = null;
           }
           setIsLoggingIn(false);
-          toast.error('Login timed out. Please try again.');
+          toast.error(translate('Login timed out. Please try again.'));
         }
       }, 2000);
     } catch {
-      toast.error('Failed to start login process');
+      toast.error(translate('Failed to start login process'));
       setIsLoggingIn(false);
     }
   };
@@ -1097,7 +1145,7 @@ function OpencodeContent() {
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <OpenCodeIcon className="w-5 h-5" />
-            OpenCode CLI Status
+            {translate('OpenCode CLI Status')}
           </CardTitle>
           <Button variant="ghost" size="sm" onClick={checkStatus} disabled={isChecking}>
             {isChecking ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
@@ -1106,9 +1154,11 @@ function OpencodeContent() {
         <CardDescription>
           {opencodeCliStatus?.installed
             ? opencodeCliStatus.auth?.authenticated
-              ? `Authenticated${opencodeCliStatus.version ? ` (v${opencodeCliStatus.version})` : ''}`
-              : 'Installed but not authenticated'
-            : 'Not installed on your system'}
+              ? translate('Authenticated{value1}', {
+                  value1: opencodeCliStatus.version ? ` (v${opencodeCliStatus.version})` : '',
+                })
+              : translate('Installed but not authenticated')
+            : translate('Not installed on your system')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -1117,15 +1167,16 @@ function OpencodeContent() {
             <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
               <div>
-                <p className="font-medium text-foreground">CLI Installed</p>
+                <p className="font-medium text-foreground">{translate('CLI Installed')}</p>
                 <p className="text-sm text-muted-foreground">
-                  {opencodeCliStatus?.version && `Version: ${opencodeCliStatus.version}`}
+                  {opencodeCliStatus?.version &&
+                    translate('Version: {value1}', { value1: opencodeCliStatus.version })}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
-              <p className="font-medium text-foreground">Authenticated</p>
+              <p className="font-medium text-foreground">{translate('Authenticated')}</p>
             </div>
           </div>
         )}
@@ -1135,14 +1186,18 @@ function OpencodeContent() {
             <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30 border border-border">
               <XCircle className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium text-foreground">OpenCode CLI not found</p>
+                <p className="font-medium text-foreground">{translate('OpenCode CLI not found')}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Install the OpenCode CLI for free tier models and connected providers.
+                  {translate(
+                    'Install the OpenCode CLI for free tier models and connected providers.'
+                  )}
                 </p>
               </div>
             </div>
             <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
-              <p className="font-medium text-foreground text-sm">Install OpenCode CLI:</p>
+              <p className="font-medium text-foreground text-sm">
+                {translate('Install OpenCode CLI:')}
+              </p>
               <div className="flex items-center gap-2">
                 <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground overflow-x-auto">
                   {opencodeCliStatus?.installCommand ||
@@ -1171,9 +1226,10 @@ function OpencodeContent() {
             <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
               <div>
-                <p className="font-medium text-foreground">CLI Installed</p>
+                <p className="font-medium text-foreground">{translate('CLI Installed')}</p>
                 <p className="text-sm text-muted-foreground">
-                  {opencodeCliStatus?.version && `Version: ${opencodeCliStatus.version}`}
+                  {opencodeCliStatus?.version &&
+                    translate('Version: {value1}', { value1: opencodeCliStatus.version })}
                 </p>
               </div>
             </div>
@@ -1181,9 +1237,11 @@ function OpencodeContent() {
             <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
               <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium text-foreground">OpenCode CLI not authenticated</p>
+                <p className="font-medium text-foreground">
+                  {translate('OpenCode CLI not authenticated')}
+                </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Run the login command to authenticate.
+                  {translate('Run the login command to authenticate.')}
                 </p>
               </div>
             </div>
@@ -1210,10 +1268,10 @@ function OpencodeContent() {
                 {isLoggingIn ? (
                   <>
                     <Spinner size="sm" variant="foreground" className="mr-2" />
-                    Waiting for login...
+                    {translate('Waiting for login...')}
                   </>
                 ) : (
-                  'Copy Command & Wait for Login'
+                  translate('Copy Command & Wait for Login')
                 )}
               </Button>
             </div>
@@ -1223,7 +1281,9 @@ function OpencodeContent() {
         {isChecking && (
           <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
             <Spinner size="md" />
-            <p className="font-medium text-foreground">Checking OpenCode CLI status...</p>
+            <p className="font-medium text-foreground">
+              {translate('Checking OpenCode CLI status...')}
+            </p>
           </div>
         )}
       </CardContent>
@@ -1235,6 +1295,7 @@ function OpencodeContent() {
 // Gemini Content
 // ============================================================================
 function GeminiContent() {
+  useUiLocale();
   const { geminiCliStatus, setGeminiCliStatus } = useSetupStore();
   const { setApiKeys, apiKeys } = useAppStore();
   const [isChecking, setIsChecking] = useState(false);
@@ -1259,7 +1320,7 @@ function GeminiContent() {
           loginCommand: result.loginCommand,
         });
         if (result.auth?.authenticated) {
-          toast.success('Gemini CLI is ready!');
+          toast.success(translate('Gemini CLI is ready!'));
         }
       }
     } catch {
@@ -1278,7 +1339,7 @@ function GeminiContent() {
 
   const copyCommand = (command: string) => {
     navigator.clipboard.writeText(command);
-    toast.success('Command copied to clipboard');
+    toast.success(translate('Command copied to clipboard'));
   };
 
   const handleSaveApiKey = async () => {
@@ -1287,7 +1348,7 @@ function GeminiContent() {
     try {
       const api = getElectronAPI();
       if (!api.setup?.saveApiKey) {
-        toast.error('Save API not available');
+        toast.error(translate('Save API not available'));
         return;
       }
       const result = await api.setup.saveApiKey('google', apiKey);
@@ -1298,10 +1359,10 @@ function GeminiContent() {
           installed: geminiCliStatus?.installed ?? false,
           auth: { authenticated: true, method: 'api_key' },
         });
-        toast.success('API key saved successfully!');
+        toast.success(translate('API key saved successfully!'));
       }
     } catch {
-      toast.error('Failed to save API key');
+      toast.error(translate('Failed to save API key'));
     } finally {
       setIsSaving(false);
     }
@@ -1312,7 +1373,7 @@ function GeminiContent() {
     try {
       const loginCommand = geminiCliStatus?.loginCommand || 'gemini auth login';
       await navigator.clipboard.writeText(loginCommand);
-      toast.info('Login command copied! Paste in terminal to authenticate.');
+      toast.info(translate('Login command copied! Paste in terminal to authenticate.'));
 
       let attempts = 0;
       pollIntervalRef.current = setInterval(async () => {
@@ -1334,7 +1395,7 @@ function GeminiContent() {
               auth: result.auth,
             });
             setIsLoggingIn(false);
-            toast.success('Successfully logged in to Gemini!');
+            toast.success(translate('Successfully logged in to Gemini!'));
           }
         } catch {
           // Ignore
@@ -1345,11 +1406,11 @@ function GeminiContent() {
             pollIntervalRef.current = null;
           }
           setIsLoggingIn(false);
-          toast.error('Login timed out. Please try again.');
+          toast.error(translate('Login timed out. Please try again.'));
         }
       }, 2000);
     } catch {
-      toast.error('Failed to start login process');
+      toast.error(translate('Failed to start login process'));
       setIsLoggingIn(false);
     }
   };
@@ -1362,7 +1423,7 @@ function GeminiContent() {
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <GeminiIcon className="w-5 h-5" />
-            Gemini CLI Status
+            {translate('Gemini CLI Status')}
           </CardTitle>
           <Button variant="ghost" size="sm" onClick={checkStatus} disabled={isChecking}>
             {isChecking ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
@@ -1371,9 +1432,11 @@ function GeminiContent() {
         <CardDescription>
           {geminiCliStatus?.installed
             ? geminiCliStatus.auth?.authenticated
-              ? `Authenticated${geminiCliStatus.version ? ` (v${geminiCliStatus.version})` : ''}`
-              : 'Installed but not authenticated'
-            : 'Not installed on your system'}
+              ? translate('Authenticated{value1}', {
+                  value1: geminiCliStatus.version ? ` (v${geminiCliStatus.version})` : '',
+                })
+              : translate('Installed but not authenticated')
+            : translate('Not installed on your system')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -1382,15 +1445,16 @@ function GeminiContent() {
             <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
               <div>
-                <p className="font-medium text-foreground">CLI Installed</p>
+                <p className="font-medium text-foreground">{translate('CLI Installed')}</p>
                 <p className="text-sm text-muted-foreground">
-                  {geminiCliStatus?.version && `Version: ${geminiCliStatus.version}`}
+                  {geminiCliStatus?.version &&
+                    translate('Version: {value1}', { value1: geminiCliStatus.version })}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
-              <p className="font-medium text-foreground">Authenticated</p>
+              <p className="font-medium text-foreground">{translate('Authenticated')}</p>
             </div>
           </div>
         )}
@@ -1400,14 +1464,16 @@ function GeminiContent() {
             <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30 border border-border">
               <XCircle className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium text-foreground">Gemini CLI not found</p>
+                <p className="font-medium text-foreground">{translate('Gemini CLI not found')}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Install the Gemini CLI to use Google Gemini models.
+                  {translate('Install the Gemini CLI to use Google Gemini models.')}
                 </p>
               </div>
             </div>
             <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
-              <p className="font-medium text-foreground text-sm">Install Gemini CLI:</p>
+              <p className="font-medium text-foreground text-sm">
+                {translate('Install Gemini CLI:')}
+              </p>
               <div className="flex items-center gap-2">
                 <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground overflow-x-auto">
                   {geminiCliStatus?.installCommand || 'npm install -g @google/gemini-cli'}
@@ -1434,9 +1500,10 @@ function GeminiContent() {
             <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
               <div>
-                <p className="font-medium text-foreground">CLI Installed</p>
+                <p className="font-medium text-foreground">{translate('CLI Installed')}</p>
                 <p className="text-sm text-muted-foreground">
-                  {geminiCliStatus?.version && `Version: ${geminiCliStatus.version}`}
+                  {geminiCliStatus?.version &&
+                    translate('Version: {value1}', { value1: geminiCliStatus.version })}
                 </p>
               </div>
             </div>
@@ -1444,9 +1511,11 @@ function GeminiContent() {
             <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
               <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium text-foreground">Gemini CLI not authenticated</p>
+                <p className="font-medium text-foreground">
+                  {translate('Gemini CLI not authenticated')}
+                </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Run the login command or provide a Google API key below.
+                  {translate('Run the login command or provide a Google API key below.')}
                 </p>
               </div>
             </div>
@@ -1456,7 +1525,7 @@ function GeminiContent() {
                 <AccordionTrigger className="hover:no-underline">
                   <div className="flex items-center gap-3">
                     <Terminal className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium">Google OAuth Login</span>
+                    <span className="font-medium">{translate('Google OAuth Login')}</span>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="pt-4 space-y-4">
@@ -1482,10 +1551,10 @@ function GeminiContent() {
                     {isLoggingIn ? (
                       <>
                         <Spinner size="sm" variant="foreground" className="mr-2" />
-                        Waiting for login...
+                        {translate('Waiting for login...')}
                       </>
                     ) : (
-                      'Copy Command & Wait for Login'
+                      translate('Copy Command & Wait for Login')
                     )}
                   </Button>
                 </AccordionContent>
@@ -1495,14 +1564,14 @@ function GeminiContent() {
                 <AccordionTrigger className="hover:no-underline">
                   <div className="flex items-center gap-3">
                     <Key className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium">Google API Key</span>
+                    <span className="font-medium">{translate('Google API Key')}</span>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="pt-4 space-y-4">
                   <div className="space-y-2">
                     <Input
                       type="password"
-                      placeholder="AIza..."
+                      placeholder={translate('AIza...')}
                       value={apiKey}
                       onChange={(e) => setApiKey(e.target.value)}
                       className="bg-input border-border text-foreground"
@@ -1514,7 +1583,7 @@ function GeminiContent() {
                         rel="noopener noreferrer"
                         className="text-brand-500 hover:underline"
                       >
-                        Get an API key from Google AI Studio
+                        {translate('Get an API key from Google AI Studio')}
                         <ExternalLink className="w-3 h-3 inline ml-1" />
                       </a>
                     </p>
@@ -1524,7 +1593,11 @@ function GeminiContent() {
                     disabled={isSaving || !apiKey.trim()}
                     className="w-full bg-brand-500 hover:bg-brand-600 text-white"
                   >
-                    {isSaving ? <Spinner size="sm" variant="foreground" /> : 'Save API Key'}
+                    {isSaving ? (
+                      <Spinner size="sm" variant="foreground" />
+                    ) : (
+                      translate('Save API Key')
+                    )}
                   </Button>
                 </AccordionContent>
               </AccordionItem>
@@ -1535,7 +1608,9 @@ function GeminiContent() {
         {isChecking && (
           <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
             <Spinner size="md" />
-            <p className="font-medium text-foreground">Checking Gemini CLI status...</p>
+            <p className="font-medium text-foreground">
+              {translate('Checking Gemini CLI status...')}
+            </p>
           </div>
         )}
       </CardContent>
@@ -1547,6 +1622,7 @@ function GeminiContent() {
 // Copilot Content
 // ============================================================================
 function CopilotContent() {
+  useUiLocale();
   const { copilotCliStatus, setCopilotCliStatus } = useSetupStore();
   const [isChecking, setIsChecking] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -1568,7 +1644,7 @@ function CopilotContent() {
           loginCommand: result.loginCommand,
         });
         if (result.auth?.authenticated) {
-          toast.success('Copilot CLI is ready!');
+          toast.success(translate('Copilot CLI is ready!'));
         }
       }
     } catch {
@@ -1587,7 +1663,7 @@ function CopilotContent() {
 
   const copyCommand = (command: string) => {
     navigator.clipboard.writeText(command);
-    toast.success('Command copied to clipboard');
+    toast.success(translate('Command copied to clipboard'));
   };
 
   const handleLogin = async () => {
@@ -1595,7 +1671,7 @@ function CopilotContent() {
     try {
       const loginCommand = copilotCliStatus?.loginCommand || 'gh auth login';
       await navigator.clipboard.writeText(loginCommand);
-      toast.info('Login command copied! Paste in terminal to authenticate.');
+      toast.info(translate('Login command copied! Paste in terminal to authenticate.'));
 
       let attempts = 0;
       pollIntervalRef.current = setInterval(async () => {
@@ -1617,7 +1693,7 @@ function CopilotContent() {
               auth: result.auth,
             });
             setIsLoggingIn(false);
-            toast.success('Successfully authenticated with GitHub!');
+            toast.success(translate('Successfully authenticated with GitHub!'));
           }
         } catch {
           // Ignore
@@ -1628,11 +1704,11 @@ function CopilotContent() {
             pollIntervalRef.current = null;
           }
           setIsLoggingIn(false);
-          toast.error('Login timed out. Please try again.');
+          toast.error(translate('Login timed out. Please try again.'));
         }
       }, 2000);
     } catch {
-      toast.error('Failed to start login process');
+      toast.error(translate('Failed to start login process'));
       setIsLoggingIn(false);
     }
   };
@@ -1645,7 +1721,7 @@ function CopilotContent() {
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <CopilotIcon className="w-5 h-5" />
-            GitHub Copilot CLI Status
+            {translate('GitHub Copilot CLI Status')}
           </CardTitle>
           <Button variant="ghost" size="sm" onClick={checkStatus} disabled={isChecking}>
             {isChecking ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
@@ -1654,9 +1730,11 @@ function CopilotContent() {
         <CardDescription>
           {copilotCliStatus?.installed
             ? copilotCliStatus.auth?.authenticated
-              ? `Authenticated${copilotCliStatus.version ? ` (v${copilotCliStatus.version})` : ''}`
-              : 'Installed but not authenticated'
-            : 'Not installed on your system'}
+              ? translate('Authenticated{value1}', {
+                  value1: copilotCliStatus.version ? ` (v${copilotCliStatus.version})` : '',
+                })
+              : translate('Installed but not authenticated')
+            : translate('Not installed on your system')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -1665,19 +1743,21 @@ function CopilotContent() {
             <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
               <div>
-                <p className="font-medium text-foreground">SDK Installed</p>
+                <p className="font-medium text-foreground">{translate('SDK Installed')}</p>
                 <p className="text-sm text-muted-foreground">
-                  {copilotCliStatus?.version && `Version: ${copilotCliStatus.version}`}
+                  {copilotCliStatus?.version &&
+                    translate('Version: {value1}', { value1: copilotCliStatus.version })}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
               <div>
-                <p className="font-medium text-foreground">Authenticated</p>
+                <p className="font-medium text-foreground">{translate('Authenticated')}</p>
                 {copilotCliStatus?.auth?.login && (
                   <p className="text-sm text-muted-foreground">
-                    Logged in as {copilotCliStatus.auth.login}
+                    {translate('Logged in as ')}
+                    {copilotCliStatus.auth.login}
                   </p>
                 )}
               </div>
@@ -1690,14 +1770,16 @@ function CopilotContent() {
             <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30 border border-border">
               <XCircle className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium text-foreground">Copilot CLI not found</p>
+                <p className="font-medium text-foreground">{translate('Copilot CLI not found')}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Install the GitHub Copilot CLI to use Copilot models.
+                  {translate('Install the GitHub Copilot CLI to use Copilot models.')}
                 </p>
               </div>
             </div>
             <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
-              <p className="font-medium text-foreground text-sm">Install Copilot CLI:</p>
+              <p className="font-medium text-foreground text-sm">
+                {translate('Install Copilot CLI:')}
+              </p>
               <div className="flex items-center gap-2">
                 <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground overflow-x-auto">
                   {copilotCliStatus?.installCommand || 'npm install -g @github/copilot'}
@@ -1724,9 +1806,10 @@ function CopilotContent() {
             <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
               <div>
-                <p className="font-medium text-foreground">SDK Installed</p>
+                <p className="font-medium text-foreground">{translate('SDK Installed')}</p>
                 <p className="text-sm text-muted-foreground">
-                  {copilotCliStatus?.version && `Version: ${copilotCliStatus.version}`}
+                  {copilotCliStatus?.version &&
+                    translate('Version: {value1}', { value1: copilotCliStatus.version })}
                 </p>
               </div>
             </div>
@@ -1734,9 +1817,11 @@ function CopilotContent() {
             <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
               <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium text-foreground">GitHub not authenticated</p>
+                <p className="font-medium text-foreground">
+                  {translate('GitHub not authenticated')}
+                </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Run the GitHub CLI login command to authenticate.
+                  {translate('Run the GitHub CLI login command to authenticate.')}
                 </p>
               </div>
             </div>
@@ -1761,10 +1846,10 @@ function CopilotContent() {
                 {isLoggingIn ? (
                   <>
                     <Spinner size="sm" variant="foreground" className="mr-2" />
-                    Waiting for login...
+                    {translate('Waiting for login...')}
                   </>
                 ) : (
-                  'Copy Command & Wait for Login'
+                  translate('Copy Command & Wait for Login')
                 )}
               </Button>
             </div>
@@ -1774,7 +1859,9 @@ function CopilotContent() {
         {isChecking && (
           <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
             <Spinner size="md" />
-            <p className="font-medium text-foreground">Checking Copilot CLI status...</p>
+            <p className="font-medium text-foreground">
+              {translate('Checking Copilot CLI status...')}
+            </p>
           </div>
         )}
       </CardContent>
@@ -1786,6 +1873,7 @@ function CopilotContent() {
 // Main Component
 // ============================================================================
 export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) {
+  useUiLocale();
   const { data: directSettings } = useDirectEndpoints();
   const hasConfiguredDirectEndpoint =
     directSettings?.endpoints.some(
@@ -2032,42 +2120,42 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
   const providers = [
     {
       id: 'claude' as const,
-      label: 'Claude',
+      label: translate('Claude'),
       icon: AnthropicIcon,
       status: getProviderStatus(isClaudeInstalled, isClaudeAuthenticated, claudeIsVerifying),
       color: 'text-brand-500',
     },
     {
       id: 'cursor' as const,
-      label: 'Cursor',
+      label: translate('Cursor'),
       icon: CursorIcon,
       status: getProviderStatus(isCursorInstalled, isCursorAuthenticated),
       color: 'text-blue-500',
     },
     {
       id: 'codex' as const,
-      label: 'Codex',
+      label: translate('Codex'),
       icon: OpenAIIcon,
       status: getProviderStatus(isCodexInstalled, isCodexAuthenticated),
       color: 'text-emerald-500',
     },
     {
       id: 'opencode' as const,
-      label: 'OpenCode',
+      label: translate('OpenCode'),
       icon: OpenCodeIcon,
       status: getProviderStatus(isOpencodeInstalled, isOpencodeAuthenticated),
       color: 'text-green-500',
     },
     {
       id: 'gemini' as const,
-      label: 'Gemini',
+      label: translate('Gemini'),
       icon: GeminiIcon,
       status: getProviderStatus(isGeminiInstalled, isGeminiAuthenticated),
       color: 'text-blue-500',
     },
     {
       id: 'copilot' as const,
-      label: 'Copilot',
+      label: translate('Copilot'),
       icon: CopilotIcon,
       status: getProviderStatus(isCopilotInstalled, isCopilotAuthenticated),
       color: 'text-violet-500',
@@ -2096,14 +2184,18 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-foreground mb-2">AI Provider Setup</h2>
-        <p className="text-muted-foreground">Configure at least one AI provider to continue</p>
+        <h2 className="text-2xl font-bold text-foreground mb-2">
+          {translate('AI Provider Setup')}
+        </h2>
+        <p className="text-muted-foreground">
+          {translate('Configure at least one AI provider to continue')}
+        </p>
       </div>
 
       {isInitialChecking && (
         <div className="flex items-center justify-center gap-2 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
           <Spinner size="md" />
-          <p className="font-medium text-foreground">Checking provider status...</p>
+          <p className="font-medium text-foreground">{translate('Checking provider status...')}</p>
         </div>
       )}
 
@@ -2114,7 +2206,7 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
             className="relative flex flex-col items-center gap-1 py-3 px-2"
           >
             <OpenAIIcon className="w-5 h-5" />
-            <span className="text-xs font-medium">Direct API (no CLI)</span>
+            <span className="text-xs font-medium">{translate('Direct API (no CLI)')}</span>
           </TabsTrigger>
           {providers.map((provider) => {
             const Icon = provider.icon;
@@ -2176,7 +2268,7 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
       <div className="flex justify-between pt-4">
         <Button variant="ghost" onClick={onBack} className="text-muted-foreground">
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
+          {translate('Back')}
         </Button>
         <Button
           onClick={onNext}
@@ -2186,14 +2278,14 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
           )}
           data-testid="providers-next-button"
         >
-          {hasAtLeastOneProvider ? 'Continue' : 'Skip for now'}
+          {hasAtLeastOneProvider ? translate('Continue') : translate('Skip for now')}
           <ArrowRight className="w-4 h-4 ml-2" />
         </Button>
       </div>
 
       {!hasAtLeastOneProvider && (
         <p className="text-xs text-muted-foreground text-center">
-          You can configure providers later in Settings
+          {translate('You can configure providers later in Settings')}
         </p>
       )}
     </div>

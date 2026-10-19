@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -29,13 +30,17 @@ export function EditorSettingsForm({
   editorAutoSave,
   setEditorAutoSave,
 }: EditorSettingsFormProps) {
+  useUiLocale();
   return (
     <>
       {/* Font Size */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label className="text-xs font-medium">Font Size</Label>
-          <span className="text-xs text-muted-foreground">{editorFontSize}px</span>
+          <Label className="text-xs font-medium">{translate('Font Size')}</Label>
+          <span className="text-xs text-muted-foreground">
+            {editorFontSize}
+            {translate('px')}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <Slider
@@ -52,7 +57,7 @@ export function EditorSettingsForm({
             className="h-6 w-6 shrink-0"
             onClick={() => setEditorFontSize(13)}
             disabled={editorFontSize === 13}
-            title="Reset to default"
+            title={translate('Reset to default')}
           >
             <RotateCcw className="h-3 w-3" />
           </Button>
@@ -61,13 +66,13 @@ export function EditorSettingsForm({
 
       {/* Font Family */}
       <div className="space-y-2">
-        <Label className="text-xs font-medium">Font Family</Label>
+        <Label className="text-xs font-medium">{translate('Font Family')}</Label>
         <Select
           value={editorFontFamily || DEFAULT_FONT_VALUE}
           onValueChange={(value) => setEditorFontFamily(value)}
         >
           <SelectTrigger className="w-full h-8 text-xs">
-            <SelectValue placeholder="Default (Geist Mono)" />
+            <SelectValue placeholder={translate('Default (Geist Mono)')} />
           </SelectTrigger>
           <SelectContent>
             {UI_MONO_FONT_OPTIONS.map((option) => (
@@ -87,7 +92,7 @@ export function EditorSettingsForm({
 
       {/* Auto Save toggle */}
       <div className="flex items-center justify-between">
-        <Label className="text-xs font-medium">Auto Save</Label>
+        <Label className="text-xs font-medium">{translate('Auto Save')}</Label>
         <Switch checked={editorAutoSave} onCheckedChange={setEditorAutoSave} />
       </div>
     </>

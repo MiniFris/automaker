@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { GitBranch } from 'lucide-react';
@@ -9,6 +10,7 @@ interface WorktreesSectionProps {
 }
 
 export function WorktreesSection({ useWorktrees, onUseWorktreesChange }: WorktreesSectionProps) {
+  useUiLocale();
   return (
     <div
       className={cn(
@@ -23,10 +25,12 @@ export function WorktreesSection({ useWorktrees, onUseWorktreesChange }: Worktre
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500/20 to-brand-600/10 flex items-center justify-center border border-brand-500/20">
             <GitBranch className="w-5 h-5 text-brand-500" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground tracking-tight">Worktrees</h2>
+          <h2 className="text-lg font-semibold text-foreground tracking-tight">
+            {translate('Worktrees')}
+          </h2>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Configure git worktree isolation for feature development.
+          {translate('Configure git worktree isolation for feature development.')}
         </p>
       </div>
       <div className="p-6 space-y-5">
@@ -45,11 +49,12 @@ export function WorktreesSection({ useWorktrees, onUseWorktreesChange }: Worktre
               className="text-foreground cursor-pointer font-medium flex items-center gap-2"
             >
               <GitBranch className="w-4 h-4 text-brand-500" />
-              Enable Git Worktree Isolation
+              {translate('Enable Git Worktree Isolation')}
             </Label>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">
-              Creates isolated git branches for each feature. When disabled, agents work directly in
-              the main project directory.
+              {translate(
+                'Creates isolated git branches for each feature. When disabled, agents work directly in the main project directory.'
+              )}
             </p>
           </div>
         </div>
@@ -57,8 +62,9 @@ export function WorktreesSection({ useWorktrees, onUseWorktreesChange }: Worktre
         {/* Info about project-specific settings */}
         <div className="rounded-xl border border-border/30 bg-muted/30 p-4">
           <p className="text-xs text-muted-foreground">
-            Project-specific worktree preferences (init script, delete branch behavior) can be
-            configured in each project's settings via the sidebar.
+            {translate(
+              "Project-specific worktree preferences (init script, delete branch behavior) can be configured in each project's settings via the sidebar."
+            )}
           </p>
         </div>
       </div>

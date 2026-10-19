@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useCallback, useEffect, startTransition } from 'react';
 import { Plus, Bug, FolderOpen, BookOpen } from 'lucide-react';
 import { useNavigate, useLocation } from '@tanstack/react-router';
@@ -36,6 +37,7 @@ function getOSAbbreviation(os: string): string {
 }
 
 export function ProjectSwitcher() {
+  useUiLocale();
   const navigate = useNavigate();
   const location = useLocation();
   const { hideWiki } = SIDEBAR_FEATURE_FLAGS;
@@ -168,7 +170,7 @@ export function ProjectSwitcher() {
         const initResult = await initializeProject(path);
 
         if (!initResult.success) {
-          toast.error('Failed to initialize project', {
+          toast.error(translate('Failed to initialize project'), {
             description: initResult.error || 'Unknown error occurred',
           });
           return;
@@ -185,16 +187,25 @@ export function ProjectSwitcher() {
           // This is a brand new project - show setup dialog
           setSetupProjectPath(path);
           setShowSetupDialog(true);
-          toast.success('Project opened', {
-            description: `Opened ${name}. Let's set up your app specification!`,
+          toast.success(translate('Project opened'), {
+            description: translate("Opened {value1}. Let's set up your app specification!", {
+              value1: name,
+            }),
           });
         } else if (initResult.createdFiles && initResult.createdFiles.length > 0) {
-          toast.success(initResult.isNewProject ? 'Project initialized' : 'Project updated', {
-            description: `Set up ${initResult.createdFiles.length} file(s) in .automaker`,
-          });
+          toast.success(
+            initResult.isNewProject
+              ? translate('Project initialized')
+              : translate('Project updated'),
+            {
+              description: translate('Set up {value1} file(s) in .automaker', {
+                value1: initResult.createdFiles.length,
+              }),
+            }
+          );
         } else {
-          toast.success('Project opened', {
-            description: `Opened ${name}`,
+          toast.success(translate('Project opened'), {
+            description: translate('Opened {value1}', { value1: name }),
           });
         }
 
@@ -202,7 +213,7 @@ export function ProjectSwitcher() {
         navigate({ to: '/board' });
       } catch (error) {
         console.error('Failed to open project:', error);
-        toast.error('Failed to open project', {
+        toast.error(translate('Failed to open project'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
       }
@@ -219,7 +230,7 @@ export function ProjectSwitcher() {
     try {
       const api = getElectronAPI();
       if (!api.specRegeneration) {
-        toast.error('Spec regeneration not available');
+        toast.error(translate('Spec regeneration not available'));
         setSpecCreatingForProject(null);
         return;
       }
@@ -232,7 +243,7 @@ export function ProjectSwitcher() {
       );
     } catch (error) {
       console.error('Failed to generate spec:', error);
-      toast.error('Failed to generate spec', {
+      toast.error(translate('Failed to generate spec'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
       setSpecCreatingForProject(null);
@@ -309,13 +320,13 @@ export function ProjectSwitcher() {
           <button
             onClick={() => navigate({ to: '/dashboard' })}
             className="group flex flex-col items-center gap-0.5"
-            title="Go to Dashboard"
+            title={translate('Go to Dashboard')}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 256 256"
               role="img"
-              aria-label="Automaker Logo"
+              aria-label={translate('Automaker Logo')}
               className="size-10 group-hover:rotate-12 transition-transform duration-300 ease-out"
             >
               <defs>
@@ -345,7 +356,8 @@ export function ProjectSwitcher() {
               </g>
             </svg>
             <span className="text-[0.625rem] text-muted-foreground leading-none font-medium">
-              v{appVersion} {versionSuffix}
+              {translate('v')}
+              {appVersion} {versionSuffix}
             </span>
           </button>
 
@@ -382,7 +394,7 @@ export function ProjectSwitcher() {
                   'hover:bg-accent/50 border border-transparent hover:border-border/40',
                   'hover:shadow-sm hover:scale-105 active:scale-95'
                 )}
-                title="New Project"
+                title={translate('New Project')}
                 data-testid="new-project-button"
               >
                 <Plus className="w-5 h-5" />
@@ -396,7 +408,7 @@ export function ProjectSwitcher() {
                   'hover:bg-accent/50 border border-transparent hover:border-border/40',
                   'hover:shadow-sm hover:scale-105 active:scale-95'
                 )}
-                title="Open Project"
+                title={translate('Open Project')}
                 data-testid="open-project-button"
               >
                 <FolderOpen className="w-5 h-5" />
@@ -416,7 +428,7 @@ export function ProjectSwitcher() {
                   'hover:bg-accent/50 border border-transparent hover:border-border/40',
                   'hover:shadow-sm hover:scale-105 active:scale-95'
                 )}
-                title="New Project"
+                title={translate('New Project')}
                 data-testid="new-project-button"
               >
                 <Plus className="w-5 h-5" />
@@ -430,7 +442,7 @@ export function ProjectSwitcher() {
                   'hover:bg-accent/50 border border-transparent hover:border-border/40',
                   'hover:shadow-sm hover:scale-105 active:scale-95'
                 )}
-                title="Open Project"
+                title={translate('Open Project')}
                 data-testid="open-project-button"
               >
                 <FolderOpen className="w-5 h-5" />
@@ -461,7 +473,7 @@ export function ProjectSwitcher() {
                       'hover:shadow-sm hover:scale-105 active:scale-95',
                     ]
               )}
-              title="Wiki"
+              title={translate('Wiki')}
               data-testid="wiki-button"
             >
               <BookOpen
@@ -479,7 +491,7 @@ export function ProjectSwitcher() {
               'hover:bg-accent/50 border border-transparent hover:border-border/40',
               'hover:shadow-sm hover:scale-105 active:scale-95'
             )}
-            title="Report Bug / Feature Request"
+            title={translate('Report Bug / Feature Request')}
             data-testid="bug-report-button"
           >
             <Bug className="w-5 h-5" />
@@ -541,8 +553,10 @@ export function ProjectSwitcher() {
         onSkip={handleSkipSetup}
         isCreatingSpec={isCreatingSpec}
         showSkipButton={true}
-        title="Set Up Your Project"
-        description="We didn't find an app_spec.txt file. Let us help you generate your app_spec.txt to help describe your project for our system. We'll analyze your project's tech stack and create a comprehensive specification."
+        title={translate('Set Up Your Project')}
+        description={translate(
+          "We didn't find an app_spec.txt file. Let us help you generate your app_spec.txt to help describe your project for our system. We'll analyze your project's tech stack and create a comprehensive specification."
+        )}
       />
     </>
   );

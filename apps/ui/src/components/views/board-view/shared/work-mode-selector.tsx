@@ -1,4 +1,5 @@
 'use client';
+import { translate, useUiLocale } from '@/lib/i18n';
 
 import { Label } from '@/components/ui/label';
 import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
@@ -22,20 +23,32 @@ interface WorkModeSelectorProps {
 const WORK_MODES = [
   {
     value: 'current' as const,
-    label: 'Current Branch',
-    description: 'Work directly on the selected branch',
+    get label() {
+      return translate('Current Branch');
+    },
+    get description() {
+      return translate('Work directly on the selected branch');
+    },
     icon: GitBranch,
   },
   {
     value: 'auto' as const,
-    label: 'Auto Worktree',
-    description: 'Create isolated worktree automatically',
+    get label() {
+      return translate('Auto Worktree');
+    },
+    get description() {
+      return translate('Create isolated worktree automatically');
+    },
     icon: GitFork,
   },
   {
     value: 'custom' as const,
-    label: 'Custom Branch',
-    description: 'Specify a branch name',
+    get label() {
+      return translate('Custom Branch');
+    },
+    get description() {
+      return translate('Specify a branch name');
+    },
     icon: Pencil,
   },
 ];
@@ -51,11 +64,12 @@ export function WorkModeSelector({
   disabled = false,
   testIdPrefix = 'work-mode',
 }: WorkModeSelectorProps) {
+  useUiLocale();
   const hasError = workMode === 'custom' && !branchName.trim();
 
   return (
     <div className="space-y-3">
-      <Label id={`${testIdPrefix}-label`}>Work Mode</Label>
+      <Label id={`${testIdPrefix}-label`}>{translate('Work Mode')}</Label>
 
       <div className="grid grid-cols-3 gap-2">
         {WORK_MODES.map((mode) => {
@@ -107,28 +121,32 @@ export function WorkModeSelector({
       <p className="text-xs text-muted-foreground">
         {workMode === 'current' && (
           <>
-            Work will be done directly on{' '}
+            {translate('Work will be done directly on')}{' '}
             {currentBranch ? (
               <span className="font-medium">{currentBranch}</span>
             ) : (
-              'the current branch'
+              translate('the current branch')
             )}
-            . No isolation.
+            {translate('. No isolation.')}
           </>
         )}
         {workMode === 'auto' && (
           <>
-            A new worktree will be created automatically based on{' '}
+            {translate('A new worktree will be created automatically based on')}{' '}
             {currentBranch ? (
               <span className="font-medium">{currentBranch}</span>
             ) : (
-              'the current branch'
+              translate('the current branch')
             )}{' '}
-            when this card is created.
+            {translate('when this card is created.')}
           </>
         )}
         {workMode === 'custom' && (
-          <>Specify a branch name below. A worktree will be created if it doesn't exist.</>
+          <>
+            {translate(
+              "Specify a branch name below. A worktree will be created if it doesn't exist."
+            )}
+          </>
         )}
       </p>
 
@@ -140,14 +158,14 @@ export function WorkModeSelector({
             onChange={onBranchNameChange}
             branches={branchSuggestions}
             branchCardCounts={branchCardCounts}
-            placeholder="Select or create branch..."
+            placeholder={translate('Select or create branch...')}
             data-testid={`${testIdPrefix}-branch-input`}
             disabled={disabled}
             error={hasError}
           />
           {hasError && (
             <p className="text-xs text-destructive">
-              Branch name is required for custom branch mode.
+              {translate('Branch name is required for custom branch mode.')}
             </p>
           )}
         </div>
@@ -155,7 +173,7 @@ export function WorkModeSelector({
 
       {disabled && (
         <p className="text-xs text-muted-foreground italic">
-          Work mode cannot be changed after work has started.
+          {translate('Work mode cannot be changed after work has started.')}
         </p>
       )}
     </div>

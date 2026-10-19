@@ -1,3 +1,5 @@
+import { formatCount } from '@/lib/i18n';
+import { getFormattingLocale, getUiLocale, translate } from '@/lib/i18n';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import type { ModelAlias, ModelProvider } from '@/store/app-store';
@@ -230,15 +232,23 @@ export function formatRelativeTime(date: Date): string {
   const diffMs = now.getTime() - date.getTime();
   const diffSec = Math.floor(diffMs / 1000);
 
-  if (diffSec < 0) return date.toLocaleDateString();
+  if (diffSec < 0) return date.toLocaleDateString(getFormattingLocale());
 
   const diffMin = Math.floor(diffSec / 60);
   const diffHour = Math.floor(diffMin / 60);
   const diffDay = Math.floor(diffHour / 24);
 
-  if (diffSec < 60) return 'just now';
-  if (diffMin < 60) return `${diffMin} minute${diffMin === 1 ? '' : 's'} ago`;
-  if (diffHour < 24) return `${diffHour} hour${diffHour === 1 ? '' : 's'} ago`;
-  if (diffDay < 7) return `${diffDay} day${diffDay === 1 ? '' : 's'} ago`;
-  return date.toLocaleDateString();
+  if (getUiLocale() === 'ru') {
+    const relative = new Intl.RelativeTimeFormat(getFormattingLocale(), { numeric: 'auto' });
+    if (diffSec < 60) return translate('just now');
+    if (diffMin < 60) return relative.format(-diffMin, 'minute');
+    if (diffHour < 24) return relative.format(-diffHour, 'hour');
+    if (diffDay < 7) return relative.format(-diffDay, 'day');
+  }
+
+  if (diffSec < 60) return translate('just now');
+  if (diffMin < 60) return translate('{value1} ago', { value1: formatCount(diffMin, 'minute') });
+  if (diffHour < 24) return translate('{value1} ago', { value1: formatCount(diffHour, 'hour') });
+  if (diffDay < 7) return translate('{value1} ago', { value1: formatCount(diffDay, 'day') });
+  return date.toLocaleDateString(getFormattingLocale());
 }

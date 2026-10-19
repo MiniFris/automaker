@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,6 +74,7 @@ function SortableTemplateItem({
   onToggleEnabled: () => void;
   onDelete: () => void;
 }) {
+  useUiLocale();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: template.id,
   });
@@ -111,13 +113,13 @@ function SortableTemplateItem({
           <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           <span className="font-medium truncate">{template.name}</span>
           {template.isBuiltIn && (
-            <span title="Built-in template">
+            <span title={translate('Built-in template')}>
               <Lock className="w-3 h-3 text-muted-foreground" />
             </span>
           )}
           {!isEnabled && (
             <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-              Disabled
+              {translate('Disabled')}
             </span>
           )}
         </div>
@@ -134,14 +136,14 @@ function SortableTemplateItem({
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={onEdit} data-testid={`template-edit-${template.id}`}>
             <Pencil className="w-4 h-4 mr-2" />
-            Edit
+            {translate('Edit')}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={onToggleEnabled}
             data-testid={`template-toggle-${template.id}`}
           >
             <Checkbox checked={isEnabled} className="w-4 h-4 mr-2 pointer-events-none" />
-            {isEnabled ? 'Disable' : 'Enable'}
+            {isEnabled ? translate('Disable') : translate('Enable')}
           </DropdownMenuItem>
           {!template.isBuiltIn && (
             <DropdownMenuItem
@@ -150,7 +152,7 @@ function SortableTemplateItem({
               data-testid={`template-delete-${template.id}`}
             >
               <Trash2 className="w-4 h-4 mr-2" />
-              Delete
+              {translate('Delete')}
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>
@@ -166,6 +168,7 @@ export function TemplatesSection({
   onDeleteTemplate,
   onReorderTemplates,
 }: TemplatesSectionProps) {
+  useUiLocale();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<FeatureTemplate | null>(null);
   const [formData, setFormData] = useState<TemplateFormData>({
@@ -214,11 +217,11 @@ export function TemplatesSection({
 
   const handleDelete = async (template: FeatureTemplate) => {
     if (template.isBuiltIn) {
-      toast.error('Built-in templates cannot be deleted');
+      toast.error(translate('Built-in templates cannot be deleted'));
       return;
     }
     await onDeleteTemplate(template.id);
-    toast.success('Template deleted');
+    toast.success(translate('Template deleted'));
   };
 
   const handleSave = async () => {
@@ -241,7 +244,7 @@ export function TemplatesSection({
         prompt: formData.prompt.trim(),
         model: formData.model,
       });
-      toast.success('Template updated');
+      toast.success(translate('Template updated'));
     } else {
       // Create new
       const newTemplate: FeatureTemplate = {
@@ -254,7 +257,7 @@ export function TemplatesSection({
         order: Math.max(...templates.map((t) => t.order ?? 0), -1) + 1,
       };
       await onAddTemplate(newTemplate);
-      toast.success('Template created');
+      toast.success(translate('Template created'));
     }
     setDialogOpen(false);
   };
@@ -292,7 +295,7 @@ export function TemplatesSection({
               <FileText className="w-5 h-5 text-brand-500" />
             </div>
             <h2 className="text-lg font-semibold text-foreground tracking-tight">
-              Feature Templates
+              {translate('Feature Templates')}
             </h2>
           </div>
           <Button
@@ -302,11 +305,13 @@ export function TemplatesSection({
             data-testid="add-template-button"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Add Template
+            {translate('Add Template')}
           </Button>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Create reusable task templates for quick feature creation from the Add Feature dropdown.
+          {translate(
+            'Create reusable task templates for quick feature creation from the Add Feature dropdown.'
+          )}
         </p>
       </div>
 
@@ -314,8 +319,8 @@ export function TemplatesSection({
         {templates.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p className="text-sm">No templates yet</p>
-            <p className="text-xs mt-1">Create your first template to get started</p>
+            <p className="text-sm">{translate('No templates yet')}</p>
+            <p className="text-xs mt-1">{translate('Create your first template to get started')}</p>
           </div>
         ) : (
           <DndContext
@@ -347,11 +352,13 @@ export function TemplatesSection({
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-lg" data-testid="template-dialog">
           <DialogHeader>
-            <DialogTitle>{editingTemplate ? 'Edit Template' : 'Create Template'}</DialogTitle>
+            <DialogTitle>
+              {editingTemplate ? translate('Edit Template') : translate('Create Template')}
+            </DialogTitle>
             <DialogDescription>
               {editingTemplate
-                ? 'Update the template details below.'
-                : 'Create a new template for quick feature creation.'}
+                ? translate('Update the template details below.')
+                : translate('Create a new template for quick feature creation.')}
             </DialogDescription>
           </DialogHeader>
 
@@ -359,7 +366,8 @@ export function TemplatesSection({
             {/* Name */}
             <div className="space-y-2">
               <Label htmlFor="template-name">
-                Name <span className="text-destructive">*</span>
+                {translate('Name ')}
+                <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="template-name"
@@ -368,13 +376,15 @@ export function TemplatesSection({
                   setFormData({ ...formData, name: e.target.value });
                   if (e.target.value.trim()) setNameError(false);
                 }}
-                placeholder="e.g., Run tests and fix issues"
+                placeholder={translate('e.g., Run tests and fix issues')}
                 maxLength={MAX_NAME_LENGTH}
                 className={nameError ? 'border-destructive' : ''}
                 data-testid="template-name-input"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
-                {nameError && <span className="text-destructive">Name is required</span>}
+                {nameError && (
+                  <span className="text-destructive">{translate('Name is required')}</span>
+                )}
                 <span className="ml-auto">
                   {formData.name.length}/{MAX_NAME_LENGTH}
                 </span>
@@ -384,7 +394,8 @@ export function TemplatesSection({
             {/* Prompt */}
             <div className="space-y-2">
               <Label htmlFor="template-prompt">
-                Prompt <span className="text-destructive">*</span>
+                {translate('Prompt ')}
+                <span className="text-destructive">*</span>
               </Label>
               <Textarea
                 id="template-prompt"
@@ -393,17 +404,19 @@ export function TemplatesSection({
                   setFormData({ ...formData, prompt: e.target.value });
                   if (e.target.value.trim()) setPromptError(false);
                 }}
-                placeholder="Describe the task the AI should perform..."
+                placeholder={translate('Describe the task the AI should perform...')}
                 rows={4}
                 className={promptError ? 'border-destructive' : ''}
                 data-testid="template-prompt-input"
               />
-              {promptError && <p className="text-xs text-destructive">Prompt is required</p>}
+              {promptError && (
+                <p className="text-xs text-destructive">{translate('Prompt is required')}</p>
+              )}
             </div>
 
             {/* Model (optional) */}
             <div className="space-y-2">
-              <Label htmlFor="template-model">Preferred Model (optional)</Label>
+              <Label htmlFor="template-model">{translate('Preferred Model (optional)')}</Label>
               <PhaseModelSelector
                 value={formData.model ?? defaultFeatureModel}
                 onChange={(entry) => setFormData({ ...formData, model: entry })}
@@ -411,17 +424,17 @@ export function TemplatesSection({
                 align="end"
               />
               <p className="text-xs text-muted-foreground">
-                If set, this model will be pre-selected when using this template.
+                {translate('If set, this model will be pre-selected when using this template.')}
               </p>
             </div>
           </div>
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setDialogOpen(false)}>
-              Cancel
+              {translate('Cancel')}
             </Button>
             <Button onClick={handleSave} data-testid="template-save-button">
-              {editingTemplate ? 'Save Changes' : 'Create Template'}
+              {editingTemplate ? translate('Save Changes') : translate('Create Template')}
             </Button>
           </DialogFooter>
         </DialogContent>

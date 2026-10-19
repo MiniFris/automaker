@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { LayoutGrid, List } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -14,6 +15,7 @@ interface ViewToggleProps {
  * Uses icons to represent each view mode with clear visual feedback.
  */
 export function ViewToggle({ viewMode, onViewModeChange, className }: ViewToggleProps) {
+  useUiLocale();
   return (
     <div
       className={cn(
@@ -21,12 +23,12 @@ export function ViewToggle({ viewMode, onViewModeChange, className }: ViewToggle
         className
       )}
       role="tablist"
-      aria-label="View mode"
+      aria-label={translate('View mode')}
     >
       <button
         role="tab"
         aria-selected={viewMode === 'kanban'}
-        aria-label="Kanban view"
+        aria-label={translate('Kanban view')}
         onClick={() => onViewModeChange('kanban')}
         className={cn(
           'inline-flex h-[calc(100%-1px)] items-center justify-center gap-1.5 rounded-md px-2.5 py-1 text-sm font-medium transition-all duration-200 cursor-pointer',
@@ -38,12 +40,12 @@ export function ViewToggle({ viewMode, onViewModeChange, className }: ViewToggle
         data-testid="view-toggle-kanban"
       >
         <LayoutGrid className="w-4 h-4" />
-        <span className="sr-only">Kanban</span>
+        <span className="sr-only">{translate('Kanban')}</span>
       </button>
       <button
         role="tab"
         aria-selected={viewMode === 'list'}
-        aria-label="List view"
+        aria-label={translate('List view')}
         onClick={() => onViewModeChange('list')}
         className={cn(
           'inline-flex h-[calc(100%-1px)] items-center justify-center gap-1.5 rounded-md px-2.5 py-1 text-sm font-medium transition-all duration-200 cursor-pointer',
@@ -55,7 +57,7 @@ export function ViewToggle({ viewMode, onViewModeChange, className }: ViewToggle
         data-testid="view-toggle-list"
       >
         <List className="w-4 h-4" />
-        <span className="sr-only">List</span>
+        <span className="sr-only">{translate('List')}</span>
       </button>
     </div>
   );

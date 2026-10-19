@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, type ReactNode, type ElementType } from 'react';
 import {
   ChevronDown,
@@ -38,6 +39,7 @@ function CollapsibleSection({
   isOpen: boolean;
   onToggle: () => void;
 }) {
+  useUiLocale();
   const Icon = section.icon;
 
   return (
@@ -68,6 +70,7 @@ function CollapsibleSection({
 }
 
 function CodeBlock({ children, title }: { children: string; title?: string }) {
+  useUiLocale();
   return (
     <div className="my-3 rounded-lg overflow-hidden border border-border">
       {title && (
@@ -87,6 +90,7 @@ function FeatureList({
 }: {
   items: { icon: ElementType; title: string; description: string }[];
 }) {
+  useUiLocale();
   return (
     <div className="grid gap-3 mt-3">
       {items.map((item, index) => {
@@ -111,6 +115,7 @@ function FeatureList({
 }
 
 export function WikiView() {
+  useUiLocale();
   const [openSections, setOpenSections] = useState<Set<string>>(new Set(['overview']));
 
   const toggleSection = (id: string) => {
@@ -136,23 +141,26 @@ export function WikiView() {
   const sections: WikiSection[] = [
     {
       id: 'overview',
-      title: 'Project Overview',
+      title: translate('Project Overview'),
       icon: Rocket,
       content: (
         <div className="space-y-3">
           <p>
-            <strong className="text-foreground">Automaker</strong> is an autonomous AI development
-            studio that helps developers build software faster using AI agents.
+            <strong className="text-foreground">{translate('Automaker')}</strong>{' '}
+            {translate(
+              ' is an autonomous AI development studio that helps developers build software faster using AI agents.'
+            )}
           </p>
           <p>
-            At its core, Automaker provides a visual Kanban board to manage features. When you're
-            ready, AI agents automatically implement those features in your codebase, complete with
-            git worktree isolation for safe parallel development.
+            {translate(
+              "At its core, Automaker provides a visual Kanban board to manage features. When you're ready, AI agents automatically implement those features in your codebase, complete with git worktree isolation for safe parallel development."
+            )}
           </p>
           <div className="p-3 rounded-lg bg-brand-500/10 border border-brand-500/20 mt-4">
             <p className="text-brand-400 text-sm">
-              Think of it as having a team of AI developers that can work on multiple features
-              simultaneously while you focus on the bigger picture.
+              {translate(
+                'Think of it as having a team of AI developers that can work on multiple features simultaneously while you focus on the bigger picture.'
+              )}
             </p>
           </div>
         </div>
@@ -160,33 +168,43 @@ export function WikiView() {
     },
     {
       id: 'architecture',
-      title: 'Architecture',
+      title: translate('Architecture'),
       icon: Layers,
       content: (
         <div className="space-y-3">
-          <p>Automaker is built as a monorepo with two main applications and shared libraries:</p>
+          <p>
+            {translate(
+              'Automaker is built as a monorepo with two main applications and shared libraries:'
+            )}
+          </p>
           <ul className="list-disc list-inside space-y-2 ml-2">
             <li>
-              <strong className="text-foreground">apps/ui</strong> - React + TanStack Router +
-              Electron frontend for the desktop application
+              <strong className="text-foreground">apps/ui</strong>{' '}
+              {translate(
+                ' - React + TanStack Router + Electron frontend for the desktop application'
+              )}
             </li>
             <li>
-              <strong className="text-foreground">apps/server</strong> - Express backend handling
-              API requests and agent orchestration
+              <strong className="text-foreground">apps/server</strong>{' '}
+              {translate(' - Express backend handling API requests and agent orchestration')}
             </li>
             <li>
-              <strong className="text-foreground">libs/</strong> - Shared packages for types,
-              utilities, and common logic used across apps
+              <strong className="text-foreground">libs/</strong>{' '}
+              {translate(
+                ' - Shared packages for types, utilities, and common logic used across apps'
+              )}
             </li>
           </ul>
           <div className="mt-4 space-y-2">
-            <p className="font-medium text-foreground">Key Technologies:</p>
+            <p className="font-medium text-foreground">{translate('Key Technologies:')}</p>
             <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>Electron + React + TanStack Router for cross-platform desktop support</li>
-              <li>Real-time communication via WebSocket for live agent updates</li>
-              <li>State management with Zustand for reactive UI updates</li>
-              <li>Claude Agent SDK for AI capabilities</li>
-              <li>Shared monorepo packages (@automaker/*) for code reuse</li>
+              <li>
+                {translate('Electron + React + TanStack Router for cross-platform desktop support')}
+              </li>
+              <li>{translate('Real-time communication via WebSocket for live agent updates')}</li>
+              <li>{translate('State management with Zustand for reactive UI updates')}</li>
+              <li>{translate('Claude Agent SDK for AI capabilities')}</li>
+              <li>{translate('Shared monorepo packages (@automaker/*) for code reuse')}</li>
             </ul>
           </div>
         </div>
@@ -194,7 +212,7 @@ export function WikiView() {
     },
     {
       id: 'features',
-      title: 'Key Features',
+      title: translate('Key Features'),
       icon: Sparkles,
       content: (
         <div>
@@ -202,63 +220,72 @@ export function WikiView() {
             items={[
               {
                 icon: LayoutGrid,
-                title: 'Kanban Board',
-                description:
-                  '4 columns: Backlog, In Progress, Waiting Approval, Verified. Drag and drop to manage feature lifecycle.',
+                title: translate('Kanban Board'),
+                description: translate(
+                  '4 columns: Backlog, In Progress, Waiting Approval, Verified. Drag and drop to manage feature lifecycle.'
+                ),
               },
               {
                 icon: Bot,
-                title: 'AI Agent Integration',
-                description:
-                  'Powered by Claude via the Agent SDK with full file, bash, and git access.',
+                title: translate('AI Agent Integration'),
+                description: translate(
+                  'Powered by Claude via the Agent SDK with full file, bash, and git access.'
+                ),
               },
               {
                 icon: Cpu,
-                title: 'Multi-Model Support',
-                description:
-                  'Claude Haiku/Sonnet/Opus models. Choose the right model for each task.',
+                title: translate('Multi-Model Support'),
+                description: translate(
+                  'Claude Haiku/Sonnet/Opus models. Choose the right model for each task.'
+                ),
               },
               {
                 icon: Brain,
-                title: 'Extended Thinking',
-                description:
-                  'Configurable thinking levels (none, low, medium, high, ultrathink) for complex tasks.',
+                title: translate('Extended Thinking'),
+                description: translate(
+                  'Configurable thinking levels (none, low, medium, high, ultrathink) for complex tasks.'
+                ),
               },
               {
                 icon: Zap,
-                title: 'Real-time Streaming',
-                description: 'Watch AI agents work in real-time with live output streaming.',
+                title: translate('Real-time Streaming'),
+                description: translate(
+                  'Watch AI agents work in real-time with live output streaming.'
+                ),
               },
               {
                 icon: GitBranch,
-                title: 'Git Worktree Isolation',
-                description:
-                  'Each feature runs in its own git worktree for safe parallel development.',
+                title: translate('Git Worktree Isolation'),
+                description: translate(
+                  'Each feature runs in its own git worktree for safe parallel development.'
+                ),
               },
               {
                 icon: Terminal,
-                title: 'Integrated Terminal',
-                description: 'Built-in terminal with tab support and split panes.',
+                title: translate('Integrated Terminal'),
+                description: translate('Built-in terminal with tab support and split panes.'),
               },
               {
                 icon: Keyboard,
-                title: 'Keyboard Shortcuts',
-                description: 'Fully customizable shortcuts for power users.',
+                title: translate('Keyboard Shortcuts'),
+                description: translate('Fully customizable shortcuts for power users.'),
               },
               {
                 icon: Palette,
-                title: '14 Themes',
-                description: 'From light to dark, retro to synthwave - pick your style.',
+                title: translate('14 Themes'),
+                description: translate('From light to dark, retro to synthwave - pick your style.'),
               },
               {
                 icon: Image,
-                title: 'Image Support',
-                description: 'Attach images to features for visual context.',
+                title: translate('Image Support'),
+                description: translate('Attach images to features for visual context.'),
               },
               {
                 icon: TestTube,
-                title: 'Test Integration',
-                description: 'Automatic test running and TDD support for quality assurance.',
+                title: translate('Test Integration'),
+                description: translate(
+                  'Automatic test running and TDD support for quality assurance.'
+                ),
               },
             ]}
           />
@@ -267,61 +294,61 @@ export function WikiView() {
     },
     {
       id: 'data-flow',
-      title: 'How It Works (Data Flow)',
+      title: translate('How It Works (Data Flow)'),
       icon: GitBranch,
       content: (
         <div className="space-y-3">
-          <p>Here's what happens when you use Automaker to implement a feature:</p>
+          <p>{translate("Here's what happens when you use Automaker to implement a feature:")}</p>
           <ol className="list-decimal list-inside space-y-3 ml-2 mt-4">
             <li className="text-foreground">
-              <strong>Create Feature</strong>
+              <strong>{translate('Create Feature')}</strong>
               <p className="text-muted-foreground ml-5 mt-1">
-                Add a new feature card to the Kanban board with description and steps
+                {translate('Add a new feature card to the Kanban board with description and steps')}
               </p>
             </li>
             <li className="text-foreground">
-              <strong>Feature Saved</strong>
+              <strong>{translate('Feature Saved')}</strong>
               <p className="text-muted-foreground ml-5 mt-1">
-                Feature saved to{' '}
+                {translate('Feature saved to')}{' '}
                 <code className="px-1 py-0.5 bg-muted rounded text-xs">
                   .automaker/features/&#123;id&#125;/feature.json
                 </code>
               </p>
             </li>
             <li className="text-foreground">
-              <strong>Start Work</strong>
+              <strong>{translate('Start Work')}</strong>
               <p className="text-muted-foreground ml-5 mt-1">
-                Drag to "In Progress" or enable auto mode to start implementation
+                {translate('Drag to "In Progress" or enable auto mode to start implementation')}
               </p>
             </li>
             <li className="text-foreground">
-              <strong>Git Worktree Created</strong>
+              <strong>{translate('Git Worktree Created')}</strong>
               <p className="text-muted-foreground ml-5 mt-1">
-                Backend AutoModeService creates isolated git worktree (if enabled)
+                {translate('Backend AutoModeService creates isolated git worktree (if enabled)')}
               </p>
             </li>
             <li className="text-foreground">
-              <strong>Agent Executes</strong>
+              <strong>{translate('Agent Executes')}</strong>
               <p className="text-muted-foreground ml-5 mt-1">
-                Claude Agent SDK runs with file/bash/git tool access
+                {translate('Claude Agent SDK runs with file/bash/git tool access')}
               </p>
             </li>
             <li className="text-foreground">
-              <strong>Progress Streamed</strong>
+              <strong>{translate('Progress Streamed')}</strong>
               <p className="text-muted-foreground ml-5 mt-1">
-                Real-time updates via WebSocket as agent works
+                {translate('Real-time updates via WebSocket as agent works')}
               </p>
             </li>
             <li className="text-foreground">
-              <strong>Completion</strong>
+              <strong>{translate('Completion')}</strong>
               <p className="text-muted-foreground ml-5 mt-1">
-                On success, feature moves to "waiting_approval" for your review
+                {translate('On success, feature moves to "waiting_approval" for your review')}
               </p>
             </li>
             <li className="text-foreground">
-              <strong>Verify</strong>
+              <strong>{translate('Verify')}</strong>
               <p className="text-muted-foreground ml-5 mt-1">
-                Review changes and move to "verified" when satisfied
+                {translate('Review changes and move to "verified" when satisfied')}
               </p>
             </li>
           </ol>
@@ -330,67 +357,26 @@ export function WikiView() {
     },
     {
       id: 'structure',
-      title: 'Project Structure',
+      title: translate('Project Structure'),
       icon: FolderTree,
       content: (
         <div>
-          <p className="mb-3">The Automaker codebase is organized as follows:</p>
-          <CodeBlock title="Directory Structure">
-            {`automaker/
-├─ apps/
-│  ├─ ui/                                    Frontend (React + Electron)
-│  │  └─ src/
-│  │     ├─ routes/                          TanStack Router pages
-│  │     ├─ components/
-│  │     │  ├─ layout/                       Layout components (sidebar, etc.)
-│  │     │  ├─ views/                        View components (board, agent, etc.)
-│  │     │  ├─ dialogs/                      Dialog components
-│  │     │  └─ ui/                           shadcn/ui components
-│  │     ├─ store/                           Zustand state management
-│  │     ├─ hooks/                           Custom React hooks
-│  │     ├─ lib/                             Utilities and helpers
-│  │     ├─ config/                          App configuration files
-│  │     ├─ contexts/                        React context providers
-│  │     ├─ styles/                          CSS styles and theme definitions
-│  │     ├─ types/                           TypeScript type definitions
-│  │     ├─ utils/                           Utility functions
-│  │     ├─ main.ts                          Electron main process entry
-│  │     ├─ preload.ts                       Electron preload script
-│  │     └─ renderer.tsx                     React renderer entry
-│  │
-│  └─ server/                                Backend (Express)
-│     └─ src/
-│        ├─ routes/                          API endpoints
-│        ├─ services/                        Business logic (AutoModeService, etc.)
-│        ├─ lib/                             Library utilities
-│        ├─ middleware/                      Express middleware
-│        ├─ providers/                        AI provider implementations
-│        ├─ types/                           TypeScript type definitions
-│        └─ index.ts                         Server entry point
-│
-├─ libs/                                     Shared packages (monorepo)
-│  ├─ types/                                 TypeScript type definitions
-│  ├─ utils/                                 Common utilities (logging, errors)
-│  ├─ prompts/                               AI prompt templates
-│  ├─ platform/                              Platform & path utilities
-│  ├─ model-resolver/                        Claude model resolution
-│  ├─ dependency-resolver/                   Feature dependency ordering
-│  └─ git-utils/                             Git operations & parsing
-│
-├─ docs/                                     Documentation
-└─ package.json                              Workspace root
-`}
+          <p className="mb-3">{translate('The Automaker codebase is organized as follows:')}</p>
+          <CodeBlock title={translate('Directory Structure')}>
+            {translate(
+              'automaker/\n├─ apps/\n│  ├─ ui/                                    Frontend (React + Electron)\n│  │  └─ src/\n│  │     ├─ routes/                          TanStack Router pages\n│  │     ├─ components/\n│  │     │  ├─ layout/                       Layout components (sidebar, etc.)\n│  │     │  ├─ views/                        View components (board, agent, etc.)\n│  │     │  ├─ dialogs/                      Dialog components\n│  │     │  └─ ui/                           shadcn/ui components\n│  │     ├─ store/                           Zustand state management\n│  │     ├─ hooks/                           Custom React hooks\n│  │     ├─ lib/                             Utilities and helpers\n│  │     ├─ config/                          App configuration files\n│  │     ├─ contexts/                        React context providers\n│  │     ├─ styles/                          CSS styles and theme definitions\n│  │     ├─ types/                           TypeScript type definitions\n│  │     ├─ utils/                           Utility functions\n│  │     ├─ main.ts                          Electron main process entry\n│  │     ├─ preload.ts                       Electron preload script\n│  │     └─ renderer.tsx                     React renderer entry\n│  │\n│  └─ server/                                Backend (Express)\n│     └─ src/\n│        ├─ routes/                          API endpoints\n│        ├─ services/                        Business logic (AutoModeService, etc.)\n│        ├─ lib/                             Library utilities\n│        ├─ middleware/                      Express middleware\n│        ├─ providers/                        AI provider implementations\n│        ├─ types/                           TypeScript type definitions\n│        └─ index.ts                         Server entry point\n│\n├─ libs/                                     Shared packages (monorepo)\n│  ├─ types/                                 TypeScript type definitions\n│  ├─ utils/                                 Common utilities (logging, errors)\n│  ├─ prompts/                               AI prompt templates\n│  ├─ platform/                              Platform & path utilities\n│  ├─ model-resolver/                        Claude model resolution\n│  ├─ dependency-resolver/                   Feature dependency ordering\n│  └─ git-utils/                             Git operations & parsing\n│\n├─ docs/                                     Documentation\n└─ package.json                              Workspace root\n'
+            )}
           </CodeBlock>
         </div>
       ),
     },
     {
       id: 'components',
-      title: 'Key Components',
+      title: translate('Key Components'),
       icon: Component,
       content: (
         <div className="space-y-3">
-          <p>The main UI components that make up Automaker:</p>
+          <p>{translate('The main UI components that make up Automaker:')}</p>
           <div className="grid gap-2 mt-4">
             {[
               {
@@ -438,13 +424,14 @@ export function WikiView() {
     },
     {
       id: 'configuration',
-      title: 'Configuration',
+      title: translate('Configuration'),
       icon: Settings,
       content: (
         <div className="space-y-3">
           <p>
-            Automaker stores project configuration in the{' '}
-            <code className="px-1 py-0.5 bg-muted rounded text-xs">.automaker/</code> directory:
+            {translate('Automaker stores project configuration in the')}{' '}
+            <code className="px-1 py-0.5 bg-muted rounded text-xs">.automaker/</code>{' '}
+            {translate(' directory:')}
           </p>
           <div className="grid gap-2 mt-4">
             {[
@@ -473,12 +460,14 @@ export function WikiView() {
             ))}
           </div>
           <div className="mt-4 p-3 rounded-lg bg-muted/30 border border-border/50">
-            <p className="text-sm text-foreground font-medium mb-2">Tip: App Spec Best Practices</p>
+            <p className="text-sm text-foreground font-medium mb-2">
+              {translate('Tip: App Spec Best Practices')}
+            </p>
             <ul className="list-disc list-inside space-y-1 text-xs text-muted-foreground">
-              <li>Include your tech stack and key dependencies</li>
-              <li>Describe the project structure and conventions</li>
-              <li>List any important patterns or architectural decisions</li>
-              <li>Note testing requirements and coding standards</li>
+              <li>{translate('Include your tech stack and key dependencies')}</li>
+              <li>{translate('Describe the project structure and conventions')}</li>
+              <li>{translate('List any important patterns or architectural decisions')}</li>
+              <li>{translate('Note testing requirements and coding standards')}</li>
             </ul>
           </div>
         </div>
@@ -486,59 +475,65 @@ export function WikiView() {
     },
     {
       id: 'getting-started',
-      title: 'Getting Started',
+      title: translate('Getting Started'),
       icon: PlayCircle,
       content: (
         <div className="space-y-3">
-          <p>Follow these steps to start building with Automaker:</p>
+          <p>{translate('Follow these steps to start building with Automaker:')}</p>
           <ol className="list-decimal list-inside space-y-4 ml-2 mt-4">
             <li className="text-foreground">
-              <strong>Create or Open a Project</strong>
+              <strong>{translate('Create or Open a Project')}</strong>
               <p className="text-muted-foreground ml-5 mt-1">
-                Use the sidebar to create a new project or open an existing folder
+                {translate('Use the sidebar to create a new project or open an existing folder')}
               </p>
             </li>
             <li className="text-foreground">
-              <strong>Write an App Spec</strong>
+              <strong>{translate('Write an App Spec')}</strong>
               <p className="text-muted-foreground ml-5 mt-1">
-                Go to Spec Editor and describe your project. This helps AI understand your codebase.
+                {translate(
+                  'Go to Spec Editor and describe your project. This helps AI understand your codebase.'
+                )}
               </p>
             </li>
             <li className="text-foreground">
-              <strong>Add Context (Optional)</strong>
+              <strong>{translate('Add Context (Optional)')}</strong>
               <p className="text-muted-foreground ml-5 mt-1">
-                Add relevant documentation or examples to the Context view for better AI results
+                {translate(
+                  'Add relevant documentation or examples to the Context view for better AI results'
+                )}
               </p>
             </li>
             <li className="text-foreground">
-              <strong>Create Features</strong>
+              <strong>{translate('Create Features')}</strong>
               <p className="text-muted-foreground ml-5 mt-1">
-                Add feature cards to your Kanban board with clear descriptions and implementation
-                steps
+                {translate(
+                  'Add feature cards to your Kanban board with clear descriptions and implementation steps'
+                )}
               </p>
             </li>
             <li className="text-foreground">
-              <strong>Start Implementation</strong>
+              <strong>{translate('Start Implementation')}</strong>
               <p className="text-muted-foreground ml-5 mt-1">
-                Drag features to "In Progress" or enable auto mode to let AI work
+                {translate('Drag features to "In Progress" or enable auto mode to let AI work')}
               </p>
             </li>
             <li className="text-foreground">
-              <strong>Review and Verify</strong>
+              <strong>{translate('Review and Verify')}</strong>
               <p className="text-muted-foreground ml-5 mt-1">
-                Check completed features, review changes, and mark as verified
+                {translate('Check completed features, review changes, and mark as verified')}
               </p>
             </li>
           </ol>
           <div className="mt-6 p-4 rounded-lg bg-brand-500/10 border border-brand-500/20">
-            <p className="text-brand-400 text-sm font-medium mb-2">Pro Tips:</p>
+            <p className="text-brand-400 text-sm font-medium mb-2">{translate('Pro Tips:')}</p>
             <ul className="list-disc list-inside space-y-1 text-xs text-brand-400/80">
               <li>
-                Use keyboard shortcuts for faster navigation (press{' '}
-                <code className="px-1 py-0.5 bg-brand-500/20 rounded">?</code> to see all)
+                {translate('Use keyboard shortcuts for faster navigation (press')}{' '}
+                <code className="px-1 py-0.5 bg-brand-500/20 rounded">?</code>{' '}
+                {translate(' to see all)')}
               </li>
-              <li>Enable git worktree isolation for parallel feature development</li>
-              <li>Keep your app spec up to date as your project evolves</li>
+              <li>{translate('Enable git worktree isolation for parallel feature development')}</li>
+              <li>{translate('Keep your app spec up to date as your project evolves')}</li>
             </ul>
           </div>
         </div>
@@ -552,9 +547,9 @@ export function WikiView() {
       <div className="border-b border-border bg-card/30 backdrop-blur-sm px-6 py-4 shrink-0">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-foreground">Wiki</h1>
+            <h1 className="text-xl font-semibold text-foreground">{translate('Wiki')}</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Learn how Automaker works and how to use it effectively
+              {translate('Learn how Automaker works and how to use it effectively')}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -562,13 +557,13 @@ export function WikiView() {
               onClick={expandAll}
               className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
             >
-              Expand All
+              {translate('Expand All')}
             </button>
             <button
               onClick={collapseAll}
               className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
             >
-              Collapse All
+              {translate('Collapse All')}
             </button>
           </div>
         </div>

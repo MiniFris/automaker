@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Copy } from 'lucide-react';
 import { toast } from 'sonner';
@@ -8,9 +9,10 @@ interface CopyableCommandFieldProps {
 }
 
 export function CopyableCommandField({ command, label }: CopyableCommandFieldProps) {
+  useUiLocale();
   const copyToClipboard = () => {
     navigator.clipboard.writeText(command);
-    toast.success('Command copied to clipboard');
+    toast.success(translate('Command copied to clipboard'));
   };
 
   return (

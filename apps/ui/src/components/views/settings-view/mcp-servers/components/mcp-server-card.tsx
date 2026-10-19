@@ -1,3 +1,5 @@
+import { formatCount } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { ChevronDown, ChevronRight, Code, Pencil, Trash2, PlayCircle } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
@@ -32,6 +34,7 @@ export function MCPServerCard({
   onEdit,
   onDelete,
 }: MCPServerCardProps) {
+  useUiLocale();
   const Icon = getServerIcon(server.type);
   const hasTools = testState?.tools && testState.tools.length > 0;
 
@@ -79,7 +82,7 @@ export function MCPServerCard({
                     {testState && getTestStatusIcon(testState.status)}
                     {testState?.status === 'success' && testState.tools && (
                       <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded whitespace-nowrap">
-                        {testState.tools.length} tool{testState.tools.length !== 1 ? 's' : ''}
+                        {formatCount(testState.tools.length, 'tool')}
                       </span>
                     )}
                   </div>
@@ -116,7 +119,7 @@ export function MCPServerCard({
               ) : (
                 <PlayCircle className="w-4 h-4" />
               )}
-              <span className="ml-1.5 text-xs">Test</span>
+              <span className="ml-1.5 text-xs">{translate('Test')}</span>
             </Button>
             <Switch
               checked={server.enabled !== false}
@@ -127,7 +130,7 @@ export function MCPServerCard({
               variant="ghost"
               size="icon"
               onClick={onEditJson}
-              title="Edit JSON"
+              title={translate('Edit JSON')}
               data-testid={`mcp-server-json-${server.id}`}
             >
               <Code className="w-4 h-4" />
@@ -154,7 +157,9 @@ export function MCPServerCard({
         {hasTools && (
           <CollapsibleContent>
             <div className="px-4 pb-4 pt-0 ml-7 overflow-hidden">
-              <div className="text-xs font-medium text-muted-foreground mb-2">Available Tools</div>
+              <div className="text-xs font-medium text-muted-foreground mb-2">
+                {translate('Available Tools')}
+              </div>
               <MCPToolsList
                 tools={testState.tools!}
                 isLoading={testState.status === 'testing'}

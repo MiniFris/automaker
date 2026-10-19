@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 import { Component, type ReactNode, type ErrorInfo } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 
@@ -128,11 +129,15 @@ export class AppErrorBoundary extends Component<Props, State> {
           </svg>
 
           <div className="text-center space-y-2">
-            <h1 className="text-xl font-semibold">Something went wrong</h1>
+            <h1 className="text-xl font-semibold">{translate('Something went wrong')}</h1>
             <p className="text-sm text-muted-foreground max-w-md">
               {this.state.isCrashLoop
-                ? 'The application crashed repeatedly, likely due to stale cached data. The cache has been cleared automatically. Reload to continue.'
-                : 'The application encountered an unexpected error. This is usually temporary and can be resolved by reloading the page.'}
+                ? translate(
+                    'The application crashed repeatedly, likely due to stale cached data. The cache has been cleared automatically. Reload to continue.'
+                  )
+                : translate(
+                    'The application encountered an unexpected error. This is usually temporary and can be resolved by reloading the page.'
+                  )}
             </p>
           </div>
 
@@ -158,7 +163,7 @@ export class AppErrorBoundary extends Component<Props, State> {
                 <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
                 <path d="M16 21h5v-5" />
               </svg>
-              Reload Page
+              {translate('Reload Page')}
             </button>
 
             <button
@@ -181,7 +186,7 @@ export class AppErrorBoundary extends Component<Props, State> {
                 <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
                 <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
               </svg>
-              Clear Cache &amp; Reload
+              {translate('Clear Cache & Reload')}
             </button>
           </div>
 
@@ -189,7 +194,7 @@ export class AppErrorBoundary extends Component<Props, State> {
           {this.state.error && (
             <details className="text-xs text-muted-foreground max-w-lg w-full">
               <summary className="cursor-pointer hover:text-foreground text-center">
-                Technical details
+                {translate('Technical details')}
               </summary>
               <pre className="mt-2 p-3 bg-muted/50 rounded-md text-left overflow-auto max-h-32 border border-border">
                 {this.state.error.stack || this.state.error.message}

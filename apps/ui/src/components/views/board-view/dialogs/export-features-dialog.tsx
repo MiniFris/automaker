@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -39,6 +40,7 @@ export function ExportFeaturesDialog({
   features,
   selectedFeatureIds,
 }: ExportFeaturesDialogProps) {
+  useUiLocale();
   const [format, setFormat] = useState<ExportFormat>('json');
   const [includeHistory, setIncludeHistory] = useState(true);
   const [includePlanSpec, setIncludePlanSpec] = useState(true);
@@ -72,7 +74,7 @@ export function ExportFeaturesDialog({
       });
 
       if (!result.success || !result.data) {
-        toast.error(result.error || 'Failed to export features');
+        toast.error(result.error || translate('Failed to export features'));
         return;
       }
 
@@ -89,10 +91,15 @@ export function ExportFeaturesDialog({
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      toast.success(`Exported ${featuresToExport.length} feature(s) to ${format.toUpperCase()}`);
+      toast.success(
+        translate('Exported {value1} feature(s) to {value2}', {
+          value1: featuresToExport.length,
+          value2: format.toUpperCase(),
+        })
+      );
       onOpenChange(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to export features');
+      toast.error(error instanceof Error ? error.message : translate('Failed to export features'));
     } finally {
       setIsExporting(false);
     }
@@ -104,18 +111,19 @@ export function ExportFeaturesDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Download className="w-5 h-5" />
-            Export Features
+            {translate('Export Features')}
           </DialogTitle>
           <DialogDescription>
-            Export {featuresToExport.length} feature(s) to a file for backup or sharing with other
-            projects.
+            {translate('Export ')}
+            {featuresToExport.length}{' '}
+            {translate(' feature(s) to a file for backup or sharing with other projects.')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="py-4 space-y-4">
           {/* Format Selection */}
           <div className="space-y-2">
-            <Label>Export Format</Label>
+            <Label>{translate('Export Format')}</Label>
             <Select value={format} onValueChange={(v) => setFormat(v as ExportFormat)}>
               <SelectTrigger data-testid="export-format-select">
                 <SelectValue />
@@ -139,7 +147,7 @@ export function ExportFeaturesDialog({
 
           {/* Options */}
           <div className="space-y-3">
-            <Label>Options</Label>
+            <Label>{translate('Options')}</Label>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Checkbox
@@ -149,7 +157,7 @@ export function ExportFeaturesDialog({
                   data-testid="export-include-history"
                 />
                 <Label htmlFor="include-history" className="text-sm font-normal cursor-pointer">
-                  Include description history
+                  {translate('Include description history')}
                 </Label>
               </div>
               <div className="flex items-center gap-2">
@@ -160,7 +168,7 @@ export function ExportFeaturesDialog({
                   data-testid="export-include-plan-spec"
                 />
                 <Label htmlFor="include-plan-spec" className="text-sm font-normal cursor-pointer">
-                  Include plan specifications
+                  {translate('Include plan specifications')}
                 </Label>
               </div>
             </div>
@@ -169,7 +177,7 @@ export function ExportFeaturesDialog({
           {/* Features to Export Preview */}
           {featuresToExport.length > 0 && featuresToExport.length <= 10 && (
             <div className="space-y-2">
-              <Label className="text-muted-foreground">Features to export</Label>
+              <Label className="text-muted-foreground">{translate('Features to export')}</Label>
               <div className="max-h-32 overflow-y-auto rounded-md border border-border/50 bg-muted/30 p-2 text-sm">
                 {featuresToExport.map((f) => (
                   <div key={f.id} className="py-1 px-2 truncate text-muted-foreground">
@@ -183,11 +191,11 @@ export function ExportFeaturesDialog({
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isExporting}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button onClick={handleExport} disabled={isExporting} data-testid="confirm-export">
             <Download className="w-4 h-4 mr-2" />
-            {isExporting ? 'Exporting...' : 'Export'}
+            {isExporting ? translate('Exporting...') : translate('Export')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,4 +1,5 @@
 'use client';
+import { translate, useUiLocale } from '@/lib/i18n';
 
 import {
   Dialog,
@@ -24,28 +25,30 @@ export function ArchiveAllVerifiedDialog({
   verifiedCount,
   onConfirm,
 }: ArchiveAllVerifiedDialogProps) {
+  useUiLocale();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent data-testid="archive-all-verified-dialog">
         <DialogHeader>
-          <DialogTitle>Archive All Verified Features</DialogTitle>
+          <DialogTitle>{translate('Archive All Verified Features')}</DialogTitle>
           <DialogDescription>
-            Are you sure you want to archive all verified features? They will be moved to the
-            archive box.
+            {translate(
+              'Are you sure you want to archive all verified features? They will be moved to the archive box.'
+            )}
             {verifiedCount > 0 && (
               <span className="block mt-2 text-yellow-500">
-                {verifiedCount} feature(s) will be archived.
+                {verifiedCount} {translate(' feature(s) will be archived.')}
               </span>
             )}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button variant="default" onClick={onConfirm} data-testid="confirm-archive-all-verified">
             <Archive className="w-4 h-4 mr-2" />
-            Complete All
+            {translate('Complete All')}
           </Button>
         </DialogFooter>
       </DialogContent>

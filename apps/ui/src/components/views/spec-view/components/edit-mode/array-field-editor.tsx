@@ -1,3 +1,5 @@
+import { translate } from '@/lib/i18n';
+import { useUiLocale } from '@/lib/i18n';
 import { Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,10 +23,11 @@ interface ItemWithId {
 export function ArrayFieldEditor({
   values,
   onChange,
-  placeholder = 'Enter value...',
+  placeholder = translate('Enter value...'),
   addLabel = 'Add Item',
-  emptyMessage = 'No items added yet.',
+  emptyMessage = translate('No items added yet.'),
 }: ArrayFieldEditorProps) {
+  useUiLocale();
   // Track items with stable IDs
   const [items, setItems] = useState<ItemWithId[]>(() =>
     values.map((value) => ({ id: generateUUID(), value }))

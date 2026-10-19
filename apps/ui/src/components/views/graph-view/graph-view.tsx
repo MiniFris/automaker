@@ -1,3 +1,5 @@
+import { useLocalizedMemo } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useMemo, useCallback, type ReactNode } from 'react';
 import { Feature, useAppStore } from '@/store/app-store';
 import { GraphCanvas } from './graph-canvas';
@@ -53,6 +55,7 @@ export function GraphView({
   onPlanUseSelectedWorktreeBranchChange,
   worktreeSelector,
 }: GraphViewProps) {
+  useUiLocale();
   const currentProject = useAppStore((state) => state.currentProject);
 
   // Use the same background hook as the board view
@@ -98,13 +101,13 @@ export function GraphView({
 
       // Prevent self-dependency
       if (sourceId === targetId) {
-        toast.error('A task cannot depend on itself');
+        toast.error(translate('A task cannot depend on itself'));
         return false;
       }
 
       // Check if dependency already exists
       if (dependencyExists(features, sourceId, targetId)) {
-        toast.info('Dependency already exists');
+        toast.info(translate('Dependency already exists'));
         return false;
       }
 
@@ -113,15 +116,15 @@ export function GraphView({
       // A cycle would occur if sourceId already depends on targetId (transitively)
       const wouldCycle = wouldCreateCircularDependency(features, sourceId, targetId);
       if (wouldCycle) {
-        toast.error('Cannot create circular dependency', {
-          description: 'This would create a dependency cycle',
+        toast.error(translate('Cannot create circular dependency'), {
+          description: translate('This would create a dependency cycle'),
         });
         return false;
       }
 
       // Get target feature and update its dependencies
       if (!targetFeature) {
-        toast.error('Target task not found');
+        toast.error(translate('Target task not found'));
         return false;
       }
 
@@ -132,14 +135,14 @@ export function GraphView({
         dependencies: [...currentDeps, sourceId],
       });
 
-      toast.success('Dependency created');
+      toast.success(translate('Dependency created'));
       return true;
     },
     [features, onUpdateFeature]
   );
 
   // Node action callbacks for dropdown menu
-  const nodeActionCallbacks: NodeActionCallbacks = useMemo(
+  const nodeActionCallbacks: NodeActionCallbacks = useLocalizedMemo(
     () => ({
       onViewLogs: (featureId: string) => {
         const feature = features.find((f) => f.id === featureId);
@@ -206,7 +209,7 @@ export function GraphView({
           console.error('onUpdateFeature is not defined!');
         }
 
-        toast.success('Dependency removed');
+        toast.success(translate('Dependency removed'));
       },
     }),
     [

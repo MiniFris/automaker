@@ -1,3 +1,5 @@
+import { translate } from '@/lib/i18n';
+import { useUiLocale } from '@/lib/i18n';
 import type { GeminiModelId } from '@automaker/types';
 import { GeminiIcon } from '@/components/ui/provider-icon';
 import { GEMINI_MODEL_MAP } from '@automaker/types';
@@ -30,6 +32,7 @@ export function GeminiModelConfiguration({
   onDefaultModelChange,
   onModelToggle,
 }: GeminiModelConfigurationProps) {
+  useUiLocale();
   return (
     <BaseModelConfiguration<GeminiModelId>
       providerName="Gemini"
@@ -44,7 +47,7 @@ export function GeminiModelConfiguration({
       onModelToggle={onModelToggle}
       getFeatureBadge={(model) => {
         const geminiModel = model as GeminiModelInfo;
-        return geminiModel.supportsThinking ? { show: true, label: 'Thinking' } : null;
+        return geminiModel.supportsThinking ? { show: true, label: translate('Thinking') } : null;
       }}
     />
   );

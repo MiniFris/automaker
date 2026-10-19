@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 /**
  * Shared utility functions for worktree indicator styling and formatting.
  * These utilities ensure consistent appearance across WorktreeTab, WorktreeDropdown,
@@ -60,13 +61,13 @@ export function getConflictBadgeStyles(): string {
 export function getConflictTypeLabel(conflictType?: 'merge' | 'rebase' | 'cherry-pick'): string {
   switch (conflictType) {
     case 'merge':
-      return 'Merge';
+      return translate('Merge');
     case 'rebase':
-      return 'Rebase';
+      return translate('Rebase');
     case 'cherry-pick':
-      return 'Cherry-pick';
+      return translate('Cherry-pick');
     default:
-      return 'Conflict';
+      return translate('Conflict');
   }
 }
 

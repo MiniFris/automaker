@@ -1,3 +1,6 @@
+import { useLocalizedMemo } from '@/lib/i18n';
+import { formatCount } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useMemo, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import {
@@ -79,21 +82,21 @@ const getStatusBadgeColor = (status: string) => {
 const getStatusDisplayName = (status: string) => {
   switch (status) {
     case 'A':
-      return 'Added';
+      return translate('Added');
     case '?':
-      return 'Untracked';
+      return translate('Untracked');
     case 'D':
-      return 'Deleted';
+      return translate('Deleted');
     case 'M':
-      return 'Modified';
+      return translate('Modified');
     case 'U':
-      return 'Updated';
+      return translate('Updated');
     case 'R':
-      return 'Renamed';
+      return translate('Renamed');
     case 'C':
-      return 'Copied';
+      return translate('Copied');
     default:
-      return 'Changed';
+      return translate('Changed');
   }
 };
 
@@ -116,28 +119,30 @@ function getStagingState(file: FileStatus): 'staged' | 'unstaged' | 'partial' {
 }
 
 function StagingBadge({ state }: { state: 'staged' | 'unstaged' | 'partial' }) {
+  useUiLocale();
   if (state === 'staged') {
     return (
       <span className="text-[10px] px-1.5 py-0.5 rounded border font-medium bg-green-500/15 text-green-400 border-green-500/30">
-        Staged
+        {translate('Staged')}
       </span>
     );
   }
   if (state === 'partial') {
     return (
       <span className="text-[10px] px-1.5 py-0.5 rounded border font-medium bg-amber-500/15 text-amber-400 border-amber-500/30">
-        Partial
+        {translate('Partial')}
       </span>
     );
   }
   return (
     <span className="text-[10px] px-1.5 py-0.5 rounded border font-medium bg-muted text-muted-foreground border-border">
-      Unstaged
+      {translate('Unstaged')}
     </span>
   );
 }
 
 function MergeBadge({ mergeType }: { mergeType?: string }) {
+  useUiLocale();
   if (!mergeType) return null;
 
   const label = (() => {
@@ -172,16 +177,18 @@ function MergeBadge({ mergeType }: { mergeType?: string }) {
 }
 
 function MergeStateBanner({ mergeState }: { mergeState: MergeStateInfo }) {
+  useUiLocale();
   // Completed merge commit (HEAD is a merge)
   if (mergeState.isMergeCommit && !mergeState.isMerging) {
     return (
       <div className="mx-4 mt-3 flex items-start gap-2 p-3 rounded-md bg-purple-500/10 border border-purple-500/20">
         <GitMerge className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
         <div className="text-sm">
-          <span className="font-medium text-purple-400">Merge commit</span>
+          <span className="font-medium text-purple-400">{translate('Merge commit')}</span>
           <span className="text-purple-400/80 ml-1">
-            &mdash; {mergeState.mergeAffectedFiles.length} file
-            {mergeState.mergeAffectedFiles.length !== 1 ? 's' : ''} changed in merge
+            {translate('— ')}
+            {formatCount(mergeState.mergeAffectedFiles.length, 'file')}{' '}
+            {translate(' changed in merge')}
           </span>
         </div>
       </div>
@@ -200,16 +207,18 @@ function MergeStateBanner({ mergeState }: { mergeState: MergeStateInfo }) {
     <div className="mx-4 mt-3 flex items-start gap-2 p-3 rounded-md bg-purple-500/10 border border-purple-500/20">
       <GitMerge className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
       <div className="text-sm">
-        <span className="font-medium text-purple-400">{operationLabel} in progress</span>
+        <span className="font-medium text-purple-400">
+          {operationLabel} {translate(' in progress')}
+        </span>
         {mergeState.conflictFiles.length > 0 ? (
           <span className="text-purple-400/80 ml-1">
-            &mdash; {mergeState.conflictFiles.length} file
-            {mergeState.conflictFiles.length !== 1 ? 's' : ''} with conflicts
+            {translate('— ')}
+            {formatCount(mergeState.conflictFiles.length, 'file')} {translate(' with conflicts')}
           </span>
         ) : mergeState.isCleanMerge ? (
           <span className="text-purple-400/80 ml-1">
-            &mdash; Clean merge, {mergeState.mergeAffectedFiles.length} file
-            {mergeState.mergeAffectedFiles.length !== 1 ? 's' : ''} affected
+            {translate('— Clean merge, ')}
+            {formatCount(mergeState.mergeAffectedFiles.length, 'file')} {translate(' affected')}
           </span>
         ) : null}
       </div>
@@ -239,6 +248,7 @@ function FileDiffSection({
   onUnstage?: (filePath: string) => void;
   isStagingFile?: boolean;
 }) {
+  useUiLocale();
   const additions = fileDiff.additions;
   const deletions = fileDiff.deletions;
 
@@ -284,17 +294,17 @@ function FileDiffSection({
           {enableStaging && stagingState && <StagingBadge state={stagingState} />}
           {fileDiff.isNew && (
             <span className="text-xs px-1.5 py-0.5 rounded bg-green-500/20 text-green-400">
-              new
+              {translate('new')}
             </span>
           )}
           {fileDiff.isDeleted && (
             <span className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 text-red-400">
-              deleted
+              {translate('deleted')}
             </span>
           )}
           {fileDiff.isRenamed && (
             <span className="text-xs px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">
-              renamed
+              {translate('renamed')}
             </span>
           )}
           {additions > 0 && <span className="text-xs text-green-400">+{additions}</span>}
@@ -312,10 +322,10 @@ function FileDiffSection({
                     e.stopPropagation();
                     onUnstage(fileDiff.filePath);
                   }}
-                  title="Unstage file"
+                  title={translate('Unstage file')}
                 >
                   <Minus className="w-3 h-3 mr-1" />
-                  Unstage
+                  {translate('Unstage')}
                 </Button>
               ) : (
                 <Button
@@ -326,10 +336,10 @@ function FileDiffSection({
                     e.stopPropagation();
                     onStage(fileDiff.filePath);
                   }}
-                  title="Stage file"
+                  title={translate('Stage file')}
                 >
                   <Plus className="w-3 h-3 mr-1" />
-                  Stage
+                  {translate('Stage')}
                 </Button>
               )}
             </div>
@@ -354,6 +364,7 @@ export function GitDiffPanel({
   enableStaging = false,
   worktreePath,
 }: GitDiffPanelProps) {
+  useUiLocale();
   const [isExpanded, setIsExpanded] = useState(!compact);
   const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
   const [stagingInProgress, setStagingInProgress] = useState<Set<string>>(new Set());
@@ -398,7 +409,7 @@ export function GitDiffPanel({
   const loadDiffs = useWorktrees ? refetchWorktree : refetchGit;
 
   // Build a map from file path to FileStatus for quick lookup
-  const fileStatusMap = useMemo(() => {
+  const fileStatusMap = useLocalizedMemo(() => {
     const map = new Map<string, FileStatus>();
     for (const file of files) {
       map.set(file.path, file);
@@ -425,7 +436,7 @@ export function GitDiffPanel({
   }, [diffContent, mergeState, fileStatusMap]);
 
   // Build a map from file path to raw diff string for CodeMirror merge view
-  const fileDiffMap = useMemo(() => {
+  const fileDiffMap = useLocalizedMemo(() => {
     const map = new Map<string, string>();
     const perFileDiffs = splitDiffByFile(diffContent);
     for (const entry of perFileDiffs) {
@@ -467,7 +478,7 @@ export function GitDiffPanel({
       onStart();
       if (!worktreePath && !projectPath) {
         toast.error(failurePrefix, {
-          description: 'No project or worktree path configured',
+          description: translate('No project or worktree path configured'),
         });
         onFinally();
         return;
@@ -479,21 +490,21 @@ export function GitDiffPanel({
         if (useWorktrees && worktreePath) {
           if (!api.worktree?.stageFiles) {
             toast.error(failurePrefix, {
-              description: 'Worktree stage API not available',
+              description: translate('Worktree stage API not available'),
             });
             return;
           }
           result = await api.worktree.stageFiles(worktreePath, paths, action);
         } else if (!useWorktrees) {
           if (!api.git?.stageFiles) {
-            toast.error(failurePrefix, { description: 'Git stage API not available' });
+            toast.error(failurePrefix, { description: translate('Git stage API not available') });
             return;
           }
           result = await api.git.stageFiles(projectPath, paths, action);
         }
 
         if (!result) {
-          toast.error(failurePrefix, { description: 'Stage API not available' });
+          toast.error(failurePrefix, { description: translate('Stage API not available') });
           return;
         }
 
@@ -520,8 +531,8 @@ export function GitDiffPanel({
   const handleStageFile = useCallback(
     async (filePath: string) => {
       if (enableStaging && useWorktrees && !worktreePath) {
-        toast.error('Failed to stage file', {
-          description: 'worktreePath required when useWorktrees is enabled',
+        toast.error(translate('Failed to stage file'), {
+          description: translate('worktreePath required when useWorktrees is enabled'),
         });
         return;
       }
@@ -546,8 +557,8 @@ export function GitDiffPanel({
   const handleUnstageFile = useCallback(
     async (filePath: string) => {
       if (enableStaging && useWorktrees && !worktreePath) {
-        toast.error('Failed to unstage file', {
-          description: 'worktreePath required when useWorktrees is enabled',
+        toast.error(translate('Failed to unstage file'), {
+          description: translate('worktreePath required when useWorktrees is enabled'),
         });
         return;
       }
@@ -572,8 +583,8 @@ export function GitDiffPanel({
     const allPaths = files.map((f) => f.path);
     if (allPaths.length === 0) return;
     if (enableStaging && useWorktrees && !worktreePath) {
-      toast.error('Failed to stage all files', {
-        description: 'worktreePath required when useWorktrees is enabled',
+      toast.error(translate('Failed to stage all files'), {
+        description: translate('worktreePath required when useWorktrees is enabled'),
       });
       return;
     }
@@ -595,8 +606,8 @@ export function GitDiffPanel({
     const allPaths = stagedFiles.map((f) => f.path);
     if (allPaths.length === 0) return;
     if (enableStaging && useWorktrees && !worktreePath) {
-      toast.error('Failed to unstage all files', {
-        description: 'worktreePath required when useWorktrees is enabled',
+      toast.error(translate('Failed to unstage all files'), {
+        description: translate('worktreePath required when useWorktrees is enabled'),
       });
       return;
     }
@@ -662,14 +673,12 @@ export function GitDiffPanel({
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           )}
           <GitBranch className="w-4 h-4 text-brand-500" />
-          <span className="font-medium text-sm text-foreground">Git Changes</span>
+          <span className="font-medium text-sm text-foreground">{translate('Git Changes')}</span>
         </div>
         <div className="flex items-center gap-3 text-xs">
           {!isExpanded && files.length > 0 && (
             <>
-              <span className="text-muted-foreground">
-                {files.length} {files.length === 1 ? 'file' : 'files'}
-              </span>
+              <span className="text-muted-foreground">{formatCount(files.length, 'file')}</span>
               {totalAdditions > 0 && <span className="text-green-400">+{totalAdditions}</span>}
               {totalDeletions > 0 && <span className="text-red-400">-{totalDeletions}</span>}
             </>
@@ -683,7 +692,7 @@ export function GitDiffPanel({
           {isLoading ? (
             <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
               <Spinner size="md" />
-              <span className="text-sm">Loading changes...</span>
+              <span className="text-sm">{translate('Loading changes...')}</span>
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center gap-2 py-8 text-muted-foreground">
@@ -691,12 +700,12 @@ export function GitDiffPanel({
               <span className="text-sm">{error}</span>
               <Button variant="ghost" size="sm" onClick={() => void loadDiffs()} className="mt-2">
                 <RefreshCw className="w-4 h-4 mr-2" />
-                Retry
+                {translate('Retry')}
               </Button>
             </div>
           ) : files.length === 0 ? (
             <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
-              <span className="text-sm">No changes detected</span>
+              <span className="text-sm">{translate('No changes detected')}</span>
             </div>
           ) : (
             <div>
@@ -757,7 +766,7 @@ export function GitDiffPanel({
                           >
                             <GitMerge className="w-4 h-4 text-purple-500" />
                             <span className="text-xs px-1.5 py-0.5 rounded border font-medium bg-purple-500/20 text-purple-400 border-purple-500/30">
-                              {mergeSummary.total} Merge
+                              {mergeSummary.total} {translate(' Merge')}
                             </span>
                           </div>
                         );
@@ -780,7 +789,7 @@ export function GitDiffPanel({
                           }
                         >
                           <Plus className="w-3 h-3 mr-1" />
-                          Stage All
+                          {translate('Stage All')}
                         </Button>
                         <Button
                           variant="ghost"
@@ -793,7 +802,7 @@ export function GitDiffPanel({
                           }
                         >
                           <Minus className="w-3 h-3 mr-1" />
-                          Unstage All
+                          {translate('Unstage All')}
                         </Button>
                       </>
                     )}
@@ -803,7 +812,7 @@ export function GitDiffPanel({
                       onClick={expandAllFiles}
                       className="text-xs h-7"
                     >
-                      Expand All
+                      {translate('Expand All')}
                     </Button>
                     <Button
                       variant="ghost"
@@ -811,7 +820,7 @@ export function GitDiffPanel({
                       onClick={collapseAllFiles}
                       className="text-xs h-7"
                     >
-                      Collapse All
+                      {translate('Collapse All')}
                     </Button>
                     <Button
                       variant="ghost"
@@ -820,7 +829,7 @@ export function GitDiffPanel({
                       className="text-xs h-7"
                     >
                       <RefreshCw className="w-3 h-3 mr-1" />
-                      Refresh
+                      {translate('Refresh')}
                     </Button>
                   </div>
                 </div>
@@ -828,19 +837,30 @@ export function GitDiffPanel({
                 {/* Stats */}
                 <div className="flex items-center gap-4 text-sm mt-2 flex-wrap">
                   <span className="text-muted-foreground">
-                    {files.length} {files.length === 1 ? 'file' : 'files'} changed
+                    {formatCount(files.length, 'file')} {translate(' changed')}
                   </span>
                   {totalAdditions > 0 && (
-                    <span className="text-green-400">+{totalAdditions} additions</span>
+                    <span className="text-green-400">
+                      +{totalAdditions} {translate(' additions')}
+                    </span>
                   )}
                   {totalDeletions > 0 && (
-                    <span className="text-red-400">-{totalDeletions} deletions</span>
+                    <span className="text-red-400">
+                      -{totalDeletions} {translate(' deletions')}
+                    </span>
                   )}
                   {enableStaging && stagingSummary && (
                     <span className="text-muted-foreground">
                       {stagingSummary.partial > 0
-                        ? `(${stagingSummary.staged} staged, ${stagingSummary.partial} partial, ${stagingSummary.unstaged} unstaged)`
-                        : `(${stagingSummary.staged} staged, ${stagingSummary.unstaged} unstaged)`}
+                        ? translate('({value1} staged, {value2} partial, {value3} unstaged)', {
+                            value1: stagingSummary.staged,
+                            value2: stagingSummary.partial,
+                            value3: stagingSummary.unstaged,
+                          })
+                        : translate('({value1} staged, {value2} unstaged)', {
+                            value1: stagingSummary.staged,
+                            value2: stagingSummary.unstaged,
+                          })}
                     </span>
                   )}
                 </div>
@@ -916,10 +936,10 @@ export function GitDiffPanel({
                                       size="sm"
                                       className="h-6 px-2 text-xs"
                                       onClick={() => void handleUnstageFile(file.path)}
-                                      title="Unstage file"
+                                      title={translate('Unstage file')}
                                     >
                                       <Minus className="w-3 h-3 mr-1" />
-                                      Unstage
+                                      {translate('Unstage')}
                                     </Button>
                                   ) : (
                                     <Button
@@ -927,10 +947,10 @@ export function GitDiffPanel({
                                       size="sm"
                                       className="h-6 px-2 text-xs"
                                       onClick={() => void handleStageFile(file.path)}
-                                      title="Stage file"
+                                      title={translate('Stage file')}
                                     >
                                       <Plus className="w-3 h-3 mr-1" />
-                                      Stage
+                                      {translate('Stage')}
                                     </Button>
                                   )}
                                 </div>
@@ -939,11 +959,11 @@ export function GitDiffPanel({
                           </div>
                           <div className="px-4 py-3 text-sm text-muted-foreground bg-background border-t border-border">
                             {file.status === '?' ? (
-                              <span>New file - content preview not available</span>
+                              <span>{translate('New file - content preview not available')}</span>
                             ) : file.status === 'D' ? (
-                              <span>File deleted</span>
+                              <span>{translate('File deleted')}</span>
                             ) : (
-                              <span>Diff content not available</span>
+                              <span>{translate('Diff content not available')}</span>
                             )}
                           </div>
                         </div>

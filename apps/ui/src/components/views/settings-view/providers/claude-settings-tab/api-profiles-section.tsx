@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState } from 'react';
 import { useAppStore } from '@/store/app-store';
 import { Button } from '@/components/ui/button';
@@ -63,11 +64,19 @@ function maskApiKey(key?: string): string {
 
 // Provider type display names
 const PROVIDER_TYPE_LABELS: Record<ClaudeCompatibleProviderType, string> = {
-  anthropic: 'Anthropic',
+  get anthropic() {
+    return translate('Anthropic');
+  },
   glm: 'GLM',
-  minimax: 'MiniMax',
-  openrouter: 'OpenRouter',
-  custom: 'Custom',
+  get minimax() {
+    return translate('MiniMax');
+  },
+  get openrouter() {
+    return translate('OpenRouter');
+  },
+  get custom() {
+    return translate('Custom');
+  },
 };
 
 // Provider type badge colors
@@ -81,9 +90,15 @@ const PROVIDER_TYPE_COLORS: Record<ClaudeCompatibleProviderType, string> = {
 
 // Claude model display names
 const CLAUDE_MODEL_LABELS: Record<ClaudeModelAlias, string> = {
-  haiku: 'Claude Haiku',
-  sonnet: 'Claude Sonnet',
-  opus: 'Claude Opus',
+  get haiku() {
+    return 'Claude Haiku';
+  },
+  get sonnet() {
+    return 'Claude Sonnet';
+  },
+  get opus() {
+    return 'Claude Opus';
+  },
 };
 
 interface ModelFormEntry {
@@ -125,6 +140,7 @@ function hasFixedSettings(providerType: ClaudeCompatibleProviderType): boolean {
 }
 
 export function ApiProfilesSection() {
+  useUiLocale();
   const {
     claudeCompatibleProviders,
     addClaudeCompatibleProvider,
@@ -323,9 +339,9 @@ export function ApiProfilesSection() {
             <Server className="w-5 h-5 text-brand-500" />
           </div>
           <div>
-            <h3 className="font-semibold text-foreground">Model Providers</h3>
+            <h3 className="font-semibold text-foreground">{translate('Model Providers')}</h3>
             <p className="text-xs text-muted-foreground">
-              Configure providers whose models appear in all model selectors
+              {translate('Configure providers whose models appear in all model selectors')}
             </p>
           </div>
         </div>
@@ -333,13 +349,13 @@ export function ApiProfilesSection() {
           <DropdownMenuTrigger asChild>
             <Button size="sm" className="gap-2">
               <Plus className="w-4 h-4" />
-              Add Provider
+              {translate('Add Provider')}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleOpenAddDialog()}>
               <Plus className="w-4 h-4 mr-2" />
-              Custom Provider
+              {translate('Custom Provider')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             {CLAUDE_PROVIDER_TEMPLATES.filter((t) => t.providerType !== 'anthropic').map(
@@ -361,17 +377,18 @@ export function ApiProfilesSection() {
       <div className="p-6 space-y-4">
         {/* Info Banner */}
         <div className="p-3 rounded-lg bg-brand-500/5 border border-brand-500/20 text-sm text-muted-foreground">
-          Models from enabled providers appear in all model dropdowns throughout the app. You can
-          select different models from different providers for each phase.
+          {translate(
+            'Models from enabled providers appear in all model dropdowns throughout the app. You can select different models from different providers for each phase.'
+          )}
         </div>
 
         {/* Provider List */}
         {claudeCompatibleProviders.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground border border-dashed border-border/50 rounded-lg">
             <Server className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p className="text-sm">No model providers configured</p>
+            <p className="text-sm">{translate('No model providers configured')}</p>
             <p className="text-xs mt-1">
-              Add a provider to use alternative Claude-compatible models
+              {translate('Add a provider to use alternative Claude-compatible models')}
             </p>
           </div>
         ) : (
@@ -394,35 +411,43 @@ export function ApiProfilesSection() {
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingProviderId ? 'Edit Model Provider' : 'Add Model Provider'}
+              {editingProviderId
+                ? translate('Edit Model Provider')
+                : translate('Add Model Provider')}
             </DialogTitle>
             <DialogDescription>
               {isFixedProvider
-                ? `Configure ${PROVIDER_TYPE_LABELS[formData.providerType]} endpoint with model mappings to Claude.`
-                : 'Configure a Claude-compatible API endpoint. Models from this provider will appear in all model selectors.'}
+                ? translate('Configure {value1} endpoint with model mappings to Claude.', {
+                    value1: PROVIDER_TYPE_LABELS[formData.providerType],
+                  })
+                : translate(
+                    'Configure a Claude-compatible API endpoint. Models from this provider will appear in all model selectors.'
+                  )}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             {/* Name */}
             <div className="space-y-2">
-              <Label htmlFor="provider-name">Provider Name</Label>
+              <Label htmlFor="provider-name">{translate('Provider Name')}</Label>
               <Input
                 id="provider-name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., GLM (Work)"
+                placeholder={translate('e.g., GLM (Work)')}
                 className={isDuplicateName ? 'border-destructive' : ''}
               />
               {isDuplicateName && (
-                <p className="text-xs text-destructive">A provider with this name already exists</p>
+                <p className="text-xs text-destructive">
+                  {translate('A provider with this name already exists')}
+                </p>
               )}
             </div>
 
             {/* Provider Type - only for custom providers */}
             {!isFixedProvider && (
               <div className="space-y-2">
-                <Label>Provider Type</Label>
+                <Label>{translate('Provider Type')}</Label>
                 <Select
                   value={formData.providerType}
                   onValueChange={(value: ClaudeCompatibleProviderType) =>
@@ -430,14 +455,14 @@ export function ApiProfilesSection() {
                   }
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select provider type" />
+                    <SelectValue placeholder={translate('Select provider type')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="glm">GLM (z.AI)</SelectItem>
-                    <SelectItem value="minimax">MiniMax</SelectItem>
-                    <SelectItem value="openrouter">OpenRouter</SelectItem>
-                    <SelectItem value="anthropic">Anthropic</SelectItem>
-                    <SelectItem value="custom">Custom</SelectItem>
+                    <SelectItem value="glm">{translate('GLM (z.AI)')}</SelectItem>
+                    <SelectItem value="minimax">{translate('MiniMax')}</SelectItem>
+                    <SelectItem value="openrouter">{translate('OpenRouter')}</SelectItem>
+                    <SelectItem value="anthropic">{translate('Anthropic')}</SelectItem>
+                    <SelectItem value="custom">{translate('Custom')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -445,14 +470,14 @@ export function ApiProfilesSection() {
 
             {/* API Key - always shown first for fixed providers */}
             <div className="space-y-2">
-              <Label htmlFor="provider-api-key">API Key</Label>
+              <Label htmlFor="provider-api-key">{translate('API Key')}</Label>
               <div className="relative">
                 <Input
                   id="provider-api-key"
                   type={showApiKey ? 'text' : 'password'}
                   value={formData.apiKey}
                   onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
-                  placeholder="Enter API key"
+                  placeholder={translate('Enter API key')}
                   className="pr-10"
                 />
                 <Button
@@ -472,7 +497,8 @@ export function ApiProfilesSection() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-xs text-brand-500 hover:text-brand-400"
                 >
-                  Get API Key from {currentTemplate.name} <ExternalLink className="w-3 h-3" />
+                  {translate('Get API Key from ')}
+                  {currentTemplate.name} <ExternalLink className="w-3 h-3" />
                 </a>
               )}
             </div>
@@ -480,7 +506,7 @@ export function ApiProfilesSection() {
             {/* Base URL - hidden for fixed providers since it's pre-configured */}
             {!isFixedProvider && (
               <div className="space-y-2">
-                <Label htmlFor="provider-base-url">API Base URL</Label>
+                <Label htmlFor="provider-base-url">{translate('API Base URL')}</Label>
                 <Input
                   id="provider-base-url"
                   value={formData.baseUrl}
@@ -495,7 +521,7 @@ export function ApiProfilesSection() {
               <>
                 {/* API Key Source */}
                 <div className="space-y-2">
-                  <Label>API Key Source</Label>
+                  <Label>{translate('API Key Source')}</Label>
                   <Select
                     value={formData.apiKeySource}
                     onValueChange={(value: ApiKeySource) =>
@@ -503,15 +529,17 @@ export function ApiProfilesSection() {
                     }
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select API key source" />
+                      <SelectValue placeholder={translate('Select API key source')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="inline">Enter key for this provider only</SelectItem>
+                      <SelectItem value="inline">
+                        {translate('Enter key for this provider only')}
+                      </SelectItem>
                       <SelectItem value="credentials">
-                        Use saved API key (from Settings → API Keys)
+                        {translate('Use saved API key (from Settings → API Keys)')}
                       </SelectItem>
                       <SelectItem value="env">
-                        Use environment variable (ANTHROPIC_API_KEY)
+                        {translate('Use environment variable (ANTHROPIC_API_KEY)')}
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -521,10 +549,10 @@ export function ApiProfilesSection() {
                 <div className="flex items-center justify-between py-2">
                   <div>
                     <Label htmlFor="use-auth-token" className="font-medium">
-                      Use Auth Token
+                      {translate('Use Auth Token')}
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Use ANTHROPIC_AUTH_TOKEN instead of ANTHROPIC_API_KEY
+                      {translate('Use ANTHROPIC_AUTH_TOKEN instead of ANTHROPIC_API_KEY')}
                     </p>
                   </div>
                   <Switch
@@ -540,10 +568,10 @@ export function ApiProfilesSection() {
                 <div className="flex items-center justify-between py-2">
                   <div>
                     <Label htmlFor="disable-traffic" className="font-medium">
-                      Disable Non-essential Traffic
+                      {translate('Disable Non-essential Traffic')}
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Sets CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+                      {translate('Sets CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1')}
                     </p>
                   </div>
                   <Switch
@@ -559,13 +587,13 @@ export function ApiProfilesSection() {
 
             {/* Timeout */}
             <div className="space-y-2">
-              <Label htmlFor="provider-timeout">Timeout (ms)</Label>
+              <Label htmlFor="provider-timeout">{translate('Timeout (ms)')}</Label>
               <Input
                 id="provider-timeout"
                 type="number"
                 value={formData.timeoutMs}
                 onChange={(e) => setFormData({ ...formData, timeoutMs: e.target.value })}
-                placeholder="Optional, e.g., 3000000"
+                placeholder={translate('Optional, e.g., 3000000')}
               />
             </div>
 
@@ -576,9 +604,10 @@ export function ApiProfilesSection() {
                 <>
                   <div className="flex items-center justify-between">
                     <div>
-                      <Label className="font-medium">Model Mappings</Label>
+                      <Label className="font-medium">{translate('Model Mappings')}</Label>
                       <p className="text-xs text-muted-foreground">
-                        {formData.models.length} mappings configured (Haiku, Sonnet, Opus)
+                        {formData.models.length}{' '}
+                        {translate(' mappings configured (Haiku, Sonnet, Opus)')}
                       </p>
                     </div>
                     <Button
@@ -589,7 +618,7 @@ export function ApiProfilesSection() {
                       className="gap-2"
                     >
                       <Settings2 className="w-4 h-4" />
-                      {showModelMappings ? 'Hide' : 'Customize'}
+                      {showModelMappings ? translate('Hide') : translate('Customize')}
                       <ChevronDown
                         className={cn(
                           'w-4 h-4 transition-transform',
@@ -610,31 +639,33 @@ export function ApiProfilesSection() {
                           <div className="flex-1 space-y-2">
                             <div className="grid grid-cols-2 gap-2">
                               <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">Model ID</Label>
+                                <Label className="text-xs text-muted-foreground">
+                                  {translate('Model ID')}
+                                </Label>
                                 <Input
                                   value={model.id}
                                   onChange={(e) => handleUpdateModel(index, { id: e.target.value })}
-                                  placeholder="e.g., GLM-4.7"
+                                  placeholder={translate('e.g., GLM-4.7')}
                                   className="text-xs h-8"
                                 />
                               </div>
                               <div className="space-y-1">
                                 <Label className="text-xs text-muted-foreground">
-                                  Display Name
+                                  {translate('Display Name')}
                                 </Label>
                                 <Input
                                   value={model.displayName}
                                   onChange={(e) =>
                                     handleUpdateModel(index, { displayName: e.target.value })
                                   }
-                                  placeholder="e.g., GLM 4.7"
+                                  placeholder={translate('e.g., GLM 4.7')}
                                   className="text-xs h-8"
                                 />
                               </div>
                             </div>
                             <div className="space-y-1">
                               <Label className="text-xs text-muted-foreground">
-                                Maps to Claude Model
+                                {translate('Maps to Claude Model')}
                               </Label>
                               <Select
                                 value={model.mapsToClaudeModel}
@@ -646,9 +677,15 @@ export function ApiProfilesSection() {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="haiku">Haiku (fast, efficient)</SelectItem>
-                                  <SelectItem value="sonnet">Sonnet (balanced)</SelectItem>
-                                  <SelectItem value="opus">Opus (powerful)</SelectItem>
+                                  <SelectItem value="haiku">
+                                    {translate('Haiku (fast, efficient)')}
+                                  </SelectItem>
+                                  <SelectItem value="sonnet">
+                                    {translate('Sonnet (balanced)')}
+                                  </SelectItem>
+                                  <SelectItem value="opus">
+                                    {translate('Opus (powerful)')}
+                                  </SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -672,7 +709,7 @@ export function ApiProfilesSection() {
                         className="w-full"
                       >
                         <Plus className="w-4 h-4 mr-1" />
-                        Add Model
+                        {translate('Add Model')}
                       </Button>
                     </div>
                   )}
@@ -682,21 +719,23 @@ export function ApiProfilesSection() {
                   {/* Non-fixed providers: always show full editing UI */}
                   <div className="flex items-center justify-between">
                     <div>
-                      <Label className="font-medium">Model Mappings</Label>
+                      <Label className="font-medium">{translate('Model Mappings')}</Label>
                       <p className="text-xs text-muted-foreground">
-                        Map provider models to Claude equivalents (Haiku, Sonnet, Opus)
+                        {translate(
+                          'Map provider models to Claude equivalents (Haiku, Sonnet, Opus)'
+                        )}
                       </p>
                     </div>
                     <Button type="button" variant="outline" size="sm" onClick={handleAddModel}>
                       <Plus className="w-4 h-4 mr-1" />
-                      Add Model
+                      {translate('Add Model')}
                     </Button>
                   </div>
 
                   {/* Coverage warning - only for non-fixed providers */}
                   {formData.models.length > 0 && !hasAllMappings && (
                     <div className="p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-xs text-yellow-600 dark:text-yellow-400">
-                      Missing mappings:{' '}
+                      {translate('Missing mappings:')}{' '}
                       {[
                         !modelCoverage.hasHaiku && 'Haiku',
                         !modelCoverage.hasSonnet && 'Sonnet',
@@ -709,7 +748,7 @@ export function ApiProfilesSection() {
 
                   {formData.models.length === 0 ? (
                     <div className="p-4 border border-dashed border-border/50 rounded-lg text-center text-sm text-muted-foreground">
-                      No models configured. Add models to use with this provider.
+                      {translate('No models configured. Add models to use with this provider.')}
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -721,31 +760,33 @@ export function ApiProfilesSection() {
                           <div className="flex-1 space-y-2">
                             <div className="grid grid-cols-2 gap-2">
                               <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">Model ID</Label>
+                                <Label className="text-xs text-muted-foreground">
+                                  {translate('Model ID')}
+                                </Label>
                                 <Input
                                   value={model.id}
                                   onChange={(e) => handleUpdateModel(index, { id: e.target.value })}
-                                  placeholder="e.g., GLM-4.7"
+                                  placeholder={translate('e.g., GLM-4.7')}
                                   className="text-xs h-8"
                                 />
                               </div>
                               <div className="space-y-1">
                                 <Label className="text-xs text-muted-foreground">
-                                  Display Name
+                                  {translate('Display Name')}
                                 </Label>
                                 <Input
                                   value={model.displayName}
                                   onChange={(e) =>
                                     handleUpdateModel(index, { displayName: e.target.value })
                                   }
-                                  placeholder="e.g., GLM 4.7"
+                                  placeholder={translate('e.g., GLM 4.7')}
                                   className="text-xs h-8"
                                 />
                               </div>
                             </div>
                             <div className="space-y-1">
                               <Label className="text-xs text-muted-foreground">
-                                Maps to Claude Model
+                                {translate('Maps to Claude Model')}
                               </Label>
                               <Select
                                 value={model.mapsToClaudeModel}
@@ -757,9 +798,15 @@ export function ApiProfilesSection() {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="haiku">Haiku (fast, efficient)</SelectItem>
-                                  <SelectItem value="sonnet">Sonnet (balanced)</SelectItem>
-                                  <SelectItem value="opus">Opus (powerful)</SelectItem>
+                                  <SelectItem value="haiku">
+                                    {translate('Haiku (fast, efficient)')}
+                                  </SelectItem>
+                                  <SelectItem value="sonnet">
+                                    {translate('Sonnet (balanced)')}
+                                  </SelectItem>
+                                  <SelectItem value="opus">
+                                    {translate('Opus (powerful)')}
+                                  </SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -784,10 +831,10 @@ export function ApiProfilesSection() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Cancel
+              {translate('Cancel')}
             </Button>
             <Button onClick={handleSave} disabled={!isFormValid}>
-              {editingProviderId ? 'Save Changes' : 'Add Provider'}
+              {editingProviderId ? translate('Save Changes') : translate('Add Provider')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -797,21 +844,22 @@ export function ApiProfilesSection() {
       <Dialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Delete Provider?</DialogTitle>
+            <DialogTitle>{translate('Delete Provider?')}</DialogTitle>
             <DialogDescription>
-              This will permanently delete the provider and its models. Any phase model
-              configurations using these models will need to be updated.
+              {translate(
+                'This will permanently delete the provider and its models. Any phase model configurations using these models will need to be updated.'
+              )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>
-              Cancel
+              {translate('Cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
             >
-              Delete
+              {translate('Delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -828,6 +876,7 @@ interface ProviderCardProps {
 }
 
 function ProviderCard({ provider, onEdit, onDelete, onToggleEnabled }: ProviderCardProps) {
+  useUiLocale();
   const isEnabled = provider.enabled !== false;
 
   return (
@@ -851,14 +900,19 @@ function ProviderCard({ provider, onEdit, onDelete, onToggleEnabled }: ProviderC
             </Badge>
             {!isEnabled && (
               <Badge variant="secondary" className="text-xs bg-zinc-500/20 text-zinc-400">
-                Disabled
+                {translate('Disabled')}
               </Badge>
             )}
           </div>
           <p className="text-xs text-muted-foreground truncate mt-1">{provider.baseUrl}</p>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-muted-foreground">
-            <span>Key: {maskApiKey(provider.apiKey)}</span>
-            <span>{provider.models?.length || 0} model(s)</span>
+            <span>
+              {translate('Key: ')}
+              {maskApiKey(provider.apiKey)}
+            </span>
+            <span>
+              {provider.models?.length || 0} {translate(' model(s)')}
+            </span>
           </div>
           {/* Show models with their Claude mapping */}
           {provider.models && provider.models.length > 0 && (
@@ -892,7 +946,7 @@ function ProviderCard({ provider, onEdit, onDelete, onToggleEnabled }: ProviderC
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={onEdit}>
                 <Pencil className="w-4 h-4 mr-2" />
-                Edit
+                {translate('Edit')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -900,7 +954,7 @@ function ProviderCard({ provider, onEdit, onDelete, onToggleEnabled }: ProviderC
                 className="text-destructive focus:text-destructive"
               >
                 <Trash2 className="w-4 h-4 mr-2" />
-                Delete
+                {translate('Delete')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

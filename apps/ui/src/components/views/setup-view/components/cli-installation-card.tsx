@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download, AlertCircle } from 'lucide-react';
@@ -31,6 +32,7 @@ export function CliInstallationCard({
   warningMessage,
   color = 'brand',
 }: CliInstallationCardProps) {
+  useUiLocale();
   const colorClasses = {
     brand: 'bg-brand-500 hover:bg-brand-600',
     green: 'bg-green-500 hover:bg-green-600',
@@ -41,7 +43,8 @@ export function CliInstallationCard({
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <Download className="w-5 h-5" />
-          Install {cliName}
+          {translate('Install ')}
+          {cliName}
         </CardTitle>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
@@ -61,12 +64,12 @@ export function CliInstallationCard({
           {isInstalling ? (
             <>
               <Spinner size="sm" variant="foreground" className="mr-2" />
-              Installing...
+              {translate('Installing...')}
             </>
           ) : (
             <>
               <Download className="w-4 h-4 mr-2" />
-              Auto Install
+              {translate('Auto Install')}
             </>
           )}
         </Button>

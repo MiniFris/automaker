@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { XIcon } from 'lucide-react';
@@ -35,18 +36,22 @@ const DialogDescriptionPrimitive = DialogPrimitive.Description as React.ForwardR
 >;
 
 function Dialog({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
+  useUiLocale();
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
 }
 
 function DialogTrigger({ ...props }: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
+  useUiLocale();
   return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
 }
 
 function DialogPortal({ ...props }: React.ComponentProps<typeof DialogPrimitive.Portal>) {
+  useUiLocale();
   return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />;
 }
 
 function DialogClose({ ...props }: React.ComponentProps<typeof DialogPrimitive.Close>) {
+  useUiLocale();
   return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
 }
 
@@ -62,6 +67,7 @@ function DialogOverlay({
 }: React.ComponentProps<typeof DialogPrimitive.Overlay> & {
   className?: string;
 }) {
+  useUiLocale();
   return (
     <DialogOverlayPrimitive
       data-slot="dialog-overlay"
@@ -99,6 +105,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
     },
     ref
   ) => {
+    useUiLocale();
     // Check if className contains a custom max-width (fallback heuristic)
     const hasCustomMaxWidth =
       noDefaultMaxWidth || (typeof className === 'string' && className.includes('max-w-'));
@@ -147,7 +154,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
               )}
             >
               <XIcon />
-              <span className="sr-only">Close</span>
+              <span className="sr-only">{translate('Close')}</span>
             </DialogClosePrimitive>
           )}
         </DialogContentPrimitive>
@@ -159,6 +166,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
 DialogContent.displayName = 'DialogContent';
 
 function DialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
+  useUiLocale();
   return (
     <div
       data-slot="dialog-header"
@@ -169,6 +177,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
 }
 
 function DialogFooter({ className, ...props }: React.ComponentProps<'div'>) {
+  useUiLocale();
   return (
     <div
       data-slot="dialog-footer"
@@ -186,6 +195,7 @@ function DialogTitle({
   children?: React.ReactNode;
   className?: string;
 }) {
+  useUiLocale();
   return (
     <DialogTitlePrimitive
       data-slot="dialog-title"
@@ -207,6 +217,7 @@ function DialogDescription({
   className?: string;
   title?: string;
 }) {
+  useUiLocale();
   return (
     <DialogDescriptionPrimitive
       data-slot="dialog-description"

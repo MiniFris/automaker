@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 import { useState, useCallback } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { getElectronAPI } from '@/lib/electron';
@@ -68,10 +69,10 @@ export function useProjectCreation({ upsertAndSetCurrentProject }: UseProjectCre
         setNewProjectPath(projectPath);
         setShowOnboardingDialog(true);
 
-        toast.success('Project created successfully');
+        toast.success(translate('Project created successfully'));
       } catch (error) {
         logger.error('Failed to finalize project:', error);
-        toast.error('Failed to initialize project', {
+        toast.error(translate('Failed to initialize project'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
         throw error;
@@ -97,7 +98,7 @@ export function useProjectCreation({ upsertAndSetCurrentProject }: UseProjectCre
         await finalizeProjectCreation(projectPath, projectName);
       } catch (error) {
         logger.error('Failed to create blank project:', error);
-        toast.error('Failed to create project', {
+        toast.error(translate('Failed to create project'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
       } finally {
@@ -161,12 +162,15 @@ export function useProjectCreation({ upsertAndSetCurrentProject }: UseProjectCre
         setNewProjectPath(projectPath);
         setShowOnboardingDialog(true);
 
-        toast.success('Project created from template', {
-          description: `Created ${projectName} from ${template.name}`,
+        toast.success(translate('Project created from template'), {
+          description: translate('Created {value1} from {value2}', {
+            value1: projectName,
+            value2: template.name,
+          }),
         });
       } catch (error) {
         logger.error('Failed to create from template:', error);
-        toast.error('Failed to create project from template', {
+        toast.error(translate('Failed to create project from template'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
       } finally {
@@ -230,12 +234,15 @@ export function useProjectCreation({ upsertAndSetCurrentProject }: UseProjectCre
         setNewProjectPath(projectPath);
         setShowOnboardingDialog(true);
 
-        toast.success('Project created from repository', {
-          description: `Created ${projectName} from ${repoUrl}`,
+        toast.success(translate('Project created from repository'), {
+          description: translate('Created {value1} from {value2}', {
+            value1: projectName,
+            value2: repoUrl,
+          }),
         });
       } catch (error) {
         logger.error('Failed to create from custom URL:', error);
-        toast.error('Failed to create project from URL', {
+        toast.error(translate('Failed to create project from URL'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
       } finally {

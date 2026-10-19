@@ -1,3 +1,5 @@
+import { formatCount } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import {
   Dialog,
   DialogContent,
@@ -29,6 +31,7 @@ export function ViewWorktreeChangesDialog({
   worktree,
   projectPath,
 }: ViewWorktreeChangesDialogProps) {
+  useUiLocale();
   if (!worktree) return null;
 
   return (
@@ -37,19 +40,19 @@ export function ViewWorktreeChangesDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5" />
-            View Changes
+            {translate('View Changes')}
           </DialogTitle>
           <DialogDescription>
-            Changes in the{' '}
-            <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code> worktree.
+            {translate('Changes in the')}{' '}
+            <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>{' '}
+            {translate(' worktree.')}
             {worktree.changedFilesCount !== undefined && worktree.changedFilesCount > 0 && (
               <span className="ml-1">
-                ({worktree.changedFilesCount} file
-                {worktree.changedFilesCount > 1 ? 's' : ''} changed)
+                ({formatCount(worktree.changedFilesCount, 'file')} {translate(' changed)')}
               </span>
             )}
             <span className="ml-1 text-xs text-muted-foreground">
-              — Use the Stage/Unstage buttons to prepare files for commit.
+              {translate('— Use the Stage/Unstage buttons to prepare files for commit.')}
             </span>
           </DialogDescription>
         </DialogHeader>

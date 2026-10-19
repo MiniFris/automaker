@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -40,6 +41,7 @@ function NavButton({
   isActive: boolean;
   onNavigate: (sectionId: SettingsViewId) => void;
 }) {
+  useUiLocale();
   const Icon = item.icon;
   return (
     <button
@@ -86,6 +88,7 @@ function NavItemWithSubItems({
   activeSection: SettingsViewId;
   onNavigate: (sectionId: SettingsViewId) => void;
 }) {
+  useUiLocale();
   const disabledProviders = useAppStore((state) => state.disabledProviders);
 
   const [isOpen, setIsOpen] = useState(() => {
@@ -195,6 +198,7 @@ export function SettingsNavigation({
   isOpen = true,
   onClose,
 }: SettingsNavigationProps) {
+  useUiLocale();
   // On mobile, only show when isOpen is true
   // On desktop (lg+), always show regardless of isOpen
   // The desktop visibility is handled by CSS, but we need to render on mobile only when open
@@ -229,13 +233,13 @@ export function SettingsNavigation({
       >
         {/* Mobile close button */}
         <div className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-border/50">
-          <span className="text-sm font-semibold text-foreground">Navigation</span>
+          <span className="text-sm font-semibold text-foreground">{translate('Navigation')}</span>
           <Button
             variant="ghost"
             size="sm"
             onClick={onClose}
             className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-            aria-label="Close navigation menu"
+            aria-label={translate('Close navigation menu')}
           >
             <X className="w-4 h-4" />
           </Button>

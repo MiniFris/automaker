@@ -1,3 +1,5 @@
+import { useUiLocale } from '@/lib/i18n';
+import { useEditorLocalization } from '@/lib/editor-localization';
 import CodeMirror from '@uiw/react-codemirror';
 import { StreamLanguage } from '@codemirror/language';
 import { javascript } from '@codemirror/legacy-modes/mode/javascript';
@@ -109,6 +111,8 @@ export function JsonSyntaxEditor({
   readOnly = false,
   'data-testid': testId,
 }: JsonSyntaxEditorProps) {
+  useUiLocale();
+  const editorLocalization = useEditorLocalization();
   return (
     <div
       className={cn('w-full rounded-lg border border-border bg-muted/30', className)}
@@ -118,7 +122,7 @@ export function JsonSyntaxEditor({
       <CodeMirror
         value={value}
         onChange={onChange}
-        extensions={extensions}
+        extensions={[...extensions, editorLocalization]}
         theme="none"
         placeholder={placeholder}
         height={maxHeight}

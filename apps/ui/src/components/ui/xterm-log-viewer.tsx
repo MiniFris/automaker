@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import { useEffect, useRef, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
 import { useAppStore } from '@/store/app-store';
 import { getTerminalTheme, getTerminalFontFamily } from '@/config/terminal-themes';
@@ -51,6 +52,7 @@ export const XtermLogViewer = forwardRef<XtermLogViewerRef, XtermLogViewerProps>
     },
     ref
   ) => {
+    useUiLocale();
     const containerRef = useRef<HTMLDivElement>(null);
     const xtermRef = useRef<XTerminal | null>(null);
     const fitAddonRef = useRef<XFitAddon | null>(null);

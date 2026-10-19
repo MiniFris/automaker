@@ -1,3 +1,5 @@
+import { formatCount } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import React, { useState, useRef, useCallback } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { cn } from '@/lib/utils';
@@ -35,6 +37,7 @@ export function ImageDropZone({
   disabled = false,
   images,
 }: ImageDropZoneProps) {
+  useUiLocale();
   const [isDragOver, setIsDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [internalImages, setInternalImages] = useState<ImageAttachment[]>([]);
@@ -212,12 +215,15 @@ export function ImageDropZone({
             </div>
             <p className="text-sm font-medium text-foreground mb-1">
               {isDragOver && !disabled
-                ? 'Drop your images here'
-                : 'Drag images here or click to browse'}
+                ? translate('Drop your images here')
+                : translate('Drag images here or click to browse')}
             </p>
             <p className="text-xs text-muted-foreground">
-              {maxFiles > 1 ? `Up to ${maxFiles} images` : '1 image'}, max{' '}
-              {Math.round(maxFileSize / (1024 * 1024))}MB each
+              {maxFiles > 1
+                ? translate('Up to {value1} images', { value1: maxFiles })
+                : translate('1 image')}
+              {translate(', max')} {Math.round(maxFileSize / (1024 * 1024))}
+              {translate('MB each')}
             </p>
             {!disabled && (
               <button
@@ -225,7 +231,7 @@ export function ImageDropZone({
                 className="mt-2 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                 disabled={isProcessing}
               >
-                Browse files
+                {translate('Browse files')}
               </button>
             )}
           </div>
@@ -237,14 +243,14 @@ export function ImageDropZone({
         <div className="mt-3 space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-foreground">
-              {selectedImages.length} image{selectedImages.length > 1 ? 's' : ''} selected
+              {formatCount(selectedImages.length, 'image')} {translate(' selected')}
             </p>
             <button
               onClick={clearAllImages}
               className="text-xs text-muted-foreground hover:text-foreground"
               disabled={disabled}
             >
-              Clear all
+              {translate('Clear all')}
             </button>
           </div>
           <div className="flex flex-wrap gap-2">

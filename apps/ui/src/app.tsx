@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import { useState, useCallback, useEffect } from 'react';
 import { RouterProvider } from '@tanstack/react-router';
 import { createLogger } from '@automaker/utils/logger';
@@ -20,6 +21,7 @@ const logger = createLogger('App');
 const DISABLE_SPLASH_KEY = 'automaker-disable-splash';
 
 export default function App() {
+  useUiLocale();
   const disableSplashScreen = useAppStore((state) => state.disableSplashScreen);
 
   const [showSplash, setShowSplash] = useState(() => {

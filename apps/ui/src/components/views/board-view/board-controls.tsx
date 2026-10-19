@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -8,6 +9,7 @@ interface BoardControlsProps {
 }
 
 export function BoardControls({ isMounted, onShowBoardBackground }: BoardControlsProps) {
+  useUiLocale();
   if (!isMounted) return null;
 
   const buttonClass = cn(
@@ -31,7 +33,7 @@ export function BoardControls({ isMounted, onShowBoardBackground }: BoardControl
           </button>
         </TooltipTrigger>
         <TooltipContent>
-          <p>Board Background Settings</p>
+          <p>{translate('Board Background Settings')}</p>
         </TooltipContent>
       </Tooltip>
     </div>

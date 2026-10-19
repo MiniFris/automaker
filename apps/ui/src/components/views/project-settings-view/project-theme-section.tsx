@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -18,6 +19,7 @@ interface ProjectThemeSectionProps {
 }
 
 export function ProjectThemeSection({ project }: ProjectThemeSectionProps) {
+  useUiLocale();
   const {
     theme: globalTheme,
     fontFamilySans: globalFontSans,
@@ -126,13 +128,13 @@ export function ProjectThemeSection({ project }: ProjectThemeSectionProps) {
 
   // Get display label for global font
   const getGlobalFontSansLabel = () => {
-    if (!globalFontSans) return 'Default (Geist Sans)';
+    if (!globalFontSans) return translate('Default (Geist Sans)');
     const option = UI_SANS_FONT_OPTIONS.find((o) => o.value === globalFontSans);
     return option?.label || globalFontSans;
   };
 
   const getGlobalFontMonoLabel = () => {
-    if (!globalFontMono) return 'Default (Geist Mono)';
+    if (!globalFontMono) return translate('Default (Geist Mono)');
     const option = UI_MONO_FONT_OPTIONS.find((o) => o.value === globalFontMono);
     return option?.label || globalFontMono;
   };
@@ -151,10 +153,12 @@ export function ProjectThemeSection({ project }: ProjectThemeSectionProps) {
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500/20 to-brand-600/10 flex items-center justify-center border border-brand-500/20">
             <Palette className="w-5 h-5 text-brand-500" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground tracking-tight">Theme & Fonts</h2>
+          <h2 className="text-lg font-semibold text-foreground tracking-tight">
+            {translate('Theme & Fonts')}
+          </h2>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Customize the appearance for this project.
+          {translate('Customize the appearance for this project.')}
         </p>
       </div>
       <div className="p-6 space-y-6">
@@ -173,11 +177,12 @@ export function ProjectThemeSection({ project }: ProjectThemeSectionProps) {
               className="text-foreground cursor-pointer font-medium flex items-center gap-2"
             >
               <Palette className="w-4 h-4 text-brand-500" />
-              Use Global Theme
+              {translate('Use Global Theme')}
             </Label>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">
-              When enabled, this project will use the global theme setting. Disable to set a
-              project-specific theme.
+              {translate(
+                'When enabled, this project will use the global theme setting. Disable to set a project-specific theme.'
+              )}
             </p>
           </div>
         </div>
@@ -186,7 +191,7 @@ export function ProjectThemeSection({ project }: ProjectThemeSectionProps) {
         {hasCustomTheme && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label className="text-foreground font-medium">Project Theme</Label>
+              <Label className="text-foreground font-medium">{translate('Project Theme')}</Label>
               {/* Dark/Light Tabs */}
               <div className="flex gap-1 p-1 rounded-lg bg-accent/30">
                 <button
@@ -199,7 +204,7 @@ export function ProjectThemeSection({ project }: ProjectThemeSectionProps) {
                   )}
                 >
                   <Moon className="w-3.5 h-3.5" />
-                  Dark
+                  {translate('Dark')}
                 </button>
                 <button
                   onClick={() => setActiveTab('light')}
@@ -211,7 +216,7 @@ export function ProjectThemeSection({ project }: ProjectThemeSectionProps) {
                   )}
                 >
                   <Sun className="w-3.5 h-3.5" />
-                  Light
+                  {translate('Light')}
                 </button>
               </div>
             </div>
@@ -255,7 +260,7 @@ export function ProjectThemeSection({ project }: ProjectThemeSectionProps) {
         {!hasCustomTheme && (
           <div className="rounded-xl border border-border/30 bg-muted/30 p-4">
             <p className="text-sm text-muted-foreground">
-              This project is using the global theme:{' '}
+              {translate('This project is using the global theme:')}{' '}
               <span className="font-medium text-foreground">{globalTheme}</span>
             </p>
           </div>
@@ -265,7 +270,7 @@ export function ProjectThemeSection({ project }: ProjectThemeSectionProps) {
         <div className="space-y-4 pt-6 border-t border-border/50">
           <div className="flex items-center gap-2 mb-4">
             <Type className="w-4 h-4 text-muted-foreground" />
-            <Label className="text-foreground font-medium">Fonts</Label>
+            <Label className="text-foreground font-medium">{translate('Fonts')}</Label>
           </div>
 
           <div className="space-y-4">
@@ -283,11 +288,11 @@ export function ProjectThemeSection({ project }: ProjectThemeSectionProps) {
                     htmlFor="use-global-font-sans"
                     className="text-foreground cursor-pointer font-medium"
                   >
-                    Use Global UI Font
+                    {translate('Use Global UI Font')}
                   </Label>
                   {!hasCustomFontSans && (
                     <p className="text-xs text-muted-foreground">
-                      Currently using:{' '}
+                      {translate('Currently using:')}{' '}
                       <span className="font-medium">{getGlobalFontSansLabel()}</span>
                     </p>
                   )}
@@ -297,13 +302,13 @@ export function ProjectThemeSection({ project }: ProjectThemeSectionProps) {
               {hasCustomFontSans && (
                 <div className="ml-6 space-y-2">
                   <Label htmlFor="ui-font-select" className="text-sm">
-                    Project UI Font
+                    {translate('Project UI Font')}
                   </Label>
                   <FontSelector
                     id="ui-font-select"
                     value={fontSansLocal}
                     options={UI_SANS_FONT_OPTIONS}
-                    placeholder="Default (Geist Sans)"
+                    placeholder={translate('Default (Geist Sans)')}
                     onChange={handleFontSansChange}
                   />
                 </div>
@@ -324,11 +329,11 @@ export function ProjectThemeSection({ project }: ProjectThemeSectionProps) {
                     htmlFor="use-global-font-mono"
                     className="text-foreground cursor-pointer font-medium"
                   >
-                    Use Global Code Font
+                    {translate('Use Global Code Font')}
                   </Label>
                   {!hasCustomFontMono && (
                     <p className="text-xs text-muted-foreground">
-                      Currently using:{' '}
+                      {translate('Currently using:')}{' '}
                       <span className="font-medium">{getGlobalFontMonoLabel()}</span>
                     </p>
                   )}
@@ -338,13 +343,13 @@ export function ProjectThemeSection({ project }: ProjectThemeSectionProps) {
               {hasCustomFontMono && (
                 <div className="ml-6 space-y-2">
                   <Label htmlFor="code-font-select" className="text-sm">
-                    Project Code Font
+                    {translate('Project Code Font')}
                   </Label>
                   <FontSelector
                     id="code-font-select"
                     value={fontMonoLocal}
                     options={UI_MONO_FONT_OPTIONS}
-                    placeholder="Default (Geist Mono)"
+                    placeholder={translate('Default (Geist Mono)')}
                     onChange={handleFontMonoChange}
                   />
                 </div>

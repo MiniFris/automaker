@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useEffect, useState, useMemo } from 'react';
 
 const TOTAL_DURATION = 2300; // Total animation duration in ms (tightened from 4000)
@@ -36,6 +37,7 @@ function generateParticles(count: number): Particle[] {
 }
 
 export function SplashScreen({ onComplete }: { onComplete: () => void }) {
+  useUiLocale();
   const [phase, setPhase] = useState<'enter' | 'hold' | 'exit' | 'done'>('enter');
 
   const particles = useMemo(() => generateParticles(50), []);
@@ -207,7 +209,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 256 256"
           role="img"
-          aria-label="Automaker Logo"
+          aria-label={translate('Automaker Logo')}
           className="relative z-10"
           style={{
             width: 120,
@@ -274,7 +276,8 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
         }}
       >
         <span className="font-bold text-foreground text-4xl tracking-tight leading-none">
-          automaker<span className="text-brand-500">.</span>
+          {translate('automaker')}
+          <span className="text-brand-500">.</span>
         </span>
       </div>
     </div>

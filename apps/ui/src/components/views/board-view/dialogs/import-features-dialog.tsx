@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
@@ -49,6 +50,7 @@ export function ImportFeaturesDialog({
   categorySuggestions,
   onImportComplete,
 }: ImportFeaturesDialogProps) {
+  useUiLocale();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<ImportStep>('upload');
@@ -147,7 +149,7 @@ export function ImportFeaturesDialog({
       });
 
       if (!result.success && result.failedCount === result.results?.length) {
-        toast.error(result.error || 'Failed to import features');
+        toast.error(result.error || translate('Failed to import features'));
         return;
       }
 
@@ -158,16 +160,23 @@ export function ImportFeaturesDialog({
       const failCount = result.failedCount || 0;
 
       if (failCount === 0) {
-        toast.success(`Successfully imported ${successCount} feature(s)`);
+        toast.success(
+          translate('Successfully imported {value1} feature(s)', { value1: successCount })
+        );
       } else if (successCount > 0) {
-        toast.warning(`Imported ${successCount} feature(s), ${failCount} failed`);
+        toast.warning(
+          translate('Imported {value1} feature(s), {value2} failed', {
+            value1: successCount,
+            value2: failCount,
+          })
+        );
       } else {
-        toast.error(`Failed to import features`);
+        toast.error(translate('Failed to import features'));
       }
 
       onImportComplete?.();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to import features');
+      toast.error(error instanceof Error ? error.message : translate('Failed to import features'));
     } finally {
       setIsImporting(false);
     }
@@ -231,13 +240,13 @@ export function ImportFeaturesDialog({
         <div className="flex flex-col items-center gap-3">
           <Upload className="w-8 h-8 text-muted-foreground" />
           <div className="text-sm">
-            <span className="text-primary font-medium">Click to upload</span>
-            <span className="text-muted-foreground"> or drag and drop</span>
+            <span className="text-primary font-medium">{translate('Click to upload')}</span>
+            <span className="text-muted-foreground"> {translate(' or drag and drop')}</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <FileJson className="w-3.5 h-3.5" />
             <span>JSON</span>
-            <span>or</span>
+            <span>{translate('or')}</span>
             <FileText className="w-3.5 h-3.5" />
             <span>YAML</span>
           </div>
@@ -252,7 +261,9 @@ export function ImportFeaturesDialog({
       )}
 
       {isCheckingConflicts && (
-        <div className="text-sm text-muted-foreground text-center">Analyzing file...</div>
+        <div className="text-sm text-muted-foreground text-center">
+          {translate('Analyzing file...')}
+        </div>
       )}
     </div>
   );
@@ -269,7 +280,7 @@ export function ImportFeaturesDialog({
         <div className="flex-1 truncate">
           <div className="text-sm font-medium">{fileName}</div>
           <div className="text-xs text-muted-foreground">
-            {conflicts.length} feature(s) to import
+            {conflicts.length} {translate(' feature(s) to import')}
           </div>
         </div>
       </div>
@@ -280,10 +291,10 @@ export function ImportFeaturesDialog({
           <AlertTriangle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
           <div className="space-y-1">
             <div className="text-sm font-medium text-warning">
-              {conflictingFeatures.length} conflict(s) detected
+              {conflictingFeatures.length} {translate(' conflict(s) detected')}
             </div>
             <div className="text-xs text-muted-foreground">
-              The following features already exist in this project:
+              {translate('The following features already exist in this project:')}
             </div>
             <ul className="text-xs text-muted-foreground list-disc list-inside max-h-24 overflow-y-auto">
               {conflictingFeatures.map((c) => (
@@ -298,7 +309,7 @@ export function ImportFeaturesDialog({
 
       {/* Options */}
       <div className="space-y-3">
-        <Label>Import Options</Label>
+        <Label>{translate('Import Options')}</Label>
 
         {hasConflicts && (
           <div className="flex items-center gap-2">
@@ -309,20 +320,20 @@ export function ImportFeaturesDialog({
               data-testid="import-overwrite"
             />
             <Label htmlFor="overwrite" className="text-sm font-normal cursor-pointer">
-              Overwrite existing features with same ID
+              {translate('Overwrite existing features with same ID')}
             </Label>
           </div>
         )}
 
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">
-            Target Category (optional - override imported categories)
+            {translate('Target Category (optional - override imported categories)')}
           </Label>
           <CategoryAutocomplete
             value={targetCategory}
             onChange={setTargetCategory}
             suggestions={categorySuggestions}
-            placeholder="Keep original categories"
+            placeholder={translate('Keep original categories')}
             data-testid="import-target-category"
           />
         </div>
@@ -330,7 +341,7 @@ export function ImportFeaturesDialog({
 
       {/* Features Preview */}
       <div className="space-y-2">
-        <Label className="text-muted-foreground">Features to import</Label>
+        <Label className="text-muted-foreground">{translate('Features to import')}</Label>
         <div className="max-h-40 overflow-y-auto rounded-md border border-border/50 bg-muted/30 p-2 text-sm">
           {conflicts.map((c) => (
             <div
@@ -351,7 +362,7 @@ export function ImportFeaturesDialog({
               )}
               <span className="truncate">{c.title || c.featureId}</span>
               {c.hasConflict && !overwrite && (
-                <span className="text-xs text-warning">(will skip)</span>
+                <span className="text-xs text-warning">{translate('(will skip)')}</span>
               )}
             </div>
           ))}
@@ -371,13 +382,17 @@ export function ImportFeaturesDialog({
           {successResults.length > 0 && (
             <div className="flex items-center gap-2 text-primary">
               <CheckCircle2 className="w-5 h-5" />
-              <span className="font-medium">{successResults.length} imported</span>
+              <span className="font-medium">
+                {successResults.length} {translate(' imported')}
+              </span>
             </div>
           )}
           {failedResults.length > 0 && (
             <div className="flex items-center gap-2 text-destructive">
               <XCircle className="w-5 h-5" />
-              <span className="font-medium">{failedResults.length} failed</span>
+              <span className="font-medium">
+                {failedResults.length} {translate(' failed')}
+              </span>
             </div>
           )}
         </div>
@@ -398,9 +413,13 @@ export function ImportFeaturesDialog({
                 ) : (
                   <XCircle className="w-3.5 h-3.5 text-destructive shrink-0" />
                 )}
-                <span className="truncate">{result.featureId || `Feature ${idx + 1}`}</span>
+                <span className="truncate">
+                  {result.featureId || translate('Feature {value1}', { value1: idx + 1 })}
+                </span>
                 {result.wasOverwritten && (
-                  <span className="text-xs text-muted-foreground">(overwritten)</span>
+                  <span className="text-xs text-muted-foreground">
+                    {translate('(overwritten)')}
+                  </span>
                 )}
               </div>
               {result.warnings && result.warnings.length > 0 && (
@@ -430,12 +449,12 @@ export function ImportFeaturesDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Upload className="w-5 h-5" />
-            Import Features
+            {translate('Import Features')}
           </DialogTitle>
           <DialogDescription>
-            {step === 'upload' && 'Import features from a JSON or YAML export file.'}
-            {step === 'review' && 'Review and configure import options.'}
-            {step === 'result' && 'Import completed.'}
+            {step === 'upload' && translate('Import features from a JSON or YAML export file.')}
+            {step === 'review' && translate('Review and configure import options.')}
+            {step === 'result' && translate('Import completed.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -446,25 +465,30 @@ export function ImportFeaturesDialog({
         <DialogFooter>
           {step === 'upload' && (
             <Button variant="ghost" onClick={() => onOpenChange(false)}>
-              Cancel
+              {translate('Cancel')}
             </Button>
           )}
           {step === 'review' && (
             <>
               <Button variant="ghost" onClick={() => setStep('upload')}>
-                Back
+                {translate('Back')}
               </Button>
               <Button onClick={handleImport} disabled={isImporting} data-testid="confirm-import">
                 <Upload className="w-4 h-4 mr-2" />
                 {isImporting
-                  ? 'Importing...'
-                  : `Import ${hasConflicts && !overwrite ? conflicts.filter((c) => !c.hasConflict).length : conflicts.length} Feature(s)`}
+                  ? translate('Importing...')
+                  : translate('Import {value1} Feature(s)', {
+                      value1:
+                        hasConflicts && !overwrite
+                          ? conflicts.filter((c) => !c.hasConflict).length
+                          : conflicts.length,
+                    })}
               </Button>
             </>
           )}
           {step === 'result' && (
             <Button onClick={() => onOpenChange(false)} data-testid="close-import">
-              Done
+              {translate('Done')}
             </Button>
           )}
         </DialogFooter>

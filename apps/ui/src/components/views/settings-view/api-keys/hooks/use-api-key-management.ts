@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 // API key management state with validation and persistence
 import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -121,7 +122,7 @@ export function useApiKeyManagement() {
     if (!anthropicKey || anthropicKey.trim().length === 0) {
       setTestResult({
         success: false,
-        message: 'Please enter an API key to test.',
+        message: translate('Please enter an API key to test.'),
       });
       return;
     }
@@ -137,7 +138,7 @@ export function useApiKeyManagement() {
       if (data.success && data.authenticated) {
         setTestResult({
           success: true,
-          message: 'Connection successful! Claude responded.',
+          message: translate('Connection successful! Claude responded.'),
         });
       } else {
         setTestResult({
@@ -148,7 +149,7 @@ export function useApiKeyManagement() {
     } catch {
       setTestResult({
         success: false,
-        message: 'Network error. Please check your connection.',
+        message: translate('Network error. Please check your connection.'),
       });
     } finally {
       setTestingConnection(false);
@@ -165,7 +166,7 @@ export function useApiKeyManagement() {
     if (!googleKey || googleKey.trim().length < 10) {
       setGeminiTestResult({
         success: false,
-        message: 'Please enter a valid API key.',
+        message: translate('Please enter a valid API key.'),
       });
       setTestingGeminiConnection(false);
       return;
@@ -175,7 +176,7 @@ export function useApiKeyManagement() {
     // Full verification requires a backend endpoint
     setGeminiTestResult({
       success: true,
-      message: 'API key saved. Connection test not yet available.',
+      message: translate('API key saved. Connection test not yet available.'),
     });
     setTestingGeminiConnection(false);
   };
@@ -192,7 +193,7 @@ export function useApiKeyManagement() {
       if (data.success && data.authenticated) {
         setOpenaiTestResult({
           success: true,
-          message: 'Connection successful! Codex responded.',
+          message: translate('Connection successful! Codex responded.'),
         });
       } else {
         setOpenaiTestResult({
@@ -203,7 +204,7 @@ export function useApiKeyManagement() {
     } catch {
       setOpenaiTestResult({
         success: false,
-        message: 'Network error. Please check your connection.',
+        message: translate('Network error. Please check your connection.'),
       });
     } finally {
       setTestingOpenaiConnection(false);
@@ -219,7 +220,7 @@ export function useApiKeyManagement() {
     if (!zaiKey || zaiKey.trim().length === 0) {
       setZaiTestResult({
         success: false,
-        message: 'Please enter an API key to test.',
+        message: translate('Please enter an API key to test.'),
       });
       setTestingZaiConnection(false);
       return;
@@ -244,7 +245,7 @@ export function useApiKeyManagement() {
     } catch {
       setZaiTestResult({
         success: false,
-        message: 'Network error. Please check your connection.',
+        message: translate('Network error. Please check your connection.'),
       });
     } finally {
       setTestingZaiConnection(false);

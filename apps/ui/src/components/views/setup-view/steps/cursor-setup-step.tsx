@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { Button } from '@/components/ui/button';
@@ -41,6 +42,7 @@ interface CursorCliStatus {
 }
 
 export function CursorSetupStep({ onNext, onBack, onSkip }: CursorSetupStepProps) {
+  useUiLocale();
   const { cursorCliStatus, setCursorCliStatus } = useSetupStore();
   const [isChecking, setIsChecking] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -66,7 +68,7 @@ export function CursorSetupStep({ onNext, onBack, onSkip }: CursorSetupStepProps
         setCursorCliStatus(status);
 
         if (result.auth?.authenticated) {
-          toast.success('Cursor CLI is ready!');
+          toast.success(translate('Cursor CLI is ready!'));
         }
       }
     } catch (error) {
@@ -88,7 +90,7 @@ export function CursorSetupStep({ onNext, onBack, onSkip }: CursorSetupStepProps
 
   const copyCommand = (command: string) => {
     navigator.clipboard.writeText(command);
-    toast.success('Command copied to clipboard');
+    toast.success(translate('Command copied to clipboard'));
   };
 
   const handleLogin = async () => {
@@ -98,7 +100,7 @@ export function CursorSetupStep({ onNext, onBack, onSkip }: CursorSetupStepProps
       // Copy login command to clipboard and show instructions
       const loginCommand = cursorCliStatus?.loginCommand || 'cursor-agent login';
       await navigator.clipboard.writeText(loginCommand);
-      toast.info('Login command copied! Paste in terminal to authenticate.');
+      toast.info(translate('Login command copied! Paste in terminal to authenticate.'));
 
       // Poll for auth status
       let attempts = 0;
@@ -127,7 +129,7 @@ export function CursorSetupStep({ onNext, onBack, onSkip }: CursorSetupStepProps
               auth: result.auth,
             } as CursorCliStatus);
             setIsLoggingIn(false);
-            toast.success('Successfully logged in to Cursor!');
+            toast.success(translate('Successfully logged in to Cursor!'));
           }
         } catch {
           // Ignore polling errors
@@ -139,12 +141,12 @@ export function CursorSetupStep({ onNext, onBack, onSkip }: CursorSetupStepProps
             pollIntervalRef.current = null;
           }
           setIsLoggingIn(false);
-          toast.error('Login timed out. Please try again.');
+          toast.error(translate('Login timed out. Please try again.'));
         }
       }, 2000);
     } catch (error) {
       logger.error('Login failed:', error);
-      toast.error('Failed to start login process');
+      toast.error(translate('Failed to start login process'));
       setIsLoggingIn(false);
     }
   };
@@ -153,15 +155,15 @@ export function CursorSetupStep({ onNext, onBack, onSkip }: CursorSetupStepProps
 
   const getStatusBadge = () => {
     if (isChecking) {
-      return <StatusBadge status="checking" label="Checking..." />;
+      return <StatusBadge status="checking" label={translate('Checking...')} />;
     }
     if (cursorCliStatus?.auth?.authenticated) {
-      return <StatusBadge status="authenticated" label="Ready" />;
+      return <StatusBadge status="authenticated" label={translate('Ready')} />;
     }
     if (cursorCliStatus?.installed) {
-      return <StatusBadge status="unverified" label="Not Logged In" />;
+      return <StatusBadge status="unverified" label={translate('Not Logged In')} />;
     }
-    return <StatusBadge status="not_installed" label="Not Installed" />;
+    return <StatusBadge status="not_installed" label={translate('Not Installed')} />;
   };
 
   return (
@@ -170,8 +172,10 @@ export function CursorSetupStep({ onNext, onBack, onSkip }: CursorSetupStepProps
         <div className="w-16 h-16 rounded-xl bg-cyan-500/10 flex items-center justify-center mx-auto mb-4">
           <CursorIcon className="w-8 h-8 text-cyan-500" />
         </div>
-        <h2 className="text-2xl font-bold text-foreground mb-2">Cursor CLI Setup</h2>
-        <p className="text-muted-foreground">Optional - Use Cursor as an AI provider</p>
+        <h2 className="text-2xl font-bold text-foreground mb-2">{translate('Cursor CLI Setup')}</h2>
+        <p className="text-muted-foreground">
+          {translate('Optional - Use Cursor as an AI provider')}
+        </p>
       </div>
 
       {/* Info Banner */}
@@ -180,10 +184,11 @@ export function CursorSetupStep({ onNext, onBack, onSkip }: CursorSetupStepProps
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-cyan-500 shrink-0 mt-0.5" />
             <div>
-              <p className="font-medium text-foreground">This step is optional</p>
+              <p className="font-medium text-foreground">{translate('This step is optional')}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Configure Cursor CLI as an alternative AI provider. You can skip this and use Claude
-                instead, or configure it later in Settings.
+                {translate(
+                  'Configure Cursor CLI as an alternative AI provider. You can skip this and use Claude instead, or configure it later in Settings.'
+                )}
               </p>
             </div>
           </div>
@@ -196,9 +201,9 @@ export function CursorSetupStep({ onNext, onBack, onSkip }: CursorSetupStepProps
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <CursorIcon className="w-5 h-5" />
-              Cursor CLI Status
+              {translate('Cursor CLI Status')}
               <Badge variant="outline" className="ml-2">
-                Optional
+                {translate('Optional')}
               </Badge>
             </CardTitle>
             <div className="flex items-center gap-2">
@@ -211,9 +216,12 @@ export function CursorSetupStep({ onNext, onBack, onSkip }: CursorSetupStepProps
           <CardDescription>
             {cursorCliStatus?.installed
               ? cursorCliStatus.auth?.authenticated
-                ? `Authenticated via ${cursorCliStatus.auth.method === 'api_key' ? 'API Key' : 'Browser Login'}${cursorCliStatus.version ? ` (v${cursorCliStatus.version})` : ''}`
-                : 'Installed but not authenticated'
-              : 'Not installed on your system'}
+                ? translate('Authenticated via {value1}{value2}', {
+                    value1: cursorCliStatus.auth.method === 'api_key' ? 'API Key' : 'Browser Login',
+                    value2: cursorCliStatus.version ? ` (v${cursorCliStatus.version})` : '',
+                  })
+                : translate('Installed but not authenticated')
+              : translate('Not installed on your system')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -222,11 +230,14 @@ export function CursorSetupStep({ onNext, onBack, onSkip }: CursorSetupStepProps
             <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
               <div>
-                <p className="font-medium text-foreground">Cursor CLI is ready!</p>
+                <p className="font-medium text-foreground">{translate('Cursor CLI is ready!')}</p>
                 <p className="text-sm text-muted-foreground">
-                  You can use Cursor models for AI tasks.
+                  {translate('You can use Cursor models for AI tasks.')}
                   {cursorCliStatus?.version && (
-                    <span className="ml-1">Version: {cursorCliStatus.version}</span>
+                    <span className="ml-1">
+                      {translate('Version: ')}
+                      {cursorCliStatus.version}
+                    </span>
                   )}
                 </p>
               </div>
@@ -239,15 +250,17 @@ export function CursorSetupStep({ onNext, onBack, onSkip }: CursorSetupStepProps
               <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30 border border-border">
                 <XCircle className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <p className="font-medium text-foreground">Cursor CLI not found</p>
+                  <p className="font-medium text-foreground">{translate('Cursor CLI not found')}</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Install the Cursor CLI to use Cursor models.
+                    {translate('Install the Cursor CLI to use Cursor models.')}
                   </p>
                 </div>
               </div>
 
               <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
-                <p className="font-medium text-foreground text-sm">Install Cursor CLI:</p>
+                <p className="font-medium text-foreground text-sm">
+                  {translate('Install Cursor CLI:')}
+                </p>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground overflow-x-auto">
                     {cursorCliStatus?.installCommand ||
@@ -272,7 +285,7 @@ export function CursorSetupStep({ onNext, onBack, onSkip }: CursorSetupStepProps
                   rel="noopener noreferrer"
                   className="inline-flex items-center text-sm text-brand-500 hover:underline mt-2"
                 >
-                  View installation docs
+                  {translate('View installation docs')}
                   <ExternalLink className="w-3 h-3 ml-1" />
                 </a>
               </div>
@@ -285,17 +298,20 @@ export function CursorSetupStep({ onNext, onBack, onSkip }: CursorSetupStepProps
               <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
                 <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <p className="font-medium text-foreground">Cursor CLI not authenticated</p>
+                  <p className="font-medium text-foreground">
+                    {translate('Cursor CLI not authenticated')}
+                  </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Run the login command to authenticate with Cursor.
+                    {translate('Run the login command to authenticate with Cursor.')}
                   </p>
                 </div>
               </div>
 
               <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
                 <p className="text-sm text-muted-foreground">
-                  Run the login command in your terminal, then complete authentication in your
-                  browser:
+                  {translate(
+                    'Run the login command in your terminal, then complete authentication in your browser:'
+                  )}
                 </p>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
@@ -319,10 +335,10 @@ export function CursorSetupStep({ onNext, onBack, onSkip }: CursorSetupStepProps
                   {isLoggingIn ? (
                     <>
                       <Spinner size="sm" variant="foreground" className="mr-2" />
-                      Waiting for login...
+                      {translate('Waiting for login...')}
                     </>
                   ) : (
-                    'Copy Command & Wait for Login'
+                    translate('Copy Command & Wait for Login')
                   )}
                 </Button>
               </div>
@@ -334,7 +350,9 @@ export function CursorSetupStep({ onNext, onBack, onSkip }: CursorSetupStepProps
             <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
               <Spinner size="md" />
               <div>
-                <p className="font-medium text-foreground">Checking Cursor CLI status...</p>
+                <p className="font-medium text-foreground">
+                  {translate('Checking Cursor CLI status...')}
+                </p>
               </div>
             </div>
           )}
@@ -345,18 +363,18 @@ export function CursorSetupStep({ onNext, onBack, onSkip }: CursorSetupStepProps
       <div className="flex justify-between pt-4">
         <Button variant="ghost" onClick={onBack} className="text-muted-foreground">
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
+          {translate('Back')}
         </Button>
         <div className="flex gap-2">
           <Button variant="ghost" onClick={onSkip} className="text-muted-foreground">
-            {isReady ? 'Skip' : 'Skip for now'}
+            {isReady ? translate('Skip') : translate('Skip for now')}
           </Button>
           <Button
             onClick={onNext}
             className="bg-brand-500 hover:bg-brand-600 text-white"
             data-testid="cursor-next-button"
           >
-            {isReady ? 'Continue' : 'Continue without Cursor'}
+            {isReady ? translate('Continue') : translate('Continue without Cursor')}
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>
@@ -364,7 +382,7 @@ export function CursorSetupStep({ onNext, onBack, onSkip }: CursorSetupStepProps
 
       {/* Info note */}
       <p className="text-xs text-muted-foreground text-center">
-        You can always configure Cursor later in Settings
+        {translate('You can always configure Cursor later in Settings')}
       </p>
     </div>
   );

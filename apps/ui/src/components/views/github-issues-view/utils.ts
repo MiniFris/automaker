@@ -1,3 +1,4 @@
+import { getFormattingLocale } from '@/lib/i18n';
 import type { IssueComplexity } from '@/lib/electron';
 import { VALIDATION_STALENESS_HOURS } from './constants';
 
@@ -20,7 +21,7 @@ export function getFeaturePriority(complexity: IssueComplexity | undefined): num
 
 export function formatDate(dateString: string): string {
   const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString(getFormattingLocale(), {
     month: 'short',
     day: 'numeric',
     year: 'numeric',

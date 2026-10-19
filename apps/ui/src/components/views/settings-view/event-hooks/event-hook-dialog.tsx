@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,14 +54,40 @@ const TRIGGER_OPTIONS: EventHookTrigger[] = [
 const HTTP_METHODS: EventHookHttpMethod[] = ['POST', 'GET', 'PUT', 'PATCH'];
 
 const PRIORITY_OPTIONS = [
-  { value: 1, label: 'Min (no sound/vibration)' },
-  { value: 2, label: 'Low' },
-  { value: 3, label: 'Default' },
-  { value: 4, label: 'High' },
-  { value: 5, label: 'Urgent (max)' },
+  {
+    value: 1,
+    get label() {
+      return translate('Min (no sound/vibration)');
+    },
+  },
+  {
+    value: 2,
+    get label() {
+      return translate('Low');
+    },
+  },
+  {
+    value: 3,
+    get label() {
+      return translate('Default');
+    },
+  },
+  {
+    value: 4,
+    get label() {
+      return translate('High');
+    },
+  },
+  {
+    value: 5,
+    get label() {
+      return translate('Urgent (max)');
+    },
+  },
 ];
 
 export function EventHookDialog({ open, onOpenChange, editingHook, onSave }: EventHookDialogProps) {
+  useUiLocale();
   const ntfyEndpoints = useAppStore((state) => state.ntfyEndpoints);
 
   // Form state
@@ -176,7 +203,7 @@ export function EventHookDialog({ open, onOpenChange, editingHook, onSave }: Eve
           parsedHeaders = JSON.parse(headers);
         } catch {
           // If JSON is invalid, show error and don't save
-          toast.error('Invalid JSON in Headers field');
+          toast.error(translate('Invalid JSON in Headers field'));
           return;
         }
       }
@@ -224,27 +251,29 @@ export function EventHookDialog({ open, onOpenChange, editingHook, onSave }: Eve
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editingHook ? 'Edit Event Hook' : 'Add Event Hook'}</DialogTitle>
+          <DialogTitle>
+            {editingHook ? translate('Edit Event Hook') : translate('Add Event Hook')}
+          </DialogTitle>
           <DialogDescription>
-            Configure an action to run when a specific event occurs.
+            {translate('Configure an action to run when a specific event occurs.')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           {/* Name (optional) */}
           <div className="space-y-2">
-            <Label htmlFor="hook-name">Name (optional)</Label>
+            <Label htmlFor="hook-name">{translate('Name (optional)')}</Label>
             <Input
               id="hook-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="My notification hook"
+              placeholder={translate('My notification hook')}
             />
           </div>
 
           {/* Trigger selection */}
           <div className="space-y-2">
-            <Label htmlFor="hook-trigger">Trigger Event</Label>
+            <Label htmlFor="hook-trigger">{translate('Trigger Event')}</Label>
             <Select value={trigger} onValueChange={(v) => setTrigger(v as EventHookTrigger)}>
               <SelectTrigger id="hook-trigger">
                 <SelectValue />
@@ -261,12 +290,12 @@ export function EventHookDialog({ open, onOpenChange, editingHook, onSave }: Eve
 
           {/* Action type tabs */}
           <div className="space-y-2">
-            <Label>Action Type</Label>
+            <Label>{translate('Action Type')}</Label>
             <Tabs value={actionType} onValueChange={(v) => setActionType(v as ActionType)}>
               <TabsList className="w-full">
                 <TabsTrigger value="shell" className="flex-1 gap-1">
                   <Terminal className="w-4 h-4" />
-                  <span className="sr-only sm:inline">Shell</span>
+                  <span className="sr-only sm:inline">{translate('Shell')}</span>
                 </TabsTrigger>
                 <TabsTrigger value="http" className="flex-1 gap-1">
                   <Globe className="w-4 h-4" />
@@ -274,29 +303,30 @@ export function EventHookDialog({ open, onOpenChange, editingHook, onSave }: Eve
                 </TabsTrigger>
                 <TabsTrigger value="ntfy" className="flex-1 gap-1">
                   <Bell className="w-4 h-4" />
-                  <span className="sr-only sm:inline">Ntfy</span>
+                  <span className="sr-only sm:inline">{translate('Ntfy')}</span>
                 </TabsTrigger>
               </TabsList>
 
               {/* Shell command form */}
               <TabsContent value="shell" className="space-y-4 mt-4">
                 <div className="space-y-2">
-                  <Label htmlFor="shell-command">Command</Label>
+                  <Label htmlFor="shell-command">{translate('Command')}</Label>
                   <Textarea
                     id="shell-command"
                     value={command}
                     onChange={(e) => setCommand(e.target.value)}
-                    placeholder='echo "Feature {{featureId}} completed!"'
+                    placeholder={translate('echo "Feature {{featureId}} completed!"')}
                     className="font-mono text-sm"
                     rows={3}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Use {'{{variable}}'} syntax for dynamic values
+                    {translate('Use ')}
+                    {translate('{{variable}}')} {translate(' syntax for dynamic values')}
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="shell-timeout">Timeout (ms)</Label>
+                  <Label htmlFor="shell-timeout">{translate('Timeout (ms)')}</Label>
                   <Input
                     id="shell-timeout"
                     type="number"
@@ -320,7 +350,7 @@ export function EventHookDialog({ open, onOpenChange, editingHook, onSave }: Eve
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="http-method">Method</Label>
+                  <Label htmlFor="http-method">{translate('Method')}</Label>
                   <Select value={method} onValueChange={(v) => setMethod(v as EventHookHttpMethod)}>
                     <SelectTrigger id="http-method">
                       <SelectValue />
@@ -336,29 +366,31 @@ export function EventHookDialog({ open, onOpenChange, editingHook, onSave }: Eve
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="http-headers">Headers (JSON, optional)</Label>
+                  <Label htmlFor="http-headers">{translate('Headers (JSON, optional)')}</Label>
                   <Textarea
                     id="http-headers"
                     value={headers}
                     onChange={(e) => setHeaders(e.target.value)}
-                    placeholder={'{\n  "Authorization": "Bearer {{token}}"\n}'}
+                    placeholder={translate('{\n  "Authorization": "Bearer {{token}}"\n}')}
                     className="font-mono text-sm"
                     rows={3}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="http-body">Body (JSON, optional)</Label>
+                  <Label htmlFor="http-body">{translate('Body (JSON, optional)')}</Label>
                   <Textarea
                     id="http-body"
                     value={body}
                     onChange={(e) => setBody(e.target.value)}
-                    placeholder={'{\n  "feature": "{{featureId}}",\n  "status": "{{eventType}}"\n}'}
+                    placeholder={translate(
+                      '{\n  "feature": "{{featureId}}",\n  "status": "{{eventType}}"\n}'
+                    )}
                     className="font-mono text-sm"
                     rows={4}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Leave empty for default body with all event context
+                    {translate('Leave empty for default body with all event context')}
                   </p>
                 </div>
               </TabsContent>
@@ -368,18 +400,20 @@ export function EventHookDialog({ open, onOpenChange, editingHook, onSave }: Eve
                 {ntfyEndpoints.length === 0 ? (
                   <div className="rounded-lg bg-muted/50 p-4 text-center">
                     <Bell className="w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-50" />
-                    <p className="text-sm text-muted-foreground">No ntfy endpoints configured.</p>
+                    <p className="text-sm text-muted-foreground">
+                      {translate('No ntfy endpoints configured.')}
+                    </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Add an endpoint in the "Endpoints" tab first.
+                      {translate('Add an endpoint in the "Endpoints" tab first.')}
                     </p>
                   </div>
                 ) : (
                   <>
                     <div className="space-y-2">
-                      <Label htmlFor="ntfy-endpoint">Endpoint *</Label>
+                      <Label htmlFor="ntfy-endpoint">{translate('Endpoint *')}</Label>
                       <Select value={ntfyEndpointId} onValueChange={setNtfyEndpointId}>
                         <SelectTrigger id="ntfy-endpoint">
-                          <SelectValue placeholder="Select an endpoint" />
+                          <SelectValue placeholder={translate('Select an endpoint')} />
                         </SelectTrigger>
                         <SelectContent>
                           {ntfyEndpoints
@@ -396,73 +430,78 @@ export function EventHookDialog({ open, onOpenChange, editingHook, onSave }: Eve
                     {selectedEndpoint && (
                       <div className="rounded-lg bg-muted/30 p-3 text-xs text-muted-foreground">
                         <p>
-                          <strong>Server:</strong> {selectedEndpoint.serverUrl}
+                          <strong>{translate('Server:')}</strong> {selectedEndpoint.serverUrl}
                         </p>
                         {selectedEndpoint.defaultTags && (
                           <p>
-                            <strong>Default Tags:</strong> {selectedEndpoint.defaultTags}
+                            <strong>{translate('Default Tags:')}</strong>{' '}
+                            {selectedEndpoint.defaultTags}
                           </p>
                         )}
                         {selectedEndpoint.defaultEmoji && (
                           <p>
-                            <strong>Default Emoji:</strong> {selectedEndpoint.defaultEmoji}
+                            <strong>{translate('Default Emoji:')}</strong>{' '}
+                            {selectedEndpoint.defaultEmoji}
                           </p>
                         )}
                       </div>
                     )}
 
                     <div className="space-y-2">
-                      <Label htmlFor="ntfy-title">Title (optional)</Label>
+                      <Label htmlFor="ntfy-title">{translate('Title (optional)')}</Label>
                       <Input
                         id="ntfy-title"
                         value={ntfyTitle}
                         onChange={(e) => setNtfyTitle(e.target.value)}
-                        placeholder="Feature {{featureName}} completed"
+                        placeholder={translate('Feature {{featureName}} completed')}
                       />
                       <p className="text-xs text-muted-foreground">
-                        Defaults to event name. Use {'{{variable}}'} for dynamic values.
+                        {translate('Defaults to event name. Use ')}
+                        {translate('{{variable}}')} {translate(' for dynamic values.')}
                       </p>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="ntfy-body">Message (optional)</Label>
+                      <Label htmlFor="ntfy-body">{translate('Message (optional)')}</Label>
                       <Textarea
                         id="ntfy-body"
                         value={ntfyBody}
                         onChange={(e) => setNtfyBody(e.target.value)}
-                        placeholder="Feature {{featureId}} completed at {{timestamp}}"
+                        placeholder={translate('Feature {{featureId}} completed at {{timestamp}}')}
                         className="font-mono text-sm"
                         rows={3}
                       />
                       <p className="text-xs text-muted-foreground">
-                        Defaults to event details. Leave empty for auto-generated message.
+                        {translate(
+                          'Defaults to event details. Leave empty for auto-generated message.'
+                        )}
                       </p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="ntfy-tags">Tags (optional)</Label>
+                        <Label htmlFor="ntfy-tags">{translate('Tags (optional)')}</Label>
                         <Input
                           id="ntfy-tags"
                           value={ntfyTags}
                           onChange={(e) => setNtfyTags(e.target.value)}
-                          placeholder="warning,skull"
+                          placeholder={translate('warning,skull')}
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="ntfy-emoji">Emoji</Label>
+                        <Label htmlFor="ntfy-emoji">{translate('Emoji')}</Label>
                         <Input
                           id="ntfy-emoji"
                           value={ntfyEmoji}
                           onChange={(e) => setNtfyEmoji(e.target.value)}
-                          placeholder="tada"
+                          placeholder={translate('tada')}
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="ntfy-click">Click URL (optional)</Label>
+                      <Label htmlFor="ntfy-click">{translate('Click URL (optional)')}</Label>
                       <Input
                         id="ntfy-click"
                         value={ntfyClickUrl}
@@ -470,12 +509,14 @@ export function EventHookDialog({ open, onOpenChange, editingHook, onSave }: Eve
                         placeholder="https://example.com"
                       />
                       <p className="text-xs text-muted-foreground">
-                        URL to open when notification is clicked. Defaults to endpoint setting.
+                        {translate(
+                          'URL to open when notification is clicked. Defaults to endpoint setting.'
+                        )}
                       </p>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="ntfy-priority">Priority</Label>
+                      <Label htmlFor="ntfy-priority">{translate('Priority')}</Label>
                       <Select
                         value={String(ntfyPriority)}
                         onValueChange={(v) => setNtfyPriority(Number(v) as 1 | 2 | 3 | 4 | 5)}
@@ -501,10 +542,10 @@ export function EventHookDialog({ open, onOpenChange, editingHook, onSave }: Eve
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button onClick={handleSave} disabled={!isValid}>
-            {editingHook ? 'Save Changes' : 'Add Hook'}
+            {editingHook ? translate('Save Changes') : translate('Add Hook')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useEffect, useState, useCallback } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { useAppStore } from '@/store/app-store';
@@ -30,6 +31,7 @@ const shouldIgnore = (name: string) => {
 };
 
 export function CodeView() {
+  useUiLocale();
   const { currentProject } = useAppStore();
   const [fileTree, setFileTree] = useState<FileTreeNode[]>([]);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
@@ -199,7 +201,7 @@ export function CodeView() {
   if (!currentProject) {
     return (
       <div className="flex-1 flex items-center justify-center" data-testid="code-view-no-project">
-        <p className="text-muted-foreground">No project selected</p>
+        <p className="text-muted-foreground">{translate('No project selected')}</p>
       </div>
     );
   }
@@ -219,13 +221,13 @@ export function CodeView() {
         <div className="flex items-center gap-3">
           <Code className="w-5 h-5 text-muted-foreground" />
           <div>
-            <h1 className="text-xl font-bold">Code Explorer</h1>
+            <h1 className="text-xl font-bold">{translate('Code Explorer')}</h1>
             <p className="text-sm text-muted-foreground">{currentProject.name}</p>
           </div>
         </div>
         <Button variant="outline" size="sm" onClick={loadTree} data-testid="refresh-tree">
           <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh
+          {translate('Refresh')}
         </Button>
       </div>
 
@@ -255,7 +257,9 @@ export function CodeView() {
             </div>
           ) : (
             <div className="flex-1 flex items-center justify-center">
-              <p className="text-muted-foreground">Select a file to view its contents</p>
+              <p className="text-muted-foreground">
+                {translate('Select a file to view its contents')}
+              </p>
             </div>
           )}
         </div>

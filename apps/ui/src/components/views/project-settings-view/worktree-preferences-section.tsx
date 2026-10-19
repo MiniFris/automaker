@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -44,6 +45,7 @@ interface InitScriptResponse {
 }
 
 export function WorktreePreferencesSection({ project }: WorktreePreferencesSectionProps) {
+  useUiLocale();
   // Use direct store subscriptions (not getter functions) so the component
   // properly re-renders when these values change in the store.
   const globalUseWorktrees = useAppStore((s) => s.useWorktrees);
@@ -204,15 +206,15 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
       if (response.success) {
         setOriginalContent(scriptContent);
         setScriptExists(true);
-        toast.success('Init script saved');
+        toast.success(translate('Init script saved'));
       } else {
-        toast.error('Failed to save init script', {
+        toast.error(translate('Failed to save init script'), {
           description: response.error,
         });
       }
     } catch (error) {
       console.error('Failed to save init script:', error);
-      toast.error('Failed to save init script');
+      toast.error(translate('Failed to save init script'));
     } finally {
       setIsSaving(false);
     }
@@ -237,15 +239,15 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
         setScriptContent('');
         setOriginalContent('');
         setScriptExists(false);
-        toast.success('Init script deleted');
+        toast.success(translate('Init script deleted'));
       } else {
-        toast.error('Failed to delete init script', {
+        toast.error(translate('Failed to delete init script'), {
           description: response.error,
         });
       }
     } catch (error) {
       console.error('Failed to delete init script:', error);
-      toast.error('Failed to delete init script');
+      toast.error(translate('Failed to delete init script'));
     } finally {
       setIsDeleting(false);
     }
@@ -267,8 +269,10 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
 
     // Check for duplicates
     if (copyFiles.includes(normalized)) {
-      toast.error('File already in list', {
-        description: `"${normalized}" is already configured for copying.`,
+      toast.error(translate('File already in list'), {
+        description: translate('"{value1}" is already configured for copying.', {
+          value1: normalized,
+        }),
       });
       return;
     }
@@ -284,15 +288,17 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
       await httpClient.settings.updateProject(project.path, {
         worktreeCopyFiles: updatedFiles,
       });
-      toast.success('Copy file added', {
-        description: `"${normalized}" will be copied to new worktrees.`,
+      toast.success(translate('Copy file added'), {
+        description: translate('"{value1}" will be copied to new worktrees.', {
+          value1: normalized,
+        }),
       });
     } catch (error) {
       // Rollback optimistic update on failure
       setWorktreeCopyFiles(project.path, prevFiles);
       setNewCopyFilePath(normalized);
       console.error('Failed to persist worktreeCopyFiles:', error);
-      toast.error('Failed to save copy files setting');
+      toast.error(translate('Failed to save copy files setting'));
     }
   }, [project.path, newCopyFilePath, copyFiles, setWorktreeCopyFiles]);
 
@@ -309,12 +315,12 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
         await httpClient.settings.updateProject(project.path, {
           worktreeCopyFiles: updatedFiles,
         });
-        toast.success('Copy file removed');
+        toast.success(translate('Copy file removed'));
       } catch (error) {
         // Rollback optimistic update on failure
         setWorktreeCopyFiles(project.path, prevFiles);
         console.error('Failed to persist worktreeCopyFiles:', error);
-        toast.error('Failed to save copy files setting');
+        toast.error(translate('Failed to save copy files setting'));
       }
     },
     [project.path, copyFiles, setWorktreeCopyFiles]
@@ -326,7 +332,7 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
       // Filter out duplicates
       const newPaths = paths.filter((p) => !copyFiles.includes(p));
       if (newPaths.length === 0) {
-        toast.info('All selected files are already in the list');
+        toast.info(translate('All selected files are already in the list'));
         return;
       }
 
@@ -340,14 +346,20 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
         await httpClient.settings.updateProject(project.path, {
           worktreeCopyFiles: updatedFiles,
         });
-        toast.success(`${newPaths.length} ${newPaths.length === 1 ? 'file' : 'files'} added`, {
-          description: newPaths.map((p) => `"${p}"`).join(', '),
-        });
+        toast.success(
+          translate('{value1} {value2} added', {
+            value1: newPaths.length,
+            value2: newPaths.length === 1 ? 'file' : 'files',
+          }),
+          {
+            description: newPaths.map((p) => `"${p}"`).join(', '),
+          }
+        );
       } catch (error) {
         // Rollback optimistic update on failure
         setWorktreeCopyFiles(project.path, prevFiles);
         console.error('Failed to persist worktreeCopyFiles:', error);
-        toast.error('Failed to save copy files setting');
+        toast.error(translate('Failed to save copy files setting'));
       }
     },
     [project.path, copyFiles, setWorktreeCopyFiles]
@@ -368,11 +380,11 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
             <GitBranch className="w-5 h-5 text-brand-500" />
           </div>
           <h2 className="text-lg font-semibold text-foreground tracking-tight">
-            Worktree Preferences
+            {translate('Worktree Preferences')}
           </h2>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Configure worktree behavior for this project.
+          {translate('Configure worktree behavior for this project.')}
         </p>
       </div>
       <div className="p-6 space-y-5">
@@ -402,11 +414,12 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
               className="text-foreground cursor-pointer font-medium flex items-center gap-2"
             >
               <GitBranch className="w-4 h-4 text-brand-500" />
-              Enable Git Worktree Isolation
+              {translate('Enable Git Worktree Isolation')}
             </Label>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">
-              Creates isolated git branches for each feature in this project. When disabled, agents
-              work directly in the main project directory.
+              {translate(
+                'Creates isolated git branches for each feature in this project. When disabled, agents work directly in the main project directory.'
+              )}
             </p>
           </div>
         </div>
@@ -440,11 +453,12 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
               className="text-foreground cursor-pointer font-medium flex items-center gap-2"
             >
               <PanelBottomClose className="w-4 h-4 text-brand-500" />
-              Show Init Script Indicator
+              {translate('Show Init Script Indicator')}
             </Label>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">
-              Display a floating panel in the bottom-right corner showing init script execution
-              status and output when a worktree is created.
+              {translate(
+                'Display a floating panel in the bottom-right corner showing init script execution status and output when a worktree is created.'
+              )}
             </p>
           </div>
         </div>
@@ -475,10 +489,12 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
                 htmlFor="auto-dismiss-indicator"
                 className="text-foreground cursor-pointer font-medium flex items-center gap-2"
               >
-                Auto-dismiss After Completion
+                {translate('Auto-dismiss After Completion')}
               </Label>
               <p className="text-xs text-muted-foreground/80 leading-relaxed">
-                Automatically hide the indicator 5 seconds after the script completes.
+                {translate(
+                  'Automatically hide the indicator 5 seconds after the script completes.'
+                )}
               </p>
             </div>
           </div>
@@ -510,10 +526,12 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
               className="text-foreground cursor-pointer font-medium flex items-center gap-2"
             >
               <Trash2 className="w-4 h-4 text-brand-500" />
-              Delete Branch by Default
+              {translate('Delete Branch by Default')}
             </Label>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">
-              When deleting a worktree, automatically check the "Also delete the branch" option.
+              {translate(
+                'When deleting a worktree, automatically check the "Also delete the branch" option.'
+              )}
             </p>
           </div>
         </div>
@@ -525,11 +543,12 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <LayoutGrid className="w-4 h-4 text-brand-500" />
-            <Label className="text-foreground font-medium">Display Settings</Label>
+            <Label className="text-foreground font-medium">{translate('Display Settings')}</Label>
           </div>
           <p className="text-xs text-muted-foreground/80 leading-relaxed">
-            Control how worktrees are presented in the panel. Pinned worktrees appear as tabs, and
-            remaining worktrees are available in a combined overflow dropdown.
+            {translate(
+              'Control how worktrees are presented in the panel. Pinned worktrees appear as tabs, and remaining worktrees are available in a combined overflow dropdown.'
+            )}
           </p>
 
           {/* Pinned Worktrees Count */}
@@ -543,14 +562,16 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
                   htmlFor="pinned-worktrees-count"
                   className="text-foreground cursor-pointer font-medium"
                 >
-                  Pinned Worktree Tabs
+                  {translate('Pinned Worktree Tabs')}
                 </Label>
                 <span className="text-sm font-medium text-foreground tabular-nums">
                   {pinnedWorktreesCount}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground/80 leading-relaxed">
-                Number of worktree tabs to pin (excluding the main worktree, which is always shown).
+                {translate(
+                  'Number of worktree tabs to pin (excluding the main worktree, which is always shown).'
+                )}
               </p>
               <Slider
                 id="pinned-worktrees-count"
@@ -579,7 +600,7 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
                     });
                   } catch (error) {
                     console.error('Failed to persist pinnedWorktreesCount:', error);
-                    toast.error('Failed to save pinned worktrees setting');
+                    toast.error(translate('Failed to save pinned worktrees setting'));
                     // Rollback optimistic update using captured previous value
                     setPinnedWorktreesCount(project.path, prev);
                   }
@@ -597,14 +618,17 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Copy className="w-4 h-4 text-brand-500" />
-            <Label className="text-foreground font-medium">Copy Files to Worktrees</Label>
+            <Label className="text-foreground font-medium">
+              {translate('Copy Files to Worktrees')}
+            </Label>
           </div>
           <p className="text-xs text-muted-foreground/80 leading-relaxed">
-            Specify files or directories (relative to project root) to automatically copy into new
-            worktrees. Useful for untracked files like{' '}
+            {translate(
+              'Specify files or directories (relative to project root) to automatically copy into new worktrees. Useful for untracked files like'
+            )}{' '}
             <code className="font-mono text-foreground/60">.env</code>,{' '}
-            <code className="font-mono text-foreground/60">.env.local</code>, or local config files
-            that aren&apos;t committed to git.
+            <code className="font-mono text-foreground/60">.env.local</code>
+            {translate(", or local config files that aren't committed to git.")}
           </p>
 
           {/* Current file list */}
@@ -622,7 +646,7 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
                   <button
                     onClick={() => handleRemoveCopyFile(filePath)}
                     className="p-0.5 rounded text-muted-foreground/50 hover:bg-destructive/10 hover:text-destructive transition-all flex-shrink-0"
-                    title={`Remove ${filePath}`}
+                    title={translate('Remove {value1}', { value1: filePath })}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -653,7 +677,7 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
               className="gap-1.5 h-8"
             >
               <Plus className="w-3.5 h-3.5" />
-              Add
+              {translate('Add')}
             </Button>
             <Button
               variant="outline"
@@ -662,7 +686,7 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
               className="gap-1.5 h-8"
             >
               <FolderOpen className="w-3.5 h-3.5" />
-              Browse
+              {translate('Browse')}
             </Button>
           </div>
 
@@ -684,19 +708,24 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Terminal className="w-4 h-4 text-brand-500" />
-              <Label className="text-foreground font-medium">Initialization Script</Label>
+              <Label className="text-foreground font-medium">
+                {translate('Initialization Script')}
+              </Label>
             </div>
           </div>
           <p className="text-xs text-muted-foreground/80 leading-relaxed">
-            Shell commands to run after a worktree is created. Runs once per worktree. Uses Git Bash
-            on Windows for cross-platform compatibility.
+            {translate(
+              'Shell commands to run after a worktree is created. Runs once per worktree. Uses Git Bash on Windows for cross-platform compatibility.'
+            )}
           </p>
 
           {/* File path indicator */}
           <div className="flex items-center gap-2 text-xs text-muted-foreground/60">
             <FileCode className="w-3.5 h-3.5" />
             <code className="font-mono">.automaker/worktree-init.sh</code>
-            {hasChanges && <span className="text-amber-500 font-medium">(unsaved changes)</span>}
+            {hasChanges && (
+              <span className="text-amber-500 font-medium">{translate('(unsaved changes)')}</span>
+            )}
           </div>
 
           {isLoading ? (
@@ -731,7 +760,7 @@ npm install
                   className="gap-1.5"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  Reset
+                  {translate('Reset')}
                 </Button>
                 <Button
                   variant="outline"
@@ -741,7 +770,7 @@ npm install
                   className="gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
                 >
                   {isDeleting ? <Spinner size="xs" /> : <Trash2 className="w-3.5 h-3.5" />}
-                  Delete
+                  {translate('Delete')}
                 </Button>
                 <Button
                   size="sm"
@@ -750,7 +779,7 @@ npm install
                   className="gap-1.5"
                 >
                   {isSaving ? <Spinner size="xs" /> : <Save className="w-3.5 h-3.5" />}
-                  Save
+                  {translate('Save')}
                 </Button>
               </div>
             </>

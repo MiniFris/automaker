@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useRef, useEffect } from 'react';
 import {
   Dialog,
@@ -23,6 +24,7 @@ interface QuickAddDialogProps {
 }
 
 export function QuickAddDialog({ open, onOpenChange, onAdd, onAddAndStart }: QuickAddDialogProps) {
+  useUiLocale();
   const [description, setDescription] = useState('');
   const [descriptionError, setDescriptionError] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -82,9 +84,11 @@ export function QuickAddDialog({ open, onOpenChange, onAdd, onAddAndStart }: Qui
         }}
       >
         <DialogHeader>
-          <DialogTitle>Quick Add Feature</DialogTitle>
+          <DialogTitle>{translate('Quick Add Feature')}</DialogTitle>
           <DialogDescription>
-            Create a new feature with minimal configuration. All other settings use defaults.
+            {translate(
+              'Create a new feature with minimal configuration. All other settings use defaults.'
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -92,14 +96,14 @@ export function QuickAddDialog({ open, onOpenChange, onAdd, onAddAndStart }: Qui
           {/* Description Input */}
           <div className="space-y-2">
             <label htmlFor="quick-add-description" className="text-sm font-medium">
-              Description
+              {translate('Description')}
             </label>
             <Textarea
               ref={textareaRef}
               id="quick-add-description"
               value={description}
               onChange={(e) => handleDescriptionChange(e.target.value)}
-              placeholder="Describe what you want to build..."
+              placeholder={translate('Describe what you want to build...')}
               className={
                 descriptionError ? 'border-destructive focus-visible:ring-destructive' : ''
               }
@@ -107,7 +111,7 @@ export function QuickAddDialog({ open, onOpenChange, onAdd, onAddAndStart }: Qui
               data-testid="quick-add-description-input"
             />
             {descriptionError && (
-              <p className="text-xs text-destructive">Description is required</p>
+              <p className="text-xs text-destructive">{translate('Description is required')}</p>
             )}
           </div>
 
@@ -117,11 +121,11 @@ export function QuickAddDialog({ open, onOpenChange, onAdd, onAddAndStart }: Qui
 
         <DialogFooter className="gap-2">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button variant="secondary" onClick={handleAdd} data-testid="quick-add-button">
             <Plus className="w-4 h-4 mr-2" />
-            Add
+            {translate('Add')}
           </Button>
           <HotkeyButton
             onClick={handleAddAndStart}
@@ -130,7 +134,7 @@ export function QuickAddDialog({ open, onOpenChange, onAdd, onAddAndStart }: Qui
             data-testid="quick-add-and-start-button"
           >
             <Play className="w-4 h-4 mr-2" />
-            Make
+            {translate('Make')}
           </HotkeyButton>
         </DialogFooter>
       </DialogContent>

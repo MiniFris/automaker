@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Sparkles } from 'lucide-react';
 
@@ -6,6 +7,7 @@ interface CompleteStepProps {
 }
 
 export function CompleteStep({ onFinish }: CompleteStepProps) {
+  useUiLocale();
   return (
     <div className="text-center space-y-6">
       <div className="w-20 h-20 rounded-full bg-linear-to-br from-green-500 to-emerald-600 shadow-lg shadow-green-500/30 flex items-center justify-center mx-auto">
@@ -13,10 +15,11 @@ export function CompleteStep({ onFinish }: CompleteStepProps) {
       </div>
 
       <div>
-        <h2 className="text-3xl font-bold text-foreground mb-3">Setup Complete!</h2>
+        <h2 className="text-3xl font-bold text-foreground mb-3">{translate('Setup Complete!')}</h2>
         <p className="text-muted-foreground max-w-md mx-auto">
-          Your development environment is configured. You&apos;re ready to start building with
-          AI-powered assistance.
+          {translate(
+            "Your development environment is configured. You're ready to start building with AI-powered assistance."
+          )}
         </p>
       </div>
 
@@ -27,7 +30,7 @@ export function CompleteStep({ onFinish }: CompleteStepProps) {
         data-testid="setup-finish-button"
       >
         <Sparkles className="w-4 h-4 mr-2" />
-        Start Building
+        {translate('Start Building')}
       </Button>
     </div>
   );

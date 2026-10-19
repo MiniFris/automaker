@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -131,6 +132,7 @@ interface CliSetupStepProps {
 }
 
 export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetupStepProps) {
+  useUiLocale();
   const { apiKeys, setApiKeys } = useAppStore();
   const { cliStatus, authStatus, setCliStatus, setAuthStatus, setInstallProgress, getStoreState } =
     state;
@@ -173,7 +175,7 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
     onSuccess: () => {
       setAuthStatus(config.buildApiKeyAuthStatus(authStatus));
       setApiKeys({ ...apiKeys, [config.apiKeyProvider]: apiKey });
-      toast.success('API key saved successfully!');
+      toast.success(translate('API key saved successfully!'));
     },
   });
 
@@ -197,9 +199,11 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
 
         if (hasLimitOrBillingError) {
           // Show warning but keep auth verified
-          toast.warning(result.error || 'Rate limit or billing issue');
+          toast.warning(result.error || translate('Rate limit or billing issue'));
         } else {
-          toast.success(`${config.displayName} CLI authentication verified!`);
+          toast.success(
+            translate('{value1} CLI authentication verified!', { value1: config.displayName })
+          );
         }
       } else {
         // Actual auth failure
@@ -238,9 +242,9 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
 
         if (hasLimitOrBillingError) {
           // Show warning but keep auth verified
-          toast.warning(result.error || 'Rate limit or billing issue');
+          toast.warning(result.error || translate('Rate limit or billing issue'));
         } else {
-          toast.success('API key authentication verified!');
+          toast.success(translate('API key authentication verified!'));
         }
       } else {
         // Actual auth failure
@@ -263,7 +267,7 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
     try {
       const api = getElectronAPI();
       if (!api.setup?.deleteApiKey) {
-        toast.error('Delete API not available');
+        toast.error(translate('Delete API not available'));
         return;
       }
 
@@ -274,9 +278,9 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
         setApiKeyVerificationStatus('idle');
         setApiKeyVerificationError(null);
         setAuthStatus(config.buildClearedAuthStatus(authStatus));
-        toast.success('API key deleted successfully');
+        toast.success(translate('API key deleted successfully'));
       } else {
-        toast.error(result.error || 'Failed to delete API key');
+        toast.error(result.error || translate('Failed to delete API key'));
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete API key';
@@ -299,7 +303,7 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
 
   const copyCommand = (command: string) => {
     navigator.clipboard.writeText(command);
-    toast.success('Command copied to clipboard');
+    toast.success(translate('Command copied to clipboard'));
   };
 
   const hasApiKey =
@@ -313,31 +317,31 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
 
   const getCliStatusBadge = () => {
     if (cliVerificationStatus === 'verified') {
-      return <StatusBadge status="authenticated" label="Verified" />;
+      return <StatusBadge status="authenticated" label={translate('Verified')} />;
     }
     if (cliVerificationStatus === 'error') {
-      return <StatusBadge status="error" label="Error" />;
+      return <StatusBadge status="error" label={translate('Error')} />;
     }
     if (isChecking) {
-      return <StatusBadge status="checking" label="Checking..." />;
+      return <StatusBadge status="checking" label={translate('Checking...')} />;
     }
     if (cliStatus?.installed) {
-      return <StatusBadge status="unverified" label="Unverified" />;
+      return <StatusBadge status="unverified" label={translate('Unverified')} />;
     }
-    return <StatusBadge status="not_installed" label="Not Installed" />;
+    return <StatusBadge status="not_installed" label={translate('Not Installed')} />;
   };
 
   const getApiKeyStatusBadge = () => {
     if (apiKeyVerificationStatus === 'verified') {
-      return <StatusBadge status="authenticated" label="Verified" />;
+      return <StatusBadge status="authenticated" label={translate('Verified')} />;
     }
     if (apiKeyVerificationStatus === 'error') {
-      return <StatusBadge status="error" label="Error" />;
+      return <StatusBadge status="error" label={translate('Error')} />;
     }
     if (hasApiKey) {
-      return <StatusBadge status="unverified" label="Unverified" />;
+      return <StatusBadge status="unverified" label={translate('Unverified')} />;
     }
-    return <StatusBadge status="not_authenticated" label="Not Set" />;
+    return <StatusBadge status="not_authenticated" label={translate('Not Set')} />;
   };
 
   return (
@@ -346,8 +350,12 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
         <div className="w-16 h-16 rounded-xl bg-brand-500/10 flex items-center justify-center mx-auto mb-4">
           <ProviderIcon className="w-8 h-8 text-brand-500" />
         </div>
-        <h2 className="text-2xl font-bold text-foreground mb-2">{config.displayName} Setup</h2>
-        <p className="text-muted-foreground">Configure authentication for code generation</p>
+        <h2 className="text-2xl font-bold text-foreground mb-2">
+          {config.displayName} {translate(' Setup')}
+        </h2>
+        <p className="text-muted-foreground">
+          {translate('Configure authentication for code generation')}
+        </p>
       </div>
 
       <Card className="bg-card border-border">
@@ -355,13 +363,15 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <Info className="w-5 h-5" />
-              Authentication Methods
+              {translate('Authentication Methods')}
             </CardTitle>
             <Button variant="ghost" size="sm" onClick={checkStatus} disabled={isChecking}>
               {isChecking ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
             </Button>
           </div>
-          <CardDescription>Choose one of the following methods to authenticate:</CardDescription>
+          <CardDescription>
+            {translate('Choose one of the following methods to authenticate:')}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Accordion type="single" collapsible className="w-full">
@@ -389,11 +399,16 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
                   <div className="space-y-4 p-4 rounded-lg bg-muted/30 border border-border">
                     <div className="flex items-center gap-2">
                       <Download className="w-4 h-4 text-muted-foreground" />
-                      <p className="font-medium text-foreground">Install {config.cliLabel}</p>
+                      <p className="font-medium text-foreground">
+                        {translate('Install ')}
+                        {config.cliLabel}
+                      </p>
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-sm text-muted-foreground">macOS / Linux</Label>
+                      <Label className="text-sm text-muted-foreground">
+                        {translate('macOS / Linux')}
+                      </Label>
                       <div className="flex items-center gap-2">
                         <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
                           {config.installCommands.macos}
@@ -409,7 +424,9 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-sm text-muted-foreground">Windows</Label>
+                      <Label className="text-sm text-muted-foreground">
+                        {translate('Windows')}
+                      </Label>
                       <div className="flex items-center gap-2">
                         <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
                           {config.installCommands.windows}
@@ -435,12 +452,12 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
                       {isInstalling ? (
                         <>
                           <Spinner size="sm" variant="foreground" className="mr-2" />
-                          Installing...
+                          {translate('Installing...')}
                         </>
                       ) : (
                         <>
                           <Download className="w-4 h-4 mr-2" />
-                          Auto Install
+                          {translate('Auto Install')}
                         </>
                       )}
                     </Button>
@@ -448,15 +465,22 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
                 )}
 
                 {cliStatus?.installed && cliStatus?.version && (
-                  <p className="text-sm text-muted-foreground">Version: {cliStatus.version}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {translate('Version: ')}
+                    {cliStatus.version}
+                  </p>
                 )}
 
                 {cliVerificationStatus === 'verifying' && (
                   <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
                     <Spinner size="md" />
                     <div>
-                      <p className="font-medium text-foreground">Verifying CLI authentication...</p>
-                      <p className="text-sm text-muted-foreground">Running a test query</p>
+                      <p className="font-medium text-foreground">
+                        {translate('Verifying CLI authentication...')}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {translate('Running a test query')}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -465,9 +489,12 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
                   <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
                     <CheckCircle2 className="w-5 h-5 text-green-500" />
                     <div>
-                      <p className="font-medium text-foreground">CLI Authentication verified!</p>
+                      <p className="font-medium text-foreground">
+                        {translate('CLI Authentication verified!')}
+                      </p>
                       <p className="text-sm text-muted-foreground">
-                        Your {config.displayName} CLI is working correctly.
+                        {translate('Your ')}
+                        {config.displayName} {translate(' CLI is working correctly.')}
                       </p>
                     </div>
                   </div>
@@ -477,7 +504,9 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
                   <div className="flex items-start gap-3 p-4 rounded-lg bg-red-500/10 border border-red-500/20">
                     <XCircle className="w-5 h-5 text-red-500 shrink-0" />
                     <div className="flex-1 space-y-2">
-                      <p className="font-medium text-foreground">Verification failed</p>
+                      <p className="font-medium text-foreground">
+                        {translate('Verification failed')}
+                      </p>
                       {(() => {
                         const parts = cliVerificationError.split('\n\nDetails: ');
                         const mainError = parts[0];
@@ -501,9 +530,10 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
                           // Usage limit issue - NOT an authentication problem
                           if (isUsageLimitIssue) {
                             return {
-                              title: 'Usage limit issue (not authentication)',
-                              message:
-                                'Your login credentials are working fine. This is a rate limit or billing error.',
+                              title: translate('Usage limit issue (not authentication)'),
+                              message: translate(
+                                'Your login credentials are working fine. This is a rate limit or billing error.'
+                              ),
                               action: 'Wait a few minutes and try again, or check your billing',
                             };
                           }
@@ -514,8 +544,8 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
                             errorLower.includes('token refresh')
                           ) {
                             return {
-                              title: 'Token refresh failed',
-                              message: 'Your OAuth token needs to be refreshed.',
+                              title: translate('Token refresh failed'),
+                              message: translate('Your OAuth token needs to be refreshed.'),
                               action: 'Re-authenticate',
                               command: config.cliLoginCommand,
                             };
@@ -524,9 +554,10 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
                           // Connection/transport issues
                           if (errorLower.includes('transport channel closed')) {
                             return {
-                              title: 'Connection issue',
-                              message:
-                                'The connection to the authentication server was interrupted.',
+                              title: translate('Connection issue'),
+                              message: translate(
+                                'The connection to the authentication server was interrupted.'
+                              ),
                               action: 'Try again or re-authenticate',
                               command: config.cliLoginCommand,
                             };
@@ -535,8 +566,8 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
                           // Invalid API key
                           if (errorLower.includes('invalid') && errorLower.includes('api key')) {
                             return {
-                              title: 'Invalid API key',
-                              message: 'Your API key is incorrect or has been revoked.',
+                              title: translate('Invalid API key'),
+                              message: translate('Your API key is incorrect or has been revoked.'),
                               action: 'Check your API key or get a new one',
                             };
                           }
@@ -544,8 +575,8 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
                           // Expired token
                           if (errorLower.includes('expired')) {
                             return {
-                              title: 'Token expired',
-                              message: 'Your authentication token has expired.',
+                              title: translate('Token expired'),
+                              message: translate('Your authentication token has expired.'),
                               action: 'Re-authenticate',
                               command: config.cliLoginCommand,
                             };
@@ -554,8 +585,8 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
                           // Authentication required
                           if (errorLower.includes('login') || errorLower.includes('authenticate')) {
                             return {
-                              title: 'Authentication required',
-                              message: 'You need to authenticate with your account.',
+                              title: translate('Authentication required'),
+                              message: translate('You need to authenticate with your account.'),
                               action: 'Run the login command',
                               command: config.cliLoginCommand,
                             };
@@ -572,7 +603,7 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
                             {details && (
                               <div className="mt-2 p-3 rounded bg-black/20 border border-red-500/20">
                                 <p className="text-xs font-medium text-muted-foreground mb-1">
-                                  Technical details:
+                                  {translate('Technical details:')}
                                 </p>
                                 <pre className="text-xs text-red-300 whitespace-pre-wrap font-mono">
                                   {details}
@@ -632,17 +663,17 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
                     {cliVerificationStatus === 'verifying' ? (
                       <>
                         <Spinner size="sm" className="mr-2" />
-                        Verifying...
+                        {translate('Verifying...')}
                       </>
                     ) : cliVerificationStatus === 'error' ? (
                       <>
                         <RefreshCw className="w-4 h-4 mr-2" />
-                        Retry Verification
+                        {translate('Retry Verification')}
                       </>
                     ) : (
                       <>
                         <ShieldCheck className="w-4 h-4 mr-2" />
-                        Verify CLI Authentication
+                        {translate('Verify CLI Authentication')}
                       </>
                     )}
                   </Button>
@@ -708,10 +739,10 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
                       {isSavingApiKey ? (
                         <>
                           <Spinner size="sm" variant="foreground" className="mr-2" />
-                          Saving...
+                          {translate('Saving...')}
                         </>
                       ) : (
-                        'Save API Key'
+                        translate('Save API Key')
                       )}
                     </Button>
                     {hasApiKey && (
@@ -732,8 +763,12 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
                   <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
                     <Spinner size="md" />
                     <div>
-                      <p className="font-medium text-foreground">Verifying API key...</p>
-                      <p className="text-sm text-muted-foreground">Running a test query</p>
+                      <p className="font-medium text-foreground">
+                        {translate('Verifying API key...')}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {translate('Running a test query')}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -742,9 +777,11 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
                   <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
                     <CheckCircle2 className="w-5 h-5 text-green-500" />
                     <div>
-                      <p className="font-medium text-foreground">API Key verified!</p>
+                      <p className="font-medium text-foreground">
+                        {translate('API Key verified!')}
+                      </p>
                       <p className="text-sm text-muted-foreground">
-                        Your API key is working correctly.
+                        {translate('Your API key is working correctly.')}
                       </p>
                     </div>
                   </div>
@@ -754,7 +791,9 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
                   <div className="flex items-start gap-3 p-4 rounded-lg bg-red-500/10 border border-red-500/20">
                     <XCircle className="w-5 h-5 text-red-500 shrink-0" />
                     <div className="flex-1 space-y-2">
-                      <p className="font-medium text-foreground">Verification failed</p>
+                      <p className="font-medium text-foreground">
+                        {translate('Verification failed')}
+                      </p>
                       {(() => {
                         const parts = apiKeyVerificationError.split('\n\nDetails: ');
                         const mainError = parts[0];
@@ -766,7 +805,7 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
                             {details && (
                               <div className="mt-2 p-3 rounded bg-black/20 border border-red-500/20">
                                 <p className="text-xs font-medium text-muted-foreground mb-1">
-                                  Technical details:
+                                  {translate('Technical details:')}
                                 </p>
                                 <pre className="text-xs text-red-300 whitespace-pre-wrap font-mono">
                                   {details}
@@ -790,17 +829,17 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
                     {apiKeyVerificationStatus === 'verifying' ? (
                       <>
                         <Spinner size="sm" className="mr-2" />
-                        Verifying...
+                        {translate('Verifying...')}
                       </>
                     ) : apiKeyVerificationStatus === 'error' ? (
                       <>
                         <RefreshCw className="w-4 h-4 mr-2" />
-                        Retry Verification
+                        {translate('Retry Verification')}
                       </>
                     ) : (
                       <>
                         <ShieldCheck className="w-4 h-4 mr-2" />
-                        Verify API Key
+                        {translate('Verify API Key')}
                       </>
                     )}
                   </Button>
@@ -814,11 +853,11 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
       <div className="flex justify-between pt-4">
         <Button variant="ghost" onClick={onBack} className="text-muted-foreground">
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
+          {translate('Back')}
         </Button>
         <div className="flex gap-2">
           <Button variant="ghost" onClick={onSkip} className="text-muted-foreground">
-            Skip for now
+            {translate('Skip for now')}
           </Button>
           <Button
             onClick={onNext}
@@ -826,7 +865,7 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
             className="bg-brand-500 hover:bg-brand-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
             data-testid={config.testIds.nextButton}
           >
-            Continue
+            {translate('Continue')}
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>

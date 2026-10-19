@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,6 +44,7 @@ export function BranchSwitchDropdown({
   onSwitchBranch,
   onCreateBranch,
 }: BranchSwitchDropdownProps) {
+  useUiLocale();
   // Separate local and remote branches, filtering out bare remotes without a branch
   const { localBranches, remoteBranches } = useMemo(() => {
     const local: BranchInfo[] = [];
@@ -93,19 +95,19 @@ export function BranchSwitchDropdown({
             !standalone && isSelected && 'bg-primary text-primary-foreground',
             !standalone && !isSelected && 'bg-secondary/50 hover:bg-secondary'
           )}
-          title="Switch branch"
+          title={translate('Switch branch')}
         >
           <GitBranch className={standalone ? 'w-3.5 h-3.5' : 'w-3 h-3'} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-72">
-        <DropdownMenuLabel className="text-xs">Switch Branch</DropdownMenuLabel>
+        <DropdownMenuLabel className="text-xs">{translate('Switch Branch')}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <div className="px-2 py-1.5">
           <div className="relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
             <Input
-              placeholder="Filter branches..."
+              placeholder={translate('Filter branches...')}
               value={branchFilter}
               onChange={(e) => onFilterChange(e.target.value)}
               onKeyDown={(e) => e.stopPropagation()}
@@ -121,11 +123,11 @@ export function BranchSwitchDropdown({
           {isLoadingBranches ? (
             <DropdownMenuItem disabled className="text-xs">
               <Spinner size="xs" className="mr-2" />
-              Loading branches...
+              {translate('Loading branches...')}
             </DropdownMenuItem>
           ) : filteredBranches.length === 0 ? (
             <DropdownMenuItem disabled className="text-xs">
-              {branchFilter ? 'No matching branches' : 'No branches found'}
+              {branchFilter ? translate('No matching branches') : translate('No branches found')}
             </DropdownMenuItem>
           ) : (
             <>
@@ -133,7 +135,7 @@ export function BranchSwitchDropdown({
               {localBranches.length > 0 && (
                 <>
                   <DropdownMenuLabel className="text-[10px] text-muted-foreground uppercase tracking-wider px-2 py-1">
-                    Local
+                    {translate('Local')}
                   </DropdownMenuLabel>
                   {localBranches.map(renderBranchItem)}
                 </>
@@ -144,7 +146,7 @@ export function BranchSwitchDropdown({
                 <>
                   {localBranches.length > 0 && <DropdownMenuSeparator />}
                   <DropdownMenuLabel className="text-[10px] text-muted-foreground uppercase tracking-wider px-2 py-1">
-                    Remote
+                    {translate('Remote')}
                   </DropdownMenuLabel>
                   {remoteBranches.map(renderBranchItem)}
                 </>
@@ -155,7 +157,7 @@ export function BranchSwitchDropdown({
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => onCreateBranch(worktree)} className="text-xs">
           <GitBranchPlus className="w-3.5 h-3.5 mr-2" />
-          Create New Branch...
+          {translate('Create New Branch...')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

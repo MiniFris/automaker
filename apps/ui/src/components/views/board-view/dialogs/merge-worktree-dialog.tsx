@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -37,6 +38,7 @@ export function MergeWorktreeDialog({
   onIntegrated,
   onCreateConflictResolutionFeature,
 }: MergeWorktreeDialogProps) {
+  useUiLocale();
   const [isLoading, setIsLoading] = useState(false);
   const [targetBranch, setTargetBranch] = useState('main');
   const [availableBranches, setAvailableBranches] = useState<string[]>([]);
@@ -90,7 +92,7 @@ export function MergeWorktreeDialog({
     try {
       const api = getElectronAPI();
       if (!api?.worktree?.mergeFeature) {
-        toast.error('Worktree API not available');
+        toast.error(translate('Worktree API not available'));
         return;
       }
 
@@ -107,7 +109,9 @@ export function MergeWorktreeDialog({
         const description = deleteWorktreeAndBranch
           ? `Branch "${worktree.branch}" has been integrated into "${targetBranch}" and the worktree and branch were deleted`
           : `Branch "${worktree.branch}" has been integrated into "${targetBranch}"`;
-        toast.success(`Branch integrated into ${targetBranch}`, { description });
+        toast.success(translate('Branch integrated into {value1}', { value1: targetBranch }), {
+          description,
+        });
         onIntegrated(worktree, deleteWorktreeAndBranch);
         onOpenChange(false);
       } else {
@@ -128,11 +132,11 @@ export function MergeWorktreeDialog({
             conflictFiles: result.conflictFiles || [],
             operationType: 'merge',
           });
-          toast.error('Integrate conflicts detected', {
-            description: 'Choose how to resolve the conflicts below.',
+          toast.error(translate('Integrate conflicts detected'), {
+            description: translate('Choose how to resolve the conflicts below.'),
           });
         } else {
-          toast.error('Failed to integrate branch', {
+          toast.error(translate('Failed to integrate branch'), {
             description: result.error,
           });
         }
@@ -153,11 +157,11 @@ export function MergeWorktreeDialog({
           conflictFiles: [],
           operationType: 'merge',
         });
-        toast.error('Integrate conflicts detected', {
-          description: 'Choose how to resolve the conflicts below.',
+        toast.error(translate('Integrate conflicts detected'), {
+          description: translate('Choose how to resolve the conflicts below.'),
         });
       } else {
-        toast.error('Failed to integrate branch', {
+        toast.error(translate('Failed to integrate branch'), {
           description: errorMessage,
         });
       }
@@ -174,8 +178,8 @@ export function MergeWorktreeDialog({
   };
 
   const handleResolveManually = () => {
-    toast.info('Conflict markers left in place', {
-      description: 'Edit the conflicting files to resolve conflicts manually.',
+    toast.info(translate('Conflict markers left in place'), {
+      description: translate('Edit the conflicting files to resolve conflicts manually.'),
       duration: 6000,
     });
     onOpenChange(false);
@@ -191,16 +195,16 @@ export function MergeWorktreeDialog({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-orange-500" />
-              Integrate Conflicts Detected
+              {translate('Integrate Conflicts Detected')}
             </DialogTitle>
             <DialogDescription asChild>
               <div className="space-y-4">
                 <span className="block">
-                  There are conflicts when integrating{' '}
+                  {translate('There are conflicts when integrating')}{' '}
                   <code className="font-mono bg-muted px-1 rounded">
                     {mergeConflict.sourceBranch}
                   </code>{' '}
-                  into{' '}
+                  {translate('into')}{' '}
                   <code className="font-mono bg-muted px-1 rounded">
                     {mergeConflict.targetBranch}
                   </code>
@@ -210,7 +214,8 @@ export function MergeWorktreeDialog({
                 {mergeConflict.conflictFiles && mergeConflict.conflictFiles.length > 0 && (
                   <div className="space-y-1.5">
                     <span className="text-sm font-medium text-foreground">
-                      Conflicting files ({mergeConflict.conflictFiles.length}):
+                      {translate('Conflicting files (')}
+                      {mergeConflict.conflictFiles.length}):
                     </span>
                     <div className="border border-border rounded-lg overflow-hidden max-h-[200px] overflow-y-auto scrollbar-visible">
                       {mergeConflict.conflictFiles.map((file) => (
@@ -228,16 +233,18 @@ export function MergeWorktreeDialog({
 
                 <div className="mt-2 p-3 rounded-md bg-muted/50 border border-border">
                   <p className="text-sm text-muted-foreground font-medium mb-2">
-                    Choose how to resolve:
+                    {translate('Choose how to resolve:')}
                   </p>
                   <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
                     <li>
-                      <strong>Resolve with AI</strong> &mdash; Creates a task to analyze and resolve
-                      conflicts automatically
+                      <strong>{translate('Resolve with AI')}</strong>{' '}
+                      {translate(
+                        ' — Creates a task to analyze and resolve conflicts automatically'
+                      )}
                     </li>
                     <li>
-                      <strong>Resolve Manually</strong> &mdash; Leaves conflict markers in place for
-                      you to edit directly
+                      <strong>{translate('Resolve Manually')}</strong>{' '}
+                      {translate(' — Leaves conflict markers in place for you to edit directly')}
                     </li>
                   </ul>
                 </div>
@@ -247,11 +254,11 @@ export function MergeWorktreeDialog({
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setMergeConflict(null)}>
-              Back
+              {translate('Back')}
             </Button>
             <Button variant="outline" onClick={handleResolveManually}>
               <Wrench className="w-4 h-4 mr-2" />
-              Resolve Manually
+              {translate('Resolve Manually')}
             </Button>
             {onCreateConflictResolutionFeature && (
               <Button
@@ -259,7 +266,7 @@ export function MergeWorktreeDialog({
                 className="bg-purple-600 hover:bg-purple-700 text-white"
               >
                 <Sparkles className="w-4 h-4 mr-2" />
-                Resolve with AI
+                {translate('Resolve with AI')}
               </Button>
             )}
           </DialogFooter>
@@ -274,30 +281,31 @@ export function MergeWorktreeDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <GitMerge className="w-5 h-5 text-green-600" />
-            Integrate Branch
+            {translate('Integrate Branch')}
           </DialogTitle>
           <DialogDescription asChild>
             <div className="space-y-4">
               <span className="block">
-                Integrate <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>{' '}
-                into:
+                {translate('Integrate ')}
+                <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>{' '}
+                {translate(' into:')}
               </span>
 
               <div className="space-y-2">
                 <Label htmlFor="target-branch" className="text-sm text-foreground">
-                  Target Branch
+                  {translate('Target Branch')}
                 </Label>
                 {loadingBranches ? (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Spinner size="sm" />
-                    Loading branches...
+                    {translate('Loading branches...')}
                   </div>
                 ) : (
                   <BranchAutocomplete
                     value={targetBranch}
                     onChange={setTargetBranch}
                     branches={availableBranches}
-                    placeholder="Select target branch..."
+                    placeholder={translate('Select target branch...')}
                     data-testid="merge-target-branch"
                   />
                 )}
@@ -307,8 +315,11 @@ export function MergeWorktreeDialog({
                 <div className="flex items-start gap-2 p-3 rounded-md bg-yellow-500/10 border border-yellow-500/20">
                   <AlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
                   <span className="text-yellow-500 text-sm">
-                    This worktree has {worktree.changedFilesCount} uncommitted change(s). Please
-                    commit or discard them before integrating.
+                    {translate('This worktree has ')}
+                    {worktree.changedFilesCount}{' '}
+                    {translate(
+                      ' uncommitted change(s). Please commit or discard them before integrating.'
+                    )}
                   </span>
                 </div>
               )}
@@ -327,7 +338,7 @@ export function MergeWorktreeDialog({
             className="text-sm cursor-pointer flex items-center gap-1.5"
           >
             <Trash2 className="w-3.5 h-3.5 text-destructive" />
-            Delete worktree and branch after integrating
+            {translate('Delete worktree and branch after integrating')}
           </Label>
         </div>
 
@@ -335,15 +346,16 @@ export function MergeWorktreeDialog({
           <div className="flex items-start gap-2 p-3 rounded-md bg-orange-500/10 border border-orange-500/20">
             <AlertTriangle className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
             <span className="text-orange-500 text-sm">
-              The worktree and branch will be permanently deleted. Any features assigned to this
-              branch will be unassigned.
+              {translate(
+                'The worktree and branch will be permanently deleted. Any features assigned to this branch will be unassigned.'
+              )}
             </span>
           </div>
         )}
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isLoading}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button
             onClick={handleMerge}
@@ -353,12 +365,12 @@ export function MergeWorktreeDialog({
             {isLoading ? (
               <>
                 <Spinner size="sm" variant="foreground" className="mr-2" />
-                Integrating...
+                {translate('Integrating...')}
               </>
             ) : (
               <>
                 <GitMerge className="w-4 h-4 mr-2" />
-                Integrate
+                {translate('Integrate')}
               </>
             )}
           </Button>

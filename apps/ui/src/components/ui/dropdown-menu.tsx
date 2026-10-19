@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import * as React from 'react';
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
 import { Check, ChevronRight, Circle } from 'lucide-react';
@@ -84,6 +85,7 @@ function DropdownMenuTrigger({
   children?: React.ReactNode;
   asChild?: boolean;
 }) {
+  useUiLocale();
   return (
     <DropdownMenuTriggerPrimitive asChild={asChild} {...props}>
       {children}
@@ -101,6 +103,7 @@ function DropdownMenuRadioGroup({
   children,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.RadioGroup> & { children?: React.ReactNode }) {
+  useUiLocale();
   return <DropdownMenuRadioGroupPrimitive {...props}>{children}</DropdownMenuRadioGroupPrimitive>;
 }
 
@@ -270,6 +273,7 @@ const DropdownMenuSeparator = React.forwardRef<
 DropdownMenuSeparator.displayName = DropdownMenuPrimitive.Separator.displayName;
 
 const DropdownMenuShortcut = ({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => {
+  useUiLocale();
   return (
     <span
       className={cn('ml-auto text-xs tracking-widest text-brand-400/70', className)}

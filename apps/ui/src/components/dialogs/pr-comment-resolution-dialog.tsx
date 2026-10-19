@@ -1,3 +1,6 @@
+import { formatCount } from '@/lib/i18n';
+import { getFormattingLocale } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * PR Comment Resolution Dialog
  *
@@ -84,7 +87,7 @@ function generateFeatureId(): string {
 /** Format a date string for display */
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString(getFormattingLocale(), {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -94,7 +97,7 @@ function formatDate(dateString: string): string {
 /** Format a time string for display */
 function formatTime(dateString: string): string {
   const date = new Date(dateString);
-  return date.toLocaleTimeString('en-US', {
+  return date.toLocaleTimeString(getFormattingLocale(), {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
@@ -120,12 +123,20 @@ function generateSingleCommentTitle(
   const location = comment.path
     ? ` on ${comment.path}${comment.line ? `:${comment.line}` : ''}`
     : '';
-  return `Address PR #${pr.number} comment by @${comment.author}${location}`;
+  return translate('Address PR #{value1} comment by @{value2}{value3}', {
+    value1: pr.number,
+    value2: comment.author,
+    value3: location,
+  });
 }
 
 /** Generate a feature title for multiple comments addressed together */
 function generateGroupTitle(pr: PRCommentResolutionPRInfo, comments: PRReviewComment[]): string {
-  return `Address ${comments.length} review comment${comments.length > 1 ? 's' : ''} on PR #${pr.number}`;
+  return translate('Address {value1} review comment{value2} on PR #{value3}', {
+    value1: comments.length,
+    value2: comments.length > 1 ? 's' : '',
+    value3: pr.number,
+  });
 }
 
 /** Generate a feature description for a single comment */
@@ -217,6 +228,7 @@ function CommentRow({
   onResolve,
   isResolvingThread,
 }: CommentRowProps) {
+  useUiLocale();
   const fileLocation = formatFileLocation(comment);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -291,25 +303,25 @@ function CommentRow({
 
             {comment.isBot && (
               <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-500/10 text-purple-500">
-                Bot
+                {translate('Bot')}
               </span>
             )}
 
             {comment.isOutdated && (
               <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-yellow-500/10 text-yellow-500">
-                Outdated
+                {translate('Outdated')}
               </span>
             )}
 
             {comment.isReviewComment && (
               <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-blue-500/10 text-blue-500">
-                Review
+                {translate('Review')}
               </span>
             )}
 
             {comment.isResolved && (
               <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-green-500/10 text-green-600 dark:text-green-500">
-                Resolved
+                {translate('Resolved')}
               </span>
             )}
 
@@ -326,7 +338,11 @@ function CommentRow({
                     : 'text-muted-foreground hover:text-green-600 dark:hover:text-green-500 hover:bg-muted',
                   isResolvingThread && 'opacity-50 cursor-not-allowed'
                 )}
-                title={comment.isResolved ? 'Unresolve this thread' : 'Resolve this thread'}
+                title={
+                  comment.isResolved
+                    ? translate('Unresolve this thread')
+                    : translate('Resolve this thread')
+                }
               >
                 {isResolvingThread ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -345,7 +361,7 @@ function CommentRow({
                   type="button"
                   onClick={handleExpandToggle}
                   className="text-muted-foreground hover:text-foreground transition-colors p-0.5 rounded hover:bg-muted"
-                  title={isExpanded ? 'Collapse comment' : 'Expand comment'}
+                  title={isExpanded ? translate('Collapse comment') : translate('Expand comment')}
                 >
                   {isExpanded ? (
                     <ChevronDown className="h-3.5 w-3.5" />
@@ -362,7 +378,7 @@ function CommentRow({
                 type="button"
                 onClick={handleExpandDetail}
                 className="text-muted-foreground hover:text-foreground transition-colors p-0.5 rounded hover:bg-muted"
-                title="View full comment details"
+                title={translate('View full comment details')}
               >
                 <Maximize2 className="h-3.5 w-3.5" />
               </button>
@@ -408,6 +424,7 @@ interface CommentDetailDialogProps {
 }
 
 function CommentDetailDialog({ comment, open, onOpenChange }: CommentDetailDialogProps) {
+  useUiLocale();
   if (!comment) return null;
 
   const fileLocation = formatFileLocation(comment);
@@ -418,10 +435,10 @@ function CommentDetailDialog({ comment, open, onOpenChange }: CommentDetailDialo
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5 text-blue-500" />
-            Comment Details
+            {translate('Comment Details')}
           </DialogTitle>
           <DialogDescription>
-            Full view of the review comment with rendered content.
+            {translate('Full view of the review comment with rendered content.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -444,7 +461,8 @@ function CommentDetailDialog({ comment, open, onOpenChange }: CommentDetailDialo
                 <div>
                   <span className="text-sm font-semibold">@{comment.author}</span>
                   <div className="text-xs text-muted-foreground">
-                    {formatDate(comment.createdAt)} at {formatTime(comment.createdAt)}
+                    {formatDate(comment.createdAt)} {translate(' at ')}
+                    {formatTime(comment.createdAt)}
                   </div>
                 </div>
               </div>
@@ -453,22 +471,22 @@ function CommentDetailDialog({ comment, open, onOpenChange }: CommentDetailDialo
               <div className="flex items-center gap-1.5 ml-auto">
                 {comment.isBot && (
                   <span className="px-2 py-0.5 text-xs font-medium rounded bg-purple-500/10 text-purple-500">
-                    Bot
+                    {translate('Bot')}
                   </span>
                 )}
                 {comment.isOutdated && (
                   <span className="px-2 py-0.5 text-xs font-medium rounded bg-yellow-500/10 text-yellow-500">
-                    Outdated
+                    {translate('Outdated')}
                   </span>
                 )}
                 {comment.isReviewComment && (
                   <span className="px-2 py-0.5 text-xs font-medium rounded bg-blue-500/10 text-blue-500">
-                    Review
+                    {translate('Review')}
                   </span>
                 )}
                 {comment.isResolved && (
                   <span className="px-2 py-0.5 text-xs font-medium rounded bg-green-500/10 text-green-600 dark:text-green-500">
-                    Resolved
+                    {translate('Resolved')}
                   </span>
                 )}
               </div>
@@ -486,7 +504,9 @@ function CommentDetailDialog({ comment, open, onOpenChange }: CommentDetailDialo
             {comment.diffHunk && (
               <div className="rounded-lg border border-border overflow-hidden">
                 <div className="px-3 py-1.5 bg-muted/50 border-b border-border">
-                  <span className="text-xs font-medium text-muted-foreground">Code Context</span>
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {translate('Code Context')}
+                  </span>
                 </div>
                 <pre className="p-3 text-xs font-mono overflow-x-auto bg-card text-foreground-secondary leading-relaxed">
                   {comment.diffHunk}
@@ -503,12 +523,23 @@ function CommentDetailDialog({ comment, open, onOpenChange }: CommentDetailDialo
             {(comment.updatedAt || comment.commitId || comment.side) && (
               <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
                 {comment.updatedAt && comment.updatedAt !== comment.createdAt && (
-                  <span>Updated: {formatDate(comment.updatedAt)}</span>
+                  <span>
+                    {translate('Updated: ')}
+                    {formatDate(comment.updatedAt)}
+                  </span>
                 )}
                 {comment.commitId && (
-                  <span className="font-mono">Commit: {comment.commitId.slice(0, 7)}</span>
+                  <span className="font-mono">
+                    {translate('Commit: ')}
+                    {comment.commitId.slice(0, 7)}
+                  </span>
                 )}
-                {comment.side && <span>Side: {comment.side}</span>}
+                {comment.side && (
+                  <span>
+                    {translate('Side: ')}
+                    {comment.side}
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -516,7 +547,7 @@ function CommentDetailDialog({ comment, open, onOpenChange }: CommentDetailDialo
 
         <DialogFooter className="mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
+            {translate('Close')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -534,24 +565,33 @@ interface CreationErrorStateProps {
 }
 
 function CreationErrorState({ errors, onDismiss }: CreationErrorStateProps) {
+  useUiLocale();
   return (
     <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
       <div className="flex items-center gap-2 mb-2">
         <AlertCircle className="h-4 w-4 text-destructive" />
         <span className="text-sm font-medium text-destructive">
-          Failed to create {errors.length} feature{errors.length > 1 ? 's' : ''}
+          {translate('Failed to create ')}
+          {formatCount(errors.length, 'feature')}
         </span>
       </div>
       <ul className="text-xs text-muted-foreground space-y-1 ml-6">
         {errors.map((err, i) => (
           <li key={i}>
             <span className="font-medium">@{err.comment.author}</span>
-            {err.comment.path && <span> on {err.comment.path}</span>}: {err.error}
+            {err.comment.path && (
+              <span>
+                {' '}
+                {translate(' on ')}
+                {err.comment.path}
+              </span>
+            )}
+            : {err.error}
           </li>
         ))}
       </ul>
       <Button variant="ghost" size="sm" className="mt-2" onClick={onDismiss}>
-        Dismiss
+        {translate('Dismiss')}
       </Button>
     </div>
   );
@@ -566,6 +606,7 @@ export function PRCommentResolutionDialog({
   onOpenChange,
   pr,
 }: PRCommentResolutionDialogProps) {
+  useUiLocale();
   const { currentProject, defaultFeatureModel } = useAppStore();
 
   // Use project-level default feature model if set, otherwise fall back to global
@@ -762,8 +803,11 @@ export function PRCommentResolutionDialog({
         };
 
         await createFeature.mutateAsync(feature);
-        toast.success('Feature created', {
-          description: `Created feature to address ${selectedComments.length} PR comment${selectedComments.length > 1 ? 's' : ''}`,
+        toast.success(translate('Feature created'), {
+          description: translate('Created feature to address {value1} PR comment{value2}', {
+            value1: selectedComments.length,
+            value2: selectedComments.length > 1 ? 's' : '',
+          }),
         });
         onOpenChange(false);
       } else {
@@ -805,19 +849,25 @@ export function PRCommentResolutionDialog({
         if (errors.length > 0) {
           setCreationErrors(errors);
           if (successCount > 0) {
-            toast.warning(`Created ${successCount} feature${successCount > 1 ? 's' : ''}`, {
-              description: `${errors.length} failed to create`,
-            });
+            toast.warning(
+              translate('Created {value1}', { value1: formatCount(successCount, 'feature') }),
+              {
+                description: translate('{value1} failed to create', { value1: errors.length }),
+              }
+            );
           }
         } else {
-          toast.success(`Created ${successCount} feature${successCount > 1 ? 's' : ''}`, {
-            description: `Each PR comment will be addressed individually`,
-          });
+          toast.success(
+            translate('Created {value1}', { value1: formatCount(successCount, 'feature') }),
+            {
+              description: translate('Each PR comment will be addressed individually'),
+            }
+          );
           onOpenChange(false);
         }
       }
     } catch (err) {
-      toast.error('Failed to create feature', {
+      toast.error(translate('Failed to create feature'), {
         description: err instanceof Error ? err.message : 'Unknown error',
       });
     } finally {
@@ -864,7 +914,7 @@ export function PRCommentResolutionDialog({
           <div className="flex items-center justify-between pr-10">
             <DialogTitle className="flex items-center gap-2">
               <MessageSquare className="h-5 w-5 text-blue-500" />
-              Manage PR Review Comments
+              {translate('Manage PR Review Comments')}
             </DialogTitle>
             <Button
               variant="ghost"
@@ -872,13 +922,14 @@ export function PRCommentResolutionDialog({
               className="h-7 w-7 p-0 shrink-0"
               onClick={() => refetch()}
               disabled={refreshing}
-              title="Refresh comments"
+              title={translate('Refresh comments')}
             >
               <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
             </Button>
           </div>
           <DialogDescription>
-            Select comments from PR #{pr.number} to create feature tasks that address them.
+            {translate('Select comments from PR #')}
+            {pr.number} {translate(' to create feature tasks that address them.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -897,12 +948,12 @@ export function PRCommentResolutionDialog({
               <div className="p-3 rounded-full bg-destructive/10 mb-3">
                 <AlertCircle className="h-8 w-8 text-destructive" />
               </div>
-              <h3 className="text-sm font-medium mb-1">Failed to Load Comments</h3>
+              <h3 className="text-sm font-medium mb-1">{translate('Failed to Load Comments')}</h3>
               <p className="text-xs text-muted-foreground mb-3">
-                {error instanceof Error ? error.message : 'Unknown error'}
+                {error instanceof Error ? error.message : translate('Unknown error')}
               </p>
               <Button variant="outline" size="sm" onClick={() => refetch()}>
-                Try Again
+                {translate('Try Again')}
               </Button>
             </div>
           )}
@@ -927,8 +978,12 @@ export function PRCommentResolutionDialog({
                     onClick={comments.length > 0 ? handleSelectAll : undefined}
                   >
                     {allSelected
-                      ? 'Deselect all'
-                      : `Select all (${comments.length}${!showResolved && hasResolvedComments ? ` of ${allComments.length}` : ''})`}
+                      ? translate('Deselect all')
+                      : translate('Select all ({value1}{value2})', {
+                          value1: comments.length,
+                          value2:
+                            !showResolved && hasResolvedComments ? ` of ${allComments.length}` : '',
+                        })}
                   </Label>
                 </div>
 
@@ -946,21 +1001,25 @@ export function PRCommentResolutionDialog({
                     disabled={!hasResolvedComments}
                     title={
                       !hasResolvedComments
-                        ? 'No resolved comments'
+                        ? translate('No resolved comments')
                         : showResolved
-                          ? `Showing all comments — click to hide ${resolvedCount} resolved`
-                          : `Hiding ${resolvedCount} resolved — click to show all`
+                          ? translate('Showing all comments — click to hide {value1} resolved', {
+                              value1: resolvedCount,
+                            })
+                          : translate('Hiding {value1} resolved — click to show all', {
+                              value1: resolvedCount,
+                            })
                     }
                   >
                     {showResolved ? (
                       <>
                         <Eye className="h-3 w-3" />
-                        Hide resolved
+                        {translate('Hide resolved')}
                       </>
                     ) : (
                       <>
                         <EyeOff className="h-3 w-3" />
-                        Show resolved
+                        {translate('Show resolved')}
                       </>
                     )}
                     {hasResolvedComments && (
@@ -978,12 +1037,12 @@ export function PRCommentResolutionDialog({
                     onClick={handleSortToggle}
                     title={
                       sortOrder === 'newest'
-                        ? 'Showing newest first — click for oldest first'
-                        : 'Showing oldest first — click for newest first'
+                        ? translate('Showing newest first — click for oldest first')
+                        : translate('Showing oldest first — click for newest first')
                     }
                   >
                     <ArrowUpDown className="h-3 w-3" />
-                    {sortOrder === 'newest' ? 'Newest first' : 'Oldest first'}
+                    {sortOrder === 'newest' ? translate('Newest first') : translate('Oldest first')}
                   </Button>
 
                   {/* Mode Toggle */}
@@ -994,7 +1053,7 @@ export function PRCommentResolutionDialog({
                         addressMode === 'together' ? 'text-foreground' : 'text-muted-foreground'
                       )}
                     >
-                      Together
+                      {translate('Together')}
                     </Label>
                     <Switch
                       checked={addressMode === 'individually'}
@@ -1006,7 +1065,7 @@ export function PRCommentResolutionDialog({
                         addressMode === 'individually' ? 'text-foreground' : 'text-muted-foreground'
                       )}
                     >
-                      Individually
+                      {translate('Individually')}
                     </Label>
                   </div>
                 </div>
@@ -1018,10 +1077,12 @@ export function PRCommentResolutionDialog({
                   <div className="p-3 rounded-full bg-muted/50 mb-3">
                     <CheckCircle2 className="h-8 w-8 text-green-500" />
                   </div>
-                  <h3 className="text-sm font-medium mb-1">All Comments Resolved</h3>
+                  <h3 className="text-sm font-medium mb-1">{translate('All Comments Resolved')}</h3>
                   <p className="text-xs text-muted-foreground mb-3">
-                    All {resolvedCount} comment{resolvedCount !== 1 ? 's' : ''} on this pull request{' '}
-                    {resolvedCount !== 1 ? 'have' : 'has'} been resolved.
+                    {translate('All ')}
+                    {formatCount(resolvedCount, 'comment')} {translate(' on this pull request')}{' '}
+                    {resolvedCount !== 1 ? translate('have') : translate('has')}{' '}
+                    {translate(' been resolved.')}
                   </p>
                   <Button
                     variant="outline"
@@ -1030,7 +1091,7 @@ export function PRCommentResolutionDialog({
                     className="text-xs"
                   >
                     <Eye className="h-3 w-3 mr-1.5" />
-                    Show resolved comments
+                    {translate('Show resolved comments')}
                   </Button>
                 </div>
               )}
@@ -1038,10 +1099,12 @@ export function PRCommentResolutionDialog({
               {/* Selection Info */}
               {!noneSelected && comments.length > 0 && (
                 <div className="text-xs text-muted-foreground px-1">
-                  {selectedIds.size} comment{selectedIds.size > 1 ? 's' : ''} selected
+                  {formatCount(selectedIds.size, 'comment')} {translate(' selected')}
                   {addressMode === 'together'
-                    ? ' - will create 1 feature'
-                    : ` - will create ${selectedIds.size} feature${selectedIds.size > 1 ? 's' : ''}`}
+                    ? translate(' - will create 1 feature')
+                    : translate(' - will create {value1}', {
+                        value1: formatCount(selectedIds.size, 'feature'),
+                      })}
                 </div>
               )}
 
@@ -1080,9 +1143,9 @@ export function PRCommentResolutionDialog({
               <div className="p-3 rounded-full bg-muted/50 mb-3">
                 <CheckCircle2 className="h-8 w-8 text-green-500" />
               </div>
-              <h3 className="text-sm font-medium mb-1">No Open Comments</h3>
+              <h3 className="text-sm font-medium mb-1">{translate('No Open Comments')}</h3>
               <p className="text-xs text-muted-foreground">
-                This pull request has no comments to address.
+                {translate('This pull request has no comments to address.')}
               </p>
             </div>
           )}
@@ -1093,7 +1156,7 @@ export function PRCommentResolutionDialog({
           <div className="flex items-center justify-between gap-2 w-full flex-wrap">
             {/* Cancel button - left side */}
             <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={isCreating}>
-              Cancel
+              {translate('Cancel')}
             </Button>
 
             {/* Model selector + Create button - right side */}
@@ -1113,12 +1176,13 @@ export function PRCommentResolutionDialog({
                 {isCreating ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Creating...
+                    {translate('Creating...')}
                   </>
                 ) : (
                   <>
-                    Create Feature
-                    {addressMode === 'individually' && selectedIds.size > 1 ? 's' : ''}
+                    {addressMode === 'individually' && selectedIds.size > 1
+                      ? translate('Create Features')
+                      : translate('Create Feature')}
                     {!noneSelected && (
                       <span className="ml-1.5 px-1.5 py-0.5 text-[10px] bg-primary-foreground/20 rounded">
                         {addressMode === 'together' ? '1' : selectedIds.size}

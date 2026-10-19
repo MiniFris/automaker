@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
@@ -43,6 +44,7 @@ export function ChangePRNumberDialog({
   projectPath,
   onChanged,
 }: ChangePRNumberDialogProps) {
+  useUiLocale();
   const [prNumberInput, setPrNumberInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,12 +64,12 @@ export function ChangePRNumberDialog({
 
     const trimmed = prNumberInput.trim();
     if (!/^\d+$/.test(trimmed)) {
-      setError('Please enter a valid positive PR number');
+      setError(translate('Please enter a valid positive PR number'));
       return;
     }
     const prNumber = Number(trimmed);
     if (prNumber <= 0) {
-      setError('Please enter a valid positive PR number');
+      setError(translate('Please enter a valid positive PR number'));
       return;
     }
 
@@ -77,7 +79,7 @@ export function ChangePRNumberDialog({
     try {
       const api = getElectronAPI();
       if (!api?.worktree?.updatePRNumber) {
-        setError('Worktree API not available');
+        setError(translate('Worktree API not available'));
         return;
       }
 
@@ -89,7 +91,7 @@ export function ChangePRNumberDialog({
 
       if (result.success) {
         const prInfo = result.result?.prInfo;
-        toast.success('PR tracking updated', {
+        toast.success(translate('PR tracking updated'), {
           description: prInfo?.title
             ? `Now tracking PR #${prNumber}: ${prInfo.title}`
             : `Now tracking PR #${prNumber}`,
@@ -97,10 +99,10 @@ export function ChangePRNumberDialog({
         onOpenChange(false);
         onChanged();
       } else {
-        setError(result.error || 'Failed to update PR number');
+        setError(result.error || translate('Failed to update PR number'));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update PR number');
+      setError(err instanceof Error ? err.message : translate('Failed to update PR number'));
     } finally {
       setIsLoading(false);
     }
@@ -131,14 +133,15 @@ export function ChangePRNumberDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <GitPullRequest className="w-5 h-5" />
-            Change Tracked PR Number
+            {translate('Change Tracked PR Number')}
           </DialogTitle>
           <DialogDescription>
-            Update which pull request number is tracked for{' '}
+            {translate('Update which pull request number is tracked for')}{' '}
             <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>.
             {worktree.pr && (
               <span className="block mt-1 text-xs">
-                Currently tracking PR #{worktree.pr.number}
+                {translate('Currently tracking PR #')}
+                {worktree.pr.number}
               </span>
             )}
           </DialogDescription>
@@ -146,14 +149,14 @@ export function ChangePRNumberDialog({
 
         <div className="py-2 space-y-3">
           <div className="space-y-2">
-            <Label htmlFor="pr-number">Pull Request Number</Label>
+            <Label htmlFor="pr-number">{translate('Pull Request Number')}</Label>
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground text-sm">#</span>
               <Input
                 id="pr-number"
                 type="text"
                 inputMode="numeric"
-                placeholder="e.g. 42"
+                placeholder={translate('e.g. 42')}
                 value={prNumberInput}
                 onChange={(e) => {
                   setPrNumberInput(e.target.value);
@@ -165,8 +168,9 @@ export function ChangePRNumberDialog({
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Enter the GitHub PR number to associate with this worktree. The PR info will be
-              fetched from GitHub if available.
+              {translate(
+                'Enter the GitHub PR number to associate with this worktree. The PR info will be fetched from GitHub if available.'
+              )}
             </p>
           </div>
 
@@ -175,18 +179,18 @@ export function ChangePRNumberDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button onClick={handleSubmit} disabled={isLoading || !prNumberInput.trim()}>
             {isLoading ? (
               <>
                 <Spinner size="xs" className="mr-2" />
-                Updating...
+                {translate('Updating...')}
               </>
             ) : (
               <>
                 <GitPullRequest className="w-4 h-4 mr-2" />
-                Update PR
+                {translate('Update PR')}
               </>
             )}
           </Button>

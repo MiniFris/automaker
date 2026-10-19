@@ -1,3 +1,5 @@
+import { getFormattingLocale } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -40,9 +42,10 @@ export function EnhancementHistoryButton<T extends BaseHistoryEntry>({
   currentValue,
   onRestore,
   valueAccessor,
-  title = 'Version History',
+  title = translate('Version History'),
   restoreMessage = 'Restored from history',
 }: EnhancementHistoryButtonProps<T>) {
+  useUiLocale();
   const [showHistory, setShowHistory] = useState(false);
 
   // Memoize reversed history to avoid creating new array on every render
@@ -56,19 +59,19 @@ export function EnhancementHistoryButton<T extends BaseHistoryEntry>({
 
   const getSourceLabel = (entry: T): string => {
     if (entry.source === 'initial') {
-      return 'Original';
+      return translate('Original');
     }
     if (entry.source === 'enhance') {
       const mode = entry.enhancementMode ?? 'improve';
       const label = ENHANCEMENT_MODE_LABELS[mode as EnhancementMode] ?? mode;
-      return `Enhanced (${label})`;
+      return translate('Enhanced ({value1})', { value1: label });
     }
-    return 'Edited';
+    return translate('Edited');
   };
 
   const formatDate = (timestamp: string): string => {
     const date = new Date(timestamp);
-    return date.toLocaleDateString(undefined, {
+    return date.toLocaleDateString(getFormattingLocale(), {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
@@ -86,13 +89,16 @@ export function EnhancementHistoryButton<T extends BaseHistoryEntry>({
           className="h-7 gap-1.5 text-xs text-muted-foreground"
         >
           <History className="w-3.5 h-3.5" />
-          History ({history.length})
+          {translate('History (')}
+          {history.length})
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end">
         <div className="p-3 border-b">
           <h4 className="font-medium text-sm">{title}</h4>
-          <p className="text-xs text-muted-foreground mt-1">Click a version to restore it</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {translate('Click a version to restore it')}
+          </p>
         </div>
         <div className="max-h-64 overflow-y-auto p-2 space-y-1">
           {reversedHistory.map((entry, index) => {
@@ -123,7 +129,7 @@ export function EnhancementHistoryButton<T extends BaseHistoryEntry>({
                 </p>
                 {isCurrentVersion && (
                   <span className="text-xs text-primary font-medium mt-1 block">
-                    Current version
+                    {translate('Current version')}
                   </span>
                 )}
               </button>

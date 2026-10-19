@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 import type { TerminalPromptTheme } from '@automaker/types';
 
 export const PROMPT_THEME_CUSTOM_ID: TerminalPromptTheme = 'custom';
@@ -224,8 +225,8 @@ function buildPresetConfig(name: OmpThemeName): PromptThemeConfig {
 
 export const PROMPT_THEME_PRESETS: PromptThemePreset[] = OMP_THEME_NAMES.map((name) => ({
   id: toPromptThemeId(name),
-  label: `${formatLabel(name)} (OMP)`,
-  description: 'Oh My Posh theme preset',
+  label: translate('{value1} (OMP)', { value1: formatLabel(name) }),
+  description: translate('Oh My Posh theme preset'),
   config: buildPresetConfig(name),
 }));
 

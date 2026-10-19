@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 import { useEffect } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { toast } from 'sonner';
@@ -54,13 +55,13 @@ export function useSpecRegeneration({
         setNewProjectPath('');
 
         if (isCreationFlow) {
-          toast.success('App specification created', {
-            description: 'Your project is now set up and ready to go!',
+          toast.success(translate('App specification created'), {
+            description: translate('Your project is now set up and ready to go!'),
           });
         }
       } else if (event.type === 'spec_regeneration_error') {
         setSpecCreatingForProject(null);
-        toast.error('Failed to create specification', {
+        toast.error(translate('Failed to create specification'), {
           description: event.error,
         });
       }

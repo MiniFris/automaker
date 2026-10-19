@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 /**
  * Re-export PhaseModelSelector in compact mode for use in agent chat view.
  * This ensures we have a single source of truth for model selection logic.
@@ -19,6 +20,7 @@ interface AgentModelSelectorProps {
 }
 
 export function AgentModelSelector({ value, onChange, disabled }: AgentModelSelectorProps) {
+  useUiLocale();
   return (
     <PhaseModelSelector value={value} onChange={onChange} disabled={disabled} compact align="end" />
   );

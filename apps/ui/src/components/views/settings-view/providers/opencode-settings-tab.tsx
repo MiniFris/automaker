@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -13,6 +14,7 @@ import type { OpencodeModelId } from '@automaker/types';
 import type { OpencodeAuthStatus, OpenCodeProviderInfo } from '../cli-status/opencode-cli-status';
 
 export function OpencodeSettingsTab() {
+  useUiLocale();
   const queryClient = useQueryClient();
   const {
     enabledOpencodeModels,
@@ -86,7 +88,7 @@ export function OpencodeSettingsTab() {
       queryClient.invalidateQueries({ queryKey: queryKeys.models.opencode() }),
     ]);
     await refetchCliStatus();
-    toast.success('OpenCode CLI refreshed');
+    toast.success(translate('OpenCode CLI refreshed'));
   }, [queryClient, refetchCliStatus]);
 
   const handleDefaultModelChange = useCallback(
@@ -94,9 +96,9 @@ export function OpencodeSettingsTab() {
       setIsSaving(true);
       try {
         setOpencodeDefaultModel(model);
-        toast.success('Default model updated');
+        toast.success(translate('Default model updated'));
       } catch {
-        toast.error('Failed to update default model');
+        toast.error(translate('Failed to update default model'));
       } finally {
         setIsSaving(false);
       }
@@ -110,7 +112,7 @@ export function OpencodeSettingsTab() {
       try {
         toggleOpencodeModel(model, enabled);
       } catch {
-        toast.error('Failed to update models');
+        toast.error(translate('Failed to update models'));
       } finally {
         setIsSaving(false);
       }
@@ -124,7 +126,7 @@ export function OpencodeSettingsTab() {
       try {
         toggleDynamicModel(modelId, enabled);
       } catch {
-        toast.error('Failed to update dynamic model');
+        toast.error(translate('Failed to update dynamic model'));
       } finally {
         setIsSaving(false);
       }

@@ -1,4 +1,5 @@
 // @ts-nocheck - badge component prop variations with conditional rendering
+import { translate, useUiLocale } from '@/lib/i18n';
 import { memo, useEffect, useMemo, useState } from 'react';
 import { Feature, useAppStore } from '@/store/app-store';
 import { cn } from '@/lib/utils';
@@ -29,6 +30,7 @@ interface CardBadgesProps {
  * Note: Merge conflict badge is aligned with the top badge row for visual consistency
  */
 export const CardBadges = memo(function CardBadges({ feature }: CardBadgesProps) {
+  useUiLocale();
   const showMergeConflict = feature.status === 'merge_conflict';
   const mergeConflictOffsetClass = feature.priority ? 'left-9' : 'left-2';
   if (!feature.error && !showMergeConflict) {
@@ -53,7 +55,9 @@ export const CardBadges = memo(function CardBadges({ feature }: CardBadgesProps)
               </div>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="text-xs max-w-[250px]">
-              <p>Merge Conflict: automatic merge failed and requires manual resolution</p>
+              <p>
+                {translate('Merge Conflict: automatic merge failed and requires manual resolution')}
+              </p>
             </TooltipContent>
           </Tooltip>
         </div>
@@ -93,6 +97,7 @@ export const PriorityBadges = memo(function PriorityBadges({
   feature,
   projectPath,
 }: PriorityBadgesProps) {
+  useUiLocale();
   const { enableDependencyBlocking, features } = useAppStore(
     useShallow((state) => ({
       enableDependencyBlocking: state.enableDependencyBlocking,
@@ -195,10 +200,10 @@ export const PriorityBadges = memo(function PriorityBadges({
           <TooltipContent side="bottom" className="text-xs">
             <p>
               {feature.priority === 1
-                ? 'High Priority'
+                ? translate('High Priority')
                 : feature.priority === 2
-                  ? 'Medium Priority'
-                  : 'Low Priority'}
+                  ? translate('Medium Priority')
+                  : translate('Low Priority')}
             </p>
           </TooltipContent>
         </Tooltip>
@@ -219,7 +224,7 @@ export const PriorityBadges = memo(function PriorityBadges({
             </div>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="text-xs">
-            <p>Manual verification required</p>
+            <p>{translate('Manual verification required')}</p>
           </TooltipContent>
         </Tooltip>
       )}
@@ -240,8 +245,11 @@ export const PriorityBadges = memo(function PriorityBadges({
           </TooltipTrigger>
           <TooltipContent side="bottom" className="text-xs max-w-[250px]">
             <p className="font-medium mb-1">
-              Blocked by {blockingDependencies.length} incomplete{' '}
-              {blockingDependencies.length === 1 ? 'dependency' : 'dependencies'}
+              {translate('Blocked by ')}
+              {blockingDependencies.length} {translate(' incomplete')}{' '}
+              {blockingDependencies.length === 1
+                ? translate('dependency')
+                : translate('dependencies')}
             </p>
             <p className="text-muted-foreground">
               {blockingDependencies
@@ -270,7 +278,7 @@ export const PriorityBadges = memo(function PriorityBadges({
             </div>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="text-xs">
-            <p>Agent just finished working on this feature</p>
+            <p>{translate('Agent just finished working on this feature')}</p>
           </TooltipContent>
         </Tooltip>
       )}
@@ -290,7 +298,7 @@ export const PriorityBadges = memo(function PriorityBadges({
             </div>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="text-xs max-w-[250px]">
-            <p>Plan ready for review - click or tap to approve</p>
+            <p>{translate('Plan ready for review - click or tap to approve')}</p>
           </TooltipContent>
         </Tooltip>
       )}
@@ -314,13 +322,17 @@ export const PriorityBadges = memo(function PriorityBadges({
           <TooltipContent side="bottom" className="text-xs max-w-[250px]">
             <p className="font-medium mb-1">
               {allPipelinesExcluded
-                ? 'All pipelines skipped'
-                : `${excludedStepCount} of ${totalPipelineSteps} pipeline${totalPipelineSteps !== 1 ? 's' : ''} skipped`}
+                ? translate('All pipelines skipped')
+                : translate('{value1} of {value2} pipeline{value3} skipped', {
+                    value1: excludedStepCount,
+                    value2: totalPipelineSteps,
+                    value3: totalPipelineSteps !== 1 ? 's' : '',
+                  })}
             </p>
             <p className="text-muted-foreground">
               {allPipelinesExcluded
-                ? 'This feature will skip all custom pipeline steps'
-                : 'Some custom pipeline steps will be skipped for this feature'}
+                ? translate('This feature will skip all custom pipeline steps')
+                : translate('Some custom pipeline steps will be skipped for this feature')}
             </p>
           </TooltipContent>
         </Tooltip>

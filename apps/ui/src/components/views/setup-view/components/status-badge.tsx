@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import { CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 
@@ -14,6 +15,7 @@ interface StatusBadgeProps {
 }
 
 export function StatusBadge({ status, label }: StatusBadgeProps) {
+  useUiLocale();
   const getStatusConfig = () => {
     switch (status) {
       case 'installed':

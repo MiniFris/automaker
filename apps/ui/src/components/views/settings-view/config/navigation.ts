@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 import React from 'react';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -44,53 +45,209 @@ export interface NavigationGroup {
 // Global settings organized into groups
 export const GLOBAL_NAV_GROUPS: NavigationGroup[] = [
   {
-    label: 'Model & Prompts',
+    get label() {
+      return translate('Model & Prompts');
+    },
     items: [
-      { id: 'defaults', label: 'Feature Defaults', icon: FlaskConical },
-      { id: 'model-defaults', label: 'Model Defaults', icon: Workflow },
-      { id: 'worktrees', label: 'Worktrees', icon: GitBranch },
-      { id: 'execution-environment', label: 'Execution Environment', icon: SquareTerminal },
-      { id: 'prompts', label: 'Prompt Customization', icon: MessageSquareText },
-      { id: 'templates', label: 'Templates', icon: FileText },
-      { id: 'api-keys', label: 'API Keys', icon: Key },
+      {
+        id: 'defaults',
+        get label() {
+          return translate('Feature Defaults');
+        },
+        icon: FlaskConical,
+      },
+      {
+        id: 'model-defaults',
+        get label() {
+          return translate('Model Defaults');
+        },
+        icon: Workflow,
+      },
+      {
+        id: 'worktrees',
+        get label() {
+          return translate('Worktrees');
+        },
+        icon: GitBranch,
+      },
+      {
+        id: 'execution-environment',
+        get label() {
+          return translate('Execution Environment');
+        },
+        icon: SquareTerminal,
+      },
+      {
+        id: 'prompts',
+        get label() {
+          return translate('Prompt Customization');
+        },
+        icon: MessageSquareText,
+      },
+      {
+        id: 'templates',
+        get label() {
+          return translate('Templates');
+        },
+        icon: FileText,
+      },
+      {
+        id: 'api-keys',
+        get label() {
+          return translate('API Keys');
+        },
+        icon: Key,
+      },
       {
         id: 'providers',
-        label: 'AI Providers',
+        get label() {
+          return translate('AI Providers');
+        },
         icon: Bot,
         subItems: [
-          { id: 'direct-provider', label: 'Direct API (OpenAI-compatible)', icon: OpenAIIcon },
-          { id: 'claude-provider', label: 'Claude', icon: AnthropicIcon },
-          { id: 'cursor-provider', label: 'Cursor', icon: CursorIcon },
-          { id: 'codex-provider', label: 'Codex', icon: OpenAIIcon },
-          { id: 'opencode-provider', label: 'OpenCode', icon: OpenCodeIcon },
-          { id: 'gemini-provider', label: 'Gemini', icon: GeminiIcon },
-          { id: 'copilot-provider', label: 'Copilot', icon: CopilotIcon },
+          {
+            id: 'direct-provider',
+            get label() {
+              return translate('Direct API (OpenAI-compatible)');
+            },
+            icon: OpenAIIcon,
+          },
+          {
+            id: 'claude-provider',
+            get label() {
+              return translate('Claude');
+            },
+            icon: AnthropicIcon,
+          },
+          {
+            id: 'cursor-provider',
+            get label() {
+              return translate('Cursor');
+            },
+            icon: CursorIcon,
+          },
+          {
+            id: 'codex-provider',
+            get label() {
+              return translate('Codex');
+            },
+            icon: OpenAIIcon,
+          },
+          {
+            id: 'opencode-provider',
+            get label() {
+              return translate('OpenCode');
+            },
+            icon: OpenCodeIcon,
+          },
+          {
+            id: 'gemini-provider',
+            get label() {
+              return translate('Gemini');
+            },
+            icon: GeminiIcon,
+          },
+          {
+            id: 'copilot-provider',
+            get label() {
+              return translate('Copilot');
+            },
+            icon: CopilotIcon,
+          },
         ],
       },
-      { id: 'mcp-servers', label: 'MCP Servers', icon: Plug },
+      {
+        id: 'mcp-servers',
+        get label() {
+          return translate('MCP Servers');
+        },
+        icon: Plug,
+      },
     ],
   },
   {
-    label: 'Interface',
+    get label() {
+      return translate('Interface');
+    },
     items: [
-      { id: 'appearance', label: 'Appearance', icon: Palette },
-      { id: 'editor', label: 'File Editor', icon: FileCode2 },
-      { id: 'terminal', label: 'Terminal', icon: SquareTerminal },
-      { id: 'keyboard', label: 'Keyboard Shortcuts', icon: Settings2 },
-      { id: 'audio', label: 'Audio', icon: Volume2 },
-      { id: 'event-hooks', label: 'Event Hooks', icon: Webhook },
+      {
+        id: 'appearance',
+        get label() {
+          return translate('Appearance');
+        },
+        icon: Palette,
+      },
+      {
+        id: 'editor',
+        get label() {
+          return translate('File Editor');
+        },
+        icon: FileCode2,
+      },
+      {
+        id: 'terminal',
+        get label() {
+          return translate('Terminal');
+        },
+        icon: SquareTerminal,
+      },
+      {
+        id: 'keyboard',
+        get label() {
+          return translate('Keyboard Shortcuts');
+        },
+        icon: Settings2,
+      },
+      {
+        id: 'audio',
+        get label() {
+          return translate('Audio');
+        },
+        icon: Volume2,
+      },
+      {
+        id: 'event-hooks',
+        get label() {
+          return translate('Event Hooks');
+        },
+        icon: Webhook,
+      },
     ],
   },
   {
-    label: 'Account & Security',
+    get label() {
+      return translate('Account & Security');
+    },
     items: [
-      { id: 'account', label: 'Account', icon: User },
-      { id: 'security', label: 'Security', icon: Shield },
+      {
+        id: 'account',
+        get label() {
+          return translate('Account');
+        },
+        icon: User,
+      },
+      {
+        id: 'security',
+        get label() {
+          return translate('Security');
+        },
+        icon: Shield,
+      },
     ],
   },
   {
-    label: 'Advanced',
-    items: [{ id: 'developer', label: 'Developer', icon: Code2 }],
+    get label() {
+      return translate('Advanced');
+    },
+    items: [
+      {
+        id: 'developer',
+        get label() {
+          return translate('Developer');
+        },
+        icon: Code2,
+      },
+    ],
   },
 ];
 

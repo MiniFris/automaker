@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -28,6 +29,7 @@ export function CursorModelConfiguration({
   onDefaultModelChange,
   onModelToggle,
 }: CursorModelConfigurationProps) {
+  useUiLocale();
   // All available models from the model map
   const availableModels: CursorModelConfig[] = Object.values(CURSOR_MODEL_MAP);
 
@@ -46,17 +48,17 @@ export function CursorModelConfiguration({
             <Terminal className="w-5 h-5 text-brand-500" />
           </div>
           <h2 className="text-lg font-semibold text-foreground tracking-tight">
-            Model Configuration
+            {translate('Model Configuration')}
           </h2>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Configure which Cursor models are available in the feature modal
+          {translate('Configure which Cursor models are available in the feature modal')}
         </p>
       </div>
       <div className="p-6 space-y-6">
         {/* Default Model */}
         <div className="space-y-2">
-          <Label>Default Model</Label>
+          <Label>{translate('Default Model')}</Label>
           <Select
             value={cursorDefaultModel}
             onValueChange={(v) => onDefaultModelChange(v as CursorModelId)}
@@ -75,7 +77,7 @@ export function CursorModelConfiguration({
                       <span>{model.label}</span>
                       {model.hasThinking && (
                         <Badge variant="outline" className="text-xs">
-                          Thinking
+                          {translate('Thinking')}
                         </Badge>
                       )}
                     </div>
@@ -88,7 +90,7 @@ export function CursorModelConfiguration({
 
         {/* Enabled Models */}
         <div className="space-y-3">
-          <Label>Available Models</Label>
+          <Label>{translate('Available Models')}</Label>
           <div className="grid gap-3">
             {availableModels.map((model) => {
               const isEnabled = enabledCursorModels.includes(model.id);
@@ -111,11 +113,13 @@ export function CursorModelConfiguration({
                         <span className="text-sm font-medium">{model.label}</span>
                         {model.hasThinking && (
                           <Badge variant="outline" className="text-xs">
-                            Thinking
+                            {translate('Thinking')}
                           </Badge>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground">{model.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {translate(model.description)}
+                      </p>
                     </div>
                   </div>
                 </div>

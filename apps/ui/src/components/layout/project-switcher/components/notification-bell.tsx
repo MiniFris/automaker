@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * Notification Bell - Bell icon with unread count and popover
  */
@@ -18,6 +19,7 @@ interface NotificationBellProps {
 }
 
 export function NotificationBell({ projectPath }: NotificationBellProps) {
+  useUiLocale();
   const navigate = useNavigate();
   const {
     notifications,
@@ -118,7 +120,7 @@ export function NotificationBell({ projectPath }: NotificationBellProps) {
             'hover:bg-accent transition-colors',
             'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2'
           )}
-          title="Notifications"
+          title={translate('Notifications')}
         >
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
@@ -130,16 +132,18 @@ export function NotificationBell({ projectPath }: NotificationBellProps) {
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="start" side="right">
         <div className="flex items-center justify-between px-4 py-3 border-b">
-          <h4 className="font-medium text-sm">Notifications</h4>
+          <h4 className="font-medium text-sm">{translate('Notifications')}</h4>
           {unreadCount > 0 && (
-            <span className="text-xs text-muted-foreground">{unreadCount} unread</span>
+            <span className="text-xs text-muted-foreground">
+              {unreadCount} {translate(' unread')}
+            </span>
           )}
         </div>
 
         {recentNotifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 px-4">
             <Bell className="h-8 w-8 text-muted-foreground/50 mb-2" />
-            <p className="text-sm text-muted-foreground">No notifications</p>
+            <p className="text-sm text-muted-foreground">{translate('No notifications')}</p>
           </div>
         ) : (
           <div className="max-h-[300px] overflow-y-auto">
@@ -176,7 +180,7 @@ export function NotificationBell({ projectPath }: NotificationBellProps) {
                       e.stopPropagation();
                       handleDismiss(notification.id);
                     }}
-                    title="Dismiss"
+                    title={translate('Dismiss')}
                   >
                     <Trash2 className="h-3 w-3" />
                   </Button>
@@ -189,7 +193,7 @@ export function NotificationBell({ projectPath }: NotificationBellProps) {
         {notifications.length > 0 && (
           <div className="border-t px-4 py-2">
             <Button variant="ghost" size="sm" className="w-full text-xs" onClick={handleViewAll}>
-              View all notifications
+              {translate('View all notifications')}
             </Button>
           </div>
         )}

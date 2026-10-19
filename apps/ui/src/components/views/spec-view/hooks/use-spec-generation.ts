@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { useAppStore } from '@/store/app-store';
@@ -387,12 +388,12 @@ export function useSpecGeneration({ loadSpec }: UseSpecGenerationOptions) {
           const isFeatureGeneration = event.message?.includes('Feature generation');
           toast.success(
             isSyncComplete
-              ? 'Spec Sync Complete'
+              ? translate('Spec Sync Complete')
               : isFeatureGeneration
-                ? 'Feature Generation Complete'
+                ? translate('Feature Generation Complete')
                 : isRegeneration
-                  ? 'Spec Regeneration Complete'
-                  : 'Spec Creation Complete',
+                  ? translate('Spec Regeneration Complete')
+                  : translate('Spec Creation Complete'),
             {
               description: isSyncComplete
                 ? 'Your spec has been updated with the latest changes.'

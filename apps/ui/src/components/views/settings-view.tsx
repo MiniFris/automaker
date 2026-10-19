@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import { useState, useEffect } from 'react';
 import { useSearch } from '@tanstack/react-router';
 import { useAppStore } from '@/store/app-store';
@@ -40,6 +41,7 @@ import type { Theme } from './settings-view/shared/types';
 const LG_BREAKPOINT = 1024;
 
 export function SettingsView() {
+  useUiLocale();
   const {
     theme,
     setTheme,

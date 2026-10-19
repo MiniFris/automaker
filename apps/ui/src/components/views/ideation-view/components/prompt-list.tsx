@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * PromptList - List of prompts for a specific category
  */
@@ -19,6 +20,7 @@ interface PromptListProps {
 }
 
 export function PromptList({ category, onBack }: PromptListProps) {
+  useUiLocale();
   const currentProject = useAppStore((s) => s.currentProject);
   const generationJobs = useIdeationStore((s) => s.generationJobs);
   const setMode = useIdeationStore((s) => s.setMode);
@@ -53,7 +55,7 @@ export function PromptList({ category, onBack }: PromptListProps) {
 
   const handleSelectPrompt = async (prompt: IdeationPrompt) => {
     if (!currentProject?.path) {
-      toast.error('No project selected');
+      toast.error(translate('No project selected'));
       return;
     }
 
@@ -66,7 +68,7 @@ export function PromptList({ category, onBack }: PromptListProps) {
     setStartedPrompts((prev) => new Set(prev).add(prompt.id));
 
     // Show toast and navigate to dashboard
-    toast.info(`Generating ideas for "${prompt.title}"...`);
+    toast.info(translate('Generating ideas for "{value1}"...', { value1: prompt.title }));
     setMode('dashboard');
 
     // Start mutation - onSuccess/onError are handled at the hook level to ensure
@@ -91,19 +93,22 @@ export function PromptList({ category, onBack }: PromptListProps) {
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back</span>
+          <span>{translate('Back')}</span>
         </button>
 
         <div className="space-y-3">
           {isLoadingPrompts && (
             <div className="flex items-center justify-center py-8">
               <Spinner size="lg" />
-              <span className="ml-2 text-muted-foreground">Loading prompts...</span>
+              <span className="ml-2 text-muted-foreground">{translate('Loading prompts...')}</span>
             </div>
           )}
           {promptsError && (
             <div className="text-center py-8 text-destructive">
-              <p>Failed to load prompts: {promptsError}</p>
+              <p>
+                {translate('Failed to load prompts: ')}
+                {promptsError}
+              </p>
             </div>
           )}
           {!isLoadingPrompts &&
@@ -152,7 +157,7 @@ export function PromptList({ category, onBack }: PromptListProps) {
                           </h3>
                           {isStarted && !isGenerating && (
                             <span className="text-xs font-medium text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full">
-                              Generated
+                              {translate('Generated')}
                             </span>
                           )}
                         </div>
@@ -161,7 +166,7 @@ export function PromptList({ category, onBack }: PromptListProps) {
                         </p>
                         {(isLoading || isGenerating) && (
                           <p className="text-blue-500 text-sm font-medium animate-pulse pt-1">
-                            Generating ideas...
+                            {translate('Generating ideas...')}
                           </p>
                         )}
                       </div>

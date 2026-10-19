@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { Button } from '@/components/ui/button';
@@ -41,6 +42,7 @@ interface OpencodeCliStatus {
 }
 
 export function OpencodeSetupStep({ onNext, onBack, onSkip }: OpencodeSetupStepProps) {
+  useUiLocale();
   const { opencodeCliStatus, setOpencodeCliStatus } = useSetupStore();
   const [isChecking, setIsChecking] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -71,7 +73,7 @@ export function OpencodeSetupStep({ onNext, onBack, onSkip }: OpencodeSetupStepP
         setOpencodeCliStatus(status);
 
         if (result.auth?.authenticated) {
-          toast.success('OpenCode CLI is ready!');
+          toast.success(translate('OpenCode CLI is ready!'));
         }
       }
     } catch (error) {
@@ -93,7 +95,7 @@ export function OpencodeSetupStep({ onNext, onBack, onSkip }: OpencodeSetupStepP
 
   const copyCommand = (command: string) => {
     navigator.clipboard.writeText(command);
-    toast.success('Command copied to clipboard');
+    toast.success(translate('Command copied to clipboard'));
   };
 
   const handleLogin = async () => {
@@ -103,7 +105,7 @@ export function OpencodeSetupStep({ onNext, onBack, onSkip }: OpencodeSetupStepP
       // Copy login command to clipboard and show instructions
       const loginCommand = opencodeCliStatus?.loginCommand || 'opencode auth login';
       await navigator.clipboard.writeText(loginCommand);
-      toast.info('Login command copied! Paste in terminal to authenticate.');
+      toast.info(translate('Login command copied! Paste in terminal to authenticate.'));
 
       // Poll for auth status
       let attempts = 0;
@@ -132,7 +134,7 @@ export function OpencodeSetupStep({ onNext, onBack, onSkip }: OpencodeSetupStepP
               auth: result.auth,
             } as OpencodeCliStatus);
             setIsLoggingIn(false);
-            toast.success('Successfully logged in to OpenCode!');
+            toast.success(translate('Successfully logged in to OpenCode!'));
           }
         } catch {
           // Ignore polling errors
@@ -144,12 +146,12 @@ export function OpencodeSetupStep({ onNext, onBack, onSkip }: OpencodeSetupStepP
             pollIntervalRef.current = null;
           }
           setIsLoggingIn(false);
-          toast.error('Login timed out. Please try again.');
+          toast.error(translate('Login timed out. Please try again.'));
         }
       }, 2000);
     } catch (error) {
       logger.error('Login failed:', error);
-      toast.error('Failed to start login process');
+      toast.error(translate('Failed to start login process'));
       setIsLoggingIn(false);
     }
   };
@@ -158,15 +160,15 @@ export function OpencodeSetupStep({ onNext, onBack, onSkip }: OpencodeSetupStepP
 
   const getStatusBadge = () => {
     if (isChecking) {
-      return <StatusBadge status="checking" label="Checking..." />;
+      return <StatusBadge status="checking" label={translate('Checking...')} />;
     }
     if (opencodeCliStatus?.auth?.authenticated) {
-      return <StatusBadge status="authenticated" label="Ready" />;
+      return <StatusBadge status="authenticated" label={translate('Ready')} />;
     }
     if (opencodeCliStatus?.installed) {
-      return <StatusBadge status="unverified" label="Not Logged In" />;
+      return <StatusBadge status="unverified" label={translate('Not Logged In')} />;
     }
-    return <StatusBadge status="not_installed" label="Not Installed" />;
+    return <StatusBadge status="not_installed" label={translate('Not Installed')} />;
   };
 
   return (
@@ -175,8 +177,12 @@ export function OpencodeSetupStep({ onNext, onBack, onSkip }: OpencodeSetupStepP
         <div className="w-16 h-16 rounded-xl bg-green-500/10 flex items-center justify-center mx-auto mb-4">
           <Terminal className="w-8 h-8 text-green-500" />
         </div>
-        <h2 className="text-2xl font-bold text-foreground mb-2">OpenCode CLI Setup</h2>
-        <p className="text-muted-foreground">Optional - Use OpenCode as an AI provider</p>
+        <h2 className="text-2xl font-bold text-foreground mb-2">
+          {translate('OpenCode CLI Setup')}
+        </h2>
+        <p className="text-muted-foreground">
+          {translate('Optional - Use OpenCode as an AI provider')}
+        </p>
       </div>
 
       {/* Info Banner */}
@@ -185,10 +191,11 @@ export function OpencodeSetupStep({ onNext, onBack, onSkip }: OpencodeSetupStepP
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
             <div>
-              <p className="font-medium text-foreground">This step is optional</p>
+              <p className="font-medium text-foreground">{translate('This step is optional')}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Configure OpenCode CLI for access to free tier models and connected providers. You
-                can skip this and use other providers, or configure it later in Settings.
+                {translate(
+                  'Configure OpenCode CLI for access to free tier models and connected providers. You can skip this and use other providers, or configure it later in Settings.'
+                )}
               </p>
             </div>
           </div>
@@ -201,9 +208,9 @@ export function OpencodeSetupStep({ onNext, onBack, onSkip }: OpencodeSetupStepP
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <Terminal className="w-5 h-5" />
-              OpenCode CLI Status
+              {translate('OpenCode CLI Status')}
               <Badge variant="outline" className="ml-2">
-                Optional
+                {translate('Optional')}
               </Badge>
             </CardTitle>
             <div className="flex items-center gap-2">
@@ -216,9 +223,13 @@ export function OpencodeSetupStep({ onNext, onBack, onSkip }: OpencodeSetupStepP
           <CardDescription>
             {opencodeCliStatus?.installed
               ? opencodeCliStatus.auth?.authenticated
-                ? `Authenticated via ${opencodeCliStatus.auth.method === 'api_key' ? 'API Key' : 'Browser Login'}${opencodeCliStatus.version ? ` (v${opencodeCliStatus.version})` : ''}`
-                : 'Installed but not authenticated'
-              : 'Not installed on your system'}
+                ? translate('Authenticated via {value1}{value2}', {
+                    value1:
+                      opencodeCliStatus.auth.method === 'api_key' ? 'API Key' : 'Browser Login',
+                    value2: opencodeCliStatus.version ? ` (v${opencodeCliStatus.version})` : '',
+                  })
+                : translate('Installed but not authenticated')
+              : translate('Not installed on your system')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -227,11 +238,14 @@ export function OpencodeSetupStep({ onNext, onBack, onSkip }: OpencodeSetupStepP
             <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
               <div>
-                <p className="font-medium text-foreground">OpenCode CLI is ready!</p>
+                <p className="font-medium text-foreground">{translate('OpenCode CLI is ready!')}</p>
                 <p className="text-sm text-muted-foreground">
-                  You can use OpenCode models for AI tasks.
+                  {translate('You can use OpenCode models for AI tasks.')}
                   {opencodeCliStatus?.version && (
-                    <span className="ml-1">Version: {opencodeCliStatus.version}</span>
+                    <span className="ml-1">
+                      {translate('Version: ')}
+                      {opencodeCliStatus.version}
+                    </span>
                   )}
                 </p>
               </div>
@@ -244,15 +258,21 @@ export function OpencodeSetupStep({ onNext, onBack, onSkip }: OpencodeSetupStepP
               <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30 border border-border">
                 <XCircle className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <p className="font-medium text-foreground">OpenCode CLI not found</p>
+                  <p className="font-medium text-foreground">
+                    {translate('OpenCode CLI not found')}
+                  </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Install the OpenCode CLI to use free tier models and connected providers.
+                    {translate(
+                      'Install the OpenCode CLI to use free tier models and connected providers.'
+                    )}
                   </p>
                 </div>
               </div>
 
               <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
-                <p className="font-medium text-foreground text-sm">Install OpenCode CLI:</p>
+                <p className="font-medium text-foreground text-sm">
+                  {translate('Install OpenCode CLI:')}
+                </p>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground overflow-x-auto">
                     {opencodeCliStatus?.installCommand || 'npm install -g opencode'}
@@ -273,7 +293,7 @@ export function OpencodeSetupStep({ onNext, onBack, onSkip }: OpencodeSetupStepP
                   rel="noopener noreferrer"
                   className="inline-flex items-center text-sm text-brand-500 hover:underline mt-2"
                 >
-                  View installation docs
+                  {translate('View installation docs')}
                   <ExternalLink className="w-3 h-3 ml-1" />
                 </a>
               </div>
@@ -288,17 +308,20 @@ export function OpencodeSetupStep({ onNext, onBack, onSkip }: OpencodeSetupStepP
                 <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
                   <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                   <div className="flex-1">
-                    <p className="font-medium text-foreground">OpenCode CLI not authenticated</p>
+                    <p className="font-medium text-foreground">
+                      {translate('OpenCode CLI not authenticated')}
+                    </p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Run the login command to authenticate with OpenCode.
+                      {translate('Run the login command to authenticate with OpenCode.')}
                     </p>
                   </div>
                 </div>
 
                 <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
                   <p className="text-sm text-muted-foreground">
-                    Run the login command in your terminal, then complete authentication in your
-                    browser:
+                    {translate(
+                      'Run the login command in your terminal, then complete authentication in your browser:'
+                    )}
                   </p>
                   <div className="flex items-center gap-2">
                     <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
@@ -322,10 +345,10 @@ export function OpencodeSetupStep({ onNext, onBack, onSkip }: OpencodeSetupStepP
                     {isLoggingIn ? (
                       <>
                         <Spinner size="sm" variant="foreground" className="mr-2" />
-                        Waiting for login...
+                        {translate('Waiting for login...')}
                       </>
                     ) : (
-                      'Copy Command & Wait for Login'
+                      translate('Copy Command & Wait for Login')
                     )}
                   </Button>
                 </div>
@@ -337,7 +360,9 @@ export function OpencodeSetupStep({ onNext, onBack, onSkip }: OpencodeSetupStepP
             <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
               <Spinner size="md" />
               <div>
-                <p className="font-medium text-foreground">Checking OpenCode CLI status...</p>
+                <p className="font-medium text-foreground">
+                  {translate('Checking OpenCode CLI status...')}
+                </p>
               </div>
             </div>
           )}
@@ -348,18 +373,18 @@ export function OpencodeSetupStep({ onNext, onBack, onSkip }: OpencodeSetupStepP
       <div className="flex justify-between pt-4">
         <Button variant="ghost" onClick={onBack} className="text-muted-foreground">
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
+          {translate('Back')}
         </Button>
         <div className="flex gap-2">
           <Button variant="ghost" onClick={onSkip} className="text-muted-foreground">
-            {isReady ? 'Skip' : 'Skip for now'}
+            {isReady ? translate('Skip') : translate('Skip for now')}
           </Button>
           <Button
             onClick={onNext}
             className="bg-brand-500 hover:bg-brand-600 text-white"
             data-testid="opencode-next-button"
           >
-            {isReady ? 'Continue' : 'Continue without OpenCode'}
+            {isReady ? translate('Continue') : translate('Continue without OpenCode')}
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>
@@ -367,7 +392,7 @@ export function OpencodeSetupStep({ onNext, onBack, onSkip }: OpencodeSetupStepP
 
       {/* Info note */}
       <p className="text-xs text-muted-foreground text-center">
-        You can always configure OpenCode later in Settings
+        {translate('You can always configure OpenCode later in Settings')}
       </p>
     </div>
   );

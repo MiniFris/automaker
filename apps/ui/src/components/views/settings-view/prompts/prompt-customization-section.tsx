@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -26,6 +27,7 @@ export function PromptCustomizationSection({
   promptCustomization = {},
   onPromptCustomizationChange,
 }: PromptCustomizationSectionProps) {
+  useUiLocale();
   const [activeTab, setActiveTab] = useState('auto-mode');
 
   const updatePrompt = (
@@ -73,16 +75,16 @@ export function PromptCustomizationSection({
               <MessageSquareText className="w-5 h-5 text-brand-500" />
             </div>
             <h2 className="text-lg font-semibold text-foreground tracking-tight">
-              Prompt Customization
+              {translate('Prompt Customization')}
             </h2>
           </div>
           <Button variant="outline" size="sm" onClick={resetAllToDefaults} className="gap-2">
             <RotateCcw className="w-4 h-4" />
-            Reset All to Defaults
+            {translate('Reset All to Defaults')}
           </Button>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Customize AI prompts for Auto Mode, Agent Runner, and other features.
+          {translate('Customize AI prompts for Auto Mode, Agent Runner, and other features.')}
         </p>
       </div>
 
@@ -91,11 +93,13 @@ export function PromptCustomizationSection({
         <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
           <Info className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
           <div className="space-y-1">
-            <p className="text-sm text-foreground font-medium">How to Customize Prompts</p>
+            <p className="text-sm text-foreground font-medium">
+              {translate('How to Customize Prompts')}
+            </p>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">
-              Toggle the switch to enable custom mode and edit the prompt. When disabled, the
-              default built-in prompt is used. You can use the default as a starting point by
-              enabling the toggle.
+              {translate(
+                'Toggle the switch to enable custom mode and edit the prompt. When disabled, the default built-in prompt is used. You can use the default as a starting point by enabling the toggle.'
+              )}
             </p>
           </div>
         </div>
@@ -125,7 +129,7 @@ export function PromptCustomizationSection({
                   className="gap-2"
                 >
                   <RotateCcw className="w-3 h-3" />
-                  Reset Section
+                  {translate('Reset Section')}
                 </Button>
               </div>
 

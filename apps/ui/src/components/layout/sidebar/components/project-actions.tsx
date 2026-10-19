@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Plus, FolderOpen, Recycle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatShortcut } from '@/store/app-store';
@@ -20,6 +21,7 @@ export function ProjectActions({
   trashedProjects,
   shortcuts,
 }: ProjectActionsProps) {
+  useUiLocale();
   return (
     <div className="flex items-center gap-2.5 titlebar-no-drag px-3 mt-5">
       <button
@@ -36,11 +38,11 @@ export function ProjectActions({
           'transition-all duration-200 ease-out',
           'hover:scale-[1.02] active:scale-[0.97]'
         )}
-        title="New Project"
+        title={translate('New Project')}
         data-testid="new-project-button"
       >
         <Plus className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:rotate-90 group-hover:text-brand-500" />
-        <span className="ml-2 text-sm font-medium block whitespace-nowrap">New</span>
+        <span className="ml-2 text-sm font-medium block whitespace-nowrap">{translate('New')}</span>
       </button>
       <button
         onClick={handleOpenFolder}
@@ -55,7 +57,7 @@ export function ProjectActions({
           'transition-all duration-200 ease-out',
           'hover:scale-[1.02] active:scale-[0.97]'
         )}
-        title={`Open Folder (${shortcuts.openProject})`}
+        title={translate('Open Folder ({value1})', { value1: shortcuts.openProject })}
         data-testid="open-project-button"
       >
         <FolderOpen className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:scale-110" />
@@ -76,7 +78,7 @@ export function ProjectActions({
           'transition-all duration-200 ease-out',
           'hover:scale-[1.02] active:scale-[0.97]'
         )}
-        title="Recycle Bin"
+        title={translate('Recycle Bin')}
         data-testid="trash-button"
       >
         <Recycle className="size-4 shrink-0 transition-transform duration-200 group-hover:rotate-12" />

@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Folder, Check, GripVertical } from 'lucide-react';
@@ -10,6 +11,7 @@ export function SortableProjectItem({
   isHighlighted,
   onSelect,
 }: SortableProjectItemProps) {
+  useUiLocale();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: project.id,
   });

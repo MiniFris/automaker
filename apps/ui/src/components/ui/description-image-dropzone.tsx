@@ -1,3 +1,5 @@
+import { formatCount } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import React, { useState, useRef, useCallback } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { cn } from '@/lib/utils';
@@ -57,7 +59,7 @@ export function DescriptionImageDropZone({
   onImagesChange,
   textFiles = [],
   onTextFilesChange,
-  placeholder = 'Describe the feature...',
+  placeholder = translate('Describe the feature...'),
   className,
   disabled = false,
   maxFiles = 5,
@@ -67,6 +69,7 @@ export function DescriptionImageDropZone({
   autoFocus = false,
   error = false,
 }: DescriptionImageDropZoneProps) {
+  useUiLocale();
   const [isDragOver, setIsDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   // Use parent-provided preview map if available, otherwise use local state
@@ -397,7 +400,7 @@ export function DescriptionImageDropZone({
           >
             <div className="flex flex-col items-center gap-2 text-blue-400">
               <ImageIcon className="w-8 h-8" />
-              <span className="text-sm font-medium">Drop files here</span>
+              <span className="text-sm font-medium">{translate('Drop files here')}</span>
             </div>
           </div>
         )}
@@ -418,23 +421,23 @@ export function DescriptionImageDropZone({
 
       {/* Hint text */}
       <p className="text-xs text-muted-foreground mt-1">
-        Paste, drag and drop files, or{' '}
+        {translate('Paste, drag and drop files, or')}{' '}
         <button
           type="button"
           onClick={handleBrowseClick}
           className="text-primary hover:text-primary/80 underline"
           disabled={disabled || isProcessing}
         >
-          browse
+          {translate('browse')}
         </button>{' '}
-        to attach context (images, .txt, .md)
+        {translate('to attach context (images, .txt, .md)')}
       </p>
 
       {/* Processing indicator */}
       {isProcessing && (
         <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
           <Spinner size="sm" />
-          <span>Processing files...</span>
+          <span>{translate('Processing files...')}</span>
         </div>
       )}
 
@@ -443,8 +446,7 @@ export function DescriptionImageDropZone({
         <div className="mt-3 space-y-2" data-testid="description-file-previews">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-foreground">
-              {images.length + textFiles.length} file
-              {images.length + textFiles.length > 1 ? 's' : ''} attached
+              {formatCount(images.length + textFiles.length, 'file')} {translate(' attached')}
             </p>
             <button
               type="button"
@@ -458,7 +460,7 @@ export function DescriptionImageDropZone({
               className="text-xs text-muted-foreground hover:text-foreground"
               disabled={disabled}
             >
-              Clear all
+              {translate('Clear all')}
             </button>
           </div>
           <div className="flex flex-wrap gap-2">

@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * Claude Usage Popover
  *
@@ -14,6 +15,7 @@ import { useSetupStore } from '@/store/setup-store';
 import { useClaudeUsage } from '@/hooks/queries';
 
 export function ClaudeUsagePopover() {
+  useUiLocale();
   const claudeAuthStatus = useSetupStore((state) => state.claudeAuthStatus);
   const [open, setOpen] = useState(false);
 
@@ -69,6 +71,7 @@ export function ClaudeUsagePopover() {
     isPrimary?: boolean;
     stale?: boolean;
   }) => {
+    useUiLocale();
     const isValidPercentage =
       typeof percentage === 'number' && !isNaN(percentage) && isFinite(percentage);
     const safePercentage = isValidPercentage ? percentage : 0;
@@ -103,7 +106,7 @@ export function ClaudeUsagePopover() {
               </span>
             </div>
           ) : (
-            <span className="text-xs text-muted-foreground">N/A</span>
+            <span className="text-xs text-muted-foreground">{translate('N/A')}</span>
           )}
         </div>
         <ProgressBar
@@ -135,7 +138,7 @@ export function ClaudeUsagePopover() {
 
   const trigger = (
     <Button variant="ghost" size="sm" className="h-9 gap-3 bg-secondary border border-border px-3">
-      <span className="text-sm font-medium">Usage</span>
+      <span className="text-sm font-medium">{translate('Usage')}</span>
       {claudeUsage && (
         <div
           className={cn(
@@ -163,7 +166,7 @@ export function ClaudeUsagePopover() {
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-secondary/10">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold">Claude Usage</span>
+            <span className="text-sm font-semibold">{translate('Claude Usage')}</span>
           </div>
           {error && (
             <Button
@@ -184,10 +187,10 @@ export function ClaudeUsagePopover() {
               <AlertTriangle className="w-8 h-8 text-yellow-500/80" />
               <div className="space-y-1 flex flex-col items-center">
                 <p className="text-sm font-medium">
-                  {error instanceof Error ? error.message : 'Failed to fetch usage'}
+                  {error instanceof Error ? error.message : translate('Failed to fetch usage')}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Make sure Claude CLI is installed and authenticated via{' '}
+                  {translate('Make sure Claude CLI is installed and authenticated via')}{' '}
                   <code className="font-mono bg-muted px-1 rounded">claude login</code>
                 </p>
               </div>
@@ -195,14 +198,14 @@ export function ClaudeUsagePopover() {
           ) : isLoading || !claudeUsage ? (
             <div className="flex flex-col items-center justify-center py-8 space-y-2">
               <Spinner size="lg" />
-              <p className="text-xs text-muted-foreground">Loading usage data...</p>
+              <p className="text-xs text-muted-foreground">{translate('Loading usage data...')}</p>
             </div>
           ) : (
             <>
               {/* Primary Card */}
               <UsageCard
-                title="Session Usage"
-                subtitle="5-hour rolling window"
+                title={translate('Session Usage')}
+                subtitle={translate('5-hour rolling window')}
                 percentage={claudeUsage.sessionPercentage}
                 resetText={claudeUsage.sessionResetText}
                 isPrimary={true}
@@ -212,15 +215,15 @@ export function ClaudeUsagePopover() {
               {/* Secondary Cards Grid */}
               <div className="grid grid-cols-2 gap-3">
                 <UsageCard
-                  title="Weekly"
-                  subtitle="All models"
+                  title={translate('Weekly')}
+                  subtitle={translate('All models')}
                   percentage={claudeUsage.weeklyPercentage}
                   resetText={claudeUsage.weeklyResetText}
                   stale={isStale}
                 />
                 <UsageCard
                   title="Sonnet"
-                  subtitle="Weekly"
+                  subtitle={translate('Weekly')}
                   percentage={claudeUsage.sonnetWeeklyPercentage}
                   resetText={claudeUsage.sonnetResetText}
                   stale={isStale}
@@ -230,7 +233,7 @@ export function ClaudeUsagePopover() {
               {/* Extra Usage / Cost */}
               {claudeUsage.costLimit && claudeUsage.costLimit > 0 && (
                 <UsageCard
-                  title="Extra Usage"
+                  title={translate('Extra Usage')}
                   subtitle={`${claudeUsage.costUsed ?? 0} / ${claudeUsage.costLimit} ${claudeUsage.costCurrency ?? ''}`}
                   percentage={
                     claudeUsage.costLimit > 0
@@ -252,10 +255,13 @@ export function ClaudeUsagePopover() {
             rel="noreferrer"
             className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
           >
-            Claude Status <ExternalLink className="w-2.5 h-2.5" />
+            {translate('Claude Status ')}
+            <ExternalLink className="w-2.5 h-2.5" />
           </a>
 
-          <span className="text-[10px] text-muted-foreground">Updates every minute</span>
+          <span className="text-[10px] text-muted-foreground">
+            {translate('Updates every minute')}
+          </span>
         </div>
       </PopoverContent>
     </Popover>

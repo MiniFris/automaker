@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useCallback, type KeyboardEvent } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -10,24 +11,94 @@ import type { Project } from '@/lib/electron';
 
 /** Preset dev server commands for quick selection */
 const DEV_SERVER_PRESETS = [
-  { label: 'npm run dev', command: 'npm run dev' },
-  { label: 'yarn dev', command: 'yarn dev' },
-  { label: 'pnpm dev', command: 'pnpm dev' },
-  { label: 'bun dev', command: 'bun dev' },
-  { label: 'npm start', command: 'npm start' },
-  { label: 'cargo watch', command: 'cargo watch -x run' },
-  { label: 'go run', command: 'go run .' },
+  {
+    get label() {
+      return translate('npm run dev');
+    },
+    command: 'npm run dev',
+  },
+  {
+    get label() {
+      return translate('yarn dev');
+    },
+    command: 'yarn dev',
+  },
+  {
+    get label() {
+      return translate('pnpm dev');
+    },
+    command: 'pnpm dev',
+  },
+  {
+    get label() {
+      return translate('bun dev');
+    },
+    command: 'bun dev',
+  },
+  {
+    get label() {
+      return translate('npm start');
+    },
+    command: 'npm start',
+  },
+  {
+    get label() {
+      return translate('cargo watch');
+    },
+    command: 'cargo watch -x run',
+  },
+  {
+    get label() {
+      return translate('go run');
+    },
+    command: 'go run .',
+  },
 ] as const;
 
 /** Preset test commands for quick selection */
 const TEST_PRESETS = [
-  { label: 'npm test', command: 'npm test' },
-  { label: 'yarn test', command: 'yarn test' },
-  { label: 'pnpm test', command: 'pnpm test' },
-  { label: 'bun test', command: 'bun test' },
-  { label: 'pytest', command: 'pytest' },
-  { label: 'cargo test', command: 'cargo test' },
-  { label: 'go test', command: 'go test ./...' },
+  {
+    get label() {
+      return translate('npm test');
+    },
+    command: 'npm test',
+  },
+  {
+    get label() {
+      return translate('yarn test');
+    },
+    command: 'yarn test',
+  },
+  {
+    get label() {
+      return translate('pnpm test');
+    },
+    command: 'pnpm test',
+  },
+  {
+    get label() {
+      return translate('bun test');
+    },
+    command: 'bun test',
+  },
+  {
+    get label() {
+      return translate('pytest');
+    },
+    command: 'pytest',
+  },
+  {
+    get label() {
+      return translate('cargo test');
+    },
+    command: 'cargo test',
+  },
+  {
+    get label() {
+      return translate('go test');
+    },
+    command: 'go test ./...',
+  },
 ] as const;
 
 interface CommandsSectionProps {
@@ -35,6 +106,7 @@ interface CommandsSectionProps {
 }
 
 export function CommandsSection({ project }: CommandsSectionProps) {
+  useUiLocale();
   // Fetch project settings using TanStack Query
   const { data: projectSettings, isLoading, isError } = useProjectSettings(project.path);
 
@@ -143,10 +215,12 @@ export function CommandsSection({ project }: CommandsSectionProps) {
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500/20 to-brand-600/10 flex items-center justify-center border border-brand-500/20">
             <Terminal className="w-5 h-5 text-brand-500" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground tracking-tight">Project Commands</h2>
+          <h2 className="text-lg font-semibold text-foreground tracking-tight">
+            {translate('Project Commands')}
+          </h2>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Configure custom commands for development and testing.
+          {translate('Configure custom commands for development and testing.')}
         </p>
       </div>
 
@@ -157,7 +231,7 @@ export function CommandsSection({ project }: CommandsSectionProps) {
           </div>
         ) : isError ? (
           <div className="flex items-center justify-center py-8 text-sm text-destructive">
-            Failed to load project settings. Please try again.
+            {translate('Failed to load project settings. Please try again.')}
           </div>
         ) : (
           <>
@@ -165,9 +239,11 @@ export function CommandsSection({ project }: CommandsSectionProps) {
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Play className="w-4 h-4 text-brand-500" />
-                <h3 className="text-base font-medium text-foreground">Dev Server</h3>
+                <h3 className="text-base font-medium text-foreground">{translate('Dev Server')}</h3>
                 {hasDevChanges && (
-                  <span className="text-xs text-amber-500 font-medium">(unsaved)</span>
+                  <span className="text-xs text-amber-500 font-medium">
+                    {translate('(unsaved)')}
+                  </span>
                 )}
               </div>
 
@@ -178,7 +254,7 @@ export function CommandsSection({ project }: CommandsSectionProps) {
                     value={devCommand}
                     onChange={(e) => setDevCommand(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="e.g., npm run dev, yarn dev, cargo watch"
+                    placeholder={translate('e.g., npm run dev, yarn dev, cargo watch')}
                     className="font-mono text-sm pr-8"
                     data-testid="dev-command-input"
                   />
@@ -188,14 +264,14 @@ export function CommandsSection({ project }: CommandsSectionProps) {
                       size="sm"
                       onClick={handleClearDev}
                       className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
-                      aria-label="Clear dev command"
+                      aria-label={translate('Clear dev command')}
                     >
                       <X className="w-3.5 h-3.5" />
                     </Button>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground/80">
-                  Leave empty to auto-detect based on your package manager.
+                  {translate('Leave empty to auto-detect based on your package manager.')}
                 </p>
 
                 {/* Dev Presets */}
@@ -222,9 +298,13 @@ export function CommandsSection({ project }: CommandsSectionProps) {
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <FlaskConical className="w-4 h-4 text-brand-500" />
-                <h3 className="text-base font-medium text-foreground">Test Runner</h3>
+                <h3 className="text-base font-medium text-foreground">
+                  {translate('Test Runner')}
+                </h3>
                 {hasTestChanges && (
-                  <span className="text-xs text-amber-500 font-medium">(unsaved)</span>
+                  <span className="text-xs text-amber-500 font-medium">
+                    {translate('(unsaved)')}
+                  </span>
                 )}
               </div>
 
@@ -235,7 +315,7 @@ export function CommandsSection({ project }: CommandsSectionProps) {
                     value={testCommand}
                     onChange={(e) => setTestCommand(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="e.g., npm test, pytest, cargo test"
+                    placeholder={translate('e.g., npm test, pytest, cargo test')}
                     className="font-mono text-sm pr-8"
                     data-testid="test-command-input"
                   />
@@ -245,14 +325,14 @@ export function CommandsSection({ project }: CommandsSectionProps) {
                       size="sm"
                       onClick={handleClearTest}
                       className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
-                      aria-label="Clear test command"
+                      aria-label={translate('Clear test command')}
                     >
                       <X className="w-3.5 h-3.5" />
                     </Button>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground/80">
-                  Leave empty to auto-detect based on your project structure.
+                  {translate('Leave empty to auto-detect based on your project structure.')}
                 </p>
 
                 {/* Test Presets */}
@@ -276,11 +356,11 @@ export function CommandsSection({ project }: CommandsSectionProps) {
             <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/20 border border-border/30">
               <Info className="w-4 h-4 text-brand-500 mt-0.5 shrink-0" />
               <div className="text-xs text-muted-foreground">
-                <p className="font-medium text-foreground mb-1">Auto-detection</p>
+                <p className="font-medium text-foreground mb-1">{translate('Auto-detection')}</p>
                 <p>
-                  When no custom command is set, the system automatically detects your package
-                  manager and test framework based on project files (package.json, Cargo.toml,
-                  go.mod, etc.).
+                  {translate(
+                    'When no custom command is set, the system automatically detects your package manager and test framework based on project files (package.json, Cargo.toml, go.mod, etc.).'
+                  )}
                 </p>
               </div>
             </div>
@@ -295,7 +375,7 @@ export function CommandsSection({ project }: CommandsSectionProps) {
                 className="gap-1.5"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                Reset
+                {translate('Reset')}
               </Button>
               <Button
                 size="sm"
@@ -304,7 +384,7 @@ export function CommandsSection({ project }: CommandsSectionProps) {
                 className="gap-1.5"
               >
                 {isSaving ? <Spinner size="xs" /> : <Save className="w-3.5 h-3.5" />}
-                Save
+                {translate('Save')}
               </Button>
             </div>
           </>

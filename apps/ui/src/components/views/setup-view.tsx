@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { createLogger } from '@automaker/utils/logger';
 import { useSetupStore } from '@/store/setup-store';
 import { StepIndicator } from './setup-view/components';
@@ -9,11 +10,13 @@ import {
   GitHubSetupStep,
 } from './setup-view/steps';
 import { useNavigate } from '@tanstack/react-router';
+import { LanguageSelector } from '@/components/shared/language-selector';
 
 const logger = createLogger('SetupView');
 
 // Main Setup View
 export function SetupView() {
+  useUiLocale();
   const { currentStep, setCurrentStep, completeSetup } = useSetupStore();
   const navigate = useNavigate();
 
@@ -92,12 +95,17 @@ export function SetupView() {
 
   return (
     <div className="h-full flex flex-col content-bg" data-testid="setup-view">
+      <div className="flex justify-end px-8 py-2">
+        <LanguageSelector compact />
+      </div>
       {/* Header */}
       <div className="shrink-0 border-b border-border bg-glass backdrop-blur-md titlebar-drag-region">
         <div className="px-8 py-4">
           <div className="flex items-center gap-3 titlebar-no-drag">
-            <img src="/logo.png" alt="Automaker" className="w-8 h-8" />
-            <span className="text-lg font-semibold text-foreground">Automaker Setup</span>
+            <img src="/logo.png" alt={translate('Automaker')} className="w-8 h-8" />
+            <span className="text-lg font-semibold text-foreground">
+              {translate('Automaker Setup')}
+            </span>
           </div>
         </div>
       </div>

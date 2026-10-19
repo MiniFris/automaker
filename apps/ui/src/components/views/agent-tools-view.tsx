@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useCallback } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { useAppStore } from '@/store/app-store';
@@ -20,6 +21,7 @@ interface ToolResult {
 }
 
 export function AgentToolsView() {
+  useUiLocale();
   const { currentProject } = useAppStore();
   const api = getElectronAPI();
 
@@ -168,8 +170,10 @@ export function AgentToolsView() {
       <div className="flex-1 flex items-center justify-center" data-testid="agent-tools-no-project">
         <div className="text-center">
           <Wrench className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">No Project Selected</h2>
-          <p className="text-muted-foreground">Open or create a project to test agent tools.</p>
+          <h2 className="text-xl font-semibold mb-2">{translate('No Project Selected')}</h2>
+          <p className="text-muted-foreground">
+            {translate('Open or create a project to test agent tools.')}
+          </p>
         </div>
       </div>
     );
@@ -181,9 +185,10 @@ export function AgentToolsView() {
       <div className="flex items-center gap-3 p-4 border-b border-border bg-glass backdrop-blur-md">
         <Wrench className="w-5 h-5 text-primary" />
         <div>
-          <h1 className="text-xl font-bold">Agent Tools</h1>
+          <h1 className="text-xl font-bold">{translate('Agent Tools')}</h1>
           <p className="text-sm text-muted-foreground">
-            Test file system and terminal tools for {currentProject.name}
+            {translate('Test file system and terminal tools for ')}
+            {currentProject.name}
           </p>
         </div>
       </div>
@@ -196,13 +201,15 @@ export function AgentToolsView() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <File className="w-5 h-5 text-blue-500" />
-                <CardTitle className="text-lg">Read File</CardTitle>
+                <CardTitle className="text-lg">{translate('Read File')}</CardTitle>
               </div>
-              <CardDescription>Agent requests to read a file from the filesystem</CardDescription>
+              <CardDescription>
+                {translate('Agent requests to read a file from the filesystem')}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="read-file-path">File Path</Label>
+                <Label htmlFor="read-file-path">{translate('File Path')}</Label>
                 <Input
                   id="read-file-path"
                   placeholder="/path/to/file.txt"
@@ -220,12 +227,12 @@ export function AgentToolsView() {
                 {isReadingFile ? (
                   <>
                     <Spinner size="sm" className="mr-2" />
-                    Reading...
+                    {translate('Reading...')}
                   </>
                 ) : (
                   <>
                     <Play className="w-4 h-4 mr-2" />
-                    Execute Read
+                    {translate('Execute Read')}
                   </>
                 )}
               </Button>
@@ -248,7 +255,7 @@ export function AgentToolsView() {
                       <XCircle className="w-4 h-4 text-red-500" />
                     )}
                     <span className="text-sm font-medium">
-                      {readFileResult.success ? 'Success' : 'Failed'}
+                      {readFileResult.success ? translate('Success') : translate('Failed')}
                     </span>
                   </div>
                   <pre className="text-xs overflow-auto max-h-40 whitespace-pre-wrap">
@@ -264,13 +271,15 @@ export function AgentToolsView() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Pencil className="w-5 h-5 text-green-500" />
-                <CardTitle className="text-lg">Write File</CardTitle>
+                <CardTitle className="text-lg">{translate('Write File')}</CardTitle>
               </div>
-              <CardDescription>Agent requests to write content to a file</CardDescription>
+              <CardDescription>
+                {translate('Agent requests to write content to a file')}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="write-file-path">File Path</Label>
+                <Label htmlFor="write-file-path">{translate('File Path')}</Label>
                 <Input
                   id="write-file-path"
                   placeholder="/path/to/file.txt"
@@ -280,10 +289,10 @@ export function AgentToolsView() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="write-file-content">Content</Label>
+                <Label htmlFor="write-file-content">{translate('Content')}</Label>
                 <textarea
                   id="write-file-content"
-                  placeholder="File content..."
+                  placeholder={translate('File content...')}
                   value={writeFileContent}
                   onChange={(e) => setWriteFileContent(e.target.value)}
                   className="w-full min-h-[100px] px-3 py-2 text-sm rounded-md border border-input bg-background resize-y"
@@ -299,12 +308,12 @@ export function AgentToolsView() {
                 {isWritingFile ? (
                   <>
                     <Spinner size="sm" className="mr-2" />
-                    Writing...
+                    {translate('Writing...')}
                   </>
                 ) : (
                   <>
                     <Play className="w-4 h-4 mr-2" />
-                    Execute Write
+                    {translate('Execute Write')}
                   </>
                 )}
               </Button>
@@ -327,7 +336,7 @@ export function AgentToolsView() {
                       <XCircle className="w-4 h-4 text-red-500" />
                     )}
                     <span className="text-sm font-medium">
-                      {writeFileResult.success ? 'Success' : 'Failed'}
+                      {writeFileResult.success ? translate('Success') : translate('Failed')}
                     </span>
                   </div>
                   <pre className="text-xs overflow-auto max-h-40 whitespace-pre-wrap">
@@ -343,16 +352,18 @@ export function AgentToolsView() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Terminal className="w-5 h-5 text-purple-500" />
-                <CardTitle className="text-lg">Run Terminal</CardTitle>
+                <CardTitle className="text-lg">{translate('Run Terminal')}</CardTitle>
               </div>
-              <CardDescription>Agent requests to execute a terminal command</CardDescription>
+              <CardDescription>
+                {translate('Agent requests to execute a terminal command')}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="terminal-command">Command</Label>
+                <Label htmlFor="terminal-command">{translate('Command')}</Label>
                 <Input
                   id="terminal-command"
-                  placeholder="ls -la"
+                  placeholder={translate('ls -la')}
                   value={terminalCommand}
                   onChange={(e) => setTerminalCommand(e.target.value)}
                   data-testid="terminal-command-input"
@@ -367,12 +378,12 @@ export function AgentToolsView() {
                 {isRunningCommand ? (
                   <>
                     <Spinner size="sm" className="mr-2" />
-                    Running...
+                    {translate('Running...')}
                   </>
                 ) : (
                   <>
                     <Play className="w-4 h-4 mr-2" />
-                    Execute Command
+                    {translate('Execute Command')}
                   </>
                 )}
               </Button>
@@ -395,7 +406,7 @@ export function AgentToolsView() {
                       <XCircle className="w-4 h-4 text-red-500" />
                     )}
                     <span className="text-sm font-medium">
-                      {terminalResult.success ? 'Success' : 'Failed'}
+                      {terminalResult.success ? translate('Success') : translate('Failed')}
                     </span>
                   </div>
                   <pre className="text-xs overflow-auto max-h-40 whitespace-pre-wrap font-mono bg-black/50 text-green-400 p-2 rounded">
@@ -412,18 +423,20 @@ export function AgentToolsView() {
         {/* Tool Log Section */}
         <Card className="mt-6" data-testid="tool-log">
           <CardHeader>
-            <CardTitle className="text-lg">Tool Execution Log</CardTitle>
-            <CardDescription>View agent tool requests and responses</CardDescription>
+            <CardTitle className="text-lg">{translate('Tool Execution Log')}</CardTitle>
+            <CardDescription>{translate('View agent tool requests and responses')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm">
               <p className="text-muted-foreground">
-                Open your browser&apos;s developer console to see detailed agent tool logs.
+                {translate(
+                  "Open your browser's developer console to see detailed agent tool logs."
+                )}
               </p>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                <li>Read File - Agent requests file content from filesystem</li>
-                <li>Write File - Agent writes content to specified path</li>
-                <li>Run Terminal - Agent executes shell commands</li>
+                <li>{translate('Read File - Agent requests file content from filesystem')}</li>
+                <li>{translate('Write File - Agent writes content to specified path')}</li>
+                <li>{translate('Run Terminal - Agent executes shell commands')}</li>
               </ul>
             </div>
           </CardContent>

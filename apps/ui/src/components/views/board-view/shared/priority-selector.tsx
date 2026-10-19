@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
 interface PrioritySelectorProps {
@@ -11,6 +12,7 @@ export function PrioritySelector({
   onPrioritySelect,
   testIdPrefix = 'priority',
 }: PrioritySelectorProps) {
+  useUiLocale();
   return (
     <div className="flex gap-2">
       <button
@@ -24,7 +26,7 @@ export function PrioritySelector({
         )}
         data-testid={`${testIdPrefix}-high-button`}
       >
-        High
+        {translate('High')}
       </button>
       <button
         type="button"
@@ -37,7 +39,7 @@ export function PrioritySelector({
         )}
         data-testid={`${testIdPrefix}-medium-button`}
       >
-        Medium
+        {translate('Medium')}
       </button>
       <button
         type="button"
@@ -50,7 +52,7 @@ export function PrioritySelector({
         )}
         data-testid={`${testIdPrefix}-low-button`}
       >
-        Low
+        {translate('Low')}
       </button>
     </div>
   );

@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 /**
  * Skills Settings Hook - Manages Skills configuration state
  *
@@ -24,7 +25,7 @@ export function useSkillsSettings() {
         {
           onSuccess: () => {
             useAppStore.setState({ enableSkills: newEnabled });
-            toast.success(newEnabled ? 'Skills enabled' : 'Skills disabled');
+            toast.success(newEnabled ? translate('Skills enabled') : translate('Skills disabled'));
           },
         }
       );
@@ -39,7 +40,7 @@ export function useSkillsSettings() {
         {
           onSuccess: () => {
             useAppStore.setState({ skillsSources: newSources });
-            toast.success('Skills sources updated');
+            toast.success(translate('Skills sources updated'));
           },
         }
       );

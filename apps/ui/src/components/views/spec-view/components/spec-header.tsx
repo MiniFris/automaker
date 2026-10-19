@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import {
   HeaderActionsPanel,
@@ -45,6 +46,7 @@ export function SpecHeader({
   onToggleActionsPanel,
   showSaveButton,
 }: SpecHeaderProps) {
+  useUiLocale();
   const isProcessing = isRegenerating || isCreating || isGeneratingFeatures || isSyncing;
   const phaseLabel = PHASE_LABELS[currentPhase] || currentPhase;
 
@@ -54,7 +56,7 @@ export function SpecHeader({
         <div className="flex items-center gap-3">
           <FileText className="w-5 h-5 text-muted-foreground" />
           <div>
-            <h1 className="text-xl font-bold">App Specification</h1>
+            <h1 className="text-xl font-bold">{translate('App Specification')}</h1>
             <p className="text-sm text-muted-foreground">{projectPath}/.automaker/app_spec.txt</p>
           </div>
         </div>
@@ -69,12 +71,12 @@ export function SpecHeader({
               <div className="flex flex-col gap-1 min-w-0">
                 <span className="text-sm font-semibold text-primary leading-tight tracking-tight">
                   {isSyncing
-                    ? 'Syncing Specification'
+                    ? translate('Syncing Specification')
                     : isGeneratingFeatures
-                      ? 'Generating Features'
+                      ? translate('Generating Features')
                       : isCreating
-                        ? 'Generating Specification'
-                        : 'Regenerating Specification'}
+                        ? translate('Generating Specification')
+                        : translate('Regenerating Specification')}
                 </span>
                 {currentPhase && (
                   <span className="text-xs text-muted-foreground/90 leading-tight font-medium">
@@ -88,7 +90,7 @@ export function SpecHeader({
           {isProcessing && (
             <div className="lg:hidden flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/20">
               <Spinner size="sm" />
-              <span className="text-xs font-medium text-primary">Processing...</span>
+              <span className="text-xs font-medium text-primary">{translate('Processing...')}</span>
             </div>
           )}
           {errorMessage && (
@@ -96,7 +98,7 @@ export function SpecHeader({
               <AlertCircle className="w-5 h-5 text-destructive shrink-0" />
               <div className="flex flex-col gap-1 min-w-0">
                 <span className="text-sm font-semibold text-destructive leading-tight tracking-tight">
-                  Error
+                  {translate('Error')}
                 </span>
                 <span className="text-xs text-destructive/90 leading-tight font-medium">
                   {errorMessage}
@@ -108,7 +110,7 @@ export function SpecHeader({
           {errorMessage && (
             <div className="lg:hidden flex items-center gap-2 px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/20">
               <AlertCircle className="w-4 h-4 text-destructive" />
-              <span className="text-xs font-medium text-destructive">Error</span>
+              <span className="text-xs font-medium text-destructive">{translate('Error')}</span>
             </div>
           )}
           {/* Desktop: show actions inline - hidden when processing since status card shows progress */}
@@ -116,7 +118,7 @@ export function SpecHeader({
             <div className="hidden lg:flex gap-2">
               <Button size="sm" variant="outline" onClick={onSyncClick} data-testid="sync-spec">
                 <RefreshCcw className="w-4 h-4 mr-2" />
-                Sync
+                {translate('Sync')}
               </Button>
               <Button
                 size="sm"
@@ -125,7 +127,7 @@ export function SpecHeader({
                 data-testid="regenerate-spec"
               >
                 <Sparkles className="w-4 h-4 mr-2" />
-                Regenerate
+                {translate('Regenerate')}
               </Button>
               <Button
                 size="sm"
@@ -134,7 +136,7 @@ export function SpecHeader({
                 data-testid="generate-features"
               >
                 <ListPlus className="w-4 h-4 mr-2" />
-                Generate Features
+                {translate('Generate Features')}
               </Button>
               {showSaveButton && (
                 <Button
@@ -144,7 +146,11 @@ export function SpecHeader({
                   data-testid="save-spec"
                 >
                   <Save className="w-4 h-4 mr-2" />
-                  {isSaving ? 'Saving...' : hasChanges ? 'Save Changes' : 'Saved'}
+                  {isSaving
+                    ? translate('Saving...')
+                    : hasChanges
+                      ? translate('Save Changes')
+                      : translate('Saved')}
                 </Button>
               )}
             </div>
@@ -158,7 +164,7 @@ export function SpecHeader({
       <HeaderActionsPanel
         isOpen={showActionsPanel}
         onClose={onToggleActionsPanel}
-        title="Specification Actions"
+        title={translate('Specification Actions')}
       >
         {/* Status messages in panel */}
         {isProcessing && (
@@ -167,12 +173,12 @@ export function SpecHeader({
             <div className="flex flex-col gap-0.5 min-w-0">
               <span className="text-sm font-medium text-primary">
                 {isSyncing
-                  ? 'Syncing Specification'
+                  ? translate('Syncing Specification')
                   : isGeneratingFeatures
-                    ? 'Generating Features'
+                    ? translate('Generating Features')
                     : isCreating
-                      ? 'Generating Specification'
-                      : 'Regenerating Specification'}
+                      ? translate('Generating Specification')
+                      : translate('Regenerating Specification')}
               </span>
               {currentPhase && <span className="text-xs text-muted-foreground">{phaseLabel}</span>}
             </div>
@@ -182,7 +188,7 @@ export function SpecHeader({
           <div className="flex items-center gap-3 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
             <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
             <div className="flex flex-col gap-0.5 min-w-0">
-              <span className="text-sm font-medium text-destructive">Error</span>
+              <span className="text-sm font-medium text-destructive">{translate('Error')}</span>
               <span className="text-xs text-destructive/80">{errorMessage}</span>
             </div>
           </div>
@@ -197,7 +203,7 @@ export function SpecHeader({
               data-testid="sync-spec-mobile"
             >
               <RefreshCcw className="w-4 h-4 mr-2" />
-              Sync
+              {translate('Sync')}
             </Button>
             <Button
               variant="outline"
@@ -206,7 +212,7 @@ export function SpecHeader({
               data-testid="regenerate-spec-mobile"
             >
               <Sparkles className="w-4 h-4 mr-2" />
-              Regenerate
+              {translate('Regenerate')}
             </Button>
             <Button
               variant="outline"
@@ -215,7 +221,7 @@ export function SpecHeader({
               data-testid="generate-features-mobile"
             >
               <ListPlus className="w-4 h-4 mr-2" />
-              Generate Features
+              {translate('Generate Features')}
             </Button>
             {showSaveButton && (
               <Button
@@ -225,7 +231,11 @@ export function SpecHeader({
                 data-testid="save-spec-mobile"
               >
                 <Save className="w-4 h-4 mr-2" />
-                {isSaving ? 'Saving...' : hasChanges ? 'Save Changes' : 'Saved'}
+                {isSaving
+                  ? translate('Saving...')
+                  : hasChanges
+                    ? translate('Save Changes')
+                    : translate('Saved')}
               </Button>
             )}
           </>

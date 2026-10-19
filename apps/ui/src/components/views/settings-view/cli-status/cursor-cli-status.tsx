@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { SkeletonPulse } from '@/components/ui/skeleton';
@@ -22,6 +23,7 @@ interface CursorCliStatusProps {
 }
 
 export function CursorCliStatusSkeleton() {
+  useUiLocale();
   return (
     <div
       className={cn(
@@ -66,6 +68,7 @@ export function CursorCliStatusSkeleton() {
 }
 
 export function CursorPermissionsSkeleton() {
+  useUiLocale();
   return (
     <div
       className={cn(
@@ -151,6 +154,7 @@ export function CursorPermissionsSkeleton() {
 }
 
 export function ModelConfigSkeleton() {
+  useUiLocale();
   return (
     <div
       className={cn(
@@ -202,6 +206,7 @@ export function ModelConfigSkeleton() {
 }
 
 export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStatusProps) {
+  useUiLocale();
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isDeauthenticating, setIsDeauthenticating] = useState(false);
 
@@ -214,25 +219,25 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
         | (() => Promise<{ success: boolean; error?: string }>)
         | undefined;
       if (!authCursor) {
-        toast.error('Authentication Failed', {
-          description: 'Cursor authentication is not available',
+        toast.error(translate('Authentication Failed'), {
+          description: translate('Cursor authentication is not available'),
         });
         return;
       }
       const result = await authCursor();
 
       if (result.success) {
-        toast.success('Signed In', {
-          description: 'Successfully authenticated Cursor CLI',
+        toast.success(translate('Signed In'), {
+          description: translate('Successfully authenticated Cursor CLI'),
         });
         onRefresh();
       } else if (result.error) {
-        toast.error('Authentication Failed', {
+        toast.error(translate('Authentication Failed'), {
           description: result.error,
         });
       }
     } catch (error) {
-      toast.error('Authentication Failed', {
+      toast.error(translate('Authentication Failed'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     } finally {
@@ -249,26 +254,26 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
         | (() => Promise<{ success: boolean; error?: string }>)
         | undefined;
       if (!deauthCursor) {
-        toast.error('Sign Out Failed', {
-          description: 'Cursor sign out is not available',
+        toast.error(translate('Sign Out Failed'), {
+          description: translate('Cursor sign out is not available'),
         });
         return;
       }
       const result = await deauthCursor();
 
       if (result.success) {
-        toast.success('Signed Out', {
-          description: 'Successfully signed out from Cursor CLI',
+        toast.success(translate('Signed Out'), {
+          description: translate('Successfully signed out from Cursor CLI'),
         });
         // Refresh status after successful logout
         onRefresh();
       } else if (result.error) {
-        toast.error('Sign Out Failed', {
+        toast.error(translate('Sign Out Failed'), {
           description: result.error,
         });
       }
     } catch (error) {
-      toast.error('Sign Out Failed', {
+      toast.error(translate('Sign Out Failed'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     } finally {
@@ -293,7 +298,9 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500/20 to-brand-600/10 flex items-center justify-center border border-brand-500/20">
               <CursorIcon className="w-5 h-5 text-brand-500" />
             </div>
-            <h2 className="text-lg font-semibold text-foreground tracking-tight">Cursor CLI</h2>
+            <h2 className="text-lg font-semibold text-foreground tracking-tight">
+              {translate('Cursor CLI')}
+            </h2>
           </div>
           <Button
             variant="ghost"
@@ -301,7 +308,7 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
             onClick={onRefresh}
             disabled={isChecking}
             data-testid="refresh-cursor-cli"
-            title="Refresh Cursor CLI detection"
+            title={translate('Refresh Cursor CLI detection')}
             className={cn(
               'h-9 w-9 rounded-lg',
               'hover:bg-accent/50 hover:scale-105',
@@ -312,7 +319,7 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
           </Button>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Cursor CLI enables AI-powered code editing using Cursor's models.
+          {translate("Cursor CLI enables AI-powered code editing using Cursor's models.")}
         </p>
       </div>
       <div className="p-6 space-y-4">
@@ -324,11 +331,14 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
                 <CheckCircle2 className="w-5 h-5 text-emerald-500" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-emerald-400">Cursor CLI Installed</p>
+                <p className="text-sm font-medium text-emerald-400">
+                  {translate('Cursor CLI Installed')}
+                </p>
                 <div className="text-xs text-emerald-400/70 mt-1.5 space-y-0.5">
                   {status.version && (
                     <p>
-                      Version: <span className="font-mono">{status.version}</span>
+                      {translate('Version: ')}
+                      <span className="font-mono">{status.version}</span>
                     </p>
                   )}
                 </div>
@@ -342,12 +352,16 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
                   <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-emerald-400">Authenticated</p>
+                  <p className="text-sm font-medium text-emerald-400">
+                    {translate('Authenticated')}
+                  </p>
                   <div className="text-xs text-emerald-400/70 mt-1.5">
                     <p>
-                      Method:{' '}
+                      {translate('Method:')}{' '}
                       <span className="font-mono">
-                        {status.method === 'api_key' ? 'API Key' : 'Browser Login'}
+                        {status.method === 'api_key'
+                          ? translate('API Key')
+                          : translate('Browser Login')}
                       </span>
                     </p>
                   </div>
@@ -358,7 +372,7 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
                     disabled={isDeauthenticating}
                     className="mt-3 h-8 text-xs"
                   >
-                    {isDeauthenticating ? 'Signing Out...' : 'Sign Out'}
+                    {isDeauthenticating ? translate('Signing Out...') : translate('Sign Out')}
                   </Button>
                 </div>
               </div>
@@ -368,9 +382,11 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
                   <XCircle className="w-5 h-5 text-amber-500" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-amber-400">Not Authenticated</p>
+                  <p className="text-sm font-medium text-amber-400">
+                    {translate('Not Authenticated')}
+                  </p>
                   <p className="text-xs text-amber-400/70 mt-1">
-                    Click Sign In below to get authentication instructions.
+                    {translate('Click Sign In below to get authentication instructions.')}
                   </p>
                   <Button
                     variant="outline"
@@ -379,7 +395,7 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
                     disabled={isAuthenticating}
                     className="mt-3 h-8 text-xs"
                   >
-                    {isAuthenticating ? 'Requesting...' : 'Sign In'}
+                    {isAuthenticating ? translate('Requesting...') : translate('Sign In')}
                   </Button>
                 </div>
               </div>
@@ -392,21 +408,23 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
                 <AlertCircle className="w-5 h-5 text-amber-500" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-amber-400">Cursor CLI Not Detected</p>
+                <p className="text-sm font-medium text-amber-400">
+                  {translate('Cursor CLI Not Detected')}
+                </p>
                 <p className="text-xs text-amber-400/70 mt-1">
-                  Install Cursor CLI to use Cursor models in AutoMaker.
+                  {translate('Install Cursor CLI to use Cursor models in AutoMaker.')}
                 </p>
               </div>
             </div>
             <div className="space-y-3">
-              <p className="text-xs font-medium text-foreground/80">Installation:</p>
+              <p className="text-xs font-medium text-foreground/80">{translate('Installation:')}</p>
               <a
                 href="https://cursor.com/docs/cli"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-xs text-brand-400 hover:text-brand-300 transition-colors"
               >
-                View installation guide →
+                {translate('View installation guide →')}
               </a>
             </div>
           </div>

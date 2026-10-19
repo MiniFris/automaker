@@ -1,3 +1,6 @@
+import { formatCount } from '@/lib/i18n';
+import { getFormattingLocale } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useEffect, useState, useCallback } from 'react';
 import {
   Dialog,
@@ -50,7 +53,7 @@ interface ViewStashesDialogProps {
 
 function formatRelativeDate(dateStr: string): string {
   const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return 'Unknown date';
+  if (isNaN(date.getTime())) return translate('Unknown date');
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffSecs = Math.floor(diffMs / 1000);
@@ -60,13 +63,13 @@ function formatRelativeDate(dateStr: string): string {
   const diffWeeks = Math.floor(diffDays / 7);
   const diffMonths = Math.floor(diffDays / 30);
 
-  if (diffSecs < 60) return 'just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  if (diffWeeks < 5) return `${diffWeeks}w ago`;
-  if (diffMonths < 12) return `${diffMonths}mo ago`;
-  return date.toLocaleDateString();
+  if (diffSecs < 60) return translate('just now');
+  if (diffMins < 60) return translate('{value1}m ago', { value1: diffMins });
+  if (diffHours < 24) return translate('{value1}h ago', { value1: diffHours });
+  if (diffDays < 7) return translate('{value1}d ago', { value1: diffDays });
+  if (diffWeeks < 5) return translate('{value1}w ago', { value1: diffWeeks });
+  if (diffMonths < 12) return translate('{value1}mo ago', { value1: diffMonths });
+  return date.toLocaleDateString(getFormattingLocale());
 }
 
 function StashEntryItem({
@@ -84,6 +87,7 @@ function StashEntryItem({
   isApplying: boolean;
   isDropping: boolean;
 }) {
+  useUiLocale();
   const [expanded, setExpanded] = useState(false);
   const isBusy = isApplying || isDropping;
   const hasFiles = stash.files && stash.files.length > 0;
@@ -127,7 +131,7 @@ function StashEntryItem({
                     dateTime={stash.date}
                     title={
                       !isNaN(new Date(stash.date).getTime())
-                        ? new Date(stash.date).toLocaleString()
+                        ? new Date(stash.date).toLocaleString(getFormattingLocale())
                         : stash.date
                     }
                   >
@@ -139,7 +143,10 @@ function StashEntryItem({
                     onClick={() => setExpanded(!expanded)}
                     className="inline-flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer"
                     aria-expanded={expanded}
-                    aria-label={`${expanded ? 'Collapse' : 'Expand'} file list, ${stash.files.length} file${stash.files.length !== 1 ? 's' : ''}`}
+                    aria-label={translate('{value1} file list, {value2}', {
+                      value1: expanded ? 'Collapse' : 'Expand',
+                      value2: formatCount(stash.files.length, 'file'),
+                    })}
                   >
                     {expanded ? (
                       <ChevronDown className="w-3 h-3" />
@@ -147,7 +154,7 @@ function StashEntryItem({
                       <ChevronRight className="w-3 h-3" />
                     )}
                     <FileText className="w-3 h-3" />
-                    {stash.files.length} file{stash.files.length !== 1 ? 's' : ''}
+                    {formatCount(stash.files.length, 'file')}
                   </button>
                 )}
               </div>
@@ -161,10 +168,10 @@ function StashEntryItem({
                 className="h-7 text-xs px-2"
                 onClick={() => onApply(stash.index)}
                 disabled={isBusy}
-                title="Apply stash (keep in stash list)"
+                title={translate('Apply stash (keep in stash list)')}
               >
                 {isApplying ? <Spinner size="xs" /> : <Play className="w-3 h-3 mr-1" />}
-                Apply
+                {translate('Apply')}
               </Button>
               <Button
                 size="sm"
@@ -172,9 +179,9 @@ function StashEntryItem({
                 className="h-7 text-xs px-2"
                 onClick={() => onPop(stash.index)}
                 disabled={isBusy}
-                title="Pop stash (apply and remove from stash list)"
+                title={translate('Pop stash (apply and remove from stash list)')}
               >
-                {isApplying ? <Spinner size="xs" /> : 'Pop'}
+                {isApplying ? <Spinner size="xs" /> : translate('Pop')}
               </Button>
               <Button
                 size="sm"
@@ -182,7 +189,7 @@ function StashEntryItem({
                 className="h-7 w-7 p-0 text-destructive hover:text-destructive"
                 onClick={() => onDrop(stash.index)}
                 disabled={isBusy}
-                title="Delete this stash"
+                title={translate('Delete this stash')}
               >
                 {isDropping ? <Spinner size="xs" /> : <Trash2 className="w-3 h-3" />}
               </Button>
@@ -218,6 +225,7 @@ export function ViewStashesDialog({
   onStashApplied,
   onStashApplyConflict,
 }: ViewStashesDialogProps) {
+  useUiLocale();
   const [stashes, setStashes] = useState<StashEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -239,10 +247,10 @@ export function ViewStashesDialog({
       if (result.success && result.result) {
         setStashes(result.result.stashes);
       } else {
-        setError(result.error || 'Failed to load stashes');
+        setError(result.error || translate('Failed to load stashes'));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load stashes');
+      setError(err instanceof Error ? err.message : translate('Failed to load stashes'));
     } finally {
       setIsLoading(false);
     }
@@ -279,16 +287,16 @@ export function ViewStashesDialog({
           setConflictDialogOpen(true);
           onStashApplied?.();
         } else {
-          toast.success('Stash applied');
+          toast.success(translate('Stash applied'));
           onStashApplied?.();
         }
       } else {
-        toast.error('Failed to apply stash', {
+        toast.error(translate('Failed to apply stash'), {
           description: result.error || 'Unknown error',
         });
       }
     } catch (err) {
-      toast.error('Failed to apply stash', {
+      toast.error(translate('Failed to apply stash'), {
         description: err instanceof Error ? err.message : 'Unknown error',
       });
     } finally {
@@ -316,20 +324,20 @@ export function ViewStashesDialog({
           setConflictInfo(info);
           setConflictDialogOpen(true);
         } else {
-          toast.success('Stash popped', {
-            description: 'Changes applied and stash removed.',
+          toast.success(translate('Stash popped'), {
+            description: translate('Changes applied and stash removed.'),
           });
         }
         // Refresh the stash list since the stash was removed
         await fetchStashes();
         onStashApplied?.();
       } else {
-        toast.error('Failed to pop stash', {
+        toast.error(translate('Failed to pop stash'), {
           description: result.error || 'Unknown error',
         });
       }
     } catch (err) {
-      toast.error('Failed to pop stash', {
+      toast.error(translate('Failed to pop stash'), {
         description: err instanceof Error ? err.message : 'Unknown error',
       });
     } finally {
@@ -346,16 +354,16 @@ export function ViewStashesDialog({
       const result = await api.worktree.stashDrop(worktree.path, stashIndex);
 
       if (result.success) {
-        toast.success('Stash deleted');
+        toast.success(translate('Stash deleted'));
         // Refresh the stash list
         await fetchStashes();
       } else {
-        toast.error('Failed to delete stash', {
+        toast.error(translate('Failed to delete stash'), {
           description: result.error || 'Unknown error',
         });
       }
     } catch (err) {
-      toast.error('Failed to delete stash', {
+      toast.error(translate('Failed to delete stash'), {
         description: err instanceof Error ? err.message : 'Unknown error',
       });
     } finally {
@@ -371,10 +379,10 @@ export function ViewStashesDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Archive className="w-5 h-5" />
-            Stashes
+            {translate('Stashes')}
           </DialogTitle>
           <DialogDescription>
-            Stashed changes in{' '}
+            {translate('Stashed changes in')}{' '}
             <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>
           </DialogDescription>
         </DialogHeader>
@@ -384,7 +392,9 @@ export function ViewStashesDialog({
             {isLoading && (
               <div className="flex items-center justify-center py-12">
                 <Spinner size="md" />
-                <span className="ml-2 text-sm text-muted-foreground">Loading stashes...</span>
+                <span className="ml-2 text-sm text-muted-foreground">
+                  {translate('Loading stashes...')}
+                </span>
               </div>
             )}
 
@@ -397,9 +407,9 @@ export function ViewStashesDialog({
             {!isLoading && !error && stashes.length === 0 && (
               <div className="flex flex-col items-center justify-center py-12 gap-2">
                 <Archive className="w-8 h-8 text-muted-foreground/50" />
-                <p className="text-sm text-muted-foreground">No stashes found</p>
+                <p className="text-sm text-muted-foreground">{translate('No stashes found')}</p>
                 <p className="text-xs text-muted-foreground">
-                  Use &quot;Stash Changes&quot; to save your uncommitted changes
+                  {translate('Use "Stash Changes" to save your uncommitted changes')}
                 </p>
               </div>
             )}

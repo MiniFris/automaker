@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { OpenAICompatibleEndpoint } from '@automaker/types';
@@ -36,6 +37,7 @@ function freshEndpoint(): OpenAICompatibleEndpoint {
 }
 
 export function DirectSettingsTab() {
+  useUiLocale();
   const { data, isLoading, error } = useDirectEndpoints();
   const client = useQueryClient();
   const [draft, setDraft] = useState<OpenAICompatibleEndpoint | null>(null);
@@ -57,7 +59,7 @@ export function DirectSettingsTab() {
     try {
       await work();
     } catch (failure) {
-      setMessage(failure instanceof Error ? failure.message : 'Request failed');
+      setMessage(failure instanceof Error ? failure.message : translate('Request failed'));
     } finally {
       setBusy(false);
     }
@@ -70,16 +72,17 @@ export function DirectSettingsTab() {
     setMessage('');
   };
 
-  if (isLoading) return <p>Loading direct endpoints…</p>;
-  if (error || !data) return <p role="alert">Unable to load direct endpoint settings.</p>;
+  if (isLoading) return <p>{translate('Loading direct endpoints…')}</p>;
+  if (error || !data)
+    return <p role="alert">{translate('Unable to load direct endpoint settings.')}</p>;
   return (
     <div className="space-y-6" data-testid="direct-provider-settings">
       <div>
-        <h2 className="text-lg font-semibold">OpenAI-compatible endpoints</h2>
+        <h2 className="text-lg font-semibold">{translate('OpenAI-compatible endpoints')}</h2>
         <p className="text-sm text-muted-foreground">
-          Connect directly without an agent CLI. Chat Completions only; tool calling must be
-          supported by your model. API prefixes such as /v1 are not added automatically. Keys stay
-          on the server.
+          {translate(
+            'Connect directly without an agent CLI. Chat Completions only; tool calling must be supported by your model. API prefixes such as /v1 are not added automatically. Keys stay on the server.'
+          )}
         </p>
       </div>
       {message && (
@@ -96,17 +99,18 @@ export function DirectSettingsTab() {
             <div>
               <span className="font-medium">{endpoint.name}</span>
               <p className="text-sm text-muted-foreground">
-                {endpoint.enabled ? 'Enabled' : 'Disabled'} · {endpoint.models.length} models ·{' '}
+                {endpoint.enabled ? translate('Enabled') : translate('Disabled')} ·{' '}
+                {endpoint.models.length} {translate(' models ·')}{' '}
                 {endpoint.auth.type === 'none'
-                  ? 'No key required'
+                  ? translate('No key required')
                   : keyConfigured
-                    ? 'Key configured'
-                    : 'Key missing'}
+                    ? translate('Key configured')
+                    : translate('Key missing')}
               </p>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" disabled={busy} onClick={() => edit(endpoint)}>
-                Edit
+                {translate('Edit')}
               </Button>
               <Button
                 variant="outline"
@@ -114,7 +118,10 @@ export function DirectSettingsTab() {
                 onClick={() => {
                   if (
                     window.confirm(
-                      `Remove endpoint “${endpoint.name}”? Existing selections will fail until you choose another endpoint. Stored credentials are retained.`
+                      translate(
+                        'Remove endpoint “{value1}”? Existing selections will fail until you choose another endpoint. Stored credentials are retained.',
+                        { value1: endpoint.name }
+                      )
                     )
                   )
                     void action(async () => {
@@ -126,19 +133,19 @@ export function DirectSettingsTab() {
                     });
                 }}
               >
-                Remove
+                {translate('Remove')}
               </Button>
             </div>
           </div>
         ))}
       </div>
       <Button variant="outline" disabled={busy} onClick={() => edit(freshEndpoint())}>
-        Add direct endpoint
+        {translate('Add direct endpoint')}
       </Button>
       <ProviderModelTimeoutSettings
         provider="openai-compatible"
         keys={WORKFLOW_TIMEOUT_KEYS}
-        title="Direct task timeouts"
+        title={translate('Direct task timeouts')}
       />
       {draft && (
         <fieldset
@@ -148,7 +155,7 @@ export function DirectSettingsTab() {
         >
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <Label htmlFor="direct-name">Name</Label>
+              <Label htmlFor="direct-name">{translate('Name')}</Label>
               <Input
                 id="direct-name"
                 value={draft.name}
@@ -156,7 +163,7 @@ export function DirectSettingsTab() {
               />
             </div>
             <div>
-              <Label htmlFor="direct-url">API base URL</Label>
+              <Label htmlFor="direct-url">{translate('API base URL')}</Label>
               <Input
                 id="direct-url"
                 value={draft.baseUrl}
@@ -165,7 +172,7 @@ export function DirectSettingsTab() {
             </div>
           </div>
           <div>
-            <Label htmlFor="direct-protocol">Protocol</Label>
+            <Label htmlFor="direct-protocol">{translate('Protocol')}</Label>
             <select
               id="direct-protocol"
               className={selectStyle}
@@ -174,9 +181,9 @@ export function DirectSettingsTab() {
                 update({ protocol: event.target.value as OpenAICompatibleEndpoint['protocol'] })
               }
             >
-              <option value="chat-completions">Chat Completions</option>
+              <option value="chat-completions">{translate('Chat Completions')}</option>
               <option value="responses" disabled>
-                Responses (not implemented)
+                {translate('Responses (not implemented)')}
               </option>
             </select>
           </div>
@@ -196,7 +203,7 @@ export function DirectSettingsTab() {
             }}
           />
           <div>
-            <Label htmlFor="direct-retries">Maximum HTTP retries</Label>
+            <Label htmlFor="direct-retries">{translate('Maximum HTTP retries')}</Label>
             <Input
               id="direct-retries"
               type="number"
@@ -204,7 +211,7 @@ export function DirectSettingsTab() {
               max={5}
               step={1}
               value={draft.maxRetries ?? ''}
-              placeholder="Default: 2"
+              placeholder={translate('Default: 2')}
               onChange={(event) =>
                 update({
                   maxRetries: event.target.value === '' ? undefined : Number(event.target.value),
@@ -218,10 +225,10 @@ export function DirectSettingsTab() {
               checked={draft.enabled}
               onChange={(event) => update({ enabled: event.target.checked })}
             />
-            Enabled
+            {translate('Enabled')}
           </label>
           <div className="flex flex-wrap gap-3">
-            <Label htmlFor="direct-auth">Authentication</Label>
+            <Label htmlFor="direct-auth">{translate('Authentication')}</Label>
             <select
               id="direct-auth"
               className={selectStyle}
@@ -237,14 +244,14 @@ export function DirectSettingsTab() {
                 })
               }
             >
-              <option value="credentials">Stored API key</option>
-              <option value="env">Server environment variable</option>
-              <option value="none">No authentication</option>
+              <option value="credentials">{translate('Stored API key')}</option>
+              <option value="env">{translate('Server environment variable')}</option>
+              <option value="none">{translate('No authentication')}</option>
             </select>
           </div>
           {draft.auth.type === 'env' && (
             <div>
-              <Label htmlFor="direct-env">Server variable name</Label>
+              <Label htmlFor="direct-env">{translate('Server variable name')}</Label>
               <Input
                 id="direct-env"
                 value={draft.auth.variableName}
@@ -256,7 +263,9 @@ export function DirectSettingsTab() {
           )}
           {draft.auth.type === 'credentials' && (
             <div className="space-y-2">
-              <Label htmlFor="direct-key">New API key (leave blank to keep existing)</Label>
+              <Label htmlFor="direct-key">
+                {translate('New API key (leave blank to keep existing)')}
+              </Label>
               <Input
                 id="direct-key"
                 type="password"
@@ -276,15 +285,15 @@ export function DirectSettingsTab() {
                     setApiKey('');
                   }}
                 />
-                Explicitly clear stored key
+                {translate('Explicitly clear stored key')}
               </label>
             </div>
           )}
           <div className="space-y-3">
-            <h3 className="font-medium">Models (exact API IDs)</h3>
+            <h3 className="font-medium">{translate('Models (exact API IDs)')}</h3>
             {draft.models.map((model, index) => (
               <div key={index} className="space-y-2 rounded-md border p-3">
-                <Label htmlFor={`direct-model-${index}`}>Model ID</Label>
+                <Label htmlFor={`direct-model-${index}`}>{translate('Model ID')}</Label>
                 <Input
                   id={`direct-model-${index}`}
                   value={model.id}
@@ -296,7 +305,7 @@ export function DirectSettingsTab() {
                     })
                   }
                 />
-                <Label htmlFor={`direct-label-${index}`}>Display name</Label>
+                <Label htmlFor={`direct-label-${index}`}>{translate('Display name')}</Label>
                 <Input
                   id={`direct-label-${index}`}
                   value={model.displayName}
@@ -313,8 +322,8 @@ export function DirectSettingsTab() {
                     <div key={field}>
                       <Label htmlFor={`direct-${field}-${index}`}>
                         {field === 'contextWindow'
-                          ? 'Context window (optional)'
-                          : 'Max output tokens (optional)'}
+                          ? translate('Context window (optional)')
+                          : translate('Max output tokens (optional)')}
                       </Label>
                       <Input
                         id={`direct-${field}-${index}`}
@@ -375,11 +384,11 @@ export function DirectSettingsTab() {
                       void action(async () => {
                         const result = await api.test(draft.id, model.id);
                         if (!result.success) throw new Error(result.error || 'Connection failed');
-                        setMessage('Text connection verified.');
+                        setMessage(translate('Text connection verified.'));
                       })
                     }
                   >
-                    Test text
+                    {translate('Test text')}
                   </Button>
                   <Button
                     variant="outline"
@@ -388,18 +397,20 @@ export function DirectSettingsTab() {
                       void action(async () => {
                         const result = await api.test(draft.id, model.id, true);
                         if (!result.success) throw new Error(result.error || 'Tool calling failed');
-                        setMessage('Tool calling verified. No local tools were executed.');
+                        setMessage(
+                          translate('Tool calling verified. No local tools were executed.')
+                        );
                       })
                     }
                   >
-                    Test tools
+                    {translate('Test tools')}
                   </Button>
                   <Button
                     variant="ghost"
                     disabled={busy}
                     onClick={() => update({ models: draft.models.filter((_, i) => i !== index) })}
                   >
-                    Remove model
+                    {translate('Remove model')}
                   </Button>
                 </div>
               </div>
@@ -418,7 +429,7 @@ export function DirectSettingsTab() {
                 })
               }
             >
-              Add model manually
+              {translate('Add model manually')}
             </Button>
             <Button
               variant="outline"
@@ -429,17 +440,19 @@ export function DirectSettingsTab() {
                   if (!result.success) throw new Error(result.error || 'Catalog unavailable');
                   setCatalog(result.models ?? []);
                   setMessage(
-                    'Discovery does not establish capabilities. Enable them explicitly, then save and test.'
+                    translate(
+                      'Discovery does not establish capabilities. Enable them explicitly, then save and test.'
+                    )
                   );
                 })
               }
             >
-              Fetch /models
+              {translate('Fetch /models')}
             </Button>
           </div>
           {!!catalog.length && (
             <div>
-              <Label htmlFor="direct-catalog">Discovered models</Label>
+              <Label htmlFor="direct-catalog">{translate('Discovered models')}</Label>
               <select
                 id="direct-catalog"
                 className={`${selectStyle} w-full`}
@@ -455,7 +468,7 @@ export function DirectSettingsTab() {
                     });
                 }}
               >
-                <option value="">Choose a model to add</option>
+                <option value="">{translate('Choose a model to add')}</option>
                 {catalog.map((id) => (
                   <option key={id} value={id}>
                     {id}
@@ -465,8 +478,9 @@ export function DirectSettingsTab() {
             </div>
           )}
           <p className="text-xs text-muted-foreground">
-            Save before discovery/tests. Tests send a small paid API request to the saved endpoint.
-            Responses, images, reasoning options, MCP and subagents are not supported yet.
+            {translate(
+              'Save before discovery/tests. Tests send a small paid API request to the saved endpoint. Responses, images, reasoning options, MCP and subagents are not supported yet.'
+            )}
           </p>
           <div className="flex gap-2">
             <Button
@@ -480,11 +494,11 @@ export function DirectSettingsTab() {
                   refresh(await api.save(draft, apiKey || undefined, clearKey || undefined));
                   setApiKey('');
                   setClearKey(false);
-                  setMessage('Endpoint saved. Key values are never returned.');
+                  setMessage(translate('Endpoint saved. Key values are never returned.'));
                 })
               }
             >
-              Save endpoint
+              {translate('Save endpoint')}
             </Button>
             <Button
               variant="ghost"
@@ -494,18 +508,19 @@ export function DirectSettingsTab() {
                 setApiKey('');
               }}
             >
-              Close
+              {translate('Close')}
             </Button>
           </div>
         </fieldset>
       )}
       <p className="text-sm text-muted-foreground">
-        Execution and access are configured in{' '}
+        {translate('Execution and access are configured in')}{' '}
         <a className="underline" href="/settings?view=execution-environment">
-          Execution Environment
+          {translate('Execution Environment')}
         </a>
-        , with optional project overrides. Legacy Direct settings are retained for existing runs,
-        not automatically upgraded.
+        {translate(
+          ', with optional project overrides. Legacy Direct settings are retained for existing runs, not automatically upgraded.'
+        )}
       </p>
     </div>
   );

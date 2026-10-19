@@ -1,4 +1,5 @@
 // @ts-nocheck - feature update logic with partial updates and image/file handling
+import { translate } from '@/lib/i18n';
 import { useCallback } from 'react';
 import {
   Feature,
@@ -236,14 +237,14 @@ export function useBoardActions({
                 `Failed to create worktree for branch "${finalBranchName}":`,
                 result.error
               );
-              toast.error('Failed to create worktree', {
+              toast.error(translate('Failed to create worktree'), {
                 description: result.error || 'An error occurred',
               });
             }
           }
         } catch (error) {
           logger.error('Error creating worktree:', error);
-          toast.error('Failed to create worktree', {
+          toast.error(translate('Failed to create worktree'), {
             description: error instanceof Error ? error.message : 'An error occurred',
           });
         }
@@ -442,14 +443,14 @@ export function useBoardActions({
                 `Failed to create worktree for branch "${finalBranchName}":`,
                 result.error
               );
-              toast.error('Failed to create worktree', {
+              toast.error(translate('Failed to create worktree'), {
                 description: result.error || 'An error occurred',
               });
             }
           }
         } catch (error) {
           logger.error('Error creating worktree:', error);
-          toast.error('Failed to create worktree', {
+          toast.error(translate('Failed to create worktree'), {
             description: error instanceof Error ? error.message : 'An error occurred',
           });
         }
@@ -542,13 +543,15 @@ export function useBoardActions({
           if (currentProject) {
             removeRunningTaskFromAllWorktrees(currentProject.id, featureId);
           }
-          toast.success('Agent stopped', {
-            description: `Stopped and deleted: ${truncateDescription(feature.description)}`,
+          toast.success(translate('Agent stopped'), {
+            description: translate('Stopped and deleted: {value1}', {
+              value1: truncateDescription(feature.description),
+            }),
           });
         } catch (error) {
           logger.error('Error stopping feature before delete:', error);
-          toast.error('Failed to stop agent', {
-            description: 'The feature will still be deleted.',
+          toast.error(translate('Failed to stop agent'), {
+            description: translate('The feature will still be deleted.'),
           });
         }
       }
@@ -621,8 +624,10 @@ export function useBoardActions({
             })
             .join(', ');
 
-          toast.warning('Starting feature with incomplete dependencies', {
-            description: `This feature depends on: ${depDescriptions}`,
+          toast.warning(translate('Starting feature with incomplete dependencies'), {
+            description: translate('This feature depends on: {value1}', {
+              value1: depDescriptions,
+            }),
           });
         }
       }
@@ -658,7 +663,7 @@ export function useBoardActions({
             return false;
           }
 
-          toast.error('Failed to start feature', {
+          toast.error(translate('Failed to start feature'), {
             description:
               error instanceof Error ? error.message : 'Server may be offline. Please try again.',
           });
@@ -690,7 +695,7 @@ export function useBoardActions({
           return false;
         }
 
-        toast.error('Failed to start feature', {
+        toast.error(translate('Failed to start feature'), {
           description:
             error instanceof Error ? error.message : 'Server may be offline. Please try again.',
         });
@@ -711,12 +716,16 @@ export function useBoardActions({
             status: 'verified',
             justFinishedAt: undefined,
           });
-          toast.success('Verification passed', {
-            description: `Verified: ${truncateDescription(feature.description)}`,
+          toast.success(translate('Verification passed'), {
+            description: translate('Verified: {value1}', {
+              value1: truncateDescription(feature.description),
+            }),
           });
         } else {
-          toast.error('Verification failed', {
-            description: `Tests did not pass for: ${truncateDescription(feature.description)}`,
+          toast.error(translate('Verification failed'), {
+            description: translate('Tests did not pass for: {value1}', {
+              value1: truncateDescription(feature.description),
+            }),
           });
         }
       } catch {
@@ -744,8 +753,10 @@ export function useBoardActions({
         status: 'verified',
         justFinishedAt: undefined,
       });
-      toast.success('Feature verified', {
-        description: `Marked as verified: ${truncateDescription(feature.description)}`,
+      toast.success(translate('Feature verified'), {
+        description: translate('Marked as verified: {value1}', {
+          value1: truncateDescription(feature.description),
+        }),
       });
     },
     [persistFeatureUpdate]
@@ -758,8 +769,10 @@ export function useBoardActions({
         startedAt: new Date().toISOString(),
       };
       persistFeatureUpdate(feature.id, updates);
-      toast.info('Feature moved back', {
-        description: `Moved back to In Progress: ${truncateDescription(feature.description)}`,
+      toast.info(translate('Feature moved back'), {
+        description: translate('Moved back to In Progress: {value1}', {
+          value1: truncateDescription(feature.description),
+        }),
       });
     },
     [persistFeatureUpdate]
@@ -785,8 +798,8 @@ export function useBoardActions({
     const api = getElectronAPI();
     if (!api?.autoMode?.followUpFeature) {
       logger.error('Follow-up feature API not available');
-      toast.error('Follow-up not available', {
-        description: 'This feature is not available in the current version.',
+      toast.error(translate('Follow-up not available'), {
+        description: translate('This feature is not available in the current version.'),
       });
       return;
     }
@@ -807,8 +820,10 @@ export function useBoardActions({
       setFollowUpImagePaths([]);
       setFollowUpPreviewMap(new Map());
 
-      toast.success('Follow-up started', {
-        description: `Continuing work on: ${truncateDescription(featureDescription)}`,
+      toast.success(translate('Follow-up started'), {
+        description: translate('Continuing work on: {value1}', {
+          value1: truncateDescription(featureDescription),
+        }),
       });
 
       const imagePaths = followUpImagePaths.map((img) => img.path);
@@ -839,7 +854,7 @@ export function useBoardActions({
         return;
       }
 
-      toast.error('Failed to send follow-up', {
+      toast.error(translate('Failed to send follow-up'), {
         description:
           error instanceof Error ? error.message : 'Server may be offline. Please try again.',
       });
@@ -867,8 +882,8 @@ export function useBoardActions({
         const api = getElectronAPI();
         if (!api?.autoMode?.commitFeature) {
           logger.error('Commit feature API not available');
-          toast.error('Commit not available', {
-            description: 'This feature is not available in the current version.',
+          toast.error(translate('Commit not available'), {
+            description: translate('This feature is not available in the current version.'),
           });
           return;
         }
@@ -882,21 +897,23 @@ export function useBoardActions({
 
         if (result.success) {
           persistFeatureUpdate(feature.id, { status: 'verified' });
-          toast.success('Feature committed', {
-            description: `Committed and verified: ${truncateDescription(feature.description)}`,
+          toast.success(translate('Feature committed'), {
+            description: translate('Committed and verified: {value1}', {
+              value1: truncateDescription(feature.description),
+            }),
           });
           // Refresh worktree selector to update commit counts
           onWorktreeCreated?.();
         } else {
           logger.error('Failed to commit feature:', result.error);
-          toast.error('Failed to commit feature', {
+          toast.error(translate('Failed to commit feature'), {
             description: result.error || 'An error occurred',
           });
           await loadFeatures();
         }
       } catch (error) {
         logger.error('Error committing feature:', error);
-        toast.error('Failed to commit feature', {
+        toast.error(translate('Failed to commit feature'), {
           description: error instanceof Error ? error.message : 'An error occurred',
         });
         await loadFeatures();
@@ -913,8 +930,8 @@ export function useBoardActions({
         const api = getElectronAPI();
         if (!api?.worktree?.mergeFeature) {
           logger.error('Worktree API not available');
-          toast.error('Merge not available', {
-            description: 'This feature is not available in the current version.',
+          toast.error(translate('Merge not available'), {
+            description: translate('This feature is not available in the current version.'),
           });
           return;
         }
@@ -923,20 +940,20 @@ export function useBoardActions({
 
         if (result.success) {
           await loadFeatures();
-          toast.success('Feature merged', {
-            description: `Changes merged to main branch: ${truncateDescription(
-              feature.description
-            )}`,
+          toast.success(translate('Feature merged'), {
+            description: translate('Changes merged to main branch: {value1}', {
+              value1: truncateDescription(feature.description),
+            }),
           });
         } else {
           logger.error('Failed to merge feature:', result.error);
-          toast.error('Failed to merge feature', {
+          toast.error(translate('Failed to merge feature'), {
             description: result.error || 'An error occurred',
           });
         }
       } catch (error) {
         logger.error('Error merging feature:', error);
-        toast.error('Failed to merge feature', {
+        toast.error(translate('Failed to merge feature'), {
           description: error instanceof Error ? error.message : 'An error occurred',
         });
       }
@@ -947,8 +964,10 @@ export function useBoardActions({
   const handleCompleteFeature = useCallback(
     (feature: Feature) => {
       persistFeatureUpdate(feature.id, { status: 'completed' as const });
-      toast.success('Feature completed', {
-        description: `Archived: ${truncateDescription(feature.description)}`,
+      toast.success(translate('Feature completed'), {
+        description: translate('Archived: {value1}', {
+          value1: truncateDescription(feature.description),
+        }),
       });
     },
     [persistFeatureUpdate]
@@ -971,12 +990,17 @@ export function useBoardActions({
       persistFeatureUpdate(feature.id, { status: 'verified' as const });
 
       if (willBeVisibleOnCurrentView) {
-        toast.success('Feature restored', {
-          description: `Moved back to verified: ${truncateDescription(feature.description)}`,
+        toast.success(translate('Feature restored'), {
+          description: translate('Moved back to verified: {value1}', {
+            value1: truncateDescription(feature.description),
+          }),
         });
       } else {
-        toast.success('Feature restored', {
-          description: `Moved back to verified on branch "${branchLabel}": ${truncateDescription(feature.description)}`,
+        toast.success(translate('Feature restored'), {
+          description: translate('Moved back to verified on branch "{value1}": {value2}', {
+            value1: branchLabel,
+            value2: truncateDescription(feature.description),
+          }),
         });
       }
     },
@@ -1043,7 +1067,7 @@ export function useBoardActions({
           await persistFeatureUpdate(feature.id, { status: targetStatus });
         }
 
-        toast.success('Agent stopped', {
+        toast.success(translate('Agent stopped'), {
           description:
             targetStatus === 'waiting_approval'
               ? `Stopped commit - returned to waiting approval: ${truncateDescription(
@@ -1053,7 +1077,7 @@ export function useBoardActions({
         });
       } catch (error) {
         logger.error('Error stopping feature:', error);
-        toast.error('Failed to stop agent', {
+        toast.error(translate('Failed to stop agent'), {
           description: error instanceof Error ? error.message : 'An error occurred',
         });
       } finally {
@@ -1095,8 +1119,8 @@ export function useBoardActions({
     const availableSlots = useAppStore.getState().maxConcurrency - runningAutoTasks.length;
 
     if (availableSlots <= 0) {
-      toast.error('Concurrency limit reached', {
-        description: 'Wait for a task to complete or increase the concurrency limit.',
+      toast.error(translate('Concurrency limit reached'), {
+        description: translate('Wait for a task to complete or increase the concurrency limit.'),
       });
       return;
     }
@@ -1105,7 +1129,7 @@ export function useBoardActions({
       const isOnPrimaryBranch =
         !currentWorktreeBranch ||
         (projectPath && isPrimaryWorktreeBranch(projectPath, currentWorktreeBranch));
-      toast.info('Backlog empty', {
+      toast.info(translate('Backlog empty'), {
         description: !isOnPrimaryBranch
           ? `No features in backlog for branch "${currentWorktreeBranch}".`
           : 'No features in backlog to start.',
@@ -1140,9 +1164,10 @@ export function useBoardActions({
     });
 
     if (!featureToStart) {
-      toast.info('No eligible features', {
-        description:
-          'All backlog features have unmet dependencies. Complete their dependencies first (or enable "Skip verification requirement" in Auto Mode settings).',
+      toast.info(translate('No eligible features'), {
+        description: translate(
+          'All backlog features have unmet dependencies. Complete their dependencies first (or enable "Skip verification requirement" in Auto Mode settings).'
+        ),
       });
       return;
     }
@@ -1201,8 +1226,10 @@ export function useBoardActions({
         if (result.success) {
           // Refresh features from server to sync React Query cache
           loadFeatures();
-          toast.success('All verified features archived', {
-            description: `Archived ${verifiedFeatures.length} feature(s).`,
+          toast.success(translate('All verified features archived'), {
+            description: translate('Archived {value1} feature(s).', {
+              value1: verifiedFeatures.length,
+            }),
           });
         } else {
           logger.error('Bulk archive failed:', result);
@@ -1247,8 +1274,10 @@ export function useBoardActions({
       // Reuse the existing handleAddFeature logic
       await handleAddFeature(duplicatedFeatureData);
 
-      toast.success(asChild ? 'Duplicated as child' : 'Feature duplicated', {
-        description: `Created copy of: ${truncateDescription(feature.description || feature.title || '')}`,
+      toast.success(asChild ? translate('Duplicated as child') : translate('Feature duplicated'), {
+        description: translate('Created copy of: {value1}', {
+          value1: truncateDescription(feature.description || feature.title || ''),
+        }),
       });
     },
     [handleAddFeature]
@@ -1258,8 +1287,8 @@ export function useBoardActions({
     async (feature: Feature, count: number) => {
       // Guard: reject non-positive counts
       if (count <= 0) {
-        toast.error('Invalid duplicate count', {
-          description: 'Count must be a positive number.',
+        toast.error(translate('Invalid duplicate count'), {
+          description: translate('Count must be a positive number.'),
         });
         return;
       }
@@ -1306,7 +1335,11 @@ export function useBoardActions({
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
           toast.error(
-            `Failed after creating ${successCount} of ${effectiveCount} duplicate${effectiveCount !== 1 ? 's' : ''}`,
+            translate('Failed after creating {value1} of {value2} duplicate{value3}', {
+              value1: successCount,
+              value2: effectiveCount,
+              value3: effectiveCount !== 1 ? 's' : '',
+            }),
             {
               description: errorMessage,
             }
@@ -1316,14 +1349,32 @@ export function useBoardActions({
       }
 
       if (successCount === effectiveCount) {
-        toast.success(`Created ${successCount} chained duplicate${successCount !== 1 ? 's' : ''}`, {
-          description: `Created ${successCount} sequential ${successCount !== 1 ? 'copies' : 'copy'} of: ${truncateDescription(feature.description || feature.title || '')}`,
-        });
+        toast.success(
+          translate('Created {value1} chained duplicate{value2}', {
+            value1: successCount,
+            value2: successCount !== 1 ? 's' : '',
+          }),
+          {
+            description: translate('Created {value1} sequential {value2} of: {value3}', {
+              value1: successCount,
+              value2: successCount !== 1 ? 'copies' : 'copy',
+              value3: truncateDescription(feature.description || feature.title || ''),
+            }),
+          }
+        );
       } else {
         toast.info(
-          `Partially created ${successCount} of ${effectiveCount} chained duplicate${effectiveCount !== 1 ? 's' : ''}`,
+          translate('Partially created {value1} of {value2} chained duplicate{value3}', {
+            value1: successCount,
+            value2: effectiveCount,
+            value3: effectiveCount !== 1 ? 's' : '',
+          }),
           {
-            description: `Created ${successCount} sequential ${successCount !== 1 ? 'copies' : 'copy'} of: ${truncateDescription(feature.description || feature.title || '')}`,
+            description: translate('Created {value1} sequential {value2} of: {value3}', {
+              value1: successCount,
+              value2: successCount !== 1 ? 'copies' : 'copy',
+              value3: truncateDescription(feature.description || feature.title || ''),
+            }),
           }
         );
       }

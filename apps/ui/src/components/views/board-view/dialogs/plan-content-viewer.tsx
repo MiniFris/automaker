@@ -1,4 +1,5 @@
 'use client';
+import { formatCount, translate, useUiLocale } from '@/lib/i18n';
 
 import { useMemo, useState } from 'react';
 import { ChevronDown, ChevronRight, Wrench } from 'lucide-react';
@@ -153,6 +154,7 @@ interface PlanContentViewerProps {
 }
 
 export function PlanContentViewer({ content, className }: PlanContentViewerProps) {
+  useUiLocale();
   const [showToolCalls, setShowToolCalls] = useState(false);
 
   const { toolCalls, planMarkdown } = useMemo(() => parsePlanContent(content), [content]);
@@ -160,7 +162,7 @@ export function PlanContentViewer({ content, className }: PlanContentViewerProps
   if (!content || !content.trim()) {
     return (
       <div className={cn('text-muted-foreground text-center py-8', className)}>
-        No plan content available.
+        {translate('No plan content available.')}
       </div>
     );
   }
@@ -181,7 +183,8 @@ export function PlanContentViewer({ content, className }: PlanContentViewerProps
             )}
             <Wrench className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
-              Exploration ({toolCalls.length} tool call{toolCalls.length !== 1 ? 's' : ''})
+              {translate('Exploration (')}
+              {formatCount(toolCalls.length, 'tool call')})
             </span>
           </button>
 
@@ -189,7 +192,10 @@ export function PlanContentViewer({ content, className }: PlanContentViewerProps
             <div className="p-3 space-y-2 bg-muted/10 max-h-[300px] overflow-y-auto">
               {toolCalls.map((tc, idx) => (
                 <div key={idx} className="text-xs font-mono">
-                  <div className="text-cyan-400 mb-1">Tool: {tc.tool}</div>
+                  <div className="text-cyan-400 mb-1">
+                    {translate('Tool: ')}
+                    {tc.tool}
+                  </div>
                   <pre className="bg-muted/50 rounded p-2 overflow-x-auto text-foreground-secondary whitespace-pre-wrap">
                     {tc.input}
                   </pre>
@@ -207,8 +213,10 @@ export function PlanContentViewer({ content, className }: PlanContentViewerProps
         </div>
       ) : toolCalls.length > 0 ? (
         <div className="text-muted-foreground text-center py-8 border border-dashed border-border rounded-lg">
-          <p className="text-sm">No specification content found.</p>
-          <p className="text-xs mt-1">The plan appears to only contain exploration tool calls.</p>
+          <p className="text-sm">{translate('No specification content found.')}</p>
+          <p className="text-xs mt-1">
+            {translate('The plan appears to only contain exploration tool calls.')}
+          </p>
         </div>
       ) : null}
     </div>

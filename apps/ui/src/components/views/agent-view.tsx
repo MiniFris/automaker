@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAppStore } from '@/store/app-store';
 import { useElectronAgent } from '@/hooks/use-electron-agent';
@@ -19,6 +20,7 @@ import { AgentInputArea } from './agent-view/input-area';
 const LG_BREAKPOINT = 1024;
 
 export function AgentView() {
+  useUiLocale();
   const { currentProject, getCurrentWorktree } = useAppStore();
   const [input, setInput] = useState('');
   const [currentTool, setCurrentTool] = useState<string | null>(null);
@@ -55,11 +57,16 @@ export function AgentView() {
 
   // Session management hook - scoped to current worktree
   // Also handles model selection persistence per session
-  const { currentSessionId, handleSelectSession, modelSelection, modelSelectionReady, setModelSelection } =
-    useAgentSession({
-      projectPath: currentProject?.path,
-      workingDirectory: effectiveWorkingDirectory,
-    });
+  const {
+    currentSessionId,
+    handleSelectSession,
+    modelSelection,
+    modelSelectionReady,
+    setModelSelection,
+  } = useAgentSession({
+    projectPath: currentProject?.path,
+    workingDirectory: effectiveWorkingDirectory,
+  });
 
   // Use the Electron agent hook (only if we have a session)
   const {
@@ -134,7 +141,7 @@ export function AgentView() {
   }, [input, fileAttachments, modelSelectionReady, isProcessing, sendMessage, addToServerQueue]);
 
   const handleClearChat = async () => {
-    if (!confirm('Are you sure you want to clear this conversation?')) return;
+    if (!confirm(translate('Are you sure you want to clear this conversation?'))) return;
     await clearHistory();
   };
 

@@ -1,3 +1,5 @@
+import { getFormattingLocale } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { useQueryClient } from '@tanstack/react-query';
@@ -106,6 +108,7 @@ export function SessionManager({
   isCurrentSessionThinking = false,
   onQuickCreateRef,
 }: SessionManagerProps) {
+  useUiLocale();
   const shortcuts = useKeyboardShortcutsConfig();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
@@ -352,7 +355,7 @@ export function SessionManager({
     <Card className="h-full flex flex-col rounded-none">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between mb-4">
-          <CardTitle>Agent Sessions</CardTitle>
+          <CardTitle>{translate('Agent Sessions')}</CardTitle>
           <HotkeyButton
             variant="default"
             size="sm"
@@ -366,10 +369,10 @@ export function SessionManager({
             hotkey={shortcuts.newSession}
             hotkeyActive={false}
             data-testid="new-session-button"
-            title={`New Session (${shortcuts.newSession})`}
+            title={translate('New Session ({value1})', { value1: shortcuts.newSession })}
           >
             <Plus className="w-4 h-4 mr-1" />
-            New
+            {translate('New')}
           </HotkeyButton>
         </div>
 
@@ -381,11 +384,13 @@ export function SessionManager({
           <TabsList className="w-full">
             <TabsTrigger value="active" className="flex-1">
               <MessageSquare className="w-4 h-4 mr-2" />
-              Active ({activeSessions.length})
+              {translate('Active (')}
+              {activeSessions.length})
             </TabsTrigger>
             <TabsTrigger value="archived" className="flex-1">
               <Archive className="w-4 h-4 mr-2" />
-              Archived ({archivedSessions.length})
+              {translate('Archived (')}
+              {archivedSessions.length})
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -397,7 +402,7 @@ export function SessionManager({
           <div className="p-3 border rounded-lg bg-muted/50">
             <div className="flex gap-2">
               <Input
-                placeholder="Session name..."
+                placeholder={translate('Session name...')}
                 value={newSessionName}
                 onChange={(e) => setNewSessionName(e.target.value)}
                 onKeyDown={(e) => {
@@ -437,7 +442,7 @@ export function SessionManager({
               data-testid="delete-all-archived-sessions-button"
             >
               <Trash2 className="w-4 h-4 mr-2" />
-              Delete All Archived Sessions
+              {translate('Delete All Archived Sessions')}
             </Button>
           </div>
         )}
@@ -511,25 +516,27 @@ export function SessionManager({
                           className="text-xs text-muted-foreground"
                           title={
                             session.executionEnvironment.fallbackReason
-                              ? 'Explicitly confirmed Auto fallback; pinned Local for this session'
-                              : 'Pinned execution environment'
+                              ? translate(
+                                  'Explicitly confirmed Auto fallback; pinned Local for this session'
+                                )
+                              : translate('Pinned execution environment')
                           }
                         >
                           {session.executionEnvironment.fallbackReason
-                            ? 'Local (Auto fallback)'
+                            ? translate('Local (Auto fallback)')
                             : session.executionEnvironment.type === 'docker'
-                              ? 'Docker'
+                              ? translate('Docker')
                               : session.executionEnvironment.type === 'ssh'
                                 ? 'SSH'
                                 : session.executionEnvironment.type === 'local'
-                                  ? 'Local'
-                                  : 'Legacy'}
+                                  ? translate('Local')
+                                  : translate('Legacy')}
                         </span>
                       )}
                       {((currentSessionId === session.id && isCurrentSessionThinking) ||
                         runningSessions.has(session.id)) && (
                         <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                          thinking...
+                          {translate('thinking...')}
                         </span>
                       )}
                     </div>
@@ -538,11 +545,11 @@ export function SessionManager({
                     )}
                     <div className="flex items-center gap-2 mt-2">
                       <span className="text-xs text-muted-foreground">
-                        {session.messageCount} messages
+                        {session.messageCount} {translate(' messages')}
                       </span>
                       <span className="text-xs text-muted-foreground">·</span>
                       <span className="text-xs text-muted-foreground">
-                        {new Date(session.updatedAt).toLocaleDateString()}
+                        {new Date(session.updatedAt).toLocaleDateString(getFormattingLocale())}
                       </span>
                     </div>
                   </>
@@ -604,12 +611,14 @@ export function SessionManager({
           <div className="text-center py-8 text-muted-foreground">
             <MessageSquare className="w-12 h-12 mx-auto mb-2 opacity-50" />
             <p className="text-sm">
-              {activeTab === 'active' ? 'No active sessions' : 'No archived sessions'}
+              {activeTab === 'active'
+                ? translate('No active sessions')
+                : translate('No archived sessions')}
             </p>
             <p className="text-xs">
               {activeTab === 'active'
-                ? 'Create your first session to get started'
-                : 'Archive sessions to see them here'}
+                ? translate('Create your first session to get started')
+                : translate('Archive sessions to see them here')}
             </p>
           </div>
         )}

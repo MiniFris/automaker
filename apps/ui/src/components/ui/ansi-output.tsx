@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -248,6 +249,7 @@ function get256Color(index: number): string {
 }
 
 export function AnsiOutput({ text, className }: AnsiOutputProps) {
+  useUiLocale();
   const segments = useMemo(() => parseAnsi(text), [text]);
 
   return (

@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { memo, useState } from 'react';
 import { BaseEdge, getBezierPath, EdgeLabelRenderer } from '@xyflow/react';
 import type { EdgeProps } from '@xyflow/react';
@@ -33,6 +34,7 @@ const getEdgeColor = (sourceStatus?: Feature['status'], targetStatus?: Feature['
 };
 
 export const DependencyEdge = memo(function DependencyEdge(props: EdgeProps) {
+  useUiLocale();
   const {
     id,
     source,
@@ -123,7 +125,7 @@ export const DependencyEdge = memo(function DependencyEdge(props: EdgeProps) {
                   'transition-all duration-150',
                   'hover:scale-110'
                 )}
-                title="Delete dependency"
+                title={translate('Delete dependency')}
               >
                 <Trash2 className="w-3 h-3" />
               </button>
@@ -205,7 +207,7 @@ export const DependencyEdge = memo(function DependencyEdge(props: EdgeProps) {
                 'transition-all duration-150',
                 'hover:scale-110'
               )}
-              title="Delete dependency"
+              title={translate('Delete dependency')}
             >
               <Trash2 className="w-3 h-3" />
             </button>

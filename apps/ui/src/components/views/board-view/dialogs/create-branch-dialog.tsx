@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import {
@@ -57,6 +58,7 @@ export function CreateBranchDialog({
   worktree,
   onCreated,
 }: CreateBranchDialogProps) {
+  useUiLocale();
   const [branchName, setBranchName] = useState('');
   const [baseBranch, setBaseBranch] = useState('');
   const [branches, setBranches] = useState<BranchInfo[]>([]);
@@ -150,7 +152,7 @@ export function CreateBranchDialog({
       try {
         const api = getElectronAPI();
         if (!api?.worktree?.checkoutBranch) {
-          toast.error('Branch API not available');
+          toast.error(translate('Branch API not available'));
           setIsCreating(false);
           return;
         }
@@ -167,7 +169,7 @@ export function CreateBranchDialog({
         if (result.success && result.result) {
           // Check if there were conflicts from stash reapply
           if (result.result.hasConflicts) {
-            toast.warning('Branch created with conflicts', {
+            toast.warning(translate('Branch created with conflicts'), {
               description: result.result.message,
               duration: 8000,
             });
@@ -180,11 +182,11 @@ export function CreateBranchDialog({
           onCreated();
           onOpenChange(false);
         } else {
-          setError(result.error || 'Failed to create branch');
+          setError(result.error || translate('Failed to create branch'));
         }
       } catch (err) {
         logger.error('Create branch failed:', err);
-        setError('Failed to create branch');
+        setError(translate('Failed to create branch'));
       } finally {
         setIsCreating(false);
         setShowStashConfirm(false);
@@ -205,7 +207,7 @@ export function CreateBranchDialog({
     // Basic validation
     const invalidChars = /[\s~^:?*[\]\\]/;
     if (invalidChars.test(branchName)) {
-      setError('Branch name contains invalid characters');
+      setError(translate('Branch name contains invalid characters'));
       return;
     }
 
@@ -279,14 +281,16 @@ export function CreateBranchDialog({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <GitBranchPlus className="w-5 h-5" />
-              Create New Branch
+              {translate('Create New Branch')}
             </DialogTitle>
-            <DialogDescription>Create a new branch from a base branch</DialogDescription>
+            <DialogDescription>
+              {translate('Create a new branch from a base branch')}
+            </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="branch-name">Branch Name</Label>
+              <Label htmlFor="branch-name">{translate('Branch Name')}</Label>
               <Input
                 id="branch-name"
                 placeholder="feature/my-new-feature"
@@ -307,7 +311,7 @@ export function CreateBranchDialog({
 
             <div className="grid gap-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="base-branch">Base Branch</Label>
+                <Label htmlFor="base-branch">{translate('Base Branch')}</Label>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -320,13 +324,15 @@ export function CreateBranchDialog({
                   ) : (
                     <RefreshCw className="w-3 h-3 mr-1" />
                   )}
-                  Refresh
+                  {translate('Refresh')}
                 </Button>
               </div>
               {isLoadingBranches && branches.length === 0 ? (
                 <div className="flex items-center justify-center py-3 border rounded-md border-input">
                   <Spinner size="sm" className="mr-2" />
-                  <span className="text-sm text-muted-foreground">Loading branches...</span>
+                  <span className="text-sm text-muted-foreground">
+                    {translate('Loading branches...')}
+                  </span>
                 </div>
               ) : (
                 <Popover open={baseBranchPopoverOpen} onOpenChange={setBaseBranchPopoverOpen}>
@@ -342,7 +348,9 @@ export function CreateBranchDialog({
                     >
                       <span className="truncate text-sm">
                         {baseBranchDisplayLabel ?? (
-                          <span className="text-muted-foreground">Select base branch</span>
+                          <span className="text-muted-foreground">
+                            {translate('Select base branch')}
+                          </span>
                         )}
                       </span>
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -355,9 +363,9 @@ export function CreateBranchDialog({
                     onTouchMove={(e) => e.stopPropagation()}
                   >
                     <Command shouldFilter={true}>
-                      <CommandInput placeholder="Filter branches..." className="h-9" />
+                      <CommandInput placeholder={translate('Filter branches...')} className="h-9" />
                       <CommandList>
-                        <CommandEmpty>No matching branches</CommandEmpty>
+                        <CommandEmpty>{translate('No matching branches')}</CommandEmpty>
                         {localBranches.length > 0 && (
                           <CommandGroup heading="Local Branches">
                             {localBranches.map((branch) => (
@@ -380,7 +388,7 @@ export function CreateBranchDialog({
                                 </span>
                                 {branch.isCurrent && (
                                   <span className="ml-1.5 text-xs text-muted-foreground shrink-0">
-                                    (current)
+                                    {translate('(current)')}
                                   </span>
                                 )}
                               </CommandItem>
@@ -429,7 +437,7 @@ export function CreateBranchDialog({
               onClick={() => onOpenChange(false)}
               disabled={isCreating || isChecking}
             >
-              Cancel
+              {translate('Cancel')}
             </Button>
             <Button
               onClick={handleCreate}
@@ -438,15 +446,15 @@ export function CreateBranchDialog({
               {isCreating ? (
                 <>
                   <Spinner size="sm" className="mr-2" />
-                  Creating...
+                  {translate('Creating...')}
                 </>
               ) : isChecking ? (
                 <>
                   <Spinner size="sm" className="mr-2" />
-                  Checking...
+                  {translate('Checking...')}
                 </>
               ) : (
-                'Create Branch'
+                translate('Create Branch')
               )}
             </Button>
           </DialogFooter>

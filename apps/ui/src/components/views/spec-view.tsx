@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useCallback } from 'react';
 import { useAppStore } from '@/store/app-store';
 import { Spinner } from '@/components/ui/spinner';
@@ -22,6 +23,7 @@ import { CreateSpecDialog, RegenerateSpecDialog } from './spec-view/dialogs';
 import type { SpecViewMode as SpecViewModeType } from './spec-view/types';
 
 export function SpecView() {
+  useUiLocale();
   const { currentProject, appSpec } = useAppStore();
 
   // View mode state - default to 'view'
@@ -102,7 +104,7 @@ export function SpecView() {
   if (!currentProject) {
     return (
       <div className="flex-1 flex items-center justify-center" data-testid="spec-view-no-project">
-        <p className="text-muted-foreground">No project selected</p>
+        <p className="text-muted-foreground">{translate('No project selected')}</p>
       </div>
     );
   }
@@ -204,7 +206,7 @@ export function SpecView() {
             {/* Show parse error indicator - positioned to the right */}
             {!isParseValid && parseErrors.length > 0 && (
               <span className="absolute right-4 text-xs text-destructive">
-                XML has errors - fix in Source mode
+                {translate('XML has errors - fix in Source mode')}
               </span>
             )}
           </div>
@@ -213,7 +215,8 @@ export function SpecView() {
         {/* Show parse error banner if in source mode with errors */}
         {!isParseValid && parseErrors.length > 0 && mode === 'source' && (
           <div className="px-4 py-2 bg-destructive/10 border-b border-destructive/20 text-sm text-destructive">
-            <span className="font-medium">XML Parse Errors:</span> {parseErrors.join(', ')}
+            <span className="font-medium">{translate('XML Parse Errors:')}</span>{' '}
+            {parseErrors.join(', ')}
           </div>
         )}
 

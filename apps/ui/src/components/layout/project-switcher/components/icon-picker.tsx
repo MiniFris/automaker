@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState } from 'react';
 import { X, Search } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
@@ -441,6 +442,7 @@ const POPULAR_ICONS = [
 ];
 
 export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
+  useUiLocale();
   const [search, setSearch] = useState('');
 
   const filteredIcons = POPULAR_ICONS.filter((icon) =>
@@ -461,7 +463,7 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search icons..."
+          placeholder={translate('Search icons...')}
           className="pl-9"
         />
       </div>
@@ -479,7 +481,7 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
           <button
             onClick={() => onSelectIcon(null)}
             className="p-1 hover:bg-background rounded transition-colors"
-            title="Clear icon"
+            title={translate('Clear icon')}
           >
             <X className="w-4 h-4" />
           </button>

@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ import {
 import { getEditorIcon } from '@/components/icons/editor-icons';
 
 export function AccountSection() {
+  useUiLocale();
   const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -45,7 +47,7 @@ export function AccountSection() {
 
   const handleRefreshEditors = async () => {
     await refresh();
-    toast.success('Editor list refreshed');
+    toast.success(translate('Editor list refreshed'));
   };
 
   const handleLogout = async () => {
@@ -76,9 +78,13 @@ export function AccountSection() {
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/20">
             <User className="w-5 h-5 text-primary" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground tracking-tight">Account</h2>
+          <h2 className="text-lg font-semibold text-foreground tracking-tight">
+            {translate('Account')}
+          </h2>
         </div>
-        <p className="text-sm text-muted-foreground/80 ml-12">Manage your session and account.</p>
+        <p className="text-sm text-muted-foreground/80 ml-12">
+          {translate('Manage your session and account.')}
+        </p>
       </div>
       <div className="p-6 space-y-4">
         {/* Default IDE */}
@@ -88,9 +94,9 @@ export function AccountSection() {
               <Code2 className="w-5 h-5 text-muted-foreground" />
             </div>
             <div className="min-w-0">
-              <p className="font-medium text-foreground">Default IDE</p>
+              <p className="font-medium text-foreground">{translate('Default IDE')}</p>
               <p className="text-xs text-muted-foreground/70 mt-0.5">
-                Default IDE to use when opening branches or worktrees
+                {translate('Default IDE to use when opening branches or worktrees')}
               </p>
             </div>
           </div>
@@ -101,17 +107,17 @@ export function AccountSection() {
               disabled={isLoadingEditors || isRefreshing || editors.length === 0}
             >
               <SelectTrigger className="w-[180px] shrink-0">
-                <SelectValue placeholder="Select editor">
+                <SelectValue placeholder={translate('Select editor')}>
                   {effectiveEditor ? (
                     <span className="flex items-center gap-2">
                       {EffectiveEditorIcon && <EffectiveEditorIcon className="w-4 h-4" />}
                       {effectiveEditor.name}
                       {selectValue === 'auto' && (
-                        <span className="text-muted-foreground text-xs">(Auto)</span>
+                        <span className="text-muted-foreground text-xs">{translate('(Auto)')}</span>
                       )}
                     </span>
                   ) : (
-                    'Select editor'
+                    translate('Select editor')
                   )}
                 </SelectValue>
               </SelectTrigger>
@@ -119,7 +125,7 @@ export function AccountSection() {
                 <SelectItem value="auto">
                   <span className="flex items-center gap-2">
                     <Code2 className="w-4 h-4" />
-                    Auto-detect
+                    {translate('Auto-detect')}
                   </span>
                 </SelectItem>
                 {editors.map((editor: EditorInfo) => {
@@ -148,7 +154,7 @@ export function AccountSection() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Refresh available editors</p>
+                <p>{translate('Refresh available editors')}</p>
               </TooltipContent>
             </Tooltip>
           </div>
@@ -161,9 +167,9 @@ export function AccountSection() {
               <LogOut className="w-5 h-5 text-muted-foreground" />
             </div>
             <div className="min-w-0">
-              <p className="font-medium text-foreground">Log Out</p>
+              <p className="font-medium text-foreground">{translate('Log Out')}</p>
               <p className="text-xs text-muted-foreground/70 mt-0.5">
-                End your current session and return to the login screen
+                {translate('End your current session and return to the login screen')}
               </p>
             </div>
           </div>
@@ -179,7 +185,7 @@ export function AccountSection() {
             )}
           >
             <LogOut className="w-4 h-4" />
-            {isLoggingOut ? 'Logging out...' : 'Log Out'}
+            {isLoggingOut ? translate('Logging out...') : translate('Log Out')}
           </Button>
         </div>
       </div>

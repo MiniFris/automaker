@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
@@ -21,6 +22,7 @@ export function calculateMinHeight(text: string): string {
  * Renders an info or warning banner.
  */
 export function Banner({ config }: { config: BannerConfig }) {
+  useUiLocale();
   const isWarning = config.type === 'warning';
   const Icon = isWarning ? AlertTriangle : Info;
 
@@ -61,6 +63,7 @@ export function PromptField({
   onCustomValueChange,
   critical = false,
 }: PromptFieldProps) {
+  useUiLocale();
   const isEnabled = customValue?.enabled ?? false;
   const displayValue = isEnabled ? (customValue?.value ?? defaultValue) : defaultValue;
   const minHeight = calculateMinHeight(displayValue);
@@ -82,10 +85,11 @@ export function PromptField({
         <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
           <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
           <div className="flex-1">
-            <p className="text-xs font-medium text-amber-500">Critical Prompt</p>
+            <p className="text-xs font-medium text-amber-500">{translate('Critical Prompt')}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              This prompt requires a specific output format. Changing it incorrectly may break
-              functionality. Only modify if you understand the expected structure.
+              {translate(
+                'This prompt requires a specific output format. Changing it incorrectly may break functionality. Only modify if you understand the expected structure.'
+              )}
             </p>
           </div>
         </div>
@@ -95,7 +99,9 @@ export function PromptField({
           {label}
         </Label>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">{isEnabled ? 'Custom' : 'Default'}</span>
+          <span className="text-xs text-muted-foreground">
+            {isEnabled ? translate('Custom') : translate('Default')}
+          </span>
           <Switch
             checked={isEnabled}
             onCheckedChange={handleToggle}
@@ -137,6 +143,7 @@ export function PromptFieldList({
     value: CustomPrompt | undefined
   ) => void;
 }) {
+  useUiLocale();
   return (
     <>
       {fields.map((field) => (

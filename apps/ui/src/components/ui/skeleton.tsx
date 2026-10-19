@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 /**
  * Skeleton Components
  *
@@ -14,5 +15,6 @@ interface SkeletonPulseProps {
  * Pulsing skeleton placeholder for loading states
  */
 export function SkeletonPulse({ className }: SkeletonPulseProps) {
+  useUiLocale();
   return <div className={cn('animate-pulse bg-muted/50 rounded', className)} />;
 }

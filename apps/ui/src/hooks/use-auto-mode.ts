@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 import { useEffect, useCallback, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { createLogger } from '@automaker/utils/logger';
@@ -574,7 +575,7 @@ export function useAutoMode(worktree?: WorktreeInfo) {
             batchedAddAutoModeActivity({
               featureId: event.featureId,
               type: 'start',
-              message: `Started working on feature`,
+              message: translate('Started working on feature'),
             });
           }
           break;
@@ -655,7 +656,7 @@ export function useAutoMode(worktree?: WorktreeInfo) {
             batchedAddAutoModeActivity({
               featureId: event.featureId,
               type: 'tool',
-              message: `Using tool: ${event.tool}`,
+              message: translate('Using tool: {value1}', { value1: event.tool }),
               tool: event.tool,
             });
           }
@@ -722,7 +723,7 @@ export function useAutoMode(worktree?: WorktreeInfo) {
             batchedAddAutoModeActivity({
               featureId: event.featureId,
               type: 'action',
-              message: 'Plan auto-approved, starting implementation...',
+              message: translate('Plan auto-approved, starting implementation...'),
               phase: 'action',
             });
           }
@@ -741,7 +742,9 @@ export function useAutoMode(worktree?: WorktreeInfo) {
             batchedAddAutoModeActivity({
               featureId: event.featureId,
               type: 'planning',
-              message: `Revising plan based on feedback (v${revisionEvent.planVersion})...`,
+              message: translate('Revising plan based on feedback (v{value1})...', {
+                value1: revisionEvent.planVersion,
+              }),
               phase: 'planning',
             });
           }
@@ -757,7 +760,10 @@ export function useAutoMode(worktree?: WorktreeInfo) {
             batchedAddAutoModeActivity({
               featureId: event.featureId,
               type: 'progress',
-              message: `▶ Starting ${taskEvent.taskId}: ${taskEvent.taskDescription}`,
+              message: translate('▶ Starting {value1}: {value2}', {
+                value1: taskEvent.taskId,
+                value2: taskEvent.taskDescription,
+              }),
             });
           }
           break;
@@ -772,7 +778,11 @@ export function useAutoMode(worktree?: WorktreeInfo) {
             batchedAddAutoModeActivity({
               featureId: event.featureId,
               type: 'progress',
-              message: `✓ ${taskEvent.taskId} done (${taskEvent.tasksCompleted}/${taskEvent.tasksTotal})`,
+              message: translate('✓ {value1} done ({value2}/{value3})', {
+                value1: taskEvent.taskId,
+                value2: taskEvent.tasksCompleted,
+                value3: taskEvent.tasksTotal,
+              }),
             });
           }
           break;
@@ -790,7 +800,7 @@ export function useAutoMode(worktree?: WorktreeInfo) {
             batchedAddAutoModeActivity({
               featureId: event.featureId,
               type: 'action',
-              message: `Phase ${phaseEvent.phaseNumber} completed`,
+              message: translate('Phase {value1} completed', { value1: phaseEvent.phaseNumber }),
               phase: 'action',
             });
           }
@@ -818,7 +828,9 @@ export function useAutoMode(worktree?: WorktreeInfo) {
             batchedAddAutoModeActivity({
               featureId: event.featureId,
               type: 'progress',
-              message: `Summary: ${summaryEvent.summary.substring(0, 100)}...`,
+              message: translate('Summary: {value1}...', {
+                value1: summaryEvent.summary.substring(0, 100),
+              }),
             });
           }
           break;
@@ -1053,7 +1065,7 @@ export function useAutoMode(worktree?: WorktreeInfo) {
           batchedAddAutoModeActivity({
             featureId,
             type: 'complete',
-            message: 'Feature stopped by user',
+            message: translate('Feature stopped by user'),
             passes: false,
           });
           return true;

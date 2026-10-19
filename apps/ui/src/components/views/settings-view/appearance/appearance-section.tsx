@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -12,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/app-store';
 import { FontSelector } from '@/components/shared';
 import type { Theme } from '../shared/types';
+import { LanguageSelector } from '@/components/shared/language-selector';
 
 interface AppearanceSectionProps {
   effectiveTheme: Theme;
@@ -19,6 +21,7 @@ interface AppearanceSectionProps {
 }
 
 export function AppearanceSection({ effectiveTheme, onThemeChange }: AppearanceSectionProps) {
+  useUiLocale();
   const {
     fontFamilySans,
     fontFamilyMono,
@@ -81,17 +84,20 @@ export function AppearanceSection({ effectiveTheme, onThemeChange }: AppearanceS
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500/20 to-brand-600/10 flex items-center justify-center border border-brand-500/20">
             <Palette className="w-5 h-5 text-brand-500" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground tracking-tight">Appearance</h2>
+          <h2 className="text-lg font-semibold text-foreground tracking-tight">
+            {translate('Appearance')}
+          </h2>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Customize the look and feel of your application.
+          {translate('Customize the look and feel of your application.')}
         </p>
       </div>
       <div className="p-6 space-y-6">
+        <LanguageSelector />
         {/* Theme Section */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label className="text-foreground font-medium">Theme</Label>
+            <Label className="text-foreground font-medium">{translate('Theme')}</Label>
             {/* Dark/Light Tabs */}
             <div className="flex gap-1 p-1 rounded-lg bg-accent/30">
               <button
@@ -104,7 +110,7 @@ export function AppearanceSection({ effectiveTheme, onThemeChange }: AppearanceS
                 )}
               >
                 <Moon className="w-3.5 h-3.5" />
-                Dark
+                {translate('Dark')}
               </button>
               <button
                 onClick={() => setActiveTab('light')}
@@ -116,7 +122,7 @@ export function AppearanceSection({ effectiveTheme, onThemeChange }: AppearanceS
                 )}
               >
                 <Sun className="w-3.5 h-3.5" />
-                Light
+                {translate('Light')}
               </button>
             </div>
           </div>
@@ -159,44 +165,46 @@ export function AppearanceSection({ effectiveTheme, onThemeChange }: AppearanceS
         <div className="space-y-4 pt-6 border-t border-border/50">
           <div className="flex items-center gap-2 mb-4">
             <Type className="w-4 h-4 text-muted-foreground" />
-            <Label className="text-foreground font-medium">Fonts</Label>
+            <Label className="text-foreground font-medium">{translate('Fonts')}</Label>
           </div>
           <p className="text-xs text-muted-foreground -mt-2 mb-4">
-            Set default fonts for all projects. Individual projects can override these settings.
+            {translate(
+              'Set default fonts for all projects. Individual projects can override these settings.'
+            )}
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* UI Font Selector */}
             <div className="space-y-2">
               <Label htmlFor="global-ui-font-select" className="text-sm">
-                UI Font
+                {translate('UI Font')}
               </Label>
               <FontSelector
                 id="global-ui-font-select"
                 value={fontSansValue}
                 options={UI_SANS_FONT_OPTIONS}
-                placeholder="Default (Geist Sans)"
+                placeholder={translate('Default (Geist Sans)')}
                 onChange={handleFontSansChange}
               />
               <p className="text-xs text-muted-foreground">
-                Used for headings, labels, and UI text
+                {translate('Used for headings, labels, and UI text')}
               </p>
             </div>
 
             {/* Code Font Selector */}
             <div className="space-y-2">
               <Label htmlFor="global-code-font-select" className="text-sm">
-                Code Font
+                {translate('Code Font')}
               </Label>
               <FontSelector
                 id="global-code-font-select"
                 value={fontMonoValue}
                 options={UI_MONO_FONT_OPTIONS}
-                placeholder="Default (Geist Mono)"
+                placeholder={translate('Default (Geist Mono)')}
                 onChange={handleFontMonoChange}
               />
               <p className="text-xs text-muted-foreground">
-                Used for code blocks and monospaced text
+                {translate('Used for code blocks and monospaced text')}
               </p>
             </div>
           </div>
@@ -206,16 +214,16 @@ export function AppearanceSection({ effectiveTheme, onThemeChange }: AppearanceS
         <div className="space-y-4 pt-6 border-t border-border/50">
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="w-4 h-4 text-muted-foreground" />
-            <Label className="text-foreground font-medium">Startup</Label>
+            <Label className="text-foreground font-medium">{translate('Startup')}</Label>
           </div>
 
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <Label htmlFor="disable-splash-screen" className="text-sm">
-                Disable Splash Screen
+                {translate('Disable Splash Screen')}
               </Label>
               <p className="text-xs text-muted-foreground">
-                Skip the animated splash screen when the app starts
+                {translate('Skip the animated splash screen when the app starts')}
               </p>
             </div>
             <Switch
@@ -230,11 +238,12 @@ export function AppearanceSection({ effectiveTheme, onThemeChange }: AppearanceS
         <div className="space-y-4 pt-6 border-t border-border/50">
           <div className="flex items-center gap-2 mb-4">
             <PanelLeft className="w-4 h-4 text-muted-foreground" />
-            <Label className="text-foreground font-medium">Sidebar Layout</Label>
+            <Label className="text-foreground font-medium">{translate('Sidebar Layout')}</Label>
           </div>
           <p className="text-xs text-muted-foreground -mt-2 mb-4">
-            Choose between a modern unified sidebar or classic Discord-style layout with a separate
-            project switcher.
+            {translate(
+              'Choose between a modern unified sidebar or classic Discord-style layout with a separate project switcher.'
+            )}
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -268,9 +277,9 @@ export function AppearanceSection({ effectiveTheme, onThemeChange }: AppearanceS
                 )}
               />
               <div className="text-center">
-                <div className="font-medium">Unified</div>
+                <div className="font-medium">{translate('Unified')}</div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  Single sidebar with project dropdown
+                  {translate('Single sidebar with project dropdown')}
                 </div>
               </div>
             </button>
@@ -305,9 +314,9 @@ export function AppearanceSection({ effectiveTheme, onThemeChange }: AppearanceS
                 )}
               />
               <div className="text-center">
-                <div className="font-medium">Classic</div>
+                <div className="font-medium">{translate('Classic')}</div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  Separate project switcher + sidebar
+                  {translate('Separate project switcher + sidebar')}
                 </div>
               </div>
             </button>
@@ -318,17 +327,18 @@ export function AppearanceSection({ effectiveTheme, onThemeChange }: AppearanceS
         <div className="space-y-4 pt-6 border-t border-border/50">
           <div className="flex items-center gap-2 mb-4">
             <LayoutList className="w-4 h-4 text-muted-foreground" />
-            <Label className="text-foreground font-medium">Board</Label>
+            <Label className="text-foreground font-medium">{translate('Board')}</Label>
           </div>
 
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1 flex-1">
               <Label htmlFor="default-sort-newest-card-on-top" className="text-sm">
-                Sort Newest First
+                {translate('Sort Newest First')}
               </Label>
               <p className="text-xs text-muted-foreground">
-                Sort all cards by creation date (newest on top) across all board columns and list
-                view.
+                {translate(
+                  'Sort all cards by creation date (newest on top) across all board columns and list view.'
+                )}
               </p>
             </div>
             <Switch

@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 import { useState, useCallback, useEffect } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { DragStartEvent, DragEndEvent } from '@dnd-kit/core';
@@ -108,8 +109,8 @@ export function useBoardDragDrop({
 
           // Don't allow linking completed features (they're already done)
           if (draggedFeature.status === 'completed' || targetFeature.status === 'completed') {
-            toast.error('Cannot link features', {
-              description: 'Completed features cannot be linked.',
+            toast.error(translate('Cannot link features'), {
+              description: translate('Completed features cannot be linked.'),
             });
             return;
           }
@@ -137,8 +138,8 @@ export function useBoardDragDrop({
           // Don't allow moving running tasks to a different worktree
           if (isRunningTask) {
             logger.debug('Cannot move running feature to different worktree');
-            toast.error('Cannot move feature', {
-              description: 'This feature is currently running and cannot be moved.',
+            toast.error(translate('Cannot move feature'), {
+              description: translate('This feature is currently running and cannot be moved.'),
             });
             return;
           }
@@ -166,8 +167,12 @@ export function useBoardDragDrop({
           await persistFeatureUpdate(featureId, { branchName: newBranchName });
 
           const branchDisplay = worktreeData.isMain ? targetBranch : targetBranch;
-          toast.success('Feature moved to branch', {
-            description: `Moved to ${branchDisplay}: ${draggedFeature.description.slice(0, 40)}${draggedFeature.description.length > 40 ? '...' : ''}`,
+          toast.success(translate('Feature moved to branch'), {
+            description: translate('Moved to {value1}: {value2}{value3}', {
+              value1: branchDisplay,
+              value2: draggedFeature.description.slice(0, 40),
+              value3: draggedFeature.description.length > 40 ? '...' : '',
+            }),
           });
           return;
         }
@@ -227,11 +232,11 @@ export function useBoardDragDrop({
             status: 'verified',
             justFinishedAt: undefined,
           });
-          toast.success('Feature verified', {
-            description: `Manually verified: ${draggedFeature.description.slice(
-              0,
-              50
-            )}${draggedFeature.description.length > 50 ? '...' : ''}`,
+          toast.success(translate('Feature verified'), {
+            description: translate('Manually verified: {value1}{value2}', {
+              value1: draggedFeature.description.slice(0, 50),
+              value2: draggedFeature.description.length > 50 ? '...' : '',
+            }),
           });
         } else if (targetStatus === 'backlog') {
           // Allow moving waiting_approval cards back to backlog
@@ -240,11 +245,11 @@ export function useBoardDragDrop({
             status: 'backlog',
             justFinishedAt: undefined,
           });
-          toast.info('Feature moved to backlog', {
-            description: `Moved to Backlog: ${draggedFeature.description.slice(
-              0,
-              50
-            )}${draggedFeature.description.length > 50 ? '...' : ''}`,
+          toast.info(translate('Feature moved to backlog'), {
+            description: translate('Moved to Backlog: {value1}{value2}', {
+              value1: draggedFeature.description.slice(0, 50),
+              value2: draggedFeature.description.length > 50 ? '...' : '',
+            }),
           });
         }
       } else if (draggedFeature.status === 'in_progress') {
@@ -261,38 +266,38 @@ export function useBoardDragDrop({
               }
             } catch (error) {
               logger.error('Error stopping feature during drag to backlog:', error);
-              toast.error('Failed to stop agent', {
-                description: 'The feature will still be moved to backlog.',
+              toast.error(translate('Failed to stop agent'), {
+                description: translate('The feature will still be moved to backlog.'),
               });
             }
           }
           persistFeatureUpdate(featureId, { status: 'backlog' });
           toast.info(
             isRunningTask
-              ? 'Agent stopped and feature moved to backlog'
-              : 'Feature moved to backlog',
+              ? translate('Agent stopped and feature moved to backlog')
+              : translate('Feature moved to backlog'),
             {
-              description: `Moved to Backlog: ${draggedFeature.description.slice(
-                0,
-                50
-              )}${draggedFeature.description.length > 50 ? '...' : ''}`,
+              description: translate('Moved to Backlog: {value1}{value2}', {
+                value1: draggedFeature.description.slice(0, 50),
+                value2: draggedFeature.description.length > 50 ? '...' : '',
+              }),
             }
           );
         } else if (isRunningTask) {
           // Running features can only be dragged to backlog, not other columns
           logger.debug('Cannot drag running feature to', targetStatus);
-          toast.error('Cannot move running feature', {
-            description: 'Stop the agent first or drag to Backlog to stop and move.',
+          toast.error(translate('Cannot move running feature'), {
+            description: translate('Stop the agent first or drag to Backlog to stop and move.'),
           });
           return;
         } else if (targetStatus === 'verified' && draggedFeature.skipTests) {
           // Manual verify via drag (only for skipTests features)
           persistFeatureUpdate(featureId, { status: 'verified' });
-          toast.success('Feature verified', {
-            description: `Marked as verified: ${draggedFeature.description.slice(
-              0,
-              50
-            )}${draggedFeature.description.length > 50 ? '...' : ''}`,
+          toast.success(translate('Feature verified'), {
+            description: translate('Marked as verified: {value1}{value2}', {
+              value1: draggedFeature.description.slice(0, 50),
+              value2: draggedFeature.description.length > 50 ? '...' : '',
+            }),
           });
         }
       } else if (draggedFeature.skipTests) {
@@ -300,20 +305,20 @@ export function useBoardDragDrop({
         if (targetStatus === 'waiting_approval' && draggedFeature.status === 'verified') {
           // Move verified feature back to waiting_approval
           persistFeatureUpdate(featureId, { status: 'waiting_approval' });
-          toast.info('Feature moved back', {
-            description: `Moved back to Waiting Approval: ${draggedFeature.description.slice(
-              0,
-              50
-            )}${draggedFeature.description.length > 50 ? '...' : ''}`,
+          toast.info(translate('Feature moved back'), {
+            description: translate('Moved back to Waiting Approval: {value1}{value2}', {
+              value1: draggedFeature.description.slice(0, 50),
+              value2: draggedFeature.description.length > 50 ? '...' : '',
+            }),
           });
         } else if (targetStatus === 'backlog') {
           // Allow moving skipTests cards back to backlog (from verified)
           persistFeatureUpdate(featureId, { status: 'backlog' });
-          toast.info('Feature moved to backlog', {
-            description: `Moved to Backlog: ${draggedFeature.description.slice(
-              0,
-              50
-            )}${draggedFeature.description.length > 50 ? '...' : ''}`,
+          toast.info(translate('Feature moved to backlog'), {
+            description: translate('Moved to Backlog: {value1}{value2}', {
+              value1: draggedFeature.description.slice(0, 50),
+              value2: draggedFeature.description.length > 50 ? '...' : '',
+            }),
           });
         }
       } else if (draggedFeature.status === 'verified') {
@@ -321,20 +326,20 @@ export function useBoardDragDrop({
         if (targetStatus === 'waiting_approval') {
           // Move verified feature back to waiting_approval
           persistFeatureUpdate(featureId, { status: 'waiting_approval' });
-          toast.info('Feature moved back', {
-            description: `Moved back to Waiting Approval: ${draggedFeature.description.slice(
-              0,
-              50
-            )}${draggedFeature.description.length > 50 ? '...' : ''}`,
+          toast.info(translate('Feature moved back'), {
+            description: translate('Moved back to Waiting Approval: {value1}{value2}', {
+              value1: draggedFeature.description.slice(0, 50),
+              value2: draggedFeature.description.length > 50 ? '...' : '',
+            }),
           });
         } else if (targetStatus === 'backlog') {
           // Allow moving verified cards back to backlog
           persistFeatureUpdate(featureId, { status: 'backlog' });
-          toast.info('Feature moved to backlog', {
-            description: `Moved to Backlog: ${draggedFeature.description.slice(
-              0,
-              50
-            )}${draggedFeature.description.length > 50 ? '...' : ''}`,
+          toast.info(translate('Feature moved to backlog'), {
+            description: translate('Moved to Backlog: {value1}{value2}', {
+              value1: draggedFeature.description.slice(0, 50),
+              value2: draggedFeature.description.length > 50 ? '...' : '',
+            }),
           });
         }
       }

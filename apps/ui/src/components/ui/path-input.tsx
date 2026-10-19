@@ -1,3 +1,5 @@
+import { useLocalizedMemo } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useEffect, Fragment, FocusEvent, KeyboardEvent, MouseEvent } from 'react';
 import { useState, useRef, useCallback, useMemo } from 'react';
 import { Home, ArrowLeft, Pencil, ArrowRight, Search, Folder, File, X } from 'lucide-react';
@@ -97,14 +99,15 @@ function PathInput({
   parentPath,
   loading = false,
   error,
-  placeholder = 'Paste or type a full path (e.g., /home/user/projects/myapp)',
-  searchPlaceholder = 'Search...',
+  placeholder = translate('Paste or type a full path (e.g., /home/user/projects/myapp)'),
+  searchPlaceholder = translate('Search...'),
   onNavigate,
   onHome,
   className,
   entries = [],
   onSelectEntry,
 }: PathInputProps) {
+  useUiLocale();
   const [isEditing, setIsEditing] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [pathInput, setPathInput] = useState(currentPath);
@@ -254,7 +257,7 @@ function PathInput({
 
   const breadcrumbs = useMemo(() => parseBreadcrumbs(currentPath), [currentPath]);
 
-  const entryItems = useMemo(
+  const entryItems = useLocalizedMemo(
     () =>
       entries.map((entry) => (
         <CommandItem key={entry.path} value={entry.name} onSelect={() => handleSelectEntry(entry)}>
@@ -276,7 +279,7 @@ function PathInput({
       ref={containerRef}
       className={cn('flex items-center gap-2', className)}
       role="navigation"
-      aria-label="Path navigation"
+      aria-label={translate('Path navigation')}
     >
       {/* Navigation buttons */}
       <div className="flex items-center gap-1 shrink-0">
@@ -286,7 +289,7 @@ function PathInput({
           onClick={onHome}
           className="h-7 w-7"
           disabled={loading}
-          aria-label="Go to home directory"
+          aria-label={translate('Go to home directory')}
         >
           <Home className="w-4 h-4" />
         </Button>
@@ -297,7 +300,7 @@ function PathInput({
           onClick={handleGoToParent}
           className="h-7 w-7"
           disabled={loading || !parentPath}
-          aria-label="Go to parent directory"
+          aria-label={translate('Go to parent directory')}
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
@@ -323,7 +326,7 @@ function PathInput({
                         size="icon"
                         onClick={() => setIsSearchOpen(false)}
                         className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                        aria-label="Close search"
+                        aria-label={translate('Close search')}
                       >
                         <X className="w-3.5 h-3.5" />
                       </Button>
@@ -331,7 +334,7 @@ function PathInput({
                     </div>
                   </div>
                   <CommandList className="scrollbar-styled">
-                    <CommandEmpty>No files or directories found</CommandEmpty>
+                    <CommandEmpty>{translate('No files or directories found')}</CommandEmpty>
                     <CommandGroup>{entryItems}</CommandGroup>
                   </CommandList>
                 </Command>
@@ -387,8 +390,8 @@ function PathInput({
                   size="icon"
                   onClick={() => setIsSearchOpen(true)}
                   className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                  aria-label="Search files and directories"
-                  title="Search files and directories"
+                  aria-label={translate('Search files and directories')}
+                  title={translate('Search files and directories')}
                   disabled={loading || entries.length === 0}
                 >
                   <Search className="w-3.5 h-3.5" />
@@ -398,7 +401,7 @@ function PathInput({
                   size="icon"
                   onClick={handleStartEditing}
                   className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                  aria-label="Edit path"
+                  aria-label={translate('Edit path')}
                 >
                   <Pencil className="w-3.5 h-3.5" />
                 </Button>
@@ -417,7 +420,7 @@ function PathInput({
                 className="flex-1 font-mono text-xs h-7 px-0 border-0 shadow-none focus-visible:ring-0 bg-transparent"
                 data-testid="path-input"
                 disabled={loading}
-                aria-label="Path input"
+                aria-label={translate('Path input')}
                 aria-invalid={error}
               />
               <Button
@@ -426,7 +429,7 @@ function PathInput({
                 onClick={handleGoToPath}
                 disabled={!pathInput.trim() || loading}
                 className="h-6 w-6 shrink-0"
-                aria-label="Go to path"
+                aria-label={translate('Go to path')}
               >
                 <ArrowRight className="w-3.5 h-3.5" />
               </Button>

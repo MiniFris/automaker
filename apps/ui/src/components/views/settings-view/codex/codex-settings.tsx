@@ -1,3 +1,5 @@
+import { translate } from '@/lib/i18n';
+import { useUiLocale } from '@/lib/i18n';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FileCode, Globe, ImageIcon } from 'lucide-react';
@@ -32,6 +34,7 @@ export function CodexSettings({
   onCodexEnableWebSearchChange,
   onCodexEnableImagesChange,
 }: CodexSettingsProps) {
+  useUiLocale();
   return (
     <div
       className={cn(
@@ -46,9 +49,11 @@ export function CodexSettings({
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500/20 to-brand-600/10 flex items-center justify-center border border-brand-500/20">
             <OpenAIIcon className="w-5 h-5 text-brand-500" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground tracking-tight">{CARD_TITLE}</h2>
+          <h2 className="text-lg font-semibold text-foreground tracking-tight">
+            {translate(CARD_TITLE)}
+          </h2>
         </div>
-        <p className="text-sm text-muted-foreground/80 ml-12">{CARD_SUBTITLE}</p>
+        <p className="text-sm text-muted-foreground/80 ml-12">{translate(CARD_SUBTITLE)}</p>
       </div>
       <div className="p-6 space-y-5">
         <div className="group flex items-start space-x-3 p-3 rounded-xl hover:bg-accent/30 transition-colors duration-200 -mx-3">
@@ -65,7 +70,7 @@ export function CodexSettings({
               className="text-foreground cursor-pointer font-medium flex items-center gap-2"
             >
               <FileCode className="w-4 h-4 text-brand-500" />
-              {AGENTS_TITLE}
+              {translate(AGENTS_TITLE)}
             </Label>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">
               {AGENTS_DESCRIPTION}{' '}
@@ -89,7 +94,7 @@ export function CodexSettings({
               className="text-foreground cursor-pointer font-medium flex items-center gap-2"
             >
               <Globe className="w-4 h-4 text-brand-500" />
-              {WEB_SEARCH_TITLE}
+              {translate(WEB_SEARCH_TITLE)}
             </Label>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">
               {WEB_SEARCH_DESCRIPTION}
@@ -111,7 +116,7 @@ export function CodexSettings({
               className="text-foreground cursor-pointer font-medium flex items-center gap-2"
             >
               <ImageIcon className="w-4 h-4 text-brand-500" />
-              {IMAGES_TITLE}
+              {translate(IMAGES_TITLE)}
             </Label>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">{IMAGES_DESCRIPTION}</p>
           </div>

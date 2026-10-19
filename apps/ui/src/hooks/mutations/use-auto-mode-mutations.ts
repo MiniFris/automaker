@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 /**
  * Auto Mode Mutations
  *
@@ -54,7 +55,7 @@ export function useStartFeature(projectPath: string) {
       queryClient.invalidateQueries({ queryKey: queryKeys.features.all(projectPath) });
     },
     onError: (error: Error) => {
-      toast.error('Failed to start feature', {
+      toast.error(translate('Failed to start feature'), {
         description: error.message,
       });
     },
@@ -91,7 +92,7 @@ export function useResumeFeature(projectPath: string) {
       queryClient.invalidateQueries({ queryKey: queryKeys.features.all(projectPath) });
     },
     onError: (error: Error) => {
-      toast.error('Failed to resume feature', {
+      toast.error(translate('Failed to resume feature'), {
         description: error.message,
       });
     },
@@ -133,10 +134,10 @@ export function useStopFeature() {
       if (data.projectPath) {
         queryClient.invalidateQueries({ queryKey: queryKeys.features.all(data.projectPath) });
       }
-      toast.success('Feature stopped');
+      toast.success(translate('Feature stopped'));
     },
     onError: (error: Error) => {
-      toast.error('Failed to stop feature', {
+      toast.error(translate('Failed to stop feature'), {
         description: error.message,
       });
     },
@@ -183,7 +184,7 @@ export function useVerifyFeature(projectPath: string) {
       queryClient.invalidateQueries({ queryKey: queryKeys.features.all(projectPath) });
     },
     onError: (error: Error) => {
-      toast.error('Failed to verify feature', {
+      toast.error(translate('Failed to verify feature'), {
         description: error.message,
       });
     },
@@ -234,13 +235,13 @@ export function useApprovePlan(projectPath: string) {
     onSuccess: (_, { approved }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.features.all(projectPath) });
       if (approved) {
-        toast.success('Plan approved');
+        toast.success(translate('Plan approved'));
       } else {
-        toast.info('Plan rejected');
+        toast.info(translate('Plan rejected'));
       }
     },
     onError: (error: Error) => {
-      toast.error('Failed to submit plan decision', {
+      toast.error(translate('Failed to submit plan decision'), {
         description: error.message,
       });
     },
@@ -287,7 +288,7 @@ export function useFollowUpFeature(projectPath: string) {
       queryClient.invalidateQueries({ queryKey: queryKeys.features.all(projectPath) });
     },
     onError: (error: Error) => {
-      toast.error('Failed to send follow-up', {
+      toast.error(translate('Failed to send follow-up'), {
         description: error.message,
       });
     },
@@ -316,10 +317,10 @@ export function useCommitFeature(projectPath: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.features.all(projectPath) });
       queryClient.invalidateQueries({ queryKey: queryKeys.worktrees.all(projectPath) });
-      toast.success('Changes committed');
+      toast.success(translate('Changes committed'));
     },
     onError: (error: Error) => {
-      toast.error('Failed to commit changes', {
+      toast.error(translate('Failed to commit changes'), {
         description: error.message,
       });
     },
@@ -343,10 +344,10 @@ export function useAnalyzeProject() {
       return result;
     },
     onSuccess: () => {
-      toast.success('Project analysis started');
+      toast.success(translate('Project analysis started'));
     },
     onError: (error: Error) => {
-      toast.error('Failed to analyze project', {
+      toast.error(translate('Failed to analyze project'), {
         description: error.message,
       });
     },
@@ -374,10 +375,10 @@ export function useStartAutoMode(projectPath: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.runningAgents.all() });
-      toast.success('Auto mode started');
+      toast.success(translate('Auto mode started'));
     },
     onError: (error: Error) => {
-      toast.error('Failed to start auto mode', {
+      toast.error(translate('Failed to start auto mode'), {
         description: error.message,
       });
     },
@@ -405,10 +406,10 @@ export function useStopAutoMode(projectPath: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.runningAgents.all() });
-      toast.success('Auto mode stopped');
+      toast.success(translate('Auto mode stopped'));
     },
     onError: (error: Error) => {
-      toast.error('Failed to stop auto mode', {
+      toast.error(translate('Failed to stop auto mode'), {
         description: error.message,
       });
     },

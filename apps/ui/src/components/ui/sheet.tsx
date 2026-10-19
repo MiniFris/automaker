@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 
 import * as React from 'react';
@@ -7,18 +8,22 @@ import { XIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
+  useUiLocale();
   return <SheetPrimitive.Root data-slot="sheet" {...props} />;
 }
 
 function SheetTrigger({ ...props }: React.ComponentProps<typeof SheetPrimitive.Trigger>) {
+  useUiLocale();
   return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />;
 }
 
 function SheetClose({ ...props }: React.ComponentProps<typeof SheetPrimitive.Close>) {
+  useUiLocale();
   return <SheetPrimitive.Close data-slot="sheet-close" {...props} />;
 }
 
 function SheetPortal({ ...props }: React.ComponentProps<typeof SheetPrimitive.Portal>) {
+  useUiLocale();
   return <SheetPrimitive.Portal data-slot="sheet-portal" {...props} />;
 }
 
@@ -27,6 +32,7 @@ interface SheetOverlayProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const SheetOverlay = ({ className, ...props }: SheetOverlayProps) => {
+  useUiLocale();
   const Overlay = SheetPrimitive.Overlay as React.ComponentType<
     SheetOverlayProps & { 'data-slot': string }
   >;
@@ -51,6 +57,7 @@ interface SheetContentProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const SheetContent = ({ className, children, side = 'right', ...props }: SheetContentProps) => {
+  useUiLocale();
   const Content = SheetPrimitive.Content as React.ComponentType<
     SheetContentProps & { 'data-slot': string }
   >;
@@ -89,7 +96,7 @@ const SheetContent = ({ className, children, side = 'right', ...props }: SheetCo
           }}
         >
           <XIcon className="size-4" />
-          <span className="sr-only">Close</span>
+          <span className="sr-only">{translate('Close')}</span>
         </Close>
       </Content>
     </SheetPortal>
@@ -97,6 +104,7 @@ const SheetContent = ({ className, children, side = 'right', ...props }: SheetCo
 };
 
 function SheetHeader({ className, ...props }: React.ComponentProps<'div'>) {
+  useUiLocale();
   return (
     <div
       data-slot="sheet-header"
@@ -107,6 +115,7 @@ function SheetHeader({ className, ...props }: React.ComponentProps<'div'>) {
 }
 
 function SheetFooter({ className, ...props }: React.ComponentProps<'div'>) {
+  useUiLocale();
   return (
     <div
       data-slot="sheet-footer"
@@ -119,6 +128,7 @@ function SheetFooter({ className, ...props }: React.ComponentProps<'div'>) {
 interface SheetTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {}
 
 const SheetTitle = ({ className, ...props }: SheetTitleProps) => {
+  useUiLocale();
   const Title = SheetPrimitive.Title as React.ComponentType<
     SheetTitleProps & { 'data-slot': string }
   >;
@@ -134,6 +144,7 @@ const SheetTitle = ({ className, ...props }: SheetTitleProps) => {
 interface SheetDescriptionProps extends React.HTMLAttributes<HTMLParagraphElement> {}
 
 const SheetDescription = ({ className, ...props }: SheetDescriptionProps) => {
+  useUiLocale();
   const Description = SheetPrimitive.Description as React.ComponentType<
     SheetDescriptionProps & { 'data-slot': string }
   >;

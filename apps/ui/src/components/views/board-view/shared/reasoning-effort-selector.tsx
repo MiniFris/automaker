@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Label } from '@/components/ui/label';
 import { Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -15,11 +16,12 @@ export function ReasoningEffortSelector({
   onEffortSelect,
   testIdPrefix = 'reasoning-effort',
 }: ReasoningEffortSelectorProps) {
+  useUiLocale();
   return (
     <div className="space-y-2 pt-2 border-t border-border">
       <Label className="flex items-center gap-2 text-sm">
         <Brain className="w-3.5 h-3.5 text-muted-foreground" />
-        Reasoning Effort
+        {translate('Reasoning Effort')}
       </Label>
       <div className="flex gap-2 flex-wrap">
         {REASONING_EFFORT_LEVELS.map((effort) => (
@@ -40,7 +42,7 @@ export function ReasoningEffortSelector({
         ))}
       </div>
       <p className="text-xs text-muted-foreground">
-        Higher efforts give more reasoning tokens for complex problems.
+        {translate('Higher efforts give more reasoning tokens for complex problems.')}
       </p>
     </div>
   );

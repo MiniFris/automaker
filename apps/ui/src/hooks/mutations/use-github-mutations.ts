@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 /**
  * GitHub Mutation Hooks
  *
@@ -84,12 +85,15 @@ export function useValidateIssue(projectPath: string) {
       return { issueNumber: issue.number };
     },
     onSuccess: (_, variables) => {
-      toast.info(`Starting validation for issue #${variables.issue.number}`, {
-        description: 'You will be notified when the analysis is complete',
-      });
+      toast.info(
+        translate('Starting validation for issue #{value1}', { value1: variables.issue.number }),
+        {
+          description: translate('You will be notified when the analysis is complete'),
+        }
+      );
     },
     onError: (error) => {
-      toast.error('Failed to validate issue', {
+      toast.error(translate('Failed to validate issue'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     },
@@ -171,8 +175,8 @@ export function useResolveReviewThread(projectPath: string, prNumber: number) {
     },
     onSuccess: (_, variables) => {
       const action = variables.resolve ? 'resolved' : 'unresolved';
-      toast.success(`Comment ${action}`, {
-        description: `The review thread has been ${action} on GitHub`,
+      toast.success(translate('Comment {value1}', { value1: action }), {
+        description: translate('The review thread has been {value1} on GitHub', { value1: action }),
       });
       // Invalidate the PR review comments cache to reflect updated resolved status
       queryClient.invalidateQueries({
@@ -180,7 +184,7 @@ export function useResolveReviewThread(projectPath: string, prNumber: number) {
       });
     },
     onError: (error) => {
-      toast.error('Failed to update comment', {
+      toast.error(translate('Failed to update comment'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     },

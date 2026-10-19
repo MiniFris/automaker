@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Folder, LogOut } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import type { Project } from '@/lib/electron';
@@ -15,6 +16,7 @@ export function RemoveFromAutomakerDialog({
   project,
   onConfirm,
 }: RemoveFromAutomakerDialogProps) {
+  useUiLocale();
   const handleConfirm = () => {
     if (project) {
       onConfirm(project.id);
@@ -26,11 +28,13 @@ export function RemoveFromAutomakerDialog({
       open={open}
       onOpenChange={onOpenChange}
       onConfirm={handleConfirm}
-      title="Remove from Automaker"
-      description="Remove this project from Automaker? The folder will remain on disk and can be re-added later."
+      title={translate('Remove from Automaker')}
+      description={translate(
+        'Remove this project from Automaker? The folder will remain on disk and can be re-added later.'
+      )}
       icon={LogOut}
       iconClassName="text-muted-foreground"
-      confirmText="Remove from Automaker"
+      confirmText={translate('Remove from Automaker')}
       confirmVariant="secondary"
     >
       {project && (

@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import {
   Dialog,
   DialogContent,
@@ -23,6 +24,7 @@ interface WorkspacePickerModalProps {
 }
 
 export function WorkspacePickerModal({ open, onOpenChange, onSelect }: WorkspacePickerModalProps) {
+  useUiLocale();
   // React Query hook - only fetch when modal is open
   const { data: directories = [], isLoading, error, refetch } = useWorkspaceDirectories(open);
 
@@ -38,10 +40,10 @@ export function WorkspacePickerModal({ open, onOpenChange, onSelect }: Workspace
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-foreground">
             <FolderOpen className="w-5 h-5 text-brand-500" />
-            Select Project
+            {translate('Select Project')}
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Choose a project from your workspace directory
+            {translate('Choose a project from your workspace directory')}
           </DialogDescription>
         </DialogHeader>
 
@@ -49,7 +51,7 @@ export function WorkspacePickerModal({ open, onOpenChange, onSelect }: Workspace
           {isLoading && (
             <div className="flex flex-col items-center justify-center h-full gap-3">
               <Spinner size="xl" />
-              <p className="text-sm text-muted-foreground">Loading projects...</p>
+              <p className="text-sm text-muted-foreground">{translate('Loading projects...')}</p>
             </div>
           )}
 
@@ -60,7 +62,7 @@ export function WorkspacePickerModal({ open, onOpenChange, onSelect }: Workspace
               </div>
               <p className="text-sm text-destructive">{errorMessage}</p>
               <Button variant="secondary" size="sm" onClick={() => refetch()} className="mt-2">
-                Try Again
+                {translate('Try Again')}
               </Button>
             </div>
           )}
@@ -71,7 +73,7 @@ export function WorkspacePickerModal({ open, onOpenChange, onSelect }: Workspace
                 <Folder className="w-6 h-6 text-muted-foreground" />
               </div>
               <p className="text-sm text-muted-foreground">
-                No projects found in workspace directory
+                {translate('No projects found in workspace directory')}
               </p>
             </div>
           )}
@@ -106,7 +108,7 @@ export function WorkspacePickerModal({ open, onOpenChange, onSelect }: Workspace
             onClick={() => onOpenChange(false)}
             className="text-muted-foreground hover:text-foreground hover:bg-accent"
           >
-            Cancel
+            {translate('Cancel')}
           </Button>
         </DialogFooter>
       </DialogContent>

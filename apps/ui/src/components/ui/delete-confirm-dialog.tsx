@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Trash2 } from 'lucide-react';
 import {
   Dialog,
@@ -34,10 +35,11 @@ export function DeleteConfirmDialog({
   title,
   description,
   children,
-  confirmText = 'Delete',
+  confirmText = translate('Delete'),
   testId = 'delete-confirm-dialog',
   confirmTestId = 'confirm-delete-button',
 }: DeleteConfirmDialogProps) {
+  useUiLocale();
   const handleConfirm = () => {
     onConfirm();
     onOpenChange(false);
@@ -63,7 +65,7 @@ export function DeleteConfirmDialog({
             className="px-4"
             data-testid="cancel-delete-button"
           >
-            Cancel
+            {translate('Cancel')}
           </Button>
           <HotkeyButton
             variant="destructive"

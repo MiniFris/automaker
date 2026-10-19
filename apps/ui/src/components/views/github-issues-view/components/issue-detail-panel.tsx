@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import {
   Circle,
   CheckCircle2,
@@ -41,6 +42,7 @@ export function IssueDetailPanel({
   modelOverride,
   isMobile = false,
 }: IssueDetailPanelProps) {
+  useUiLocale();
   const isValidating = validatingIssues.has(issue.number);
   const cached = cachedValidations.get(issue.number);
   const isStale = cached ? isValidationStale(cached.validatedAt) : false;
@@ -83,8 +85,8 @@ export function IssueDetailPanel({
               size="sm"
               onClick={onClose}
               className="shrink-0 -ml-1"
-              aria-label="Back"
-              title="Back"
+              aria-label={translate('Back')}
+              title={translate('Back')}
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -103,7 +105,7 @@ export function IssueDetailPanel({
             if (isValidating) {
               return (
                 <Button variant="default" size="sm" loading>
-                  {isMobile ? '...' : 'Validating...'}
+                  {isMobile ? '...' : translate('Validating...')}
                 </Button>
               );
             }
@@ -115,17 +117,17 @@ export function IssueDetailPanel({
                     variant="outline"
                     size="sm"
                     onClick={() => onViewCachedValidation(issue)}
-                    aria-label="View Result"
-                    title="View Result"
+                    aria-label={translate('View Result')}
+                    title={translate('View Result')}
                   >
                     <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
-                    {!isMobile && 'View Result'}
+                    {!isMobile && translate('View Result')}
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => onShowRevalidateConfirm(getValidationOptions(true))}
-                    title="Re-validate"
+                    title={translate('Re-validate')}
                   >
                     <RefreshCw className="h-4 w-4" />
                   </Button>
@@ -140,11 +142,11 @@ export function IssueDetailPanel({
                     variant="outline"
                     size="sm"
                     onClick={() => onViewCachedValidation(issue)}
-                    aria-label="View (stale)"
-                    title="View (stale)"
+                    aria-label={translate('View (stale)')}
+                    title={translate('View (stale)')}
                   >
                     <Clock className="h-4 w-4 mr-1 text-yellow-500" />
-                    {!isMobile && 'View (stale)'}
+                    {!isMobile && translate('View (stale)')}
                   </Button>
                   <ModelOverrideTrigger
                     currentModelEntry={modelOverride.effectiveModelEntry}
@@ -159,11 +161,11 @@ export function IssueDetailPanel({
                     variant="default"
                     size="sm"
                     onClick={() => onValidateIssue(issue, getValidationOptions(true))}
-                    aria-label="Re-validate"
-                    title="Re-validate"
+                    aria-label={translate('Re-validate')}
+                    title={translate('Re-validate')}
                   >
                     <Wand2 className="h-4 w-4 mr-1" />
-                    {!isMobile && 'Re-validate'}
+                    {!isMobile && translate('Re-validate')}
                   </Button>
                 </>
               );
@@ -184,11 +186,11 @@ export function IssueDetailPanel({
                   variant="default"
                   size="sm"
                   onClick={() => onValidateIssue(issue, getValidationOptions())}
-                  aria-label="Validate with AI"
-                  title="Validate with AI"
+                  aria-label={translate('Validate with AI')}
+                  title={translate('Validate with AI')}
                 >
                   <Wand2 className="h-4 w-4 mr-1" />
-                  {!isMobile && 'Validate with AI'}
+                  {!isMobile && translate('Validate with AI')}
                 </Button>
               </>
             );
@@ -197,21 +199,21 @@ export function IssueDetailPanel({
             variant="secondary"
             size="sm"
             onClick={() => onCreateFeature(issue)}
-            aria-label="Create Feature"
-            title="Create a new feature to address this issue"
+            aria-label={translate('Create Feature')}
+            title={translate('Create a new feature to address this issue')}
           >
             <Plus className={cn('h-4 w-4', !isMobile && 'mr-1')} />
-            {!isMobile && 'Create Feature'}
+            {!isMobile && translate('Create Feature')}
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => onOpenInGitHub(issue.url)}
-            aria-label="Open in GitHub"
-            title="Open in GitHub"
+            aria-label={translate('Open in GitHub')}
+            title={translate('Open in GitHub')}
           >
             <ExternalLink className="h-4 w-4" />
-            {!isMobile && <span className="ml-1">Open in GitHub</span>}
+            {!isMobile && <span className="ml-1">{translate('Open in GitHub')}</span>}
           </Button>
           {!isMobile && (
             <Button variant="ghost" size="sm" onClick={onClose}>
@@ -236,10 +238,11 @@ export function IssueDetailPanel({
                 : 'bg-purple-500/10 text-purple-500'
             )}
           >
-            {issue.state === 'OPEN' ? 'Open' : 'Closed'}
+            {issue.state === 'OPEN' ? translate('Open') : translate('Closed')}
           </span>
           <span>
-            #{issue.number} opened {formatDate(issue.createdAt)} by{' '}
+            #{issue.number} {translate(' opened ')}
+            {formatDate(issue.createdAt)} {translate(' by')}{' '}
             <span className="font-medium text-foreground">{issue.author.login}</span>
           </span>
         </div>
@@ -267,7 +270,7 @@ export function IssueDetailPanel({
         {issue.assignees && issue.assignees.length > 0 && (
           <div className="flex items-center gap-2 mb-4">
             <User className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Assigned to:</span>
+            <span className="text-sm text-muted-foreground">{translate('Assigned to:')}</span>
             <div className="flex items-center gap-2">
               {issue.assignees.map((assignee) => (
                 <span
@@ -293,7 +296,7 @@ export function IssueDetailPanel({
           <div className="mb-6 p-3 rounded-lg bg-muted/30 border border-border">
             <div className="flex items-center gap-2 mb-2">
               <GitPullRequest className="h-4 w-4 text-purple-500" />
-              <span className="text-sm font-medium">Linked Pull Requests</span>
+              <span className="text-sm font-medium">{translate('Linked Pull Requests')}</span>
             </div>
             <div className="space-y-2">
               {issue.linkedPRs.map((pr) => (
@@ -309,7 +312,11 @@ export function IssueDetailPanel({
                             : 'bg-red-500/10 text-red-500'
                       )}
                     >
-                      {pr.state === 'open' ? 'Open' : pr.state === 'merged' ? 'Merged' : 'Closed'}
+                      {pr.state === 'open'
+                        ? translate('Open')
+                        : pr.state === 'merged'
+                          ? translate('Merged')
+                          : translate('Closed')}
                     </span>
                     <span className="text-muted-foreground">#{pr.number}</span>
                     <span className="truncate">{pr.title}</span>
@@ -332,7 +339,9 @@ export function IssueDetailPanel({
         {issue.body ? (
           <Markdown className="text-sm">{issue.body}</Markdown>
         ) : (
-          <p className="text-sm text-muted-foreground italic">No description provided.</p>
+          <p className="text-sm text-muted-foreground italic">
+            {translate('No description provided.')}
+          </p>
         )}
 
         {/* Comments Section */}
@@ -344,7 +353,8 @@ export function IssueDetailPanel({
             >
               <MessageSquare className="h-4 w-4 text-blue-500" />
               <span className="text-sm font-medium">
-                Comments {totalCount > 0 && `(${totalCount})`}
+                {translate('Comments ')}
+                {totalCount > 0 && `(${totalCount})`}
               </span>
               {commentsLoading && <Spinner size="xs" />}
               {commentsExpanded ? (
@@ -359,7 +369,7 @@ export function IssueDetailPanel({
                   checked={includeCommentsInAnalysis}
                   onCheckedChange={setIncludeCommentsInAnalysis}
                 />
-                Include in AI analysis
+                {translate('Include in AI analysis')}
               </label>
             )}
           </div>
@@ -369,7 +379,9 @@ export function IssueDetailPanel({
               {commentsError ? (
                 <p className="text-sm text-red-500">{commentsError}</p>
               ) : comments.length === 0 && !commentsLoading ? (
-                <p className="text-sm text-muted-foreground italic">No comments yet.</p>
+                <p className="text-sm text-muted-foreground italic">
+                  {translate('No comments yet.')}
+                </p>
               ) : (
                 <div className="space-y-3">
                   {comments.map((comment) => (
@@ -385,7 +397,7 @@ export function IssueDetailPanel({
                       onClick={loadMore}
                       loading={loadingMore}
                     >
-                      {loadingMore ? 'Loading...' : 'Load More Comments'}
+                      {loadingMore ? translate('Loading...') : translate('Load More Comments')}
                     </Button>
                   )}
                 </div>
@@ -399,14 +411,14 @@ export function IssueDetailPanel({
           <div className="mt-6 p-4 rounded-lg bg-primary/5 border border-primary/20">
             <div className="flex items-center gap-2 mb-2">
               <Plus className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">Create Feature</span>
+              <span className="text-sm font-medium">{translate('Create Feature')}</span>
             </div>
             <p className="text-sm text-muted-foreground mb-3">
-              Create a new feature task to address this issue.
+              {translate('Create a new feature task to address this issue.')}
             </p>
             <Button variant="secondary" onClick={() => onCreateFeature(issue)}>
               <Plus className="h-4 w-4 mr-2" />
-              Create Feature
+              {translate('Create Feature')}
             </Button>
           </div>
         )}
@@ -414,11 +426,11 @@ export function IssueDetailPanel({
         {/* Open in GitHub CTA */}
         <div className="mt-4 p-4 rounded-lg bg-muted/50 border border-border">
           <p className="text-sm text-muted-foreground mb-3">
-            View comments, add reactions, and more on GitHub.
+            {translate('View comments, add reactions, and more on GitHub.')}
           </p>
           <Button onClick={() => onOpenInGitHub(issue.url)}>
             <ExternalLink className="h-4 w-4 mr-2" />
-            View Full Issue on GitHub
+            {translate('View Full Issue on GitHub')}
           </Button>
         </div>
       </div>

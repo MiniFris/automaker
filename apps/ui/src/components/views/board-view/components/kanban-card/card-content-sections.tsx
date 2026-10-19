@@ -1,4 +1,5 @@
 // @ts-nocheck - content section prop typing with feature data extraction
+import { translate, useUiLocale } from '@/lib/i18n';
 import { memo } from 'react';
 import { Feature } from '@/store/app-store';
 import { GitBranch, GitPullRequest, ExternalLink } from 'lucide-react';
@@ -12,6 +13,7 @@ export const CardContentSections = memo(function CardContentSections({
   feature,
   useWorktrees,
 }: CardContentSectionsProps) {
+  useUiLocale();
   return (
     <>
       {/* Target Branch Display */}
@@ -43,7 +45,9 @@ export const CardContentSections = memo(function CardContentSections({
               >
                 <GitPullRequest className="w-3 h-3 shrink-0" />
                 <span className="truncate max-w-[150px]">
-                  {prNumber ? `Pull Request #${prNumber}` : 'Pull Request'}
+                  {prNumber
+                    ? translate('Pull Request #{value1}', { value1: prNumber })
+                    : translate('Pull Request')}
                 </span>
                 <ExternalLink className="w-2.5 h-2.5 shrink-0" />
               </a>

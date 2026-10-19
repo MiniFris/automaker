@@ -68,12 +68,18 @@ export function useAgentSession({
         setModelSelectionReady(false);
         setModelSelectionState(DEFAULT_MODEL_SELECTION);
         // A new browser/profile has no local selection; restore the server binding.
-        void getHttpApiClient().sessions.list().then((result) => {
-          if (version !== restoreVersion.current || !result.success) return;
-          const session = result.sessions?.find((item) => item.id === sessionId);
-          if (session?.model) setModelSelectionState({ model: session.model, providerId: session.providerId });
-          if (session) setModelSelectionReady(true);
-        }).catch(() => { /* Remain blocked until an explicit model choice or a successful restore. */ });
+        void getHttpApiClient()
+          .sessions.list()
+          .then((result) => {
+            if (version !== restoreVersion.current || !result.success) return;
+            const session = result.sessions?.find((item) => item.id === sessionId);
+            if (session?.model)
+              setModelSelectionState({ model: session.model, providerId: session.providerId });
+            if (session) setModelSelectionReady(true);
+          })
+          .catch(() => {
+            /* Remain blocked until an explicit model choice or a successful restore. */
+          });
       }
     },
     [getAgentModelForSession]

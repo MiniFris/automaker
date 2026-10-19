@@ -1,4 +1,5 @@
 'use client';
+import { translate, useUiLocale } from '@/lib/i18n';
 
 import { useState } from 'react';
 import {
@@ -42,18 +43,28 @@ interface PlanningModeSelectorProps {
 const modes = [
   {
     value: 'skip' as const,
-    label: 'Skip',
-    description: 'Direct implementation, no upfront planning',
+    get label() {
+      return translate('Skip');
+    },
+    get description() {
+      return translate('Direct implementation, no upfront planning');
+    },
     icon: Zap,
     color: 'text-emerald-500',
     bgColor: 'bg-emerald-500/10',
     borderColor: 'border-emerald-500/30',
-    badge: 'Default',
+    get badge() {
+      return translate('Default');
+    },
   },
   {
     value: 'lite' as const,
-    label: 'Lite',
-    description: 'Think through approach, create task list',
+    get label() {
+      return translate('Lite');
+    },
+    get description() {
+      return translate('Think through approach, create task list');
+    },
     icon: ClipboardList,
     color: 'text-blue-500',
     bgColor: 'bg-blue-500/10',
@@ -61,23 +72,35 @@ const modes = [
   },
   {
     value: 'spec' as const,
-    label: 'Spec',
-    description: 'Generate spec with acceptance criteria',
+    get label() {
+      return translate('Spec');
+    },
+    get description() {
+      return translate('Generate spec with acceptance criteria');
+    },
     icon: FileText,
     color: 'text-purple-500',
     bgColor: 'bg-purple-500/10',
     borderColor: 'border-purple-500/30',
-    badge: 'Approval Required',
+    get badge() {
+      return translate('Approval Required');
+    },
   },
   {
     value: 'full' as const,
-    label: 'Full',
-    description: 'Comprehensive spec with phased plan',
+    get label() {
+      return translate('Full');
+    },
+    get description() {
+      return translate('Comprehensive spec with phased plan');
+    },
     icon: ScrollText,
     color: 'text-amber-500',
     bgColor: 'bg-amber-500/10',
     borderColor: 'border-amber-500/30',
-    badge: 'Approval Required',
+    get badge() {
+      return translate('Approval Required');
+    },
   },
 ];
 
@@ -96,6 +119,7 @@ export function PlanningModeSelector({
   testIdPrefix = 'planning',
   compact = false,
 }: PlanningModeSelectorProps) {
+  useUiLocale();
   const [showPreview, setShowPreview] = useState(false);
   const selectedMode = modes.find((m) => m.value === mode);
   const requiresApproval = mode === 'spec' || mode === 'full';
@@ -116,9 +140,9 @@ export function PlanningModeSelector({
             {selectedMode && <selectedMode.icon className={cn('h-4 w-4', selectedMode.color)} />}
           </div>
           <div>
-            <Label className="text-sm font-medium">Planning Mode</Label>
+            <Label className="text-sm font-medium">{translate('Planning Mode')}</Label>
             <p className="text-xs text-muted-foreground">
-              Choose how much upfront planning before implementation
+              {translate('Choose how much upfront planning before implementation')}
             </p>
           </div>
         </div>
@@ -128,7 +152,7 @@ export function PlanningModeSelector({
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={onViewSpec} className="h-7 px-2">
               <Eye className="h-3.5 w-3.5 mr-1" />
-              View
+              {translate('View')}
             </Button>
           </div>
         )}
@@ -185,7 +209,7 @@ export function PlanningModeSelector({
                           : 'bg-amber-500/15 text-amber-500'
                       )}
                     >
-                      {m.badge === 'Default' ? 'Default' : 'Review'}
+                      {m.badge === 'Default' ? translate('Default') : translate('Review')}
                     </span>
                   )}
                 </div>
@@ -213,7 +237,7 @@ export function PlanningModeSelector({
             htmlFor="require-approval"
             className="text-sm text-muted-foreground cursor-pointer"
           >
-            Manually approve plan before implementation
+            {translate('Manually approve plan before implementation')}
           </Label>
         </div>
       )}
@@ -238,26 +262,29 @@ export function PlanningModeSelector({
                   <>
                     <Spinner size="sm" />
                     <span className="text-sm text-muted-foreground">
-                      Generating {mode === 'full' ? 'comprehensive spec' : 'spec'}...
+                      {translate('Generating ')}
+                      {mode === 'full' ? translate('comprehensive spec') : translate('spec')}...
                     </span>
                   </>
                 ) : planSpec?.status === 'approved' ? (
                   <>
                     <Check className="h-4 w-4 text-emerald-500" />
-                    <span className="text-sm text-emerald-500 font-medium">Spec Approved</span>
+                    <span className="text-sm text-emerald-500 font-medium">
+                      {translate('Spec Approved')}
+                    </span>
                   </>
                 ) : planSpec?.status === 'generated' ? (
                   <>
                     <Eye className="h-4 w-4 text-amber-500" />
                     <span className="text-sm text-amber-500 font-medium">
-                      Spec Ready for Review
+                      {translate('Spec Ready for Review')}
                     </span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">
-                      Spec will be generated when feature starts
+                      {translate('Spec will be generated when feature starts')}
                     </span>
                   </>
                 )}
@@ -273,7 +300,7 @@ export function PlanningModeSelector({
                   className="h-7"
                 >
                   <Sparkles className="h-3.5 w-3.5 mr-1" />
-                  Pre-generate
+                  {translate('Pre-generate')}
                 </Button>
               )}
             </div>
@@ -288,7 +315,7 @@ export function PlanningModeSelector({
                   className="w-full justify-between h-8 px-2"
                 >
                   <span className="text-xs text-muted-foreground">
-                    {showPreview ? 'Hide Preview' : 'Show Preview'}
+                    {showPreview ? translate('Hide Preview') : translate('Show Preview')}
                   </span>
                   <Eye className="h-3.5 w-3.5" />
                 </Button>
@@ -307,7 +334,7 @@ export function PlanningModeSelector({
             {planSpec?.status === 'generated' && (
               <div className="flex items-center gap-2 pt-2 border-t border-border/30">
                 <Button variant="outline" size="sm" onClick={onRejectSpec} className="flex-1">
-                  Request Changes
+                  {translate('Request Changes')}
                 </Button>
                 <Button
                   size="sm"
@@ -315,7 +342,7 @@ export function PlanningModeSelector({
                   className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white"
                 >
                   <Check className="h-3.5 w-3.5 mr-1" />
-                  Approve Spec
+                  {translate('Approve Spec')}
                 </Button>
               </div>
             )}
@@ -325,7 +352,7 @@ export function PlanningModeSelector({
               <div className="flex items-center justify-end pt-2 border-t border-border/30">
                 <Button variant="ghost" size="sm" onClick={onGenerateSpec} className="h-7">
                   <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                  Regenerate
+                  {translate('Regenerate')}
                 </Button>
               </div>
             )}
@@ -337,8 +364,12 @@ export function PlanningModeSelector({
       {!requiresApproval && (
         <p className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3">
           {mode === 'skip'
-            ? 'The agent will start implementing immediately without creating a plan or spec.'
-            : "The agent will create a planning outline before implementing, but won't wait for approval."}
+            ? translate(
+                'The agent will start implementing immediately without creating a plan or spec.'
+              )
+            : translate(
+                "The agent will create a planning outline before implementing, but won't wait for approval."
+              )}
         </p>
       )}
     </div>

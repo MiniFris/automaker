@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import type { ComponentType, ImgHTMLAttributes, SVGProps } from 'react';
 import { cn } from '@/lib/utils';
 import type { AgentModel, ModelProvider } from '@automaker/types';
@@ -128,6 +129,7 @@ export interface ProviderIconProps extends Omit<SVGProps<SVGSVGElement>, 'viewBo
 }
 
 export function ProviderIcon({ provider, title, className, ...props }: ProviderIconProps) {
+  useUiLocale();
   const definition = PROVIDER_ICON_DEFINITIONS[provider];
   const {
     role,
@@ -158,18 +160,22 @@ export function ProviderIcon({ provider, title, className, ...props }: ProviderI
 }
 
 export function AnthropicIcon(props: Omit<ProviderIconProps, 'provider'>) {
+  useUiLocale();
   return <ProviderIcon provider={PROVIDER_ICON_KEYS.anthropic} {...props} />;
 }
 
 export function OpenAIIcon(props: Omit<ProviderIconProps, 'provider'>) {
+  useUiLocale();
   return <ProviderIcon provider={PROVIDER_ICON_KEYS.openai} {...props} />;
 }
 
 export function OpenRouterIcon(props: Omit<ProviderIconProps, 'provider'>) {
+  useUiLocale();
   return <ProviderIcon provider={PROVIDER_ICON_KEYS.openrouter} {...props} />;
 }
 
 export function CursorIcon(props: Omit<ProviderIconProps, 'provider'>) {
+  useUiLocale();
   return <ProviderIcon provider={PROVIDER_ICON_KEYS.cursor} {...props} />;
 }
 
@@ -181,6 +187,7 @@ type GeminiIconProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> & {
 };
 
 export function GeminiIcon({ title, className, ...props }: GeminiIconProps) {
+  useUiLocale();
   const {
     role,
     'aria-label': ariaLabel,
@@ -206,14 +213,17 @@ export function GeminiIcon({ title, className, ...props }: GeminiIconProps) {
 }
 
 export function CopilotIcon(props: Omit<ProviderIconProps, 'provider'>) {
+  useUiLocale();
   return <ProviderIcon provider={PROVIDER_ICON_KEYS.copilot} {...props} />;
 }
 
 export function GrokIcon(props: Omit<ProviderIconProps, 'provider'>) {
+  useUiLocale();
   return <ProviderIcon provider={PROVIDER_ICON_KEYS.grok} {...props} />;
 }
 
 export function OpenCodeIcon(props: Omit<ProviderIconProps, 'provider'>) {
+  useUiLocale();
   return <ProviderIcon provider={PROVIDER_ICON_KEYS.opencode} {...props} />;
 }
 
@@ -225,6 +235,7 @@ export function DeepSeekIcon({
   className?: string;
   title?: string;
 }) {
+  useUiLocale();
   const hasAccessibleLabel = Boolean(title);
 
   return (
@@ -246,6 +257,7 @@ export function DeepSeekIcon({
 }
 
 export function QwenIcon({ className, title, ...props }: { className?: string; title?: string }) {
+  useUiLocale();
   const hasAccessibleLabel = Boolean(title);
 
   return (
@@ -273,6 +285,7 @@ export function QwenIcon({ className, title, ...props }: { className?: string; t
 }
 
 export function NovaIcon({ className, title, ...props }: { className?: string; title?: string }) {
+  useUiLocale();
   const hasAccessibleLabel = Boolean(title);
 
   return (
@@ -301,6 +314,7 @@ export function MistralIcon({
   className?: string;
   title?: string;
 }) {
+  useUiLocale();
   const hasAccessibleLabel = Boolean(title);
 
   return (
@@ -329,6 +343,7 @@ export function MistralIcon({
 }
 
 export function MetaIcon({ className, title, ...props }: { className?: string; title?: string }) {
+  useUiLocale();
   const hasAccessibleLabel = Boolean(title);
 
   return (
@@ -357,6 +372,7 @@ export function MiniMaxIcon({
   className?: string;
   title?: string;
 }) {
+  useUiLocale();
   const hasAccessibleLabel = Boolean(title);
 
   return (
@@ -378,6 +394,7 @@ export function MiniMaxIcon({
 }
 
 export function GlmIcon({ className, title, ...props }: { className?: string; title?: string }) {
+  useUiLocale();
   const hasAccessibleLabel = Boolean(title);
 
   return (
@@ -409,6 +426,7 @@ export function BigPickleIcon({
   className?: string;
   title?: string;
 }) {
+  useUiLocale();
   const hasAccessibleLabel = Boolean(title);
 
   return (

@@ -1,4 +1,5 @@
 'use client';
+import { translate, useUiLocale } from '@/lib/i18n';
 
 import { useState, useEffect } from 'react';
 import {
@@ -38,6 +39,7 @@ export function PlanApprovalDialog({
   isLoading = false,
   viewOnly = false,
 }: PlanApprovalDialogProps) {
+  useUiLocale();
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedPlan, setEditedPlan] = useState(planContent);
   const [showRejectFeedback, setShowRejectFeedback] = useState(false);
@@ -91,18 +93,18 @@ export function PlanApprovalDialog({
       >
         <DialogHeader>
           <DialogTitle>
-            {viewOnly ? 'View Plan' : 'Review Plan'}
+            {viewOnly ? translate('View Plan') : translate('Review Plan')}
             {feature?.title && feature.title.length <= TITLE_LIMIT && (
               <span className="font-normal text-muted-foreground"> - {feature.title}</span>
             )}
           </DialogTitle>
           <DialogDescription>
             {viewOnly
-              ? 'View the generated plan for this feature.'
-              : 'Review the generated plan before implementation begins.'}
+              ? translate('View the generated plan for this feature.')
+              : translate('Review the generated plan before implementation begins.')}
             {feature && (
               <span className="block mt-2 text-primary">
-                Feature:{' '}
+                {translate('Feature:')}{' '}
                 {showFullDescription || feature.description.length <= DESCRIPTION_LIMIT
                   ? feature.description
                   : `${feature.description.slice(0, DESCRIPTION_LIMIT)}...`}
@@ -112,7 +114,7 @@ export function PlanApprovalDialog({
                     onClick={() => setShowFullDescription(!showFullDescription)}
                     className="ml-1 text-muted-foreground hover:text-foreground underline text-sm"
                   >
-                    {showFullDescription ? 'show less' : 'show more'}
+                    {showFullDescription ? translate('show less') : translate('show more')}
                   </button>
                 )}
               </span>
@@ -125,7 +127,7 @@ export function PlanApprovalDialog({
           {!viewOnly && (
             <div className="flex items-center justify-between mb-3">
               <Label className="text-sm text-muted-foreground">
-                {isEditMode ? 'Edit Mode' : 'View Mode'}
+                {isEditMode ? translate('Edit Mode') : translate('View Mode')}
               </Label>
               <Button
                 variant="outline"
@@ -136,12 +138,12 @@ export function PlanApprovalDialog({
                 {isEditMode ? (
                   <>
                     <Eye className="w-4 h-4 mr-2" />
-                    View
+                    {translate('View')}
                   </>
                 ) : (
                   <>
                     <Edit2 className="w-4 h-4 mr-2" />
-                    Edit
+                    {translate('Edit')}
                   </>
                 )}
               </Button>
@@ -155,7 +157,7 @@ export function PlanApprovalDialog({
                 value={editedPlan}
                 onChange={(e) => setEditedPlan(e.target.value)}
                 className="min-h-[200px] sm:min-h-[400px] h-full w-full border-0 rounded-lg resize-none font-mono text-sm"
-                placeholder="Enter plan content..."
+                placeholder={translate('Enter plan content...')}
                 disabled={isLoading}
               />
             ) : (
@@ -166,17 +168,19 @@ export function PlanApprovalDialog({
           {/* Revision Feedback Section - Only show when not in viewOnly mode */}
           {showRejectFeedback && !viewOnly && (
             <div className="mt-4 space-y-2">
-              <Label htmlFor="reject-feedback">What changes would you like?</Label>
+              <Label htmlFor="reject-feedback">{translate('What changes would you like?')}</Label>
               <Textarea
                 id="reject-feedback"
                 value={rejectFeedback}
                 onChange={(e) => setRejectFeedback(e.target.value)}
-                placeholder="Describe the changes you'd like to see in the plan..."
+                placeholder={translate("Describe the changes you'd like to see in the plan...")}
                 className="min-h-[80px]"
                 disabled={isLoading}
               />
               <p className="text-xs text-muted-foreground">
-                Leave empty to cancel the feature, or provide feedback to regenerate the plan.
+                {translate(
+                  'Leave empty to cancel the feature, or provide feedback to regenerate the plan.'
+                )}
               </p>
             </div>
           )}
@@ -189,7 +193,7 @@ export function PlanApprovalDialog({
               onClick={() => onOpenChange(false)}
               className="w-full sm:w-auto"
             >
-              Close
+              {translate('Close')}
             </Button>
           ) : showRejectFeedback ? (
             <>
@@ -199,7 +203,7 @@ export function PlanApprovalDialog({
                 disabled={isLoading}
                 className="w-full sm:w-auto"
               >
-                Back
+                {translate('Back')}
               </Button>
               <Button
                 variant="secondary"
@@ -212,7 +216,7 @@ export function PlanApprovalDialog({
                 ) : (
                   <RefreshCw className="w-4 h-4 mr-2" />
                 )}
-                {rejectFeedback.trim() ? 'Revise Plan' : 'Cancel Feature'}
+                {rejectFeedback.trim() ? translate('Revise Plan') : translate('Cancel Feature')}
               </Button>
             </>
           ) : (
@@ -224,7 +228,7 @@ export function PlanApprovalDialog({
                 className="w-full sm:w-auto order-2 sm:order-1"
               >
                 <RefreshCw className="w-4 h-4 mr-2" />
-                Request Changes
+                {translate('Request Changes')}
               </Button>
               <Button
                 onClick={handleApprove}
@@ -236,7 +240,7 @@ export function PlanApprovalDialog({
                 ) : (
                   <Check className="w-4 h-4 mr-2" />
                 )}
-                Approve Plan
+                {translate('Approve Plan')}
               </Button>
             </>
           )}

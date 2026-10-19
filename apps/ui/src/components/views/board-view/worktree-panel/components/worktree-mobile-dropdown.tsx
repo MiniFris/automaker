@@ -1,3 +1,5 @@
+import { formatCount } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -35,6 +37,7 @@ export function WorktreeMobileDropdown({
   branchCardCounts,
   onSelectWorktree,
 }: WorktreeMobileDropdownProps) {
+  useUiLocale();
   // Find the currently selected worktree to display in the trigger
   const selectedWorktree = worktrees.find((w) => isWorktreeSelected(w));
   const displayBranch = selectedWorktree?.branch || 'Select branch';
@@ -59,7 +62,7 @@ export function WorktreeMobileDropdown({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64 max-h-80 overflow-y-auto">
         <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-          Branches & Worktrees
+          {translate('Branches & Worktrees')}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {worktrees.map((worktree) => {
@@ -90,7 +93,7 @@ export function WorktreeMobileDropdown({
                 </span>
                 {worktree.isMain && (
                   <span className="text-[10px] px-1 py-0.5 rounded bg-muted text-muted-foreground shrink-0">
-                    main
+                    {translate('main')}
                   </span>
                 )}
               </div>
@@ -106,7 +109,11 @@ export function WorktreeMobileDropdown({
                       'inline-flex items-center justify-center h-4 min-w-[1rem] px-1 text-[10px] font-medium rounded border',
                       'bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30'
                     )}
-                    title={`${changedFilesCount ?? 'Some'} uncommitted file${changedFilesCount !== 1 ? 's' : ''}`}
+                    title={
+                      changedFilesCount === undefined
+                        ? translate('Uncommitted changes')
+                        : formatCount(changedFilesCount, 'uncommitted file')
+                    }
                   >
                     <CircleDot className="w-2.5 h-2.5 mr-0.5" />
                     {changedFilesCount ?? '!'}

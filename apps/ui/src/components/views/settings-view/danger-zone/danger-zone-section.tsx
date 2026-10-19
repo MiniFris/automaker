@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Trash2, Folder, AlertTriangle, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -14,6 +15,7 @@ export function DangerZoneSection({
   onDeleteClick,
   onRemoveFromAutomakerClick,
 }: DangerZoneSectionProps) {
+  useUiLocale();
   return (
     <div
       className={cn(
@@ -28,9 +30,13 @@ export function DangerZoneSection({
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-destructive/20 to-destructive/10 flex items-center justify-center border border-destructive/20">
             <AlertTriangle className="w-5 h-5 text-destructive" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground tracking-tight">Danger Zone</h2>
+          <h2 className="text-lg font-semibold text-foreground tracking-tight">
+            {translate('Danger Zone')}
+          </h2>
         </div>
-        <p className="text-sm text-muted-foreground/80 ml-12">Destructive project actions.</p>
+        <p className="text-sm text-muted-foreground/80 ml-12">
+          {translate('Destructive project actions.')}
+        </p>
       </div>
       <div className="p-6 space-y-4">
         {project ? (
@@ -39,10 +45,13 @@ export function DangerZoneSection({
             {onRemoveFromAutomakerClick && (
               <div className="flex items-start justify-between gap-4 p-4 rounded-xl bg-muted/30 border border-border">
                 <div className="min-w-0">
-                  <p className="font-medium text-foreground">Remove from Automaker</p>
+                  <p className="font-medium text-foreground">
+                    {translate('Remove from Automaker')}
+                  </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Remove this project from Automaker without deleting any files from disk. You can
-                    re-add it later by opening the folder.
+                    {translate(
+                      'Remove this project from Automaker without deleting any files from disk. You can re-add it later by opening the folder.'
+                    )}
                   </p>
                 </div>
                 <Button
@@ -52,7 +61,7 @@ export function DangerZoneSection({
                   className="shrink-0 transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98]"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
-                  Remove
+                  {translate('Remove')}
                 </Button>
               </div>
             )}
@@ -80,12 +89,14 @@ export function DangerZoneSection({
                 )}
               >
                 <Trash2 className="w-4 h-4 mr-2" />
-                Move to Trash
+                {translate('Move to Trash')}
               </Button>
             </div>
           </>
         ) : (
-          <p className="text-sm text-muted-foreground/60 text-center py-4">No project selected.</p>
+          <p className="text-sm text-muted-foreground/60 text-center py-4">
+            {translate('No project selected.')}
+          </p>
         )}
       </div>
     </div>

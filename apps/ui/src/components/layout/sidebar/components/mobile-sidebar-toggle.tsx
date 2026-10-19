@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { PanelLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/app-store';
@@ -9,6 +10,7 @@ import { useIsCompact } from '@/hooks/use-media-query';
  * Only visible on compact/mobile screens when the sidebar is hidden.
  */
 export function MobileSidebarToggle() {
+  useUiLocale();
   const isCompact = useIsCompact();
   const { mobileSidebarHidden, toggleMobileSidebarHidden } = useAppStore();
 
@@ -33,7 +35,7 @@ export function MobileSidebarToggle() {
         'transition-all duration-200 ease-out',
         'hover:w-10 active:scale-95'
       )}
-      aria-label="Show sidebar"
+      aria-label={translate('Show sidebar')}
       data-testid="mobile-sidebar-toggle"
     >
       <PanelLeft className="w-4 h-4 pointer-events-none" />

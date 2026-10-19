@@ -1,3 +1,6 @@
+import { useLocalizedMemo } from '@/lib/i18n';
+import { formatCount } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Dialog,
@@ -66,21 +69,21 @@ const getFileIcon = (status: string) => {
 const getStatusLabel = (status: string) => {
   switch (status) {
     case 'A':
-      return 'Added';
+      return translate('Added');
     case '?':
-      return 'Untracked';
+      return translate('Untracked');
     case 'D':
-      return 'Deleted';
+      return translate('Deleted');
     case 'M':
-      return 'Modified';
+      return translate('Modified');
     case 'U':
-      return 'Updated';
+      return translate('Updated');
     case 'R':
-      return 'Renamed';
+      return translate('Renamed');
     case 'C':
-      return 'Copied';
+      return translate('Copied');
     default:
-      return 'Changed';
+      return translate('Changed');
   }
 };
 
@@ -132,6 +135,7 @@ function DiffLine({
   content: string;
   lineNumber?: { old?: number; new?: number };
 }) {
+  useUiLocale();
   if (type === 'header') {
     return (
       <div className={cn('px-2 py-1 font-mono text-xs', bgClass[type], textClass[type])}>
@@ -164,6 +168,7 @@ export function DiscardWorktreeChangesDialog({
   worktree,
   onDiscarded,
 }: DiscardWorktreeChangesDialogProps) {
+  useUiLocale();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -178,7 +183,7 @@ export function DiscardWorktreeChangesDialog({
   const parsedDiffs = useMemo(() => parseDiff(diffContent), [diffContent]);
 
   // Create a map of file path to parsed diff for quick lookup
-  const diffsByFile = useMemo(() => {
+  const diffsByFile = useLocalizedMemo(() => {
     const map = new Map<string, ParsedFileDiff>();
     for (const diff of parsedDiffs) {
       map.set(diff.filePath, diff);
@@ -210,10 +215,10 @@ export function DiscardWorktreeChangesDialog({
               if (!cancelled) setDiffContent(result.diff ?? '');
               if (!cancelled) setSelectedFiles(new Set());
             } else {
-              if (!cancelled) setError(result.error || 'Failed to fetch diffs');
+              if (!cancelled) setError(result.error || translate('Failed to fetch diffs'));
             }
           } else {
-            if (!cancelled) setError('Diff API unavailable');
+            if (!cancelled) setError(translate('Diff API unavailable'));
           }
         } catch (err) {
           if (cancelled) return;
@@ -275,21 +280,25 @@ export function DiscardWorktreeChangesDialog({
       if (result.success && result.result) {
         if (result.result.discarded) {
           const fileCount = filesToDiscard ? filesToDiscard.length : selectedFiles.size;
-          toast.success('Changes discarded', {
-            description: `Discarded ${fileCount} ${fileCount === 1 ? 'file' : 'files'} in ${worktree.branch}`,
+          toast.success(translate('Changes discarded'), {
+            description: translate('Discarded {value1} {value2} in {value3}', {
+              value1: fileCount,
+              value2: fileCount === 1 ? 'file' : 'files',
+              value3: worktree.branch,
+            }),
           });
           onDiscarded();
           onOpenChange(false);
         } else {
-          toast.info('No changes to discard', {
+          toast.info(translate('No changes to discard'), {
             description: result.result.message,
           });
         }
       } else {
-        setError(result.error || 'Failed to discard changes');
+        setError(result.error || translate('Failed to discard changes'));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to discard changes');
+      setError(err instanceof Error ? err.message : translate('Failed to discard changes'));
     } finally {
       setIsLoading(false);
     }
@@ -305,12 +314,12 @@ export function DiscardWorktreeChangesDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Undo2 className="w-5 h-5 text-destructive" />
-            Discard Changes
+            {translate('Discard Changes')}
           </DialogTitle>
           <DialogDescription>
-            Select which changes to discard in the{' '}
-            <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code> worktree.
-            This action cannot be undone.
+            {translate('Select which changes to discard in the')}{' '}
+            <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>{' '}
+            {translate(' worktree. This action cannot be undone.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -319,12 +328,12 @@ export function DiscardWorktreeChangesDialog({
           <div className="flex flex-col min-h-0">
             <div className="flex items-center justify-between mb-1.5">
               <Label className="text-sm font-medium flex items-center gap-2">
-                Files to discard
+                {translate('Files to discard')}
                 {isLoadingDiffs ? (
                   <Spinner size="sm" />
                 ) : (
                   <span className="text-xs text-muted-foreground font-normal">
-                    ({selectedFiles.size}/{files.length} selected)
+                    ({selectedFiles.size}/{files.length} {translate(' selected)')}
                   </span>
                 )}
               </Label>
@@ -334,7 +343,7 @@ export function DiscardWorktreeChangesDialog({
                   onClick={handleToggleAll}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {allSelected ? 'Deselect all' : 'Select all'}
+                  {allSelected ? translate('Deselect all') : translate('Select all')}
                 </button>
               )}
             </div>
@@ -342,11 +351,11 @@ export function DiscardWorktreeChangesDialog({
             {isLoadingDiffs ? (
               <div className="flex items-center justify-center py-6 text-muted-foreground border border-border rounded-lg">
                 <Spinner size="sm" className="mr-2" />
-                <span className="text-sm">Loading changes...</span>
+                <span className="text-sm">{translate('Loading changes...')}</span>
               </div>
             ) : files.length === 0 ? (
               <div className="flex items-center justify-center py-6 text-muted-foreground border border-border rounded-lg">
-                <span className="text-sm">No changes detected</span>
+                <span className="text-sm">{translate('No changes detected')}</span>
               </div>
             ) : (
               <div className="border border-border rounded-lg overflow-hidden max-h-[300px] overflow-y-auto scrollbar-visible">
@@ -447,11 +456,11 @@ export function DiscardWorktreeChangesDialog({
                       {isExpanded && !fileDiff && (
                         <div className="px-4 py-3 text-xs text-muted-foreground bg-background border-t border-border">
                           {file.status === '?' ? (
-                            <span>New file - diff preview not available</span>
+                            <span>{translate('New file - diff preview not available')}</span>
                           ) : file.status === 'D' ? (
-                            <span>File deleted</span>
+                            <span>{translate('File deleted')}</span>
                           ) : (
-                            <span>Diff content not available</span>
+                            <span>{translate('Diff content not available')}</span>
                           )}
                         </div>
                       )}
@@ -466,9 +475,9 @@ export function DiscardWorktreeChangesDialog({
           <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
             <AlertTriangle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
             <p className="text-xs text-destructive">
-              This will permanently discard the selected changes. Staged changes will be unstaged,
-              modifications to tracked files will be reverted, and untracked files will be deleted.
-              This action cannot be undone.
+              {translate(
+                'This will permanently discard the selected changes. Staged changes will be unstaged, modifications to tracked files will be reverted, and untracked files will be deleted. This action cannot be undone.'
+              )}
             </p>
           </div>
 
@@ -477,7 +486,7 @@ export function DiscardWorktreeChangesDialog({
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isLoading}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button
             variant="destructive"
@@ -487,16 +496,18 @@ export function DiscardWorktreeChangesDialog({
             {isLoading ? (
               <>
                 <Spinner size="sm" className="mr-2" />
-                Discarding...
+                {translate('Discarding...')}
               </>
             ) : (
               <>
                 <Undo2 className="w-4 h-4 mr-2" />
-                Discard
+                {translate('Discard')}
                 {selectedFiles.size > 0 && selectedFiles.size < files.length
-                  ? ` (${selectedFiles.size} file${selectedFiles.size > 1 ? 's' : ''})`
+                  ? translate(' ({value1})', { value1: formatCount(selectedFiles.size, 'file') })
                   : selectedFiles.size > 0
-                    ? ` All (${selectedFiles.size} file${selectedFiles.size > 1 ? 's' : ''})`
+                    ? translate(' All ({value1})', {
+                        value1: formatCount(selectedFiles.size, 'file'),
+                      })
                     : ''}
               </>
             )}

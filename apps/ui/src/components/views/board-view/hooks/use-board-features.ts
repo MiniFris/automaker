@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 /**
  * Board Features Hook
  *
@@ -119,13 +120,14 @@ export function useBoardFeatures({ currentProject }: UseBoardFeaturesProps) {
               event.error.includes('Invalid API key')));
 
         if (isAuthError) {
-          toast.error('Authentication Failed', {
-            description:
-              "Your API key is invalid or expired. Please check Settings or run 'claude login' in terminal.",
+          toast.error(translate('Authentication Failed'), {
+            description: translate(
+              "Your API key is invalid or expired. Please check Settings or run 'claude login' in terminal."
+            ),
             duration: 10000,
           });
         } else {
-          toast.error('Agent encountered an error', {
+          toast.error(translate('Agent encountered an error'), {
             description: event.error || 'Check the logs for details',
           });
         }

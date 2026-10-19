@@ -1,3 +1,5 @@
+import { getFormattingLocale } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useCallback } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { Button } from '@/components/ui/button';
@@ -38,6 +40,7 @@ import { useNavigate } from '@tanstack/react-router';
 const logger = createLogger('WelcomeView');
 
 export function WelcomeView() {
+  useUiLocale();
   const { projects, upsertAndSetCurrentProject, addProject, setCurrentProject } = useAppStore();
   const navigate = useNavigate();
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
@@ -70,8 +73,8 @@ export function WelcomeView() {
       const result = await api.autoMode.analyzeProject(projectPath);
 
       if (result.success) {
-        toast.success('Project analyzed', {
-          description: 'AI agent has analyzed your project structure',
+        toast.success(translate('Project analyzed'), {
+          description: translate('AI agent has analyzed your project structure'),
         });
       } else {
         logger.error('[Welcome] Project analysis failed:', result.error);
@@ -94,7 +97,7 @@ export function WelcomeView() {
         const initResult = await initializeProject(path);
 
         if (!initResult.success) {
-          toast.error('Failed to initialize project', {
+          toast.error(translate('Failed to initialize project'), {
             description: initResult.error || 'Unknown error occurred',
           });
           return;
@@ -121,8 +124,8 @@ export function WelcomeView() {
           // Start analysis in background (don't await, let it run async)
           analyzeProject(path);
         } else {
-          toast.success('Project opened', {
-            description: `Opened ${name}`,
+          toast.success(translate('Project opened'), {
+            description: translate('Opened {value1}', { value1: name }),
           });
         }
 
@@ -130,7 +133,7 @@ export function WelcomeView() {
         navigate({ to: '/board' });
       } catch (error) {
         logger.error('[Welcome] Failed to open project:', error);
-        toast.error('Failed to open project', {
+        toast.error(translate('Failed to open project'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
       } finally {
@@ -216,8 +219,10 @@ export function WelcomeView() {
       // Validate that parent directory exists
       const parentExists = await api.exists(parentDir);
       if (!parentExists) {
-        toast.error('Parent directory does not exist', {
-          description: `Cannot create project in non-existent directory: ${parentDir}`,
+        toast.error(translate('Parent directory does not exist'), {
+          description: translate('Cannot create project in non-existent directory: {value1}', {
+            value1: parentDir,
+          }),
         });
         return;
       }
@@ -225,8 +230,8 @@ export function WelcomeView() {
       // Verify parent is actually a directory
       const parentStat = await api.stat(parentDir);
       if (parentStat && !parentStat.stats?.isDirectory) {
-        toast.error('Parent path is not a directory', {
-          description: `${parentDir} is not a directory`,
+        toast.error(translate('Parent path is not a directory'), {
+          description: translate('{value1} is not a directory', { value1: parentDir }),
         });
         return;
       }
@@ -234,7 +239,7 @@ export function WelcomeView() {
       // Create project directory
       const mkdirResult = await api.mkdir(projectPath);
       if (!mkdirResult.success) {
-        toast.error('Failed to create project directory', {
+        toast.error(translate('Failed to create project directory'), {
           description: mkdirResult.error || 'Unknown error occurred',
         });
         return;
@@ -244,7 +249,7 @@ export function WelcomeView() {
       const initResult = await initializeProject(projectPath);
 
       if (!initResult.success) {
-        toast.error('Failed to initialize project', {
+        toast.error(translate('Failed to initialize project'), {
           description: initResult.error || 'Unknown error occurred',
         });
         return;
@@ -287,8 +292,10 @@ export function WelcomeView() {
       setCurrentProject(project);
       setShowNewProjectModal(false);
 
-      toast.success('Project created', {
-        description: `Created ${projectName} with .automaker directory`,
+      toast.success(translate('Project created'), {
+        description: translate('Created {value1} with .automaker directory', {
+          value1: projectName,
+        }),
       });
 
       // Set init status to show the dialog
@@ -304,7 +311,7 @@ export function WelcomeView() {
       navigate({ to: '/board' });
     } catch (error) {
       logger.error('Failed to create project:', error);
-      toast.error('Failed to create project', {
+      toast.error(translate('Failed to create project'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     } finally {
@@ -333,7 +340,7 @@ export function WelcomeView() {
       );
 
       if (!cloneResult.success || !cloneResult.projectPath) {
-        toast.error('Failed to clone template', {
+        toast.error(translate('Failed to clone template'), {
           description: cloneResult.error || 'Unknown error occurred',
         });
         return;
@@ -345,7 +352,7 @@ export function WelcomeView() {
       const initResult = await initializeProject(projectPath);
 
       if (!initResult.success) {
-        toast.error('Failed to initialize project', {
+        toast.error(translate('Failed to initialize project'), {
           description: initResult.error || 'Unknown error occurred',
         });
         return;
@@ -388,8 +395,11 @@ export function WelcomeView() {
       setCurrentProject(project);
       setShowNewProjectModal(false);
 
-      toast.success('Project created from template', {
-        description: `Created ${projectName} from ${template.name}`,
+      toast.success(translate('Project created from template'), {
+        description: translate('Created {value1} from {value2}', {
+          value1: projectName,
+          value2: template.name,
+        }),
       });
 
       // Set init status to show the dialog
@@ -408,7 +418,7 @@ export function WelcomeView() {
       analyzeProject(projectPath);
     } catch (error) {
       logger.error('Failed to create project from template:', error);
-      toast.error('Failed to create project', {
+      toast.error(translate('Failed to create project'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     } finally {
@@ -433,7 +443,7 @@ export function WelcomeView() {
       const cloneResult = await httpClient.templates.clone(repoUrl, projectName, parentDir);
 
       if (!cloneResult.success || !cloneResult.projectPath) {
-        toast.error('Failed to clone repository', {
+        toast.error(translate('Failed to clone repository'), {
           description: cloneResult.error || 'Unknown error occurred',
         });
         return;
@@ -445,7 +455,7 @@ export function WelcomeView() {
       const initResult = await initializeProject(projectPath);
 
       if (!initResult.success) {
-        toast.error('Failed to initialize project', {
+        toast.error(translate('Failed to initialize project'), {
           description: initResult.error || 'Unknown error occurred',
         });
         return;
@@ -488,8 +498,11 @@ export function WelcomeView() {
       setCurrentProject(project);
       setShowNewProjectModal(false);
 
-      toast.success('Project created from repository', {
-        description: `Created ${projectName} from ${repoUrl}`,
+      toast.success(translate('Project created from repository'), {
+        description: translate('Created {value1} from {value2}', {
+          value1: projectName,
+          value2: repoUrl,
+        }),
       });
 
       // Set init status to show the dialog
@@ -508,7 +521,7 @@ export function WelcomeView() {
       analyzeProject(projectPath);
     } catch (error) {
       logger.error('Failed to create project from custom URL:', error);
-      toast.error('Failed to create project', {
+      toast.error(translate('Failed to create project'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     } finally {
@@ -531,14 +544,14 @@ export function WelcomeView() {
         <div className="px-8 py-6">
           <div className="flex items-center gap-4 animate-in fade-in slide-in-from-top-2 duration-500">
             <div className="w-12 h-12 rounded-xl bg-linear-to-br from-brand-500/20 to-brand-600/10 border border-brand-500/20 flex items-center justify-center shadow-lg shadow-brand-500/10">
-              <img src="/logo.png" alt="Automaker Logo" className="w-8 h-8" />
+              <img src="/logo.png" alt={translate('Automaker Logo')} className="w-8 h-8" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-foreground tracking-tight">
-                Welcome to Automaker
+                {translate('Welcome to Automaker')}
               </h1>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Your autonomous AI development studio
+                {translate('Your autonomous AI development studio')}
               </p>
             </div>
           </div>
@@ -562,9 +575,11 @@ export function WelcomeView() {
                     <Plus className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-semibold text-foreground mb-1.5">New Project</h3>
+                    <h3 className="text-lg font-semibold text-foreground mb-1.5">
+                      {translate('New Project')}
+                    </h3>
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                      Create a new project from scratch with AI-powered development
+                      {translate('Create a new project from scratch with AI-powered development')}
                     </p>
                   </div>
                 </div>
@@ -575,21 +590,21 @@ export function WelcomeView() {
                       data-testid="create-new-project"
                     >
                       <Plus className="w-4 h-4 mr-2" />
-                      Create Project
+                      {translate('Create Project')}
                       <ChevronDown className="w-4 h-4 ml-2" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuItem onClick={handleNewProject} data-testid="quick-setup-option">
                       <Plus className="w-4 h-4 mr-2" />
-                      Quick Setup
+                      {translate('Quick Setup')}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={handleInteractiveMode}
                       data-testid="interactive-mode-option"
                     >
                       <MessageSquare className="w-4 h-4 mr-2" />
-                      Interactive Mode
+                      {translate('Interactive Mode')}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -609,9 +624,11 @@ export function WelcomeView() {
                     <FolderOpen className="w-6 h-6 text-muted-foreground group-hover:text-blue-500 transition-colors duration-300" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-semibold text-foreground mb-1.5">Open Project</h3>
+                    <h3 className="text-lg font-semibold text-foreground mb-1.5">
+                      {translate('Open Project')}
+                    </h3>
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                      Open an existing project folder to continue working
+                      {translate('Open an existing project folder to continue working')}
                     </p>
                   </div>
                 </div>
@@ -621,7 +638,7 @@ export function WelcomeView() {
                   data-testid="open-existing-project"
                 >
                   <FolderOpen className="w-4 h-4 mr-2" />
-                  Browse Folder
+                  {translate('Browse Folder')}
                 </Button>
               </div>
             </div>
@@ -634,7 +651,9 @@ export function WelcomeView() {
                 <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
                   <Clock className="w-4 h-4 text-muted-foreground" />
                 </div>
-                <h2 className="text-lg font-semibold text-foreground">Recent Projects</h2>
+                <h2 className="text-lg font-semibold text-foreground">
+                  {translate('Recent Projects')}
+                </h2>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {recentProjects.map((project, index) => (
@@ -660,7 +679,9 @@ export function WelcomeView() {
                           </p>
                           {project.lastOpened && (
                             <p className="text-xs text-muted-foreground mt-1.5">
-                              {new Date(project.lastOpened).toLocaleDateString()}
+                              {new Date(project.lastOpened).toLocaleDateString(
+                                getFormattingLocale()
+                              )}
                             </p>
                           )}
                         </div>
@@ -678,9 +699,11 @@ export function WelcomeView() {
               <div className="w-20 h-20 rounded-2xl bg-muted/50 border border-border flex items-center justify-center mb-5">
                 <Sparkles className="w-10 h-10 text-muted-foreground/50" />
               </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">No projects yet</h3>
+              <h3 className="text-xl font-semibold text-foreground mb-2">
+                {translate('No projects yet')}
+              </h3>
               <p className="text-sm text-muted-foreground max-w-md leading-relaxed">
-                Get started by creating a new project or opening an existing one
+                {translate('Get started by creating a new project or opening an existing one')}
               </p>
             </div>
           )}
@@ -708,17 +731,23 @@ export function WelcomeView() {
               <div className="w-8 h-8 rounded-lg bg-brand-500/10 flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-brand-500" />
               </div>
-              {initStatus?.isNewProject ? 'Project Initialized' : 'Project Updated'}
+              {initStatus?.isNewProject
+                ? translate('Project Initialized')
+                : translate('Project Updated')}
             </DialogTitle>
             <DialogDescription className="text-muted-foreground mt-1">
               {initStatus?.isNewProject
-                ? `Created .automaker directory structure for ${initStatus?.projectName}`
-                : `Updated missing files in .automaker for ${initStatus?.projectName}`}
+                ? translate('Created .automaker directory structure for {value1}', {
+                    value1: initStatus?.projectName,
+                  })
+                : translate('Updated missing files in .automaker for {value1}', {
+                    value1: initStatus?.projectName,
+                  })}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <div className="space-y-3">
-              <p className="text-sm text-foreground font-medium">Created files:</p>
+              <p className="text-sm text-foreground font-medium">{translate('Created files:')}</p>
               <ul className="space-y-2">
                 {initStatus?.createdFiles.map((file) => (
                   <li
@@ -740,17 +769,19 @@ export function WelcomeView() {
                   <div className="flex items-center gap-3">
                     <Spinner size="sm" />
                     <p className="text-sm text-brand-500">
-                      AI agent is analyzing your project structure...
+                      {translate('AI agent is analyzing your project structure...')}
                     </p>
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    <span className="text-brand-500 font-medium">Tip:</span> Edit the{' '}
+                    <span className="text-brand-500 font-medium">{translate('Tip:')}</span>{' '}
+                    {translate(' Edit the')}{' '}
                     <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
                       app_spec.txt
                     </code>{' '}
-                    file to describe your project. The AI agent will use this to understand your
-                    project structure.
+                    {translate(
+                      'file to describe your project. The AI agent will use this to understand your project structure.'
+                    )}
                   </p>
                 )}
               </div>
@@ -762,7 +793,7 @@ export function WelcomeView() {
               className="bg-linear-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white border-0 shadow-md shadow-brand-500/20"
               data-testid="close-init-dialog"
             >
-              Get Started
+              {translate('Get Started')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -783,7 +814,7 @@ export function WelcomeView() {
         >
           <div className="flex flex-col items-center gap-4 p-8 rounded-2xl bg-card border border-border shadow-2xl">
             <Spinner size="xl" />
-            <p className="text-foreground font-medium">Initializing project...</p>
+            <p className="text-foreground font-medium">{translate('Initializing project...')}</p>
           </div>
         </div>
       )}

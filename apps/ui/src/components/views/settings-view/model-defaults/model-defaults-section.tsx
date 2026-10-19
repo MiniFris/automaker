@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState } from 'react';
 import { Workflow, RotateCcw, Replace, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -21,67 +22,111 @@ interface PhaseConfig {
 const QUICK_TASKS: PhaseConfig[] = [
   {
     key: 'enhancementModel',
-    label: 'Feature Enhancement',
-    description: 'Improves feature names and descriptions',
+    get label() {
+      return translate('Feature Enhancement');
+    },
+    get description() {
+      return translate('Improves feature names and descriptions');
+    },
   },
   {
     key: 'fileDescriptionModel',
-    label: 'File Descriptions',
-    description: 'Generates descriptions for context files',
+    get label() {
+      return translate('File Descriptions');
+    },
+    get description() {
+      return translate('Generates descriptions for context files');
+    },
   },
   {
     key: 'imageDescriptionModel',
-    label: 'Image Descriptions',
-    description: 'Analyzes and describes context images',
+    get label() {
+      return translate('Image Descriptions');
+    },
+    get description() {
+      return translate('Analyzes and describes context images');
+    },
   },
   {
     key: 'commitMessageModel',
-    label: 'Commit Messages',
-    description: 'Generates git commit messages from diffs',
+    get label() {
+      return translate('Commit Messages');
+    },
+    get description() {
+      return translate('Generates git commit messages from diffs');
+    },
   },
 ];
 
 const VALIDATION_TASKS: PhaseConfig[] = [
   {
     key: 'validationModel',
-    label: 'GitHub Issue Validation',
-    description: 'Validates and improves GitHub issues',
+    get label() {
+      return translate('GitHub Issue Validation');
+    },
+    get description() {
+      return translate('Validates and improves GitHub issues');
+    },
   },
 ];
 
 const GENERATION_TASKS: PhaseConfig[] = [
   {
     key: 'specGenerationModel',
-    label: 'App Specification',
-    description: 'Generates full application specifications',
+    get label() {
+      return translate('App Specification');
+    },
+    get description() {
+      return translate('Generates full application specifications');
+    },
   },
   {
     key: 'featureGenerationModel',
-    label: 'Feature Generation',
-    description: 'Creates features from specifications',
+    get label() {
+      return translate('Feature Generation');
+    },
+    get description() {
+      return translate('Creates features from specifications');
+    },
   },
   {
     key: 'backlogPlanningModel',
-    label: 'Backlog Planning',
-    description: 'Reorganizes and prioritizes backlog',
+    get label() {
+      return translate('Backlog Planning');
+    },
+    get description() {
+      return translate('Reorganizes and prioritizes backlog');
+    },
   },
   {
     key: 'projectAnalysisModel',
-    label: 'Project Analysis',
-    description: 'Analyzes project structure for suggestions',
+    get label() {
+      return translate('Project Analysis');
+    },
+    get description() {
+      return translate('Analyzes project structure for suggestions');
+    },
   },
   {
     key: 'ideationModel',
-    label: 'Ideation',
-    description: 'Model for ideation view (generating AI suggestions)',
+    get label() {
+      return translate('Ideation');
+    },
+    get description() {
+      return translate('Model for ideation view (generating AI suggestions)');
+    },
   },
 ];
 
 const MEMORY_TASKS: PhaseConfig[] = [
   {
     key: 'memoryExtractionModel',
-    label: 'Memory Extraction',
-    description: 'Extracts learnings from completed agent sessions',
+    get label() {
+      return translate('Memory Extraction');
+    },
+    get description() {
+      return translate('Extracts learnings from completed agent sessions');
+    },
   },
 ];
 
@@ -94,6 +139,7 @@ function PhaseGroup({
   subtitle: string;
   phases: PhaseConfig[];
 }) {
+  useUiLocale();
   const { phaseModels, setPhaseModel } = useAppStore();
 
   return (
@@ -122,6 +168,7 @@ function PhaseGroup({
  * This is separate from phase models but logically belongs with model configuration.
  */
 function FeatureDefaultModelSection() {
+  useUiLocale();
   const { defaultFeatureModel, setDefaultFeatureModel } = useAppStore();
   const defaultValue: PhaseModelEntry =
     defaultFeatureModel ?? DEFAULT_GLOBAL_SETTINGS.defaultFeatureModel;
@@ -129,15 +176,15 @@ function FeatureDefaultModelSection() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-foreground">Feature Defaults</h3>
+        <h3 className="text-sm font-medium text-foreground">{translate('Feature Defaults')}</h3>
         <p className="text-xs text-muted-foreground">
-          Default model for new feature cards when created
+          {translate('Default model for new feature cards when created')}
         </p>
       </div>
       <div className="space-y-3">
         <PhaseModelSelector
-          label="Default Feature Model"
-          description="Model and thinking level used when creating new feature cards"
+          label={translate('Default Feature Model')}
+          description={translate('Model and thinking level used when creating new feature cards')}
           value={defaultValue}
           onChange={setDefaultFeatureModel}
           align="end"
@@ -149,12 +196,60 @@ function FeatureDefaultModelSection() {
 
 // Thinking level options with descriptions for the settings UI
 const THINKING_LEVEL_OPTIONS: { id: ThinkingLevel; label: string; description: string }[] = [
-  { id: 'none', label: 'None', description: 'No extended thinking' },
-  { id: 'low', label: 'Low', description: 'Light reasoning (1k tokens)' },
-  { id: 'medium', label: 'Medium', description: 'Moderate reasoning (10k tokens)' },
-  { id: 'high', label: 'High', description: 'Deep reasoning (16k tokens)' },
-  { id: 'ultrathink', label: 'Ultra', description: 'Maximum reasoning (32k tokens)' },
-  { id: 'adaptive', label: 'Adaptive', description: 'Model decides reasoning depth' },
+  {
+    id: 'none',
+    get label() {
+      return translate('None');
+    },
+    get description() {
+      return translate('No extended thinking');
+    },
+  },
+  {
+    id: 'low',
+    get label() {
+      return translate('Low');
+    },
+    get description() {
+      return translate('Light reasoning (1k tokens)');
+    },
+  },
+  {
+    id: 'medium',
+    get label() {
+      return translate('Medium');
+    },
+    get description() {
+      return translate('Moderate reasoning (10k tokens)');
+    },
+  },
+  {
+    id: 'high',
+    get label() {
+      return translate('High');
+    },
+    get description() {
+      return translate('Deep reasoning (16k tokens)');
+    },
+  },
+  {
+    id: 'ultrathink',
+    get label() {
+      return translate('Ultra');
+    },
+    get description() {
+      return translate('Maximum reasoning (32k tokens)');
+    },
+  },
+  {
+    id: 'adaptive',
+    get label() {
+      return translate('Adaptive');
+    },
+    get description() {
+      return translate('Model decides reasoning depth');
+    },
+  },
 ];
 
 /**
@@ -163,6 +258,7 @@ const THINKING_LEVEL_OPTIONS: { id: ThinkingLevel; label: string; description: s
  * in the two-stage model selector (i.e. clicking the model name directly).
  */
 function DefaultThinkingLevelSection() {
+  useUiLocale();
   const {
     defaultThinkingLevel,
     setDefaultThinkingLevel,
@@ -173,10 +269,13 @@ function DefaultThinkingLevelSection() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-foreground">Quick-Select Defaults</h3>
+        <h3 className="text-sm font-medium text-foreground">
+          {translate('Quick-Select Defaults')}
+        </h3>
         <p className="text-xs text-muted-foreground">
-          Thinking/reasoning level applied when quick-selecting a model from the dropdown. You can
-          always fine-tune per model via the expand arrow.
+          {translate(
+            'Thinking/reasoning level applied when quick-selecting a model from the dropdown. You can always fine-tune per model via the expand arrow.'
+          )}
         </p>
       </div>
       <div className="space-y-3">
@@ -193,9 +292,11 @@ function DefaultThinkingLevelSection() {
               <Brain className="w-4 h-4 text-purple-500" />
             </div>
             <div className="min-w-0">
-              <h4 className="text-sm font-medium text-foreground">Default Thinking Level</h4>
+              <h4 className="text-sm font-medium text-foreground">
+                {translate('Default Thinking Level')}
+              </h4>
               <p className="text-xs text-muted-foreground truncate">
-                Applied to Claude models when quick-selected
+                {translate('Applied to Claude models when quick-selected')}
               </p>
             </div>
           </div>
@@ -211,9 +312,9 @@ function DefaultThinkingLevelSection() {
                     ? 'bg-primary text-primary-foreground border-primary shadow-sm'
                     : 'bg-background border-border/50 text-muted-foreground hover:bg-accent hover:text-foreground'
                 )}
-                title={option.description}
+                title={translate(option.description)}
               >
-                {option.label}
+                {translate(option.label)}
               </button>
             ))}
           </div>
@@ -232,9 +333,11 @@ function DefaultThinkingLevelSection() {
               <Brain className="w-4 h-4 text-blue-500" />
             </div>
             <div className="min-w-0">
-              <h4 className="text-sm font-medium text-foreground">Default Reasoning Effort</h4>
+              <h4 className="text-sm font-medium text-foreground">
+                {translate('Default Reasoning Effort')}
+              </h4>
               <p className="text-xs text-muted-foreground truncate">
-                Applied to Codex/OpenAI models when quick-selected
+                {translate('Applied to Codex/OpenAI models when quick-selected')}
               </p>
             </div>
           </div>
@@ -250,9 +353,9 @@ function DefaultThinkingLevelSection() {
                     ? 'bg-primary text-primary-foreground border-primary shadow-sm'
                     : 'bg-background border-border/50 text-muted-foreground hover:bg-accent hover:text-foreground'
                 )}
-                title={option.description}
+                title={translate(option.description)}
               >
-                {option.label}
+                {translate(option.label)}
               </button>
             ))}
           </div>
@@ -263,6 +366,7 @@ function DefaultThinkingLevelSection() {
 }
 
 export function ModelDefaultsSection() {
+  useUiLocale();
   const { resetPhaseModels, claudeCompatibleProviders } = useAppStore();
   const [showBulkReplace, setShowBulkReplace] = useState(false);
 
@@ -288,10 +392,10 @@ export function ModelDefaultsSection() {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-foreground tracking-tight">
-                Model Defaults
+                {translate('Model Defaults')}
               </h2>
               <p className="text-sm text-muted-foreground/80">
-                Configure which AI model to use for each application task
+                {translate('Configure which AI model to use for each application task')}
               </p>
             </div>
           </div>
@@ -304,12 +408,12 @@ export function ModelDefaultsSection() {
                 className="gap-2"
               >
                 <Replace className="w-3.5 h-3.5" />
-                Bulk Replace
+                {translate('Bulk Replace')}
               </Button>
             )}
             <Button variant="outline" size="sm" onClick={resetPhaseModels} className="gap-2">
               <RotateCcw className="w-3.5 h-3.5" />
-              Reset to Defaults
+              {translate('Reset to Defaults')}
             </Button>
           </div>
         </div>
@@ -328,29 +432,29 @@ export function ModelDefaultsSection() {
 
         {/* Quick Tasks */}
         <PhaseGroup
-          title="Quick Tasks"
-          subtitle="Fast models recommended for speed and cost savings"
+          title={translate('Quick Tasks')}
+          subtitle={translate('Fast models recommended for speed and cost savings')}
           phases={QUICK_TASKS}
         />
 
         {/* Validation Tasks */}
         <PhaseGroup
-          title="Validation Tasks"
-          subtitle="Smart models recommended for accuracy"
+          title={translate('Validation Tasks')}
+          subtitle={translate('Smart models recommended for accuracy')}
           phases={VALIDATION_TASKS}
         />
 
         {/* Generation Tasks */}
         <PhaseGroup
-          title="Generation Tasks"
-          subtitle="Powerful models recommended for quality output"
+          title={translate('Generation Tasks')}
+          subtitle={translate('Powerful models recommended for quality output')}
           phases={GENERATION_TASKS}
         />
 
         {/* Memory Tasks */}
         <PhaseGroup
-          title="Memory Tasks"
-          subtitle="Fast models recommended for learning extraction"
+          title={translate('Memory Tasks')}
+          subtitle={translate('Fast models recommended for learning extraction')}
           phases={MEMORY_TASKS}
         />
       </div>
