@@ -32,6 +32,12 @@ import type {
   EventHookContext,
 } from '@automaker/types';
 import { ntfyService, type NtfyContext } from './ntfy-service.js';
+import { EnvironmentBindingStore } from './execution-environment/bindings.js';
+import {
+  FeatureWorkspaceService,
+  featureRunKey,
+} from './execution-environment/feature-workspace.js';
+import { ExecutionEnvironmentError } from './execution-environment/runtime.js';
 
 const execAsync = promisify(exec);
 const logger = createLogger('EventHooks');
@@ -460,8 +466,60 @@ export class EventHookService {
     context: HookContext,
     hookName: string
   ): Promise<void> {
-    const command = this.substituteVariables(action.command, context);
     const timeout = action.timeout || DEFAULT_SHELL_TIMEOUT;
+    if (this.settingsService && context.projectPath) {
+      const store = new EnvironmentBindingStore(this.settingsService);
+      const pinned = context.featureId
+        ? await store.peek(
+            context.projectPath,
+            featureRunKey(context.projectPath, context.featureId)
+          )
+        : undefined;
+      if (pinned?.type === 'ssh' || pinned?.type === 'docker' || pinned?.featureWorkspace) {
+        const service = new FeatureWorkspaceService(this.settingsService);
+        const remote = await service.prepare(
+          context.projectPath,
+          {
+            id: context.featureId!,
+            model: 'direct-internal',
+            branchName: (pinned.sshWorkspace ?? pinned.featureWorkspace)?.baseBranch,
+          },
+          new AbortController().signal,
+          false
+        );
+        if (!remote)
+          throw new ExecutionEnvironmentError(
+            'SSH_FEATURE_REQUIRED',
+            'Remote feature hook has no pinned workspace.'
+          );
+        const command = this.substituteVariables(action.command, {
+          ...context,
+          projectPath: remote.environment.cwd,
+        });
+        const result = await remote.environment.exec(command, new AbortController().signal, {
+          timeoutMs: Math.min(timeout, 600000),
+          maxOutputBytes: 12000,
+        });
+        if (result.exitCode !== 0)
+          throw new ExecutionEnvironmentError(
+            'SSH_HOOK_FAILED',
+            'Remote feature shell hook failed; no host execution was attempted.'
+          );
+        logger.info(`Shell hook "${hookName}" completed in the pinned ${pinned.type} workspace`);
+        return;
+      }
+      if (
+        !pinned &&
+        ['ssh', 'docker', 'auto'].includes(
+          (await store.configuration(context.projectPath)).resolved.type
+        )
+      )
+        throw new ExecutionEnvironmentError(
+          'SSH_FEATURE_REQUIRED',
+          'Managed shell hooks require a started feature with a pinned workspace. Unbound/project-wide hooks were not executed on the host.'
+        );
+    }
+    const command = this.substituteVariables(action.command, context);
 
     logger.info(`Executing shell hook "${hookName}": ${command}`);
 

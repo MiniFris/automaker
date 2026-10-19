@@ -35,7 +35,7 @@ import {
   type SubprocessOptions,
   type WslCliResult,
 } from '@automaker/platform';
-import { calculateReasoningTimeout } from '@automaker/types';
+import { calculateReasoningTimeout, modelTimeout, MAX_MODEL_TIMEOUT_MS } from '@automaker/types';
 import { createLogger, isAbortError } from '@automaker/utils';
 import { execSync } from 'child_process';
 import * as fs from 'fs';
@@ -43,6 +43,9 @@ import * as os from 'os';
 import * as path from 'path';
 import { BaseProvider } from './base-provider.js';
 import type { ExecuteOptions, ProviderConfig, ProviderMessage } from './types.js';
+import { remoteCliRuntime } from './environment-execution.js';
+import { environmentJSONL } from './environment-jsonl.js';
+import { ExecutionEnvironmentError } from '../services/execution-environment/runtime.js';
 
 /**
  * Spawn strategy for CLI tools on Windows
@@ -107,15 +110,6 @@ export interface CliDetectionResult {
 
 // Create logger for CLI operations
 const cliLogger = createLogger('CliProvider');
-
-/**
- * Base timeout for CLI operations in milliseconds.
- * CLI tools have longer startup and processing times compared to direct API calls,
- * so we use a higher base timeout (120s) than the default provider timeout (30s).
- * This is multiplied by reasoning effort multipliers when applicable.
- * @see calculateReasoningTimeout from @automaker/types
- */
-const CLI_BASE_TIMEOUT_MS = 120000;
 
 /**
  * Abstract base class for CLI-based providers
@@ -444,6 +438,26 @@ export abstract class CliProvider extends BaseProvider {
    * Build subprocess options based on detected strategy
    */
   protected buildSubprocessOptions(options: ExecuteOptions, cliArgs: string[]): SubprocessOptions {
+    if (remoteCliRuntime(options)) {
+      if (options.tools?.length === 0 || (options.readOnly && this.getName() !== 'cursor'))
+        throw new ExecutionEnvironmentError(
+          'REMOTE_PROVIDER_READ_ONLY_UNSUPPORTED',
+          'The selected CLI cannot enforce these tool restrictions. No process was started.'
+        );
+      return {
+        command: this.getCliName(),
+        args: cliArgs,
+        cwd: options.cwd,
+        abortController: options.abortController,
+        timeout: Math.min(
+          MAX_MODEL_TIMEOUT_MS,
+          calculateReasoningTimeout(
+            options.reasoningEffort,
+            modelTimeout(options.modelTimeouts, 'cliIdleTimeoutMs')
+          )
+        ),
+      };
+    }
     this.ensureCliDetected();
 
     if (!this.cliPath) {
@@ -462,7 +476,13 @@ export abstract class CliProvider extends BaseProvider {
 
     // Calculate dynamic timeout based on reasoning effort.
     // This addresses GitHub issue #530 where reasoning models with 'xhigh' effort would timeout.
-    const timeout = calculateReasoningTimeout(options.reasoningEffort, CLI_BASE_TIMEOUT_MS);
+    const timeout = Math.min(
+      MAX_MODEL_TIMEOUT_MS,
+      calculateReasoningTimeout(
+        options.reasoningEffort,
+        modelTimeout(options.modelTimeouts, 'cliIdleTimeoutMs')
+      )
+    );
 
     // WSL strategy
     if (this.useWsl && this.wslCliPath) {
@@ -530,9 +550,10 @@ export abstract class CliProvider extends BaseProvider {
    * Subclasses can override for custom behavior.
    */
   async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
-    this.ensureCliDetected();
+    const runtime = remoteCliRuntime(options);
+    if (!runtime) this.ensureCliDetected();
 
-    if (!this.cliPath) {
+    if (!runtime && !this.cliPath) {
       throw new Error(`${this.getCliName()} CLI not found. ${this.getInstallInstructions()}`);
     }
 
@@ -545,7 +566,7 @@ export abstract class CliProvider extends BaseProvider {
     const subprocessOptions = this.buildSubprocessOptions(effectiveOptions, cliArgs);
 
     try {
-      for await (const rawEvent of spawnJSONLProcess(subprocessOptions)) {
+      for await (const rawEvent of this.streamProcess(options, subprocessOptions)) {
         const normalized = this.normalizeEvent(rawEvent);
         if (normalized) {
           yield normalized;
@@ -573,6 +594,20 @@ export abstract class CliProvider extends BaseProvider {
 
       throw error;
     }
+  }
+
+  protected streamProcess(
+    options: ExecuteOptions,
+    subprocess: SubprocessOptions
+  ): AsyncGenerator<unknown> {
+    const runtime = remoteCliRuntime(options);
+    return runtime
+      ? environmentJSONL(
+          runtime,
+          subprocess,
+          modelTimeout(options.modelTimeouts, 'remoteProcessTimeoutMs')
+        )
+      : spawnJSONLProcess(subprocess);
   }
 
   /**

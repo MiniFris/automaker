@@ -7,6 +7,24 @@
 
 import { createLogger } from '@automaker/utils/logger';
 import type {
+  ExecutionEnvironmentSettings,
+  ExecutionEnvironmentSettingsResponse,
+  ExecutionEnvironmentSelection,
+  DockerConnectionDiagnostic,
+  DockerPreparationResult,
+  SSHHostKey,
+  SSHDiagnostic,
+  ProjectGitEnvironment,
+  DevServerEnvironmentMetadata,
+  ModelTimeoutSettings,
+  ModelTimeoutProvider,
+} from '@automaker/types';
+import type {
+  OpenAICompatibleEndpoint,
+  OpenAICompatibleEndpointStatus,
+  DirectAgentSettings,
+} from '@automaker/types';
+import type {
   ElectronAPI,
   FileResult,
   WriteResult,
@@ -609,14 +627,14 @@ type EventType =
  */
 
 /** Shared base for dev server events that carry URL/port information */
-interface DevServerUrlEvent {
+interface DevServerUrlEvent extends DevServerEnvironmentMetadata {
   worktreePath: string;
   url: string;
   port: number;
   timestamp: string;
 }
 
-export interface DevServerStartingEvent {
+export interface DevServerStartingEvent extends DevServerEnvironmentMetadata {
   worktreePath: string;
   timestamp: string;
 }
@@ -624,12 +642,13 @@ export interface DevServerStartingEvent {
 export type DevServerStartedEvent = DevServerUrlEvent;
 
 export interface DevServerOutputEvent {
+  sessionId?: string;
   worktreePath: string;
   content: string;
   timestamp: string;
 }
 
-export interface DevServerStoppedEvent {
+export interface DevServerStoppedEvent extends DevServerEnvironmentMetadata {
   worktreePath: string;
   port: number;
   exitCode: number | null;
@@ -652,6 +671,7 @@ export type DevServerLogEvent =
 export type TestRunStatus = 'pending' | 'running' | 'passed' | 'failed' | 'cancelled' | 'error';
 
 export interface TestRunnerStartedEvent {
+  executionEnvironment?: ProjectGitEnvironment;
   sessionId: string;
   worktreePath: string;
   /** The test command being run (from project settings) */
@@ -668,6 +688,8 @@ export interface TestRunnerOutputEvent {
 }
 
 export interface TestRunnerCompletedEvent {
+  executionEnvironment?: ProjectGitEnvironment;
+  error?: string;
   sessionId: string;
   worktreePath: string;
   /** The test command that was run */
@@ -689,7 +711,7 @@ export type TestRunnerEvent =
  */
 export interface DevServerLogsResponse {
   success: boolean;
-  result?: {
+  result?: DevServerEnvironmentMetadata & {
     worktreePath: string;
     port: number;
     url: string;
@@ -705,6 +727,8 @@ export interface DevServerLogsResponse {
 export interface TestLogsResponse {
   success: boolean;
   result?: {
+    executionEnvironment?: ProjectGitEnvironment;
+    error?: string;
     sessionId: string;
     worktreePath: string;
     /** The test command that was/is being run */
@@ -1023,11 +1047,23 @@ export class HttpApiClient implements ElectronAPI {
   private async post<T>(endpoint: string, body?: unknown, signal?: AbortSignal): Promise<T> {
     // Ensure API key is initialized before making request
     await waitForApiKeyInit();
+    let requestBody = body;
+    if (
+      (endpoint.startsWith('/api/git/') || endpoint.startsWith('/api/worktree/')) &&
+      body &&
+      typeof body === 'object'
+    ) {
+      const source = body as Record<string, unknown>;
+      const alias = source.worktreePath ?? source.projectPath;
+      const target = typeof alias === 'string' ? this.gitEnvironmentTargets.get(alias) : undefined;
+      if (target && source.environmentTargetId === undefined)
+        requestBody = { ...source, environmentTargetId: target };
+    }
     const response = await fetch(`${this.serverUrl}${endpoint}`, {
       method: 'POST',
       headers: this.getHeaders(),
       credentials: 'include', // Include cookies for session auth
-      body: body ? JSON.stringify(body) : undefined,
+      body: requestBody ? JSON.stringify(requestBody) : undefined,
       signal,
     });
 
@@ -1049,8 +1085,27 @@ export class HttpApiClient implements ElectronAPI {
       throw new Error(errorMessage);
     }
 
-    return response.json();
+    const data = await response.json();
+    if (endpoint.startsWith('/api/git/') || endpoint.startsWith('/api/worktree/')) {
+      const remember = (value: unknown) => {
+        const environment = value as { path?: unknown; targetId?: unknown } | undefined;
+        if (typeof environment?.path === 'string' && environment.targetId === '')
+          this.gitEnvironmentTargets.delete(environment.path);
+        if (
+          typeof environment?.path === 'string' &&
+          typeof environment.targetId === 'string' &&
+          /^[a-f0-9]{64}$/.test(environment.targetId)
+        )
+          this.gitEnvironmentTargets.set(environment.path, environment.targetId);
+      };
+      remember(data?.executionEnvironment);
+      if (Array.isArray(data?.worktrees))
+        for (const item of data.worktrees) remember(item.executionEnvironment);
+    }
+    return data;
   }
+
+  private readonly gitEnvironmentTargets = new Map<string, string>();
 
   async get<T>(endpoint: string): Promise<T> {
     // Ensure API key is initialized before making request
@@ -2199,6 +2254,20 @@ export class HttpApiClient implements ElectronAPI {
         imagePaths,
         useWorktrees,
       }),
+    mergeEnvironmentFeature: (
+      projectPath: string,
+      featureId: string
+    ): Promise<{ success: boolean; error?: string }> =>
+      this.post('/api/auto-mode/merge-environment-feature', {
+        projectPath,
+        featureId,
+        accepted: true,
+      }),
+    mergeSSHFeature: (
+      projectPath: string,
+      featureId: string
+    ): Promise<{ success: boolean; error?: string }> =>
+      this.post('/api/auto-mode/merge-ssh-feature', { projectPath, featureId, accepted: true }),
     commitFeature: (projectPath: string, featureId: string, worktreePath?: string) =>
       this.post('/api/auto-mode/commit-feature', {
         projectPath,
@@ -2233,7 +2302,8 @@ export class HttpApiClient implements ElectronAPI {
       enhancementMode: string,
       model?: string,
       thinkingLevel?: string,
-      projectPath?: string
+      projectPath?: string,
+      providerId?: string
     ): Promise<EnhancePromptResult> =>
       this.post('/api/enhance-prompt', {
         originalText,
@@ -2241,6 +2311,7 @@ export class HttpApiClient implements ElectronAPI {
         model,
         thinkingLevel,
         projectPath,
+        providerId,
       }),
   };
 
@@ -2364,12 +2435,24 @@ export class HttpApiClient implements ElectronAPI {
     openInExternalTerminal: (worktreePath: string, terminalId?: string) =>
       this.post('/api/worktree/open-in-external-terminal', { worktreePath, terminalId }),
     initGit: (projectPath: string) => this.post('/api/worktree/init-git', { projectPath }),
-    startDevServer: (projectPath: string, worktreePath: string) =>
-      this.post('/api/worktree/start-dev', { projectPath, worktreePath }),
-    stopDevServer: (worktreePath: string) => this.post('/api/worktree/stop-dev', { worktreePath }),
+    startDevServer: async (projectPath: string, worktreePath: string) => {
+      const inspected = await this.executionEnvironments.inspectGit(worktreePath);
+      if (!inspected.success || !inspected.executionEnvironment)
+        throw new Error(
+          inspected.error || 'Cannot inspect the dev environment. No command was started.'
+        );
+      return this.post<Awaited<ReturnType<WorktreeAPI['startDevServer']>>>(
+        '/api/worktree/start-dev',
+        { projectPath, worktreePath, environmentTargetId: inspected.executionEnvironment.targetId }
+      );
+    },
+    stopDevServer: (worktreePath: string, sessionId?: string) =>
+      this.post('/api/worktree/stop-dev', { worktreePath, ...(sessionId && { sessionId }) }),
     listDevServers: () => this.post('/api/worktree/list-dev-servers', {}),
-    getDevServerLogs: (worktreePath: string): Promise<DevServerLogsResponse> =>
-      this.get(`/api/worktree/dev-server-logs?worktreePath=${encodeURIComponent(worktreePath)}`),
+    getDevServerLogs: (worktreePath: string, sessionId?: string): Promise<DevServerLogsResponse> =>
+      this.get(
+        `/api/worktree/dev-server-logs?worktreePath=${encodeURIComponent(worktreePath)}${sessionId ? '&sessionId=' + encodeURIComponent(sessionId) : ''}`
+      ),
     onDevServerLogEvent: (callback: (event: DevServerLogEvent) => void) => {
       const unsub0 = this.subscribeToEvent('dev-server:starting', (payload) =>
         callback({ type: 'dev-server:starting', payload: payload as DevServerStartingEvent })
@@ -2430,8 +2513,24 @@ export class HttpApiClient implements ElectronAPI {
       };
     },
     // Test runner methods
-    startTests: (worktreePath: string, options?: { projectPath?: string; testFile?: string }) =>
-      this.post('/api/worktree/start-tests', { worktreePath, ...options }),
+    startTests: async (
+      worktreePath: string,
+      options?: { projectPath?: string; testFile?: string }
+    ) => {
+      const inspected = await this.executionEnvironments.inspectGit(worktreePath);
+      if (!inspected.success || !inspected.executionEnvironment)
+        throw new Error(
+          inspected.error || 'Cannot inspect the test environment. No tests were started.'
+        );
+      return this.post<Awaited<ReturnType<WorktreeAPI['startTests']>>>(
+        '/api/worktree/start-tests',
+        {
+          worktreePath,
+          ...options,
+          environmentTargetId: inspected.executionEnvironment.targetId,
+        }
+      );
+    },
     stopTests: (sessionId: string) => this.post('/api/worktree/stop-tests', { sessionId }),
     getCommitLog: (worktreePath: string, limit?: number) =>
       this.post('/api/worktree/commit-log', { worktreePath, limit }),
@@ -2625,7 +2724,8 @@ export class HttpApiClient implements ElectronAPI {
       workingDirectory?: string,
       imagePaths?: string[],
       model?: string,
-      thinkingLevel?: string
+      thinkingLevel?: string,
+      providerId?: string
     ): Promise<{ success: boolean; error?: string }> =>
       this.post('/api/agent/send', {
         sessionId,
@@ -2634,6 +2734,7 @@ export class HttpApiClient implements ElectronAPI {
         imagePaths,
         model,
         thinkingLevel,
+        providerId,
       }),
 
     getHistory: (
@@ -2661,7 +2762,8 @@ export class HttpApiClient implements ElectronAPI {
       message: string,
       imagePaths?: string[],
       model?: string,
-      thinkingLevel?: string
+      thinkingLevel?: string,
+      providerId?: string
     ): Promise<{
       success: boolean;
       queuedPrompt?: {
@@ -2674,7 +2776,14 @@ export class HttpApiClient implements ElectronAPI {
       };
       error?: string;
     }> =>
-      this.post('/api/agent/queue/add', { sessionId, message, imagePaths, model, thinkingLevel }),
+      this.post('/api/agent/queue/add', {
+        sessionId,
+        message,
+        imagePaths,
+        model,
+        thinkingLevel,
+        providerId,
+      }),
 
     queueList: (
       sessionId: string
@@ -2900,6 +3009,246 @@ export class HttpApiClient implements ElectronAPI {
     }> => this.post('/api/settings/agents/discover', { projectPath, sources }),
   };
 
+  executionEnvironments = {
+    inspectGit: (
+      path: string
+    ): Promise<{
+      success: boolean;
+      executionEnvironment?: import('@automaker/types').ProjectGitEnvironment;
+      error?: string;
+    }> => this.post('/api/git/environment', { projectPath: path }),
+    inspectProvider: (
+      projectPath: string,
+      provider: import('@automaker/types').RemoteSdkProvider
+    ): Promise<{
+      success: boolean;
+      status?: import('@automaker/types').RemoteProviderStatus;
+      error?: string;
+    }> =>
+      this.post('/api/settings/execution-environments/providers/inspect', {
+        projectPath,
+        provider,
+      }),
+    installProvider: (
+      projectPath: string,
+      provider: import('@automaker/types').RemoteSdkProvider,
+      targetId: string
+    ): Promise<{
+      success: boolean;
+      status?: import('@automaker/types').RemoteProviderStatus;
+      error?: string;
+    }> =>
+      this.post('/api/settings/execution-environments/providers/install', {
+        projectPath,
+        provider,
+        targetId,
+        accepted: true,
+      }),
+    saveProviderKey: (
+      projectPath: string,
+      provider: import('@automaker/types').RemoteSdkProvider,
+      targetId: string,
+      apiKey: string
+    ): Promise<{
+      success: boolean;
+      status?: import('@automaker/types').RemoteProviderStatus;
+      error?: string;
+    }> =>
+      this.post('/api/settings/execution-environments/providers/key', {
+        projectPath,
+        provider,
+        targetId,
+        apiKey,
+        accepted: true,
+      }),
+    clearProviderKey: (
+      projectPath: string,
+      provider: import('@automaker/types').RemoteSdkProvider,
+      targetId: string
+    ): Promise<{
+      success: boolean;
+      status?: import('@automaker/types').RemoteProviderStatus;
+      error?: string;
+    }> =>
+      this.post('/api/settings/execution-environments/providers/key', {
+        projectPath,
+        provider,
+        targetId,
+        clear: true,
+        accepted: true,
+      }),
+    inspectFeature: (
+      projectPath: string,
+      featureId: string
+    ): Promise<{
+      success: boolean;
+      binding?: import('@automaker/types').ExecutionEnvironmentBinding | null;
+      selectedType?: string;
+      error?: string;
+    }> =>
+      this.post('/api/settings/execution-environments/feature/inspect', { projectPath, featureId }),
+    scanSSH: (
+      profileId: string
+    ): Promise<{ success: boolean; hostKey?: SSHHostKey; error?: string }> =>
+      this.post('/api/settings/execution-environments/ssh/scan', { profileId }),
+    trustSSH: (
+      profileId: string,
+      fingerprint: string,
+      replace = false
+    ): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.post('/api/settings/execution-environments/ssh/trust', {
+        profileId,
+        fingerprint,
+        replace,
+        accepted: true,
+      }),
+    saveSSHKey: (
+      profileId: string,
+      privateKey: string,
+      passphrase?: string
+    ): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.post('/api/settings/execution-environments/ssh/key', {
+        profileId,
+        privateKey,
+        passphrase: passphrase || undefined,
+      }),
+    clearSSHKey: (profileId: string): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.post('/api/settings/execution-environments/ssh/key', { profileId, clear: true }),
+    checkSSH: (
+      profileId: string,
+      projectPath?: string
+    ): Promise<{ success: boolean; diagnostic?: SSHDiagnostic; error?: string }> =>
+      this.post('/api/settings/execution-environments/ssh/check', { profileId, projectPath }),
+    prepareSSH: (profileId: string): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.post('/api/settings/execution-environments/ssh/prepare', { profileId, accepted: true }),
+    prepareSSHProject: (
+      profileId: string,
+      projectPath: string,
+      source:
+        | { method: 'import' }
+        | { method: 'clone'; repositoryUrl: string }
+        | { method: 'existing'; remotePath: string }
+    ): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.post('/api/settings/execution-environments/ssh/project', {
+        profileId,
+        projectPath,
+        source,
+        accepted: true,
+      }),
+    recoverSSH: (
+      profileId: string,
+      projectPath: string
+    ): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.post('/api/settings/execution-environments/ssh/recover', {
+        profileId,
+        projectPath,
+        accepted: true,
+      }),
+    prepareDocker: (
+      projectPath?: string,
+      profileId?: string
+    ): Promise<{ success: boolean; preparation?: DockerPreparationResult; error?: string }> =>
+      this.post('/api/settings/execution-environments/docker/prepare', {
+        projectPath,
+        profileId,
+        accepted: true,
+      }),
+    confirmAutoFallback: (projectPath?: string): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.post('/api/settings/execution-environments/auto/confirm', {
+        projectPath,
+        accepted: true,
+        warningVersion: 1,
+      }),
+    revokeAutoFallback: (projectPath?: string): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.post('/api/settings/execution-environments/auto/revoke', { projectPath }),
+    confirmLocal: (projectPath?: string): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.post('/api/settings/execution-environments/local/confirm', {
+        projectPath,
+        accepted: true,
+        warningVersion: 1,
+      }),
+    revokeLocal: (projectPath?: string): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.post('/api/settings/execution-environments/local/revoke', { projectPath }),
+    inspect: (projectPath?: string): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.post('/api/settings/execution-environments/inspect', { projectPath }),
+    saveGlobal: (
+      settings: ExecutionEnvironmentSettings
+    ): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.put('/api/settings/execution-environments/global', { settings }),
+    saveProject: (
+      projectPath: string,
+      selection: ExecutionEnvironmentSelection | null
+    ): Promise<ExecutionEnvironmentSettingsResponse> =>
+      this.put('/api/settings/execution-environments/project', { projectPath, selection }),
+    checkDocker: (
+      profileId?: string
+    ): Promise<{ success: boolean; diagnostic?: DockerConnectionDiagnostic; error?: string }> =>
+      this.post('/api/settings/execution-environments/docker/check', { profileId }),
+  };
+
+  modelTimeouts = {
+    getProvider: (
+      provider: ModelTimeoutProvider
+    ): Promise<{ success: boolean; timeouts?: ModelTimeoutSettings; error?: string }> =>
+      this.get('/api/settings/model-timeouts/' + provider),
+    saveProvider: (
+      provider: ModelTimeoutProvider,
+      timeouts: ModelTimeoutSettings
+    ): Promise<{ success: boolean; timeouts?: ModelTimeoutSettings; error?: string }> =>
+      this.put('/api/settings/model-timeouts/' + provider, { timeouts }),
+    get: (): Promise<{ success: boolean; timeouts?: ModelTimeoutSettings; error?: string }> =>
+      this.get('/api/settings/model-timeouts'),
+    save: (
+      timeouts: ModelTimeoutSettings
+    ): Promise<{ success: boolean; timeouts?: ModelTimeoutSettings; error?: string }> =>
+      this.put('/api/settings/model-timeouts', { timeouts }),
+  };
+
+  directEndpoints = {
+    list: (): Promise<{
+      success: boolean;
+      endpoints: OpenAICompatibleEndpointStatus[];
+      agentSettings: DirectAgentSettings;
+      error?: string;
+    }> => this.get('/api/settings/openai-compatible'),
+    save: (
+      endpoint: OpenAICompatibleEndpoint,
+      apiKey?: string,
+      clearKey?: boolean
+    ): Promise<{
+      success: boolean;
+      endpoints: OpenAICompatibleEndpointStatus[];
+      agentSettings: DirectAgentSettings;
+      error?: string;
+    }> => this.put('/api/settings/openai-compatible/endpoint', { endpoint, apiKey, clearKey }),
+    remove: (
+      providerId: string
+    ): Promise<{
+      success: boolean;
+      endpoints: OpenAICompatibleEndpointStatus[];
+      agentSettings: DirectAgentSettings;
+      error?: string;
+    }> => this.post('/api/settings/openai-compatible/remove', { providerId }),
+    saveAgent: (
+      settings: DirectAgentSettings
+    ): Promise<{
+      success: boolean;
+      endpoints: OpenAICompatibleEndpointStatus[];
+      agentSettings: DirectAgentSettings;
+      error?: string;
+    }> => this.put('/api/settings/openai-compatible/agent', settings),
+    models: (
+      providerId: string
+    ): Promise<{ success: boolean; models?: string[]; error?: string }> =>
+      this.post('/api/settings/openai-compatible/models', { providerId }),
+    test: (
+      providerId: string,
+      modelId: string,
+      tools = false
+    ): Promise<{ success: boolean; verified?: boolean; error?: string }> =>
+      this.post('/api/settings/openai-compatible/test', { providerId, modelId, tools }),
+  };
+
   // Sessions API
   sessions = {
     list: (
@@ -3003,9 +3352,16 @@ export class HttpApiClient implements ElectronAPI {
       projectPath: string,
       prompt: string,
       model?: string,
-      branchName?: string
+      branchName?: string,
+      providerId?: string
     ): Promise<{ success: boolean; error?: string }> =>
-      this.post('/api/backlog-plan/generate', { projectPath, prompt, model, branchName }),
+      this.post('/api/backlog-plan/generate', {
+        projectPath,
+        prompt,
+        model,
+        branchName,
+        providerId,
+      }),
 
     stop: (): Promise<{ success: boolean; error?: string }> =>
       this.post('/api/backlog-plan/stop', {}),

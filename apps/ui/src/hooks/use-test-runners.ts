@@ -90,15 +90,8 @@ export function useTestRunners(worktreePath?: string) {
   );
 
   // Derived state for the current worktree
-  const activeSession = useMemo(() => {
-    if (!worktreePath) return null;
-    return getActiveSession(worktreePath);
-  }, [worktreePath, getActiveSession]);
-
-  const isRunning = useMemo(() => {
-    if (!worktreePath) return false;
-    return isWorktreeRunning(worktreePath);
-  }, [worktreePath, isWorktreeRunning]);
+  const activeSession = worktreePath ? getActiveSession(worktreePath) : null;
+  const isRunning = worktreePath ? isWorktreeRunning(worktreePath) : false;
 
   // Get all sessions for the current worktree
   const worktreeSessions = useMemo(() => {
@@ -132,6 +125,7 @@ export function useTestRunners(worktreePath?: string) {
             status: 'running',
             testFile: payload.testFile,
             startedAt: payload.timestamp,
+            executionEnvironment: payload.executionEnvironment,
           });
           break;
         }
@@ -187,6 +181,7 @@ export function useTestRunners(worktreePath?: string) {
               startedAt,
               finishedAt: finishedAt || undefined,
               exitCode: exitCode ?? undefined,
+              executionEnvironment: result.result.executionEnvironment,
             });
 
             // Add existing logs
@@ -232,6 +227,17 @@ export function useTestRunners(worktreePath?: string) {
         }
 
         logger.info(`Tests started with session: ${result.result?.sessionId}`);
+        if (result.result?.sessionId) {
+          startSession({
+            sessionId: result.result.sessionId,
+            worktreePath,
+            command: result.result.command,
+            status: result.result.status,
+            testFile: result.result.testFile,
+            startedAt: new Date().toISOString(),
+            executionEnvironment: result.result.executionEnvironment,
+          });
+        }
         return {
           success: true,
           sessionId: result.result?.sessionId,
@@ -242,8 +248,52 @@ export function useTestRunners(worktreePath?: string) {
         return { success: false, error: errorMessage };
       }
     },
-    [worktreePath]
+    [worktreePath, startSession]
   );
+
+  // Reconcile a missed completed event/backend restart by the original ID, never by a new default.
+  useEffect(() => {
+    if (!activeSession?.sessionId.startsWith('managed-test-')) return;
+    let disposed = false;
+    const id = activeSession.sessionId;
+    const reconcile = async () => {
+      try {
+        const api = getElectronAPI();
+        if (!api.worktree?.getTestLogs) return;
+        const response = await api.worktree.getTestLogs(undefined, id);
+        if (disposed) return;
+        if (!response.success || !response.result)
+          throw new Error(
+            response.error || 'Managed test session is unavailable; its outcome is unconfirmed.'
+          );
+        const snapshot = response.result;
+        startSession({
+          sessionId: id,
+          worktreePath: snapshot.worktreePath,
+          command: snapshot.command,
+          status: snapshot.status,
+          startedAt: snapshot.startedAt,
+          finishedAt: snapshot.finishedAt ?? undefined,
+          exitCode: snapshot.exitCode,
+          testFile: snapshot.testFile,
+          executionEnvironment: snapshot.executionEnvironment,
+        });
+      } catch (err) {
+        if (disposed) return;
+        completeSession(id, 'error', null, 0);
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Managed test outcome is unconfirmed. No tests were replayed.'
+        );
+      }
+    };
+    const timer = setInterval(() => void reconcile(), 5000);
+    return () => {
+      disposed = true;
+      clearInterval(timer);
+    };
+  }, [activeSession?.sessionId, startSession, completeSession, setError]);
 
   // Stop a test run
   const stop = useCallback(

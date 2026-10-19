@@ -15,7 +15,7 @@ import type {
   PhaseModelEntry,
   Credentials,
 } from '@automaker/types';
-import { DEFAULT_PHASE_MODELS } from '@automaker/types';
+import { DEFAULT_PHASE_MODELS, isDirectModel } from '@automaker/types';
 import {
   mergeAutoModePrompts,
   mergeAgentPrompts,
@@ -639,7 +639,7 @@ export async function getPhaseModelWithOverrides(
 
     // Resolve provider if providerId is set
     let provider: ClaudeCompatibleProvider | undefined;
-    if (phaseModel.providerId) {
+    if (phaseModel.providerId && !isDirectModel(phaseModel.model)) {
       const providers = globalSettings.claudeCompatibleProviders || [];
       provider = providers.find((p) => p.id === phaseModel.providerId);
 
@@ -742,6 +742,9 @@ export async function resolveProviderContext(
   providerId?: string,
   logPrefix = '[SettingsHelper]'
 ): Promise<ProviderContextResult> {
+  // Direct endpoint identities are resolved strictly by prepareDirectExecution,
+  // never through Claude fallback/model mappings or case-insensitive matching.
+  if (isDirectModel(modelId)) return { provider: undefined, credentials: undefined, resolvedModel: undefined, modelConfig: undefined };
   try {
     const globalSettings = await settingsService.getGlobalSettings();
     const credentials = await settingsService.getCredentials();
@@ -846,6 +849,7 @@ export async function getProviderByModelId(
   settingsService: SettingsService,
   logPrefix = '[SettingsHelper]'
 ): Promise<ProviderByModelIdResult> {
+  if (isDirectModel(modelId)) return { provider: undefined, credentials: undefined, resolvedModel: undefined, modelConfig: undefined };
   try {
     const globalSettings = await settingsService.getGlobalSettings();
     const credentials = await settingsService.getCredentials();

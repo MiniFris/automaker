@@ -9,9 +9,10 @@ import { getErrorMessage, logError } from '../common.js';
 export function createModelHandler(agentService: AgentService) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
-      const { sessionId, model } = req.body as {
+      const { sessionId, model, providerId } = req.body as {
         sessionId: string;
         model: string;
+        providerId?: string;
       };
 
       if (!sessionId || !model) {
@@ -19,7 +20,7 @@ export function createModelHandler(agentService: AgentService) {
         return;
       }
 
-      const result = await agentService.setSessionModel(sessionId, model);
+      const result = await agentService.setSessionModel(sessionId, model, providerId);
       res.json({ success: result });
     } catch (error) {
       logError(error, 'Set session model failed');

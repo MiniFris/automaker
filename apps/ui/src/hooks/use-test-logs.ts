@@ -14,6 +14,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { getElectronAPI } from '@/lib/electron';
 import { pathsEqual } from '@/lib/utils';
+import type { ProjectGitEnvironment } from '@automaker/types';
 import type {
   TestRunStatus,
   TestRunnerStartedEvent,
@@ -31,6 +32,7 @@ const logger = createLogger('TestLogs');
  * State for test log management
  */
 export interface TestLogState {
+  executionEnvironment: ProjectGitEnvironment | null;
   /** The accumulated log content */
   logs: string;
   /** Whether initial logs are being fetched */
@@ -72,6 +74,7 @@ export interface UseTestLogsOptions {
 // ============================================================================
 
 const initialState: TestLogState = {
+  executionEnvironment: null,
   logs: '',
   isLoading: false,
   error: null,
@@ -174,7 +177,7 @@ export function useTestLogs({
           ...prev,
           logs,
           isLoading: false,
-          error: null,
+          error: result.result?.error ?? null,
           status,
           sessionId,
           command,
@@ -183,6 +186,7 @@ export function useTestLogs({
           finishedAt,
           exitCode,
           duration: null, // Not provided by getTestLogs
+          executionEnvironment: result.result?.executionEnvironment ?? null,
         }));
         hasFetchedInitialLogs.current = true;
       } else {
@@ -201,6 +205,8 @@ export function useTestLogs({
         ...prev,
         isLoading: false,
         error: error instanceof Error ? error.message : 'Failed to fetch logs',
+        // An unavailable managed run is not still known to be running after restart/lost transport.
+        status: prev.sessionId?.startsWith('managed-test-') ? 'error' : prev.status,
       }));
     }
   }, [worktreePath, targetSessionId]);
@@ -220,7 +226,7 @@ export function useTestLogs({
   const appendLogs = useCallback((content: string) => {
     setState((prev) => ({
       ...prev,
-      logs: prev.logs + content,
+      logs: (prev.logs + content).slice(-50000),
     }));
   }, []);
 
@@ -267,6 +273,7 @@ export function useTestLogs({
 
           // Update current session ID for future event filtering
           currentSessionId.current = payload.sessionId;
+          ++fetchSeq.current;
 
           setState((prev) => ({
             ...prev,
@@ -281,6 +288,7 @@ export function useTestLogs({
             // Clear logs on new test run start
             logs: '',
             error: null,
+            executionEnvironment: payload.executionEnvironment ?? null,
           }));
           hasFetchedInitialLogs.current = false;
           break;
@@ -316,14 +324,24 @@ export function useTestLogs({
             finishedAt: payload.timestamp,
             exitCode: payload.exitCode,
             duration: payload.duration,
+            error: payload.error ?? null,
+            executionEnvironment: payload.executionEnvironment ?? prev.executionEnvironment,
           }));
+          // Discard a pre-completion snapshot and recover the final buffered tail.
+          void fetchLogs();
           break;
         }
       }
     });
 
     return unsubscribe;
-  }, [worktreePath, targetSessionId, autoSubscribe, appendLogs]);
+  }, [worktreePath, targetSessionId, autoSubscribe, appendLogs, fetchLogs]);
+
+  useEffect(() => {
+    if (!autoSubscribe || !isRunning) return;
+    const timer = setInterval(() => void fetchLogs(), 5000);
+    return () => clearInterval(timer);
+  }, [autoSubscribe, isRunning, fetchLogs]);
 
   return {
     // State

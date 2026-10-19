@@ -72,13 +72,22 @@ import { createSyncHandler } from './routes/sync.js';
 import { createUpdatePRNumberHandler } from './routes/update-pr-number.js';
 import type { SettingsService } from '../../services/settings-service.js';
 import type { FeatureLoader } from '../../services/feature-loader.js';
+import { environmentGitDispatcher } from '../environment-git.js';
+import { environmentTestDispatcher } from '../environment-tests.js';
+import { environmentDevDispatcher } from '../environment-dev-server.js';
 
 export function createWorktreeRoutes(
   events: EventEmitter,
   settingsService?: SettingsService,
-  featureLoader?: FeatureLoader
+  featureLoader?: FeatureLoader,
+  isProjectBusy?: (projectPath: string) => boolean | Promise<boolean>
 ): Router {
   const router = Router();
+  if (settingsService) {
+    router.use(environmentDevDispatcher(settingsService, events));
+    router.use(environmentTestDispatcher(settingsService, events));
+    router.use(environmentGitDispatcher(settingsService, 'worktree', isProjectBusy));
+  }
 
   router.post('/info', validatePathParams('projectPath'), createInfoHandler());
   router.post('/status', validatePathParams('projectPath'), createStatusHandler());

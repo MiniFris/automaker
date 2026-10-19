@@ -24,6 +24,8 @@ export type GetCurrentBranchFn = (projectPath: string) => Promise<string | null>
  * Represents a running feature execution with all tracking metadata
  */
 export interface RunningFeature {
+  /** Keep the lease until managed workspace processes confirm cancellation/cleanup. */
+  remoteWorkspace?: boolean;
   featureId: string;
   projectPath: string;
   worktreePath: string | null;

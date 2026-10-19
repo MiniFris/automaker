@@ -389,6 +389,27 @@ describe('codex-provider.ts', () => {
       const CODEX_CLI_TIMEOUT_MS = 120000;
       expect(call.timeout).toBe(CODEX_CLI_TIMEOUT_MS);
     });
+
+    it.each([
+      ['high', 600_000, 300_000, 1_800_000],
+      ['xhigh', 600_000, 900_000, 3_600_000],
+      ['xhigh', 600_000, 2_147_483_647, 2_147_483_647],
+    ] as const)(
+      'honours saved idle bases for %s reasoning without timer overflow (%#)',
+      async (reasoningEffort, cliIdleTimeoutMs, codexExtendedIdleTimeoutMs, expected) => {
+        vi.mocked(spawnJSONLProcess).mockReturnValue((async function* () {})());
+        await collectAsyncGenerator(
+          provider.executeQuery({
+            prompt: 'Task',
+            model: 'gpt-5.1-codex-max',
+            cwd: '/tmp',
+            reasoningEffort,
+            modelTimeouts: { cliIdleTimeoutMs, codexExtendedIdleTimeoutMs },
+          })
+        );
+        expect(vi.mocked(spawnJSONLProcess).mock.calls[0][0].timeout).toBe(expected);
+      }
+    );
   });
 
   describe('calculateReasoningTimeout', () => {

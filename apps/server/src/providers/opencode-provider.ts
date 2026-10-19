@@ -534,6 +534,14 @@ export class OpencodeProvider extends CliProvider {
    * replacing the stale sdkSessionId and preventing repeated failures.
    */
   async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+    // Remote sessions never replay automatically, even on a session-not-found-looking error.
+    if (
+      options.executionEnvironmentBinding?.type === 'ssh' ||
+      options.executionEnvironmentBinding?.type === 'docker'
+    ) {
+      yield* super.executeQuery(options);
+      return;
+    }
     // When no sdkSessionId is set, there is nothing to "retry without" — just
     // stream normally and clean error messages as they pass through.
     if (!options.sdkSessionId) {

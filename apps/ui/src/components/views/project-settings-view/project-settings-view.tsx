@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/store/app-store';
+import { ExecutionEnvironmentSettings } from '@/components/shared/execution-environment-settings';
 import { Settings, FolderOpen, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProjectIdentitySection } from './project-identity-section';
@@ -96,6 +97,8 @@ export function ProjectSettingsView() {
     if (!currentProject) return null;
 
     switch (activeView) {
+      case 'execution-environment':
+        return <ExecutionEnvironmentSettings projectPath={currentProject.path} />;
       case 'identity':
         return <ProjectIdentitySection project={currentProject} />;
       case 'theme':

@@ -3,8 +3,9 @@
  */
 
 import type { Request, Response } from 'express';
+import type { SettingsService } from '../../../services/settings-service.js';
 import { createLogger } from '@automaker/utils';
-import { CODEX_MODEL_MAP } from '@automaker/types';
+import { CODEX_MODEL_MAP, modelTimeout, providerModelTimeouts } from '@automaker/types';
 import { ProviderFactory } from '../../../providers/provider-factory.js';
 import { getApiKey } from '../common.js';
 import { getCodexAuthIndicators } from '@automaker/platform';
@@ -20,7 +21,6 @@ const logger = createLogger('Setup');
 const rateLimiter = new AuthRateLimiter();
 const OPENAI_API_KEY_ENV = 'OPENAI_API_KEY';
 const AUTH_PROMPT = "Reply with only the word 'ok'";
-const AUTH_TIMEOUT_MS = 30000;
 const ERROR_BILLING_MESSAGE =
   'Credit balance is too low. Please add credits to your OpenAI account.';
 const ERROR_RATE_LIMIT_MESSAGE =
@@ -80,7 +80,7 @@ function isRateLimitError(text: string): boolean {
   return RATE_LIMIT_PATTERNS.some((pattern) => lowerText.includes(pattern));
 }
 
-export function createVerifyCodexAuthHandler() {
+export function createVerifyCodexAuthHandler(settingsService?: SettingsService) {
   return async (req: Request, res: Response): Promise<void> => {
     // In E2E/CI mock mode, skip real API calls
     if (process.env.AUTOMAKER_MOCK_AGENT === 'true') {
@@ -110,7 +110,13 @@ export function createVerifyCodexAuthHandler() {
     }
 
     const abortController = new AbortController();
-    const timeoutId = setTimeout(() => abortController.abort(), AUTH_TIMEOUT_MS);
+    const timeoutId = setTimeout(
+      () => abortController.abort(),
+      modelTimeout(
+        providerModelTimeouts(await settingsService?.getGlobalSettings(), 'codex'),
+        'connectionTestTimeoutMs'
+      )
+    );
 
     try {
       // Create secure environment without modifying process.env

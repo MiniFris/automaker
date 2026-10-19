@@ -8,6 +8,7 @@
 import type { Feature, PlanningMode, ThinkingLevel, ReasoningEffort } from '@automaker/types';
 import type { loadContextFiles } from '@automaker/utils';
 import type { PipelineContext } from './pipeline-orchestrator.js';
+import type { FeatureMemoryWriter } from './execution-environment/memory.js';
 
 // =============================================================================
 // ExecutionService Callback Types
@@ -73,12 +74,15 @@ export type SaveFeatureSummaryFn = (
 ) => Promise<void>;
 
 /**
- * Function to record learnings from a completed feature
+ * Function to record learnings from a completed feature.
+ * When memory is supplied, projectPath is controller metadata ONLY: all learned
+ * content must be written through memory.appendLearning, never controller fs.
  */
 export type RecordLearningsFn = (
   projectPath: string,
   feature: Feature,
-  agentOutput: string
+  agentOutput: string,
+  memory?: FeatureMemoryWriter
 ) => Promise<void>;
 
 /**

@@ -11,6 +11,8 @@
  */
 
 import { execSync } from 'child_process';
+import { remoteCliRuntime } from './environment-execution.js';
+import { executeRemoteSdk } from './remote-sdk.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
@@ -527,6 +529,10 @@ export class CopilotProvider extends CliProvider {
    * Streams tool execution events in real-time for UI display.
    */
   async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+    if (remoteCliRuntime(options)) {
+      yield* executeRemoteSdk('copilot', options, (event) => this.normalizeEvent(event));
+      return;
+    }
     this.ensureCliDetected();
 
     // Note: We don't use validateBareModelId here because Copilot's model IDs

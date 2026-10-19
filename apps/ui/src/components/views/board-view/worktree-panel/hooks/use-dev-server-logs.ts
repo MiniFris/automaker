@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { getElectronAPI } from '@/lib/electron';
 import { pathsEqual } from '@/lib/utils';
+import type { ProjectGitEnvironment } from '@automaker/types';
 
 const logger = createLogger('DevServerLogs');
 
@@ -9,6 +10,8 @@ const logger = createLogger('DevServerLogs');
 const MAX_LOG_BUFFER_SIZE = 50_000; // ~50KB
 
 export interface DevServerLogState {
+  sessionId?: string;
+  executionEnvironment?: ProjectGitEnvironment;
   /** The log content (buffered + live) */
   logs: string;
   /** Incremented whenever logs content changes (including trim+shift) */
@@ -73,6 +76,8 @@ export function useDevServerLogs({ worktreePath, autoSubscribe = true }: UseDevS
 
   // Keep track of whether we've fetched initial logs
   const hasFetchedInitialLogs = useRef(false);
+  const capturedSession = useRef<string | undefined>(undefined);
+  const fetchSequence = useRef(0);
 
   // Buffer for batching rapid output events into fewer setState calls.
   // Content accumulates here and is flushed via requestAnimationFrame,
@@ -100,6 +105,7 @@ export function useDevServerLogs({ worktreePath, autoSubscribe = true }: UseDevS
    */
   const fetchLogs = useCallback(async () => {
     if (!worktreePath) return;
+    const sequence = ++fetchSequence.current;
 
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
@@ -114,13 +120,19 @@ export function useDevServerLogs({ worktreePath, autoSubscribe = true }: UseDevS
         return;
       }
 
-      const result = await api.worktree.getDevServerLogs(worktreePath);
+      const result = await api.worktree.getDevServerLogs(worktreePath, capturedSession.current);
+      if (sequence !== fetchSequence.current) return;
 
       if (result.success && result.result) {
+        capturedSession.current = result.result.sessionId;
         setState((prev) => ({
           ...prev,
           logs: result.result!.logs,
-          isRunning: true,
+          isRunning: result.result!.isRunning ?? true,
+          sessionId: result.result!.sessionId,
+          executionEnvironment: result.result!.executionEnvironment,
+          exitCode: result.result!.exitCode ?? null,
+          serverError: result.result!.error ?? null,
           isLoading: false,
           port: result.result!.port,
           url: result.result!.url,
@@ -138,11 +150,13 @@ export function useDevServerLogs({ worktreePath, autoSubscribe = true }: UseDevS
         }));
       }
     } catch (error) {
+      if (sequence !== fetchSequence.current) return;
       logger.error('Failed to fetch dev server logs:', error);
       setState((prev) => ({
         ...prev,
         isLoading: false,
         error: error instanceof Error ? error.message : 'Failed to fetch logs',
+        isRunning: capturedSession.current ? false : prev.isRunning,
       }));
     }
   }, [worktreePath]);
@@ -151,6 +165,8 @@ export function useDevServerLogs({ worktreePath, autoSubscribe = true }: UseDevS
    * Clear logs and reset state
    */
   const clearLogs = useCallback(() => {
+    capturedSession.current = undefined;
+    ++fetchSequence.current;
     resetPendingOutput();
     setState({
       logs: '',
@@ -242,6 +258,8 @@ export function useDevServerLogs({ worktreePath, autoSubscribe = true }: UseDevS
 
   // Fetch initial logs when worktreePath changes
   useEffect(() => {
+    capturedSession.current = undefined;
+    ++fetchSequence.current;
     if (worktreePath && autoSubscribe) {
       hasFetchedInitialLogs.current = false;
       fetchLogs();
@@ -263,15 +281,29 @@ export function useDevServerLogs({ worktreePath, autoSubscribe = true }: UseDevS
     const unsubscribe = api.worktree.onDevServerLogEvent((event) => {
       // Filter events to only handle those for our worktree
       if (!pathsEqual(event.payload.worktreePath, worktreePath)) return;
+      if (
+        event.type !== 'dev-server:started' &&
+        event.payload.sessionId &&
+        capturedSession.current &&
+        event.payload.sessionId !== capturedSession.current
+      )
+        return;
 
       switch (event.type) {
         case 'dev-server:started': {
           resetPendingOutput();
           const { payload } = event;
-          logger.info('Dev server started:', payload);
+          capturedSession.current = payload.sessionId;
+          ++fetchSequence.current;
+          logger.info('Dev server started:', {
+            worktreePath: payload.worktreePath,
+            port: payload.port,
+          });
           setState((prev) => ({
             ...prev,
             isRunning: true,
+            sessionId: payload.sessionId,
+            executionEnvironment: payload.executionEnvironment,
             port: payload.port,
             url: payload.url,
             startedAt: payload.timestamp,
@@ -293,18 +325,25 @@ export function useDevServerLogs({ worktreePath, autoSubscribe = true }: UseDevS
         }
         case 'dev-server:stopped': {
           const { payload } = event;
-          logger.info('Dev server stopped:', payload);
+          logger.info('Dev server stopped:', {
+            worktreePath: payload.worktreePath,
+            exitCode: payload.exitCode,
+          });
           setState((prev) => ({
             ...prev,
             isRunning: false,
             exitCode: payload.exitCode,
             serverError: payload.error ?? null,
           }));
+          void fetchLogs();
           break;
         }
         case 'dev-server:url-detected': {
           const { payload } = event;
-          logger.info('Dev server URL detected:', payload);
+          logger.info('Dev server URL detected:', {
+            worktreePath: payload.worktreePath,
+            port: payload.port,
+          });
           setState((prev) => ({
             ...prev,
             url: payload.url,
@@ -316,7 +355,13 @@ export function useDevServerLogs({ worktreePath, autoSubscribe = true }: UseDevS
     });
 
     return unsubscribe;
-  }, [worktreePath, autoSubscribe, appendLogs, resetPendingOutput]);
+  }, [worktreePath, autoSubscribe, appendLogs, resetPendingOutput, fetchLogs]);
+
+  useEffect(() => {
+    if (!state.isRunning || !state.sessionId || !autoSubscribe) return;
+    const timer = setInterval(() => void fetchLogs(), 5000);
+    return () => clearInterval(timer);
+  }, [state.isRunning, state.sessionId, autoSubscribe, fetchLogs]);
 
   return {
     ...state,

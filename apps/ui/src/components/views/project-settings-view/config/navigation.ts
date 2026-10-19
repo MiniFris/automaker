@@ -20,6 +20,7 @@ export interface ProjectNavigationItem {
 export const PROJECT_SETTINGS_NAV_ITEMS: ProjectNavigationItem[] = [
   { id: 'identity', label: 'Identity', icon: User },
   { id: 'worktrees', label: 'Worktrees', icon: GitBranch },
+  { id: 'execution-environment', label: 'Execution Environment', icon: Terminal },
   { id: 'commands-scripts', label: 'Commands & Scripts', icon: Terminal },
   { id: 'theme', label: 'Theme', icon: Palette },
   { id: 'claude', label: 'Models', icon: Workflow },

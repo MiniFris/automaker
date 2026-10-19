@@ -506,6 +506,26 @@ export function SessionManager({
                         <MessageSquare className="w-4 h-4 text-muted-foreground shrink-0" />
                       )}
                       <h3 className="font-medium truncate">{session.name}</h3>
+                      {session.executionEnvironment && (
+                        <span
+                          className="text-xs text-muted-foreground"
+                          title={
+                            session.executionEnvironment.fallbackReason
+                              ? 'Explicitly confirmed Auto fallback; pinned Local for this session'
+                              : 'Pinned execution environment'
+                          }
+                        >
+                          {session.executionEnvironment.fallbackReason
+                            ? 'Local (Auto fallback)'
+                            : session.executionEnvironment.type === 'docker'
+                              ? 'Docker'
+                              : session.executionEnvironment.type === 'ssh'
+                                ? 'SSH'
+                                : session.executionEnvironment.type === 'local'
+                                  ? 'Local'
+                                  : 'Legacy'}
+                        </span>
+                      )}
                       {((currentSessionId === session.id && isCurrentSessionThinking) ||
                         runningSessions.has(session.id)) && (
                         <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full">

@@ -1,6 +1,24 @@
 #!/bin/sh
 set -e
 
+# Opt-in Docker controller: make the target user a member of the actual socket GID.
+# gosu initializes supplementary groups from /etc/group, not Compose group_add alone.
+# Never change socket permissions and never mount the socket into project workers.
+if [ "${AUTOMAKER_DOCKER_SOCKET_ACCESS:-false}" = "true" ]; then
+    agent_docker_socket="${AUTOMAKER_DOCKER_SOCKET_PATH:-/var/run/docker.sock}"
+    if [ ! -S "$agent_docker_socket" ]; then
+        echo "Docker controller socket is unavailable; check the explicit Compose socket mount." >&2
+        exit 1
+    fi
+    agent_docker_gid="$(stat -c '%g' "$agent_docker_socket")"
+    agent_docker_group="$(getent group "$agent_docker_gid" | cut -d: -f1)"
+    if [ -z "$agent_docker_group" ]; then
+        agent_docker_group="automaker-docker-${agent_docker_gid}"
+        groupadd -g "$agent_docker_gid" "$agent_docker_group"
+    fi
+    usermod -aG "$agent_docker_group" automaker
+fi
+
 # Ensure Claude CLI config directory exists with correct permissions
 if [ ! -d "/home/automaker/.claude" ]; then
     mkdir -p /home/automaker/.claude

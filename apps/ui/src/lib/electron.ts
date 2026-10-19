@@ -89,7 +89,7 @@ export interface IdeationAPI {
   sendMessage: (
     sessionId: string,
     message: string,
-    options?: { imagePaths?: string[]; model?: string }
+    options?: { imagePaths?: string[]; model?: string; providerId?: string }
   ) => Promise<{ success: boolean; error?: string }>;
   stopSession: (sessionId: string) => Promise<{ success: boolean; error?: string }>;
 
@@ -555,6 +555,14 @@ export interface FeaturesAPI {
 }
 
 export interface AutoModeAPI {
+  mergeEnvironmentFeature: (
+    projectPath: string,
+    featureId: string
+  ) => Promise<{ success: boolean; error?: string }>;
+  mergeSSHFeature: (
+    projectPath: string,
+    featureId: string
+  ) => Promise<{ success: boolean; error?: string }>;
   start: (
     projectPath: string,
     branchName?: string | null,
@@ -793,7 +801,8 @@ export interface ElectronAPI {
       enhancementMode: string,
       model?: string,
       thinkingLevel?: string,
-      projectPath?: string
+      projectPath?: string,
+      providerId?: string
     ) => Promise<{
       success: boolean;
       enhancedText?: string;
@@ -812,7 +821,8 @@ export interface ElectronAPI {
       projectPath: string,
       prompt: string,
       model?: string,
-      branchName?: string
+      branchName?: string,
+      providerId?: string
     ) => Promise<{ success: boolean; error?: string }>;
     stop: () => Promise<{ success: boolean; error?: string }>;
     status: (projectPath: string) => Promise<{
@@ -877,7 +887,9 @@ export interface ElectronAPI {
       message: string,
       workingDirectory?: string,
       imagePaths?: string[],
-      model?: string
+      model?: string,
+      thinkingLevel?: string,
+      providerId?: string
     ) => Promise<{ success: boolean; error?: string }>;
     getHistory: (sessionId: string) => Promise<{
       success: boolean;
@@ -3323,6 +3335,14 @@ function createMockAutoModeAPI(): AutoModeAPI {
       return { success: true };
     },
 
+    mergeEnvironmentFeature: async () => ({
+      success: false,
+      error: 'Environment merge requires the Automaker HTTP server.',
+    }),
+    mergeSSHFeature: async () => ({
+      success: false,
+      error: 'SSH merge requires the Automaker HTTP server.',
+    }),
     commitFeature: async (projectPath: string, featureId: string, worktreePath?: string) => {
       console.log('[Mock] Committing feature:', {
         projectPath,

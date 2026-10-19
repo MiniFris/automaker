@@ -163,6 +163,7 @@ export interface StartSessionOptions {
 export interface SendMessageOptions {
   imagePaths?: string[];
   model?: string;
+  providerId?: string;
 }
 
 export interface CreateIdeaInput {

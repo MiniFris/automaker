@@ -8,6 +8,7 @@
  */
 
 import type { Feature } from '@automaker/types';
+import fs from 'node:fs/promises';
 import type { EventEmitter } from '../../lib/events.js';
 import { GlobalAutoModeService } from './global-service.js';
 import { AutoModeServiceFacade } from './facade.js';
@@ -70,6 +71,13 @@ export class AutoModeServiceCompat {
 
   getStatus(): AutoModeStatus {
     return this.globalService.getStatus();
+  }
+  async isProjectRunning(projectPath: string): Promise<boolean> {
+    const canonical = await fs.realpath(projectPath);
+    for (const run of this.globalService.getSharedServices().concurrencyManager.getAllRunning()) {
+      if ((await fs.realpath(run.projectPath)) === canonical) return true;
+    }
+    return false;
   }
 
   getActiveAutoLoopProjects(): string[] {
@@ -195,6 +203,14 @@ export class AutoModeServiceCompat {
   async contextExists(projectPath: string, featureId: string): Promise<boolean> {
     const facade = this.createFacade(projectPath);
     return facade.contextExists(featureId);
+  }
+
+  async mergeSSHFeature(projectPath: string, featureId: string): Promise<void> {
+    return this.createFacade(projectPath).mergeSSHFeature(featureId);
+  }
+
+  async mergeEnvironmentFeature(projectPath: string, featureId: string): Promise<void> {
+    return this.createFacade(projectPath).mergeEnvironmentFeature(featureId);
   }
 
   async analyzeProject(projectPath: string): Promise<void> {

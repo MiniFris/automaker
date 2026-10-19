@@ -22,6 +22,17 @@ describe('model-resolver', () => {
   });
 
   describe('resolveModelString', () => {
+    it.each(['direct-Qwen/Qwen3-Coder:latest', 'direct-claude-sonnet-custom', 'direct-gpt-5.2'])(
+      'preserves opaque direct model %s',
+      (model) => {
+        expect(resolveModelString(model)).toBe(model);
+        expect(resolvePhaseModel({ model, providerId: 'local-endpoint' })).toMatchObject({
+          model,
+          providerId: 'local-endpoint',
+        });
+      }
+    );
+
     describe('with undefined/null input', () => {
       it('should return default model when modelKey is undefined', () => {
         const result = resolveModelString(undefined);

@@ -40,6 +40,7 @@ import type { WorkMode } from '../shared';
 import { PhaseModelSelector } from '@/components/views/settings-view/model-defaults/phase-model-selector';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { DependencyTreeDialog } from './dependency-tree-dialog';
+import { FeatureEnvironmentStatus } from '@/components/shared/feature-environment-status';
 
 interface EditFeatureDialogProps {
   feature: Feature | null;
@@ -311,6 +312,14 @@ export function EditFeatureDialog({
         </DialogHeader>
 
         <div className="py-4 space-y-4 overflow-y-auto flex-1 min-h-0">
+          {projectPath && (
+            <FeatureEnvironmentStatus
+              key={`${projectPath}:${editingFeature.id}`}
+              projectPath={projectPath}
+              featureId={editingFeature.id}
+              model={editingFeature.model}
+            />
+          )}
           {/* Task Details Section */}
           <div className={cardClass}>
             <div className="space-y-2">

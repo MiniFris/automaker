@@ -1,6 +1,6 @@
 // Re-export shared types from @automaker/types
 export type { PRState, WorktreePRInfo } from '@automaker/types';
-import type { PRState, WorktreePRInfo } from '@automaker/types';
+import type { PRState, WorktreePRInfo, DevServerEnvironmentMetadata } from '@automaker/types';
 
 export interface WorktreeInfo {
   path: string;
@@ -32,7 +32,7 @@ export interface GitRepoStatus {
   hasCommits: boolean;
 }
 
-export interface DevServerInfo {
+export interface DevServerInfo extends DevServerEnvironmentMetadata {
   worktreePath: string;
   port: number;
   url: string;

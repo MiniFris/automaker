@@ -1,0 +1,24 @@
+# Opt-in: grants the SERVER host-level Docker management authority.
+# docker compose -f docker-compose.yml -f docker-compose.execution.yml up -d --build
+# Existing projects in the old /projects writable layer must be backed up/migrated
+# BEFORE adding the projects volume. See docs/execution-environments-docker.md.
+services:
+  server:
+    build:
+      target: server-docker
+    environment:
+      - AUTOMAKER_DOCKER_SOCKET_ACCESS=true
+      - AUTOMAKER_DOCKER_CONTROLLER=automaker-server
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - type: bind
+        source: ${AUTOMAKER_DOCKER_SOCKET:-/var/run/docker.sock}
+        target: /var/run/docker.sock
+        read_only: true
+        bind:
+          create_host_path: false
+      - automaker-projects:/projects
+
+volumes:
+  automaker-projects:
+    name: automaker-projects

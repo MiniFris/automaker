@@ -10,11 +10,12 @@ import { getErrorMessage, logError } from '../common.js';
 export function createQueueAddHandler(agentService: AgentService) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
-      const { sessionId, message, imagePaths, model, thinkingLevel } = req.body as {
+      const { sessionId, message, imagePaths, model, providerId, thinkingLevel } = req.body as {
         sessionId: string;
         message: string;
         imagePaths?: string[];
         model?: string;
+        providerId?: string;
         thinkingLevel?: ThinkingLevel;
       };
 
@@ -30,6 +31,7 @@ export function createQueueAddHandler(agentService: AgentService) {
         message,
         imagePaths,
         model,
+        providerId,
         thinkingLevel,
       });
       res.json(result);

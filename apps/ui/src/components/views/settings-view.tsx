@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearch } from '@tanstack/react-router';
 import { useAppStore } from '@/store/app-store';
+import { ExecutionEnvironmentSettings } from '@/components/shared/execution-environment-settings';
 
 import { useSettingsView, type SettingsViewId } from './settings-view/hooks';
 import { NAV_ITEMS } from './settings-view/config/navigation';
@@ -26,6 +27,7 @@ import {
   OpencodeSettingsTab,
   GeminiSettingsTab,
   CopilotSettingsTab,
+  DirectSettingsTab,
 } from './settings-view/providers';
 import { MCPServersSection } from './settings-view/mcp-servers';
 import { PromptCustomizationSection } from './settings-view/prompts';
@@ -124,6 +126,10 @@ export function SettingsView() {
   // Render the active section based on current view
   const renderActiveSection = () => {
     switch (activeView) {
+      case 'execution-environment':
+        return <ExecutionEnvironmentSettings />;
+      case 'direct-provider':
+        return <DirectSettingsTab />;
       case 'claude-provider':
         return <ClaudeSettingsTab />;
       case 'cursor-provider':

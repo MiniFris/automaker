@@ -28,6 +28,7 @@ import {
   isOpencodeModel,
   isCopilotModel,
   isGeminiModel,
+  isDirectModel,
   stripProviderPrefix,
   migrateModelId,
   type PhaseModelEntry,
@@ -64,6 +65,9 @@ export function resolveModelString(
     console.log(`[ModelResolver] No model specified, using default: ${defaultModel}`);
     return defaultModel;
   }
+
+  // Endpoint model IDs are opaque: do not apply alias migration or provider heuristics.
+  if (isDirectModel(modelKey)) return modelKey;
 
   // First, migrate legacy IDs to canonical format
   const canonicalKey = migrateModelId(modelKey);

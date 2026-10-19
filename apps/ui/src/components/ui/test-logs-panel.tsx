@@ -143,7 +143,7 @@ function TestLogsPanelContent({
 }: TestLogsPanelContentProps) {
   const xtermRef = useRef<XtermLogViewerRef>(null);
   const [autoScrollEnabled, setAutoScrollEnabled] = useState(true);
-  const lastLogsLengthRef = useRef(0);
+  const lastLogsRef = useRef('');
   const lastSessionIdRef = useRef<string | null>(null);
 
   const {
@@ -159,6 +159,7 @@ function TestLogsPanelContent({
     duration,
     isRunning,
     fetchLogs,
+    executionEnvironment,
   } = useTestLogs({
     worktreePath,
     sessionId,
@@ -167,29 +168,28 @@ function TestLogsPanelContent({
 
   // Write logs to xterm when they change
   useEffect(() => {
-    if (!xtermRef.current || !logs) return;
+    if (!xtermRef.current) return;
 
     // If session changed, reset the terminal and write all content
     if (lastSessionIdRef.current !== currentSessionId) {
       lastSessionIdRef.current = currentSessionId;
-      lastLogsLengthRef.current = 0;
       xtermRef.current.write(logs);
-      lastLogsLengthRef.current = logs.length;
+      lastLogsRef.current = logs;
       return;
     }
 
-    // If logs got shorter (e.g., cleared), rewrite all
-    if (logs.length < lastLogsLengthRef.current) {
+    // A bounded scrollback can roll over without changing length, or be replaced by a snapshot.
+    if (!logs.startsWith(lastLogsRef.current)) {
       xtermRef.current.write(logs);
-      lastLogsLengthRef.current = logs.length;
+      lastLogsRef.current = logs;
       return;
     }
 
     // Append only the new content
-    if (logs.length > lastLogsLengthRef.current) {
-      const newContent = logs.slice(lastLogsLengthRef.current);
+    if (logs.length > lastLogsRef.current.length) {
+      const newContent = logs.slice(lastLogsRef.current.length);
       xtermRef.current.append(newContent);
-      lastLogsLengthRef.current = logs.length;
+      lastLogsRef.current = logs;
     }
   }, [logs, currentSessionId]);
 
@@ -197,7 +197,7 @@ function TestLogsPanelContent({
   useEffect(() => {
     if (currentSessionId !== lastSessionIdRef.current) {
       setAutoScrollEnabled(true);
-      lastLogsLengthRef.current = 0;
+      lastLogsRef.current = '';
     }
   }, [currentSessionId]);
 
@@ -220,6 +220,14 @@ function TestLogsPanelContent({
           <DialogTitle className="flex items-center gap-2 text-base">
             <FlaskConical className="w-4 h-4 text-primary" />
             <span>Test Runner</span>
+            {executionEnvironment && (
+              <span
+                className="text-xs font-mono text-muted-foreground"
+                title={executionEnvironment.runtimeCwd}
+              >
+                {executionEnvironment.type.toUpperCase()} · {executionEnvironment.runtimeCwd}
+              </span>
+            )}
             {status && (
               <span
                 className={cn(

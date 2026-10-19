@@ -4,7 +4,7 @@
 
 import path from 'path';
 import type { Feature, FeatureStatusWithPipeline } from '@automaker/types';
-import { DEFAULT_MAX_CONCURRENCY } from '@automaker/types';
+import { DEFAULT_MAX_CONCURRENCY, isDirectModel } from '@automaker/types';
 import {
   createLogger,
   readJsonWithRecovery,
@@ -271,6 +271,12 @@ export class RecoveryService {
           logRecoveryWarning(result, `Feature ${entry.name}`, logger);
           const feature = result.data;
           if (!feature) continue;
+          // No automatic replay of an ambiguous direct run. Single-feature manual
+          // resume remains available; crash-safe run/tool journaling is stage 6.
+          if (isDirectModel(feature.model)) {
+            logger.info(`Direct feature ${feature.id} requires explicit resume after reviewing its workspace.`);
+            continue;
+          }
 
           // Check if the feature should be resumed:
           // 1. Features still in active states (in_progress, pipeline_*) - not yet reconciled

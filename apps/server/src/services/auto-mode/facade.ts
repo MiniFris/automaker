@@ -17,6 +17,9 @@ import { promisify } from 'util';
 import type { Feature, PlanningMode, ThinkingLevel, ReasoningEffort } from '@automaker/types';
 import {
   DEFAULT_MAX_CONCURRENCY,
+  modelTimeout,
+  providerModelTimeouts,
+  getModelProvider,
   DEFAULT_MODELS,
   stripProviderPrefix,
   isPipelineStatus,
@@ -26,6 +29,8 @@ import { createLogger, loadContextFiles, classifyError } from '@automaker/utils'
 import { getFeatureDir } from '@automaker/platform';
 import * as secureFs from '../../lib/secure-fs.js';
 import { validateWorkingDirectory, createAutoModeOptions } from '../../lib/sdk-options.js';
+import { hasRemoteEnvironment } from '../../providers/environment-execution.js';
+import { isRemoteCliModel, isRemoteSdkModel } from '@automaker/types';
 import {
   getPromptCustomization,
   resolveProviderContext,
@@ -40,6 +45,7 @@ import { FeatureStateManager } from '../feature-state-manager.js';
 import { PlanApprovalService } from '../plan-approval-service.js';
 import { AutoLoopCoordinator, type AutoModeConfig } from '../auto-loop-coordinator.js';
 import { ExecutionService } from '../execution-service.js';
+import { FeatureWorkspaceService } from '../execution-environment/feature-workspace.js';
 import { RecoveryService } from '../recovery-service.js';
 import { PipelineOrchestrator } from '../pipeline-orchestrator.js';
 import { AgentExecutor } from '../agent-executor.js';
@@ -171,7 +177,8 @@ export class AutoModeServiceFacade {
     // Use shared services if provided, otherwise create new ones
     // Shared services allow multiple facades to share state (e.g., running features, auto loops)
     const eventBus = sharedServices?.eventBus ?? new TypedEventBus(events);
-    const worktreeResolver = sharedServices?.worktreeResolver ?? new WorktreeResolver();
+    const worktreeResolver =
+      sharedServices?.worktreeResolver ?? new WorktreeResolver(settingsService);
     const concurrencyManager =
       sharedServices?.concurrencyManager ??
       new ConcurrencyManager((p) => worktreeResolver.getCurrentBranch(p));
@@ -257,7 +264,13 @@ export class AutoModeServiceFacade {
         }
       ): Promise<void> => {
         const resolvedModel = resolveModelString(model, DEFAULT_MODELS.claude);
-        const provider = ProviderFactory.getProviderForModel(resolvedModel);
+        const remoteCLI =
+          (isRemoteCliModel(resolvedModel) || isRemoteSdkModel(resolvedModel)) &&
+          settingsService &&
+          (await hasRemoteEnvironment(settingsService, pPath, `feature:${pPath}:${featureId}`));
+        const provider = remoteCLI
+          ? ProviderFactory.getProviderForModel(resolvedModel, { throwOnDisconnected: false })
+          : ProviderFactory.getProviderForModel(resolvedModel);
         const effectiveBareModel = stripProviderPrefix(resolvedModel);
 
         // Resolve custom provider (GLM, MiniMax, etc.) for baseUrl and credentials
@@ -336,6 +349,7 @@ export class AutoModeServiceFacade {
             abortController,
             imagePaths,
             model: resolvedModel,
+            providerId: opts?.providerId as string | undefined,
             planningMode: opts?.planningMode as PlanningMode | undefined,
             requirePlanApproval: opts?.requirePlanApproval as boolean | undefined,
             previousContent: opts?.previousContent as string | undefined,
@@ -486,7 +500,8 @@ export class AutoModeServiceFacade {
       (pPath, featureId, summary) =>
         featureStateManager.saveFeatureSummary(pPath, featureId, summary),
       async () => {
-        /* recordLearnings - stub */
+        // Extraction remains a stub (no extra model calls). Future extraction must
+        // use the supplied FeatureMemoryWriter for managed runs, not controller fs.
       },
       (pPath, featureId) => getFacade().contextExists(featureId),
       (pPath, featureId, useWorktrees, _calledInternally) =>
@@ -779,11 +794,20 @@ export class AutoModeServiceFacade {
    */
   async verifyFeature(featureId: string): Promise<boolean> {
     const feature = await this.featureStateManager.loadFeature(this.projectPath, featureId);
+    const remote =
+      feature && this.settingsService
+        ? await new FeatureWorkspaceService(this.settingsService).prepare(
+            this.projectPath,
+            feature,
+            new AbortController().signal,
+            false
+          )
+        : undefined;
     let workDir = this.projectPath;
 
     // Use worktreeResolver to find worktree path (consistent with commitFeature)
     const branchName = feature?.branchName;
-    if (branchName) {
+    if (!remote && branchName) {
       const resolved = await this.worktreeResolver.findWorktreeForBranch(
         this.projectPath,
         branchName
@@ -807,16 +831,60 @@ export class AutoModeServiceFacade {
 
     let allPassed = true;
     const results: Array<{ check: string; passed: boolean; output?: string }> = [];
-
-    for (const check of verificationChecks) {
-      try {
-        const { stdout, stderr } = await execAsync(check.cmd, { cwd: workDir, timeout: 120000 });
-        results.push({ check: check.name, passed: true, output: stdout || stderr });
-      } catch (error) {
-        allPassed = false;
-        results.push({ check: check.name, passed: false, output: (error as Error).message });
-        break;
+    const verificationLease = remote
+      ? this.concurrencyManager.acquire({
+          featureId,
+          projectPath: this.projectPath,
+          isAutoMode: false,
+        })
+      : undefined;
+    if (verificationLease) {
+      verificationLease.remoteWorkspace = true;
+      verificationLease.worktreePath = remote!.environment.cwd;
+    }
+    try {
+      const verificationTimeout = modelTimeout(
+        providerModelTimeouts(
+          await this.settingsService?.getGlobalSettings(),
+          getModelProvider(feature?.model)
+        ),
+        'verificationTimeoutMs'
+      );
+      for (const check of verificationChecks) {
+        try {
+          if (remote) {
+            const result = await remote.environment.exec(
+              check.cmd,
+              verificationLease!.abortController.signal,
+              {
+                timeoutMs: verificationTimeout,
+              }
+            );
+            results.push({
+              check: check.name,
+              passed: result.exitCode === 0,
+              output: result.output,
+            });
+            if (result.exitCode !== 0) {
+              allPassed = false;
+              break;
+            }
+          } else {
+            const { stdout, stderr } = await execAsync(check.cmd, {
+              cwd: workDir,
+              timeout: verificationTimeout,
+            });
+            results.push({ check: check.name, passed: true, output: stdout || stderr });
+          }
+        } catch (error) {
+          if (remote) throw error; // Unknown remote outcomes must not be converted into a retryable test failure.
+          allPassed = false;
+          results.push({ check: check.name, passed: false, output: (error as Error).message });
+          break;
+        }
       }
+    } finally {
+      if (verificationLease) this.concurrencyManager.release(featureId);
     }
 
     const runningEntryForVerify = this.concurrencyManager.getRunningFeature(featureId);
@@ -843,6 +911,36 @@ export class AutoModeServiceFacade {
    * @param providedWorktreePath - Optional worktree path
    */
   async commitFeature(featureId: string, providedWorktreePath?: string): Promise<string | null> {
+    const remoteFeature = await this.featureStateManager.loadFeature(this.projectPath, featureId);
+    if (remoteFeature && this.settingsService) {
+      const service = new FeatureWorkspaceService(this.settingsService);
+      const remote = await service.prepare(
+        this.projectPath,
+        remoteFeature,
+        new AbortController().signal,
+        false
+      );
+      if (remote) {
+        if (this.concurrencyManager.isRunning(featureId))
+          throw new Error('Stop this feature before committing its remote workspace.');
+        if (providedWorktreePath && providedWorktreePath !== remote.environment.cwd)
+          throw new Error(
+            'The supplied path is not the pinned remote feature workspace. No local Git operation was performed.'
+          );
+        const lease = this.concurrencyManager.acquire({
+          featureId,
+          projectPath: this.projectPath,
+          isAutoMode: false,
+        });
+        lease.remoteWorkspace = true;
+        lease.worktreePath = remote.environment.cwd;
+        try {
+          return await service.commit(remote, remoteFeature, lease.abortController.signal);
+        } finally {
+          this.concurrencyManager.release(featureId);
+        }
+      }
+    }
     let workDir = this.projectPath;
 
     if (providedWorktreePath) {
@@ -899,6 +997,40 @@ export class AutoModeServiceFacade {
     } catch (error) {
       logger.error(`Commit failed for ${featureId}:`, error);
       return null;
+    }
+  }
+
+  async mergeSSHFeature(featureId: string): Promise<void> {
+    return this.mergeEnvironmentFeature(featureId);
+  }
+
+  async mergeEnvironmentFeature(featureId: string): Promise<void> {
+    if (!this.settingsService) throw new Error('Execution environment settings are unavailable.');
+    if (this.concurrencyManager.isRunning(featureId))
+      throw new Error('Stop this feature before merging its remote workspace.');
+    const feature = await this.featureStateManager.loadFeature(this.projectPath, featureId);
+    if (!feature) throw new Error('Feature not found.');
+    const lease = this.concurrencyManager.acquire({
+      featureId,
+      projectPath: this.projectPath,
+      isAutoMode: false,
+    });
+    try {
+      const service = new FeatureWorkspaceService(this.settingsService);
+      const remote = await service.prepare(
+        this.projectPath,
+        feature,
+        lease.abortController.signal,
+        false
+      );
+      if (!remote)
+        throw new Error(
+          'This action requires an existing managed feature workspace. No implicit workspace or controller Git merge was performed.'
+        );
+      lease.remoteWorkspace = true;
+      await service.merge(remote, lease.abortController.signal);
+    } finally {
+      this.concurrencyManager.release(featureId);
     }
   }
 

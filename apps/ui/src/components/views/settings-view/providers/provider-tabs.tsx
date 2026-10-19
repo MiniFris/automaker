@@ -14,15 +14,17 @@ import { CodexSettingsTab } from './codex-settings-tab';
 import { OpencodeSettingsTab } from './opencode-settings-tab';
 import { GeminiSettingsTab } from './gemini-settings-tab';
 import { CopilotSettingsTab } from './copilot-settings-tab';
+import { DirectSettingsTab } from './direct-settings-tab';
 
 interface ProviderTabsProps {
-  defaultTab?: 'claude' | 'cursor' | 'codex' | 'opencode' | 'gemini' | 'copilot';
+  defaultTab?: 'claude' | 'cursor' | 'codex' | 'opencode' | 'gemini' | 'copilot' | 'direct';
 }
 
 export function ProviderTabs({ defaultTab = 'claude' }: ProviderTabsProps) {
   return (
     <Tabs defaultValue={defaultTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-6 mb-6">
+      <TabsList className="flex w-full flex-wrap h-auto mb-6">
+        <TabsTrigger value="direct" className="flex items-center gap-2"><OpenAIIcon className="w-4 h-4" />Direct API</TabsTrigger>
         <TabsTrigger value="claude" className="flex items-center gap-2">
           <AnthropicIcon className="w-4 h-4" />
           Claude
@@ -48,6 +50,7 @@ export function ProviderTabs({ defaultTab = 'claude' }: ProviderTabsProps) {
           Copilot
         </TabsTrigger>
       </TabsList>
+      <TabsContent value="direct"><DirectSettingsTab /></TabsContent>
 
       <TabsContent value="claude">
         <ClaudeSettingsTab />

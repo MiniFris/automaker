@@ -43,7 +43,7 @@ export class GlobalAutoModeService {
   ) {
     this.featureLoader = featureLoader;
     this.eventBus = new TypedEventBus(events);
-    this.worktreeResolver = new WorktreeResolver();
+    this.worktreeResolver = new WorktreeResolver(settingsService);
     this.concurrencyManager = new ConcurrencyManager((p) =>
       this.worktreeResolver.getCurrentBranch(p)
     );

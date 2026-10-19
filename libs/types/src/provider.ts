@@ -9,6 +9,10 @@ import type {
   Credentials,
 } from './settings.js';
 import type { CodexSandboxMode, CodexApprovalPolicy } from './codex.js';
+import type {
+  ResolvedOpenAICompatibleConnection,
+  DirectAgentOptions,
+} from './openai-compatible.js';
 
 /**
  * Reasoning effort levels for Codex/OpenAI models
@@ -154,6 +158,16 @@ export interface AgentDefinition {
  * Options for executing a query via a provider
  */
 export interface ExecuteOptions {
+  /** Resolved server settings, captured per request rather than on shared provider instances. */
+  modelTimeouts?: import('./model-timeouts.js').ModelTimeoutSettings;
+  /** Internal server-issued environment. Never accept from an HTTP request body. */
+  executionEnvironmentRuntime?: unknown;
+  /** Immutable, non-secret run/session binding persisted by the server. */
+  executionEnvironmentBinding?: import('./execution-environment.js').ExecutionEnvironmentBinding;
+  /** Server-resolved direct endpoint. Contains a secret; never serialize to UI or logs. */
+  openaiCompatibleConnection?: ResolvedOpenAICompatibleConnection;
+  /** Server-local limits and checkpoint hooks for the direct agent. */
+  openaiCompatibleAgent?: DirectAgentOptions;
   prompt: string | Array<{ type: string; text?: string; source?: object }>;
   /** Bare model ID without provider prefix (e.g., "gpt-5.1-codex-max", "composer-1") */
   model: string;
@@ -314,6 +328,8 @@ export interface ValidationResult {
  * Model definition
  */
 export interface ModelDefinition {
+  /** Required to select a configured direct endpoint, even when another endpoint has the same model. */
+  providerId?: string;
   id: string;
   name: string;
   modelString: string;

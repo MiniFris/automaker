@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { Feature, PipelineStep, PipelineConfig } from '@automaker/types';
+import { toDirectModelId } from '@automaker/types';
+import { SSHFeatureService } from '../../../src/services/execution-environment/ssh-feature.js';
 import {
   PipelineOrchestrator,
   type PipelineContext,
@@ -228,6 +230,58 @@ describe('PipelineOrchestrator', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('fails SSH preflight for pipeline start/resume and merge without local Git or source context', async () => {
+    vi.spyOn(SSHFeatureService.prototype, 'prepare').mockRejectedValue(
+      new Error('SSH fixture unavailable; no local Git merge')
+    );
+    const settings = { getDataDirectory: () => '/unused-test-state' } as SettingsService;
+    const guarded = new PipelineOrchestrator(
+      mockEventBus,
+      mockFeatureStateManager,
+      mockAgentExecutor,
+      mockTestRunnerService,
+      mockWorktreeResolver,
+      mockConcurrencyManager,
+      settings,
+      mockUpdateFeatureStatusFn,
+      mockLoadContextFilesFn,
+      mockBuildFeaturePromptFn,
+      mockExecuteFeatureFn,
+      mockRunAgentFn
+    );
+    const feature = { ...testFeature, model: toDirectModelId('remote') };
+    const context = {
+      projectPath: '/test/project',
+      featureId: feature.id,
+      feature,
+      branchName: 'feature/remote',
+      workDir: '/test/project',
+      worktreePath: null,
+      steps: [],
+      abortController: new AbortController(),
+      autoLoadClaudeMd: false,
+      useClaudeCodeSystemPrompt: false,
+      testAttempts: 0,
+      maxTestAttempts: 1,
+    } satisfies PipelineContext;
+    await expect(guarded.executePipeline(context)).rejects.toThrow('SSH fixture unavailable');
+    await expect(
+      guarded.resumePipeline('/test/project', feature, true, {} as PipelineStatusInfo)
+    ).rejects.toThrow('SSH fixture unavailable');
+    await expect(
+      guarded.resumeFromStep('/test/project', feature, true, 0, { version: 1, steps: [] })
+    ).rejects.toThrow('Invalid step index');
+    expect(await guarded.attemptMerge(context)).toMatchObject({
+      success: false,
+      error: expect.stringContaining('no local Git merge'),
+    });
+    expect(mockWorktreeResolver.findWorktreeForBranch).not.toHaveBeenCalled();
+    expect(mockWorktreeResolver.getCurrentBranch).not.toHaveBeenCalled();
+    expect(mockLoadContextFilesFn).not.toHaveBeenCalled();
+    expect(performMerge).not.toHaveBeenCalled();
+    expect(mockRunAgentFn).not.toHaveBeenCalled();
   });
 
   describe('constructor', () => {

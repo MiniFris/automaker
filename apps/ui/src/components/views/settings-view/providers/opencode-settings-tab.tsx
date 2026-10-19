@@ -5,6 +5,7 @@ import { useAppStore } from '@/store/app-store';
 import { OpencodeCliStatus, OpencodeCliStatusSkeleton } from '../cli-status/opencode-cli-status';
 import { OpencodeModelConfiguration } from './opencode-model-configuration';
 import { ProviderToggle } from './provider-toggle';
+import { ProviderModelTimeoutSettings } from '@/components/shared/model-timeout-settings';
 import { useOpencodeCliStatus, useOpencodeProviders, useOpencodeModels } from '@/hooks/queries';
 import { queryKeys } from '@/lib/query-keys';
 import type { CliStatus as SharedCliStatus } from '../shared/types';
@@ -146,6 +147,7 @@ export function OpencodeSettingsTab() {
     <div className="space-y-6">
       {/* Provider Visibility Toggle */}
       <ProviderToggle provider="opencode" providerLabel="OpenCode" />
+      <ProviderModelTimeoutSettings provider="opencode" />
 
       <OpencodeCliStatus
         status={cliStatus}

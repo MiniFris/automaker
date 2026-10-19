@@ -45,6 +45,8 @@ export { GeminiProvider, GeminiErrorCode } from './gemini-provider.js';
 export { CopilotProvider, CopilotErrorCode } from './copilot-provider.js';
 
 // Provider factory
+export { OpenAICompatibleProvider } from './openai-compatible-provider.js';
+export { AgentCheckpointStore, parseCheckpoint } from './openai-compatible/checkpoint.js';
 export { ProviderFactory } from './provider-factory.js';
 
 // Simple query service - unified interface for basic AI queries

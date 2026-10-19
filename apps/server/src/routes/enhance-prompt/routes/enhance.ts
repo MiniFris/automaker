@@ -40,6 +40,7 @@ interface EnhanceRequestBody {
   enhancementMode: string;
   /** Optional model override */
   model?: string;
+  providerId?: string;
   /** Optional thinking level for Claude models */
   thinkingLevel?: ThinkingLevel;
   /** Optional project path for per-project Claude API profile */
@@ -133,7 +134,7 @@ export function createEnhanceHandler(
 ): (req: Request, res: Response) => Promise<void> {
   return async (req: Request, res: Response): Promise<void> => {
     try {
-      const { originalText, enhancementMode, model, thinkingLevel, projectPath } =
+      const { originalText, enhancementMode, model, providerId, thinkingLevel, projectPath } =
         req.body as EnhanceRequestBody;
 
       // Validate required fields
@@ -232,6 +233,7 @@ export function createEnhanceHandler(
       // The system prompt is combined with user prompt since some providers
       // don't have a separate system prompt concept
       const result = await simpleQuery({
+        settingsService, providerId,
         prompt: [systemPrompt, projectContext, userPrompt].filter(Boolean).join('\n\n'),
         model: modelForApi,
         cwd: process.cwd(), // Enhancement doesn't need a specific working directory

@@ -3,6 +3,7 @@
  */
 
 export interface AgentSession {
+  executionEnvironment?: import('./execution-environment.js').ExecutionEnvironmentBinding;
   id: string;
   name: string;
   projectPath: string;
@@ -13,6 +14,8 @@ export interface AgentSession {
   isArchived: boolean;
   isDirty?: boolean; // Indicates session has completed work that needs review
   tags?: string[];
+  model?: string;
+  providerId?: string;
 }
 
 export interface SessionListItem extends AgentSession {

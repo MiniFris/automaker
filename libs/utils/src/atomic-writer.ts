@@ -20,6 +20,8 @@ export const DEFAULT_BACKUP_COUNT = 3;
  * Options for atomic write operations
  */
 export interface AtomicWriteOptions {
+  /** Permission bits for a new temporary file (e.g. 0o600 for credentials). */
+  mode?: number;
   /** Number of spaces for JSON indentation (default: 2) */
   indent?: number;
   /** Create parent directories if they don't exist (default: false) */
@@ -116,7 +118,7 @@ export async function atomicWriteJson<T>(
       await rotateBackups(resolvedPath, backupCount);
     }
 
-    await secureFs.writeFile(tempPath, content, 'utf-8');
+    await secureFs.writeFile(tempPath, content, options.mode === undefined ? 'utf-8' : { encoding: 'utf-8', mode: options.mode, flag: 'wx' });
     await secureFs.rename(tempPath, resolvedPath);
   } catch (error) {
     // Clean up temp file if it exists

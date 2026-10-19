@@ -13,6 +13,7 @@ import { useCursorPermissions } from '../hooks/use-cursor-permissions';
 import { CursorPermissionsSection } from './cursor-permissions-section';
 import { CursorModelConfiguration } from './cursor-model-configuration';
 import { ProviderToggle } from './provider-toggle';
+import { ProviderModelTimeoutSettings } from '@/components/shared/model-timeout-settings';
 
 export function CursorSettingsTab() {
   // Global settings from store
@@ -76,6 +77,7 @@ export function CursorSettingsTab() {
     <div className="space-y-6">
       {/* Provider Visibility Toggle */}
       <ProviderToggle provider="cursor" providerLabel="Cursor" />
+      <ProviderModelTimeoutSettings provider="cursor" />
 
       {/* CLI Status */}
       <CursorCliStatus status={status} isChecking={isLoading} onRefresh={loadData} />

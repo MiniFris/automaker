@@ -11,10 +11,17 @@ export function createSessionResizeHandler() {
     const { id } = req.params;
     const { cols, rows } = req.body;
 
-    if (!cols || !rows) {
+    if (
+      !Number.isInteger(cols) ||
+      !Number.isInteger(rows) ||
+      cols < 1 ||
+      cols > 1000 ||
+      rows < 1 ||
+      rows > 500
+    ) {
       res.status(400).json({
         success: false,
-        error: 'cols and rows are required',
+        error: 'cols (1–1000) and rows (1–500) must be integers',
       });
       return;
     }
