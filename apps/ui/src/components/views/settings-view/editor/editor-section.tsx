@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -20,12 +21,13 @@ import { UI_MONO_FONT_OPTIONS, DEFAULT_FONT_VALUE } from '@/config/ui-font-optio
  */
 const EDITOR_FONT_OPTIONS = UI_MONO_FONT_OPTIONS.map((option) => {
   if (option.value === DEFAULT_FONT_VALUE) {
-    return { value: option.value, label: 'Default (Geist Mono)' };
+    return { value: option.value, label: translate('Default (Geist Mono)') };
   }
   return option;
 });
 
 export function EditorSection() {
+  useUiLocale();
   const {
     editorFontSize,
     editorFontFamily,
@@ -50,16 +52,18 @@ export function EditorSection() {
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center border border-blue-500/20">
               <FileCode2 className="w-5 h-5 text-blue-500" />
             </div>
-            <h2 className="text-lg font-semibold text-foreground tracking-tight">File Editor</h2>
+            <h2 className="text-lg font-semibold text-foreground tracking-tight">
+              {translate('File Editor')}
+            </h2>
           </div>
           <p className="text-sm text-muted-foreground/80 ml-12">
-            Customize the appearance of the built-in file editor.
+            {translate('Customize the appearance of the built-in file editor.')}
           </p>
         </div>
         <div className="p-6 space-y-6">
           {/* Font Family */}
           <div className="space-y-3">
-            <Label className="text-foreground font-medium">Font Family</Label>
+            <Label className="text-foreground font-medium">{translate('Font Family')}</Label>
             <Select
               value={editorFontFamily || DEFAULT_FONT_VALUE}
               onValueChange={(value) => {
@@ -67,7 +71,7 @@ export function EditorSection() {
               }}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Default (Geist Mono)" />
+                <SelectValue placeholder={translate('Default (Geist Mono)')} />
               </SelectTrigger>
               <SelectContent>
                 {EDITOR_FONT_OPTIONS.map((option) => (
@@ -88,8 +92,11 @@ export function EditorSection() {
           {/* Font Size */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-foreground font-medium">Font Size</Label>
-              <span className="text-sm text-muted-foreground">{editorFontSize}px</span>
+              <Label className="text-foreground font-medium">{translate('Font Size')}</Label>
+              <span className="text-sm text-muted-foreground">
+                {editorFontSize}
+                {translate('px')}
+              </span>
             </div>
             <Slider
               value={[editorFontSize]}
@@ -105,9 +112,9 @@ export function EditorSection() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-foreground font-medium">Auto Save</Label>
+                <Label className="text-foreground font-medium">{translate('Auto Save')}</Label>
                 <p className="text-xs text-muted-foreground/80 mt-0.5">
-                  Automatically save files after changes or when switching tabs
+                  {translate('Automatically save files after changes or when switching tabs')}
                 </p>
               </div>
               <Switch checked={editorAutoSave} onCheckedChange={setEditorAutoSave} />

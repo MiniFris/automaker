@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 /**
  * React Query Client Configuration
  *
@@ -105,7 +106,7 @@ const handleMutationError = (error: Error) => {
   }
 
   // Show error toast for other errors
-  toast.error('Operation failed', {
+  toast.error(translate('Operation failed'), {
     description: error.message || 'An unexpected error occurred',
   });
 };

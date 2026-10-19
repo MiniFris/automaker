@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useAppStore } from '@/store/app-store';
@@ -16,6 +17,7 @@ import { ProviderToggle } from './provider-toggle';
 import { ProviderModelTimeoutSettings } from '@/components/shared/model-timeout-settings';
 
 export function CursorSettingsTab() {
+  useUiLocale();
   // Global settings from store
   const {
     enabledCursorModels,
@@ -44,9 +46,9 @@ export function CursorSettingsTab() {
     setIsSaving(true);
     try {
       setCursorDefaultModel(model);
-      toast.success('Default model updated');
+      toast.success(translate('Default model updated'));
     } catch {
-      toast.error('Failed to update default model');
+      toast.error(translate('Failed to update default model'));
     } finally {
       setIsSaving(false);
     }
@@ -57,7 +59,7 @@ export function CursorSettingsTab() {
     try {
       toggleCursorModel(model, enabled);
     } catch {
-      toast.error('Failed to update models');
+      toast.error(translate('Failed to update models'));
     } finally {
       setIsSaving(false);
     }

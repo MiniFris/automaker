@@ -1,3 +1,5 @@
+import { useLocalizedMemo } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -59,7 +61,7 @@ function getModelIcon(modelId: OpencodeModelId): ComponentType<{ className?: str
 function getProviderLabel(provider: OpencodeProvider): string {
   switch (provider) {
     case 'opencode':
-      return 'OpenCode (Free)';
+      return translate('OpenCode (Free)');
     default:
       return provider;
   }
@@ -72,18 +74,78 @@ const DYNAMIC_PROVIDER_CONFIG: Record<
   string,
   { label: string; icon: ComponentType<{ className?: string }> }
 > = {
-  'github-copilot': { label: 'GitHub Copilot', icon: Github },
-  google: { label: 'Google AI', icon: GeminiIcon },
-  openai: { label: 'OpenAI', icon: OpenAIIcon },
-  openrouter: { label: 'OpenRouter', icon: OpenRouterIcon },
-  anthropic: { label: 'Anthropic', icon: AnthropicIcon },
-  opencode: { label: 'OpenCode (Free)', icon: Terminal },
-  ollama: { label: 'Ollama (Local)', icon: Cpu },
-  lmstudio: { label: 'LM Studio (Local)', icon: Cpu },
-  azure: { label: 'Azure OpenAI', icon: Cloud },
-  'amazon-bedrock': { label: 'AWS Bedrock', icon: Cloud },
-  xai: { label: 'xAI', icon: GrokIcon },
-  deepseek: { label: 'DeepSeek', icon: Brain },
+  'github-copilot': {
+    get label() {
+      return translate('GitHub Copilot');
+    },
+    icon: Github,
+  },
+  google: {
+    get label() {
+      return translate('Google AI');
+    },
+    icon: GeminiIcon,
+  },
+  openai: {
+    get label() {
+      return translate('OpenAI');
+    },
+    icon: OpenAIIcon,
+  },
+  openrouter: {
+    get label() {
+      return translate('OpenRouter');
+    },
+    icon: OpenRouterIcon,
+  },
+  anthropic: {
+    get label() {
+      return translate('Anthropic');
+    },
+    icon: AnthropicIcon,
+  },
+  opencode: {
+    get label() {
+      return translate('OpenCode (Free)');
+    },
+    icon: Terminal,
+  },
+  ollama: {
+    get label() {
+      return translate('Ollama (Local)');
+    },
+    icon: Cpu,
+  },
+  lmstudio: {
+    get label() {
+      return translate('LM Studio (Local)');
+    },
+    icon: Cpu,
+  },
+  azure: {
+    get label() {
+      return translate('Azure OpenAI');
+    },
+    icon: Cloud,
+  },
+  'amazon-bedrock': {
+    get label() {
+      return translate('AWS Bedrock');
+    },
+    icon: Cloud,
+  },
+  xai: {
+    get label() {
+      return translate('xAI');
+    },
+    icon: GrokIcon,
+  },
+  deepseek: {
+    get label() {
+      return translate('DeepSeek');
+    },
+    icon: Brain,
+  },
 };
 
 function getDynamicProviderConfig(providerId: string) {
@@ -96,10 +158,18 @@ function getDynamicProviderConfig(providerId: string) {
 }
 
 const OPENCODE_AUTH_METHOD_LABELS: Record<string, string> = {
-  oauth: 'OAuth',
-  api_key: 'Key',
-  api: 'Key',
-  key: 'Key',
+  get oauth() {
+    return translate('OAuth');
+  },
+  get api_key() {
+    return translate('Key');
+  },
+  get api() {
+    return translate('Key');
+  },
+  get key() {
+    return translate('Key');
+  },
 };
 const OPENCODE_AUTH_METHOD_ICONS: Record<string, ComponentType<{ className?: string }>> = {
   oauth: ShieldCheck,
@@ -197,11 +267,12 @@ export function OpencodeModelConfiguration({
   onDynamicModelToggle,
   isLoadingDynamicModels = false,
 }: OpencodeModelConfigurationProps) {
+  useUiLocale();
   // Determine the free tier models to display.
   // When dynamic models are available from CLI, use the opencode provider models
   // from the dynamic list (they reflect the actual currently-available models).
   // Fall back to the hardcoded OPENCODE_MODELS only when CLI hasn't returned data.
-  const dynamicOpencodeFreeModels = useMemo(() => {
+  const dynamicOpencodeFreeModels = useLocalizedMemo(() => {
     const opencodeModelsFromCli = dynamicModels.filter((m) => m.provider === 'opencode');
     if (opencodeModelsFromCli.length === 0) return null;
 
@@ -395,17 +466,17 @@ export function OpencodeModelConfiguration({
             <OpenCodeIcon className="w-5 h-5 text-brand-500" />
           </div>
           <h2 className="text-lg font-semibold text-foreground tracking-tight">
-            Model Configuration
+            {translate('Model Configuration')}
           </h2>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Configure which OpenCode models are available in the feature modal
+          {translate('Configure which OpenCode models are available in the feature modal')}
         </p>
       </div>
       <div className="p-6 space-y-6">
         {/* Default Model Selection */}
         <div className="space-y-2">
-          <Label>Default Model</Label>
+          <Label>{translate('Default Model')}</Label>
           <Select
             value={opencodeDefaultModel}
             onValueChange={(v) => onDefaultModelChange(v as OpencodeModelId)}
@@ -435,7 +506,7 @@ export function OpencodeModelConfiguration({
         {/* Available Models grouped by provider */}
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <Label>Available Models</Label>
+            <Label>{translate('Available Models')}</Label>
             {selectableStaticModelIds.length > 0 && (
               <div className={OPENCODE_SELECT_ALL_CONTAINER_CLASS}>
                 <Checkbox
@@ -443,7 +514,7 @@ export function OpencodeModelConfiguration({
                   onCheckedChange={toggleAllStaticModels}
                   disabled={isSaving}
                 />
-                <span>{OPENCODE_SELECT_STATIC_LABEL}</span>
+                <span>{translate(OPENCODE_SELECT_STATIC_LABEL)}</span>
               </div>
             )}
           </div>
@@ -467,7 +538,7 @@ export function OpencodeModelConfiguration({
                       variant="outline"
                       className="text-xs bg-green-500/10 text-green-500 border-green-500/30"
                     >
-                      Free
+                      {translate('Free')}
                     </Badge>
                   )}
                 </div>
@@ -492,7 +563,7 @@ export function OpencodeModelConfiguration({
                               <span className="text-sm font-medium">{model.label}</span>
                               {model.supportsVision && (
                                 <Badge variant="outline" className="text-xs">
-                                  Vision
+                                  {translate('Vision')}
                                 </Badge>
                               )}
                               {model.tier === 'free' && (
@@ -500,16 +571,18 @@ export function OpencodeModelConfiguration({
                                   variant="outline"
                                   className="text-xs bg-green-500/10 text-green-500 border-green-500/30"
                                 >
-                                  Free
+                                  {translate('Free')}
                                 </Badge>
                               )}
                               {isDefault && (
                                 <Badge variant="secondary" className="text-xs">
-                                  Default
+                                  {translate('Default')}
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-xs text-muted-foreground">{model.description}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {translate(model.description)}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -528,12 +601,12 @@ export function OpencodeModelConfiguration({
               <div className="flex flex-wrap items-center justify-between gap-2 -mt-2 mb-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-xs text-muted-foreground">
-                    {OPENCODE_DYNAMIC_MODELS_SECTION_LABEL}
+                    {translate(OPENCODE_DYNAMIC_MODELS_SECTION_LABEL)}
                   </p>
                   {isLoadingDynamicModels && (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <Spinner size="xs" />
-                      <span>Discovering...</span>
+                      <span>{translate('Discovering...')}</span>
                     </div>
                   )}
                 </div>
@@ -599,7 +672,7 @@ export function OpencodeModelConfiguration({
                       onClick={() => setDynamicProviderSearch('')}
                       className="text-xs"
                     >
-                      {OPENCODE_PROVIDER_FILTER_CLEAR_LABEL}
+                      {translate(OPENCODE_PROVIDER_FILTER_CLEAR_LABEL)}
                     </Button>
                   )}
                 </div>
@@ -607,7 +680,7 @@ export function OpencodeModelConfiguration({
 
               {hasDynamicSearch && !hasFilteredDynamicProviders && (
                 <div className="rounded-xl border border-dashed border-border/60 bg-card/40 px-3 py-2 text-xs text-muted-foreground">
-                  <p className="font-medium">{OPENCODE_PROVIDER_FILTER_EMPTY_LABEL}</p>
+                  <p className="font-medium">{translate(OPENCODE_PROVIDER_FILTER_EMPTY_LABEL)}</p>
                   <p className="mt-1">{OPENCODE_PROVIDER_FILTER_EMPTY_HINT}</p>
                 </div>
               )}
@@ -640,7 +713,7 @@ export function OpencodeModelConfiguration({
                           variant="outline"
                           className="text-xs bg-blue-500/10 text-blue-500 border-blue-500/30"
                         >
-                          Dynamic
+                          {translate('Dynamic')}
                         </Badge>
                       </div>
                       {filteredModels.length > 0 && (
@@ -658,14 +731,16 @@ export function OpencodeModelConfiguration({
                             }
                             disabled={isSaving}
                           />
-                          <span>{OPENCODE_SELECT_DYNAMIC_LABEL}</span>
+                          <span>{translate(OPENCODE_SELECT_DYNAMIC_LABEL)}</span>
                         </div>
                       )}
                     </div>
                     <div className="grid gap-2">
                       {filteredModels.length === 0 ? (
                         <div className="rounded-xl border border-dashed border-border/60 bg-card/40 px-3 py-2 text-xs text-muted-foreground">
-                          <p className="font-medium">{OPENCODE_PROVIDER_MODELS_EMPTY_LABEL}</p>
+                          <p className="font-medium">
+                            {translate(OPENCODE_PROVIDER_MODELS_EMPTY_LABEL)}
+                          </p>
                           <p className="mt-1">{OPENCODE_PROVIDER_MODELS_EMPTY_HINT}</p>
                         </div>
                       ) : (
@@ -690,12 +765,12 @@ export function OpencodeModelConfiguration({
                                     <span className="text-sm font-medium">{model.name}</span>
                                     {model.supportsVision && (
                                       <Badge variant="outline" className="text-xs">
-                                        Vision
+                                        {translate('Vision')}
                                       </Badge>
                                     )}
                                   </div>
                                   <p className="text-xs text-muted-foreground">
-                                    {model.description}
+                                    {translate(model.description)}
                                   </p>
                                 </div>
                               </div>

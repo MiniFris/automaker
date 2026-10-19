@@ -1,4 +1,5 @@
 'use client';
+import { useUiLocale } from '@/lib/i18n';
 
 import * as React from 'react';
 import * as RadioGroupPrimitive from '@radix-ui/react-radio-group';
@@ -10,6 +11,7 @@ const RadioGroup = React.forwardRef<
   React.ElementRef<typeof RadioGroupPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root>
 >(({ className, ...props }, ref) => {
+  useUiLocale();
   return <RadioGroupPrimitive.Root className={cn('grid gap-2', className)} {...props} ref={ref} />;
 });
 RadioGroup.displayName = RadioGroupPrimitive.Root.displayName;
@@ -18,6 +20,7 @@ const RadioGroupItem = React.forwardRef<
   React.ElementRef<typeof RadioGroupPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Item>
 >(({ className, ...props }, ref) => {
+  useUiLocale();
   return (
     <RadioGroupPrimitive.Item
       ref={ref}

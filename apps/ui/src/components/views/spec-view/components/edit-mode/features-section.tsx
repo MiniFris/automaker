@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Plus, X, ChevronDown, ChevronUp, FolderOpen } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -44,6 +45,7 @@ interface FeatureCardProps {
 }
 
 function FeatureCard({ feature, index, onChange, onRemove }: FeatureCardProps) {
+  useUiLocale();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleNameChange = (name: string) => {
@@ -101,7 +103,7 @@ function FeatureCard({ feature, index, onChange, onRemove }: FeatureCardProps) {
             <Input
               value={feature.name}
               onChange={(e) => handleNameChange(e.target.value)}
-              placeholder="Feature name..."
+              placeholder={translate('Feature name...')}
               className="font-medium"
             />
           </div>
@@ -121,11 +123,11 @@ function FeatureCard({ feature, index, onChange, onRemove }: FeatureCardProps) {
         <CollapsibleContent>
           <div className="px-3 pb-3 space-y-4 border-t border-border pt-3 ml-10">
             <div className="space-y-2">
-              <Label>Description</Label>
+              <Label>{translate('Description')}</Label>
               <Textarea
                 value={feature.description}
                 onChange={(e) => handleDescriptionChange(e.target.value)}
-                placeholder="Describe what this feature does..."
+                placeholder={translate('Describe what this feature does...')}
                 rows={3}
               />
             </div>
@@ -133,7 +135,7 @@ function FeatureCard({ feature, index, onChange, onRemove }: FeatureCardProps) {
               <div className="flex items-center justify-between">
                 <Label className="flex items-center gap-1">
                   <FolderOpen className="w-4 h-4" />
-                  File Locations
+                  {translate('File Locations')}
                 </Label>
                 <Button
                   type="button"
@@ -143,11 +145,13 @@ function FeatureCard({ feature, index, onChange, onRemove }: FeatureCardProps) {
                   className="gap-1 h-7"
                 >
                   <Plus className="w-3 h-3" />
-                  Add
+                  {translate('Add')}
                 </Button>
               </div>
               {(feature.file_locations || []).length === 0 ? (
-                <p className="text-sm text-muted-foreground">No file locations specified.</p>
+                <p className="text-sm text-muted-foreground">
+                  {translate('No file locations specified.')}
+                </p>
               ) : (
                 <div className="space-y-2">
                   {(feature.file_locations || []).map((location, idx) => {
@@ -157,7 +161,7 @@ function FeatureCard({ feature, index, onChange, onRemove }: FeatureCardProps) {
                         <Input
                           value={location}
                           onChange={(e) => handleLocationChange(locId, e.target.value)}
-                          placeholder="e.g., src/components/feature.tsx"
+                          placeholder={translate('e.g., src/components/feature.tsx')}
                           className="flex-1 font-mono text-sm"
                         />
                         <Button
@@ -183,6 +187,7 @@ function FeatureCard({ feature, index, onChange, onRemove }: FeatureCardProps) {
 }
 
 export function FeaturesSection({ features, onChange }: FeaturesSectionProps) {
+  useUiLocale();
   // Track features with stable IDs
   const [items, setItems] = useState<FeatureWithId[]>(() => features.map(featureToInternal));
 
@@ -224,7 +229,7 @@ export function FeaturesSection({ features, onChange }: FeaturesSectionProps) {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <ListChecks className="w-5 h-5 text-primary" />
-          Implemented Features
+          {translate('Implemented Features')}
           <Badge variant="outline" className="ml-2">
             {items.length}
           </Badge>
@@ -233,7 +238,7 @@ export function FeaturesSection({ features, onChange }: FeaturesSectionProps) {
       <CardContent className="space-y-3">
         {items.length === 0 ? (
           <p className="text-sm text-muted-foreground py-2">
-            No features added yet. Click below to add implemented features.
+            {translate('No features added yet. Click below to add implemented features.')}
           </p>
         ) : (
           <div className="space-y-2">
@@ -250,7 +255,7 @@ export function FeaturesSection({ features, onChange }: FeaturesSectionProps) {
         )}
         <Button type="button" variant="outline" size="sm" onClick={handleAdd} className="gap-1">
           <Plus className="w-4 h-4" />
-          Add Feature
+          {translate('Add Feature')}
         </Button>
       </CardContent>
     </Card>

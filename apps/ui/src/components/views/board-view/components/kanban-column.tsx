@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import { memo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { cn } from '@/lib/utils';
@@ -42,6 +43,7 @@ export const KanbanColumn = memo(function KanbanColumn({
   contentStyle,
   disableItemSpacing = false,
 }: KanbanColumnProps) {
+  useUiLocale();
   const { setNodeRef, isOver: isColumnOver } = useDroppable({ id });
   // Also make the header explicitly a drop target so dragging to the top of the column works
   const { setNodeRef: setHeaderDropRef, isOver: isHeaderOver } = useDroppable({

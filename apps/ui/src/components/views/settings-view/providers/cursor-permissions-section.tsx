@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +33,7 @@ export function CursorPermissionsSection({
   onCopyConfig,
   onLoadPermissions,
 }: CursorPermissionsSectionProps) {
+  useUiLocale();
   const [permissionsExpanded, setPermissionsExpanded] = useState(false);
 
   // Load permissions when section is expanded
@@ -63,9 +65,11 @@ export function CursorPermissionsSection({
               </div>
               <div className="text-left">
                 <h2 className="text-lg font-semibold text-foreground tracking-tight">
-                  CLI Permissions
+                  {translate('CLI Permissions')}
                 </h2>
-                <p className="text-sm text-muted-foreground/80">Configure what Cursor CLI can do</p>
+                <p className="text-sm text-muted-foreground/80">
+                  {translate('Configure what Cursor CLI can do')}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -105,11 +109,11 @@ export function CursorPermissionsSection({
             <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
               <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
               <div className="text-sm text-amber-400/90">
-                <span className="font-medium">Security Notice</span>
+                <span className="font-medium">{translate('Security Notice')}</span>
                 <p className="text-xs text-amber-400/70 mt-1">
-                  Cursor CLI can execute shell commands based on its permission config. For
-                  overnight automation, consider using the Strict profile to limit what commands can
-                  run.
+                  {translate(
+                    'Cursor CLI can execute shell commands based on its permission config. For overnight automation, consider using the Strict profile to limit what commands can run.'
+                  )}
                 </p>
               </div>
             </div>
@@ -122,7 +126,7 @@ export function CursorPermissionsSection({
               <>
                 {/* Permission Profiles */}
                 <div className="space-y-3">
-                  <Label>Permission Profiles</Label>
+                  <Label>{translate('Permission Profiles')}</Label>
                   <div className="grid gap-3">
                     {permissions?.availableProfiles.map((profile) => (
                       <div
@@ -145,7 +149,7 @@ export function CursorPermissionsSection({
                               <span className="font-medium">{profile.name}</span>
                               {permissions.activeProfile === profile.id && (
                                 <Badge variant="secondary" className="text-xs">
-                                  Active
+                                  {translate('Active')}
                                 </Badge>
                               )}
                             </div>
@@ -154,11 +158,11 @@ export function CursorPermissionsSection({
                             </p>
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                               <span className="text-green-500">
-                                {profile.permissions.allow.length} allowed
+                                {profile.permissions.allow.length} {translate(' allowed')}
                               </span>
                               <span className="text-muted-foreground/50">|</span>
                               <span className="text-red-500">
-                                {profile.permissions.deny.length} denied
+                                {profile.permissions.deny.length} {translate(' denied')}
                               </span>
                             </div>
                           </div>
@@ -175,7 +179,7 @@ export function CursorPermissionsSection({
                                 onApplyProfile(profile.id as 'strict' | 'development', 'global')
                               }
                             >
-                              Apply Globally
+                              {translate('Apply Globally')}
                             </Button>
                             {currentProject && (
                               <Button
@@ -186,7 +190,7 @@ export function CursorPermissionsSection({
                                   onApplyProfile(profile.id as 'strict' | 'development', 'project')
                                 }
                               >
-                                Apply to Project
+                                {translate('Apply to Project')}
                               </Button>
                             )}
                           </div>
@@ -198,13 +202,13 @@ export function CursorPermissionsSection({
 
                 {/* Config File Location */}
                 <div className="space-y-3">
-                  <Label>Config File Locations</Label>
+                  <Label>{translate('Config File Locations')}</Label>
                   <div className="p-4 rounded-xl border border-border/50 bg-card/30 space-y-2">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium">Global Config</p>
+                        <p className="text-sm font-medium">{translate('Global Config')}</p>
                         <p className="text-xs text-muted-foreground font-mono">
-                          ~/.cursor/cli-config.json
+                          {translate('~/.cursor/cli-config.json')}
                         </p>
                       </div>
                       <Button size="sm" variant="ghost" onClick={() => onCopyConfig('development')}>
@@ -216,13 +220,13 @@ export function CursorPermissionsSection({
                       </Button>
                     </div>
                     <div className="border-t border-border/30 pt-2">
-                      <p className="text-sm font-medium">Project Config</p>
+                      <p className="text-sm font-medium">{translate('Project Config')}</p>
                       <p className="text-xs text-muted-foreground font-mono">
-                        &lt;project&gt;/.cursor/cli.json
+                        {translate('<project>/.cursor/cli.json')}
                       </p>
                       {permissions?.hasProjectConfig && (
                         <Badge variant="secondary" className="mt-1 text-xs">
-                          Project override active
+                          {translate('Project override active')}
                         </Badge>
                       )}
                     </div>
@@ -231,14 +235,14 @@ export function CursorPermissionsSection({
 
                 {/* Documentation Link */}
                 <div className="text-xs text-muted-foreground">
-                  Learn more about{' '}
+                  {translate('Learn more about')}{' '}
                   <a
                     href="https://cursor.com/docs/cli/reference/permissions"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-brand-500 hover:underline"
                   >
-                    Cursor CLI permissions
+                    {translate('Cursor CLI permissions')}
                   </a>
                 </div>
               </>

@@ -1,3 +1,5 @@
+import { translate } from '@/lib/i18n';
+import { useUiLocale } from '@/lib/i18n';
 import { CircleDot, RefreshCw } from 'lucide-react';
 import { Button } from './button';
 
@@ -14,10 +16,11 @@ interface ErrorStateProps {
 
 export function ErrorState({
   error,
-  title = 'Failed to Load',
+  title = translate('Failed to Load'),
   onRetry,
   retryText = 'Try Again',
 }: ErrorStateProps) {
+  useUiLocale();
   return (
     <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
       <div className="p-4 rounded-full bg-destructive/10 mb-4">

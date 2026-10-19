@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import React, { useEffect, useCallback, useRef } from 'react';
 import { Button, buttonVariants } from './button';
 import { cn } from '@/lib/utils';
@@ -78,7 +79,7 @@ function getHotkeyDisplayLabel(config: HotkeyConfig, isMac: boolean): React.Reac
   if (config.alt) {
     parts.push(
       <span key="alt" className="leading-none flex items-center justify-center">
-        {isMac ? '⌥' : 'Alt'}
+        {isMac ? '⌥' : translate('Alt')}
       </span>
     );
   }
@@ -181,6 +182,7 @@ export function HotkeyButton({
   asChild = false,
   ...props
 }: HotkeyButtonProps) {
+  useUiLocale();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [isMac, setIsMac] = React.useState(true);
 

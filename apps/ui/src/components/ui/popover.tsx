@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import * as React from 'react';
 import * as PopoverPrimitive from '@radix-ui/react-popover';
 
@@ -18,6 +19,7 @@ const PopoverContentPrimitive = PopoverPrimitive.Content as React.ForwardRefExot
 >;
 
 function Popover({ ...props }: React.ComponentProps<typeof PopoverPrimitive.Root>) {
+  useUiLocale();
   return <PopoverPrimitive.Root data-slot="popover" {...props} />;
 }
 
@@ -29,6 +31,7 @@ function PopoverTrigger({
   children?: React.ReactNode;
   asChild?: boolean;
 }) {
+  useUiLocale();
   return (
     <PopoverTriggerPrimitive data-slot="popover-trigger" asChild={asChild} {...props}>
       {children}
@@ -44,6 +47,7 @@ function PopoverContent({
 }: React.ComponentProps<typeof PopoverPrimitive.Content> & {
   className?: string;
 }) {
+  useUiLocale();
   return (
     <PopoverPrimitive.Portal>
       <PopoverContentPrimitive
@@ -61,6 +65,7 @@ function PopoverContent({
 }
 
 function PopoverAnchor({ ...props }: React.ComponentProps<typeof PopoverPrimitive.Anchor>) {
+  useUiLocale();
   return <PopoverPrimitive.Anchor data-slot="popover-anchor" {...props} />;
 }
 

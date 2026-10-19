@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import {
   Select,
   SelectContent,
@@ -19,24 +20,36 @@ interface PrioritySelectProps {
 const priorities = [
   {
     value: 1,
-    label: 'High',
-    description: 'Urgent, needs immediate attention',
+    get label() {
+      return translate('High');
+    },
+    get description() {
+      return translate('Urgent, needs immediate attention');
+    },
     icon: ChevronUp,
     color: 'text-red-500',
     bgColor: 'bg-red-500/10',
   },
   {
     value: 2,
-    label: 'Medium',
-    description: 'Normal priority, standard workflow',
+    get label() {
+      return translate('Medium');
+    },
+    get description() {
+      return translate('Normal priority, standard workflow');
+    },
     icon: AlertCircle,
     color: 'text-yellow-500',
     bgColor: 'bg-yellow-500/10',
   },
   {
     value: 3,
-    label: 'Low',
-    description: 'Can wait, not time-sensitive',
+    get label() {
+      return translate('Low');
+    },
+    get description() {
+      return translate('Can wait, not time-sensitive');
+    },
     icon: ChevronDown,
     color: 'text-blue-500',
     bgColor: 'bg-blue-500/10',
@@ -67,6 +80,7 @@ export function PrioritySelect({
   className,
   disabled = false,
 }: PrioritySelectProps) {
+  useUiLocale();
   const selectedPriorityObj = priorities.find((p) => p.value === selectedPriority);
 
   return (

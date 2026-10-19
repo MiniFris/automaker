@@ -1,4 +1,5 @@
 // @ts-nocheck - column filtering logic with dependency resolution and status mapping
+import { useLocalizedMemo } from '@/lib/i18n';
 import { useMemo, useCallback, useEffect } from 'react';
 import { Feature, useAppStore } from '@/store/app-store';
 import {
@@ -210,7 +211,7 @@ export function useBoardColumnFeatures({
   }, [features, clearRecentlyCompletedFeatures]);
 
   // Memoize column features to prevent unnecessary re-renders
-  const columnFeaturesMap = useMemo(() => {
+  const columnFeaturesMap = useLocalizedMemo(() => {
     // Use a more flexible type to support dynamic pipeline statuses
     const map: Record<string, Feature[]> = {
       backlog: [],

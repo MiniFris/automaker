@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * Dialog shown when a branch switch or stash-pop operation results in merge conflicts.
  * Presents the user with two options:
@@ -41,9 +42,10 @@ export function BranchConflictDialog({
   conflictData,
   onResolveWithAI,
 }: BranchConflictDialogProps) {
+  useUiLocale();
   const handleResolveManually = useCallback(() => {
-    toast.info('Conflict markers left in place', {
-      description: 'Edit the conflicting files to resolve conflicts manually.',
+    toast.info(translate('Conflict markers left in place'), {
+      description: translate('Edit the conflicting files to resolve conflicts manually.'),
       duration: 6000,
     });
     onOpenChange(false);
@@ -63,17 +65,23 @@ export function BranchConflictDialog({
 
   const description = isBranchSwitch ? (
     <>
-      Merge conflicts occurred when switching from{' '}
+      {translate('Merge conflicts occurred when switching from')}{' '}
       <code className="font-mono bg-muted px-1 rounded">
         {(conflictData.info as BranchSwitchConflictInfo).previousBranch}
       </code>{' '}
-      to <code className="font-mono bg-muted px-1 rounded">{branchName}</code>. Local changes were
-      stashed before switching and reapplying them caused conflicts.
+      {translate('to ')}
+      <code className="font-mono bg-muted px-1 rounded">{branchName}</code>
+      {translate(
+        '. Local changes were stashed before switching and reapplying them caused conflicts.'
+      )}
     </>
   ) : (
     <>
-      The branch switch to <code className="font-mono bg-muted px-1 rounded">{branchName}</code>{' '}
-      failed and restoring the previously stashed local changes resulted in merge conflicts.
+      {translate('The branch switch to ')}
+      <code className="font-mono bg-muted px-1 rounded">{branchName}</code>{' '}
+      {translate(
+        'failed and restoring the previously stashed local changes resulted in merge conflicts.'
+      )}
     </>
   );
 
@@ -105,16 +113,16 @@ export function BranchConflictDialog({
 
               <div className="mt-2 p-3 rounded-md bg-muted/50 border border-border">
                 <p className="text-sm text-muted-foreground font-medium mb-2">
-                  Choose how to resolve:
+                  {translate('Choose how to resolve:')}
                 </p>
                 <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
                   <li>
-                    <strong>Resolve with AI</strong> &mdash; Creates a task to analyze and resolve
-                    conflicts automatically
+                    <strong>{translate('Resolve with AI')}</strong>{' '}
+                    {translate(' — Creates a task to analyze and resolve conflicts automatically')}
                   </li>
                   <li>
-                    <strong>Resolve Manually</strong> &mdash; Leaves conflict markers in place for
-                    you to edit directly
+                    <strong>{translate('Resolve Manually')}</strong>{' '}
+                    {translate(' — Leaves conflict markers in place for you to edit directly')}
                   </li>
                 </ul>
               </div>
@@ -125,7 +133,7 @@ export function BranchConflictDialog({
         <DialogFooter>
           <Button variant="outline" onClick={handleResolveManually}>
             <Wrench className="w-4 h-4 mr-2" />
-            Resolve Manually
+            {translate('Resolve Manually')}
           </Button>
           {onResolveWithAI && (
             <Button
@@ -133,7 +141,7 @@ export function BranchConflictDialog({
               className="bg-purple-600 hover:bg-purple-700 text-white"
             >
               <Sparkles className="w-4 h-4 mr-2" />
-              Resolve with AI
+              {translate('Resolve with AI')}
             </Button>
           )}
         </DialogFooter>

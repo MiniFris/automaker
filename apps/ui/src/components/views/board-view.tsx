@@ -1,3 +1,5 @@
+import { useLocalizedMemo } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useEffect, useState, useCallback, useMemo, useRef, startTransition } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import type { PointerEvent as ReactPointerEvent } from 'react';
@@ -123,6 +125,7 @@ interface BoardViewProps {
 }
 
 export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewProps) {
+  useUiLocale();
   const {
     currentProject,
     defaultSkipTests,
@@ -335,7 +338,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
             `Deep link: failed to initialize project "${initialProjectPath}":`,
             initResult.error
           );
-          toast.error('Failed to open project from link', {
+          toast.error(translate('Failed to open project from link'), {
             description: initResult.error || 'Unknown error',
           });
           return;
@@ -348,7 +351,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         upsertAndSetCurrentProject(initialProjectPath, projectName);
       } catch (error) {
         logger.error('Deep link: project switch failed:', error);
-        toast.error('Failed to switch project', {
+        toast.error(translate('Failed to switch project'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
       }
@@ -792,7 +795,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
       }
     } catch (error) {
       logger.error('[Board] Failed to refresh board state:', error);
-      toast.error('Failed to refresh board state');
+      toast.error(translate('Failed to refresh board state'));
     }
   }, [autoMode, currentProject, queryClient]);
   // Get runningTasks from the hook (scoped to current project/worktree)
@@ -844,7 +847,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
   }, [hookFeatures, runningAutoTasks]);
 
   // Calculate unarchived card counts per branch
-  const branchCardCounts = useMemo(() => {
+  const branchCardCounts = useLocalizedMemo(() => {
     // Use primary worktree branch as default for features without branchName
     const primaryBranch = worktrees.find((w) => w.isMain)?.branch || 'main';
     return hookFeatures.reduce(
@@ -998,7 +1001,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
                   `Failed to create worktree for branch "${finalBranchName}":`,
                   result.error
                 );
-                toast.error('Failed to create worktree', {
+                toast.error(translate('Failed to create worktree'), {
                   description: result.error || 'An error occurred',
                 });
                 return; // Don't proceed with update if worktree creation failed
@@ -1006,7 +1009,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
             }
           } catch (error) {
             logger.error('Error creating worktree:', error);
-            toast.error('Failed to create worktree', {
+            toast.error(translate('Failed to create worktree'), {
               description: error instanceof Error ? error.message : 'An error occurred',
             });
             return; // Don't proceed with update if worktree creation failed
@@ -1026,16 +1029,18 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         if (result.success) {
           // Invalidate React Query cache to refetch features with server-updated values
           loadFeatures();
-          toast.success(`Updated ${result.updatedCount} features`);
+          toast.success(translate('Updated {value1} features', { value1: result.updatedCount }));
           exitSelectionMode();
         } else {
-          toast.error('Failed to update some features', {
-            description: `${result.failedCount} features failed to update`,
+          toast.error(translate('Failed to update some features'), {
+            description: translate('{value1} features failed to update', {
+              value1: result.failedCount,
+            }),
           });
         }
       } catch (error) {
         logger.error('Bulk update failed:', error);
-        toast.error('Failed to update features');
+        toast.error(translate('Failed to update features'));
       }
     },
     [
@@ -1067,12 +1072,16 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         successfullyDeletedIds.forEach((featureId) => {
           useAppStore.getState().removeFeature(featureId);
         });
-        toast.success(`Deleted ${successfullyDeletedIds.length} features`);
+        toast.success(
+          translate('Deleted {value1} features', { value1: successfullyDeletedIds.length })
+        );
       }
 
       if (result.failedCount && result.failedCount > 0) {
-        toast.error('Failed to delete some features', {
-          description: `${result.failedCount} features failed to delete`,
+        toast.error(translate('Failed to delete some features'), {
+          description: translate('{value1} features failed to delete', {
+            value1: result.failedCount,
+          }),
         });
       }
 
@@ -1081,11 +1090,11 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         exitSelectionMode();
         loadFeatures();
       } else if (!result.success) {
-        toast.error('Failed to delete features', { description: result.error });
+        toast.error(translate('Failed to delete features'), { description: result.error });
       }
     } catch (error) {
       logger.error('Bulk delete failed:', error);
-      toast.error('Failed to delete features');
+      toast.error(translate('Failed to delete features'));
     }
   }, [currentProject, selectedFeatureIds, exitSelectionMode, loadFeatures]);
 
@@ -1171,16 +1180,18 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
       if (result.success) {
         // Invalidate React Query cache to refetch features with server-updated values
         loadFeatures();
-        toast.success(`Verified ${result.updatedCount} features`);
+        toast.success(translate('Verified {value1} features', { value1: result.updatedCount }));
         exitSelectionMode();
       } else {
-        toast.error('Failed to verify some features', {
-          description: `${result.failedCount} features failed to verify`,
+        toast.error(translate('Failed to verify some features'), {
+          description: translate('{value1} features failed to verify', {
+            value1: result.failedCount,
+          }),
         });
       }
     } catch (error) {
       logger.error('Bulk verify failed:', error);
-      toast.error('Failed to verify features');
+      toast.error(translate('Failed to verify features'));
     }
   }, [currentProject, selectedFeatureIds, loadFeatures, exitSelectionMode]);
 
@@ -1197,7 +1208,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         createdFeatureId = createdFeature?.id ?? null;
       } catch (error) {
         logger.error('Failed to create feature:', error);
-        toast.error('Failed to create feature', {
+        toast.error(translate('Failed to create feature'), {
           description: error instanceof Error ? error.message : 'An error occurred',
         });
         return null;
@@ -1213,14 +1224,14 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           await handleStartImplementation(newFeature);
         } catch (startError) {
           logger.error('Failed to start implementation for feature:', startError);
-          toast.error('Failed to start feature implementation', {
+          toast.error(translate('Failed to start feature implementation'), {
             description: startError instanceof Error ? startError.message : 'An error occurred',
           });
         }
       } else {
         logger.error('Could not find newly created feature to start it automatically.');
-        toast.error('Failed to auto-start feature', {
-          description: 'The feature was created but could not be started automatically.',
+        toast.error(translate('Failed to auto-start feature'), {
+          description: translate('The feature was created but could not be started automatically.'),
         });
       }
 
@@ -1341,16 +1352,19 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
   const handleAutoAddressPRComments = useCallback(
     async (worktree: WorktreeInfo, prInfo: PRInfo) => {
       if (!prInfo.number) {
-        toast.error('Cannot address PR comments', {
-          description: 'No PR number available for this worktree.',
+        toast.error(translate('Cannot address PR comments'), {
+          description: translate('No PR number available for this worktree.'),
         });
         return;
       }
 
       const featureData = {
-        title: `Address PR #${prInfo.number} Review Comments`,
+        title: translate('Address PR #{value1} Review Comments', { value1: prInfo.number }),
         category: 'Maintenance',
-        description: `Read the review requests on PR #${prInfo.number} and address any feedback the best you can.`,
+        description: translate(
+          'Read the review requests on PR #{value1} and address any feedback the best you can.',
+          { value1: prInfo.number }
+        ),
         images: [],
         imagePaths: [],
         skipTests: defaultSkipTests,
@@ -1453,7 +1467,9 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         const description = `Resolve merge conflicts that occurred when switching from "${conflictInfo.previousBranch}" to "${conflictInfo.branchName}". Local changes were stashed before switching and reapplying them caused conflicts. Please resolve all merge conflicts, ensure the code compiles and tests pass.`;
 
         const featureData = {
-          title: `Resolve Stash Conflicts: switch to ${conflictInfo.branchName}`,
+          title: translate('Resolve Stash Conflicts: switch to {value1}', {
+            value1: conflictInfo.branchName,
+          }),
           category: 'Maintenance',
           description,
           images: [],
@@ -1479,7 +1495,9 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           `then re-attempt the branch switch.`;
 
         const featureData = {
-          title: `Resolve Stash-Pop Conflicts: branch switch to ${conflictInfo.branchName}`,
+          title: translate('Resolve Stash-Pop Conflicts: branch switch to {value1}', {
+            value1: conflictInfo.branchName,
+          }),
           category: 'Maintenance',
           description,
           images: [],
@@ -1518,7 +1536,10 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         conflictFilesList;
 
       const featureData = {
-        title: `Resolve Stash Apply Conflicts: ${conflictInfo.stashRef} on ${conflictInfo.branchName}`,
+        title: translate('Resolve Stash Apply Conflicts: {value1} on {value2}', {
+          value1: conflictInfo.stashRef,
+          value2: conflictInfo.branchName,
+        }),
         category: 'Maintenance',
         description,
         images: [],
@@ -1553,19 +1574,19 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         setIsGeneratingPlan(false);
         if (event.result && event.result.changes?.length > 0) {
           setPendingBacklogPlan(event.result);
-          toast.success('Plan ready! Click to review.', {
+          toast.success(translate('Plan ready! Click to review.'), {
             duration: 10000,
             action: {
-              label: 'Review',
+              label: translate('Review'),
               onClick: () => setShowPlanDialog(true),
             },
           });
         } else {
-          toast.info('No changes generated. Try again with a different prompt.');
+          toast.info(translate('No changes generated. Try again with a different prompt.'));
         }
       } else if (event.type === 'backlog_plan_error') {
         setIsGeneratingPlan(false);
-        toast.error(`Plan generation failed: ${event.error}`);
+        toast.error(translate('Plan generation failed: {value1}', { value1: event.error }));
       }
     });
 
@@ -1638,8 +1659,11 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           const newDeps = [...currentDeps, targetFeature.id];
           updateFeature(draggedFeature.id, { dependencies: newDeps });
           await persistFeatureUpdate(draggedFeature.id, { dependencies: newDeps });
-          toast.success('Dependency link created', {
-            description: `"${draggedFeature.description.slice(0, 30)}..." now depends on "${targetFeature.description.slice(0, 30)}..."`,
+          toast.success(translate('Dependency link created'), {
+            description: translate('"{value1}..." now depends on "{value2}..."', {
+              value1: draggedFeature.description.slice(0, 30),
+              value2: targetFeature.description.slice(0, 30),
+            }),
           });
         }
       } else {
@@ -1650,8 +1674,11 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           const newDeps = [...currentDeps, draggedFeature.id];
           updateFeature(targetFeature.id, { dependencies: newDeps });
           await persistFeatureUpdate(targetFeature.id, { dependencies: newDeps });
-          toast.success('Dependency link created', {
-            description: `"${targetFeature.description.slice(0, 30)}..." now depends on "${draggedFeature.description.slice(0, 30)}..."`,
+          toast.success(translate('Dependency link created'), {
+            description: translate('"{value1}..." now depends on "{value2}..."', {
+              value1: targetFeature.description.slice(0, 30),
+              value2: draggedFeature.description.slice(0, 30),
+            }),
           });
         }
       }
@@ -1686,7 +1713,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
 
   // Build columnFeaturesMap for ListView
   // pipelineConfig is now from usePipelineConfig React Query hook at the top
-  const columnFeaturesMap = useMemo(() => {
+  const columnFeaturesMap = useLocalizedMemo(() => {
     const columns = getColumnsWithPipeline(pipelineConfig ?? null);
     const map: Record<string, typeof hookFeatures> = {};
     for (const column of columns) {
@@ -1836,7 +1863,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
   if (!currentProject) {
     return (
       <div className="flex-1 flex items-center justify-center" data-testid="board-view-no-project">
-        <p className="text-muted-foreground">No project selected</p>
+        <p className="text-muted-foreground">{translate('No project selected')}</p>
       </div>
     );
   }
@@ -1881,14 +1908,14 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           if (enabled) {
             autoMode.start().catch((error) => {
               logger.error('[AutoMode] Failed to start:', error);
-              toast.error('Failed to start auto mode', {
+              toast.error(translate('Failed to start auto mode'), {
                 description: error instanceof Error ? error.message : 'Unknown error',
               });
             });
           } else {
             autoMode.stop().catch((error) => {
               logger.error('[AutoMode] Failed to stop:', error);
-              toast.error('Failed to stop auto mode', {
+              toast.error(translate('Failed to stop auto mode'), {
                 description: error instanceof Error ? error.message : 'Unknown error',
               });
             });

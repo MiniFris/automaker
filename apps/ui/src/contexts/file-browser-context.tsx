@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { FileBrowserDialog } from '@/components/dialogs/file-browser-dialog';
 
@@ -14,6 +15,7 @@ interface FileBrowserContextValue {
 const FileBrowserContext = createContext<FileBrowserContextValue | null>(null);
 
 export function FileBrowserProvider({ children }: { children: ReactNode }) {
+  useUiLocale();
   const [isOpen, setIsOpen] = useState(false);
   const [resolver, setResolver] = useState<((value: string | null) => void) | null>(null);
   const [dialogOptions, setDialogOptions] = useState<FileBrowserOptions>({});

@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * PromptCategoryGrid - Grid of prompt categories to select from
  */
@@ -37,6 +38,7 @@ const iconMap: Record<string, typeof Zap> = {
 };
 
 export function PromptCategoryGrid({ onSelect, onBack }: PromptCategoryGridProps) {
+  useUiLocale();
   const { categories, isLoading, error } = useGuidedPrompts();
 
   return (
@@ -48,18 +50,21 @@ export function PromptCategoryGrid({ onSelect, onBack }: PromptCategoryGridProps
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back</span>
+          <span>{translate('Back')}</span>
         </button>
 
         {isLoading && (
           <div className="flex items-center justify-center py-12">
             <Spinner size="lg" />
-            <span className="ml-2 text-muted-foreground">Loading categories...</span>
+            <span className="ml-2 text-muted-foreground">{translate('Loading categories...')}</span>
           </div>
         )}
         {error && (
           <div className="text-center py-12 text-destructive">
-            <p>Failed to load categories: {error}</p>
+            <p>
+              {translate('Failed to load categories: ')}
+              {error}
+            </p>
           </div>
         )}
         {!isLoading && !error && (

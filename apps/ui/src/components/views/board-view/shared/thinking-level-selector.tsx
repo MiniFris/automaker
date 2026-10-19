@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Label } from '@/components/ui/label';
 import { Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -20,13 +21,14 @@ export function ThinkingLevelSelector({
   testIdPrefix = 'thinking-level',
   model,
 }: ThinkingLevelSelectorProps) {
+  useUiLocale();
   const levels = getThinkingLevelsForModel(model || '');
 
   return (
     <div className="space-y-2 pt-2 border-t border-border">
       <Label className="flex items-center gap-2 text-sm">
         <Brain className="w-3.5 h-3.5 text-muted-foreground" />
-        Thinking Level
+        {translate('Thinking Level')}
       </Label>
       <div className="flex gap-2 flex-wrap">
         {levels.map((level) => (
@@ -48,8 +50,8 @@ export function ThinkingLevelSelector({
       </div>
       <p className="text-xs text-muted-foreground">
         {levels.includes('adaptive')
-          ? 'Adaptive thinking lets the model decide how much reasoning to use.'
-          : 'Higher levels give more time to reason through complex problems.'}
+          ? translate('Adaptive thinking lets the model decide how much reasoning to use.')
+          : translate('Higher levels give more time to reason through complex problems.')}
       </p>
     </div>
   );

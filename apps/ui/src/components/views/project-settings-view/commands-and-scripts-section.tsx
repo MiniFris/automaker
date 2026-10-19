@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useCallback, useMemo, useRef, type KeyboardEvent } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -24,24 +25,94 @@ import { DEFAULT_TERMINAL_SCRIPTS } from './terminal-scripts-constants';
 
 /** Preset dev server commands for quick selection */
 const DEV_SERVER_PRESETS = [
-  { label: 'npm run dev', command: 'npm run dev' },
-  { label: 'yarn dev', command: 'yarn dev' },
-  { label: 'pnpm dev', command: 'pnpm dev' },
-  { label: 'bun dev', command: 'bun dev' },
-  { label: 'npm start', command: 'npm start' },
-  { label: 'cargo watch', command: 'cargo watch -x run' },
-  { label: 'go run', command: 'go run .' },
+  {
+    get label() {
+      return translate('npm run dev');
+    },
+    command: 'npm run dev',
+  },
+  {
+    get label() {
+      return translate('yarn dev');
+    },
+    command: 'yarn dev',
+  },
+  {
+    get label() {
+      return translate('pnpm dev');
+    },
+    command: 'pnpm dev',
+  },
+  {
+    get label() {
+      return translate('bun dev');
+    },
+    command: 'bun dev',
+  },
+  {
+    get label() {
+      return translate('npm start');
+    },
+    command: 'npm start',
+  },
+  {
+    get label() {
+      return translate('cargo watch');
+    },
+    command: 'cargo watch -x run',
+  },
+  {
+    get label() {
+      return translate('go run');
+    },
+    command: 'go run .',
+  },
 ] as const;
 
 /** Preset test commands for quick selection */
 const TEST_PRESETS = [
-  { label: 'npm test', command: 'npm test' },
-  { label: 'yarn test', command: 'yarn test' },
-  { label: 'pnpm test', command: 'pnpm test' },
-  { label: 'bun test', command: 'bun test' },
-  { label: 'pytest', command: 'pytest' },
-  { label: 'cargo test', command: 'cargo test' },
-  { label: 'go test', command: 'go test ./...' },
+  {
+    get label() {
+      return translate('npm test');
+    },
+    command: 'npm test',
+  },
+  {
+    get label() {
+      return translate('yarn test');
+    },
+    command: 'yarn test',
+  },
+  {
+    get label() {
+      return translate('pnpm test');
+    },
+    command: 'pnpm test',
+  },
+  {
+    get label() {
+      return translate('bun test');
+    },
+    command: 'bun test',
+  },
+  {
+    get label() {
+      return translate('pytest');
+    },
+    command: 'pytest',
+  },
+  {
+    get label() {
+      return translate('cargo test');
+    },
+    command: 'cargo test',
+  },
+  {
+    get label() {
+      return translate('go test');
+    },
+    command: 'go test ./...',
+  },
 ] as const;
 
 /** Preset scripts for quick addition */
@@ -72,6 +143,7 @@ function generateId(): string {
 }
 
 export function CommandsAndScriptsSection({ project }: CommandsAndScriptsSectionProps) {
+  useUiLocale();
   // Fetch project settings using TanStack Query
   const { data: projectSettings, isLoading, isError } = useProjectSettings(project.path);
 
@@ -185,7 +257,7 @@ export function CommandsAndScriptsSection({ project }: CommandsAndScriptsSection
           setOriginalScripts(structuredClone(normalizedScripts));
         },
         onError: (error) => {
-          toast.error('Failed to save settings', {
+          toast.error(translate('Failed to save settings'), {
             description: error instanceof Error ? error.message : 'An unexpected error occurred',
           });
         },
@@ -335,11 +407,11 @@ export function CommandsAndScriptsSection({ project }: CommandsAndScriptsSection
               <Terminal className="w-5 h-5 text-brand-500" />
             </div>
             <h2 className="text-lg font-semibold text-foreground tracking-tight">
-              Project Commands
+              {translate('Project Commands')}
             </h2>
           </div>
           <p className="text-sm text-muted-foreground/80 ml-12">
-            Configure custom commands for development and testing.
+            {translate('Configure custom commands for development and testing.')}
           </p>
         </div>
 
@@ -350,7 +422,7 @@ export function CommandsAndScriptsSection({ project }: CommandsAndScriptsSection
             </div>
           ) : isError ? (
             <div className="flex items-center justify-center py-8 text-sm text-destructive">
-              Failed to load project settings. Please try again.
+              {translate('Failed to load project settings. Please try again.')}
             </div>
           ) : (
             <>
@@ -358,9 +430,13 @@ export function CommandsAndScriptsSection({ project }: CommandsAndScriptsSection
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Play className="w-4 h-4 text-brand-500" />
-                  <h3 className="text-base font-medium text-foreground">Dev Server</h3>
+                  <h3 className="text-base font-medium text-foreground">
+                    {translate('Dev Server')}
+                  </h3>
                   {hasDevChanges && (
-                    <span className="text-xs text-amber-500 font-medium">(unsaved)</span>
+                    <span className="text-xs text-amber-500 font-medium">
+                      {translate('(unsaved)')}
+                    </span>
                   )}
                 </div>
 
@@ -371,7 +447,7 @@ export function CommandsAndScriptsSection({ project }: CommandsAndScriptsSection
                       value={devCommand}
                       onChange={(e) => setDevCommand(e.target.value)}
                       onKeyDown={handleKeyDown}
-                      placeholder="e.g., npm run dev, yarn dev, cargo watch"
+                      placeholder={translate('e.g., npm run dev, yarn dev, cargo watch')}
                       className="font-mono text-sm pr-8"
                       data-testid="dev-command-input"
                     />
@@ -381,14 +457,14 @@ export function CommandsAndScriptsSection({ project }: CommandsAndScriptsSection
                         size="sm"
                         onClick={handleClearDev}
                         className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
-                        aria-label="Clear dev command"
+                        aria-label={translate('Clear dev command')}
                       >
                         <X className="w-3.5 h-3.5" />
                       </Button>
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground/80">
-                    Leave empty to auto-detect based on your package manager.
+                    {translate('Leave empty to auto-detect based on your package manager.')}
                   </p>
 
                   {/* Dev Presets */}
@@ -415,9 +491,13 @@ export function CommandsAndScriptsSection({ project }: CommandsAndScriptsSection
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <FlaskConical className="w-4 h-4 text-brand-500" />
-                  <h3 className="text-base font-medium text-foreground">Test Runner</h3>
+                  <h3 className="text-base font-medium text-foreground">
+                    {translate('Test Runner')}
+                  </h3>
                   {hasTestChanges && (
-                    <span className="text-xs text-amber-500 font-medium">(unsaved)</span>
+                    <span className="text-xs text-amber-500 font-medium">
+                      {translate('(unsaved)')}
+                    </span>
                   )}
                 </div>
 
@@ -428,7 +508,7 @@ export function CommandsAndScriptsSection({ project }: CommandsAndScriptsSection
                       value={testCommand}
                       onChange={(e) => setTestCommand(e.target.value)}
                       onKeyDown={handleKeyDown}
-                      placeholder="e.g., npm test, pytest, cargo test"
+                      placeholder={translate('e.g., npm test, pytest, cargo test')}
                       className="font-mono text-sm pr-8"
                       data-testid="test-command-input"
                     />
@@ -438,14 +518,14 @@ export function CommandsAndScriptsSection({ project }: CommandsAndScriptsSection
                         size="sm"
                         onClick={handleClearTest}
                         className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
-                        aria-label="Clear test command"
+                        aria-label={translate('Clear test command')}
                       >
                         <X className="w-3.5 h-3.5" />
                       </Button>
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground/80">
-                    Leave empty to auto-detect based on your project structure.
+                    {translate('Leave empty to auto-detect based on your project structure.')}
                   </p>
 
                   {/* Test Presets */}
@@ -469,11 +549,11 @@ export function CommandsAndScriptsSection({ project }: CommandsAndScriptsSection
               <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/20 border border-border/30">
                 <Info className="w-4 h-4 text-brand-500 mt-0.5 shrink-0" />
                 <div className="text-xs text-muted-foreground">
-                  <p className="font-medium text-foreground mb-1">Auto-detection</p>
+                  <p className="font-medium text-foreground mb-1">{translate('Auto-detection')}</p>
                   <p>
-                    When no custom command is set, the system automatically detects your package
-                    manager and test framework based on project files (package.json, Cargo.toml,
-                    go.mod, etc.).
+                    {translate(
+                      'When no custom command is set, the system automatically detects your package manager and test framework based on project files (package.json, Cargo.toml, go.mod, etc.).'
+                    )}
                   </p>
                 </div>
               </div>
@@ -499,12 +579,13 @@ export function CommandsAndScriptsSection({ project }: CommandsAndScriptsSection
               <ScrollText className="w-5 h-5 text-brand-500" />
             </div>
             <h2 className="text-lg font-semibold text-foreground tracking-tight">
-              Terminal Quick Scripts
+              {translate('Terminal Quick Scripts')}
             </h2>
           </div>
           <p className="text-sm text-muted-foreground/80 ml-12">
-            Configure quick-access scripts that appear in the terminal header dropdown. Click any
-            script to run it instantly.
+            {translate(
+              'Configure quick-access scripts that appear in the terminal header dropdown. Click any script to run it instantly.'
+            )}
           </p>
         </div>
 
@@ -515,7 +596,7 @@ export function CommandsAndScriptsSection({ project }: CommandsAndScriptsSection
             </div>
           ) : isError ? (
             <div className="flex items-center justify-center py-8 text-sm text-destructive">
-              Failed to load project settings. Please try again.
+              {translate('Failed to load project settings. Please try again.')}
             </div>
           ) : (
             <>
@@ -538,10 +619,12 @@ export function CommandsAndScriptsSection({ project }: CommandsAndScriptsSection
                     {/* Drag handle - keyboard accessible */}
                     <div
                       className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground focus:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded shrink-0 p-0.5"
-                      title="Drag to reorder (or use Arrow keys)"
+                      title={translate('Drag to reorder (or use Arrow keys)')}
                       tabIndex={0}
                       role="button"
-                      aria-label={`Reorder ${script.name || 'script'}. Use arrow keys to move.`}
+                      aria-label={translate('Reorder {value1}. Use arrow keys to move.', {
+                        value1: script.name || 'script',
+                      })}
                       onKeyDown={(e) => handleDragHandleKeyDown(e, index)}
                     >
                       <GripVertical className="w-4 h-4" />
@@ -552,7 +635,7 @@ export function CommandsAndScriptsSection({ project }: CommandsAndScriptsSection
                       value={script.name}
                       onChange={(e) => handleUpdateScript(index, 'name', e.target.value)}
                       onKeyDown={handleKeyDown}
-                      placeholder="Script name"
+                      placeholder={translate('Script name')}
                       className="h-8 text-sm flex-[0.4] min-w-0"
                     />
 
@@ -561,7 +644,7 @@ export function CommandsAndScriptsSection({ project }: CommandsAndScriptsSection
                       value={script.command}
                       onChange={(e) => handleUpdateScript(index, 'command', e.target.value)}
                       onKeyDown={handleKeyDown}
-                      placeholder="Command to run"
+                      placeholder={translate('Command to run')}
                       className="h-8 text-sm font-mono flex-[0.6] min-w-0"
                     />
 
@@ -571,7 +654,7 @@ export function CommandsAndScriptsSection({ project }: CommandsAndScriptsSection
                       size="sm"
                       onClick={() => handleRemoveScript(index)}
                       className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive shrink-0"
-                      aria-label={`Remove ${script.name || 'script'}`}
+                      aria-label={translate('Remove {value1}', { value1: script.name || 'script' })}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
@@ -580,7 +663,7 @@ export function CommandsAndScriptsSection({ project }: CommandsAndScriptsSection
 
                 {scripts.length === 0 && (
                   <div className="text-center py-6 text-sm text-muted-foreground">
-                    No scripts configured. Add some below or use a preset.
+                    {translate('No scripts configured. Add some below or use a preset.')}
                   </div>
                 )}
               </div>
@@ -588,7 +671,7 @@ export function CommandsAndScriptsSection({ project }: CommandsAndScriptsSection
               {/* Add Script Button */}
               <Button variant="outline" size="sm" onClick={handleAddScript} className="gap-1.5">
                 <Plus className="w-3.5 h-3.5" />
-                Add Script
+                {translate('Add Script')}
               </Button>
 
               {/* Divider */}
@@ -596,7 +679,9 @@ export function CommandsAndScriptsSection({ project }: CommandsAndScriptsSection
 
               {/* Presets */}
               <div className="space-y-3">
-                <h3 className="text-sm font-medium text-foreground">Quick Add Presets</h3>
+                <h3 className="text-sm font-medium text-foreground">
+                  {translate('Quick Add Presets')}
+                </h3>
                 <div className="flex flex-wrap gap-1.5">
                   {SCRIPT_PRESETS.map((preset) => (
                     <Button
@@ -616,12 +701,17 @@ export function CommandsAndScriptsSection({ project }: CommandsAndScriptsSection
               <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/20 border border-border/30">
                 <Info className="w-4 h-4 text-brand-500 mt-0.5 shrink-0" />
                 <div className="text-xs text-muted-foreground">
-                  <p className="font-medium text-foreground mb-1">Terminal Quick Scripts</p>
+                  <p className="font-medium text-foreground mb-1">
+                    {translate('Terminal Quick Scripts')}
+                  </p>
                   <p>
-                    These scripts appear in the terminal header as a dropdown menu (the{' '}
-                    <ScrollText className="inline-block w-3 h-3 mx-0.5 align-middle" /> icon).
-                    Clicking a script will type the command into the active terminal and press
-                    Enter. Drag to reorder scripts.
+                    {translate(
+                      'These scripts appear in the terminal header as a dropdown menu (the'
+                    )}{' '}
+                    <ScrollText className="inline-block w-3 h-3 mx-0.5 align-middle" />{' '}
+                    {translate(
+                      ' icon). Clicking a script will type the command into the active terminal and press Enter. Drag to reorder scripts.'
+                    )}
                   </p>
                 </div>
               </div>
@@ -640,7 +730,7 @@ export function CommandsAndScriptsSection({ project }: CommandsAndScriptsSection
           className="gap-1.5"
         >
           <RotateCcw className="w-3.5 h-3.5" />
-          Reset
+          {translate('Reset')}
         </Button>
         <Button
           size="sm"
@@ -649,7 +739,7 @@ export function CommandsAndScriptsSection({ project }: CommandsAndScriptsSection
           className="gap-1.5"
         >
           {isSaving ? <Spinner size="xs" /> : <Save className="w-3.5 h-3.5" />}
-          Save
+          {translate('Save')}
         </Button>
       </div>
     </div>

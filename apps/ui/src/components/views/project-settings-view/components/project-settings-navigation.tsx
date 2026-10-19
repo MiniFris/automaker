@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ export function ProjectSettingsNavigation({
   isOpen = true,
   onClose,
 }: ProjectSettingsNavigationProps) {
+  useUiLocale();
   return (
     <>
       {/* Mobile backdrop overlay - only shown when isOpen is true on mobile */}
@@ -47,13 +49,13 @@ export function ProjectSettingsNavigation({
       >
         {/* Mobile close button */}
         <div className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-border/50">
-          <span className="text-sm font-semibold text-foreground">Navigation</span>
+          <span className="text-sm font-semibold text-foreground">{translate('Navigation')}</span>
           <Button
             variant="ghost"
             size="sm"
             onClick={onClose}
             className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-            aria-label="Close navigation menu"
+            aria-label={translate('Close navigation menu')}
           >
             <X className="w-4 h-4" />
           </Button>

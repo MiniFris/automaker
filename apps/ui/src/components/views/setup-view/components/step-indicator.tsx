@@ -1,9 +1,11 @@
+import { useUiLocale } from '@/lib/i18n';
 interface StepIndicatorProps {
   currentStep: number;
   totalSteps: number;
 }
 
 export function StepIndicator({ currentStep, totalSteps }: StepIndicatorProps) {
+  useUiLocale();
   return (
     <div className="flex items-center justify-center gap-2 mb-8">
       {Array.from({ length: totalSteps }).map((_, index) => (

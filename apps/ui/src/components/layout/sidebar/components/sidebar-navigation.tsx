@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useCallback, useEffect, useRef } from 'react';
 import type { NavigateOptions } from '@tanstack/react-router';
 import { ChevronDown, Wrench, Github, Folder } from 'lucide-react';
@@ -45,6 +46,7 @@ export function SidebarNavigation({
   navigate,
   onScrollStateChange,
 }: SidebarNavigationProps) {
+  useUiLocale();
   const navRef = useRef<HTMLElement>(null);
 
   // Get collapsed state from store (persisted across restarts)
@@ -182,7 +184,7 @@ export function SidebarNavigation({
                       : 'text-muted-foreground/70'
                   )}
                 >
-                  {section.label}
+                  {translate(section.label)}
                 </span>
                 {isCollapsible && (
                   <ChevronDown
@@ -216,7 +218,7 @@ export function SidebarNavigation({
                     </DropdownMenuTrigger>
                   </TooltipTrigger>
                   <TooltipContent side="right" sideOffset={8}>
-                    {section.label}
+                    {translate(section.label)}
                   </TooltipContent>
                 </Tooltip>
                 <DropdownMenuContent side="right" align="start" sideOffset={8} className="w-48">
@@ -388,7 +390,7 @@ export function SidebarNavigation({
       {!currentProject && sidebarOpen && (
         <div className="flex items-center justify-center px-4 py-8">
           <p className="text-muted-foreground text-xs text-center">
-            Select or create a project to continue
+            {translate('Select or create a project to continue')}
           </p>
         </div>
       )}

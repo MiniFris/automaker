@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { User } from 'lucide-react';
 import { Markdown } from '@/components/ui/markdown';
 import type { GitHubComment } from '@/lib/electron';
@@ -8,6 +9,7 @@ interface CommentItemProps {
 }
 
 export function CommentItem({ comment }: CommentItemProps) {
+  useUiLocale();
   return (
     <div className="p-3 rounded-lg bg-background border border-border">
       {/* Comment Header */}
@@ -25,7 +27,8 @@ export function CommentItem({ comment }: CommentItemProps) {
         )}
         <span className="text-sm font-medium">{comment.author.login}</span>
         <span className="text-xs text-muted-foreground">
-          commented {formatDate(comment.createdAt)}
+          {translate('commented ')}
+          {formatDate(comment.createdAt)}
         </span>
       </div>
 
@@ -33,7 +36,7 @@ export function CommentItem({ comment }: CommentItemProps) {
       {comment.body ? (
         <Markdown className="text-sm">{comment.body}</Markdown>
       ) : (
-        <p className="text-sm text-muted-foreground italic">No content</p>
+        <p className="text-sm text-muted-foreground italic">{translate('No content')}</p>
       )}
     </div>
   );

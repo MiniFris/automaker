@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 /**
  * Log Parser Utility
  * Parses agent output into structured sections for display
@@ -678,7 +679,7 @@ export function normalizeCursorEvent(event: CursorStreamEvent): LogEntry | null 
       return {
         ...baseEntry,
         type: 'info' as LogEntryType,
-        title: 'Session Started',
+        title: translate('Session Started'),
         content: `Model: ${sysEvent.model}\nAuth: ${sysEvent.apiKeySource}\nCWD: ${sysEvent.cwd}`,
         collapsed: true,
         metadata: {
@@ -699,7 +700,7 @@ export function normalizeCursorEvent(event: CursorStreamEvent): LogEntry | null 
       return {
         ...baseEntry,
         type: 'info' as LogEntryType,
-        title: 'Assistant',
+        title: translate('Assistant'),
         content: text,
         collapsed: false,
       };
@@ -717,7 +718,7 @@ export function normalizeCursorEvent(event: CursorStreamEvent): LogEntry | null 
         return {
           ...baseEntry,
           type: 'error' as LogEntryType,
-          title: 'Error',
+          title: translate('Error'),
           content: resultEvent.error || resultEvent.result || 'Unknown error',
           collapsed: false,
         };
@@ -726,7 +727,7 @@ export function normalizeCursorEvent(event: CursorStreamEvent): LogEntry | null 
       return {
         ...baseEntry,
         type: 'success' as LogEntryType,
-        title: 'Completed',
+        title: translate('Completed'),
         content: `Duration: ${resultEvent.duration_ms}ms`,
         collapsed: true,
       };
@@ -756,7 +757,7 @@ export function parseLogLine(line: string): LogEntry | null {
     return {
       id: `json-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       type: 'debug',
-      title: 'Debug Info',
+      title: translate('Debug Info'),
       content: line,
       timestamp: new Date().toISOString(),
       collapsed: true,
@@ -766,7 +767,7 @@ export function parseLogLine(line: string): LogEntry | null {
     return {
       id: `text-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       type: 'info',
-      title: 'Output',
+      title: translate('Output'),
       content: line,
       timestamp: new Date().toISOString(),
       collapsed: false,
@@ -781,14 +782,14 @@ export function getProviderStyle(entry: LogEntry): { badge?: string; icon?: stri
   // Check if entry has Cursor session ID pattern
   if (entry.id.startsWith('cursor-')) {
     return {
-      badge: 'Cursor',
+      badge: translate('Cursor'),
       icon: 'terminal',
     };
   }
 
   // Default (Claude/AutoMaker)
   return {
-    badge: 'Claude',
+    badge: translate('Claude'),
     icon: 'bot',
   };
 }
@@ -838,10 +839,12 @@ function generateTitle(type: LogEntryType, content: string): string {
   switch (type) {
     case 'tool_call': {
       const toolName = extractToolName(content);
-      return toolName ? `Tool Call: ${toolName}` : 'Tool Call';
+      return toolName
+        ? translate('Tool Call: {value1}', { value1: toolName })
+        : translate('Tool Call');
     }
     case 'tool_result':
-      return 'Tool Input/Result';
+      return translate('Tool Input/Result');
     case 'phase': {
       const phase = extractPhase(content);
       if (phase) {
@@ -850,12 +853,12 @@ function generateTitle(type: LogEntryType, content: string): string {
           .split(/\s+/)
           .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
           .join(' ');
-        return `Phase: ${formatted}`;
+        return translate('Phase: {value1}', { value1: formatted });
       }
-      return 'Phase Change';
+      return translate('Phase Change');
     }
     case 'error':
-      return 'Error';
+      return translate('Error');
     case 'success': {
       // Check if it's a summary section (check both raw and cleaned)
       if (
@@ -864,32 +867,32 @@ function generateTitle(type: LogEntryType, content: string): string {
         cleaned.startsWith('<summary>') ||
         cleaned.includes('<summary>')
       ) {
-        return 'Summary';
+        return translate('Summary');
       }
       if (
         content.match(/^##\s+(Summary|Feature|Changes|Implementation)/i) ||
         cleaned.match(/^##\s+(Summary|Feature|Changes|Implementation)/i)
       ) {
-        return 'Summary';
+        return translate('Summary');
       }
       if (
         content.match(/^All tasks completed/i) ||
         content.match(/^(I've|I have) (successfully |now )?(completed|finished|implemented)/i)
       ) {
-        return 'Summary';
+        return translate('Summary');
       }
-      return 'Success';
+      return translate('Success');
     }
     case 'warning':
-      return 'Warning';
+      return translate('Warning');
     case 'thinking':
-      return 'Thinking Level';
+      return translate('Thinking Level');
     case 'debug':
-      return 'Debug Info';
+      return translate('Debug Info');
     case 'prompt':
-      return 'Prompt';
+      return translate('Prompt');
     default:
-      return 'Info';
+      return translate('Info');
   }
 }
 
@@ -1144,7 +1147,7 @@ export function parseLogOutput(rawOutput: string): LogEntry[] {
       // No current entry, create a default info entry
       currentEntry = {
         type: 'info',
-        title: 'Info',
+        title: translate('Info'),
         content: '',
       };
       currentContent.push(line);

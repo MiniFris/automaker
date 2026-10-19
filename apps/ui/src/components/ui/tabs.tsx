@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import * as React from 'react';
 import * as TabsPrimitive from '@radix-ui/react-tabs';
 
@@ -40,6 +41,7 @@ function Tabs({
   children?: React.ReactNode;
   className?: string;
 }) {
+  useUiLocale();
   return (
     <TabsRootPrimitive data-slot="tabs" className={cn('flex flex-col gap-2', className)} {...props}>
       {children}
@@ -55,6 +57,7 @@ function TabsList({
   children?: React.ReactNode;
   className?: string;
 }) {
+  useUiLocale();
   return (
     <TabsListPrimitive
       data-slot="tabs-list"
@@ -77,6 +80,7 @@ function TabsTrigger({
   children?: React.ReactNode;
   className?: string;
 }) {
+  useUiLocale();
   return (
     <TabsTriggerPrimitive
       data-slot="tabs-trigger"
@@ -104,6 +108,7 @@ function TabsContent({
   children?: React.ReactNode;
   className?: string;
 }) {
+  useUiLocale();
   return (
     <TabsContentPrimitive
       data-slot="tabs-content"

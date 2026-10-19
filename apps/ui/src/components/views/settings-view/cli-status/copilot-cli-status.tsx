@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { SkeletonPulse } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
@@ -13,11 +14,11 @@ export type { CopilotAuthStatus };
 function getAuthMethodLabel(method: CopilotAuthStatus['method']): string {
   switch (method) {
     case 'oauth':
-      return 'GitHub OAuth';
+      return translate('GitHub OAuth');
     case 'cli':
-      return 'Copilot CLI';
+      return translate('Copilot CLI');
     default:
-      return method || 'Unknown';
+      return method || translate('Unknown');
   }
 }
 
@@ -29,6 +30,7 @@ interface CopilotCliStatusProps {
 }
 
 export function CopilotCliStatusSkeleton() {
+  useUiLocale();
   return (
     <div
       className={cn(
@@ -79,6 +81,7 @@ export function CopilotCliStatus({
   isChecking,
   onRefresh,
 }: CopilotCliStatusProps) {
+  useUiLocale();
   if (!status) return <CopilotCliStatusSkeleton />;
 
   return (
@@ -97,7 +100,7 @@ export function CopilotCliStatus({
               <CopilotIcon className="w-5 h-5 text-violet-500" />
             </div>
             <h2 className="text-lg font-semibold text-foreground tracking-tight">
-              GitHub Copilot CLI
+              {translate('GitHub Copilot CLI')}
             </h2>
           </div>
           <Button
@@ -106,8 +109,8 @@ export function CopilotCliStatus({
             onClick={onRefresh}
             disabled={isChecking}
             data-testid="refresh-copilot-cli"
-            title="Refresh Copilot CLI detection"
-            aria-label="Refresh Copilot CLI detection"
+            title={translate('Refresh Copilot CLI detection')}
+            aria-label={translate('Refresh Copilot CLI detection')}
             className={cn(
               'h-9 w-9 rounded-lg',
               'hover:bg-accent/50 hover:scale-105',
@@ -118,7 +121,9 @@ export function CopilotCliStatus({
           </Button>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          GitHub Copilot CLI provides access to GPT and Claude models via your Copilot subscription.
+          {translate(
+            'GitHub Copilot CLI provides access to GPT and Claude models via your Copilot subscription.'
+          )}
         </p>
       </div>
       <div className="p-6 space-y-4">
@@ -129,21 +134,26 @@ export function CopilotCliStatus({
                 <CheckCircle2 className="w-5 h-5 text-emerald-500" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-emerald-400">Copilot CLI Installed</p>
+                <p className="text-sm font-medium text-emerald-400">
+                  {translate('Copilot CLI Installed')}
+                </p>
                 <div className="text-xs text-emerald-400/70 mt-1.5 space-y-0.5">
                   {status.method && (
                     <p>
-                      Method: <span className="font-mono">{status.method}</span>
+                      {translate('Method: ')}
+                      <span className="font-mono">{status.method}</span>
                     </p>
                   )}
                   {status.version && (
                     <p>
-                      Version: <span className="font-mono">{status.version}</span>
+                      {translate('Version: ')}
+                      <span className="font-mono">{status.version}</span>
                     </p>
                   )}
                   {status.path && (
                     <p className="truncate" title={status.path}>
-                      Path: <span className="font-mono text-[10px]">{status.path}</span>
+                      {translate('Path: ')}
+                      <span className="font-mono text-[10px]">{status.path}</span>
                     </p>
                   )}
                 </div>
@@ -157,17 +167,20 @@ export function CopilotCliStatus({
                   <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-emerald-400">Authenticated</p>
+                  <p className="text-sm font-medium text-emerald-400">
+                    {translate('Authenticated')}
+                  </p>
                   <div className="text-xs text-emerald-400/70 mt-1.5">
                     {authStatus.method !== 'none' && (
                       <p>
-                        Method:{' '}
+                        {translate('Method:')}{' '}
                         <span className="font-mono">{getAuthMethodLabel(authStatus.method)}</span>
                       </p>
                     )}
                     {authStatus.login && (
                       <p>
-                        User: <span className="font-mono">{authStatus.login}</span>
+                        {translate('User: ')}
+                        <span className="font-mono">{authStatus.login}</span>
                       </p>
                     )}
                   </div>
@@ -179,13 +192,16 @@ export function CopilotCliStatus({
                   <AlertCircle className="w-5 h-5 text-red-500" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-red-400">Authentication Required</p>
+                  <p className="text-sm font-medium text-red-400">
+                    {translate('Authentication Required')}
+                  </p>
                   {authStatus?.error && (
                     <p className="text-xs text-red-400/70 mt-1">{authStatus.error}</p>
                   )}
                   <p className="text-xs text-red-400/70 mt-2">
-                    Run <code className="font-mono bg-red-500/10 px-1 rounded">gh auth login</code>{' '}
-                    in your terminal to authenticate with GitHub.
+                    {translate('Run ')}
+                    <code className="font-mono bg-red-500/10 px-1 rounded">gh auth login</code>{' '}
+                    {translate('in your terminal to authenticate with GitHub.')}
                   </p>
                 </div>
               </div>
@@ -202,21 +218,27 @@ export function CopilotCliStatus({
                 <AlertCircle className="w-5 h-5 text-amber-500" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-amber-400">Copilot CLI Not Detected</p>
+                <p className="text-sm font-medium text-amber-400">
+                  {translate('Copilot CLI Not Detected')}
+                </p>
                 <p className="text-xs text-amber-400/70 mt-1">
                   {status.recommendation ||
-                    'Install GitHub Copilot CLI to use models via your Copilot subscription.'}
+                    translate(
+                      'Install GitHub Copilot CLI to use models via your Copilot subscription.'
+                    )}
                 </p>
               </div>
             </div>
             {status.installCommands && (
               <div className="space-y-3">
-                <p className="text-xs font-medium text-foreground/80">Installation Commands:</p>
+                <p className="text-xs font-medium text-foreground/80">
+                  {translate('Installation Commands:')}
+                </p>
                 <div className="space-y-2">
                   {status.installCommands.npm && (
                     <div className="p-3 rounded-xl bg-accent/30 border border-border/50">
                       <p className="text-[10px] text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">
-                        npm
+                        {translate('npm')}
                       </p>
                       <code className="text-xs text-foreground/80 font-mono break-all">
                         {status.installCommands.npm}

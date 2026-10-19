@@ -1,3 +1,5 @@
+import { formatCount } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import type { JSX } from 'react';
 import { Button } from '@/components/ui/button';
 import { Globe, CircleDot, GitPullRequest, AlertTriangle } from 'lucide-react';
@@ -217,6 +219,7 @@ export function WorktreeTab({
   onSwapWorktree,
   pinnedBranches,
 }: WorktreeTabProps) {
+  useUiLocale();
   // Make the worktree tab a drop target for feature cards
   const { setNodeRef, isOver } = useDroppable({
     id: `worktree-drop-${worktree.branch}`,
@@ -282,8 +285,8 @@ export function WorktreeTab({
           'cursor-pointer hover:opacity-80 active:opacity-70',
           prStateClasses
         )}
-        title={`${prLabel} - Click to open`}
-        aria-label={`${prLabel} - Click to open pull request`}
+        title={translate('{value1} - Click to open', { value1: prLabel })}
+        aria-label={translate('{value1} - Click to open pull request', { value1: prLabel })}
         onClick={(e) => {
           e.stopPropagation(); // Prevent triggering worktree selection
           if (worktree.pr?.url) {
@@ -303,7 +306,8 @@ export function WorktreeTab({
       >
         <GitPullRequest className={cn('w-3 h-3', getStatusColorClass())} aria-hidden="true" />
         <span aria-hidden="true" className={isSelected ? 'text-foreground font-semibold' : ''}>
-          PR #{worktree.pr.number}
+          {translate('PR #')}
+          {worktree.pr.number}
         </span>
         <span className={cn('capitalize', getStatusColorClass())} aria-hidden="true">
           {prState}
@@ -332,7 +336,7 @@ export function WorktreeTab({
             )}
             onClick={() => onSelectWorktree(worktree)}
             disabled={isActivating}
-            title={`Click to preview ${worktree.branch}`}
+            title={translate('Click to preview {value1}', { value1: worktree.branch })}
             aria-label={worktree.branch}
             data-testid={`worktree-branch-${worktree.branch}`}
           >
@@ -363,8 +367,9 @@ export function WorktreeTab({
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>
-                    {changedFilesCount ?? 'Some'} uncommitted file
-                    {changedFilesCount !== 1 ? 's' : ''}
+                    {changedFilesCount === undefined
+                      ? translate('Uncommitted changes')
+                      : formatCount(changedFilesCount, 'uncommitted file')}
                   </p>
                 </TooltipContent>
               </Tooltip>
@@ -384,9 +389,11 @@ export function WorktreeTab({
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>
-                    {getConflictTypeLabel(worktree.conflictType)} conflicts detected
+                    {getConflictTypeLabel(worktree.conflictType)} {translate(' conflicts detected')}
                     {worktree.conflictFiles && worktree.conflictFiles.length > 0
-                      ? ` (${worktree.conflictFiles.length} file${worktree.conflictFiles.length !== 1 ? 's' : ''})`
+                      ? translate(' ({value1})', {
+                          value1: formatCount(worktree.conflictFiles.length, 'file'),
+                        })
                       : ''}
                   </p>
                 </TooltipContent>
@@ -422,8 +429,8 @@ export function WorktreeTab({
           disabled={isActivating}
           title={
             worktree.hasWorktree
-              ? "Click to switch to this worktree's branch"
-              : 'Click to switch to this branch'
+              ? translate("Click to switch to this worktree's branch")
+              : translate('Click to switch to this branch')
           }
         >
           {isRunning && <Spinner size="xs" variant={isSelected ? 'foreground' : 'primary'} />}
@@ -453,8 +460,9 @@ export function WorktreeTab({
               </TooltipTrigger>
               <TooltipContent>
                 <p>
-                  {changedFilesCount ?? 'Some'} uncommitted file
-                  {changedFilesCount !== 1 ? 's' : ''}
+                  {changedFilesCount === undefined
+                    ? translate('Uncommitted changes')
+                    : formatCount(changedFilesCount, 'uncommitted file')}
                 </p>
               </TooltipContent>
             </Tooltip>
@@ -474,9 +482,11 @@ export function WorktreeTab({
               </TooltipTrigger>
               <TooltipContent>
                 <p>
-                  {getConflictTypeLabel(worktree.conflictType)} conflicts detected
+                  {getConflictTypeLabel(worktree.conflictType)} {translate(' conflicts detected')}
                   {worktree.conflictFiles && worktree.conflictFiles.length > 0
-                    ? ` (${worktree.conflictFiles.length} file${worktree.conflictFiles.length !== 1 ? 's' : ''})`
+                    ? translate(' ({value1})', {
+                        value1: formatCount(worktree.conflictFiles.length, 'file'),
+                      })
                     : ''}
                 </p>
               </TooltipContent>
@@ -499,13 +509,18 @@ export function WorktreeTab({
                 'text-green-500'
               )}
               onClick={() => onOpenDevServerUrl(worktree)}
-              aria-label={`Open dev server on port ${devServerInfo?.port} in browser`}
+              aria-label={translate('Open dev server on port {value1} in browser', {
+                value1: devServerInfo?.port,
+              })}
             >
               <Globe className="w-3 h-3" aria-hidden="true" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Open dev server (:{devServerInfo?.port})</p>
+            <p>
+              {translate('Open dev server (:')}
+              {devServerInfo?.port})
+            </p>
           </TooltipContent>
         </Tooltip>
       )}
@@ -523,7 +538,7 @@ export function WorktreeTab({
             </span>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Auto Mode Running</p>
+            <p>{translate('Auto Mode Running')}</p>
           </TooltipContent>
         </Tooltip>
       )}

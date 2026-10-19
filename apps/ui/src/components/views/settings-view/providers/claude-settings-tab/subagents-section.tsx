@@ -1,3 +1,5 @@
+import { formatCount } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * Subagents Section - UI for managing Subagents configuration
  *
@@ -21,6 +23,7 @@ import { useSubagentsSettings } from './hooks/use-subagents-settings';
 import { SubagentCard } from './subagent-card';
 
 export function SubagentsSection() {
+  useUiLocale();
   const {
     subagentsWithScope,
     isLoading: isLoadingAgents,
@@ -65,15 +68,15 @@ export function SubagentsSection() {
           </div>
           <div>
             <h3 className="font-semibold text-base flex items-center gap-2">
-              Custom Subagents
+              {translate('Custom Subagents')}
               {enabled && subagentsWithScope.length > 0 && (
                 <span className="text-xs font-normal px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-500">
-                  {subagentsWithScope.length} agent{subagentsWithScope.length !== 1 ? 's' : ''}
+                  {formatCount(subagentsWithScope.length, 'agent')}
                 </span>
               )}
             </h3>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Specialized agents Claude delegates to automatically
+              {translate('Specialized agents Claude delegates to automatically')}
             </p>
           </div>
         </div>
@@ -91,7 +94,7 @@ export function SubagentsSection() {
         {enabled && (
           <div className="space-y-3">
             <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-              Load Subagents from
+              {translate('Load Subagents from')}
             </Label>
             <div className="grid gap-2">
               {/* User Subagents Option */}
@@ -115,9 +118,9 @@ export function SubagentsSection() {
                   <Globe className="w-4 h-4 text-muted-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <span className="text-sm font-medium">User Subagents</span>
+                  <span className="text-sm font-medium">{translate('User Subagents')}</span>
                   <span className="block text-xs text-muted-foreground mt-0.5 truncate">
-                    ~/.claude/agents/ — Available across all projects
+                    {translate('~/.claude/agents/ — Available across all projects')}
                   </span>
                 </div>
               </label>
@@ -143,9 +146,9 @@ export function SubagentsSection() {
                   <FolderOpen className="w-4 h-4 text-muted-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <span className="text-sm font-medium">Project Subagents</span>
+                  <span className="text-sm font-medium">{translate('Project Subagents')}</span>
                   <span className="block text-xs text-muted-foreground mt-0.5 truncate">
-                    .claude/agents/ — Version-controlled with project
+                    <code>.claude/agents/</code> — {translate('Version-controlled with project')}
                   </span>
                 </div>
               </label>
@@ -159,31 +162,33 @@ export function SubagentsSection() {
             {/* Refresh Button */}
             <div className="flex items-center justify-between">
               <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-                Discovered Agents
+                {translate('Discovered Agents')}
               </Label>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleRefresh}
                 disabled={isLoading}
-                title="Refresh agents from disk"
+                title={translate('Refresh agents from disk')}
                 className="gap-1.5 h-7 px-2 text-xs"
               >
                 {isLoadingAgents ? <Spinner size="xs" /> : <RefreshCw className="h-3.5 w-3.5" />}
-                Refresh
+                {translate('Refresh')}
               </Button>
             </div>
 
             {subagentsWithScope.length === 0 ? (
               <div className="text-center py-6 text-muted-foreground border border-dashed border-border/50 rounded-xl">
                 <Users className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                <p className="text-sm font-medium">No agents found</p>
+                <p className="text-sm font-medium">{translate('No agents found')}</p>
                 <p className="text-xs mt-1 max-w-sm mx-auto">
-                  Create <code className="text-xs bg-muted px-1 rounded">.md</code> files in{' '}
+                  {translate('Create ')}
+                  <code className="text-xs bg-muted px-1 rounded">.md</code>{' '}
+                  {translate(' files in')}{' '}
                   {sources.includes('user') && (
                     <code className="text-xs bg-muted px-1 rounded">~/.claude/agents/</code>
                   )}
-                  {sources.includes('user') && sources.includes('project') && ' or '}
+                  {sources.includes('user') && sources.includes('project') && translate(' or ')}
                   {sources.includes('project') && (
                     <code className="text-xs bg-muted px-1 rounded">.claude/agents/</code>
                   )}
@@ -210,11 +215,15 @@ export function SubagentsSection() {
                 <Sparkles className="w-3.5 h-3.5 text-brand-500" />
               </div>
               <div className="text-xs text-muted-foreground space-y-1">
-                <p className="font-medium text-foreground/80">Auto-Discovery</p>
+                <p className="font-medium text-foreground/80">{translate('Auto-Discovery')}</p>
                 <p>
-                  Subagents are automatically discovered when agents start. Define agents as{' '}
-                  <code className="text-xs bg-muted px-1 rounded">AGENT.md</code> files or{' '}
-                  <code className="text-xs bg-muted px-1 rounded">agent-name.md</code> files.
+                  {translate(
+                    'Subagents are automatically discovered when agents start. Define agents as'
+                  )}{' '}
+                  <code className="text-xs bg-muted px-1 rounded">AGENT.md</code>{' '}
+                  {translate(' files or')}{' '}
+                  <code className="text-xs bg-muted px-1 rounded">agent-name.md</code>{' '}
+                  {translate(' files.')}
                 </p>
               </div>
             </div>
@@ -225,7 +234,7 @@ export function SubagentsSection() {
               className="flex items-center gap-2 text-xs text-brand-500 hover:text-brand-400 transition-colors"
             >
               <ExternalLink className="w-3.5 h-3.5" />
-              View Agents documentation
+              {translate('View Agents documentation')}
             </a>
           </div>
         )}
@@ -234,8 +243,8 @@ export function SubagentsSection() {
         {!enabled && (
           <div className="text-center py-6 text-muted-foreground">
             <Bot className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="text-sm">Subagents are disabled</p>
-            <p className="text-xs mt-1">Enable to load custom agent definitions</p>
+            <p className="text-sm">{translate('Subagents are disabled')}</p>
+            <p className="text-xs mt-1">{translate('Enable to load custom agent definitions')}</p>
           </div>
         )}
       </div>

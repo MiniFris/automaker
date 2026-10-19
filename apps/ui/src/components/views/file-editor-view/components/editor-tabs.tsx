@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useRef, useEffect, useCallback } from 'react';
 import { X, Circle, MoreHorizontal, Save, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -96,6 +97,7 @@ export function EditorTabs({
   isDirty,
   showSaveButton,
 }: EditorTabsProps) {
+  useUiLocale();
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeTabRef = useRef<HTMLDivElement>(null);
 
@@ -124,7 +126,7 @@ export function EditorTabs({
       <button
         onClick={() => scrollBy('left')}
         className="shrink-0 p-1 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-        title="Scroll tabs left"
+        title={translate('Scroll tabs left')}
       >
         <ChevronLeft className="w-4 h-4" />
       </button>
@@ -175,7 +177,7 @@ export function EditorTabs({
                   isActive && 'opacity-60',
                   'hover:bg-accent'
                 )}
-                title="Close"
+                title={translate('Close')}
               >
                 <X className="w-3 h-3" />
               </button>
@@ -188,7 +190,7 @@ export function EditorTabs({
       <button
         onClick={() => scrollBy('right')}
         className="shrink-0 p-1 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-        title="Scroll tabs right"
+        title={translate('Scroll tabs right')}
       >
         <ChevronRight className="w-4 h-4" />
       </button>
@@ -206,8 +208,8 @@ export function EditorTabs({
                 ? 'text-primary hover:text-primary hover:bg-muted/50'
                 : 'text-muted-foreground/40 cursor-not-allowed'
             )}
-            title="Save file (Ctrl+S)"
-            aria-label="Save file"
+            title={translate('Save file (Ctrl+S)')}
+            aria-label={translate('Save file')}
           >
             <Save className="w-4 h-4" />
           </button>
@@ -217,7 +219,7 @@ export function EditorTabs({
           <DropdownMenuTrigger asChild>
             <button
               className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-              title="Tab actions"
+              title={translate('Tab actions')}
             >
               <MoreHorizontal className="w-4 h-4" />
             </button>
@@ -225,7 +227,7 @@ export function EditorTabs({
           <DropdownMenuContent align="end" className="w-40">
             <DropdownMenuItem onClick={onCloseAll} className="gap-2 cursor-pointer">
               <X className="w-4 h-4" />
-              <span>Close All</span>
+              <span>{translate('Close All')}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

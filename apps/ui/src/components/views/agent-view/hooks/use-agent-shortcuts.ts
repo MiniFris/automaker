@@ -1,4 +1,6 @@
-import { useMemo } from 'react';
+import { useLocalizedMemo } from '@/lib/i18n';
+import { translate } from '@/lib/i18n';
+
 import {
   useKeyboardShortcuts,
   useKeyboardShortcutsConfig,
@@ -17,7 +19,7 @@ export function useAgentShortcuts({
   const shortcuts = useKeyboardShortcutsConfig();
 
   // Keyboard shortcuts for agent view
-  const agentShortcuts: KeyboardShortcut[] = useMemo(() => {
+  const agentShortcuts: KeyboardShortcut[] = useLocalizedMemo(() => {
     const shortcutsList: KeyboardShortcut[] = [];
 
     // New session shortcut - only when in agent view with a project
@@ -29,7 +31,7 @@ export function useAgentShortcuts({
             quickCreateSessionRef.current();
           }
         },
-        description: 'Create new session',
+        description: translate('Create new session'),
       });
     }
 

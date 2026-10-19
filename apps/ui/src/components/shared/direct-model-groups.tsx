@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import type { OpenAICompatibleEndpoint, PhaseModelEntry } from '@automaker/types';
 import { toDirectModelId } from '@automaker/types';
 import { Check } from 'lucide-react';
@@ -13,6 +14,7 @@ export function DirectModelGroups({
   value: PhaseModelEntry;
   onSelect: (selection: PhaseModelEntry) => void;
 }) {
+  useUiLocale();
   return endpoints
     .filter((endpoint) => endpoint.enabled && endpoint.protocol === 'chat-completions')
     .map((endpoint) => (
@@ -30,8 +32,10 @@ export function DirectModelGroups({
             onSelect={() => onSelect({ model: toDirectModelId(model.id), providerId: endpoint.id })}
           >
             <OpenAIIcon className="mr-2 h-4 w-4" />
-          <span className="flex-1">{model.displayName}</span>
-          {!model.capabilities.tools && <span className="text-xs text-muted-foreground">Text only</span>}
+            <span className="flex-1">{model.displayName}</span>
+            {!model.capabilities.tools && (
+              <span className="text-xs text-muted-foreground">{translate('Text only')}</span>
+            )}
             {value.providerId === endpoint.id && value.model === toDirectModelId(model.id) && (
               <Check className="h-4 w-4" />
             )}

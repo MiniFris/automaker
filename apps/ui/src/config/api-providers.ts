@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 import type { Dispatch, SetStateAction } from 'react';
 import type { ApiKeys } from '@/store/app-store';
 
@@ -78,7 +79,7 @@ export const buildProviderConfigs = ({
 }: ProviderConfigParams): ProviderConfig[] => [
   {
     key: 'anthropic',
-    label: 'Anthropic API Key',
+    label: translate('Anthropic API Key'),
     inputId: 'anthropic-key',
     placeholder: 'sk-ant-...',
     value: anthropic.value,
@@ -104,7 +105,7 @@ export const buildProviderConfigs = ({
   },
   {
     key: 'openai',
-    label: 'OpenAI API Key',
+    label: translate('OpenAI API Key'),
     inputId: 'openai-key',
     placeholder: 'sk-...',
     value: openai.value,
@@ -130,9 +131,9 @@ export const buildProviderConfigs = ({
   },
   {
     key: 'zai',
-    label: 'z.ai API Key',
+    label: translate('z.ai API Key'),
     inputId: 'zai-key',
-    placeholder: 'Enter your z.ai API key',
+    placeholder: translate('Enter your z.ai API key'),
     value: zai.value,
     setValue: zai.setValue,
     showValue: zai.show,

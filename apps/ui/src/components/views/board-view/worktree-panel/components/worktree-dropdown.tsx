@@ -1,3 +1,5 @@
+import { useLocalizedMemo } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -258,6 +260,7 @@ export function WorktreeDropdown({
   remotesWithBranch,
   highlightTrigger = true,
 }: WorktreeDropdownProps) {
+  useUiLocale();
   // Find the currently selected worktree to display in the trigger
   const selectedWorktree = worktrees.find((w) => isWorktreeSelected(w));
   const displayBranch =
@@ -306,7 +309,7 @@ export function WorktreeDropdown({
   ]);
 
   // Build trigger button with all indicators - memoized for performance
-  const triggerButton = useMemo(
+  const triggerButton = useLocalizedMemo(
     () => (
       <Button
         variant={selectedWorktree && highlightTrigger ? 'default' : 'outline'}
@@ -364,7 +367,9 @@ export function WorktreeDropdown({
         {selectedStatus.devServerRunning && selectedStatus.devServerInfo?.urlDetected !== false && (
           <span
             className="inline-flex items-center justify-center h-4 w-4 text-green-500 shrink-0"
-            title={`Dev server running on port ${selectedStatus.devServerInfo?.port}`}
+            title={translate('Dev server running on port {value1}', {
+              value1: selectedStatus.devServerInfo?.port,
+            })}
           >
             <Globe className="w-3 h-3" />
           </span>
@@ -374,7 +379,7 @@ export function WorktreeDropdown({
         {selectedStatus.devServerStarting && (
           <span
             className="inline-flex items-center justify-center h-4 w-4 text-amber-500 shrink-0"
-            title="Dev server starting..."
+            title={translate('Dev server starting...')}
           >
             <Spinner size="xs" variant="primary" />
           </span>
@@ -384,7 +389,7 @@ export function WorktreeDropdown({
         {selectedStatus.testRunning && (
           <span
             className="inline-flex items-center justify-center h-4 w-4 text-blue-500 shrink-0"
-            title="Tests Running"
+            title={translate('Tests Running')}
           >
             <FlaskConical className="w-3 h-3 animate-pulse" />
           </span>
@@ -397,7 +402,9 @@ export function WorktreeDropdown({
               'inline-flex items-center justify-center h-4 w-4 shrink-0',
               getTestStatusStyles(selectedStatus.testSessionInfo.status)
             )}
-            title={`Last test: ${selectedStatus.testSessionInfo.status}`}
+            title={translate('Last test: {value1}', {
+              value1: selectedStatus.testSessionInfo.status,
+            })}
           >
             <FlaskConical className="w-3 h-3" />
           </span>
@@ -407,7 +414,7 @@ export function WorktreeDropdown({
         {selectedStatus.autoModeRunning && (
           <span
             className="flex items-center justify-center h-4 px-0.5 shrink-0"
-            title="Auto Mode Running"
+            title={translate('Auto Mode Running')}
           >
             <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
           </span>
@@ -420,7 +427,9 @@ export function WorktreeDropdown({
               'inline-flex items-center justify-center h-4 min-w-4 px-1 text-[10px] font-medium rounded border shrink-0',
               getConflictBadgeStyles()
             )}
-            title={`${getConflictTypeLabel(selectedWorktree.conflictType)} conflicts detected`}
+            title={translate('{value1} conflicts detected', {
+              value1: getConflictTypeLabel(selectedWorktree.conflictType),
+            })}
           >
             <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />
             {getConflictTypeLabel(selectedWorktree.conflictType)}
@@ -474,13 +483,13 @@ export function WorktreeDropdown({
         <DropdownMenuContent
           align="start"
           className="w-80 max-h-96 overflow-y-auto"
-          aria-label="Worktree selection"
+          aria-label={translate('Worktree selection')}
         >
           {/* Main worktree section */}
           {mainWorktree && (
             <>
               <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-                Main Branch
+                {translate('Main Branch')}
               </DropdownMenuLabel>
               <WorktreeDropdownItem
                 worktree={mainWorktree}
@@ -503,7 +512,8 @@ export function WorktreeDropdown({
             <>
               <DropdownMenuSeparator />
               <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-                Worktrees ({otherWorktrees.length})
+                {translate('Worktrees (')}
+                {otherWorktrees.length})
               </DropdownMenuLabel>
               <DropdownMenuGroup>
                 {otherWorktrees.map((worktree) => (
@@ -529,7 +539,7 @@ export function WorktreeDropdown({
           {/* Empty state */}
           {worktrees.length === 0 && (
             <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-              No worktrees available
+              {translate('No worktrees available')}
             </div>
           )}
         </DropdownMenuContent>

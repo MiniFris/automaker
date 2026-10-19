@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 import { Component, type ReactNode, type ErrorInfo } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { AlertCircle, RefreshCw } from 'lucide-react';
@@ -55,15 +56,16 @@ export class BoardErrorBoundary extends Component<Props, State> {
             <AlertCircle className="w-6 h-6 text-destructive" />
           </div>
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-foreground">Board crashed</h3>
+            <h3 className="text-lg font-semibold text-foreground">{translate('Board crashed')}</h3>
             <p className="text-sm text-muted-foreground max-w-sm">
-              A rendering error occurred, possibly during a worktree switch. Click recover to reset
-              to the main branch and retry.
+              {translate(
+                'A rendering error occurred, possibly during a worktree switch. Click recover to reset to the main branch and retry.'
+              )}
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={this.handleRecover} className="gap-2">
             <RefreshCw className="w-4 h-4" />
-            Recover
+            {translate('Recover')}
           </Button>
         </div>
       );

@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -15,25 +16,28 @@ interface DeleteServerDialogProps {
 }
 
 export function DeleteServerDialog({ open, onOpenChange, onConfirm }: DeleteServerDialogProps) {
+  useUiLocale();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent data-testid="mcp-server-delete-dialog">
         <DialogHeader>
-          <DialogTitle>Delete MCP Server</DialogTitle>
+          <DialogTitle>{translate('Delete MCP Server')}</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete this MCP server? This action cannot be undone.
+            {translate(
+              'Are you sure you want to delete this MCP server? This action cannot be undone.'
+            )}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button
             variant="destructive"
             onClick={onConfirm}
             data-testid="mcp-server-confirm-delete-button"
           >
-            Delete
+            {translate('Delete')}
           </Button>
         </DialogFooter>
       </DialogContent>

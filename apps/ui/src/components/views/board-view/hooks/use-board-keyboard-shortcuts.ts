@@ -1,3 +1,5 @@
+import { useLocalizedMemo } from '@/lib/i18n';
+import { translate } from '@/lib/i18n';
 import { useMemo, useRef, useEffect } from 'react';
 import {
   useKeyboardShortcuts,
@@ -40,17 +42,17 @@ export function useBoardKeyboardShortcuts({
   }, [onStartNextFeatures]);
 
   // Keyboard shortcuts for this view
-  const boardShortcuts: KeyboardShortcut[] = useMemo(() => {
+  const boardShortcuts: KeyboardShortcut[] = useLocalizedMemo(() => {
     const shortcutsList: KeyboardShortcut[] = [
       {
         key: shortcuts.addFeature,
         action: onAddFeature,
-        description: 'Add new feature',
+        description: translate('Add new feature'),
       },
       {
         key: shortcuts.startNext,
         action: () => startNextFeaturesRef.current(),
-        description: 'Start next features from backlog',
+        description: translate('Start next features from backlog'),
       },
     ];
 
@@ -63,7 +65,7 @@ export function useBoardKeyboardShortcuts({
         action: () => {
           onViewOutput(feature);
         },
-        description: `View output for in-progress card ${index + 1}`,
+        description: translate('View output for in-progress card {value1}', { value1: index + 1 }),
       });
     });
 

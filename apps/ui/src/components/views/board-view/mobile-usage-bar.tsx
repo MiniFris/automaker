@@ -1,3 +1,5 @@
+import { getFormattingLocale } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useEffect, useCallback, useState, type ComponentType, type ReactNode } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -36,7 +38,7 @@ function formatNumber(num: number): string {
   if (num >= 1_000) {
     return `${(num / 1_000).toFixed(1)}K`;
   }
-  return num.toLocaleString();
+  return num.toLocaleString(getFormattingLocale());
 }
 
 // Helper to format reset time
@@ -47,19 +49,22 @@ function formatResetTime(unixTimestamp: number, isMilliseconds = false): string 
 
   // Handle past timestamps (negative diff)
   if (diff <= 0) {
-    return 'Resetting soon';
+    return translate('Resetting soon');
   }
 
   if (diff < 3600000) {
     const mins = Math.ceil(diff / 60000);
-    return `Resets in ${mins}m`;
+    return translate('Resets in {value1}m', { value1: mins });
   }
   if (diff < 86400000) {
     const hours = Math.floor(diff / 3600000);
     const mins = Math.ceil((diff % 3600000) / 60000);
-    return `Resets in ${hours}h${mins > 0 ? ` ${mins}m` : ''}`;
+    return translate('Resets in {value1}h{value2}', {
+      value1: hours,
+      value2: mins > 0 ? ` ${mins}m` : '',
+    });
   }
-  return `Resets ${date.toLocaleDateString()}`;
+  return translate('Resets {value1}', { value1: date.toLocaleDateString(getFormattingLocale()) });
 }
 
 // Individual usage bar component
@@ -78,6 +83,7 @@ function UsageBar({
   resetText?: string;
   pacePercentage?: number | null;
 }) {
+  useUiLocale();
   const paceLabel = pacePercentage != null ? getPaceStatusLabel(percentage, pacePercentage) : null;
 
   return (
@@ -113,7 +119,7 @@ function UsageBar({
           <div
             className="absolute top-0 h-full w-0.5 bg-foreground/60"
             style={{ left: `${pacePercentage}%` }}
-            title={`Expected: ${Math.round(pacePercentage)}%`}
+            title={translate('Expected: {value1}%', { value1: Math.round(pacePercentage) })}
           />
         )}
       </div>
@@ -156,6 +162,7 @@ function UsageItem({
   onRefresh: () => void;
   children: ReactNode;
 }) {
+  useUiLocale();
   return (
     <div className="px-2 py-2">
       <div className="flex items-center justify-between mb-1.5">
@@ -169,7 +176,7 @@ function UsageItem({
             onRefresh();
           }}
           className="p-1 rounded hover:bg-accent/50 transition-colors"
-          title="Refresh usage"
+          title={translate('Refresh usage')}
         >
           {isLoading ? (
             <Spinner size="xs" />
@@ -189,6 +196,7 @@ export function MobileUsageBar({
   showZaiUsage = false,
   showGeminiUsage = false,
 }: MobileUsageBarProps) {
+  useUiLocale();
   const { claudeUsage, claudeUsageLastUpdated, setClaudeUsage } = useAppStore();
   const { codexUsage, codexUsageLastUpdated, setCodexUsage } = useAppStore();
   const { zaiUsage, zaiUsageLastUpdated, setZaiUsage } = useAppStore();
@@ -271,9 +279,10 @@ export function MobileUsageBar({
   }, [setGeminiUsage]);
 
   const getCodexWindowLabel = (durationMins: number) => {
-    if (durationMins < 60) return `${durationMins}m Window`;
-    if (durationMins < 1440) return `${Math.round(durationMins / 60)}h Window`;
-    return `${Math.round(durationMins / 1440)}d Window`;
+    if (durationMins < 60) return translate('{value1}m Window', { value1: durationMins });
+    if (durationMins < 1440)
+      return translate('{value1}h Window', { value1: Math.round(durationMins / 60) });
+    return translate('{value1}d Window', { value1: Math.round(durationMins / 1440) });
   };
 
   // Auto-fetch on mount if data is stale
@@ -311,26 +320,28 @@ export function MobileUsageBar({
       {showClaudeUsage && (
         <UsageItem
           icon={AnthropicIcon}
-          label="Claude"
+          label={translate('Claude')}
           isLoading={isClaudeLoading}
           onRefresh={fetchClaudeUsage}
         >
           {claudeUsage ? (
             <>
               <UsageBar
-                label="Session"
+                label={translate('Session')}
                 percentage={claudeUsage.sessionPercentage}
                 isStale={isClaudeStale}
               />
               <UsageBar
-                label="Weekly"
+                label={translate('Weekly')}
                 percentage={claudeUsage.weeklyPercentage}
                 isStale={isClaudeStale}
                 pacePercentage={getExpectedWeeklyPacePercentage(claudeUsage.weeklyResetTime)}
               />
             </>
           ) : (
-            <p className="text-[10px] text-muted-foreground italic">Loading usage data...</p>
+            <p className="text-[10px] text-muted-foreground italic">
+              {translate('Loading usage data...')}
+            </p>
           )}
         </UsageItem>
       )}
@@ -338,7 +349,7 @@ export function MobileUsageBar({
       {showCodexUsage && (
         <UsageItem
           icon={OpenAIIcon}
-          label="Codex"
+          label={translate('Codex')}
           isLoading={isCodexLoading}
           onRefresh={fetchCodexUsage}
         >
@@ -368,7 +379,9 @@ export function MobileUsageBar({
               )}
             </>
           ) : (
-            <p className="text-[10px] text-muted-foreground italic">Loading usage data...</p>
+            <p className="text-[10px] text-muted-foreground italic">
+              {translate('Loading usage data...')}
+            </p>
           )}
         </UsageItem>
       )}
@@ -379,7 +392,7 @@ export function MobileUsageBar({
             <>
               {zaiUsage.quotaLimits.tokens && (
                 <UsageBar
-                  label="Tokens"
+                  label={translate('Tokens')}
                   percentage={zaiUsage.quotaLimits.tokens.usedPercent}
                   isStale={isZaiStale}
                   details={`${formatNumber(zaiUsage.quotaLimits.tokens.used)} / ${formatNumber(zaiUsage.quotaLimits.tokens.limit)}`}
@@ -405,9 +418,13 @@ export function MobileUsageBar({
               )}
             </>
           ) : zaiUsage ? (
-            <p className="text-[10px] text-muted-foreground italic">No usage data from z.ai API</p>
+            <p className="text-[10px] text-muted-foreground italic">
+              {translate('No usage data from z.ai API')}
+            </p>
           ) : (
-            <p className="text-[10px] text-muted-foreground italic">Loading usage data...</p>
+            <p className="text-[10px] text-muted-foreground italic">
+              {translate('Loading usage data...')}
+            </p>
           )}
         </UsageItem>
       )}
@@ -415,7 +432,7 @@ export function MobileUsageBar({
       {showGeminiUsage && (
         <UsageItem
           icon={GeminiIcon}
-          label="Gemini"
+          label={translate('Gemini')}
           isLoading={isGeminiLoading}
           onRefresh={fetchGeminiUsage}
         >
@@ -425,7 +442,7 @@ export function MobileUsageBar({
                 <>
                   {geminiUsage.flashQuota && (
                     <UsageBar
-                      label="Flash"
+                      label={translate('Flash')}
                       percentage={geminiUsage.flashQuota.usedPercent}
                       isStale={isGeminiStale}
                       resetText={geminiUsage.flashQuota.resetText}
@@ -433,7 +450,7 @@ export function MobileUsageBar({
                   )}
                   {geminiUsage.proQuota && (
                     <UsageBar
-                      label="Pro"
+                      label={translate('Pro')}
                       percentage={geminiUsage.proQuota.usedPercent}
                       isStale={isGeminiStale}
                       resetText={geminiUsage.proQuota.resetText}
@@ -443,23 +460,25 @@ export function MobileUsageBar({
               ) : (
                 <div className="text-[10px]">
                   <p className="text-green-500 font-medium">
-                    Connected via{' '}
+                    {translate('Connected via')}{' '}
                     {geminiUsage.authMethod === 'cli_login'
-                      ? 'CLI Login'
+                      ? translate('CLI Login')
                       : geminiUsage.authMethod === 'api_key'
-                        ? 'API Key'
+                        ? translate('API Key')
                         : geminiUsage.authMethod}
                   </p>
                   <p className="text-muted-foreground italic mt-0.5">
-                    {geminiUsage.error || 'No usage yet'}
+                    {geminiUsage.error || translate('No usage yet')}
                   </p>
                 </div>
               )
             ) : (
-              <p className="text-[10px] text-yellow-500">Not authenticated</p>
+              <p className="text-[10px] text-yellow-500">{translate('Not authenticated')}</p>
             )
           ) : (
-            <p className="text-[10px] text-muted-foreground italic">Loading usage data...</p>
+            <p className="text-[10px] text-muted-foreground italic">
+              {translate('Loading usage data...')}
+            </p>
           )}
         </UsageItem>
       )}

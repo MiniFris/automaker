@@ -1,3 +1,5 @@
+import { getFormattingLocale } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { RefreshCw, AlertCircle } from 'lucide-react';
@@ -34,6 +36,7 @@ const isRateLimitWindow = (
 ): limitWindow is CodexRateLimitWindow => Boolean(limitWindow);
 
 export function CodexUsageSection() {
+  useUiLocale();
   const codexAuthStatus = useSetupStore((state) => state.codexAuthStatus);
 
   const canFetchUsage = !!codexAuthStatus?.authenticated;
@@ -48,7 +51,7 @@ export function CodexUsageSection() {
   const rateLimitWindows = [primary, secondary].filter(isRateLimitWindow);
   const hasMetrics = rateLimitWindows.length > 0;
   const lastUpdatedLabel = codexUsage?.lastUpdated
-    ? new Date(codexUsage.lastUpdated).toLocaleString()
+    ? new Date(codexUsage.lastUpdated).toLocaleString(getFormattingLocale())
     : null;
   const showAuthWarning = !canFetchUsage && !codexUsage && !isLoading;
   const errorMessage = error instanceof Error ? error.message : error ? String(error) : null;
@@ -72,6 +75,7 @@ export function CodexUsageSection() {
     subtitle: string;
     window: CodexRateLimitWindow;
   }) => {
+    useUiLocale();
     const safePercentage = Math.min(Math.max(limitWindow.usedPercent, 0), MAX_PERCENTAGE);
     const resetLabel = formatCodexResetTime(limitWindow.resetsAt);
     const pacePercentage = getExpectedCodexPacePercentage(
@@ -104,7 +108,7 @@ export function CodexUsageSection() {
             <div
               className="absolute top-0 h-full w-0.5 bg-foreground/60"
               style={{ left: `${pacePercentage}%` }}
-              title={`Expected: ${Math.round(pacePercentage)}%`}
+              title={translate('Expected: {value1}%', { value1: Math.round(pacePercentage) })}
             />
           )}
         </div>
@@ -142,7 +146,7 @@ export function CodexUsageSection() {
             <OpenAIIcon className="w-5 h-5 text-brand-500" />
           </div>
           <h2 className="text-lg font-semibold text-foreground tracking-tight">
-            {CODEX_USAGE_TITLE}
+            {translate(CODEX_USAGE_TITLE)}
           </h2>
           <Button
             variant="ghost"
@@ -151,19 +155,20 @@ export function CodexUsageSection() {
             disabled={isFetching}
             className="ml-auto h-9 w-9 rounded-lg hover:bg-accent/50"
             data-testid="refresh-codex-usage"
-            title={CODEX_REFRESH_LABEL}
+            title={translate(CODEX_REFRESH_LABEL)}
           >
             {isFetching ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
           </Button>
         </div>
-        <p className="text-sm text-muted-foreground/80 ml-12">{CODEX_USAGE_SUBTITLE}</p>
+        <p className="text-sm text-muted-foreground/80 ml-12">{translate(CODEX_USAGE_SUBTITLE)}</p>
       </div>
       <div className="p-6 space-y-4">
         {showAuthWarning && (
           <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
             <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5" />
             <div className="text-sm text-amber-400">
-              {CODEX_AUTH_WARNING} Run <span className="font-mono">{CODEX_LOGIN_COMMAND}</span>.
+              {CODEX_AUTH_WARNING} {translate(' Run ')}
+              <span className="font-mono">{CODEX_LOGIN_COMMAND}</span>.
             </div>
           </div>
         )}
@@ -191,7 +196,8 @@ export function CodexUsageSection() {
         {planType && (
           <div className="rounded-xl border border-border/60 bg-secondary/20 p-4 text-xs text-muted-foreground">
             <div>
-              {PLAN_LABEL}: <span className="text-foreground">{formatCodexPlanType(planType)}</span>
+              {translate(PLAN_LABEL)}:{' '}
+              <span className="text-foreground">{formatCodexPlanType(planType)}</span>
             </div>
           </div>
         )}
@@ -202,7 +208,7 @@ export function CodexUsageSection() {
         )}
         {lastUpdatedLabel && (
           <div className="text-[10px] text-muted-foreground text-right">
-            {UPDATED_LABEL} {lastUpdatedLabel}
+            {translate(UPDATED_LABEL)} {lastUpdatedLabel}
           </div>
         )}
       </div>

@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 /**
  * Feature Mutations
  *
@@ -39,10 +40,10 @@ export function useCreateFeature(projectPath: string) {
       queryClient.invalidateQueries({
         queryKey: queryKeys.features.all(projectPath),
       });
-      toast.success('Feature created');
+      toast.success(translate('Feature created'));
     },
     onError: (error: Error) => {
-      toast.error('Failed to create feature', {
+      toast.error(translate('Failed to create feature'), {
         description: error.message,
       });
     },
@@ -113,7 +114,7 @@ export function useUpdateFeature(projectPath: string) {
       if (context?.previousFeatures) {
         queryClient.setQueryData(queryKeys.features.all(projectPath), context.previousFeatures);
       }
-      toast.error('Failed to update feature', {
+      toast.error(translate('Failed to update feature'), {
         description: error.message,
       });
     },
@@ -166,12 +167,12 @@ export function useDeleteFeature(projectPath: string) {
       if (context?.previousFeatures) {
         queryClient.setQueryData(queryKeys.features.all(projectPath), context.previousFeatures);
       }
-      toast.error('Failed to delete feature', {
+      toast.error(translate('Failed to delete feature'), {
         description: error.message,
       });
     },
     onSuccess: () => {
-      toast.success('Feature deleted');
+      toast.success(translate('Feature deleted'));
     },
     onSettled: () => {
       queryClient.invalidateQueries({
@@ -197,7 +198,7 @@ export function useGenerateTitle() {
       return result.title ?? '';
     },
     onError: (error: Error) => {
-      toast.error('Failed to generate title', {
+      toast.error(translate('Failed to generate title'), {
         description: error.message,
       });
     },
@@ -254,7 +255,7 @@ export function useBatchUpdateFeatures(projectPath: string) {
       if (context?.previousFeatures) {
         queryClient.setQueryData(queryKeys.features.all(projectPath), context.previousFeatures);
       }
-      toast.error('Failed to update features', {
+      toast.error(translate('Failed to update features'), {
         description: error.message,
       });
     },

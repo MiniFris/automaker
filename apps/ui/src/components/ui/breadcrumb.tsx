@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { ChevronRight, MoreHorizontal } from 'lucide-react';
@@ -5,10 +6,12 @@ import { ChevronRight, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function Breadcrumb({ ...props }: React.ComponentProps<'nav'>) {
-  return <nav aria-label="breadcrumb" data-slot="breadcrumb" {...props} />;
+  useUiLocale();
+  return <nav aria-label={translate('breadcrumb')} data-slot="breadcrumb" {...props} />;
 }
 
 function BreadcrumbList({ className, ...props }: React.ComponentProps<'ol'>) {
+  useUiLocale();
   return (
     <ol
       data-slot="breadcrumb-list"
@@ -22,6 +25,7 @@ function BreadcrumbList({ className, ...props }: React.ComponentProps<'ol'>) {
 }
 
 function BreadcrumbItem({ className, ...props }: React.ComponentProps<'li'>) {
+  useUiLocale();
   return (
     <li
       data-slot="breadcrumb-item"
@@ -38,6 +42,7 @@ function BreadcrumbLink({
 }: React.ComponentProps<'a'> & {
   asChild?: boolean;
 }) {
+  useUiLocale();
   const Comp = asChild ? Slot : 'a';
 
   return (
@@ -50,6 +55,7 @@ function BreadcrumbLink({
 }
 
 function BreadcrumbPage({ className, ...props }: React.ComponentProps<'span'>) {
+  useUiLocale();
   return (
     <span
       data-slot="breadcrumb-page"
@@ -63,6 +69,7 @@ function BreadcrumbPage({ className, ...props }: React.ComponentProps<'span'>) {
 }
 
 function BreadcrumbSeparator({ children, className, ...props }: React.ComponentProps<'li'>) {
+  useUiLocale();
   return (
     <li
       data-slot="breadcrumb-separator"
@@ -77,6 +84,7 @@ function BreadcrumbSeparator({ children, className, ...props }: React.ComponentP
 }
 
 function BreadcrumbEllipsis({ className, ...props }: React.ComponentProps<'span'>) {
+  useUiLocale();
   return (
     <span
       data-slot="breadcrumb-ellipsis"
@@ -86,7 +94,7 @@ function BreadcrumbEllipsis({ className, ...props }: React.ComponentProps<'span'
       {...props}
     >
       <MoreHorizontal className="size-4" />
-      <span className="sr-only">More</span>
+      <span className="sr-only">{translate('More')}</span>
     </span>
   );
 }

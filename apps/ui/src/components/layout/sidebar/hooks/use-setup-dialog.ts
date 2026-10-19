@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 import { useState, useCallback } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { getElectronAPI } from '@/lib/electron';
@@ -42,7 +43,7 @@ export function useSetupDialog({
     try {
       const api = getElectronAPI();
       if (!api.specRegeneration) {
-        toast.error('Spec regeneration not available');
+        toast.error(translate('Spec regeneration not available'));
         setSpecCreatingForProject(null);
         return;
       }
@@ -58,20 +59,20 @@ export function useSetupDialog({
       if (!result.success) {
         logger.error('Failed to start spec creation:', result.error);
         setSpecCreatingForProject(null);
-        toast.error('Failed to create specification', {
+        toast.error(translate('Failed to create specification'), {
           description: result.error,
         });
       } else {
         // Show processing toast to inform user
-        toast.info('Generating app specification...', {
-          description: "This may take a minute. You'll be notified when complete.",
+        toast.info(translate('Generating app specification...'), {
+          description: translate("This may take a minute. You'll be notified when complete."),
         });
       }
       // If successful, we'll wait for the events to update the state
     } catch (error) {
       logger.error('Failed to create spec:', error);
       setSpecCreatingForProject(null);
-      toast.error('Failed to create specification', {
+      toast.error(translate('Failed to create specification'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     }
@@ -98,8 +99,8 @@ export function useSetupDialog({
       setNewProjectPath('');
     }
 
-    toast.info('Setup skipped', {
-      description: 'You can set up your app_spec.txt later from the Spec view.',
+    toast.info(translate('Setup skipped'), {
+      description: translate('You can set up your app_spec.txt later from the Spec view.'),
     });
   }, [newProjectPath, setNewProjectName, setNewProjectPath]);
 
@@ -121,8 +122,8 @@ export function useSetupDialog({
     setShowOnboardingDialog(false);
     setNewProjectName('');
     setNewProjectPath('');
-    toast.info('You can generate your app_spec.txt anytime from the Spec view', {
-      description: 'Your project is ready to use!',
+    toast.info(translate('You can generate your app_spec.txt anytime from the Spec view'), {
+      description: translate('Your project is ready to use!'),
     });
   }, [setShowOnboardingDialog, setNewProjectName, setNewProjectPath]);
 

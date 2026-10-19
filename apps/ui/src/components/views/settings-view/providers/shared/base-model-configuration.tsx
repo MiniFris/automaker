@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -76,6 +77,7 @@ export function BaseModelConfiguration<T extends string>({
   onModelToggle,
   getFeatureBadge,
 }: BaseModelConfigurationProps<T>) {
+  useUiLocale();
   return (
     <div
       className={cn(
@@ -97,16 +99,17 @@ export function BaseModelConfiguration<T extends string>({
             {icon}
           </div>
           <h2 className="text-lg font-semibold text-foreground tracking-tight">
-            Model Configuration
+            {translate('Model Configuration')}
           </h2>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Configure which {providerName} models are available in the feature modal
+          {translate('Configure which ')}
+          {providerName} {translate(' models are available in the feature modal')}
         </p>
       </div>
       <div className="p-6 space-y-6">
         <div className="space-y-2">
-          <Label>Default Model</Label>
+          <Label>{translate('Default Model')}</Label>
           <Select
             value={defaultModel}
             onValueChange={(v) => onDefaultModelChange(v as T)}
@@ -124,7 +127,7 @@ export function BaseModelConfiguration<T extends string>({
                       <span>{model.label}</span>
                       {badge?.show && (
                         <Badge variant="outline" className="text-xs">
-                          {badge.label}
+                          {translate(badge.label)}
                         </Badge>
                       )}
                     </div>
@@ -136,7 +139,7 @@ export function BaseModelConfiguration<T extends string>({
         </div>
 
         <div className="space-y-3">
-          <Label>Available Models</Label>
+          <Label>{translate('Available Models')}</Label>
           <div className="grid gap-3">
             {models.map((model) => {
               const isDefault = model.id === defaultModel;
@@ -160,16 +163,18 @@ export function BaseModelConfiguration<T extends string>({
                         <span className="text-sm font-medium">{model.label}</span>
                         {badge?.show && (
                           <Badge variant="outline" className="text-xs">
-                            {badge.label}
+                            {translate(badge.label)}
                           </Badge>
                         )}
                         {isDefault && (
                           <Badge variant="secondary" className="text-xs">
-                            Default
+                            {translate('Default')}
                           </Badge>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground">{model.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {translate(model.description)}
+                      </p>
                     </div>
                   </div>
                 </div>

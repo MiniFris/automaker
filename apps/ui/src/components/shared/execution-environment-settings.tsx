@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
@@ -30,6 +31,7 @@ function parseSelection(value: string): ExecutionEnvironmentSelection | null {
 }
 
 export function ExecutionEnvironmentSettings({ projectPath }: { projectPath?: string }) {
+  useUiLocale();
   const query = useQuery({
     queryKey: [...ENVIRONMENT_SETTINGS_QUERY_KEY, projectPath ?? null],
     queryFn: async () => {
@@ -41,12 +43,12 @@ export function ExecutionEnvironmentSettings({ projectPath }: { projectPath?: st
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   });
-  if (query.isPending) return <p>Loading execution environments…</p>;
+  if (query.isPending) return <p>{translate('Loading execution environments…')}</p>;
   if (query.error || !query.data)
     return (
       <div role="alert">
-        <p>Unable to load execution environments.</p>
-        <Button onClick={() => void query.refetch()}>Retry</Button>
+        <p>{translate('Unable to load execution environments.')}</p>
+        <Button onClick={() => void query.refetch()}>{translate('Retry')}</Button>
       </div>
     );
   // A different project gets a new editor; late responses cannot save to the next project.
@@ -62,6 +64,7 @@ function EnvironmentEditor({
   data: ExecutionEnvironmentSettingsResponse;
   projectPath?: string;
 }) {
+  useUiLocale();
   const client = useQueryClient();
   const [config, setConfig] = useState<EnvironmentSettings>(data.settings);
   const [selection, setSelection] = useState(
@@ -99,7 +102,7 @@ function EnvironmentEditor({
       setMessage(
         error instanceof Error
           ? error.message
-          : 'Environment operation failed. Check the server connection and retry.'
+          : translate('Environment operation failed. Check the server connection and retry.')
       );
     } finally {
       setBusy(false);
@@ -111,13 +114,15 @@ function EnvironmentEditor({
         ? await api.saveProject(projectPath, selected)
         : await api.saveGlobal({ ...config, default: selected! });
       if (!result.success) {
-        setMessage(result.error || 'Environment settings could not be saved.');
+        setMessage(result.error || translate('Environment settings could not be saved.'));
         return;
       }
       client.setQueryData([...ENVIRONMENT_SETTINGS_QUERY_KEY, projectPath ?? null], result);
       await client.invalidateQueries({ queryKey: ENVIRONMENT_SETTINGS_QUERY_KEY });
       setMessage(
-        'Environment configuration saved. Local requires explicit confirmation. Existing sessions/tasks keep their pinned environment. Docker prepares automatically; SSH requires host trust and an explicit authoritative remote checkout.'
+        translate(
+          'Environment configuration saved. Local requires explicit confirmation. Existing sessions/tasks keep their pinned environment. Docker prepares automatically; SSH requires host trust and an explicit authoritative remote checkout.'
+        )
       );
     });
   }
@@ -126,7 +131,7 @@ function EnvironmentEditor({
     await action(async () => {
       const result = await api.checkDocker(profileId);
       if (!result.success || !result.diagnostic) {
-        setMessage(result.error || 'Docker check failed.');
+        setMessage(result.error || translate('Docker check failed.'));
         return;
       }
       setDiagnostic(result.diagnostic);
@@ -147,7 +152,7 @@ function EnvironmentEditor({
         JSON.stringify(target) !==
         JSON.stringify(data.settings.profiles.find((item) => item.id === target.id))
       )
-        setMessage('Save this Docker profile before checking its connection.');
+        setMessage(translate('Save this Docker profile before checking its connection.'));
       else void checkDocker(target.id);
     }
   }
@@ -179,57 +184,45 @@ function EnvironmentEditor({
   return (
     <section className="space-y-5" data-testid="execution-environment-settings">
       <div>
-        <h2 className="text-xl font-semibold">Execution Environment</h2>
+        <h2 className="text-xl font-semibold">{translate('Execution Environment')}</h2>
         <p className="text-sm text-muted-foreground">
           {projectPath
-            ? 'Override the global default for this project, or inherit it.'
-            : 'Choose a global default and reusable Docker / SSH profiles.'}
+            ? translate('Override the global default for this project, or inherit it.')
+            : translate('Choose a global default and reusable Docker / SSH profiles.')}
         </p>
       </div>
       <div
         role="note"
         className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm"
       >
-        Direct provider supports confirmed Local and managed per-project Docker. Auto prefers
-        Docker; Local fallback requires separate confirmation and is only allowed before Docker
-        preparation. Explicit Docker/SSH and pinned runs never downgrade. Direct supports Docker/SSH
-        chat/tools and Kanban/AutoMode with pinned worktrees, context, tests, Verify, Commit and
-        feature shell hooks. Managed merge is fast-forward only; no push or sync. Git UI reads,
-        stage/unstage, commit and worktree creation use the selected target. Advanced/network/PR Git
-        actions and project-wide hooks are not migrated. Integrated terminals use prepared
-        Docker/SSH targets (Linux/Python 3); backend restart closes the shell rather than replaying
-        commands. Manual tests use the same prepared Docker/SSH target and stream logs; pinned Local
-        manual tests also use the Linux/Python 3 supervisor. Managed dev servers and HTTP/WebSocket
-        previews use the captured target with separate authenticated preview ports; cookies, service
-        workers and cross-origin backend requests are not supported in this preview MVP. Cursor,
-        Gemini and OpenCode support Docker/SSH chat and Kanban via remote CLI. Install and
-        authenticate the CLI inside that environment; server credentials are not copied.
-        Gemini/OpenCode read-only approval planning is not supported. Claude/Codex/Copilot support
-        Docker/SSH chat and Kanban after target SDK setup. Old Docker features without workspace
-        metadata require a new feature; no automatic migration occurs. Direct text-only queries do
-        not execute tools. Provider sign-in/model discovery elsewhere in Settings still describes
-        the Automaker server, not the remote CLI installation.
+        {translate(
+          'Direct provider supports confirmed Local and managed per-project Docker. Auto prefers Docker; Local fallback requires separate confirmation and is only allowed before Docker preparation. Explicit Docker/SSH and pinned runs never downgrade. Direct supports Docker/SSH chat/tools and Kanban/AutoMode with pinned worktrees, context, tests, Verify, Commit and feature shell hooks. Managed merge is fast-forward only; no push or sync. Git UI reads, stage/unstage, commit and worktree creation use the selected target. Advanced/network/PR Git actions and project-wide hooks are not migrated. Integrated terminals use prepared Docker/SSH targets (Linux/Python 3); backend restart closes the shell rather than replaying commands. Manual tests use the same prepared Docker/SSH target and stream logs; pinned Local manual tests also use the Linux/Python 3 supervisor. Managed dev servers and HTTP/WebSocket previews use the captured target with separate authenticated preview ports; cookies, service workers and cross-origin backend requests are not supported in this preview MVP. Cursor, Gemini and OpenCode support Docker/SSH chat and Kanban via remote CLI. Install and authenticate the CLI inside that environment; server credentials are not copied. Gemini/OpenCode read-only approval planning is not supported. Claude/Codex/Copilot support Docker/SSH chat and Kanban after target SDK setup. Old Docker features without workspace metadata require a new feature; no automatic migration occurs. Direct text-only queries do not execute tools. Provider sign-in/model discovery elsewhere in Settings still describes the Automaker server, not the remote CLI installation.'
+        )}
       </div>
       <p>
-        Saved selection: <strong>{resolvedLabel}</strong> (
-        {data.resolved.source === 'global' ? 'global default' : 'project override'}).
+        {translate('Saved selection: ')}
+        <strong>{resolvedLabel}</strong> (
+        {data.resolved.source === 'global'
+          ? translate('global default')
+          : translate('project override')}
+        ).
       </p>
       {data.resolved.type === 'auto' && (
         <section
           className="rounded-lg border p-4 space-y-3"
-          aria-label="Auto fallback confirmation"
+          aria-label={translate('Auto fallback confirmation')}
         >
           <p>
-            Auto does not silently execute on the server. Optional Local fallback grants the agent
-            the full filesystem, credentials, network and process rights of the Automaker OS user
-            (including root if the server runs as root). It applies only to new, unbound runs when
-            Docker connection or mapping preflight fails, never after preparation/command failure.
+            {translate(
+              'Auto does not silently execute on the server. Optional Local fallback grants the agent the full filesystem, credentials, network and process rights of the Automaker OS user (including root if the server runs as root). It applies only to new, unbound runs when Docker connection or mapping preflight fails, never after preparation/command failure.'
+            )}
           </p>
           {data.localConsent?.autoFallbackConfirmed ? (
             <>
               <p>
-                Auto Local fallback confirmed ({data.localConsent.autoFallbackScope} scope). The
-                actual environment is pinned for the session/task.
+                {translate('Auto Local fallback confirmed (')}
+                {data.localConsent.autoFallbackScope}{' '}
+                {translate(' scope). The actual environment is pinned for the session/task.')}
               </p>
               {(!projectPath || data.localConsent.autoFallbackScope === 'project') && (
                 <Button
@@ -239,7 +232,7 @@ function EnvironmentEditor({
                     void action(async () => {
                       const result = await api.revokeAutoFallback(projectPath);
                       if (!result.success) {
-                        setMessage(result.error || 'Could not revoke Auto fallback.');
+                        setMessage(result.error || translate('Could not revoke Auto fallback.'));
                         return;
                       }
                       client.setQueryData(
@@ -250,11 +243,15 @@ function EnvironmentEditor({
                     })
                   }
                 >
-                  Revoke Auto Local fallback
+                  {translate('Revoke Auto Local fallback')}
                 </Button>
               )}
               {projectPath && data.localConsent.autoFallbackScope === 'global' && (
-                <p>Global fallback confirmation is inherited. Revoke it in Global Settings.</p>
+                <p>
+                  {translate(
+                    'Global fallback confirmation is inherited. Revoke it in Global Settings.'
+                  )}
+                </p>
               )}
             </>
           ) : (
@@ -266,7 +263,7 @@ function EnvironmentEditor({
                   onChange={(event) => setAcceptedLocalRisk(event.target.checked)}
                   disabled={busy}
                 />
-                I accept full Local access if Docker preflight is unavailable
+                {translate('I accept full Local access if Docker preflight is unavailable')}
               </Label>
               <Button
                 disabled={busy || !acceptedLocalRisk}
@@ -274,7 +271,7 @@ function EnvironmentEditor({
                   void action(async () => {
                     const result = await api.confirmAutoFallback(projectPath);
                     if (!result.success) {
-                      setMessage(result.error || 'Could not confirm Auto fallback.');
+                      setMessage(result.error || translate('Could not confirm Auto fallback.'));
                       return;
                     }
                     client.setQueryData(
@@ -285,33 +282,37 @@ function EnvironmentEditor({
                   })
                 }
               >
-                Allow Auto Local fallback
+                {translate('Allow Auto Local fallback')}
               </Button>
             </>
           )}
         </section>
       )}
       {(data.resolved.type === 'docker' || data.resolved.type === 'auto') && (
-        <section className="rounded-lg border p-4 space-y-3" aria-label="Managed Docker setup">
-          <h3 className="font-medium">Managed Docker setup</h3>
+        <section
+          className="rounded-lg border p-4 space-y-3"
+          aria-label={translate('Managed Docker setup')}
+        >
+          <h3 className="font-medium">{translate('Managed Docker setup')}</h3>
           <p>
-            1. Check Engine access below. 2. Prepare the versioned Node/Git build image and test
-            create/start/exec/remove without host mounts.{' '}
+            {translate(
+              '1. Check Engine access below. 2. Prepare the versioned Node/Git build image and test create/start/exec/remove without host mounts.'
+            )}{' '}
             {projectPath
-              ? '3. Verify bidirectional access to this project and create/reuse its container.'
-              : '3. Open Project Settings to verify that project’s shared storage.'}
+              ? translate(
+                  '3. Verify bidirectional access to this project and create/reuse its container.'
+                )
+              : translate('3. Open Project Settings to verify that project’s shared storage.')}
           </p>
           <p>
-            The first run also prepares Docker automatically. Project files/dependencies are shared
-            directly, not copied. A container is reused across internal worktrees and stops after 15
-            idle minutes. The agent receives no Docker socket or Automaker credentials. This is not
-            whole-application isolation yet.
+            {translate(
+              'The first run also prepares Docker automatically. Project files/dependencies are shared directly, not copied. A container is reused across internal worktrees and stops after 15 idle minutes. The agent receives no Docker socket or Automaker credentials. This is not whole-application isolation yet.'
+            )}
           </p>
           <p>
-            First preparation can take several minutes and needs registry/package-network access and
-            disk space. Named-volume subpaths require Engine 26+ and a compatible Docker CLI.
-            Projects must live in dedicated shared storage; external worktrees are not mounted
-            automatically.
+            {translate(
+              'First preparation can take several minutes and needs registry/package-network access and disk space. Named-volume subpaths require Engine 26+ and a compatible Docker CLI. Projects must live in dedicated shared storage; external worktrees are not mounted automatically.'
+            )}
           </p>
           <Label className="flex gap-2">
             <input
@@ -320,8 +321,10 @@ function EnvironmentEditor({
               disabled={busy}
               onChange={(event) => setAcceptedPreparation(event.target.checked)}
             />
-            Allow image download/build and temporary probe containers
-            {projectPath ? ', plus this project container and temporary storage-check files' : ''}
+            {translate('Allow image download/build and temporary probe containers')}
+            {projectPath
+              ? translate(', plus this project container and temporary storage-check files')
+              : ''}
           </Label>
           <Button
             disabled={busy || !acceptedPreparation}
@@ -333,20 +336,24 @@ function EnvironmentEditor({
                   data.resolved.profile?.type === 'docker' ? data.resolved.profile.id : undefined
                 );
                 if (!result.success || !result.preparation) {
-                  setMessage(result.error || 'Docker preparation failed.');
+                  setMessage(result.error || translate('Docker preparation failed.'));
                   return;
                 }
                 setPreparation(result.preparation);
               })
             }
           >
-            {busy ? 'Preparing Docker…' : 'Prepare and verify saved Docker environment'}
+            {busy
+              ? translate('Preparing Docker…')
+              : translate('Prepare and verify saved Docker environment')}
           </Button>
           {preparation && (
             <div role="status">
               <p>{preparation.message}</p>
               <p>
-                Lifecycle: {preparation.containerLifecycle}. Project storage:{' '}
+                {translate('Lifecycle: ')}
+                {preparation.containerLifecycle}
+                {translate('. Project storage: ')}
                 {preparation.projectStorage}.
               </p>
             </div>
@@ -356,26 +363,27 @@ function EnvironmentEditor({
       {data.resolved.type === 'local' && (
         <section
           className="rounded-lg border border-destructive/40 p-4 space-y-3"
-          aria-label="Local execution confirmation"
+          aria-label={translate('Local execution confirmation')}
         >
-          <h3 className="font-medium">Local execution — no additional sandbox</h3>
+          <h3 className="font-medium">{translate('Local execution — no additional sandbox')}</h3>
           <p className="text-sm">
-            The agent can read, modify and delete files, access credentials/environment variables,
-            use the network, install dependencies and execute commands with the permissions of the
-            Automaker server user. There is no automatic privilege elevation: if the server already
-            runs as root/Administrator, the agent inherits that access. Docker installation only
-            limits it to what the Automaker container can access, including mounted volumes.
+            {translate(
+              'The agent can read, modify and delete files, access credentials/environment variables, use the network, install dependencies and execute commands with the permissions of the Automaker server user. There is no automatic privilege elevation: if the server already runs as root/Administrator, the agent inherits that access. Docker installation only limits it to what the Automaker container can access, including mounted volumes.'
+            )}
           </p>
           {data.localConsent?.legacy && (
             <p className="text-sm">
-              Migration: legacy Direct permissions remain active until you explicitly enable Local.
-              Existing pinned sessions/tasks are not upgraded; create a new session/task to use the
-              new environment.
+              {translate(
+                'Migration: legacy Direct permissions remain active until you explicitly enable Local. Existing pinned sessions/tasks are not upgraded; create a new session/task to use the new environment.'
+              )}
             </p>
           )}
           {data.localConsent?.confirmed ? (
             <>
-              <p>Local access confirmed ({data.localConsent.scope} scope).</p>
+              <p>
+                {translate('Local access confirmed (')}
+                {data.localConsent.scope} {translate(' scope).')}
+              </p>
               {!projectPath || data.localConsent.scope === 'project' ? (
                 <Button
                   variant="outline"
@@ -384,7 +392,7 @@ function EnvironmentEditor({
                     void action(async () => {
                       const result = await api.revokeLocal(projectPath);
                       if (!result.success) {
-                        setMessage(result.error || 'Could not revoke Local access.');
+                        setMessage(result.error || translate('Could not revoke Local access.'));
                         return;
                       }
                       client.setQueryData(
@@ -393,16 +401,20 @@ function EnvironmentEditor({
                       );
                       await client.invalidateQueries({ queryKey: ENVIRONMENT_SETTINGS_QUERY_KEY });
                       setMessage(
-                        'Local confirmation revoked. Already running requests keep their grant until completion; later requests are blocked.'
+                        translate(
+                          'Local confirmation revoked. Already running requests keep their grant until completion; later requests are blocked.'
+                        )
                       );
                     })
                   }
                 >
-                  Revoke Local confirmation
+                  {translate('Revoke Local confirmation')}
                 </Button>
               ) : (
                 <p className="text-sm">
-                  Global confirmation is inherited. Revoke it in Global Settings if needed.
+                  {translate(
+                    'Global confirmation is inherited. Revoke it in Global Settings if needed.'
+                  )}
                 </p>
               )}
             </>
@@ -415,13 +427,13 @@ function EnvironmentEditor({
                   onChange={(event) => setAcceptedLocalRisk(event.target.checked)}
                   disabled={busy}
                 />
-                I understand and accept unrestricted Local execution for{' '}
-                {projectPath ? 'this project' : 'all projects using Local'}.
+                {translate('I understand and accept unrestricted Local execution for')}{' '}
+                {projectPath ? translate('this project') : translate('all projects using Local')}.
               </Label>
               <p className="text-sm text-muted-foreground">
-                Check the box, then click Enable Local execution to save your confirmation on the
-                server. It persists across page reloads and container updates with the same data
-                volume and OS user.
+                {translate(
+                  'Check the box, then click Enable Local execution to save your confirmation on the server. It persists across page reloads and container updates with the same data volume and OS user.'
+                )}
               </p>
               <Button
                 disabled={busy || !acceptedLocalRisk}
@@ -429,7 +441,7 @@ function EnvironmentEditor({
                   void action(async () => {
                     const result = await api.confirmLocal(projectPath);
                     if (!result.success) {
-                      setMessage(result.error || 'Local confirmation failed.');
+                      setMessage(result.error || translate('Local confirmation failed.'));
                       return;
                     }
                     client.setQueryData(
@@ -438,12 +450,14 @@ function EnvironmentEditor({
                     );
                     await client.invalidateQueries({ queryKey: ENVIRONMENT_SETTINGS_QUERY_KEY });
                     setMessage(
-                      'Local access confirmed on the server. New Direct sessions/tasks can use Local. Existing bindings remain unchanged.'
+                      translate(
+                        'Local access confirmed on the server. New Direct sessions/tasks can use Local. Existing bindings remain unchanged.'
+                      )
                     );
                   })
                 }
               >
-                Enable Local execution
+                {translate('Enable Local execution')}
               </Button>
             </>
           )}
@@ -459,8 +473,9 @@ function EnvironmentEditor({
       )}
       {data.resolved.type === 'missing-profile' && (
         <p role="alert">
-          The selected profile no longer exists. Select another profile or inherit the global
-          default. There is no local fallback.
+          {translate(
+            'The selected profile no longer exists. Select another profile or inherit the global default. There is no local fallback.'
+          )}
         </p>
       )}
       {['docker', 'auto', 'ssh'].includes(data.resolved.type) &&
@@ -471,13 +486,16 @@ function EnvironmentEditor({
           />
         ) : (
           <p className="text-sm">
-            Open a project’s Execution Environment settings to install SDK providers and configure
-            credentials on its inherited or overridden target.
+            {translate(
+              'Open a project’s Execution Environment settings to install SDK providers and configure credentials on its inherited or overridden target.'
+            )}
           </p>
         ))}
       <fieldset disabled={busy} className="space-y-4">
         <Label htmlFor="execution-selection">
-          {projectPath ? 'Project execution environment' : 'Default execution environment'}
+          {projectPath
+            ? translate('Project execution environment')
+            : translate('Default execution environment')}
         </Label>
         <select
           id="execution-selection"
@@ -485,42 +503,51 @@ function EnvironmentEditor({
           value={selection}
           onChange={(event) => choose(event.target.value)}
         >
-          {projectPath && <option value="inherit">Inherit global default</option>}
-          <option value="local">Local — Automaker server environment</option>
+          {projectPath && <option value="inherit">{translate('Inherit global default')}</option>}
+          <option value="local">{translate('Local — Automaker server environment')}</option>
           <option value="auto">
-            Auto — prefer managed Docker; local fallback requires confirmation
+            {translate('Auto — prefer managed Docker; local fallback requires confirmation')}
           </option>
           {config.profiles.map((item) => (
             <option key={item.id} value={`profile:${item.id}`}>
-              {item.name} ({item.type === 'docker' ? 'Docker' : 'SSH'})
+              {item.name} ({item.type === 'docker' ? translate('Docker') : 'SSH'})
             </option>
           ))}
           {selection.startsWith('profile:') && effective?.mode === 'profile' && !profile && (
-            <option value={selection}>Missing profile: {effective.profileId}</option>
+            <option value={selection}>
+              {translate('Missing profile: ')}
+              {effective.profileId}
+            </option>
           )}
         </select>
         <p className="text-sm text-muted-foreground">
-          Local uses the server OS user, not root elevation. In a container installation, Local
-          means the Automaker container. SSH is remote execution, not isolation by itself.
+          {translate(
+            'Local uses the server OS user, not root elevation. In a container installation, Local means the Automaker container. SSH is remote execution, not isolation by itself.'
+          )}
         </p>
         {!projectPath && (
           <div className="space-y-4">
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={() => addProfile('docker')}>
-                Add Docker profile
+                {translate('Add Docker profile')}
               </Button>
               <Button variant="outline" onClick={() => addProfile('ssh')}>
-                Add SSH profile
+                {translate('Add SSH profile')}
               </Button>
             </div>
             {config.profiles.map((item) => (
               <section
                 className="space-y-3 rounded-lg border p-4"
                 key={item.id}
-                aria-label={`${item.type} profile ${item.name}`}
+                aria-label={translate('{value1} profile {value2}', {
+                  value1: item.type,
+                  value2: item.name,
+                })}
               >
-                <h3 className="font-medium">{item.type === 'docker' ? 'Docker' : 'SSH'} profile</h3>
-                <Label htmlFor={`env-name-${item.id}`}>Profile name</Label>
+                <h3 className="font-medium">
+                  {item.type === 'docker' ? translate('Docker') : 'SSH'} {translate(' profile')}
+                </h3>
+                <Label htmlFor={`env-name-${item.id}`}>{translate('Profile name')}</Label>
                 <Input
                   id={`env-name-${item.id}`}
                   value={item.name}
@@ -530,10 +557,12 @@ function EnvironmentEditor({
                 />
                 {item.type === 'docker' ? (
                   <>
-                    <Label htmlFor={`env-context-${item.id}`}>Docker context (optional)</Label>
+                    <Label htmlFor={`env-context-${item.id}`}>
+                      {translate('Docker context (optional)')}
+                    </Label>
                     <Input
                       id={`env-context-${item.id}`}
-                      placeholder="Server's configured context"
+                      placeholder={translate("Server's configured context")}
                       value={item.context ?? ''}
                       onChange={(event) => {
                         const { context: _context, ...rest } = item;
@@ -544,9 +573,9 @@ function EnvironmentEditor({
                       }}
                     />
                     <p className="text-sm text-muted-foreground">
-                      The context must exist on the Automaker server. Leave empty to use its Docker
-                      CLI configuration. No image ID or manually created project container is
-                      required.
+                      {translate(
+                        'The context must exist on the Automaker server. Leave empty to use its Docker CLI configuration. No image ID or manually created project container is required.'
+                      )}
                     </p>
                     <Button
                       variant="outline"
@@ -559,12 +588,12 @@ function EnvironmentEditor({
                       }
                       onClick={() => void checkDocker(item.id)}
                     >
-                      Check saved Docker connection
+                      {translate('Check saved Docker connection')}
                     </Button>
                   </>
                 ) : (
                   <>
-                    <Label htmlFor={`env-host-${item.id}`}>SSH host</Label>
+                    <Label htmlFor={`env-host-${item.id}`}>{translate('SSH host')}</Label>
                     <Input
                       id={`env-host-${item.id}`}
                       value={item.host}
@@ -572,7 +601,7 @@ function EnvironmentEditor({
                         updateProfile(item.id, { ...item, host: event.target.value })
                       }
                     />
-                    <Label htmlFor={`env-port-${item.id}`}>SSH port</Label>
+                    <Label htmlFor={`env-port-${item.id}`}>{translate('SSH port')}</Label>
                     <Input
                       id={`env-port-${item.id}`}
                       type="number"
@@ -583,7 +612,7 @@ function EnvironmentEditor({
                         updateProfile(item.id, { ...item, port: Number(event.target.value) })
                       }
                     />
-                    <Label htmlFor={`env-user-${item.id}`}>SSH user</Label>
+                    <Label htmlFor={`env-user-${item.id}`}>{translate('SSH user')}</Label>
                     <Input
                       id={`env-user-${item.id}`}
                       value={item.username}
@@ -591,7 +620,9 @@ function EnvironmentEditor({
                         updateProfile(item.id, { ...item, username: event.target.value })
                       }
                     />
-                    <Label htmlFor={`env-path-${item.id}`}>Remote projects base path</Label>
+                    <Label htmlFor={`env-path-${item.id}`}>
+                      {translate('Remote projects base path')}
+                    </Label>
                     <Input
                       id={`env-path-${item.id}`}
                       value={item.basePath}
@@ -600,11 +631,12 @@ function EnvironmentEditor({
                       }
                     />
                     <p className="text-sm text-muted-foreground">
-                      Save and select this profile to configure host trust, credentials and remote
-                      checkout. No connection is made by viewing or saving settings.
+                      {translate(
+                        'Save and select this profile to configure host trust, credentials and remote checkout. No connection is made by viewing or saving settings.'
+                      )}
                     </p>
                     <Label htmlFor={`env-key-${item.id}`}>
-                      SSH credential ID (empty = server ssh-agent)
+                      {translate('SSH credential ID (empty = server ssh-agent)')}
                     </Label>
                     <Input
                       id={`env-key-${item.id}`}
@@ -624,7 +656,9 @@ function EnvironmentEditor({
                   onClick={() => {
                     if (
                       !window.confirm(
-                        'Remove this profile? Projects selecting it will require a new selection; they will not fall back to Local.'
+                        translate(
+                          'Remove this profile? Projects selecting it will require a new selection; they will not fall back to Local.'
+                        )
                       )
                     )
                       return;
@@ -635,14 +669,14 @@ function EnvironmentEditor({
                     setDiagnostic(null);
                   }}
                 >
-                  Remove profile
+                  {translate('Remove profile')}
                 </Button>
               </section>
             ))}
           </div>
         )}
         <div className="flex flex-wrap gap-2">
-          <Button onClick={() => void save()}>Save environment configuration</Button>
+          <Button onClick={() => void save()}>{translate('Save environment configuration')}</Button>
           {docker && (
             <Button
               variant="outline"
@@ -654,7 +688,7 @@ function EnvironmentEditor({
               }
               onClick={() => void checkDocker(profile?.type === 'docker' ? profile.id : undefined)}
             >
-              Check Docker access
+              {translate('Check Docker access')}
             </Button>
           )}
         </div>
@@ -662,11 +696,15 @@ function EnvironmentEditor({
       {message && <p role="status">{message}</p>}
       {diagnostic && (
         <div role="status" className="rounded-lg border p-4 space-y-3">
-          <h3 className="font-medium">Docker connection: {diagnostic.status}</h3>
+          <h3 className="font-medium">
+            {translate('Docker connection: ')}
+            {diagnostic.status}
+          </h3>
           <p>{diagnostic.message}</p>
           <p>
-            Container lifecycle: not tested. Project storage: not tested. Isolated execution is not
-            enabled by this check.
+            {translate(
+              'Container lifecycle: not tested. Project storage: not tested. Isolated execution is not enabled by this check.'
+            )}
           </p>
           <ul className="list-disc pl-5 space-y-2">
             {diagnostic.remediation.map((step) => (

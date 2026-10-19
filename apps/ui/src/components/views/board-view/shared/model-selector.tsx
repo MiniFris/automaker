@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Brain, AlertTriangle } from 'lucide-react';
@@ -23,6 +24,7 @@ export function ModelSelector({
   onModelSelect,
   testIdPrefix = 'model-select',
 }: ModelSelectorProps) {
+  useUiLocale();
   const {
     enabledCursorModels,
     cursorDefaultModel,
@@ -193,7 +195,7 @@ export function ModelSelector({
       {/* Provider Selection */}
       {availableProviders.length > 1 && (
         <div className="space-y-2">
-          <Label>AI Provider</Label>
+          <Label>{translate('AI Provider')}</Label>
           <div className="flex gap-2">
             {!isClaudeDisabled && (
               <button
@@ -208,7 +210,7 @@ export function ModelSelector({
                 data-testid={`${testIdPrefix}-provider-claude`}
               >
                 <AnthropicIcon className="w-4 h-4" />
-                Claude
+                {translate('Claude')}
               </button>
             )}
             {!isCursorDisabled && (
@@ -224,7 +226,7 @@ export function ModelSelector({
                 data-testid={`${testIdPrefix}-provider-cursor`}
               >
                 <CursorIcon className="w-4 h-4" />
-                Cursor CLI
+                {translate('Cursor CLI')}
               </button>
             )}
             {!isCodexDisabled && (
@@ -240,7 +242,7 @@ export function ModelSelector({
                 data-testid={`${testIdPrefix}-provider-codex`}
               >
                 <OpenAIIcon className="w-4 h-4" />
-                Codex CLI
+                {translate('Codex CLI')}
               </button>
             )}
             {!isOpencodeDisabled && (
@@ -256,7 +258,7 @@ export function ModelSelector({
                 data-testid={`${testIdPrefix}-provider-opencode`}
               >
                 <OpenCodeIcon className="w-4 h-4" />
-                OpenCode
+                {translate('OpenCode')}
               </button>
             )}
           </div>
@@ -269,10 +271,10 @@ export function ModelSelector({
           <div className="flex items-center justify-between">
             <Label className="flex items-center gap-2">
               <Brain className="w-4 h-4 text-primary" />
-              Claude Model
+              {translate('Claude Model')}
             </Label>
             <span className="text-[11px] px-2 py-0.5 rounded-full border border-primary/40 text-primary">
-              Native SDK
+              {translate('Native SDK')}
             </span>
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -284,7 +286,7 @@ export function ModelSelector({
                   key={option.id}
                   type="button"
                   onClick={() => onModelSelect(option.id)}
-                  title={option.description}
+                  title={translate(option.description)}
                   className={cn(
                     'flex-1 min-w-[80px] px-3 py-2 rounded-md border text-sm font-medium transition-colors',
                     isSelected
@@ -309,8 +311,9 @@ export function ModelSelector({
             <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
               <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
               <div className="text-sm text-amber-400">
-                Cursor CLI is not installed or authenticated. Configure it in Settings → AI
-                Providers.
+                {translate(
+                  'Cursor CLI is not installed or authenticated. Configure it in Settings → AI Providers.'
+                )}
               </div>
             </div>
           )}
@@ -318,7 +321,7 @@ export function ModelSelector({
           <div className="flex items-center justify-between">
             <Label className="flex items-center gap-2">
               <CursorIcon className="w-4 h-4 text-primary" />
-              Cursor Model
+              {translate('Cursor Model')}
             </Label>
             <span className="text-[11px] px-2 py-0.5 rounded-full border border-amber-500/40 text-amber-600 dark:text-amber-400">
               CLI
@@ -327,7 +330,7 @@ export function ModelSelector({
           <div className="flex flex-col gap-2">
             {filteredCursorModels.length === 0 ? (
               <div className="text-sm text-muted-foreground p-3 border border-dashed rounded-md text-center">
-                No Cursor models enabled. Enable models in Settings → AI Providers.
+                {translate('No Cursor models enabled. Enable models in Settings → AI Providers.')}
               </div>
             ) : (
               filteredCursorModels.map((option) => {
@@ -337,7 +340,7 @@ export function ModelSelector({
                     key={option.id}
                     type="button"
                     onClick={() => onModelSelect(option.id)}
-                    title={option.description}
+                    title={translate(option.description)}
                     className={cn(
                       'w-full px-3 py-2 rounded-md border text-sm font-medium transition-colors flex items-center justify-between',
                       isSelected
@@ -358,7 +361,7 @@ export function ModelSelector({
                               : 'border-amber-500/50 text-amber-600 dark:text-amber-400'
                           )}
                         >
-                          Thinking
+                          {translate('Thinking')}
                         </Badge>
                       )}
                     </div>
@@ -378,8 +381,9 @@ export function ModelSelector({
             <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
               <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
               <div className="text-sm text-amber-400">
-                Codex CLI is not installed or authenticated. Configure it in Settings → AI
-                Providers.
+                {translate(
+                  'Codex CLI is not installed or authenticated. Configure it in Settings → AI Providers.'
+                )}
               </div>
             </div>
           )}
@@ -387,7 +391,7 @@ export function ModelSelector({
           <div className="flex items-center justify-between">
             <Label className="flex items-center gap-2">
               <OpenAIIcon className="w-4 h-4 text-primary" />
-              Codex Model
+              {translate('Codex Model')}
             </Label>
             <span className="text-[11px] px-2 py-0.5 rounded-full border border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
               CLI
@@ -398,7 +402,7 @@ export function ModelSelector({
           {codexModelsLoading && dynamicCodexModels.length === 0 && (
             <div className="flex items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
               <Spinner size="sm" />
-              Loading models...
+              {translate('Loading models...')}
             </div>
           )}
 
@@ -407,13 +411,15 @@ export function ModelSelector({
             <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
               <AlertTriangle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
               <div className="space-y-1">
-                <div className="text-sm text-red-400">Failed to load Codex models</div>
+                <div className="text-sm text-red-400">
+                  {translate('Failed to load Codex models')}
+                </div>
                 <button
                   type="button"
                   onClick={() => fetchCodexModels(true)}
                   className="text-xs text-red-400 underline hover:no-underline"
                 >
-                  Retry
+                  {translate('Retry')}
                 </button>
               </div>
             </div>
@@ -422,7 +428,7 @@ export function ModelSelector({
           {/* Model list */}
           {!codexModelsLoading && !codexModelsError && dynamicCodexModels.length === 0 && (
             <div className="text-sm text-muted-foreground p-3 border border-dashed rounded-md text-center">
-              No Codex models available
+              {translate('No Codex models available')}
             </div>
           )}
 
@@ -435,7 +441,7 @@ export function ModelSelector({
                     key={option.id}
                     type="button"
                     onClick={() => onModelSelect(option.id)}
-                    title={option.description}
+                    title={translate(option.description)}
                     className={cn(
                       'w-full px-3 py-2 rounded-md border text-sm font-medium transition-colors flex items-center justify-between',
                       isSelected
@@ -456,7 +462,7 @@ export function ModelSelector({
                               : 'border-emerald-500/50 text-emerald-600 dark:text-emerald-400'
                           )}
                         >
-                          Thinking
+                          {translate('Thinking')}
                         </Badge>
                       )}
                       {option.badge && (
@@ -487,7 +493,7 @@ export function ModelSelector({
           <div className="flex items-center justify-between">
             <Label className="flex items-center gap-2">
               <OpenCodeIcon className="w-4 h-4 text-primary" />
-              OpenCode Model
+              {translate('OpenCode Model')}
             </Label>
             <span className="text-[11px] px-2 py-0.5 rounded-full border border-violet-500/40 text-violet-600 dark:text-violet-400">
               CLI
@@ -498,7 +504,7 @@ export function ModelSelector({
           {(opencodeModelsLoading || dynamicOpencodeLoading) && allOpencodeModels.length === 0 && (
             <div className="flex items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
               <Spinner size="sm" />
-              Loading models...
+              {translate('Loading models...')}
             </div>
           )}
 
@@ -507,13 +513,15 @@ export function ModelSelector({
             <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
               <AlertTriangle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
               <div className="space-y-1">
-                <div className="text-sm text-red-400">Failed to load OpenCode models</div>
+                <div className="text-sm text-red-400">
+                  {translate('Failed to load OpenCode models')}
+                </div>
                 <button
                   type="button"
                   onClick={() => refetchOpencodeModels()}
                   className="text-xs text-red-400 underline hover:no-underline"
                 >
-                  Retry
+                  {translate('Retry')}
                 </button>
               </div>
             </div>
@@ -525,7 +533,7 @@ export function ModelSelector({
             !dynamicOpencodeError &&
             allOpencodeModels.length === 0 && (
               <div className="text-sm text-muted-foreground p-3 border border-dashed rounded-md text-center">
-                No OpenCode models enabled. Enable models in Settings → AI Providers.
+                {translate('No OpenCode models enabled. Enable models in Settings → AI Providers.')}
               </div>
             )}
 
@@ -539,7 +547,7 @@ export function ModelSelector({
                     key={option.id}
                     type="button"
                     onClick={() => onModelSelect(option.id)}
-                    title={option.description}
+                    title={translate(option.description)}
                     className={cn(
                       'w-full px-3 py-2 rounded-md border text-sm font-medium transition-colors flex items-center justify-between',
                       isSelected

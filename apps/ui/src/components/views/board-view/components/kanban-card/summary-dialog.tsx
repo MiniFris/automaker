@@ -1,3 +1,5 @@
+import { translate, useUiLocale } from '@/lib/i18n';
+import { getPipelineStepLabel } from '@/lib/workflow-labels';
 import { useMemo, useState, useRef, useEffect } from 'react';
 import type { Feature } from '@/store/app-store';
 import type { AgentTaskInfo } from '@/lib/agent-context-parser';
@@ -53,6 +55,7 @@ function PhaseEntryCard({
   isActive?: boolean;
   onClick?: () => void;
 }) {
+  useUiLocale();
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (onClick && (event.key === 'Enter' || event.key === ' ')) {
       event.preventDefault();
@@ -74,10 +77,14 @@ function PhaseEntryCard({
     >
       {/* Phase header - styled to stand out */}
       <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/30">
-        <span className="text-sm font-semibold text-primary">{entry.phaseName}</span>
+        <span className="text-sm font-semibold text-primary">
+          {getPipelineStepLabel(entry.phaseName)}
+        </span>
         {hasMultiplePhases && (
           <span className="text-xs text-muted-foreground">
-            Step {index + 1} of {totalPhases}
+            {translate('Step ')}
+            {index + 1} {translate(' of ')}
+            {totalPhases}
           </span>
         )}
       </div>
@@ -99,6 +106,7 @@ function StepNavigator({
   activeIndex: number;
   onIndexChange: (index: number) => void;
 }) {
+  useUiLocale();
   if (phaseEntries.length <= 1) return null;
 
   return (
@@ -125,7 +133,7 @@ function StepNavigator({
                 : 'text-muted-foreground hover:text-foreground hover:bg-accent'
             )}
           >
-            {entry.phaseName}
+            {getPipelineStepLabel(entry.phaseName)}
           </button>
         ))}
       </div>
@@ -151,6 +159,7 @@ export function SummaryDialog({
   onOpenChange,
   projectPath,
 }: SummaryDialogProps) {
+  useUiLocale();
   const [viewMode, setViewMode] = useState<ViewMode>('summary');
   const [activePhaseIndex, setActivePhaseIndex] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -238,7 +247,7 @@ export function SummaryDialog({
                 )}
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                Summary
+                {translate('Summary')}
               </button>
               <button
                 onClick={() => setViewMode('output')}
@@ -250,7 +259,7 @@ export function SummaryDialog({
                 )}
               >
                 <FileText className="w-3.5 h-3.5" />
-                Output
+                {translate('Output')}
               </button>
             </div>
           </div>
@@ -301,11 +310,11 @@ export function SummaryDialog({
             {isLoadingOutput ? (
               <div className="flex items-center justify-center h-full text-muted-foreground">
                 <Spinner size="lg" className="mr-2" />
-                Loading output...
+                {translate('Loading output...')}
               </div>
             ) : !agentOutput ? (
               <div className="flex items-center justify-center h-full text-muted-foreground">
-                No agent output available.
+                {translate('No agent output available.')}
               </div>
             ) : (
               <LogViewer output={agentOutput} />
@@ -319,7 +328,7 @@ export function SummaryDialog({
             onClick={() => onOpenChange(false)}
             data-testid="close-summary-button"
           >
-            Close
+            {translate('Close')}
           </Button>
         </DialogFooter>
       </DialogContent>

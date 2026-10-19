@@ -1,4 +1,6 @@
 'use client';
+import { getFormattingLocale } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -57,43 +59,43 @@ function getStatusIndicator(status: TestRunStatus | null): {
   switch (status) {
     case 'running':
       return {
-        text: 'Running',
+        text: translate('Running'),
         className: 'bg-blue-500/10 text-blue-500',
         icon: <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />,
       };
     case 'pending':
       return {
-        text: 'Pending',
+        text: translate('Pending'),
         className: 'bg-amber-500/10 text-amber-500',
         icon: <Clock className="w-3 h-3" />,
       };
     case 'passed':
       return {
-        text: 'Passed',
+        text: translate('Passed'),
         className: 'bg-green-500/10 text-green-500',
         icon: <CheckCircle2 className="w-3 h-3" />,
       };
     case 'failed':
       return {
-        text: 'Failed',
+        text: translate('Failed'),
         className: 'bg-red-500/10 text-red-500',
         icon: <XCircle className="w-3 h-3" />,
       };
     case 'cancelled':
       return {
-        text: 'Cancelled',
+        text: translate('Cancelled'),
         className: 'bg-yellow-500/10 text-yellow-500',
         icon: <AlertCircle className="w-3 h-3" />,
       };
     case 'error':
       return {
-        text: 'Error',
+        text: translate('Error'),
         className: 'bg-red-500/10 text-red-500',
         icon: <AlertCircle className="w-3 h-3" />,
       };
     default:
       return {
-        text: 'Idle',
+        text: translate('Idle'),
         className: 'bg-muted text-muted-foreground',
       };
   }
@@ -104,11 +106,11 @@ function getStatusIndicator(status: TestRunStatus | null): {
  */
 function formatDuration(ms: number | null): string | null {
   if (ms === null) return null;
-  if (ms < 1000) return `${ms}ms`;
-  if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+  if (ms < 1000) return translate('{value1}ms', { value1: ms });
+  if (ms < 60000) return translate('{value1}s', { value1: (ms / 1000).toFixed(1) });
   const minutes = Math.floor(ms / 60000);
   const seconds = ((ms % 60000) / 1000).toFixed(0);
-  return `${minutes}m ${seconds}s`;
+  return translate('{value1}m {value2}s', { value1: minutes, value2: seconds });
 }
 
 /**
@@ -118,7 +120,7 @@ function formatTime(timestamp: string | null): string | null {
   if (!timestamp) return null;
   try {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString();
+    return date.toLocaleTimeString(getFormattingLocale());
   } catch {
     return null;
   }
@@ -141,6 +143,7 @@ function TestLogsPanelContent({
   sessionId,
   onStopTests,
 }: TestLogsPanelContentProps) {
+  useUiLocale();
   const xtermRef = useRef<XtermLogViewerRef>(null);
   const [autoScrollEnabled, setAutoScrollEnabled] = useState(true);
   const lastLogsRef = useRef('');
@@ -219,7 +222,7 @@ function TestLogsPanelContent({
         <div className="flex items-center justify-between">
           <DialogTitle className="flex items-center gap-2 text-base">
             <FlaskConical className="w-4 h-4 text-primary" />
-            <span>Test Runner</span>
+            <span>{translate('Test Runner')}</span>
             {executionEnvironment && (
               <span
                 className="text-xs font-mono text-muted-foreground"
@@ -252,7 +255,7 @@ function TestLogsPanelContent({
                 onClick={onStopTests}
               >
                 <Square className="w-3 h-3 mr-1.5 fill-current" />
-                Stop
+                {translate('Stop')}
               </Button>
             )}
             <Button
@@ -260,7 +263,7 @@ function TestLogsPanelContent({
               size="sm"
               className="h-7 w-7 p-0"
               onClick={() => fetchLogs()}
-              title="Refresh logs"
+              title={translate('Refresh logs')}
             >
               {isLoading ? <Spinner size="xs" /> : <RefreshCw className="w-3.5 h-3.5" />}
             </Button>
@@ -277,13 +280,13 @@ function TestLogsPanelContent({
           )}
           {command && (
             <span className="inline-flex items-center gap-1.5">
-              <span className="text-muted-foreground/60">Command</span>
+              <span className="text-muted-foreground/60">{translate('Command')}</span>
               <span className="font-mono text-primary truncate max-w-[200px]">{command}</span>
             </span>
           )}
           {testFile && (
             <span className="inline-flex items-center gap-1.5">
-              <span className="text-muted-foreground/60">File</span>
+              <span className="text-muted-foreground/60">{translate('File')}</span>
               <span className="font-mono truncate max-w-[150px]">{testFile}</span>
             </span>
           )}
@@ -311,19 +314,23 @@ function TestLogsPanelContent({
         {isLoading && !logs ? (
           <div className="flex items-center justify-center h-full min-h-[300px] text-muted-foreground">
             <Spinner size="md" className="mr-2" />
-            <span className="text-sm">Loading logs...</span>
+            <span className="text-sm">{translate('Loading logs...')}</span>
           </div>
         ) : !logs && !isRunning && !status ? (
           <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-muted-foreground p-8">
             <Terminal className="w-10 h-10 mb-3 opacity-20" />
-            <p className="text-sm">No test run active</p>
-            <p className="text-xs mt-1 opacity-60">Start a test run to see logs here</p>
+            <p className="text-sm">{translate('No test run active')}</p>
+            <p className="text-xs mt-1 opacity-60">
+              {translate('Start a test run to see logs here')}
+            </p>
           </div>
         ) : isRunning && !logs ? (
           <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-muted-foreground p-8">
             <Spinner size="xl" className="mb-3" />
-            <p className="text-sm">Waiting for output...</p>
-            <p className="text-xs mt-1 opacity-60">Logs will appear as tests generate output</p>
+            <p className="text-sm">{translate('Waiting for output...')}</p>
+            <p className="text-xs mt-1 opacity-60">
+              {translate('Logs will appear as tests generate output')}
+            </p>
           </div>
         ) : (
           <XtermLogViewer
@@ -340,10 +347,15 @@ function TestLogsPanelContent({
       {/* Footer status bar */}
       <div className="shrink-0 flex items-center justify-between px-4 py-2 bg-muted/30 border-t border-border/50 text-xs text-muted-foreground">
         <div className="flex items-center gap-3">
-          <span className="font-mono">{lineCount > 0 ? `${lineCount} lines` : 'No output'}</span>
+          <span className="font-mono">
+            {lineCount > 0
+              ? translate('{value1} lines', { value1: lineCount })
+              : translate('No output')}
+          </span>
           {exitCode !== null && (
             <span className={cn('font-mono', exitCode === 0 ? 'text-green-500' : 'text-red-500')}>
-              Exit: {exitCode}
+              {translate('Exit: ')}
+              {exitCode}
             </span>
           )}
         </div>
@@ -353,13 +365,13 @@ function TestLogsPanelContent({
             className="inline-flex items-center gap-1.5 px-2 py-1 rounded hover:bg-muted transition-colors text-primary"
           >
             <ArrowDown className="w-3 h-3" />
-            Scroll to bottom
+            {translate('Scroll to bottom')}
           </button>
         )}
         {autoScrollEnabled && logs && (
           <span className="inline-flex items-center gap-1.5 opacity-60">
             <ArrowDown className="w-3 h-3" />
-            Auto-scroll
+            {translate('Auto-scroll')}
           </span>
         )}
       </div>
@@ -391,6 +403,7 @@ export function TestLogsPanel({
   sessionId,
   onStopTests,
 }: TestLogsPanelProps) {
+  useUiLocale();
   const isMobile = useIsMobile();
 
   if (!worktreePath) return null;
@@ -401,7 +414,7 @@ export function TestLogsPanel({
       <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
         <SheetContent side="bottom" className="h-[80vh] p-0 flex flex-col">
           <SheetHeader className="sr-only">
-            <SheetTitle>Test Logs</SheetTitle>
+            <SheetTitle>{translate('Test Logs')}</SheetTitle>
           </SheetHeader>
           <TestLogsPanelContent
             worktreePath={worktreePath}

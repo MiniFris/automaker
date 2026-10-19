@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useCallback } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -29,6 +30,7 @@ export function StickyModifierKeys({
   onModifierChange,
   isConnected,
 }: StickyModifierKeysProps) {
+  useUiLocale();
   const toggleCtrl = useCallback(() => {
     onModifierChange(activeModifier === 'ctrl' ? null : 'ctrl');
   }, [activeModifier, onModifierChange]);
@@ -40,18 +42,18 @@ export function StickyModifierKeys({
   return (
     <div className="flex items-center gap-1 shrink-0">
       <ModifierButton
-        label="Ctrl"
+        label={translate('Ctrl')}
         isActive={activeModifier === 'ctrl'}
         onPress={toggleCtrl}
         disabled={!isConnected}
-        title="Sticky Ctrl – tap to activate, then press a key (e.g. Ctrl+C)"
+        title={translate('Sticky Ctrl – tap to activate, then press a key (e.g. Ctrl+C)')}
       />
       <ModifierButton
-        label="Alt"
+        label={translate('Alt')}
         isActive={activeModifier === 'alt'}
         onPress={toggleAlt}
         disabled={!isConnected}
-        title="Sticky Alt – tap to activate, then press a key (e.g. Alt+D)"
+        title={translate('Sticky Alt – tap to activate, then press a key (e.g. Alt+D)')}
       />
     </div>
   );
@@ -73,6 +75,7 @@ function ModifierButton({
   disabled?: boolean;
   title?: string;
 }) {
+  useUiLocale();
   return (
     <button
       className={cn(

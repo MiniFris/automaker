@@ -1,3 +1,6 @@
+import { formatCount } from '@/lib/i18n';
+import { getFormattingLocale } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -22,6 +25,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { toast } from 'sonner';
 
 export function EventHistoryView() {
+  useUiLocale();
   const currentProject = useAppStore((state) => state.currentProject);
   const projectPath = currentProject?.path;
   const [events, setEvents] = useState<StoredEventSummary[]>([]);
@@ -86,18 +90,22 @@ export function EventHistoryView() {
         const failCount = hookResults.filter((r) => !r.success).length;
 
         if (hooksTriggered === 0) {
-          toast.info('No matching hooks found for this event trigger.');
+          toast.info(translate('No matching hooks found for this event trigger.'));
         } else if (failCount === 0) {
-          toast.success(`Successfully ran ${successCount} hook(s).`);
+          toast.success(translate('Successfully ran {value1} hook(s).', { value1: successCount }));
         } else {
           toast.warning(
-            `Ran ${hooksTriggered} hook(s): ${successCount} succeeded, ${failCount} failed.`
+            translate('Ran {value1} hook(s): {value2} succeeded, {value3} failed.', {
+              value1: hooksTriggered,
+              value2: successCount,
+              value3: failCount,
+            })
           );
         }
       }
     } catch (error) {
       console.error('Failed to replay event:', error);
-      toast.error('Failed to replay event. Check console for details.');
+      toast.error(translate('Failed to replay event. Check console for details.'));
     } finally {
       setReplayingEvent(null);
     }
@@ -163,18 +171,18 @@ export function EventHistoryView() {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
+    if (diffMins < 1) return translate('Just now');
+    if (diffMins < 60) return translate('{value1}m ago', { value1: diffMins });
+    if (diffHours < 24) return translate('{value1}h ago', { value1: diffHours });
+    if (diffDays < 7) return translate('{value1}d ago', { value1: diffDays });
+    return date.toLocaleDateString(getFormattingLocale());
   };
 
   if (!projectPath) {
     return (
       <div className="text-center py-8 text-muted-foreground">
         <History className="w-12 h-12 mx-auto mb-3 opacity-30" />
-        <p className="text-sm">Select a project to view event history</p>
+        <p className="text-sm">{translate('Select a project to view event history')}</p>
       </div>
     );
   }
@@ -184,7 +192,7 @@ export function EventHistoryView() {
       {/* Header with actions */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {events.length} event{events.length !== 1 ? 's' : ''} recorded
+          {formatCount(events.length, 'event')} {translate(' recorded')}
         </p>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={loadEvents} disabled={loading}>
@@ -193,7 +201,7 @@ export function EventHistoryView() {
             ) : (
               <RefreshCw className="w-4 h-4 mr-2" />
             )}
-            Refresh
+            {translate('Refresh')}
           </Button>
           {events.length > 0 && (
             <Button
@@ -203,7 +211,7 @@ export function EventHistoryView() {
               onClick={() => setClearDialogOpen(true)}
             >
               <Trash2 className="w-4 h-4 mr-2" />
-              Clear All
+              {translate('Clear All')}
             </Button>
           )}
         </div>
@@ -213,9 +221,9 @@ export function EventHistoryView() {
       {events.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <History className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">No events recorded yet</p>
+          <p className="text-sm">{translate('No events recorded yet')}</p>
           <p className="text-xs mt-1">
-            Events will appear here when features are created or completed
+            {translate('Events will appear here when features are created or completed')}
           </p>
         </div>
       ) : (
@@ -264,7 +272,7 @@ export function EventHistoryView() {
                     className="h-7 w-7"
                     onClick={() => handleReplay(event.id)}
                     disabled={replayingEvent === event.id}
-                    title="Replay event (trigger matching hooks)"
+                    title={translate('Replay event (trigger matching hooks)')}
                   >
                     <Play
                       className={cn('w-3.5 h-3.5', replayingEvent === event.id && 'animate-pulse')}
@@ -275,7 +283,7 @@ export function EventHistoryView() {
                     size="icon"
                     className="h-7 w-7 text-destructive hover:text-destructive"
                     onClick={() => handleDelete(event.id)}
-                    title="Delete event"
+                    title={translate('Delete event')}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
@@ -288,16 +296,20 @@ export function EventHistoryView() {
                   <div className="mt-3 space-y-2 text-xs">
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <span className="text-muted-foreground">Event ID:</span>
+                        <span className="text-muted-foreground">{translate('Event ID:')}</span>
                         <p className="font-mono text-[10px] truncate">{expandedEventData.id}</p>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Timestamp:</span>
-                        <p>{new Date(expandedEventData.timestamp).toLocaleString()}</p>
+                        <span className="text-muted-foreground">{translate('Timestamp:')}</span>
+                        <p>
+                          {new Date(expandedEventData.timestamp).toLocaleString(
+                            getFormattingLocale()
+                          )}
+                        </p>
                       </div>
                       {expandedEventData.featureId && (
                         <div>
-                          <span className="text-muted-foreground">Feature ID:</span>
+                          <span className="text-muted-foreground">{translate('Feature ID:')}</span>
                           <p className="font-mono text-[10px] truncate">
                             {expandedEventData.featureId}
                           </p>
@@ -305,21 +317,21 @@ export function EventHistoryView() {
                       )}
                       {expandedEventData.passes !== undefined && (
                         <div>
-                          <span className="text-muted-foreground">Passed:</span>
-                          <p>{expandedEventData.passes ? 'Yes' : 'No'}</p>
+                          <span className="text-muted-foreground">{translate('Passed:')}</span>
+                          <p>{expandedEventData.passes ? translate('Yes') : translate('No')}</p>
                         </div>
                       )}
                     </div>
                     {expandedEventData.error && (
                       <div>
-                        <span className="text-muted-foreground">Error:</span>
+                        <span className="text-muted-foreground">{translate('Error:')}</span>
                         <p className="text-red-400 mt-1 p-2 bg-red-500/10 rounded text-[10px] font-mono whitespace-pre-wrap">
                           {expandedEventData.error}
                         </p>
                       </div>
                     )}
                     <div>
-                      <span className="text-muted-foreground">Project:</span>
+                      <span className="text-muted-foreground">{translate('Project:')}</span>
                       <p className="font-mono text-[10px] truncate">
                         {expandedEventData.projectPath}
                       </p>
@@ -337,11 +349,14 @@ export function EventHistoryView() {
         open={clearDialogOpen}
         onOpenChange={setClearDialogOpen}
         onConfirm={handleClearAll}
-        title="Clear Event History"
-        description={`This will permanently delete all ${events.length} recorded events. This action cannot be undone.`}
+        title={translate('Clear Event History')}
+        description={translate(
+          'This will permanently delete all {value1} recorded events. This action cannot be undone.',
+          { value1: events.length }
+        )}
         icon={Trash2}
         iconClassName="text-destructive"
-        confirmText="Clear All"
+        confirmText={translate('Clear All')}
         confirmVariant="destructive"
       />
     </div>

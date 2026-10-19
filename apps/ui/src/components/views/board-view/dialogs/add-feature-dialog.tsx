@@ -1,4 +1,5 @@
 // @ts-nocheck - feature data building with conditional fields and model type inference
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
@@ -166,6 +167,7 @@ export function AddFeatureDialog({
   prefilledDescription,
   prefilledCategory,
 }: AddFeatureDialogProps) {
+  useUiLocale();
   const isSpawnMode = !!parentFeature;
   const navigate = useNavigate();
   const [workMode, setWorkMode] = useState<WorkMode>('current');
@@ -318,7 +320,7 @@ export function AddFeatureDialog({
     }
 
     if (workMode === 'custom' && !branchName.trim()) {
-      toast.error('Please select a branch name');
+      toast.error(translate('Please select a branch name'));
       return null;
     }
 
@@ -466,11 +468,15 @@ export function AddFeatureDialog({
         }}
       >
         <DialogHeader>
-          <DialogTitle>{isSpawnMode ? 'Spawn Sub-Task' : 'Add New Feature'}</DialogTitle>
+          <DialogTitle>
+            {isSpawnMode ? translate('Spawn Sub-Task') : translate('Add New Feature')}
+          </DialogTitle>
           <DialogDescription>
             {isSpawnMode
-              ? `Create a sub-task that depends on "${parentFeature?.title || parentFeature?.description.slice(0, 50)}..."`
-              : 'Create a new feature card for the Kanban board.'}
+              ? translate('Create a sub-task that depends on "{value1}..."', {
+                  value1: parentFeature?.title || parentFeature?.description.slice(0, 50),
+                })
+              : translate('Create a new feature card for the Kanban board.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -495,14 +501,14 @@ export function AddFeatureDialog({
           <div className={cardClass}>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{translate('Description')}</Label>
                 {/* Version History Button */}
                 <EnhancementHistoryButton
                   history={descriptionHistory}
                   currentValue={description}
                   onRestore={setDescription}
                   valueAccessor={(entry) => entry.description}
-                  title="Version History"
+                  title={translate('Version History')}
                   restoreMessage="Description restored from history"
                 />
               </div>
@@ -516,7 +522,7 @@ export function AddFeatureDialog({
                 onImagesChange={setImagePaths}
                 textFiles={textFilePaths}
                 onTextFilesChange={setTextFilePaths}
-                placeholder="Describe the feature..."
+                placeholder={translate('Describe the feature...')}
                 previewMap={previewMap}
                 onPreviewMapChange={setPreviewMap}
                 autoFocus
@@ -525,12 +531,12 @@ export function AddFeatureDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="title">Title (optional)</Label>
+              <Label htmlFor="title">{translate('Title (optional)')}</Label>
               <Input
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Leave blank to auto-generate"
+                placeholder={translate('Leave blank to auto-generate')}
               />
             </div>
 
@@ -570,7 +576,7 @@ export function AddFeatureDialog({
             <div className="flex items-center justify-between">
               <div className={sectionHeaderClass}>
                 <Cpu className="w-4 h-4 text-muted-foreground" />
-                <span>AI & Execution</span>
+                <span>{translate('AI & Execution')}</span>
               </div>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -583,17 +589,17 @@ export function AddFeatureDialog({
                     className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <Settings2 className="w-3.5 h-3.5" />
-                    <span>Edit Defaults</span>
+                    <span>{translate('Edit Defaults')}</span>
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Change default model and planning settings for new features</p>
+                  <p>{translate('Change default model and planning settings for new features')}</p>
                 </TooltipContent>
               </Tooltip>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Model</Label>
+              <Label className="text-xs text-muted-foreground">{translate('Model')}</Label>
               <PhaseModelSelector
                 value={modelEntry}
                 onChange={handleModelChange}
@@ -604,7 +610,7 @@ export function AddFeatureDialog({
 
             <div className="grid gap-3 grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Planning</Label>
+                <Label className="text-xs text-muted-foreground">{translate('Planning')}</Label>
                 <PlanningModeSelect
                   mode={planningMode}
                   onModeChange={setPlanningMode}
@@ -613,7 +619,7 @@ export function AddFeatureDialog({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Options</Label>
+                <Label className="text-xs text-muted-foreground">{translate('Options')}</Label>
                 <div className="flex flex-col gap-2 pt-1">
                   <div className="flex items-center gap-2">
                     <Checkbox
@@ -626,7 +632,7 @@ export function AddFeatureDialog({
                       htmlFor="add-feature-skip-tests"
                       className="text-xs font-normal cursor-pointer"
                     >
-                      Run tests
+                      {translate('Run tests')}
                     </Label>
                   </div>
                   <div className="flex items-center gap-2">
@@ -646,7 +652,7 @@ export function AddFeatureDialog({
                           : 'cursor-pointer'
                       )}
                     >
-                      Require approval
+                      {translate('Require approval')}
                     </Label>
                   </div>
                 </div>
@@ -658,22 +664,22 @@ export function AddFeatureDialog({
           <div className={cardClass}>
             <div className={sectionHeaderClass}>
               <FolderKanban className="w-4 h-4 text-muted-foreground" />
-              <span>Organization</span>
+              <span>{translate('Organization')}</span>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Category</Label>
+                <Label className="text-xs text-muted-foreground">{translate('Category')}</Label>
                 <CategoryAutocomplete
                   value={category}
                   onChange={setCategory}
                   suggestions={categorySuggestions}
-                  placeholder="e.g., Core, UI, API"
+                  placeholder={translate('e.g., Core, UI, API')}
                   data-testid="feature-category-input"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Priority</Label>
+                <Label className="text-xs text-muted-foreground">{translate('Priority')}</Label>
                 <PrioritySelector
                   selectedPriority={priority}
                   onPrioritySelect={setPriority}
@@ -701,27 +707,27 @@ export function AddFeatureDialog({
               <div className="pt-2 space-y-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">
-                    Parent Dependencies (this feature depends on)
+                    {translate('Parent Dependencies (this feature depends on)')}
                   </Label>
                   <DependencySelector
                     value={parentDependencies}
                     onChange={setParentDependencies}
                     features={allFeatures}
                     type="parent"
-                    placeholder="Select features this depends on..."
+                    placeholder={translate('Select features this depends on...')}
                     data-testid="add-feature-parent-deps"
                   />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">
-                    Child Dependencies (features that depend on this)
+                    {translate('Child Dependencies (features that depend on this)')}
                   </Label>
                   <DependencySelector
                     value={childDependencies}
                     onChange={setChildDependencies}
                     features={allFeatures}
                     type="child"
-                    placeholder="Select features that will depend on this..."
+                    placeholder={translate('Select features that will depend on this...')}
                     data-testid="add-feature-child-deps"
                   />
                 </div>
@@ -742,7 +748,7 @@ export function AddFeatureDialog({
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           {onAddAndStart && (
             <Button
@@ -752,7 +758,7 @@ export function AddFeatureDialog({
               disabled={workMode === 'custom' && !branchName.trim()}
             >
               <Play className="w-4 h-4 mr-2" />
-              Make
+              {translate('Make')}
             </Button>
           )}
           <HotkeyButton
@@ -762,7 +768,7 @@ export function AddFeatureDialog({
             data-testid="confirm-add-feature"
             disabled={workMode === 'custom' && !branchName.trim()}
           >
-            {isSpawnMode ? 'Spawn Task' : 'Add Feature'}
+            {isSpawnMode ? translate('Spawn Task') : translate('Add Feature')}
           </HotkeyButton>
         </DialogFooter>
       </DialogContent>

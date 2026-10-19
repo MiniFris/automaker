@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Code } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -27,6 +28,7 @@ export function GlobalJsonEditDialog({
   onSave,
   onCancel,
 }: GlobalJsonEditDialogProps) {
+  useUiLocale();
   return (
     <Dialog
       open={open}
@@ -40,32 +42,27 @@ export function GlobalJsonEditDialog({
     >
       <DialogContent className="max-w-3xl max-h-[90vh]" data-testid="mcp-global-json-edit-dialog">
         <DialogHeader>
-          <DialogTitle>Edit All MCP Servers</DialogTitle>
+          <DialogTitle>{translate('Edit All MCP Servers')}</DialogTitle>
           <DialogDescription>
-            Edit the full MCP servers configuration. Add, modify, or remove servers directly in
-            JSON. Servers removed from JSON will be deleted.
+            {translate(
+              'Edit the full MCP servers configuration. Add, modify, or remove servers directly in JSON. Servers removed from JSON will be deleted.'
+            )}
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">
           <Textarea
             value={jsonValue}
             onChange={(e) => onJsonValueChange(e.target.value)}
-            placeholder={`{
-  "mcpServers": {
-    "server-name": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-name"]
-    }
-  }
-}`}
+            placeholder={translate(
+              '{\n  "mcpServers": {\n    "server-name": {\n      "type": "stdio",\n      "command": "npx",\n      "args": ["-y", "@modelcontextprotocol/server-name"]\n    }\n  }\n}'
+            )}
             className="font-mono text-sm h-[50vh] min-h-[300px]"
             data-testid="mcp-global-json-edit-textarea"
           />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onCancel}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button
             onClick={onSave}
@@ -73,7 +70,7 @@ export function GlobalJsonEditDialog({
             data-testid="mcp-global-json-edit-save-button"
           >
             <Code className="w-4 h-4 mr-2" />
-            Save All
+            {translate('Save All')}
           </Button>
         </DialogFooter>
       </DialogContent>

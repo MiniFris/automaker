@@ -1,3 +1,5 @@
+import { getFormattingLocale } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useCallback, useState } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { useQueryClient } from '@tanstack/react-query';
@@ -58,6 +60,7 @@ const getExtension = (filename: string): string => {
 };
 
 export function AnalysisView() {
+  useUiLocale();
   const {
     currentProject,
     projectAnalysis,
@@ -457,7 +460,7 @@ ${Object.entries(projectAnalysis.filesByExtension)
         if (hasTests) {
           detectedFeatures.push({
             category: 'Testing',
-            description: 'Automated test suite',
+            description: translate('Automated test suite'),
             passes: true,
           });
         }
@@ -470,7 +473,7 @@ ${Object.entries(projectAnalysis.filesByExtension)
         if (hasComponents) {
           detectedFeatures.push({
             category: 'UI/Design',
-            description: 'Component-based UI architecture',
+            description: translate('Component-based UI architecture'),
             passes: true,
           });
         }
@@ -479,7 +482,7 @@ ${Object.entries(projectAnalysis.filesByExtension)
         if (topLevelDirs.includes('src')) {
           detectedFeatures.push({
             category: 'Project Structure',
-            description: 'Organized source code structure',
+            description: translate('Organized source code structure'),
             passes: true,
           });
         }
@@ -493,7 +496,7 @@ ${Object.entries(projectAnalysis.filesByExtension)
             if (pkg.dependencies?.react || pkg.dependencies?.['react-dom']) {
               detectedFeatures.push({
                 category: 'Frontend',
-                description: 'React-based user interface',
+                description: translate('React-based user interface'),
                 passes: true,
               });
             }
@@ -501,7 +504,7 @@ ${Object.entries(projectAnalysis.filesByExtension)
             if (pkg.dependencies?.next) {
               detectedFeatures.push({
                 category: 'Framework',
-                description: 'Next.js framework integration',
+                description: translate('Next.js framework integration'),
                 passes: true,
               });
             }
@@ -515,7 +518,7 @@ ${Object.entries(projectAnalysis.filesByExtension)
             ) {
               detectedFeatures.push({
                 category: 'Developer Experience',
-                description: 'TypeScript type safety',
+                description: translate('TypeScript type safety'),
                 passes: true,
               });
             }
@@ -524,7 +527,7 @@ ${Object.entries(projectAnalysis.filesByExtension)
             if (pkg.devDependencies?.tailwindcss || pkg.dependencies?.tailwindcss) {
               detectedFeatures.push({
                 category: 'UI/Design',
-                description: 'Tailwind CSS styling',
+                description: translate('Tailwind CSS styling'),
                 passes: true,
               });
             }
@@ -533,7 +536,7 @@ ${Object.entries(projectAnalysis.filesByExtension)
             if (pkg.devDependencies?.eslint || pkg.devDependencies?.prettier) {
               detectedFeatures.push({
                 category: 'Developer Experience',
-                description: 'Code quality tools',
+                description: translate('Code quality tools'),
                 passes: true,
               });
             }
@@ -542,7 +545,7 @@ ${Object.entries(projectAnalysis.filesByExtension)
             if (pkg.dependencies?.electron || pkg.devDependencies?.electron) {
               detectedFeatures.push({
                 category: 'Platform',
-                description: 'Electron desktop application',
+                description: translate('Electron desktop application'),
                 passes: true,
               });
             }
@@ -551,7 +554,7 @@ ${Object.entries(projectAnalysis.filesByExtension)
             if (pkg.devDependencies?.playwright || pkg.devDependencies?.['@playwright/test']) {
               detectedFeatures.push({
                 category: 'Testing',
-                description: 'Playwright end-to-end testing',
+                description: translate('Playwright end-to-end testing'),
                 passes: true,
               });
             }
@@ -564,7 +567,7 @@ ${Object.entries(projectAnalysis.filesByExtension)
         if (topLevelFiles.includes('readme.md') || topLevelDirs.includes('docs')) {
           detectedFeatures.push({
             category: 'Documentation',
-            description: 'Project documentation',
+            description: translate('Project documentation'),
             passes: true,
           });
         }
@@ -578,7 +581,7 @@ ${Object.entries(projectAnalysis.filesByExtension)
         if (hasCICD) {
           detectedFeatures.push({
             category: 'DevOps',
-            description: 'CI/CD pipeline configuration',
+            description: translate('CI/CD pipeline configuration'),
             passes: true,
           });
         }
@@ -591,7 +594,7 @@ ${Object.entries(projectAnalysis.filesByExtension)
         if (hasAPIRoutes) {
           detectedFeatures.push({
             category: 'Backend',
-            description: 'API endpoints',
+            description: translate('API endpoints'),
             passes: true,
           });
         }
@@ -608,7 +611,7 @@ ${Object.entries(projectAnalysis.filesByExtension)
         if (hasStateManagement) {
           detectedFeatures.push({
             category: 'Architecture',
-            description: 'State management system',
+            description: translate('State management system'),
             passes: true,
           });
         }
@@ -617,7 +620,7 @@ ${Object.entries(projectAnalysis.filesByExtension)
         if (topLevelFiles.includes('tsconfig.json') || topLevelFiles.includes('package.json')) {
           detectedFeatures.push({
             category: 'Configuration',
-            description: 'Project configuration files',
+            description: translate('Project configuration files'),
             passes: true,
           });
         }
@@ -629,7 +632,7 @@ ${Object.entries(projectAnalysis.filesByExtension)
       if (detectedFeatures.length === 0) {
         detectedFeatures.push({
           category: 'Core',
-          description: 'Basic project structure',
+          description: translate('Basic project structure'),
           passes: true,
         });
       }
@@ -731,7 +734,7 @@ ${Object.entries(projectAnalysis.filesByExtension)
         className="flex-1 flex items-center justify-center"
         data-testid="analysis-view-no-project"
       >
-        <p className="text-muted-foreground">No project selected</p>
+        <p className="text-muted-foreground">{translate('No project selected')}</p>
       </div>
     );
   }
@@ -743,7 +746,7 @@ ${Object.entries(projectAnalysis.filesByExtension)
         <div className="flex items-center gap-3">
           <Search className="w-5 h-5 text-muted-foreground" />
           <div>
-            <h1 className="text-xl font-bold">Project Analysis</h1>
+            <h1 className="text-xl font-bold">{translate('Project Analysis')}</h1>
             <p className="text-sm text-muted-foreground">{currentProject.name}</p>
           </div>
         </div>
@@ -751,12 +754,12 @@ ${Object.entries(projectAnalysis.filesByExtension)
           {isAnalyzing ? (
             <>
               <Spinner size="sm" className="mr-2" />
-              Analyzing...
+              {translate('Analyzing...')}
             </>
           ) : (
             <>
               <RefreshCw className="w-4 h-4 mr-2" />
-              Analyze Project
+              {translate('Analyze Project')}
             </>
           )}
         </Button>
@@ -767,20 +770,21 @@ ${Object.entries(projectAnalysis.filesByExtension)
         {!projectAnalysis && !isAnalyzing ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <Search className="w-16 h-16 text-muted-foreground/50 mb-4" />
-            <h2 className="text-lg font-semibold mb-2">No Analysis Yet</h2>
+            <h2 className="text-lg font-semibold mb-2">{translate('No Analysis Yet')}</h2>
             <p className="text-sm text-muted-foreground mb-4 max-w-md">
-              Click &quot;Analyze Project&quot; to scan your codebase and get insights about its
-              structure.
+              {translate(
+                'Click "Analyze Project" to scan your codebase and get insights about its structure.'
+              )}
             </p>
             <Button onClick={runAnalysis} data-testid="analyze-project-button-empty">
               <Search className="w-4 h-4 mr-2" />
-              Start Analysis
+              {translate('Start Analysis')}
             </Button>
           </div>
         ) : isAnalyzing ? (
           <div className="flex flex-col items-center justify-center h-full">
             <Spinner size="xl" className="mb-4" />
-            <p className="text-muted-foreground">Scanning project files...</p>
+            <p className="text-muted-foreground">{translate('Scanning project files...')}</p>
           </div>
         ) : projectAnalysis ? (
           <div className="flex gap-4 h-full overflow-hidden">
@@ -790,21 +794,26 @@ ${Object.entries(projectAnalysis.filesByExtension)
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <BarChart3 className="w-4 h-4" />
-                    Statistics
+                    {translate('Statistics')}
                   </CardTitle>
                   <CardDescription>
-                    Analyzed {new Date(projectAnalysis.analyzedAt).toLocaleString()}
+                    {translate('Analyzed ')}
+                    {new Date(projectAnalysis.analyzedAt).toLocaleString(getFormattingLocale())}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Total Files</span>
+                    <span className="text-sm text-muted-foreground">
+                      {translate('Total Files')}
+                    </span>
                     <span className="font-medium" data-testid="total-files">
                       {projectAnalysis.totalFiles}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Total Directories</span>
+                    <span className="text-sm text-muted-foreground">
+                      {translate('Total Directories')}
+                    </span>
                     <span className="font-medium" data-testid="total-directories">
                       {projectAnalysis.totalDirectories}
                     </span>
@@ -816,7 +825,7 @@ ${Object.entries(projectAnalysis.filesByExtension)
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <FileCode className="w-4 h-4" />
-                    Files by Extension
+                    {translate('Files by Extension')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -841,14 +850,17 @@ ${Object.entries(projectAnalysis.filesByExtension)
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <FileText className="w-4 h-4" />
-                    Generate Specification
+                    {translate('Generate Specification')}
                   </CardTitle>
-                  <CardDescription>Create app_spec.txt from analysis</CardDescription>
+                  <CardDescription>
+                    {translate('Create app_spec.txt from analysis')}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <p className="text-sm text-muted-foreground">
-                    Generate a project specification file based on the analyzed codebase structure
-                    and detected technologies.
+                    {translate(
+                      'Generate a project specification file based on the analyzed codebase structure and detected technologies.'
+                    )}
                   </p>
                   <Button
                     onClick={generateSpec}
@@ -859,12 +871,12 @@ ${Object.entries(projectAnalysis.filesByExtension)
                     {isGeneratingSpec ? (
                       <>
                         <Spinner size="sm" className="mr-2" />
-                        Generating...
+                        {translate('Generating...')}
                       </>
                     ) : (
                       <>
                         <FileText className="w-4 h-4 mr-2" />
-                        Generate Spec
+                        {translate('Generate Spec')}
                       </>
                     )}
                   </Button>
@@ -874,7 +886,7 @@ ${Object.entries(projectAnalysis.filesByExtension)
                       data-testid="spec-generated-success"
                     >
                       <CheckCircle className="w-4 h-4" />
-                      <span>app_spec.txt created successfully!</span>
+                      <span>{translate('app_spec.txt created successfully!')}</span>
                     </div>
                   )}
                   {specError && (
@@ -894,14 +906,15 @@ ${Object.entries(projectAnalysis.filesByExtension)
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <ListChecks className="w-4 h-4" />
-                    Generate Feature List
+                    {translate('Generate Feature List')}
                   </CardTitle>
-                  <CardDescription>Create features from analysis</CardDescription>
+                  <CardDescription>{translate('Create features from analysis')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <p className="text-sm text-muted-foreground">
-                    Automatically detect and generate a feature list based on the analyzed codebase
-                    structure, dependencies, and project configuration.
+                    {translate(
+                      'Automatically detect and generate a feature list based on the analyzed codebase structure, dependencies, and project configuration.'
+                    )}
                   </p>
                   <Button
                     onClick={generateFeatureList}
@@ -912,12 +925,12 @@ ${Object.entries(projectAnalysis.filesByExtension)
                     {isGeneratingFeatureList ? (
                       <>
                         <Spinner size="sm" className="mr-2" />
-                        Generating...
+                        {translate('Generating...')}
                       </>
                     ) : (
                       <>
                         <ListChecks className="w-4 h-4 mr-2" />
-                        Generate Feature List
+                        {translate('Generate Feature List')}
                       </>
                     )}
                   </Button>
@@ -927,7 +940,7 @@ ${Object.entries(projectAnalysis.filesByExtension)
                       data-testid="feature-list-generated-success"
                     >
                       <CheckCircle className="w-4 h-4" />
-                      <span>Features created successfully!</span>
+                      <span>{translate('Features created successfully!')}</span>
                     </div>
                   )}
                   {featureListError && (
@@ -948,11 +961,11 @@ ${Object.entries(projectAnalysis.filesByExtension)
               <CardHeader className="pb-2 border-b">
                 <CardTitle className="text-sm flex items-center gap-2">
                   <Folder className="w-4 h-4" />
-                  File Tree
+                  {translate('File Tree')}
                 </CardTitle>
                 <CardDescription>
-                  {projectAnalysis.totalFiles} files in {projectAnalysis.totalDirectories}{' '}
-                  directories
+                  {projectAnalysis.totalFiles} {translate(' files in ')}
+                  {projectAnalysis.totalDirectories} {translate('directories')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-0 overflow-y-auto h-full" data-testid="analysis-file-tree">

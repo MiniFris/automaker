@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useCallback } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import {
@@ -47,6 +48,7 @@ export function SelectRemoteDialog({
   operation,
   onConfirm,
 }: SelectRemoteDialogProps) {
+  useUiLocale();
   const [remotes, setRemotes] = useState<RemoteInfo[]>([]);
   const [selectedRemote, setSelectedRemote] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -76,7 +78,7 @@ export function SelectRemoteDialog({
           return remoteInfos.find((r) => r.name === 'origin')?.name ?? remoteInfos[0]?.name ?? '';
         });
       } else {
-        setError(result.error || 'Failed to fetch remotes');
+        setError(result.error || translate('Failed to fetch remotes'));
       }
     } catch (err) {
       logger.error('Failed to fetch remotes:', err);
@@ -133,7 +135,7 @@ export function SelectRemoteDialog({
           return remoteInfos.find((r) => r.name === 'origin')?.name ?? remoteInfos[0]?.name ?? '';
         });
       } else {
-        setError(result.error || 'Failed to refresh remotes');
+        setError(result.error || translate('Failed to refresh remotes'));
       }
     } catch (err) {
       logger.error('Failed to refresh remotes:', err);
@@ -157,13 +159,18 @@ export function SelectRemoteDialog({
     : `Push to ${selectedRemote || 'Remote'}`;
   const description = isPull ? (
     <>
-      Select a remote to pull changes into{' '}
-      <span className="font-mono text-foreground">{worktree?.branch || 'current branch'}</span>
+      {translate('Select a remote to pull changes into')}{' '}
+      <span className="font-mono text-foreground">
+        {worktree?.branch || translate('current branch')}
+      </span>
     </>
   ) : (
     <>
-      Select a remote to push{' '}
-      <span className="font-mono text-foreground">{worktree?.branch || 'current branch'}</span> to
+      {translate('Select a remote to push')}{' '}
+      <span className="font-mono text-foreground">
+        {worktree?.branch || translate('current branch')}
+      </span>{' '}
+      {translate(' to')}
     </>
   );
 
@@ -190,14 +197,14 @@ export function SelectRemoteDialog({
             </div>
             <Button variant="outline" size="sm" onClick={fetchRemotes}>
               <RefreshCw className="w-4 h-4 mr-2" />
-              Retry
+              {translate('Retry')}
             </Button>
           </div>
         ) : (
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="remote-select">Select Remote</Label>
+                <Label htmlFor="remote-select">{translate('Select Remote')}</Label>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -210,12 +217,12 @@ export function SelectRemoteDialog({
                   ) : (
                     <RefreshCw className="w-3 h-3 mr-1" />
                   )}
-                  Refresh
+                  {translate('Refresh')}
                 </Button>
               </div>
               <Select value={selectedRemote} onValueChange={setSelectedRemote}>
                 <SelectTrigger id="remote-select">
-                  <SelectValue placeholder="Select a remote" />
+                  <SelectValue placeholder={translate('Select a remote')} />
                 </SelectTrigger>
                 <SelectContent>
                   {remotes.map((remote) => (
@@ -240,15 +247,15 @@ export function SelectRemoteDialog({
                 <p className="text-sm text-muted-foreground">
                   {isPull ? (
                     <>
-                      This will pull changes from{' '}
+                      {translate('This will pull changes from')}{' '}
                       <span className="font-mono text-foreground">
                         {selectedRemote}/{worktree?.branch}
                       </span>{' '}
-                      into your local branch.
+                      {translate('into your local branch.')}
                     </>
                   ) : (
                     <>
-                      This will push your local changes to{' '}
+                      {translate('This will push your local changes to')}{' '}
                       <span className="font-mono text-foreground">
                         {selectedRemote}/{worktree?.branch}
                       </span>
@@ -263,7 +270,7 @@ export function SelectRemoteDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button onClick={handleConfirm} disabled={!selectedRemote || isLoading}>
             <Icon className="w-4 h-4 mr-2" />

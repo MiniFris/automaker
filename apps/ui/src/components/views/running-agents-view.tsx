@@ -1,3 +1,5 @@
+import { formatCount } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * Running Agents View
  *
@@ -28,6 +30,7 @@ function formatFeatureId(featureId: string): string {
 }
 
 export function RunningAgentsView() {
+  useUiLocale();
   const [selectedAgent, setSelectedAgent] = useState<RunningAgent | null>(null);
   const { setCurrentProject, projects } = useAppStore();
   const navigate = useNavigate();
@@ -116,11 +119,13 @@ export function RunningAgentsView() {
             <Activity className="h-6 w-6 text-brand-500" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Running Agents</h1>
+            <h1 className="text-2xl font-bold">{translate('Running Agents')}</h1>
             <p className="text-sm text-muted-foreground">
               {runningAgents.length === 0
-                ? 'No agents currently running'
-                : `${runningAgents.length} agent${runningAgents.length === 1 ? '' : 's'} running across all projects`}
+                ? translate('No agents currently running')
+                : translate('{value1} running across all projects', {
+                    value1: formatCount(runningAgents.length, 'agent'),
+                  })}
             </p>
           </div>
         </div>
@@ -130,7 +135,7 @@ export function RunningAgentsView() {
           ) : (
             <RefreshCw className="h-4 w-4 mr-2" />
           )}
-          Refresh
+          {translate('Refresh')}
         </Button>
       </div>
 
@@ -140,10 +145,11 @@ export function RunningAgentsView() {
           <div className="p-4 rounded-full bg-muted/50 mb-4">
             <Bot className="h-12 w-12 text-muted-foreground" />
           </div>
-          <h2 className="text-lg font-medium mb-2">No Running Agents</h2>
+          <h2 className="text-lg font-medium mb-2">{translate('No Running Agents')}</h2>
           <p className="text-muted-foreground max-w-md">
-            Agents will appear here when they are actively working on features. Start an agent from
-            the Kanban board by dragging a feature to "In Progress".
+            {translate(
+              'Agents will appear here when they are actively working on features. Start an agent from the Kanban board by dragging a feature to "In Progress".'
+            )}
           </p>
         </div>
       ) : (
@@ -209,7 +215,7 @@ export function RunningAgentsView() {
                     className="text-muted-foreground hover:text-foreground"
                   >
                     <FileText className="h-3.5 w-3.5 mr-1.5" />
-                    View Logs
+                    {translate('View Logs')}
                   </Button>
                   <Button
                     variant="ghost"
@@ -217,7 +223,7 @@ export function RunningAgentsView() {
                     onClick={() => handleNavigateToProject(agent)}
                     className="text-muted-foreground hover:text-foreground"
                   >
-                    View Project
+                    {translate('View Project')}
                   </Button>
                   <Button
                     variant="destructive"
@@ -226,7 +232,7 @@ export function RunningAgentsView() {
                     disabled={stopFeature.isPending}
                   >
                     <Square className="h-3.5 w-3.5 mr-1.5" />
-                    Stop
+                    {translate('Stop')}
                   </Button>
                 </div>
               </div>

@@ -1,3 +1,6 @@
+import { formatCount } from '@/lib/i18n';
+import { getFormattingLocale } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Bot, User, ImageIcon, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Markdown } from '@/components/ui/markdown';
@@ -17,6 +20,7 @@ interface MessageBubbleProps {
 }
 
 export function MessageBubble({ message }: MessageBubbleProps) {
+  useUiLocale();
   const isError = message.isError && message.role === 'assistant';
 
   return (
@@ -78,8 +82,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             <div className="flex items-center gap-1.5 text-xs text-primary-foreground/80">
               <ImageIcon className="w-3 h-3" />
               <span>
-                {message.images.length} image
-                {message.images.length > 1 ? 's' : ''} attached
+                {formatCount(message.images.length, 'image')} {translate(' attached')}
               </span>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -95,11 +98,14 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                   >
                     <img
                       src={dataUrl}
-                      alt={image.filename || `Attached image ${index + 1}`}
+                      alt={
+                        image.filename ||
+                        translate('Attached image {value1}', { value1: index + 1 })
+                      }
                       className="w-20 h-20 object-cover hover:opacity-90 transition-opacity"
                     />
                     <div className="absolute bottom-0 left-0 right-0 bg-black/50 px-1.5 py-0.5 text-[9px] text-white truncate">
-                      {image.filename || `Image ${index + 1}`}
+                      {image.filename || translate('Image {value1}', { value1: index + 1 })}
                     </div>
                   </div>
                 );
@@ -118,7 +124,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                 : 'text-muted-foreground'
           )}
         >
-          {new Date(message.timestamp).toLocaleTimeString([], {
+          {new Date(message.timestamp).toLocaleTimeString(getFormattingLocale(), {
             hour: '2-digit',
             minute: '2-digit',
           })}

@@ -1,3 +1,6 @@
+import { formatCount } from '@/lib/i18n';
+import { getFormattingLocale } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState } from 'react';
 import {
   GitBranch,
@@ -21,6 +24,7 @@ interface GitDetailPanelProps {
 }
 
 export function GitDetailPanel({ details, filePath, onOpenFile }: GitDetailPanelProps) {
+  useUiLocale();
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Don't show anything if there's no meaningful data
@@ -71,15 +75,21 @@ export function GitDetailPanel({ details, filePath, onOpenFile }: GitDetailPanel
           {/* Staged/unstaged two-tone badge */}
           {details.isStaged && details.isUnstaged && (
             <span className="flex items-center gap-0">
-              <span className="w-2 h-2 rounded-l bg-green-500" title="Staged changes" />
-              <span className="w-2 h-2 rounded-r bg-yellow-500" title="Unstaged changes" />
+              <span
+                className="w-2 h-2 rounded-l bg-green-500"
+                title={translate('Staged changes')}
+              />
+              <span
+                className="w-2 h-2 rounded-r bg-yellow-500"
+                title={translate('Unstaged changes')}
+              />
             </span>
           )}
           {details.isStaged && !details.isUnstaged && (
-            <span className="w-2 h-2 rounded bg-green-500" title="Staged" />
+            <span className="w-2 h-2 rounded bg-green-500" title={translate('Staged')} />
           )}
           {!details.isStaged && details.isUnstaged && (
-            <span className="w-2 h-2 rounded bg-yellow-500" title="Unstaged" />
+            <span className="w-2 h-2 rounded bg-yellow-500" title={translate('Unstaged')} />
           )}
 
           {/* Diff stats */}
@@ -146,14 +156,16 @@ export function GitDetailPanel({ details, filePath, onOpenFile }: GitDetailPanel
           {details.isConflicted && (
             <div className="flex items-center gap-2 p-2 rounded bg-orange-500/10 border border-orange-500/20 text-orange-600">
               <AlertTriangle className="w-4 h-4 shrink-0" />
-              <span className="flex-1 font-medium">This file has merge conflicts</span>
+              <span className="flex-1 font-medium">
+                {translate('This file has merge conflicts')}
+              </span>
               {onOpenFile && (
                 <button
                   onClick={() => onOpenFile(filePath)}
                   className="flex items-center gap-1 px-2 py-0.5 rounded bg-orange-500/20 hover:bg-orange-500/30 text-orange-700 text-[10px] font-medium transition-colors"
                 >
                   <FileEdit className="w-3 h-3" />
-                  Resolve
+                  {translate('Resolve')}
                 </button>
               )}
             </div>
@@ -175,12 +187,17 @@ function formatTimeAgo(isoTimestamp: string): string {
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
 
-    if (diffSecs < 60) return 'just now';
-    if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    if (diffSecs < 60) return translate('just now');
+    if (diffMins < 60)
+      return translate('{value1} min{value2} ago', {
+        value1: diffMins,
+        value2: diffMins > 1 ? 's' : '',
+      });
+    if (diffHours < 24)
+      return translate('{value1} ago', { value1: formatCount(diffHours, 'hour') });
+    if (diffDays < 30) return translate('{value1} ago', { value1: formatCount(diffDays, 'day') });
 
-    return date.toLocaleDateString();
+    return date.toLocaleDateString(getFormattingLocale());
   } catch {
     return '';
   }

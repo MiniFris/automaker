@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useRef } from 'react';
 import {
   Dialog,
@@ -24,6 +25,7 @@ interface EditProjectDialogProps {
 }
 
 export function EditProjectDialog({ project, open, onOpenChange }: EditProjectDialogProps) {
+  useUiLocale();
   const { setProjectName, setProjectIcon, setProjectCustomIcon } = useAppStore();
   const [name, setName] = useState(project.name);
   const [icon, setIcon] = useState<string | null>(project.icon || null);
@@ -54,7 +56,9 @@ export function EditProjectDialog({ project, open, onOpenChange }: EditProjectDi
     const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (!validTypes.includes(file.type)) {
       toast.error(
-        `Invalid file type: ${file.type || 'unknown'}. Please use JPG, PNG, GIF or WebP.`
+        translate('Invalid file type: {value1}. Please use JPG, PNG, GIF or WebP.', {
+          value1: file.type || 'unknown',
+        })
       );
       return;
     }
@@ -63,7 +67,9 @@ export function EditProjectDialog({ project, open, onOpenChange }: EditProjectDi
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
       toast.error(
-        `File too large (${(file.size / 1024 / 1024).toFixed(2)} MB). Maximum size is 5 MB.`
+        translate('File too large ({value1} MB). Maximum size is 5 MB.', {
+          value1: (file.size / 1024 / 1024).toFixed(2),
+        })
       );
       return;
     }
@@ -85,19 +91,19 @@ export function EditProjectDialog({ project, open, onOpenChange }: EditProjectDi
           setCustomIconPath(result.path);
           // Clear the Lucide icon when custom icon is set
           setIcon(null);
-          toast.success('Icon uploaded successfully');
+          toast.success(translate('Icon uploaded successfully'));
         } else {
-          toast.error('Failed to upload icon');
+          toast.error(translate('Failed to upload icon'));
         }
         setIsUploadingIcon(false);
       };
       reader.onerror = () => {
-        toast.error('Failed to read file');
+        toast.error(translate('Failed to read file'));
         setIsUploadingIcon(false);
       };
       reader.readAsDataURL(file);
     } catch {
-      toast.error('Failed to upload icon');
+      toast.error(translate('Failed to upload icon'));
       setIsUploadingIcon(false);
     }
   };
@@ -113,26 +119,26 @@ export function EditProjectDialog({ project, open, onOpenChange }: EditProjectDi
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Edit Project</DialogTitle>
+          <DialogTitle>{translate('Edit Project')}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4 overflow-y-auto flex-1 min-h-0">
           {/* Project Name */}
           <div className="space-y-2">
-            <Label htmlFor="project-name">Project Name</Label>
+            <Label htmlFor="project-name">{translate('Project Name')}</Label>
             <Input
               id="project-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Enter project name"
+              placeholder={translate('Enter project name')}
             />
           </div>
 
           {/* Icon Picker */}
           <div className="space-y-2">
-            <Label>Project Icon</Label>
+            <Label>{translate('Project Icon')}</Label>
             <p className="text-xs text-muted-foreground mb-2">
-              Choose a preset icon or upload a custom image
+              {translate('Choose a preset icon or upload a custom image')}
             </p>
 
             {/* Custom Icon Upload */}
@@ -142,7 +148,7 @@ export function EditProjectDialog({ project, open, onOpenChange }: EditProjectDi
                   <div className="relative">
                     <img
                       src={getAuthenticatedImageUrl(customIconPath, project.path)}
-                      alt="Custom project icon"
+                      alt={translate('Custom project icon')}
                       className="w-12 h-12 rounded-lg object-cover border border-border"
                     />
                     <button
@@ -176,10 +182,10 @@ export function EditProjectDialog({ project, open, onOpenChange }: EditProjectDi
                     className="gap-1.5"
                   >
                     <Upload className="w-3.5 h-3.5" />
-                    {isUploadingIcon ? 'Uploading...' : 'Upload Custom Icon'}
+                    {isUploadingIcon ? translate('Uploading...') : translate('Upload Custom Icon')}
                   </Button>
                   <p className="text-xs text-muted-foreground mt-1">
-                    PNG, JPG, GIF or WebP. Max 5MB.
+                    {translate('PNG, JPG, GIF or WebP. Max 5MB.')}
                   </p>
                 </div>
               </div>
@@ -192,10 +198,10 @@ export function EditProjectDialog({ project, open, onOpenChange }: EditProjectDi
 
         <DialogFooter className="flex-shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button onClick={handleSave} disabled={!name.trim()}>
-            Save Changes
+            {translate('Save Changes')}
           </Button>
         </DialogFooter>
       </DialogContent>

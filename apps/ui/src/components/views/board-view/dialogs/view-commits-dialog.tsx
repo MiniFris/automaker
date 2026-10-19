@@ -1,3 +1,6 @@
+import { formatCount } from '@/lib/i18n';
+import { getFormattingLocale } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useCallback, useEffect, useState } from 'react';
 import {
   Dialog,
@@ -47,9 +50,9 @@ interface ViewCommitsDialogProps {
 }
 
 function formatRelativeDate(dateStr: string): string {
-  if (!dateStr) return 'unknown date';
+  if (!dateStr) return translate('unknown date');
   const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return 'unknown date';
+  if (isNaN(date.getTime())) return translate('unknown date');
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffSecs = Math.floor(diffMs / 1000);
@@ -59,16 +62,17 @@ function formatRelativeDate(dateStr: string): string {
   const diffWeeks = Math.floor(diffDays / 7);
   const diffMonths = Math.floor(diffDays / 30);
 
-  if (diffSecs < 60) return 'just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  if (diffWeeks < 5) return `${diffWeeks}w ago`;
-  if (diffMonths < 12) return `${diffMonths}mo ago`;
-  return date.toLocaleDateString();
+  if (diffSecs < 60) return translate('just now');
+  if (diffMins < 60) return translate('{value1}m ago', { value1: diffMins });
+  if (diffHours < 24) return translate('{value1}h ago', { value1: diffHours });
+  if (diffDays < 7) return translate('{value1}d ago', { value1: diffDays });
+  if (diffWeeks < 5) return translate('{value1}w ago', { value1: diffWeeks });
+  if (diffMonths < 12) return translate('{value1}mo ago', { value1: diffMonths });
+  return date.toLocaleDateString(getFormattingLocale());
 }
 
 function CopyHashButton({ hash }: { hash: string }) {
+  useUiLocale();
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async (e: React.MouseEvent) => {
@@ -78,7 +82,7 @@ function CopyHashButton({ hash }: { hash: string }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error('Failed to copy hash');
+      toast.error(translate('Failed to copy hash'));
     }
   };
 
@@ -86,7 +90,7 @@ function CopyHashButton({ hash }: { hash: string }) {
     <button
       onClick={handleCopy}
       className="inline-flex items-center gap-1 font-mono text-[11px] bg-muted hover:bg-muted/80 px-1.5 py-0.5 rounded cursor-pointer transition-colors"
-      title={`Copy full hash: ${hash}`}
+      title={translate('Copy full hash: {value1}', { value1: hash })}
     >
       {copied ? (
         <Check className="w-2.5 h-2.5 text-green-500" />
@@ -107,6 +111,7 @@ function CommitEntryItem({
   index: number;
   isLast: boolean;
 }) {
+  useUiLocale();
   const [expanded, setExpanded] = useState(false);
   const hasFiles = commit.files && commit.files.length > 0;
 
@@ -144,7 +149,10 @@ function CommitEntryItem({
             </span>
             <span className="inline-flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              <time dateTime={commit.date} title={new Date(commit.date).toLocaleString()}>
+              <time
+                dateTime={commit.date}
+                title={new Date(commit.date).toLocaleString(getFormattingLocale())}
+              >
                 {formatRelativeDate(commit.date)}
               </time>
             </span>
@@ -159,7 +167,7 @@ function CommitEntryItem({
                   <ChevronRight className="w-3 h-3" />
                 )}
                 <FileText className="w-3 h-3" />
-                {commit.files.length} file{commit.files.length !== 1 ? 's' : ''}
+                {formatCount(commit.files.length, 'file')}
               </button>
             )}
           </div>
@@ -191,6 +199,7 @@ const LOAD_MORE_INCREMENT = 30;
 const MAX_COMMIT_LIMIT = 100;
 
 export function ViewCommitsDialog({ open, onOpenChange, worktree }: ViewCommitsDialogProps) {
+  useUiLocale();
   const [commits, setCommits] = useState<CommitInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -222,10 +231,10 @@ export function ViewCommitsDialog({ open, onOpenChange, worktree }: ViewCommitsD
           // If we got back exactly as many commits as we requested, there may be more
           setHasMore(fetchedCommits.length === fetchLimit && fetchLimit < MAX_COMMIT_LIMIT);
         } else {
-          setError(result.error || 'Failed to load commits');
+          setError(result.error || translate('Failed to load commits'));
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load commits');
+        setError(err instanceof Error ? err.message : translate('Failed to load commits'));
       } finally {
         setIsLoading(false);
         setIsLoadingMore(false);
@@ -255,10 +264,10 @@ export function ViewCommitsDialog({ open, onOpenChange, worktree }: ViewCommitsD
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <GitCommit className="w-5 h-5" />
-            Commit History
+            {translate('Commit History')}
           </DialogTitle>
           <DialogDescription>
-            Recent commits on{' '}
+            {translate('Recent commits on')}{' '}
             <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>
           </DialogDescription>
         </DialogHeader>
@@ -268,7 +277,9 @@ export function ViewCommitsDialog({ open, onOpenChange, worktree }: ViewCommitsD
             {isLoading && (
               <div className="flex items-center justify-center py-12">
                 <Spinner size="md" />
-                <span className="ml-2 text-sm text-muted-foreground">Loading commits...</span>
+                <span className="ml-2 text-sm text-muted-foreground">
+                  {translate('Loading commits...')}
+                </span>
               </div>
             )}
 
@@ -280,7 +291,7 @@ export function ViewCommitsDialog({ open, onOpenChange, worktree }: ViewCommitsD
 
             {!isLoading && !error && commits.length === 0 && (
               <div className="flex items-center justify-center py-12">
-                <p className="text-sm text-muted-foreground">No commits found</p>
+                <p className="text-sm text-muted-foreground">{translate('No commits found')}</p>
               </div>
             )}
 
@@ -304,12 +315,12 @@ export function ViewCommitsDialog({ open, onOpenChange, worktree }: ViewCommitsD
                       {isLoadingMore ? (
                         <>
                           <Spinner size="sm" />
-                          Loading more commits...
+                          {translate('Loading more commits...')}
                         </>
                       ) : (
                         <>
                           <ChevronDown className="w-4 h-4" />
-                          Load more commits
+                          {translate('Load more commits')}
                         </>
                       )}
                     </button>

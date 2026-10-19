@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { useAppStore } from '@/store/app-store';
@@ -94,7 +95,11 @@ export function useMCPServers() {
         if (!silent) {
           setExpandedServers((prev) => new Set([...prev, server.id]));
           toast.success(
-            `Connected to ${server.name} (${result.tools?.length || 0} tools, ${result.connectionTime}ms)`
+            translate('Connected to {value1} ({value2} tools, {value3}ms)', {
+              value1: server.name,
+              value2: result.tools?.length || 0,
+              value3: result.connectionTime,
+            })
           );
         }
       } else {
@@ -107,7 +112,7 @@ export function useMCPServers() {
           },
         }));
         if (!silent) {
-          toast.error(`Failed to connect: ${result.error}`);
+          toast.error(translate('Failed to connect: {value1}', { value1: result.error }));
         }
       }
     } catch (error) {
@@ -120,7 +125,7 @@ export function useMCPServers() {
         },
       }));
       if (!silent) {
-        toast.error(`Test failed: ${errorMessage}`);
+        toast.error(translate('Test failed: {value1}', { value1: errorMessage }));
       }
     }
   }, []);
@@ -148,12 +153,12 @@ export function useMCPServers() {
     try {
       const success = await loadMCPServersFromServer();
       if (success) {
-        toast.success('MCP servers refreshed from settings');
+        toast.success(translate('MCP servers refreshed from settings'));
       } else {
-        toast.error('Failed to refresh MCP servers');
+        toast.error(translate('Failed to refresh MCP servers'));
       }
     } catch {
-      toast.error('Error refreshing MCP servers');
+      toast.error(translate('Error refreshing MCP servers'));
     } finally {
       setIsRefreshing(false);
     }
@@ -204,17 +209,17 @@ export function useMCPServers() {
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      toast.error('Server name is required');
+      toast.error(translate('Server name is required'));
       return;
     }
 
     if (formData.type === 'stdio' && !formData.command.trim()) {
-      toast.error('Command is required for stdio servers');
+      toast.error(translate('Command is required for stdio servers'));
       return;
     }
 
     if ((formData.type === 'sse' || formData.type === 'http') && !formData.url.trim()) {
-      toast.error('URL is required for SSE/HTTP servers');
+      toast.error(translate('URL is required for SSE/HTTP servers'));
       return;
     }
 
@@ -224,11 +229,11 @@ export function useMCPServers() {
       try {
         parsedHeaders = JSON.parse(formData.headers.trim());
         if (typeof parsedHeaders !== 'object' || Array.isArray(parsedHeaders)) {
-          toast.error('Headers must be a JSON object');
+          toast.error(translate('Headers must be a JSON object'));
           return;
         }
       } catch {
-        toast.error('Invalid JSON for headers');
+        toast.error(translate('Invalid JSON for headers'));
         return;
       }
     }
@@ -239,11 +244,11 @@ export function useMCPServers() {
       try {
         parsedEnv = JSON.parse(formData.env.trim());
         if (typeof parsedEnv !== 'object' || Array.isArray(parsedEnv)) {
-          toast.error('Environment variables must be a JSON object');
+          toast.error(translate('Environment variables must be a JSON object'));
           return;
         }
       } catch {
-        toast.error('Invalid JSON for environment variables');
+        toast.error(translate('Invalid JSON for environment variables'));
         return;
       }
     }
@@ -278,10 +283,10 @@ export function useMCPServers() {
       if (!syncSuccess) {
         // Rollback local state on sync failure
         updateMCPServer(editingServer.id, previousData);
-        toast.error('Failed to save MCP server to disk');
+        toast.error(translate('Failed to save MCP server to disk'));
         return;
       }
-      toast.success('MCP server updated');
+      toast.success(translate('MCP server updated'));
       handleCloseDialog();
       return;
     }
@@ -328,12 +333,12 @@ export function useMCPServers() {
       }
 
       if (!syncSuccess) {
-        toast.error('Failed to save MCP server to disk');
+        toast.error(translate('Failed to save MCP server to disk'));
         setIsSecurityWarningOpen(false);
         setPendingServerData(null);
         return;
       }
-      toast.success('MCP server added');
+      toast.success(translate('MCP server added'));
       handleCloseDialog();
     } else if (pendingServerData.type === 'import' && pendingServerData.importServers) {
       // Capture existing IDs before adding to find the new servers reliably
@@ -360,13 +365,18 @@ export function useMCPServers() {
       }
 
       if (!syncSuccess) {
-        toast.error('Failed to save MCP servers to disk');
+        toast.error(translate('Failed to save MCP servers to disk'));
         setIsSecurityWarningOpen(false);
         setPendingServerData(null);
         return;
       }
       const count = pendingServerData.importServers.length;
-      toast.success(`Imported ${count} MCP server${count > 1 ? 's' : ''}`);
+      toast.success(
+        translate('Imported {value1} MCP server{value2}', {
+          value1: count,
+          value2: count > 1 ? 's' : '',
+        })
+      );
       setIsImportDialogOpen(false);
       setImportJson('');
     }
@@ -383,10 +393,10 @@ export function useMCPServers() {
     if (!syncSuccess) {
       // Rollback local state on sync failure
       updateMCPServer(server.id, { enabled: previousEnabled });
-      toast.error('Failed to save settings to disk');
+      toast.error(translate('Failed to save settings to disk'));
       return;
     }
-    toast.success(wasDisabled ? 'Server enabled' : 'Server disabled');
+    toast.success(wasDisabled ? translate('Server enabled') : translate('Server disabled'));
 
     // Auto-test if server was just enabled
     if (wasDisabled) {
@@ -402,10 +412,10 @@ export function useMCPServers() {
     const syncSuccess = await syncSettingsToServer();
     setDeleteConfirmId(null);
     if (!syncSuccess) {
-      toast.error('Failed to save settings to disk');
+      toast.error(translate('Failed to save settings to disk'));
       return;
     }
-    toast.success('MCP server removed');
+    toast.success(translate('MCP server removed'));
   };
 
   /** Helper to parse a server config into importable format */
@@ -522,18 +532,23 @@ export function useMCPServers() {
           }
         }
       } else {
-        toast.error('Invalid format: expected array or object with server configurations');
+        toast.error(
+          translate('Invalid format: expected array or object with server configurations')
+        );
         return;
       }
 
       if (skippedCount > 0) {
         toast.info(
-          `Skipped ${skippedCount} server${skippedCount > 1 ? 's' : ''} (already exist or invalid)`
+          translate('Skipped {value1} server{value2} (already exist or invalid)', {
+            value1: skippedCount,
+            value2: skippedCount > 1 ? 's' : '',
+          })
         );
       }
 
       if (serversToImport.length === 0) {
-        toast.warning('No new servers to import');
+        toast.warning(translate('No new servers to import'));
         return;
       }
 
@@ -585,7 +600,7 @@ export function useMCPServers() {
 
     const json = JSON.stringify({ mcpServers: exportData }, null, 2);
     navigator.clipboard.writeText(json);
-    toast.success('Copied to clipboard');
+    toast.success(translate('Copied to clipboard'));
   };
 
   const handleOpenJsonEdit = (server: MCPServerConfig) => {
@@ -625,7 +640,7 @@ export function useMCPServers() {
       const parsed = JSON.parse(jsonEditValue);
 
       if (typeof parsed !== 'object' || Array.isArray(parsed)) {
-        toast.error('Config must be a JSON object');
+        toast.error(translate('Config must be a JSON object'));
         return;
       }
 
@@ -633,18 +648,18 @@ export function useMCPServers() {
       const serverType = parsed.type || 'stdio';
 
       if (!parsed.name || typeof parsed.name !== 'string') {
-        toast.error('Name is required');
+        toast.error(translate('Name is required'));
         return;
       }
 
       if (serverType === 'stdio') {
         if (!parsed.command || typeof parsed.command !== 'string') {
-          toast.error('Command is required for stdio servers');
+          toast.error(translate('Command is required for stdio servers'));
           return;
         }
       } else if (serverType === 'sse' || serverType === 'http') {
         if (!parsed.url || typeof parsed.url !== 'string') {
-          toast.error('URL is required for SSE/HTTP servers');
+          toast.error(translate('URL is required for SSE/HTTP servers'));
           return;
         }
       }
@@ -680,10 +695,10 @@ export function useMCPServers() {
       updateMCPServer(jsonEditServer.id, updateData);
       const syncSuccess = await syncSettingsToServer();
       if (!syncSuccess) {
-        toast.error('Failed to save settings to disk');
+        toast.error(translate('Failed to save settings to disk'));
         return;
       }
-      toast.success('Server configuration updated');
+      toast.success(translate('Server configuration updated'));
       setJsonEditServer(null);
       setJsonEditValue('');
     } catch (error) {
@@ -734,11 +749,11 @@ export function useMCPServers() {
     for (const serverConfig of serversArray) {
       const name = serverConfig.name as string;
       if (!name || typeof name !== 'string') {
-        toast.error('Each server must have a name');
+        toast.error(translate('Each server must have a name'));
         return false;
       }
       if (names.has(name)) {
-        toast.error(`Duplicate server name found: "${name}"`);
+        toast.error(translate('Duplicate server name found: "{value1}"', { value1: name }));
         return false;
       }
       names.add(name);
@@ -746,12 +761,17 @@ export function useMCPServers() {
       const serverType = (serverConfig.type as string) || 'stdio';
       if (serverType === 'stdio') {
         if (!serverConfig.command || typeof serverConfig.command !== 'string') {
-          toast.error(`Command is required for "${name}" (stdio)`);
+          toast.error(translate('Command is required for "{value1}" (stdio)', { value1: name }));
           return false;
         }
       } else if (serverType === 'sse' || serverType === 'http') {
         if (!serverConfig.url || typeof serverConfig.url !== 'string') {
-          toast.error(`URL is required for "${name}" (${serverType})`);
+          toast.error(
+            translate('URL is required for "{value1}" ({value2})', {
+              value1: name,
+              value2: serverType,
+            })
+          );
           return false;
         }
       }
@@ -824,19 +844,24 @@ export function useMCPServers() {
     // Validate all servers first
     for (const [name, config] of Object.entries(serversObject)) {
       if (typeof config !== 'object' || config === null) {
-        toast.error(`Invalid config for "${name}"`);
+        toast.error(translate('Invalid config for "{value1}"', { value1: name }));
         return false;
       }
 
       const serverType = (config.type as string) || 'stdio';
       if (serverType === 'stdio') {
         if (!config.command || typeof config.command !== 'string') {
-          toast.error(`Command is required for "${name}" (stdio)`);
+          toast.error(translate('Command is required for "{value1}" (stdio)', { value1: name }));
           return false;
         }
       } else if (serverType === 'sse' || serverType === 'http') {
         if (!config.url || typeof config.url !== 'string') {
-          toast.error(`URL is required for "${name}" (${serverType})`);
+          toast.error(
+            translate('URL is required for "{value1}" ({value2})', {
+              value1: name,
+              value2: serverType,
+            })
+          );
           return false;
         }
       }
@@ -908,7 +933,9 @@ export function useMCPServers() {
         // Object format - legacy Claude Desktop compatibility
         success = await handleSaveGlobalJsonObject(servers);
       } else {
-        toast.error('Invalid format: expected array or object with server configurations');
+        toast.error(
+          translate('Invalid format: expected array or object with server configurations')
+        );
         return;
       }
 
@@ -918,10 +945,10 @@ export function useMCPServers() {
 
       const syncSuccess = await syncSettingsToServer();
       if (!syncSuccess) {
-        toast.error('Failed to save settings to disk');
+        toast.error(translate('Failed to save settings to disk'));
         return;
       }
-      toast.success('MCP servers configuration updated');
+      toast.success(translate('MCP servers configuration updated'));
       setIsGlobalJsonEditOpen(false);
       setGlobalJsonValue('');
     } catch (error) {

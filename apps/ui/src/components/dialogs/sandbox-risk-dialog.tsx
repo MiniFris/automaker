@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * Sandbox Risk Confirmation Dialog
  *
@@ -26,6 +27,7 @@ interface SandboxRiskDialogProps {
 }
 
 export function SandboxRiskDialog({ open, onConfirm, onDeny }: SandboxRiskDialogProps) {
+  useUiLocale();
   const [skipInFuture, setSkipInFuture] = useState(false);
 
   const handleConfirm = () => {
@@ -45,7 +47,7 @@ export function SandboxRiskDialog({ open, onConfirm, onDeny }: SandboxRiskDialog
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <ShieldAlert className="w-6 h-6 shrink-0" />
-            Sandbox Environment Not Detected
+            {translate('Sandbox Environment Not Detected')}
           </DialogTitle>
         </DialogHeader>
 
@@ -53,44 +55,55 @@ export function SandboxRiskDialog({ open, onConfirm, onDeny }: SandboxRiskDialog
           <DialogDescription asChild>
             <div className="space-y-4 pt-2 pb-2">
               <p className="text-muted-foreground">
-                <strong>Warning:</strong> This application is running outside of a containerized
-                sandbox environment. AI agents will have direct access to your filesystem and can
-                execute commands on your system.
+                <strong>{translate('Warning:')}</strong>{' '}
+                {translate(
+                  ' This application is running outside of a containerized sandbox environment. AI agents will have direct access to your filesystem and can execute commands on your system.'
+                )}
               </p>
 
               <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 space-y-2">
-                <p className="text-sm font-medium text-destructive">Potential Risks:</p>
+                <p className="text-sm font-medium text-destructive">
+                  {translate('Potential Risks:')}
+                </p>
                 <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
-                  <li>Agents can read, modify, or delete files on your system</li>
-                  <li>Agents can execute arbitrary commands and install software</li>
-                  <li>Agents can access environment variables and credentials</li>
-                  <li>Unintended side effects from agent actions may affect your system</li>
+                  <li>{translate('Agents can read, modify, or delete files on your system')}</li>
+                  <li>{translate('Agents can execute arbitrary commands and install software')}</li>
+                  <li>{translate('Agents can access environment variables and credentials')}</li>
+                  <li>
+                    {translate('Unintended side effects from agent actions may affect your system')}
+                  </li>
                 </ul>
               </div>
 
               <p className="text-sm text-muted-foreground">
-                For safer operation, consider running Automaker in Docker. See the README for
-                instructions.
+                {translate(
+                  'For safer operation, consider running Automaker in Docker. See the README for instructions.'
+                )}
               </p>
 
               <div className="bg-muted/50 border border-border rounded-lg p-4 space-y-2">
                 <p className="text-sm font-medium text-foreground">
-                  Already running in Docker? Try these troubleshooting steps:
+                  {translate('Already running in Docker? Try these troubleshooting steps:')}
                 </p>
                 <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
                   <li>
-                    Ensure <code className="bg-muted px-1 rounded">IS_CONTAINERIZED=true</code> is
-                    set in your docker-compose environment
+                    {translate('Ensure ')}
+                    <code className="bg-muted px-1 rounded">IS_CONTAINERIZED=true</code>{' '}
+                    {translate(' is set in your docker-compose environment')}
                   </li>
                   <li>
-                    Verify the server container has the environment variable:{' '}
+                    {translate('Verify the server container has the environment variable:')}{' '}
                     <code className="bg-muted px-1 rounded">
                       docker exec automaker-server printenv IS_CONTAINERIZED
                     </code>
                   </li>
-                  <li>Rebuild and restart containers if you recently changed the configuration</li>
                   <li>
-                    Check the server logs for startup messages:{' '}
+                    {translate(
+                      'Rebuild and restart containers if you recently changed the configuration'
+                    )}
+                  </li>
+                  <li>
+                    {translate('Check the server logs for startup messages:')}{' '}
                     <code className="bg-muted px-1 rounded">docker-compose logs server</code>
                   </li>
                 </ul>
@@ -111,12 +124,12 @@ export function SandboxRiskDialog({ open, onConfirm, onDeny }: SandboxRiskDialog
               htmlFor="skip-sandbox-warning"
               className="text-sm text-muted-foreground cursor-pointer"
             >
-              Do not show this warning again
+              {translate('Do not show this warning again')}
             </Label>
           </div>
           <div className="flex gap-2 sm:gap-2 w-full sm:justify-end">
             <Button variant="outline" onClick={onDeny} className="px-4" data-testid="sandbox-deny">
-              Deny &amp; Exit
+              {translate('Deny & Exit')}
             </Button>
             <Button
               variant="destructive"
@@ -124,7 +137,8 @@ export function SandboxRiskDialog({ open, onConfirm, onDeny }: SandboxRiskDialog
               className="px-4"
               data-testid="sandbox-confirm"
             >
-              <ShieldAlert className="w-4 h-4 mr-2" />I Accept the Risks
+              <ShieldAlert className="w-4 h-4 mr-2" />
+              {translate('I Accept the Risks')}
             </Button>
           </div>
         </DialogFooter>

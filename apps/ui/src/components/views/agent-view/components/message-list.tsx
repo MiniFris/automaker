@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import type { ImageAttachment } from '@/store/app-store';
 import { MessageBubble } from './message-bubble';
 import { ThinkingIndicator } from './thinking-indicator';
@@ -23,6 +24,7 @@ export function MessageList({
   messagesContainerRef,
   onScroll,
 }: MessageListProps) {
+  useUiLocale();
   return (
     <div
       ref={messagesContainerRef}

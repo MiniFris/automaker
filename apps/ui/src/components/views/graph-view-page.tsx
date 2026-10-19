@@ -1,3 +1,5 @@
+import { useLocalizedMemo } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useAppStore, Feature, FeatureImagePath } from '@/store/app-store';
 import { useShallow } from 'zustand/react/shallow';
@@ -30,6 +32,7 @@ const logger = createLogger('GraphViewPage');
 const EMPTY_WORKTREES: ReturnType<ReturnType<typeof useAppStore.getState>['getWorktrees']> = [];
 
 export function GraphViewPage() {
+  useUiLocale();
   const {
     currentProject,
     updateFeature,
@@ -117,7 +120,7 @@ export function GraphViewPage() {
   const repoDefaultBranch = worktrees.find((w) => w.isMain)?.branch;
 
   // Branch card counts
-  const branchCardCounts = useMemo(() => {
+  const branchCardCounts = useLocalizedMemo(() => {
     return hookFeatures.reduce(
       (counts, feature) => {
         if (feature.status !== 'completed') {
@@ -240,7 +243,7 @@ export function GraphViewPage() {
     [switchBranchMutation]
   );
 
-  const graphWorktreeSelector = useMemo(() => {
+  const graphWorktreeSelector = useLocalizedMemo(() => {
     return (
       <div className="flex items-center gap-2 w-full sm:w-auto">
         <WorktreeMobileDropdown
@@ -268,7 +271,7 @@ export function GraphViewPage() {
             onFilterChange={setBranchFilter}
             onSwitchBranch={handleGraphSwitchBranch}
             onCreateBranch={() => {
-              toast.info('Create branch is available in the board worktree panel.');
+              toast.info(translate('Create branch is available in the board worktree panel.'));
             }}
           />
         )}
@@ -341,19 +344,19 @@ export function GraphViewPage() {
         setIsGeneratingPlan(false);
         if (event.result && event.result.changes?.length > 0) {
           setPendingBacklogPlan(event.result);
-          toast.success('Plan ready! Click to review.', {
+          toast.success(translate('Plan ready! Click to review.'), {
             duration: 10000,
             action: {
-              label: 'Review',
+              label: translate('Review'),
               onClick: () => setShowPlanDialog(true),
             },
           });
         } else {
-          toast.info('No changes generated. Try again with a different prompt.');
+          toast.info(translate('No changes generated. Try again with a different prompt.'));
         }
       } else if (event.type === 'backlog_plan_error') {
         setIsGeneratingPlan(false);
-        toast.error(`Plan generation failed: ${event.error}`);
+        toast.error(translate('Plan generation failed: {value1}', { value1: event.error }));
       }
     });
 
@@ -488,7 +491,9 @@ export function GraphViewPage() {
       } catch (error) {
         logger.error('Failed to create feature:', error);
         toast.error(
-          `Failed to create feature: ${error instanceof Error ? error.message : String(error)}`
+          translate('Failed to create feature: {value1}', {
+            value1: error instanceof Error ? error.message : String(error),
+          })
         );
         return;
       }
@@ -512,7 +517,9 @@ export function GraphViewPage() {
             logger.error('Failed to rollback feature status:', rollbackErr);
           }
           toast.error(
-            `Failed to start feature: ${startError instanceof Error ? startError.message : String(startError)}`
+            translate('Failed to start feature: {value1}', {
+              value1: startError instanceof Error ? startError.message : String(startError),
+            })
           );
         }
       } else {
@@ -540,7 +547,7 @@ export function GraphViewPage() {
             logger.error('Failed to rollback orphaned feature status:', rollbackErr);
           }
         }
-        toast.error('Feature was created but could not be started. Please try again.');
+        toast.error(translate('Feature was created but could not be started. Please try again.'));
       }
     },
     [handleAddFeature, handleStartImplementation, persistFeatureUpdate]
@@ -549,7 +556,7 @@ export function GraphViewPage() {
   if (!currentProject) {
     return (
       <div className="flex-1 flex items-center justify-center" data-testid="graph-view-no-project">
-        <p className="text-muted-foreground">No project selected</p>
+        <p className="text-muted-foreground">{translate('No project selected')}</p>
       </div>
     );
   }

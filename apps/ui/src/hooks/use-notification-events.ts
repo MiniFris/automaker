@@ -2,6 +2,7 @@
  * Hook to subscribe to notification WebSocket events and update the store.
  */
 
+import { translate } from '@/lib/i18n';
 import { useEffect } from 'react';
 import { useNotificationsStore } from '@/store/notifications-store';
 import { getHttpApiClient } from '@/lib/http-api-client';
@@ -67,7 +68,9 @@ export function useLoadNotifications(projectPath: string | null) {
           setUnreadCount(countResult.count);
         }
       } catch (error) {
-        setError(error instanceof Error ? error.message : 'Failed to load notifications');
+        setError(
+          error instanceof Error ? error.message : translate('Failed to load notifications')
+        );
       } finally {
         setLoading(false);
       }

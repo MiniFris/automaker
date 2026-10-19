@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { SpecOutput } from '@automaker/spec-parser';
 import { specToXml } from '@automaker/spec-parser';
@@ -18,6 +19,7 @@ interface SpecEditModeProps {
 }
 
 export function SpecEditMode({ spec, onChange }: SpecEditModeProps) {
+  useUiLocale();
   // Local state for form editing
   const [formData, setFormData] = useState<SpecOutput>(spec);
 

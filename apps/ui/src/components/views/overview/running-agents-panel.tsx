@@ -1,3 +1,5 @@
+import { formatCount } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * RunningAgentsPanel - Shows all currently running agents across projects
  *
@@ -26,6 +28,7 @@ interface RunningAgent {
 }
 
 export function RunningAgentsPanel({ projects }: RunningAgentsPanelProps) {
+  useUiLocale();
   const navigate = useNavigate();
   const { upsertAndSetCurrentProject } = useAppStore();
 
@@ -46,7 +49,7 @@ export function RunningAgentsPanel({ projects }: RunningAgentsPanelProps) {
       try {
         const initResult = await initializeProject(agent.projectPath);
         if (!initResult.success) {
-          toast.error('Failed to open project', {
+          toast.error(translate('Failed to open project'), {
             description: initResult.error || 'Unknown error',
           });
           return;
@@ -55,7 +58,7 @@ export function RunningAgentsPanel({ projects }: RunningAgentsPanelProps) {
         upsertAndSetCurrentProject(agent.projectPath, agent.projectName);
         navigate({ to: '/board' });
       } catch (error) {
-        toast.error('Failed to navigate to agent', {
+        toast.error(translate('Failed to navigate to agent'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
       }
@@ -77,8 +80,10 @@ export function RunningAgentsPanel({ projects }: RunningAgentsPanelProps) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
         <Bot className="w-8 h-8 mb-2 opacity-50" />
-        <p className="text-sm">No agents running</p>
-        <p className="text-xs mt-1">Start auto-mode on a project to see activity here</p>
+        <p className="text-sm">{translate('No agents running')}</p>
+        <p className="text-xs mt-1">
+          {translate('Start auto-mode on a project to see activity here')}
+        </p>
       </div>
     );
   }
@@ -93,7 +98,7 @@ export function RunningAgentsPanel({ projects }: RunningAgentsPanelProps) {
           className="group flex items-center gap-3 p-3 rounded-lg border border-green-500/20 bg-green-500/5 hover:bg-green-500/10 cursor-pointer transition-all"
           onClick={() => handleAgentClick(agent)}
           onKeyDown={(e) => handleAgentKeyDown(e, agent)}
-          aria-label={`View running agent for ${agent.projectName}`}
+          aria-label={translate('View running agent for {value1}', { value1: agent.projectName })}
           data-testid={`running-agent-${agent.projectId}`}
         >
           {/* Animated icon */}
@@ -110,7 +115,7 @@ export function RunningAgentsPanel({ projects }: RunningAgentsPanelProps) {
               </span>
               {agent.isAutoMode && (
                 <span className="text-xs px-1.5 py-0.5 rounded bg-green-500/20 text-green-500 font-medium">
-                  Auto
+                  {translate('Auto')}
                 </span>
               )}
             </div>
@@ -118,7 +123,7 @@ export function RunningAgentsPanel({ projects }: RunningAgentsPanelProps) {
               {agent.featureCount > 0 && (
                 <span className="flex items-center gap-1">
                   <Activity className="w-3 h-3" />
-                  {agent.featureCount} feature{agent.featureCount !== 1 ? 's' : ''} running
+                  {formatCount(agent.featureCount, 'feature')} {translate(' running')}
                 </span>
               )}
               {agent.activeBranch && (

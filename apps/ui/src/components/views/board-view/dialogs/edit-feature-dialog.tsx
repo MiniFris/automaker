@@ -1,4 +1,5 @@
 // @ts-nocheck - form state management with partial feature updates and validation
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -91,6 +92,7 @@ export function EditFeatureDialog({
   allFeatures,
   projectPath,
 }: EditFeatureDialogProps) {
+  useUiLocale();
   const navigate = useNavigate();
   const [editingFeature, setEditingFeature] = useState<Feature | null>(feature);
   // Derive initial workMode from feature's branchName
@@ -211,7 +213,7 @@ export function EditFeatureDialog({
     const isBranchSelectorEnabled =
       editingFeature.status === 'backlog' || editingFeature.status === 'merge_conflict';
     if (isBranchSelectorEnabled && workMode === 'custom' && !editingFeature.branchName?.trim()) {
-      toast.error('Please select a branch name');
+      toast.error(translate('Please select a branch name'));
       return;
     }
 
@@ -307,8 +309,8 @@ export function EditFeatureDialog({
         }}
       >
         <DialogHeader>
-          <DialogTitle>Edit Feature</DialogTitle>
-          <DialogDescription>Modify the feature details.</DialogDescription>
+          <DialogTitle>{translate('Edit Feature')}</DialogTitle>
+          <DialogDescription>{translate('Modify the feature details.')}</DialogDescription>
         </DialogHeader>
 
         <div className="py-4 space-y-4 overflow-y-auto flex-1 min-h-0">
@@ -324,7 +326,7 @@ export function EditFeatureDialog({
           <div className={cardClass}>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="edit-description">Description</Label>
+                <Label htmlFor="edit-description">{translate('Description')}</Label>
                 {/* Version History Button - uses local history for real-time updates */}
                 <EnhancementHistoryButton
                   history={localHistory}
@@ -334,7 +336,7 @@ export function EditFeatureDialog({
                     setDescriptionChangeSource('edit');
                   }}
                   valueAccessor={(entry) => entry.description}
-                  title="Version History"
+                  title={translate('Version History')}
                   restoreMessage="Description restored from history"
                 />
               </div>
@@ -364,7 +366,7 @@ export function EditFeatureDialog({
                     textFilePaths: textFiles,
                   })
                 }
-                placeholder="Describe the feature..."
+                placeholder={translate('Describe the feature...')}
                 previewMap={editFeaturePreviewMap}
                 onPreviewMapChange={setEditFeaturePreviewMap}
                 data-testid="edit-feature-description"
@@ -372,7 +374,7 @@ export function EditFeatureDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-title">Title (optional)</Label>
+              <Label htmlFor="edit-title">{translate('Title (optional)')}</Label>
               <Input
                 id="edit-title"
                 value={editingFeature.title ?? ''}
@@ -382,7 +384,7 @@ export function EditFeatureDialog({
                     title: e.target.value,
                   })
                 }
-                placeholder="Leave blank to auto-generate"
+                placeholder={translate('Leave blank to auto-generate')}
                 data-testid="edit-feature-title"
               />
             </div>
@@ -428,7 +430,7 @@ export function EditFeatureDialog({
             <div className="flex items-center justify-between">
               <div className={sectionHeaderClass}>
                 <Cpu className="w-4 h-4 text-muted-foreground" />
-                <span>AI & Execution</span>
+                <span>{translate('AI & Execution')}</span>
               </div>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -441,17 +443,17 @@ export function EditFeatureDialog({
                     className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <Settings2 className="w-3.5 h-3.5" />
-                    <span>Edit Defaults</span>
+                    <span>{translate('Edit Defaults')}</span>
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Change default model and planning settings for new features</p>
+                  <p>{translate('Change default model and planning settings for new features')}</p>
                 </TooltipContent>
               </Tooltip>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Model</Label>
+              <Label className="text-xs text-muted-foreground">{translate('Model')}</Label>
               <PhaseModelSelector
                 value={modelEntry}
                 onChange={handleModelChange}
@@ -462,7 +464,7 @@ export function EditFeatureDialog({
 
             <div className="grid gap-3 grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Planning</Label>
+                <Label className="text-xs text-muted-foreground">{translate('Planning')}</Label>
                 <PlanningModeSelect
                   mode={planningMode}
                   onModeChange={setPlanningMode}
@@ -471,7 +473,7 @@ export function EditFeatureDialog({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Options</Label>
+                <Label className="text-xs text-muted-foreground">{translate('Options')}</Label>
                 <div className="flex flex-col gap-2 pt-1">
                   <div className="flex items-center gap-2">
                     <Checkbox
@@ -486,7 +488,7 @@ export function EditFeatureDialog({
                       htmlFor="edit-feature-skip-tests"
                       className="text-xs font-normal cursor-pointer"
                     >
-                      Run tests
+                      {translate('Run tests')}
                     </Label>
                   </div>
                   <div className="flex items-center gap-2">
@@ -506,7 +508,7 @@ export function EditFeatureDialog({
                           : 'cursor-pointer'
                       )}
                     >
-                      Require approval
+                      {translate('Require approval')}
                     </Label>
                   </div>
                 </div>
@@ -518,12 +520,12 @@ export function EditFeatureDialog({
           <div className={cardClass}>
             <div className={sectionHeaderClass}>
               <FolderKanban className="w-4 h-4 text-muted-foreground" />
-              <span>Organization</span>
+              <span>{translate('Organization')}</span>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Category</Label>
+                <Label className="text-xs text-muted-foreground">{translate('Category')}</Label>
                 <CategoryAutocomplete
                   value={editingFeature.category}
                   onChange={(value) =>
@@ -533,12 +535,12 @@ export function EditFeatureDialog({
                     })
                   }
                   suggestions={categorySuggestions}
-                  placeholder="e.g., Core, UI, API"
+                  placeholder={translate('e.g., Core, UI, API')}
                   data-testid="edit-feature-category"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Priority</Label>
+                <Label className="text-xs text-muted-foreground">{translate('Priority')}</Label>
                 <PrioritySelector
                   selectedPriority={editingFeature.priority ?? 2}
                   onPrioritySelect={(priority) =>
@@ -579,7 +581,7 @@ export function EditFeatureDialog({
               <div className="pt-2 space-y-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">
-                    Parent Dependencies (this feature depends on)
+                    {translate('Parent Dependencies (this feature depends on)')}
                   </Label>
                   <DependencySelector
                     currentFeatureId={editingFeature.id}
@@ -587,13 +589,13 @@ export function EditFeatureDialog({
                     onChange={setParentDependencies}
                     features={allFeatures}
                     type="parent"
-                    placeholder="Select features this depends on..."
+                    placeholder={translate('Select features this depends on...')}
                     data-testid="edit-feature-parent-deps"
                   />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">
-                    Child Dependencies (features that depend on this)
+                    {translate('Child Dependencies (features that depend on this)')}
                   </Label>
                   <DependencySelector
                     currentFeatureId={editingFeature.id}
@@ -601,7 +603,7 @@ export function EditFeatureDialog({
                     onChange={setChildDependencies}
                     features={allFeatures}
                     type="child"
-                    placeholder="Select features that depend on this..."
+                    placeholder={translate('Select features that depend on this...')}
                     data-testid="edit-feature-child-deps"
                   />
                 </div>
@@ -627,11 +629,11 @@ export function EditFeatureDialog({
             className="gap-2 h-10"
           >
             <GitBranch className="w-4 h-4" />
-            View Dependency Tree
+            {translate('View Dependency Tree')}
           </Button>
           <div className="flex gap-2">
             <Button variant="ghost" onClick={onClose}>
-              Cancel
+              {translate('Cancel')}
             </Button>
             <HotkeyButton
               onClick={handleUpdate}
@@ -645,7 +647,7 @@ export function EditFeatureDialog({
                 !editingFeature.branchName?.trim()
               }
             >
-              Save Changes
+              {translate('Save Changes')}
             </HotkeyButton>
           </div>
         </DialogFooter>

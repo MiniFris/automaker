@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import { useState, useEffect } from 'react';
 import { Clock } from 'lucide-react';
 
@@ -26,6 +27,7 @@ function formatElapsedTime(seconds: number): string {
  * Updates every second to show the current elapsed time in MM:SS format
  */
 export function CountUpTimer({ startedAt, className = '' }: CountUpTimerProps) {
+  useUiLocale();
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {

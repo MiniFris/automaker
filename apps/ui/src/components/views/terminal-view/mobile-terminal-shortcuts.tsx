@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useCallback, useRef, useEffect, useState } from 'react';
 import {
   ArrowUp,
@@ -84,6 +85,7 @@ export function MobileTerminalShortcuts({
   onToggleSelectMode,
   isSelectMode,
 }: MobileTerminalShortcutsProps) {
+  useUiLocale();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Track repeat interval for arrow key long-press
@@ -145,10 +147,10 @@ export function MobileTerminalShortcuts({
         <button
           className="flex items-center gap-1 px-4 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors touch-manipulation"
           onClick={() => setIsCollapsed(false)}
-          title="Show shortcuts"
+          title={translate('Show shortcuts')}
         >
           <ChevronDown className="h-3.5 w-3.5" />
-          <span>Shortcuts</span>
+          <span>{translate('Shortcuts')}</span>
         </button>
       </div>
     );
@@ -160,7 +162,7 @@ export function MobileTerminalShortcuts({
       <button
         className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0 touch-manipulation"
         onClick={() => setIsCollapsed(true)}
-        title="Hide shortcuts"
+        title={translate('Hide shortcuts')}
       >
         <ChevronUp className="h-4 w-4" />
       </button>
@@ -182,7 +184,7 @@ export function MobileTerminalShortcuts({
       {onToggleSelectMode && (
         <IconShortcutButton
           icon={TextSelect}
-          title={isSelectMode ? 'Exit select mode' : 'Select text'}
+          title={isSelectMode ? translate('Exit select mode') : translate('Select text')}
           onPress={onToggleSelectMode}
           disabled={!isConnected}
           active={isSelectMode}
@@ -191,7 +193,7 @@ export function MobileTerminalShortcuts({
       {onSelectAll && (
         <IconShortcutButton
           icon={CheckSquare}
-          title="Select all"
+          title={translate('Select all')}
           onPress={onSelectAll}
           disabled={!isConnected}
         />
@@ -199,7 +201,7 @@ export function MobileTerminalShortcuts({
       {onCopy && (
         <IconShortcutButton
           icon={Copy}
-          title="Copy selection"
+          title={translate('Copy selection')}
           onPress={onCopy}
           disabled={!isConnected}
         />
@@ -207,7 +209,7 @@ export function MobileTerminalShortcuts({
       {onPaste && (
         <IconShortcutButton
           icon={ClipboardPaste}
-          title="Paste from clipboard"
+          title={translate('Paste from clipboard')}
           onPress={onPaste}
           disabled={!isConnected}
         />
@@ -218,12 +220,12 @@ export function MobileTerminalShortcuts({
 
       {/* Special keys */}
       <ShortcutButton
-        label="Esc"
+        label={translate('Esc')}
         onPress={() => sendKey(SPECIAL_KEYS.escape)}
         disabled={!isConnected}
       />
       <ShortcutButton
-        label="Tab"
+        label={translate('Tab')}
         onPress={() => sendKey(SPECIAL_KEYS.tab)}
         disabled={!isConnected}
       />
@@ -233,20 +235,20 @@ export function MobileTerminalShortcuts({
 
       {/* Common Ctrl shortcuts */}
       <ShortcutButton
-        label="^C"
-        title="Ctrl+C (Interrupt)"
+        label={translate('^C')}
+        title={translate('Ctrl+C (Interrupt)')}
         onPress={() => sendKey(CTRL_KEYS['Ctrl+C'])}
         disabled={!isConnected}
       />
       <ShortcutButton
-        label="^Z"
-        title="Ctrl+Z (Suspend)"
+        label={translate('^Z')}
+        title={translate('Ctrl+Z (Suspend)')}
         onPress={() => sendKey(CTRL_KEYS['Ctrl+Z'])}
         disabled={!isConnected}
       />
       <ShortcutButton
-        label="^B"
-        title="Ctrl+B (Back/tmux prefix)"
+        label={translate('^B')}
+        title={translate('Ctrl+B (Back/tmux prefix)')}
         onPress={() => sendKey(CTRL_KEYS['Ctrl+B'])}
         disabled={!isConnected}
       />
@@ -285,17 +287,17 @@ export function MobileTerminalShortcuts({
 
       {/* Navigation keys */}
       <ShortcutButton
-        label="Del"
+        label={translate('Del')}
         onPress={() => sendKey(SPECIAL_KEYS.delete)}
         disabled={!isConnected}
       />
       <ShortcutButton
-        label="Home"
+        label={translate('Home')}
         onPress={() => sendKey(SPECIAL_KEYS.home)}
         disabled={!isConnected}
       />
       <ShortcutButton
-        label="End"
+        label={translate('End')}
         onPress={() => sendKey(SPECIAL_KEYS.end)}
         disabled={!isConnected}
       />
@@ -317,6 +319,7 @@ function ShortcutButton({
   onPress: () => void;
   disabled?: boolean;
 }) {
+  useUiLocale();
   return (
     <button
       className={cn(
@@ -352,6 +355,7 @@ function ArrowButton({
   onRelease: () => void;
   disabled?: boolean;
 }) {
+  useUiLocale();
   const icons = {
     up: ArrowUp,
     down: ArrowDown,
@@ -399,6 +403,7 @@ function IconShortcutButton({
   disabled?: boolean;
   active?: boolean;
 }) {
+  useUiLocale();
   return (
     <button
       className={cn(

@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 /**
  * Spec Mutation Hooks
  *
@@ -173,10 +174,10 @@ export function useSaveSpec(projectPath: string) {
       queryClient.invalidateQueries({
         queryKey: queryKeys.spec.file(projectPath),
       });
-      toast.success('Spec saved');
+      toast.success(translate('Spec saved'));
     },
     onError: (error) => {
-      toast.error('Failed to save spec', {
+      toast.error(translate('Failed to save spec'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     },

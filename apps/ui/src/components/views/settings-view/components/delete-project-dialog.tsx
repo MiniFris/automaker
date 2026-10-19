@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Folder } from 'lucide-react';
 import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog';
 import type { Project } from '@/lib/electron';
@@ -15,6 +16,7 @@ export function DeleteProjectDialog({
   project,
   onConfirm,
 }: DeleteProjectDialogProps) {
+  useUiLocale();
   const handleConfirm = () => {
     if (project) {
       onConfirm(project.id);
@@ -26,9 +28,9 @@ export function DeleteProjectDialog({
       open={open}
       onOpenChange={onOpenChange}
       onConfirm={handleConfirm}
-      title="Delete Project"
-      description="Are you sure you want to move this project to Trash?"
-      confirmText="Move to Trash"
+      title={translate('Delete Project')}
+      description={translate('Are you sure you want to move this project to Trash?')}
+      confirmText={translate('Move to Trash')}
       testId="delete-project-dialog"
       confirmTestId="confirm-delete-project"
     >
@@ -45,7 +47,9 @@ export function DeleteProjectDialog({
           </div>
 
           <p className="text-sm text-muted-foreground">
-            The folder will remain on disk until you permanently delete it from Trash.
+            {translate(
+              'The folder will remain on disk until you permanently delete it from Trash.'
+            )}
           </p>
         </>
       )}

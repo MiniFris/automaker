@@ -1,3 +1,6 @@
+import { useLocalizedMemo } from '@/lib/i18n';
+import { formatCount } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Dialog,
@@ -85,21 +88,21 @@ const getFileIcon = (status: string) => {
 const getStatusLabel = (status: string) => {
   switch (status) {
     case 'A':
-      return 'Added';
+      return translate('Added');
     case '?':
-      return 'Untracked';
+      return translate('Untracked');
     case 'D':
-      return 'Deleted';
+      return translate('Deleted');
     case 'M':
-      return 'Modified';
+      return translate('Modified');
     case 'U':
-      return 'Updated';
+      return translate('Updated');
     case 'R':
-      return 'Renamed';
+      return translate('Renamed');
     case 'C':
-      return 'Copied';
+      return translate('Copied');
     default:
-      return 'Changed';
+      return translate('Changed');
   }
 };
 
@@ -124,21 +127,21 @@ const getStatusBadgeColor = (status: string) => {
 const getMergeTypeLabel = (mergeType?: string) => {
   switch (mergeType) {
     case 'both-modified':
-      return 'Both Modified';
+      return translate('Both Modified');
     case 'added-by-us':
-      return 'Added by Us';
+      return translate('Added by Us');
     case 'added-by-them':
-      return 'Added by Them';
+      return translate('Added by Them');
     case 'deleted-by-us':
-      return 'Deleted by Us';
+      return translate('Deleted by Us');
     case 'deleted-by-them':
-      return 'Deleted by Them';
+      return translate('Deleted by Them');
     case 'both-added':
-      return 'Both Added';
+      return translate('Both Added');
     case 'both-deleted':
-      return 'Both Deleted';
+      return translate('Both Deleted');
     default:
-      return 'Merge';
+      return translate('Merge');
   }
 };
 
@@ -151,6 +154,7 @@ function DiffLine({
   content: string;
   lineNumber?: { old?: number; new?: number };
 }) {
+  useUiLocale();
   const bgClass = {
     context: 'bg-transparent',
     addition: 'bg-green-500/10',
@@ -204,6 +208,7 @@ export function CommitWorktreeDialog({
   worktree,
   onCommitted,
 }: CommitWorktreeDialogProps) {
+  useUiLocale();
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -238,7 +243,7 @@ export function CommitWorktreeDialog({
   const parsedDiffs = useMemo(() => parseDiff(diffContent), [diffContent]);
 
   // Create a map of file path to parsed diff for quick lookup
-  const diffsByFile = useMemo(() => {
+  const diffsByFile = useLocalizedMemo(() => {
     const map = new Map<string, ParsedFileDiff>();
     for (const diff of parsedDiffs) {
       map.set(diff.filePath, diff);
@@ -414,23 +419,25 @@ export function CommitWorktreeDialog({
     remoteName: string
   ): Promise<boolean> => {
     if (!api?.worktree?.push) {
-      toast.error('Push API not available');
+      toast.error(translate('Push API not available'));
       return false;
     }
     setIsPushing(true);
     try {
       const pushResult = await api.worktree.push(worktreePath, false, remoteName);
       if (pushResult.success && pushResult.result) {
-        toast.success('Pushed to remote', {
+        toast.success(translate('Pushed to remote'), {
           description: pushResult.result.message,
         });
         return true;
       } else {
-        toast.error(pushResult.error || 'Failed to push to remote');
+        toast.error(pushResult.error || translate('Failed to push to remote'));
         return false;
       }
     } catch (pushErr) {
-      toast.error(pushErr instanceof Error ? pushErr.message : 'Failed to push to remote');
+      toast.error(
+        pushErr instanceof Error ? pushErr.message : translate('Failed to push to remote')
+      );
       return false;
     } finally {
       setIsPushing(false);
@@ -466,7 +473,7 @@ export function CommitWorktreeDialog({
 
     try {
       if (!api?.worktree?.commit) {
-        setError('Worktree API not available');
+        setError(translate('Worktree API not available'));
         return;
       }
 
@@ -479,8 +486,11 @@ export function CommitWorktreeDialog({
       if (result.success && result.result) {
         if (result.result.committed) {
           setCommitSucceeded(true);
-          toast.success('Changes committed', {
-            description: `Commit ${result.result.commitHash} on ${result.result.branch}`,
+          toast.success(translate('Changes committed'), {
+            description: translate('Commit {value1} on {value2}', {
+              value1: result.result.commitHash,
+              value2: result.result.branch,
+            }),
           });
 
           // Push after commit if enabled
@@ -500,15 +510,15 @@ export function CommitWorktreeDialog({
             onCommitted();
           }
         } else {
-          toast.info('No changes to commit', {
+          toast.info(translate('No changes to commit'), {
             description: result.result.message,
           });
         }
       } else {
-        setError(result.error || 'Failed to commit changes');
+        setError(result.error || translate('Failed to commit changes'));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to commit');
+      setError(err instanceof Error ? err.message : translate('Failed to commit'));
     } finally {
       setIsLoading(false);
     }
@@ -560,13 +570,13 @@ export function CommitWorktreeDialog({
         setMessage(result.message);
       } else {
         console.warn('Failed to generate commit message:', result.error);
-        toast.error('Failed to generate commit message', {
+        toast.error(translate('Failed to generate commit message'), {
           description: result.error || 'Unknown error',
         });
       }
     } catch (err) {
       console.warn('Error generating commit message:', err);
-      toast.error('Failed to generate commit message', {
+      toast.error(translate('Failed to generate commit message'), {
         description: err instanceof Error ? err.message : 'Unknown error',
       });
     } finally {
@@ -617,11 +627,12 @@ export function CommitWorktreeDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <GitCommit className="w-5 h-5" />
-            Commit Changes
+            {translate('Commit Changes')}
           </DialogTitle>
           <DialogDescription>
-            Commit changes in the{' '}
-            <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code> worktree.
+            {translate('Commit changes in the')}{' '}
+            <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>{' '}
+            {translate(' worktree.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -633,21 +644,23 @@ export function CommitWorktreeDialog({
               <div className="text-sm">
                 <span className="font-medium text-purple-400">
                   {mergeState.mergeOperationType === 'cherry-pick'
-                    ? 'Cherry-pick'
+                    ? translate('Cherry-pick')
                     : mergeState.mergeOperationType === 'rebase'
-                      ? 'Rebase'
-                      : 'Merge'}{' '}
-                  in progress
+                      ? translate('Rebase')
+                      : translate('Merge')}{' '}
+                  {translate('in progress')}
                 </span>
                 {mergeState.conflictFiles.length > 0 ? (
                   <span className="text-purple-400/80 ml-1">
-                    &mdash; {mergeState.conflictFiles.length} file
-                    {mergeState.conflictFiles.length !== 1 ? 's' : ''} with conflicts
+                    {translate('— ')}
+                    {formatCount(mergeState.conflictFiles.length, 'file')}{' '}
+                    {translate(' with conflicts')}
                   </span>
                 ) : mergeState.isCleanMerge ? (
                   <span className="text-purple-400/80 ml-1">
-                    &mdash; Clean merge, {mergeState.mergeAffectedFiles.length} file
-                    {mergeState.mergeAffectedFiles.length !== 1 ? 's' : ''} affected
+                    {translate('— Clean merge, ')}
+                    {formatCount(mergeState.mergeAffectedFiles.length, 'file')}{' '}
+                    {translate(' affected')}
                   </span>
                 ) : null}
               </div>
@@ -658,12 +671,12 @@ export function CommitWorktreeDialog({
           <div className="flex flex-col min-h-0">
             <div className="flex items-center justify-between mb-1.5">
               <Label className="text-sm font-medium flex items-center gap-2">
-                Files to commit
+                {translate('Files to commit')}
                 {isLoadingDiffs ? (
                   <Spinner size="sm" />
                 ) : (
                   <span className="text-xs text-muted-foreground font-normal">
-                    ({selectedFiles.size}/{files.length} selected)
+                    ({selectedFiles.size}/{files.length} {translate(' selected)')}
                   </span>
                 )}
               </Label>
@@ -672,7 +685,7 @@ export function CommitWorktreeDialog({
                   onClick={handleToggleAll}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {allSelected ? 'Deselect all' : 'Select all'}
+                  {allSelected ? translate('Deselect all') : translate('Select all')}
                 </button>
               )}
             </div>
@@ -680,11 +693,11 @@ export function CommitWorktreeDialog({
             {isLoadingDiffs ? (
               <div className="flex items-center justify-center py-6 text-muted-foreground border border-border rounded-lg">
                 <Spinner size="sm" className="mr-2" />
-                <span className="text-sm">Loading changes...</span>
+                <span className="text-sm">{translate('Loading changes...')}</span>
               </div>
             ) : files.length === 0 ? (
               <div className="flex items-center justify-center py-6 text-muted-foreground border border-border rounded-lg">
-                <span className="text-sm">No changes detected</span>
+                <span className="text-sm">{translate('No changes detected')}</span>
               </div>
             ) : (
               <div className="border border-border rounded-lg overflow-hidden max-h-[300px] overflow-y-auto scrollbar-visible">
@@ -763,12 +776,12 @@ export function CommitWorktreeDialog({
                           </span>
                           {isStaged && !isUnstaged && !isUntracked && (
                             <span className="text-[10px] px-1 py-0.5 rounded border font-medium flex-shrink-0 bg-green-500/15 text-green-400 border-green-500/30">
-                              Staged
+                              {translate('Staged')}
                             </span>
                           )}
                           {isStaged && isUnstaged && (
                             <span className="text-[10px] px-1 py-0.5 rounded border font-medium flex-shrink-0 bg-amber-500/15 text-amber-400 border-amber-500/30">
-                              Partial
+                              {translate('Partial')}
                             </span>
                           )}
                           {additions > 0 && (
@@ -807,11 +820,11 @@ export function CommitWorktreeDialog({
                       {isExpanded && !fileDiff && (
                         <div className="px-4 py-3 text-xs text-muted-foreground bg-background border-t border-border">
                           {file.status === '?' ? (
-                            <span>New file - diff preview not available</span>
+                            <span>{translate('New file - diff preview not available')}</span>
                           ) : file.status === 'D' ? (
-                            <span>File deleted</span>
+                            <span>{translate('File deleted')}</span>
                           ) : (
-                            <span>Diff content not available</span>
+                            <span>{translate('Diff content not available')}</span>
                           )}
                         </div>
                       )}
@@ -826,11 +839,11 @@ export function CommitWorktreeDialog({
           <div className="grid gap-1.5">
             <div className="flex items-center justify-between">
               <Label htmlFor="commit-message" className="flex items-center gap-2">
-                Commit Message
+                {translate('Commit Message')}
                 {isGenerating && (
                   <span className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Sparkles className="w-3 h-3 animate-pulse" />
-                    Generating...
+                    {translate('Generating...')}
                   </span>
                 )}
               </Label>
@@ -843,14 +856,14 @@ export function CommitWorktreeDialog({
                       onClick={generateCommitMessage}
                       disabled={isGenerating || isLoading}
                       className="h-6 px-2 text-xs"
-                      title="Regenerate commit message"
+                      title={translate('Regenerate commit message')}
                     >
                       {isGenerating ? (
                         <Spinner size="xs" className="mr-1" />
                       ) : (
                         <RefreshCw className="w-3 h-3 mr-1" />
                       )}
-                      Regenerate
+                      {translate('Regenerate')}
                     </Button>
                     <ModelOverrideTrigger
                       currentModelEntry={commitModelOverride.effectiveModelEntry}
@@ -867,7 +880,9 @@ export function CommitWorktreeDialog({
             <Textarea
               id="commit-message"
               placeholder={
-                isGenerating ? 'Generating commit message...' : 'Describe your changes...'
+                isGenerating
+                  ? translate('Generating commit message...')
+                  : translate('Describe your changes...')
               }
               value={message}
               onChange={(e) => {
@@ -895,7 +910,7 @@ export function CommitWorktreeDialog({
                 className="text-sm font-medium cursor-pointer flex items-center gap-1.5"
               >
                 <Upload className="w-3.5 h-3.5" />
-                Push to remote after commit
+                {translate('Push to remote after commit')}
               </Label>
             </div>
 
@@ -904,11 +919,11 @@ export function CommitWorktreeDialog({
                 {isLoadingRemotes || (!remotesFetched && !remotesFetchError) ? (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Spinner size="sm" />
-                    <span>Loading remotes...</span>
+                    <span>{translate('Loading remotes...')}</span>
                   </div>
                 ) : remotesFetchError ? (
                   <div className="flex items-center gap-2 text-sm text-destructive">
-                    <span>Failed to load remotes.</span>
+                    <span>{translate('Failed to load remotes.')}</span>
                     <button
                       className="text-xs underline hover:text-foreground transition-colors"
                       onClick={() => {
@@ -917,12 +932,12 @@ export function CommitWorktreeDialog({
                         }
                       }}
                     >
-                      Retry
+                      {translate('Retry')}
                     </button>
                   </div>
                 ) : remotes.length === 0 && remotesFetched ? (
                   <p className="text-sm text-muted-foreground">
-                    No remotes configured for this repository.
+                    {translate('No remotes configured for this repository.')}
                   </p>
                 ) : remotes.length > 0 ? (
                   <div className="flex items-center gap-2">
@@ -930,11 +945,11 @@ export function CommitWorktreeDialog({
                       htmlFor="remote-select"
                       className="text-xs text-muted-foreground whitespace-nowrap"
                     >
-                      Remote:
+                      {translate('Remote:')}
                     </Label>
                     <Select value={selectedRemote} onValueChange={setSelectedRemote}>
                       <SelectTrigger id="remote-select" className="h-8 text-xs flex-1">
-                        <SelectValue placeholder="Select remote" />
+                        <SelectValue placeholder={translate('Select remote')} />
                       </SelectTrigger>
                       <SelectContent>
                         {remotes.map((remote) => (
@@ -959,8 +974,12 @@ export function CommitWorktreeDialog({
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Press <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Cmd/Ctrl+Enter</kbd> to
-            commit{pushAfterCommit ? ' & push' : ''}
+            {translate('Press ')}
+            <kbd className="px-1 py-0.5 bg-muted rounded text-xs">
+              {translate('Cmd/Ctrl+Enter')}
+            </kbd>{' '}
+            {translate(' to commit')}
+            {pushAfterCommit ? translate(' & push') : ''}
           </p>
         </div>
 
@@ -970,7 +989,7 @@ export function CommitWorktreeDialog({
             onClick={() => onOpenChange(false)}
             disabled={isLoading || isPushing || isGenerating}
           >
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button
             onClick={handleCommit}
@@ -988,12 +1007,12 @@ export function CommitWorktreeDialog({
             {isLoading || isPushing ? (
               <>
                 <Spinner size="sm" className="mr-2" />
-                {isPushing ? 'Pushing...' : 'Committing...'}
+                {isPushing ? translate('Pushing...') : translate('Committing...')}
               </>
             ) : isPushRetry ? (
               <>
                 <Upload className="w-4 h-4 mr-2" />
-                Retry Push
+                {translate('Retry Push')}
               </>
             ) : (
               <>
@@ -1002,9 +1021,9 @@ export function CommitWorktreeDialog({
                 ) : (
                   <GitCommit className="w-4 h-4 mr-2" />
                 )}
-                {pushAfterCommit ? 'Commit & Push' : 'Commit'}
+                {pushAfterCommit ? translate('Commit & Push') : translate('Commit')}
                 {selectedFiles.size > 0 && selectedFiles.size < files.length
-                  ? ` (${selectedFiles.size} file${selectedFiles.size > 1 ? 's' : ''})`
+                  ? translate(' ({value1})', { value1: formatCount(selectedFiles.size, 'file') })
                   : ''}
               </>
             )}

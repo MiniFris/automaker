@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useCallback, useEffect, startTransition } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { useNavigate, useLocation } from '@tanstack/react-router';
@@ -46,6 +47,7 @@ import { CreateSpecDialog } from '@/components/views/spec-view/dialogs';
 const logger = createLogger('Sidebar');
 
 export function Sidebar() {
+  useUiLocale();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -220,7 +222,7 @@ export function Sidebar() {
         const initResult = await initializeProject(path);
 
         if (!initResult.success) {
-          toast.error('Failed to initialize project', {
+          toast.error(translate('Failed to initialize project'), {
             description: initResult.error || 'Unknown error occurred',
           });
           return;
@@ -232,23 +234,32 @@ export function Sidebar() {
         if (!hadAutomakerDir && !specExists) {
           setSetupProjectPath(path);
           setShowSetupDialog(true);
-          toast.success('Project opened', {
-            description: `Opened ${name}. Let's set up your app specification!`,
+          toast.success(translate('Project opened'), {
+            description: translate("Opened {value1}. Let's set up your app specification!", {
+              value1: name,
+            }),
           });
         } else if (initResult.createdFiles && initResult.createdFiles.length > 0) {
-          toast.success(initResult.isNewProject ? 'Project initialized' : 'Project updated', {
-            description: `Set up ${initResult.createdFiles.length} file(s) in .automaker`,
-          });
+          toast.success(
+            initResult.isNewProject
+              ? translate('Project initialized')
+              : translate('Project updated'),
+            {
+              description: translate('Set up {value1} file(s) in .automaker', {
+                value1: initResult.createdFiles.length,
+              }),
+            }
+          );
         } else {
-          toast.success('Project opened', {
-            description: `Opened ${name}`,
+          toast.success(translate('Project opened'), {
+            description: translate('Opened {value1}', { value1: name }),
           });
         }
 
         navigate({ to: '/board' });
       } catch (error) {
         logger.error('Failed to open project:', error);
-        toast.error('Failed to open project', {
+        toast.error(translate('Failed to open project'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
       }
@@ -288,7 +299,10 @@ export function Sidebar() {
       if (!initResult.success) {
         logger.error('Failed to initialize project during switch:', initResult.error);
         toast.warning(
-          `Could not fully initialize project: ${initResult.error ?? 'Unknown error'}. Some features may not work correctly.`
+          translate(
+            'Could not fully initialize project: {value1}. Some features may not work correctly.',
+            { value1: initResult.error ?? 'Unknown error' }
+          )
         );
         // Continue with switch despite init failure — project may already be partially initialized
       }
@@ -398,7 +412,7 @@ export function Sidebar() {
               'transition-all duration-200',
               'hover:w-8 active:scale-95'
             )}
-            aria-label="Hide sidebar"
+            aria-label={translate('Hide sidebar')}
             data-testid="sidebar-mobile-hide"
           >
             <PanelLeftClose className="w-3.5 h-3.5" />
@@ -448,7 +462,7 @@ export function Sidebar() {
               />
               {sidebarOpen && (
                 <span className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wide">
-                  Scroll
+                  {translate('Scroll')}
                 </span>
               )}
             </div>
@@ -493,8 +507,10 @@ export function Sidebar() {
           onSkip={handleSkipSetup}
           isCreatingSpec={isCreatingSpec}
           showSkipButton={true}
-          title="Set Up Your Project"
-          description="We didn't find an app_spec.txt file. Let us help you generate your app_spec.txt to help describe your project for our system. We'll analyze your project's tech stack and create a comprehensive specification."
+          title={translate('Set Up Your Project')}
+          description={translate(
+            "We didn't find an app_spec.txt file. Let us help you generate your app_spec.txt to help describe your project for our system. We'll analyze your project's tech stack and create a comprehensive specification."
+          )}
         />
 
         <OnboardingDialog

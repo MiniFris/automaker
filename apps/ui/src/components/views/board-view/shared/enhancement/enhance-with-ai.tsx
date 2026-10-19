@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { Button } from '@/components/ui/button';
@@ -61,6 +62,7 @@ export function EnhanceWithAI({
   disabled = false,
   className,
 }: EnhanceWithAIProps) {
+  useUiLocale();
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [enhancementMode, setEnhancementMode] = useState<EnhancementMode>('improve');
   const [enhanceOpen, setEnhanceOpen] = useState(false);
@@ -97,13 +99,13 @@ export function EnhanceWithAI({
         // Track in history if callback provided (includes original for restoration)
         onHistoryAdd?.({ mode: enhancementMode, originalText, enhancedText });
 
-        toast.success('Enhanced successfully!');
+        toast.success(translate('Enhanced successfully!'));
       } else {
-        toast.error(result?.error || 'Failed to enhance');
+        toast.error(result?.error || translate('Failed to enhance'));
       }
     } catch (error) {
       logger.error('Enhancement failed:', error);
-      toast.error('Failed to enhance');
+      toast.error(translate('Failed to enhance'));
     } finally {
       setIsEnhancing(false);
     }
@@ -118,7 +120,7 @@ export function EnhanceWithAI({
         >
           {enhanceOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
           <Sparkles className="w-4 h-4" />
-          <span>Enhance with AI</span>
+          <span>{translate('Enhance with AI')}</span>
         </button>
       </CollapsibleTrigger>
       <CollapsibleContent className="pt-3">
@@ -131,14 +133,14 @@ export function EnhanceWithAI({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              <DropdownMenuLabel>Rewrite</DropdownMenuLabel>
+              <DropdownMenuLabel>{translate('Rewrite')}</DropdownMenuLabel>
               {REWRITE_MODES.map((mode) => (
                 <DropdownMenuItem key={mode} onClick={() => setEnhancementMode(mode)}>
                   {ENHANCEMENT_MODE_LABELS[mode]}
                 </DropdownMenuItem>
               ))}
               <DropdownMenuSeparator />
-              <DropdownMenuLabel>Append Details</DropdownMenuLabel>
+              <DropdownMenuLabel>{translate('Append Details')}</DropdownMenuLabel>
               {ADDITIVE_MODES.map((mode) => (
                 <DropdownMenuItem key={mode} onClick={() => setEnhancementMode(mode)}>
                   {ENHANCEMENT_MODE_LABELS[mode]}
@@ -157,7 +159,7 @@ export function EnhanceWithAI({
             loading={isEnhancing}
           >
             <Sparkles className="w-3 h-3 mr-1" />
-            Enhance
+            {translate('Enhance')}
           </Button>
 
           <ModelOverrideTrigger

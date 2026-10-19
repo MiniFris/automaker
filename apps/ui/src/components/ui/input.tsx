@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import * as React from 'react';
 
 import { cn } from '@/lib/utils';
@@ -8,6 +9,7 @@ interface InputProps extends React.ComponentProps<'input'> {
 }
 
 function Input({ className, type, startAddon, endAddon, ...props }: InputProps) {
+  useUiLocale();
   const hasAddons = startAddon || endAddon;
 
   const inputElement = (

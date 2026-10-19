@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Cog, Menu, X, FileJson } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -11,12 +12,13 @@ interface SettingsHeaderProps {
 }
 
 export function SettingsHeader({
-  title = 'Global Settings',
-  description = 'Configure your API keys and preferences',
+  title = translate('Global Settings'),
+  description = translate('Configure your API keys and preferences'),
   showNavigation,
   onToggleNavigation,
   onImportExportClick,
 }: SettingsHeaderProps) {
+  useUiLocale();
   return (
     <div
       className={cn(
@@ -50,7 +52,7 @@ export function SettingsHeader({
             {onImportExportClick && (
               <Button variant="outline" size="sm" onClick={onImportExportClick} className="gap-2">
                 <FileJson className="w-4 h-4" />
-                <span className="hidden sm:inline">Import / Export</span>
+                <span className="hidden sm:inline">{translate('Import / Export')}</span>
               </Button>
             )}
             {/* Mobile menu toggle button - only visible on mobile */}
@@ -60,7 +62,11 @@ export function SettingsHeader({
                 size="sm"
                 onClick={onToggleNavigation}
                 className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground lg:hidden"
-                aria-label={showNavigation ? 'Close navigation menu' : 'Open navigation menu'}
+                aria-label={
+                  showNavigation
+                    ? translate('Close navigation menu')
+                    : translate('Open navigation menu')
+                }
               >
                 {showNavigation ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </Button>

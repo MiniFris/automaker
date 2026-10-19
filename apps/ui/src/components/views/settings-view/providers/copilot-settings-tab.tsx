@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -13,6 +14,7 @@ import type { CopilotAuthStatus } from '../cli-status/copilot-cli-status';
 import type { CopilotModelId } from '@automaker/types';
 
 export function CopilotSettingsTab() {
+  useUiLocale();
   const queryClient = useQueryClient();
   const { enabledCopilotModels, copilotDefaultModel, setCopilotDefaultModel, toggleCopilotModel } =
     useAppStore();
@@ -61,7 +63,7 @@ export function CopilotSettingsTab() {
   const handleRefreshCopilotCli = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: queryKeys.cli.copilot() });
     await refetchCliStatus();
-    toast.success('Copilot CLI refreshed');
+    toast.success(translate('Copilot CLI refreshed'));
   }, [queryClient, refetchCliStatus]);
 
   const handleDefaultModelChange = useCallback(
@@ -69,9 +71,9 @@ export function CopilotSettingsTab() {
       setIsSaving(true);
       try {
         setCopilotDefaultModel(model);
-        toast.success('Default model updated');
+        toast.success(translate('Default model updated'));
       } catch {
-        toast.error('Failed to update default model');
+        toast.error(translate('Failed to update default model'));
       } finally {
         setIsSaving(false);
       }
@@ -85,7 +87,7 @@ export function CopilotSettingsTab() {
       try {
         toggleCopilotModel(model, enabled);
       } catch {
-        toast.error('Failed to update models');
+        toast.error(translate('Failed to update models'));
       } finally {
         setIsSaving(false);
       }

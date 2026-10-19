@@ -1,3 +1,5 @@
+import { useLocalizedMemo } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * IdeationDashboard - Main dashboard showing all generated suggestions
  * First page users see - shows all ideas ready for accept/reject
@@ -63,6 +65,7 @@ function SuggestionCard({
   onRemove: () => void;
   isAdding: boolean;
 }) {
+  useUiLocale();
   return (
     <Card className="group transition-all hover:border-primary/50 hover:shadow-sm">
       <CardContent className="p-5">
@@ -114,7 +117,7 @@ function SuggestionCard({
               ) : (
                 <>
                   <Plus className="w-4 h-4" />
-                  Accept
+                  {translate('Accept')}
                 </>
               )}
             </Button>
@@ -125,7 +128,7 @@ function SuggestionCard({
               disabled={isAdding}
               className="w-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-8"
             >
-              Dismiss
+              {translate('Dismiss')}
             </Button>
           </div>
         </div>
@@ -135,6 +138,7 @@ function SuggestionCard({
 }
 
 function GeneratingCard({ job }: { job: GenerationJob }) {
+  useUiLocale();
   const { removeJob } = useIdeationStore();
   const isError = job.status === 'error';
 
@@ -160,8 +164,8 @@ function GeneratingCard({ job }: { job: GenerationJob }) {
               <p className="font-medium">{job.prompt.title}</p>
               <p className="text-sm text-muted-foreground">
                 {isError
-                  ? job.error || 'Failed to generate'
-                  : 'Analyzing codebase and generating ideas...'}
+                  ? job.error || translate('Failed to generate')
+                  : translate('Analyzing codebase and generating ideas...')}
               </p>
             </div>
           </div>
@@ -190,6 +194,7 @@ function TagFilter({
   selectedTags: Set<string>;
   onToggleTag: (tag: string) => void;
 }) {
+  useUiLocale();
   if (tags.length === 0) return null;
 
   return (
@@ -228,7 +233,7 @@ function TagFilter({
           onClick={() => selectedTags.forEach((tag) => onToggleTag(tag))}
           className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors font-medium"
         >
-          Clear filters
+          {translate('Clear filters')}
         </button>
       )}
     </div>
@@ -240,6 +245,7 @@ export function IdeationDashboard({
   onAcceptAllReady,
   onDiscardAllReady,
 }: IdeationDashboardProps) {
+  useUiLocale();
   const currentProject = useAppStore((s) => s.currentProject);
   const generationJobs = useIdeationStore((s) => s.generationJobs);
   const removeSuggestionFromJob = useIdeationStore((s) => s.removeSuggestionFromJob);
@@ -284,7 +290,7 @@ export function IdeationDashboard({
   );
 
   // Extract unique tags and counts from all suggestions
-  const { availableTags, tagCounts } = useMemo(() => {
+  const { availableTags, tagCounts } = useLocalizedMemo(() => {
     const counts: Record<string, number> = {};
     allSuggestions.forEach(({ job }) => {
       const tag = job.prompt.title;
@@ -297,7 +303,7 @@ export function IdeationDashboard({
   }, [allSuggestions]);
 
   // Filter suggestions based on selected tags
-  const filteredSuggestions = useMemo(() => {
+  const filteredSuggestions = useLocalizedMemo(() => {
     if (selectedTags.size === 0) return allSuggestions;
     return allSuggestions.filter(({ job }) => selectedTags.has(job.prompt.title));
   }, [allSuggestions, selectedTags]);
@@ -316,7 +322,7 @@ export function IdeationDashboard({
 
   const handleAccept = async (suggestion: AnalysisSuggestion, jobId: string) => {
     if (!currentProject?.path) {
-      toast.error('No project selected');
+      toast.error(translate('No project selected'));
       return;
     }
 
@@ -327,10 +333,10 @@ export function IdeationDashboard({
       const result = await api.ideation?.addSuggestionToBoard(currentProject.path, suggestion);
 
       if (result?.success) {
-        toast.success(`Added "${suggestion.title}" to board`);
+        toast.success(translate('Added "{value1}" to board', { value1: suggestion.title }));
         removeSuggestionFromJob(jobId, suggestion.id);
       } else {
-        toast.error(result?.error || 'Failed to add to board');
+        toast.error(result?.error || translate('Failed to add to board'));
       }
     } catch (error) {
       console.error('Failed to add to board:', error);
@@ -342,7 +348,7 @@ export function IdeationDashboard({
 
   const handleRemove = (suggestionId: string, jobId: string) => {
     removeSuggestionFromJob(jobId, suggestionId);
-    toast.info('Idea removed');
+    toast.info(translate('Idea removed'));
   };
 
   // Accept all filtered suggestions
@@ -375,11 +381,22 @@ export function IdeationDashboard({
     setIsAcceptingAll(false);
 
     if (successCount > 0 && failCount === 0) {
-      toast.success(`Added ${successCount} ${pluralizeIdea(successCount)} to board`);
+      toast.success(
+        translate('Added {value1} {value2} to board', {
+          value1: successCount,
+          value2: pluralizeIdea(successCount),
+        })
+      );
     } else if (successCount > 0 && failCount > 0) {
-      toast.warning(`Added ${successCount} ${pluralizeIdea(successCount)}, ${failCount} failed`);
+      toast.warning(
+        translate('Added {value1} {value2}, {value3} failed', {
+          value1: successCount,
+          value2: pluralizeIdea(successCount),
+          value3: failCount,
+        })
+      );
     } else {
-      toast.error('Failed to add ideas to board');
+      toast.error(translate('Failed to add ideas to board'));
     }
   }, [currentProject?.path, filteredSuggestions, removeSuggestionFromJob]);
 
@@ -394,7 +411,9 @@ export function IdeationDashboard({
     for (const { suggestion, job } of filteredSuggestions) {
       removeSuggestionFromJob(job.id, suggestion.id);
     }
-    toast.info(`Discarded ${count} ${pluralizeIdea(count)}`);
+    toast.info(
+      translate('Discarded {value1} {value2}', { value1: count, value2: pluralizeIdea(count) })
+    );
   }, [filteredSuggestions, removeSuggestionFromJob]);
 
   // Common readiness state for bulk operations
@@ -419,10 +438,20 @@ export function IdeationDashboard({
         {(generatingCount > 0 || allSuggestions.length > 0) && (
           <p className="text-sm text-muted-foreground">
             {generatingCount > 0
-              ? `Generating ${generatingCount} ${pluralizeIdea(generatingCount)}...`
+              ? translate('Generating {value1} {value2}...', {
+                  value1: generatingCount,
+                  value2: pluralizeIdea(generatingCount),
+                })
               : selectedTags.size > 0
-                ? `Showing ${filteredSuggestions.length} of ${allSuggestions.length} ${pluralizeIdea(allSuggestions.length)}`
-                : `${allSuggestions.length} ${pluralizeIdea(allSuggestions.length)} ready for review`}
+                ? translate('Showing {value1} of {value2} {value3}', {
+                    value1: filteredSuggestions.length,
+                    value2: allSuggestions.length,
+                    value3: pluralizeIdea(allSuggestions.length),
+                  })
+                : translate('{value1} {value2} ready for review', {
+                    value1: allSuggestions.length,
+                    value2: pluralizeIdea(allSuggestions.length),
+                  })}
           </p>
         )}
 
@@ -466,12 +495,12 @@ export function IdeationDashboard({
           <Card>
             <CardContent className="py-8">
               <div className="text-center text-muted-foreground">
-                <p>No ideas match the selected filters</p>
+                <p>{translate('No ideas match the selected filters')}</p>
                 <button
                   onClick={() => setSelectedTags(new Set())}
                   className="text-primary hover:underline mt-2"
                 >
-                  Clear filters
+                  {translate('Clear filters')}
                 </button>
               </div>
             </CardContent>
@@ -483,7 +512,7 @@ export function IdeationDashboard({
           <div className="pt-2">
             <Button onClick={onGenerateIdeas} variant="outline" className="w-full gap-2">
               <Lightbulb className="w-4 h-4" />
-              Generate More Ideas
+              {translate('Generate More Ideas')}
             </Button>
           </div>
         )}
@@ -494,13 +523,13 @@ export function IdeationDashboard({
             <CardContent className="py-16">
               <div className="text-center">
                 <Sparkles className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
-                <h3 className="text-lg font-medium mb-2">No ideas yet</h3>
+                <h3 className="text-lg font-medium mb-2">{translate('No ideas yet')}</h3>
                 <p className="text-muted-foreground mb-6">
-                  Generate ideas by selecting a category and prompt type
+                  {translate('Generate ideas by selecting a category and prompt type')}
                 </p>
                 <Button onClick={onGenerateIdeas} size="lg" className="gap-2">
                   <Lightbulb className="w-5 h-5" />
-                  Generate Ideas
+                  {translate('Generate Ideas')}
                 </Button>
               </div>
             </CardContent>
@@ -513,11 +542,14 @@ export function IdeationDashboard({
         open={showDiscardConfirm}
         onOpenChange={setShowDiscardConfirm}
         onConfirm={confirmDiscardAll}
-        title="Discard All Ideas"
-        description={`Are you sure you want to discard ${filteredSuggestions.length} ${pluralizeIdea(filteredSuggestions.length)}? This cannot be undone.`}
+        title={translate('Discard All Ideas')}
+        description={translate(
+          'Are you sure you want to discard {value1} {value2}? This cannot be undone.',
+          { value1: filteredSuggestions.length, value2: pluralizeIdea(filteredSuggestions.length) }
+        )}
         icon={Trash2}
         iconClassName="text-destructive"
-        confirmText="Discard"
+        confirmText={translate('Discard')}
         confirmVariant="destructive"
       />
     </div>

@@ -1,3 +1,5 @@
+import { useUiLocale } from '@/lib/i18n';
+import { useEditorLocalization } from '@/lib/editor-localization';
 import CodeMirror from '@uiw/react-codemirror';
 import { xml } from '@codemirror/lang-xml';
 import { EditorView } from '@codemirror/view';
@@ -46,12 +48,14 @@ export function XmlSyntaxEditor({
   className,
   'data-testid': testId,
 }: XmlSyntaxEditorProps) {
+  useUiLocale();
+  const editorLocalization = useEditorLocalization();
   return (
     <div className={cn('w-full h-full', className)} data-testid={testId}>
       <CodeMirror
         value={value}
         onChange={onChange}
-        extensions={[xml(), editorTheme]}
+        extensions={[xml(), editorTheme, editorLocalization]}
         theme="none"
         placeholder={placeholder}
         className="h-full [&_.cm-editor]:h-full [&_.cm-content]:text-foreground"

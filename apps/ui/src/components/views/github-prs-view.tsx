@@ -1,3 +1,5 @@
+import { getFormattingLocale } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * GitHub PRs View
  *
@@ -37,6 +39,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export function GitHubPRsView() {
+  useUiLocale();
   const [selectedPR, setSelectedPR] = useState<GitHubPR | null>(null);
   const [commentDialogPR, setCommentDialogPR] = useState<GitHubPR | null>(null);
   const { currentProject, getEffectiveUseWorktrees } = useAppStore();
@@ -67,8 +70,8 @@ export function GitHubPRsView() {
   const handleAutoAddressComments = useCallback(
     async (pr: GitHubPR) => {
       if (!pr.number || !currentProject?.path) {
-        toast.error('Cannot address PR comments', {
-          description: 'No PR number or project available.',
+        toast.error(translate('Cannot address PR comments'), {
+          description: translate('No PR number or project available.'),
         });
         return;
       }
@@ -76,9 +79,12 @@ export function GitHubPRsView() {
       const featureId = `pr-${pr.number}-${generateUUID()}`;
       const feature: Feature = {
         id: featureId,
-        title: `Address PR #${pr.number} Review Comments`,
+        title: translate('Address PR #{value1} Review Comments', { value1: pr.number }),
         category: 'bug-fix',
-        description: `Read the review requests on PR #${pr.number} and address any feedback the best you can.`,
+        description: translate(
+          'Read the review requests on PR #{value1} and address any feedback the best you can.',
+          { value1: pr.number }
+        ),
         steps: [],
         status: 'backlog',
         model: resolveModelString('opus'),
@@ -102,11 +108,13 @@ export function GitHubPRsView() {
               featureId,
               getEffectiveUseWorktrees(currentProject.path)
             );
-            toast.success('Feature created and started', {
-              description: `Addressing review comments on PR #${pr.number}`,
+            toast.success(translate('Feature created and started'), {
+              description: translate('Addressing review comments on PR #{value1}', {
+                value1: pr.number,
+              }),
             });
           } catch (runError) {
-            toast.error('Feature created but failed to start', {
+            toast.error(translate('Feature created but failed to start'), {
               description:
                 runError instanceof Error
                   ? runError.message
@@ -114,13 +122,14 @@ export function GitHubPRsView() {
             });
           }
         } else {
-          toast.error('Cannot start feature', {
-            description:
-              'Feature API is not available. The feature was created but could not be started.',
+          toast.error(translate('Cannot start feature'), {
+            description: translate(
+              'Feature API is not available. The feature was created but could not be started.'
+            ),
           });
         }
       } catch (error) {
-        toast.error('Failed to create feature', {
+        toast.error(translate('Failed to create feature'), {
           description: error instanceof Error ? error.message : 'An error occurred',
         });
       }
@@ -130,7 +139,7 @@ export function GitHubPRsView() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(getFormattingLocale(), {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
@@ -138,14 +147,23 @@ export function GitHubPRsView() {
   };
 
   const getReviewStatus = (pr: GitHubPR) => {
-    if (pr.isDraft) return { label: 'Draft', color: 'text-muted-foreground', bg: 'bg-muted' };
+    if (pr.isDraft)
+      return { label: translate('Draft'), color: 'text-muted-foreground', bg: 'bg-muted' };
     switch (pr.reviewDecision) {
       case 'APPROVED':
-        return { label: 'Approved', color: 'text-green-500', bg: 'bg-green-500/10' };
+        return { label: translate('Approved'), color: 'text-green-500', bg: 'bg-green-500/10' };
       case 'CHANGES_REQUESTED':
-        return { label: 'Changes requested', color: 'text-orange-500', bg: 'bg-orange-500/10' };
+        return {
+          label: translate('Changes requested'),
+          color: 'text-orange-500',
+          bg: 'bg-orange-500/10',
+        };
       case 'REVIEW_REQUIRED':
-        return { label: 'Review required', color: 'text-yellow-500', bg: 'bg-yellow-500/10' };
+        return {
+          label: translate('Review required'),
+          color: 'text-yellow-500',
+          bg: 'bg-yellow-500/10',
+        };
       default:
         return null;
     }
@@ -165,13 +183,13 @@ export function GitHubPRsView() {
         <div className="p-4 rounded-full bg-destructive/10 mb-4">
           <GitPullRequest className="h-12 w-12 text-destructive" />
         </div>
-        <h2 className="text-lg font-medium mb-2">Failed to Load Pull Requests</h2>
+        <h2 className="text-lg font-medium mb-2">{translate('Failed to Load Pull Requests')}</h2>
         <p className="text-muted-foreground max-w-md mb-4">
-          {error instanceof Error ? error.message : 'Failed to fetch pull requests'}
+          {error instanceof Error ? error.message : translate('Failed to fetch pull requests')}
         </p>
         <Button variant="outline" onClick={handleRefresh}>
           <RefreshCw className="h-4 w-4 mr-2" />
-          Try Again
+          {translate('Try Again')}
         </Button>
       </div>
     );
@@ -196,11 +214,14 @@ export function GitHubPRsView() {
               <GitPullRequest className="h-5 w-5 text-blue-500" />
             </div>
             <div>
-              <h1 className="text-lg font-bold">Pull Requests</h1>
+              <h1 className="text-lg font-bold">{translate('Pull Requests')}</h1>
               <p className="text-xs text-muted-foreground">
                 {totalPRs === 0
-                  ? 'No pull requests found'
-                  : `${openPRs.length} open, ${mergedPRs.length} merged`}
+                  ? translate('No pull requests found')
+                  : translate('{value1} open, {value2} merged', {
+                      value1: openPRs.length,
+                      value2: mergedPRs.length,
+                    })}
               </p>
             </div>
           </div>
@@ -216,9 +237,9 @@ export function GitHubPRsView() {
               <div className="p-4 rounded-full bg-muted/50 mb-4">
                 <GitPullRequest className="h-8 w-8 text-muted-foreground" />
               </div>
-              <h2 className="text-base font-medium mb-2">No Pull Requests</h2>
+              <h2 className="text-base font-medium mb-2">{translate('No Pull Requests')}</h2>
               <p className="text-sm text-muted-foreground">
-                This repository has no pull requests yet.
+                {translate('This repository has no pull requests yet.')}
               </p>
             </div>
           ) : (
@@ -242,7 +263,8 @@ export function GitHubPRsView() {
               {mergedPRs.length > 0 && (
                 <>
                   <div className="px-4 py-2 bg-muted/30 text-xs font-medium text-muted-foreground">
-                    Merged ({mergedPRs.length})
+                    {translate('Merged (')}
+                    {mergedPRs.length})
                   </div>
                   {mergedPRs.map((pr) => (
                     <PRRow
@@ -293,7 +315,7 @@ export function GitHubPRsView() {
                   </span>
                   {selectedPR.isDraft && (
                     <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-muted text-muted-foreground">
-                      Draft
+                      {translate('Draft')}
                     </span>
                   )}
                 </div>
@@ -305,7 +327,7 @@ export function GitHubPRsView() {
                       onClick={() => setCommentDialogPR(selectedPR)}
                     >
                       <MessageSquare className="h-4 w-4 mr-1" />
-                      Manage Comments
+                      {translate('Manage Comments')}
                     </Button>
                   )}
                   <Button
@@ -314,7 +336,7 @@ export function GitHubPRsView() {
                     onClick={() => handleOpenInGitHub(selectedPR.url)}
                   >
                     <ExternalLink className="h-4 w-4" />
-                    {!isMobile && <span className="ml-1">Open in GitHub</span>}
+                    {!isMobile && <span className="ml-1">{translate('Open in GitHub')}</span>}
                   </Button>
                   {!isMobile && (
                     <Button variant="ghost" size="sm" onClick={() => setSelectedPR(null)}>
@@ -342,10 +364,10 @@ export function GitHubPRsView() {
                     )}
                   >
                     {selectedPR.state === 'MERGED'
-                      ? 'Merged'
+                      ? translate('Merged')
                       : selectedPR.isDraft
-                        ? 'Draft'
-                        : 'Open'}
+                        ? translate('Draft')
+                        : translate('Open')}
                   </span>
                   {reviewStatus && (
                     <span
@@ -359,7 +381,8 @@ export function GitHubPRsView() {
                     </span>
                   )}
                   <span>
-                    #{selectedPR.number} opened {formatDate(selectedPR.createdAt)} by{' '}
+                    #{selectedPR.number} {translate(' opened ')}
+                    {formatDate(selectedPR.createdAt)} {translate(' by')}{' '}
                     <span className="font-medium text-foreground">{selectedPR.author.login}</span>
                   </span>
                 </div>
@@ -367,7 +390,7 @@ export function GitHubPRsView() {
                 {/* Branch info */}
                 {selectedPR.headRefName && (
                   <div className="flex items-center gap-2 mb-4">
-                    <span className="text-xs text-muted-foreground">Branch:</span>
+                    <span className="text-xs text-muted-foreground">{translate('Branch:')}</span>
                     <span className="text-xs font-mono bg-muted px-2 py-0.5 rounded">
                       {selectedPR.headRefName}
                     </span>
@@ -397,27 +420,30 @@ export function GitHubPRsView() {
                 {selectedPR.body ? (
                   <Markdown className="text-sm">{selectedPR.body}</Markdown>
                 ) : (
-                  <p className="text-sm text-muted-foreground italic">No description provided.</p>
+                  <p className="text-sm text-muted-foreground italic">
+                    {translate('No description provided.')}
+                  </p>
                 )}
 
                 {/* Review Comments CTA */}
                 <div className="mt-8 p-4 rounded-lg bg-blue-500/5 border border-blue-500/20">
                   <div className="flex items-center gap-2 mb-2">
                     <MessageSquare className="h-4 w-4 text-blue-500" />
-                    <span className="text-sm font-medium">Review Comments</span>
+                    <span className="text-sm font-medium">{translate('Review Comments')}</span>
                   </div>
                   <p className="text-sm text-muted-foreground mb-3">
-                    Manage review comments individually or let AI address all feedback
-                    automatically.
+                    {translate(
+                      'Manage review comments individually or let AI address all feedback automatically.'
+                    )}
                   </p>
                   <div className={cn('flex gap-2', isMobile ? 'flex-col' : 'items-center')}>
                     <Button variant="outline" onClick={() => setCommentDialogPR(selectedPR)}>
                       <MessageSquare className="h-4 w-4 mr-2" />
-                      Manage Review Comments
+                      {translate('Manage Review Comments')}
                     </Button>
                     <Button variant="outline" onClick={() => handleAutoAddressComments(selectedPR)}>
                       <Zap className="h-4 w-4 mr-2" />
-                      Address Review Comments
+                      {translate('Address Review Comments')}
                     </Button>
                   </div>
                 </div>
@@ -425,11 +451,11 @@ export function GitHubPRsView() {
                 {/* Open in GitHub CTA */}
                 <div className="mt-4 p-4 rounded-lg bg-muted/50 border border-border">
                   <p className="text-sm text-muted-foreground mb-3">
-                    View code changes, comments, and reviews on GitHub.
+                    {translate('View code changes, comments, and reviews on GitHub.')}
                   </p>
                   <Button onClick={() => handleOpenInGitHub(selectedPR.url)}>
                     <ExternalLink className="h-4 w-4 mr-2" />
-                    View Full PR on GitHub
+                    {translate('View Full PR on GitHub')}
                   </Button>
                 </div>
               </div>
@@ -472,6 +498,7 @@ function PRRow({
   formatDate,
   getReviewStatus,
 }: PRRowProps) {
+  useUiLocale();
   const reviewStatus = getReviewStatus(pr);
 
   return (
@@ -493,14 +520,16 @@ function PRRow({
           <span className="text-sm font-medium truncate">{pr.title}</span>
           {pr.isDraft && (
             <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-muted text-muted-foreground shrink-0">
-              Draft
+              {translate('Draft')}
             </span>
           )}
         </div>
 
         <div className="flex items-center gap-2 mt-1 flex-wrap">
           <span className="text-xs text-muted-foreground">
-            #{pr.number} opened {formatDate(pr.createdAt)} by {pr.author.login}
+            #{pr.number} {translate(' opened ')}
+            {formatDate(pr.createdAt)} {translate(' by ')}
+            {pr.author.login}
           </span>
           {pr.headRefName && (
             <span className="text-xs text-muted-foreground font-mono bg-muted px-1 rounded">
@@ -561,7 +590,7 @@ function PRRow({
             className="text-xs text-blue-500 focus:text-blue-600"
           >
             <MessageSquare className="h-3.5 w-3.5 mr-2" />
-            Manage PR Comments
+            {translate('Manage PR Comments')}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={(e) => {
@@ -571,7 +600,7 @@ function PRRow({
             className="text-xs text-blue-500 focus:text-blue-600"
           >
             <Zap className="h-3.5 w-3.5 mr-2" />
-            Address PR Comments
+            {translate('Address PR Comments')}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
@@ -582,7 +611,7 @@ function PRRow({
             className="text-xs"
           >
             <ExternalLink className="h-3.5 w-3.5 mr-2" />
-            Open in GitHub
+            {translate('Open in GitHub')}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { createPortal } from 'react-dom';
 import { X, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -18,9 +19,10 @@ interface HeaderActionsPanelProps {
 export function HeaderActionsPanel({
   isOpen,
   onClose,
-  title = 'Actions',
+  title = translate('Actions'),
   children,
 }: HeaderActionsPanelProps) {
+  useUiLocale();
   // Use portal to render outside parent stacking contexts (backdrop-blur creates stacking context)
   const panelContent = (
     <>
@@ -56,7 +58,7 @@ export function HeaderActionsPanel({
             size="sm"
             onClick={onClose}
             className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-            aria-label="Close actions panel"
+            aria-label={translate('Close actions panel')}
           >
             <X className="w-4 h-4" />
           </Button>
@@ -91,13 +93,14 @@ export function HeaderActionsPanelTrigger({
   onToggle,
   className,
 }: HeaderActionsPanelTriggerProps) {
+  useUiLocale();
   return (
     <Button
       variant="ghost"
       size="sm"
       onClick={onToggle}
       className={cn('h-8 w-8 p-0 text-muted-foreground hover:text-foreground lg:hidden', className)}
-      aria-label={isOpen ? 'Close actions menu' : 'Open actions menu'}
+      aria-label={isOpen ? translate('Close actions menu') : translate('Open actions menu')}
       data-testid="header-actions-panel-trigger"
     >
       {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}

@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * Notifications View - Full page view for all notifications
  */
@@ -16,6 +17,7 @@ import type { Notification } from '@automaker/types';
 import { formatRelativeTime } from '@/lib/utils';
 
 export function NotificationsView() {
+  useUiLocale();
   const { currentProject } = useAppStore();
   const projectPath = currentProject?.path ?? null;
   const navigate = useNavigate();
@@ -130,7 +132,9 @@ export function NotificationsView() {
     return (
       <div className="flex flex-1 flex-col items-center justify-center p-8">
         <Bell className="h-12 w-12 text-muted-foreground/50 mb-4" />
-        <p className="text-muted-foreground">Select a project to view notifications</p>
+        <p className="text-muted-foreground">
+          {translate('Select a project to view notifications')}
+        </p>
       </div>
     );
   }
@@ -139,7 +143,7 @@ export function NotificationsView() {
     return (
       <div className="flex flex-1 flex-col items-center justify-center p-8">
         <Spinner size="xl" />
-        <p className="text-muted-foreground mt-4">Loading notifications...</p>
+        <p className="text-muted-foreground mt-4">{translate('Loading notifications...')}</p>
       </div>
     );
   }
@@ -156,9 +160,11 @@ export function NotificationsView() {
     <div className="flex flex-1 flex-col p-6 overflow-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Notifications</h1>
+          <h1 className="text-2xl font-bold">{translate('Notifications')}</h1>
           <p className="text-muted-foreground">
-            {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up!'}
+            {unreadCount > 0
+              ? translate('{value1} unread', { value1: unreadCount })
+              : translate('All caught up!')}
           </p>
         </div>
         {notifications.length > 0 && (
@@ -170,11 +176,11 @@ export function NotificationsView() {
               disabled={unreadCount === 0}
             >
               <CheckCheck className="h-4 w-4 mr-2" />
-              Mark all as read
+              {translate('Mark all as read')}
             </Button>
             <Button variant="outline" size="sm" onClick={handleDismissAll}>
               <Trash2 className="h-4 w-4 mr-2" />
-              Dismiss all
+              {translate('Dismiss all')}
             </Button>
           </div>
         )}
@@ -184,10 +190,11 @@ export function NotificationsView() {
         <Card className="flex-1">
           <CardContent className="flex flex-col items-center justify-center h-full min-h-[300px]">
             <Bell className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <p className="text-muted-foreground text-lg">No notifications</p>
+            <p className="text-muted-foreground text-lg">{translate('No notifications')}</p>
             <p className="text-muted-foreground text-sm mt-2">
-              Notifications will appear here when features are ready for review or operations
-              complete.
+              {translate(
+                'Notifications will appear here when features are ready for review or operations complete.'
+              )}
             </p>
           </CardContent>
         </Card>
@@ -224,7 +231,7 @@ export function NotificationsView() {
                         e.stopPropagation();
                         handleMarkAsRead(notification.id);
                       }}
-                      title="Mark as read"
+                      title={translate('Mark as read')}
                     >
                       <Check className="h-4 w-4" />
                     </Button>
@@ -236,7 +243,7 @@ export function NotificationsView() {
                       e.stopPropagation();
                       handleDismiss(notification.id);
                     }}
-                    title="Dismiss"
+                    title={translate('Dismiss')}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -248,7 +255,7 @@ export function NotificationsView() {
                         e.stopPropagation();
                         handleNotificationClick(notification);
                       }}
-                      title="Go to feature"
+                      title={translate('Go to feature')}
                     >
                       <ExternalLink className="h-4 w-4" />
                     </Button>

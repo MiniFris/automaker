@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -66,6 +67,7 @@ export function FeatureDefaultsSection({
   onDefaultFeatureModelChange,
   onDefaultMaxTurnsChange,
 }: FeatureDefaultsSectionProps) {
+  useUiLocale();
   const [maxTurnsInput, setMaxTurnsInput] = useState(String(defaultMaxTurns));
 
   // Keep the displayed input in sync if the prop changes after mount
@@ -88,10 +90,12 @@ export function FeatureDefaultsSection({
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500/20 to-brand-600/10 flex items-center justify-center border border-brand-500/20">
             <FlaskConical className="w-5 h-5 text-brand-500" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground tracking-tight">Feature Defaults</h2>
+          <h2 className="text-lg font-semibold text-foreground tracking-tight">
+            {translate('Feature Defaults')}
+          </h2>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Configure default settings for new features.
+          {translate('Configure default settings for new features.')}
         </p>
       </div>
       <div className="p-6 space-y-5">
@@ -102,7 +106,7 @@ export function FeatureDefaultsSection({
           </div>
           <div className="flex-1 min-w-0 space-y-2">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <Label className="text-foreground font-medium">Default Model</Label>
+              <Label className="text-foreground font-medium">{translate('Default Model')}</Label>
               <PhaseModelSelector
                 value={defaultFeatureModel}
                 onChange={onDefaultFeatureModelChange}
@@ -111,7 +115,9 @@ export function FeatureDefaultsSection({
               />
             </div>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">
-              The default AI model and thinking level used when creating new feature cards.
+              {translate(
+                'The default AI model and thinking level used when creating new feature cards.'
+              )}
             </p>
           </div>
         </div>
@@ -127,7 +133,7 @@ export function FeatureDefaultsSection({
           <div className="flex-1 min-w-0 space-y-2">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <Label htmlFor="default-max-turns" className="text-foreground font-medium">
-                Max Agent Turns
+                {translate('Max Agent Turns')}
               </Label>
               <Input
                 id="default-max-turns"
@@ -158,9 +164,9 @@ export function FeatureDefaultsSection({
               />
             </div>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">
-              Maximum number of tool-call round-trips the AI agent can perform per feature. Higher
-              values allow more complex tasks but use more API credits. Default: 1000, Range:
-              1-2000. Supported by Claude and Codex providers.
+              {translate(
+                'Maximum number of tool-call round-trips the AI agent can perform per feature. Higher values allow more complex tasks but use more API credits. Default: 1000, Range: 1-2000. Supported by Claude and Codex providers.'
+              )}
             </p>
           </div>
         </div>
@@ -189,7 +195,9 @@ export function FeatureDefaultsSection({
           </div>
           <div className="flex-1 min-w-0 space-y-2">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <Label className="text-foreground font-medium">Default Planning Mode</Label>
+              <Label className="text-foreground font-medium">
+                {translate('Default Planning Mode')}
+              </Label>
               <Select
                 value={defaultPlanningMode}
                 onValueChange={(v: string) => onDefaultPlanningModeChange(v as PlanningMode)}
@@ -204,26 +212,28 @@ export function FeatureDefaultsSection({
                   <SelectItem value="skip">
                     <div className="flex items-center gap-2">
                       <Zap className="h-3.5 w-3.5 text-emerald-500" />
-                      <span>Skip</span>
-                      <span className="text-[10px] text-muted-foreground">(Default)</span>
+                      <span>{translate('Skip')}</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {translate('(Default)')}
+                      </span>
                     </div>
                   </SelectItem>
                   <SelectItem value="lite">
                     <div className="flex items-center gap-2">
                       <ClipboardList className="h-3.5 w-3.5 text-blue-500" />
-                      <span>Lite Planning</span>
+                      <span>{translate('Lite Planning')}</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="spec">
                     <div className="flex items-center gap-2">
                       <FileText className="h-3.5 w-3.5 text-purple-500" />
-                      <span>Spec (Lite SDD)</span>
+                      <span>{translate('Spec (Lite SDD)')}</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="full">
                     <div className="flex items-center gap-2">
                       <ScrollText className="h-3.5 w-3.5 text-amber-500" />
-                      <span>Full (SDD)</span>
+                      <span>{translate('Full (SDD)')}</span>
                     </div>
                   </SelectItem>
                 </SelectContent>
@@ -231,13 +241,13 @@ export function FeatureDefaultsSection({
             </div>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">
               {defaultPlanningMode === 'skip' &&
-                'Jump straight to implementation without upfront planning.'}
+                translate('Jump straight to implementation without upfront planning.')}
               {defaultPlanningMode === 'lite' &&
-                'Create a quick planning outline with tasks before building.'}
+                translate('Create a quick planning outline with tasks before building.')}
               {defaultPlanningMode === 'spec' &&
-                'Generate a specification with acceptance criteria for approval.'}
+                translate('Generate a specification with acceptance criteria for approval.')}
               {defaultPlanningMode === 'full' &&
-                'Create comprehensive spec with phased implementation plan.'}
+                translate('Create comprehensive spec with phased implementation plan.')}
             </p>
           </div>
         </div>
@@ -259,12 +269,12 @@ export function FeatureDefaultsSection({
                   className="text-foreground cursor-pointer font-medium flex items-center gap-2"
                 >
                   <ShieldCheck className="w-4 h-4 text-brand-500" />
-                  Require manual plan approval by default
+                  {translate('Require manual plan approval by default')}
                 </Label>
                 <p className="text-xs text-muted-foreground/80 leading-relaxed">
-                  When enabled, the agent will pause after generating a plan and wait for you to
-                  review, edit, and approve before starting implementation. You can also view the
-                  plan from the feature card.
+                  {translate(
+                    'When enabled, the agent will pause after generating a plan and wait for you to review, edit, and approve before starting implementation. You can also view the plan from the feature card.'
+                  )}
                 </p>
               </div>
             </div>
@@ -289,11 +299,12 @@ export function FeatureDefaultsSection({
               className="text-foreground cursor-pointer font-medium flex items-center gap-2"
             >
               <TestTube className="w-4 h-4 text-brand-500" />
-              Enable automated testing by default
+              {translate('Enable automated testing by default')}
             </Label>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">
-              When enabled, new features will use TDD with automated tests. When disabled, features
-              will require manual verification.
+              {translate(
+                'When enabled, new features will use TDD with automated tests. When disabled, features will require manual verification.'
+              )}
             </p>
           </div>
         </div>
@@ -316,12 +327,12 @@ export function FeatureDefaultsSection({
               className="text-foreground cursor-pointer font-medium flex items-center gap-2"
             >
               <AlertCircle className="w-4 h-4 text-brand-500" />
-              Enable Dependency Blocking
+              {translate('Enable Dependency Blocking')}
             </Label>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">
-              When enabled, features with incomplete dependencies will show blocked badges and
-              warnings. Auto mode and backlog ordering always respect dependencies regardless of
-              this setting.
+              {translate(
+                'When enabled, features with incomplete dependencies will show blocked badges and warnings. Auto mode and backlog ordering always respect dependencies regardless of this setting.'
+              )}
             </p>
           </div>
         </div>
@@ -344,12 +355,12 @@ export function FeatureDefaultsSection({
               className="text-foreground cursor-pointer font-medium flex items-center gap-2"
             >
               <FastForward className="w-4 h-4 text-brand-500" />
-              Skip verification in auto mode
+              {translate('Skip verification in auto mode')}
             </Label>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">
-              When enabled, auto mode will grab features even if their dependencies are not
-              verified, as long as they are not currently running. This allows faster pipeline
-              execution without waiting for manual verification.
+              {translate(
+                'When enabled, auto mode will grab features even if their dependencies are not verified, as long as they are not currently running. This allows faster pipeline execution without waiting for manual verification.'
+              )}
             </p>
           </div>
         </div>
@@ -372,12 +383,12 @@ export function FeatureDefaultsSection({
               className="text-foreground cursor-pointer font-medium flex items-center gap-2"
             >
               <Sparkles className="w-4 h-4 text-brand-500" />
-              Generate AI commit messages
+              {translate('Generate AI commit messages')}
             </Label>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">
-              When enabled, opening the commit dialog will automatically generate a commit message
-              using AI based on your staged or unstaged changes. You can configure the model used in
-              Model Defaults.
+              {translate(
+                'When enabled, opening the commit dialog will automatically generate a commit message using AI based on your staged or unstaged changes. You can configure the model used in Model Defaults.'
+              )}
             </p>
           </div>
         </div>

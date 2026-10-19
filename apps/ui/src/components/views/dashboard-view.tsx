@@ -1,3 +1,5 @@
+import { getFormattingLocale } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useCallback } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { useNavigate } from '@tanstack/react-router';
@@ -69,6 +71,7 @@ function getIconComponent(iconName?: string): LucideIcon {
 }
 
 export function DashboardView() {
+  useUiLocale();
   const navigate = useNavigate();
   const { os } = useOSDetection();
   const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0';
@@ -128,14 +131,17 @@ export function DashboardView() {
             if (projectToRemove) {
               logger.warn(`[Dashboard] Removing project with non-existent path: ${path}`);
               moveProjectToTrash(projectToRemove.id);
-              toast.error('Project directory not found', {
-                description: `Removed ${name} from your projects list since the directory no longer exists.`,
+              toast.error(translate('Project directory not found'), {
+                description: translate(
+                  'Removed {value1} from your projects list since the directory no longer exists.',
+                  { value1: name }
+                ),
               });
               return;
             }
           }
 
-          toast.error('Failed to initialize project', {
+          toast.error(translate('Failed to initialize project'), {
             description: initResult.error || 'Unknown error occurred',
           });
           return;
@@ -144,14 +150,14 @@ export function DashboardView() {
         // Theme handling (trashed project recovery or undefined for global) is done by the store
         upsertAndSetCurrentProject(path, name);
 
-        toast.success('Project opened', {
-          description: `Opened ${name}`,
+        toast.success(translate('Project opened'), {
+          description: translate('Opened {value1}', { value1: name }),
         });
 
         navigate({ to: '/board' });
       } catch (error) {
         logger.error('[Dashboard] Failed to open project:', error);
-        toast.error('Failed to open project', {
+        toast.error(translate('Failed to open project'), {
           description: error instanceof Error ? error.message : 'Unknown error',
         });
       } finally {
@@ -225,8 +231,10 @@ export function DashboardView() {
   const handleConfirmRemove = useCallback(() => {
     if (projectToRemove) {
       moveProjectToTrash(projectToRemove.id);
-      toast.success('Project removed', {
-        description: `${projectToRemove.name} has been removed from your projects list`,
+      toast.success(translate('Project removed'), {
+        description: translate('{value1} has been removed from your projects list', {
+          value1: projectToRemove.name,
+        }),
       });
       setProjectToRemove(null);
     }
@@ -248,23 +256,25 @@ export function DashboardView() {
 
       const parentExists = await api.exists(parentDir);
       if (!parentExists) {
-        toast.error('Parent directory does not exist', {
-          description: `Cannot create project in non-existent directory: ${parentDir}`,
+        toast.error(translate('Parent directory does not exist'), {
+          description: translate('Cannot create project in non-existent directory: {value1}', {
+            value1: parentDir,
+          }),
         });
         return;
       }
 
       const parentStat = await api.stat(parentDir);
       if (parentStat && !parentStat.stats?.isDirectory) {
-        toast.error('Parent path is not a directory', {
-          description: `${parentDir} is not a directory`,
+        toast.error(translate('Parent path is not a directory'), {
+          description: translate('{value1} is not a directory', { value1: parentDir }),
         });
         return;
       }
 
       const mkdirResult = await api.mkdir(projectPath);
       if (!mkdirResult.success) {
-        toast.error('Failed to create project directory', {
+        toast.error(translate('Failed to create project directory'), {
           description: mkdirResult.error || 'Unknown error occurred',
         });
         return;
@@ -272,7 +282,7 @@ export function DashboardView() {
 
       const initResult = await initializeProject(projectPath);
       if (!initResult.success) {
-        toast.error('Failed to initialize project', {
+        toast.error(translate('Failed to initialize project'), {
           description: initResult.error || 'Unknown error occurred',
         });
         return;
@@ -313,14 +323,14 @@ export function DashboardView() {
       setCurrentProject(project);
       setShowNewProjectModal(false);
 
-      toast.success('Project created', {
-        description: `Created ${projectName}`,
+      toast.success(translate('Project created'), {
+        description: translate('Created {value1}', { value1: projectName }),
       });
 
       navigate({ to: '/board' });
     } catch (error) {
       logger.error('Failed to create project:', error);
-      toast.error('Failed to create project', {
+      toast.error(translate('Failed to create project'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     } finally {
@@ -344,7 +354,7 @@ export function DashboardView() {
         parentDir
       );
       if (!cloneResult.success || !cloneResult.projectPath) {
-        toast.error('Failed to clone template', {
+        toast.error(translate('Failed to clone template'), {
           description: cloneResult.error || 'Unknown error occurred',
         });
         return;
@@ -353,7 +363,7 @@ export function DashboardView() {
       const projectPath = cloneResult.projectPath;
       const initResult = await initializeProject(projectPath);
       if (!initResult.success) {
-        toast.error('Failed to initialize project', {
+        toast.error(translate('Failed to initialize project'), {
           description: initResult.error || 'Unknown error occurred',
         });
         return;
@@ -394,14 +404,17 @@ export function DashboardView() {
       setCurrentProject(project);
       setShowNewProjectModal(false);
 
-      toast.success('Project created from template', {
-        description: `Created ${projectName} from ${template.name}`,
+      toast.success(translate('Project created from template'), {
+        description: translate('Created {value1} from {value2}', {
+          value1: projectName,
+          value2: template.name,
+        }),
       });
 
       navigate({ to: '/board' });
     } catch (error) {
       logger.error('Failed to create project from template:', error);
-      toast.error('Failed to create project', {
+      toast.error(translate('Failed to create project'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     } finally {
@@ -421,7 +434,7 @@ export function DashboardView() {
 
       const cloneResult = await httpClient.templates.clone(repoUrl, projectName, parentDir);
       if (!cloneResult.success || !cloneResult.projectPath) {
-        toast.error('Failed to clone repository', {
+        toast.error(translate('Failed to clone repository'), {
           description: cloneResult.error || 'Unknown error occurred',
         });
         return;
@@ -430,7 +443,7 @@ export function DashboardView() {
       const projectPath = cloneResult.projectPath;
       const initResult = await initializeProject(projectPath);
       if (!initResult.success) {
-        toast.error('Failed to initialize project', {
+        toast.error(translate('Failed to initialize project'), {
           description: initResult.error || 'Unknown error occurred',
         });
         return;
@@ -471,14 +484,14 @@ export function DashboardView() {
       setCurrentProject(project);
       setShowNewProjectModal(false);
 
-      toast.success('Project created from repository', {
-        description: `Created ${projectName}`,
+      toast.success(translate('Project created from repository'), {
+        description: translate('Created {value1}', { value1: projectName }),
       });
 
       navigate({ to: '/board' });
     } catch (error) {
       logger.error('Failed to create project from custom URL:', error);
-      toast.error('Failed to create project', {
+      toast.error(translate('Failed to create project'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     } finally {
@@ -508,7 +521,7 @@ export function DashboardView() {
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 256 256"
               role="img"
-              aria-label="Automaker Logo"
+              aria-label={translate('Automaker Logo')}
               className="size-8 sm:size-10 group-hover:rotate-12 transition-transform duration-300 ease-out"
             >
               <defs>
@@ -549,10 +562,12 @@ export function DashboardView() {
             </svg>
             <div className="flex flex-col">
               <span className="font-bold text-foreground text-xl sm:text-2xl tracking-tight leading-none">
-                automaker<span className="text-brand-500">.</span>
+                {translate('automaker')}
+                <span className="text-brand-500">.</span>
               </span>
               <span className="text-xs text-muted-foreground leading-none font-medium mt-1">
-                v{appVersion} {versionSuffix}
+                {translate('v')}
+                {appVersion} {versionSuffix}
               </span>
             </div>
           </div>
@@ -567,7 +582,7 @@ export function DashboardView() {
               data-testid="projects-overview-button"
             >
               <LayoutDashboard className="w-4 h-4" />
-              Overview
+              {translate('Overview')}
             </Button>
           )}
 
@@ -578,7 +593,7 @@ export function DashboardView() {
                 variant="outline"
                 size="icon"
                 onClick={() => navigate({ to: '/overview' })}
-                title="Projects Overview"
+                title={translate('Projects Overview')}
                 data-testid="projects-overview-button-mobile"
               >
                 <LayoutDashboard className="w-4 h-4" />
@@ -602,11 +617,11 @@ export function DashboardView() {
                     data-testid="quick-setup-option-mobile"
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    Quick Setup
+                    {translate('Quick Setup')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleInteractiveMode}>
                     <MessageSquare className="w-4 h-4 mr-2" />
-                    Interactive Mode
+                    {translate('Interactive Mode')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -623,11 +638,12 @@ export function DashboardView() {
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="text-center mb-8 sm:mb-12">
                 <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-3">
-                  Welcome to Automaker
+                  {translate('Welcome to Automaker')}
                 </h2>
                 <p className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto px-2">
-                  Your autonomous AI development studio. Get started by creating a new project or
-                  opening an existing one.
+                  {translate(
+                    'Your autonomous AI development studio. Get started by creating a new project or opening an existing one.'
+                  )}
                 </p>
               </div>
 
@@ -645,10 +661,12 @@ export function DashboardView() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="text-lg font-semibold text-foreground mb-1.5">
-                          New Project
+                          {translate('New Project')}
                         </h3>
                         <p className="text-sm text-muted-foreground leading-relaxed">
-                          Create a new project from scratch with AI-powered development
+                          {translate(
+                            'Create a new project from scratch with AI-powered development'
+                          )}
                         </p>
                       </div>
                     </div>
@@ -659,7 +677,7 @@ export function DashboardView() {
                           data-testid="create-new-project"
                         >
                           <Plus className="w-4 h-4 mr-2" />
-                          Create Project
+                          {translate('Create Project')}
                           <ChevronDown className="w-4 h-4 ml-2" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -669,14 +687,14 @@ export function DashboardView() {
                           data-testid="quick-setup-option-no-projects"
                         >
                           <Plus className="w-4 h-4 mr-2" />
-                          Quick Setup
+                          {translate('Quick Setup')}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={handleInteractiveMode}
                           data-testid="interactive-mode-option"
                         >
                           <MessageSquare className="w-4 h-4 mr-2" />
-                          Interactive Mode
+                          {translate('Interactive Mode')}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -697,10 +715,10 @@ export function DashboardView() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="text-lg font-semibold text-foreground mb-1.5">
-                          Open Project
+                          {translate('Open Project')}
                         </h3>
                         <p className="text-sm text-muted-foreground leading-relaxed">
-                          Open an existing project folder to continue working
+                          {translate('Open an existing project folder to continue working')}
                         </p>
                       </div>
                     </div>
@@ -710,7 +728,7 @@ export function DashboardView() {
                       data-testid="open-existing-project"
                     >
                       <FolderOpen className="w-4 h-4 mr-2" />
-                      Browse Folder
+                      {translate('Browse Folder')}
                     </Button>
                   </div>
                 </div>
@@ -723,14 +741,16 @@ export function DashboardView() {
             <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               {/* Search and actions header */}
               <div className="flex items-center justify-between gap-4">
-                <h2 className="text-xl sm:text-2xl font-bold text-foreground">Your Projects</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+                  {translate('Your Projects')}
+                </h2>
                 <div className="flex items-center gap-2">
                   {/* Search input */}
                   <div className="relative flex-1 sm:flex-none">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                     <Input
                       type="text"
-                      placeholder="Search projects..."
+                      placeholder={translate('Search projects...')}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-9 pr-8 w-full sm:w-64"
@@ -740,7 +760,7 @@ export function DashboardView() {
                       <button
                         onClick={() => setSearchQuery('')}
                         className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-muted transition-colors"
-                        title="Clear search"
+                        title={translate('Clear search')}
                       >
                         <X className="w-4 h-4 text-muted-foreground" />
                       </button>
@@ -749,7 +769,7 @@ export function DashboardView() {
                   {/* Desktop only buttons */}
                   <Button variant="outline" onClick={handleOpenProject} className="hidden sm:flex">
                     <FolderOpen className="w-4 h-4 mr-2" />
-                    Open Folder
+                    {translate('Open Folder')}
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -758,7 +778,7 @@ export function DashboardView() {
                         data-testid="create-new-project-header"
                       >
                         <Plus className="w-4 h-4 mr-2" />
-                        New Project
+                        {translate('New Project')}
                         <ChevronDown className="w-4 h-4 ml-2" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -768,11 +788,11 @@ export function DashboardView() {
                         data-testid="quick-setup-option-has-projects"
                       >
                         <Plus className="w-4 h-4 mr-2" />
-                        Quick Setup
+                        {translate('Quick Setup')}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={handleInteractiveMode}>
                         <MessageSquare className="w-4 h-4 mr-2" />
-                        Interactive Mode
+                        {translate('Interactive Mode')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -787,7 +807,7 @@ export function DashboardView() {
                       <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-500 fill-yellow-500" />
                     </div>
                     <h3 className="text-base sm:text-lg font-semibold text-foreground">
-                      Favorites
+                      {translate('Favorites')}
                     </h3>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
@@ -829,7 +849,9 @@ export function DashboardView() {
                               </p>
                               {project.lastOpened && (
                                 <p className="text-xs text-muted-foreground mt-1 sm:mt-1.5">
-                                  {new Date(project.lastOpened).toLocaleDateString()}
+                                  {new Date(project.lastOpened).toLocaleDateString(
+                                    getFormattingLocale()
+                                  )}
                                 </p>
                               )}
                             </div>
@@ -837,7 +859,7 @@ export function DashboardView() {
                               <button
                                 onClick={(e) => handleToggleFavorite(e, project.id)}
                                 className="p-1 sm:p-1.5 rounded-lg hover:bg-yellow-500/20 transition-colors"
-                                title="Remove from favorites"
+                                title={translate('Remove from favorites')}
                               >
                                 <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-500 fill-yellow-500" />
                               </button>
@@ -846,7 +868,7 @@ export function DashboardView() {
                                   <button
                                     onClick={(e) => e.stopPropagation()}
                                     className="p-1 sm:p-1.5 rounded-lg hover:bg-muted transition-colors opacity-0 group-hover:opacity-100"
-                                    title="More options"
+                                    title={translate('More options')}
                                   >
                                     <MoreVertical className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
                                   </button>
@@ -857,7 +879,7 @@ export function DashboardView() {
                                     className="text-destructive focus:text-destructive"
                                   >
                                     <Trash2 className="w-4 h-4 mr-2" />
-                                    Remove from Automaker
+                                    {translate('Remove from Automaker')}
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -878,7 +900,7 @@ export function DashboardView() {
                       <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
                     </div>
                     <h3 className="text-base sm:text-lg font-semibold text-foreground">
-                      Recent Projects
+                      {translate('Recent Projects')}
                     </h3>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
@@ -920,7 +942,9 @@ export function DashboardView() {
                               </p>
                               {project.lastOpened && (
                                 <p className="text-xs text-muted-foreground mt-1 sm:mt-1.5">
-                                  {new Date(project.lastOpened).toLocaleDateString()}
+                                  {new Date(project.lastOpened).toLocaleDateString(
+                                    getFormattingLocale()
+                                  )}
                                 </p>
                               )}
                             </div>
@@ -928,7 +952,7 @@ export function DashboardView() {
                               <button
                                 onClick={(e) => handleToggleFavorite(e, project.id)}
                                 className="p-1 sm:p-1.5 rounded-lg hover:bg-muted transition-colors"
-                                title="Add to favorites"
+                                title={translate('Add to favorites')}
                               >
                                 <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground/50 hover:text-yellow-500 transition-colors" />
                               </button>
@@ -937,7 +961,7 @@ export function DashboardView() {
                                   <button
                                     onClick={(e) => e.stopPropagation()}
                                     className="p-1 sm:p-1.5 rounded-lg hover:bg-muted transition-colors opacity-0 group-hover:opacity-100"
-                                    title="More options"
+                                    title={translate('More options')}
                                   >
                                     <MoreVertical className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
                                   </button>
@@ -948,7 +972,7 @@ export function DashboardView() {
                                     className="text-destructive focus:text-destructive"
                                   >
                                     <Trash2 className="w-4 h-4 mr-2" />
-                                    Remove from Automaker
+                                    {translate('Remove from Automaker')}
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -967,12 +991,15 @@ export function DashboardView() {
                   <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
                     <Search className="w-8 h-8 text-muted-foreground" />
                   </div>
-                  <h3 className="text-lg font-medium text-foreground mb-2">No projects found</h3>
+                  <h3 className="text-lg font-medium text-foreground mb-2">
+                    {translate('No projects found')}
+                  </h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    No projects match "{searchQuery}"
+                    {translate('No projects match "')}
+                    {searchQuery}"
                   </p>
                   <Button variant="outline" size="sm" onClick={() => setSearchQuery('')}>
-                    Clear search
+                    {translate('Clear search')}
                   </Button>
                 </div>
               )}
@@ -1001,25 +1028,26 @@ export function DashboardView() {
       <Dialog open={!!projectToRemove} onOpenChange={(open) => !open && setProjectToRemove(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Remove Project</DialogTitle>
+            <DialogTitle>{translate('Remove Project')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to remove <strong>{projectToRemove?.name}</strong> from
-              Automaker?
+              {translate('Are you sure you want to remove ')}
+              <strong>{projectToRemove?.name}</strong> {translate(' from Automaker?')}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <p className="text-sm text-muted-foreground">
-              This will only remove the project from your Automaker projects list. The project files
-              on your computer will not be deleted.
+              {translate(
+                'This will only remove the project from your Automaker projects list. The project files on your computer will not be deleted.'
+              )}
             </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setProjectToRemove(null)}>
-              Cancel
+              {translate('Cancel')}
             </Button>
             <Button variant="destructive" onClick={handleConfirmRemove}>
               <Trash2 className="w-4 h-4 mr-2" />
-              Remove Project
+              {translate('Remove Project')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1033,7 +1061,7 @@ export function DashboardView() {
         >
           <div className="flex flex-col items-center gap-4 p-8 rounded-2xl bg-card border border-border shadow-2xl">
             <Spinner size="xl" />
-            <p className="text-foreground font-medium">Opening project...</p>
+            <p className="text-foreground font-medium">{translate('Opening project...')}</p>
           </div>
         </div>
       )}

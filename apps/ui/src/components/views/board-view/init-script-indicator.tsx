@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Terminal, Check, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
@@ -24,6 +25,7 @@ function SingleIndicator({
   isOnlyOne,
   autoDismiss,
 }: SingleIndicatorProps) {
+  useUiLocale();
   const [showLogs, setShowLogs] = useState(false);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
@@ -70,15 +72,19 @@ function SingleIndicator({
           {status === 'success' && <Check className="w-4 h-4 text-green-500" />}
           {status === 'failed' && <X className="w-4 h-4 text-red-500" />}
           <span className="font-medium text-sm">
-            Init Script{' '}
-            {status === 'running' ? 'Running' : status === 'success' ? 'Completed' : 'Failed'}
+            {translate('Init Script')}{' '}
+            {status === 'running'
+              ? translate('Running')
+              : status === 'success'
+                ? translate('Completed')
+                : translate('Failed')}
           </span>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={() => setShowLogs(!showLogs)}
             className="p-1 hover:bg-accent rounded transition-colors"
-            title={showLogs ? 'Hide logs' : 'Show logs'}
+            title={showLogs ? translate('Hide logs') : translate('Show logs')}
           >
             {showLogs ? (
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
@@ -90,7 +96,7 @@ function SingleIndicator({
             <button
               onClick={() => onDismiss(stateKey)}
               className="p-1 hover:bg-accent rounded transition-colors"
-              title="Dismiss"
+              title={translate('Dismiss')}
             >
               <X className="w-4 h-4 text-muted-foreground" />
             </button>
@@ -101,7 +107,10 @@ function SingleIndicator({
       {/* Branch info */}
       <div className="px-3 py-2 text-xs text-muted-foreground flex items-center gap-2">
         <Terminal className="w-3.5 h-3.5" />
-        <span>Branch: {branch}</span>
+        <span>
+          {translate('Branch: ')}
+          {branch}
+        </span>
       </div>
 
       {/* Logs (collapsible) */}
@@ -112,10 +121,15 @@ function SingleIndicator({
               <AnsiOutput text={output.join('')} />
             ) : (
               <div className="text-xs text-muted-foreground/60 text-center py-2">
-                {status === 'running' ? 'Waiting for output...' : 'No output'}
+                {status === 'running' ? translate('Waiting for output...') : translate('No output')}
               </div>
             )}
-            {error && <div className="mt-2 text-red-500 text-xs font-medium">Error: {error}</div>}
+            {error && (
+              <div className="mt-2 text-red-500 text-xs font-medium">
+                {translate('Error: ')}
+                {error}
+              </div>
+            )}
             <div ref={logsEndRef} />
           </div>
         </div>
@@ -130,8 +144,8 @@ function SingleIndicator({
           )}
         >
           {status === 'success'
-            ? 'Initialization completed successfully'
-            : 'Initialization failed - worktree is still usable'}
+            ? translate('Initialization completed successfully')
+            : translate('Initialization failed - worktree is still usable')}
         </div>
       )}
     </div>
@@ -139,6 +153,7 @@ function SingleIndicator({
 }
 
 export function InitScriptIndicator({ projectPath }: InitScriptIndicatorProps) {
+  useUiLocale();
   const getInitScriptStatesForProject = useAppStore((s) => s.getInitScriptStatesForProject);
   const clearInitScriptState = useAppStore((s) => s.clearInitScriptState);
   const getAutoDismissInitScriptIndicator = useAppStore((s) => s.getAutoDismissInitScriptIndicator);

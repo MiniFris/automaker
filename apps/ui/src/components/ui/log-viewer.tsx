@@ -1,3 +1,5 @@
+import { useLocalizedMemo } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useMemo, useRef } from 'react';
 import {
   ChevronDown,
@@ -142,6 +144,7 @@ function parseTodoContent(content: string): TodoItem[] | null {
  * Renders a list of todo items with status icons and colors
  */
 function TodoListRenderer({ todos }: { todos: TodoItem[] }) {
+  useUiLocale();
   const getStatusIcon = (status: TodoItem['status']) => {
     switch (status) {
       case 'completed':
@@ -173,13 +176,13 @@ function TodoListRenderer({ todos }: { todos: TodoItem[] }) {
       case 'completed':
         return (
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 ml-auto">
-            Done
+            {translate('Done')}
           </span>
         );
       case 'in_progress':
         return (
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 ml-auto">
-            In Progress
+            {translate('In Progress')}
           </span>
         );
       default:
@@ -220,6 +223,7 @@ interface LogEntryItemProps {
 }
 
 function LogEntryItem({ entry, isExpanded, onToggle }: LogEntryItemProps) {
+  useUiLocale();
   const colors = getLogTypeColors(entry.type);
   const hasContent = entry.content.length > 100;
 
@@ -252,7 +256,7 @@ function LogEntryItem({ entry, isExpanded, onToggle }: LogEntryItemProps) {
   }, [isExpanded, entry.metadata?.summary, entry.content]);
 
   // Format content - detect and highlight JSON
-  const formattedContent = useMemo(() => {
+  const formattedContent = useLocalizedMemo(() => {
     let content = entry.content;
 
     // For tool_call entries, remove redundant "Tool: X" and "Input:" prefixes
@@ -405,6 +409,7 @@ interface ToolCategoryStats {
 }
 
 export function LogViewer({ output, className }: LogViewerProps) {
+  useUiLocale();
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [hiddenTypes, setHiddenTypes] = useState<Set<LogEntryType>>(new Set());
@@ -484,7 +489,7 @@ export function LogViewer({ output, className }: LogViewerProps) {
   }, [entries]);
 
   // Filter entries based on search and hidden types/categories
-  const filteredEntries = useMemo(() => {
+  const filteredEntries = useLocalizedMemo(() => {
     return entries.filter((entry) => {
       // Filter by hidden types
       if (hiddenTypes.has(entry.type)) return false;
@@ -575,7 +580,9 @@ export function LogViewer({ output, className }: LogViewerProps) {
       <div className="flex items-center justify-center p-8 text-muted-foreground">
         <div className="text-center">
           <Info className="w-8 h-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">No log entries yet. Logs will appear here as the process runs.</p>
+          <p className="text-sm">
+            {translate('No log entries yet. Logs will appear here as the process runs.')}
+          </p>
           {output && output.trim() && (
             <div className="mt-4 p-3 bg-muted/50 rounded text-xs font-mono text-left max-h-40 overflow-auto scrollbar-styled">
               <pre className="whitespace-pre-wrap">{output}</pre>
@@ -597,14 +604,14 @@ export function LogViewer({ output, className }: LogViewerProps) {
 
   // Tool categories to display in stats bar
   const toolCategoryLabels: { key: ToolCategory; label: string }[] = [
-    { key: 'read', label: 'Read' },
-    { key: 'edit', label: 'Edit' },
-    { key: 'write', label: 'Write' },
-    { key: 'bash', label: 'Bash' },
-    { key: 'search', label: 'Search' },
-    { key: 'todo', label: 'Todo' },
-    { key: 'task', label: 'Task' },
-    { key: 'other', label: 'Other' },
+    { key: 'read', label: translate('Read') },
+    { key: 'edit', label: translate('Edit') },
+    { key: 'write', label: translate('Write') },
+    { key: 'bash', label: translate('Bash') },
+    { key: 'search', label: translate('Search') },
+    { key: 'todo', label: translate('Todo') },
+    { key: 'task', label: translate('Task') },
+    { key: 'other', label: translate('Other') },
   ];
 
   return (
@@ -620,7 +627,7 @@ export function LogViewer({ output, className }: LogViewerProps) {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search logs..."
+              placeholder={translate('Search logs...')}
               className="w-full pl-8 pr-8 py-1.5 text-xs bg-muted/50 border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring"
               data-testid="log-search-input"
             />
@@ -641,7 +648,7 @@ export function LogViewer({ output, className }: LogViewerProps) {
               data-testid="log-clear-filters"
             >
               <X className="w-3 h-3" />
-              Clear Filters
+              {translate('Clear Filters')}
             </button>
           )}
         </div>
@@ -651,7 +658,7 @@ export function LogViewer({ output, className }: LogViewerProps) {
           <div className="flex items-center gap-1 px-1 flex-wrap" data-testid="log-stats-bar">
             <span className="text-xs text-muted-foreground/70 mr-1">
               <Wrench className="w-3 h-3 inline mr-1" />
-              {stats.total} tools:
+              {stats.total} {translate(' tools:')}
             </span>
             {toolCategoryLabels.map(({ key, label }) => {
               const count = stats.byCategory[key];
@@ -667,7 +674,11 @@ export function LogViewer({ output, className }: LogViewerProps) {
                     colorClasses,
                     isHidden && 'opacity-40 line-through'
                   )}
-                  title={isHidden ? `Show ${label} tools` : `Hide ${label} tools`}
+                  title={
+                    isHidden
+                      ? translate('Show {value1} tools', { value1: label })
+                      : translate('Hide {value1} tools', { value1: label })
+                  }
                   data-testid={`log-category-filter-${key}`}
                 >
                   {getToolCategoryIcon(key)}
@@ -700,7 +711,11 @@ export function LogViewer({ output, className }: LogViewerProps) {
                     colors.badge,
                     isHidden && 'opacity-40 line-through'
                   )}
-                  title={isHidden ? `Show ${type}` : `Hide ${type}`}
+                  title={
+                    isHidden
+                      ? translate('Show {value1}', { value1: type })
+                      : translate('Hide {value1}', { value1: type })
+                  }
                   data-testid={`log-type-filter-${type}`}
                 >
                   {type}: {count}
@@ -722,17 +737,20 @@ export function LogViewer({ output, className }: LogViewerProps) {
               )}
               data-testid="log-expand-all"
               title={
-                expandAllMode ? 'Expand All (Active - new items will auto-expand)' : 'Expand All'
+                expandAllMode
+                  ? translate('Expand All (Active - new items will auto-expand)')
+                  : translate('Expand All')
               }
             >
-              Expand All{expandAllMode ? ' (On)' : ''}
+              {translate('Expand All')}
+              {expandAllMode ? translate(' (On)') : ''}
             </button>
             <button
               onClick={collapseAll}
               className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted transition-colors"
               data-testid="log-collapse-all"
             >
-              Collapse All
+              {translate('Collapse All')}
             </button>
           </div>
         </div>
@@ -742,10 +760,10 @@ export function LogViewer({ output, className }: LogViewerProps) {
       <div className="space-y-2 mt-2" data-testid="log-entries-container">
         {filteredEntries.length === 0 ? (
           <div className="text-center py-4 text-muted-foreground text-sm">
-            No entries match your filters.
+            {translate('No entries match your filters.')}
             {hasActiveFilters && (
               <button onClick={clearFilters} className="ml-2 text-primary hover:underline">
-                Clear filters
+                {translate('Clear filters')}
               </button>
             )}
           </div>

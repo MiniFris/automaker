@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import type { ReactElement, ReactNode } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -24,6 +25,7 @@ export function TooltipWrapper({
   showTooltip,
   side = 'left',
 }: TooltipWrapperProps) {
+  useUiLocale();
   if (!showTooltip) {
     return children;
   }

@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * Subagent Card - Display card for a single subagent definition
  *
@@ -27,6 +28,7 @@ interface SubagentCardProps {
 }
 
 export function SubagentCard({ agent }: SubagentCardProps) {
+  useUiLocale();
   const [isExpanded, setIsExpanded] = useState(false);
   const { name, definition, scope, filePath } = agent;
 
@@ -80,7 +82,7 @@ export function SubagentCard({ agent }: SubagentCardProps) {
               </Badge>
               <Badge variant="muted" size="sm" className="flex items-center gap-1">
                 <Wrench className="h-3 w-3" />
-                {toolCount === 'all' ? 'All' : toolCount} tools
+                {toolCount === 'all' ? translate('All') : toolCount} {translate(' tools')}
               </Badge>
               <Badge variant="muted" size="sm" className="flex items-center gap-1">
                 <ScopeIcon className="h-3 w-3" />
@@ -110,7 +112,7 @@ export function SubagentCard({ agent }: SubagentCardProps) {
                 'hover:bg-muted/50 text-muted-foreground hover:text-foreground',
                 'cursor-pointer'
               )}
-              title={isExpanded ? 'Hide prompt' : 'View prompt'}
+              title={isExpanded ? translate('Hide prompt') : translate('View prompt')}
             >
               {isExpanded ? (
                 <ChevronDown className="w-4 h-4" />
@@ -126,7 +128,7 @@ export function SubagentCard({ agent }: SubagentCardProps) {
           <div className="px-4 pb-4 pt-0">
             <div className="ml-12 rounded-lg border border-border/30 bg-muted/30 p-4 overflow-auto max-h-64">
               <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
-                System Prompt
+                {translate('System Prompt')}
               </div>
               <Markdown className="text-xs prose-sm">{definition.prompt}</Markdown>
             </div>

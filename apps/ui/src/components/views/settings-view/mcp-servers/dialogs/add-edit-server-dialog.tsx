@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,18 +40,21 @@ export function AddEditServerDialog({
   onSave,
   onCancel,
 }: AddEditServerDialogProps) {
+  useUiLocale();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg" data-testid="mcp-server-dialog">
         <DialogHeader>
-          <DialogTitle>{editingServer ? 'Edit MCP Server' : 'Add MCP Server'}</DialogTitle>
+          <DialogTitle>
+            {editingServer ? translate('Edit MCP Server') : translate('Add MCP Server')}
+          </DialogTitle>
           <DialogDescription>
-            Configure an MCP server to extend agent capabilities with custom tools.
+            {translate('Configure an MCP server to extend agent capabilities with custom tools.')}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4 overflow-y-auto">
           <div className="space-y-2">
-            <Label htmlFor="server-name">Name</Label>
+            <Label htmlFor="server-name">{translate('Name')}</Label>
             <Input
               id="server-name"
               value={formData.name}
@@ -60,17 +64,17 @@ export function AddEditServerDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="server-description">Description (optional)</Label>
+            <Label htmlFor="server-description">{translate('Description (optional)')}</Label>
             <Input
               id="server-description"
               value={formData.description}
               onChange={(e) => onFormDataChange({ ...formData, description: e.target.value })}
-              placeholder="What this server provides..."
+              placeholder={translate('What this server provides...')}
               data-testid="mcp-server-description-input"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="server-type">Transport Type</Label>
+            <Label htmlFor="server-type">{translate('Transport Type')}</Label>
             <Select
               value={formData.type}
               onValueChange={(value: ServerType) => onFormDataChange({ ...formData, type: value })}
@@ -79,8 +83,8 @@ export function AddEditServerDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="stdio">Stdio (subprocess)</SelectItem>
-                <SelectItem value="sse">SSE (Server-Sent Events)</SelectItem>
+                <SelectItem value="stdio">{translate('Stdio (subprocess)')}</SelectItem>
+                <SelectItem value="sse">{translate('SSE (Server-Sent Events)')}</SelectItem>
                 <SelectItem value="http">HTTP</SelectItem>
               </SelectContent>
             </Select>
@@ -88,32 +92,34 @@ export function AddEditServerDialog({
           {formData.type === 'stdio' ? (
             <>
               <div className="space-y-2">
-                <Label htmlFor="server-command">Command</Label>
+                <Label htmlFor="server-command">{translate('Command')}</Label>
                 <Input
                   id="server-command"
                   value={formData.command}
                   onChange={(e) => onFormDataChange({ ...formData, command: e.target.value })}
-                  placeholder="npx, node, python, etc."
+                  placeholder={translate('npx, node, python, etc.')}
                   data-testid="mcp-server-command-input"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="server-args">Arguments (space-separated)</Label>
+                <Label htmlFor="server-args">{translate('Arguments (space-separated)')}</Label>
                 <Input
                   id="server-args"
                   value={formData.args}
                   onChange={(e) => onFormDataChange({ ...formData, args: e.target.value })}
-                  placeholder="-y @modelcontextprotocol/server-filesystem"
+                  placeholder={translate('-y @modelcontextprotocol/server-filesystem')}
                   data-testid="mcp-server-args-input"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="server-env">Environment Variables (JSON, optional)</Label>
+                <Label htmlFor="server-env">
+                  {translate('Environment Variables (JSON, optional)')}
+                </Label>
                 <Textarea
                   id="server-env"
                   value={formData.env}
                   onChange={(e) => onFormDataChange({ ...formData, env: e.target.value })}
-                  placeholder={'{\n  "API_KEY": "your-key"\n}'}
+                  placeholder={translate('{\n  "API_KEY": "your-key"\n}')}
                   className="font-mono text-sm h-24"
                   data-testid="mcp-server-env-input"
                 />
@@ -132,14 +138,14 @@ export function AddEditServerDialog({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="server-headers">Headers (JSON, optional)</Label>
+                <Label htmlFor="server-headers">{translate('Headers (JSON, optional)')}</Label>
                 <Textarea
                   id="server-headers"
                   value={formData.headers}
                   onChange={(e) => onFormDataChange({ ...formData, headers: e.target.value })}
-                  placeholder={
+                  placeholder={translate(
                     '{\n  "x-api-key": "your-api-key",\n  "Authorization": "Bearer token"\n}'
-                  }
+                  )}
                   className="font-mono text-sm h-24"
                   data-testid="mcp-server-headers-input"
                 />
@@ -149,10 +155,10 @@ export function AddEditServerDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onCancel}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button onClick={onSave} data-testid="mcp-server-save-button">
-            {editingServer ? 'Save Changes' : 'Add Server'}
+            {editingServer ? translate('Save Changes') : translate('Add Server')}
           </Button>
         </DialogFooter>
       </DialogContent>

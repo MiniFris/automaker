@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useCallback, useState } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -67,6 +68,7 @@ export function BoardHeader({
   viewMode,
   onViewModeChange,
 }: BoardHeaderProps) {
+  useUiLocale();
   const claudeAuthStatus = useSetupStore((state) => state.claudeAuthStatus);
   const skipVerificationInAutoMode = useAppStore((state) => state.skipVerificationInAutoMode);
   const setSkipVerificationInAutoMode = useAppStore((state) => state.setSkipVerificationInAutoMode);
@@ -158,12 +160,14 @@ export function BoardHeader({
                 size="icon-sm"
                 onClick={handleRefreshBoard}
                 disabled={isRefreshingBoard}
-                aria-label="Refresh board state from server"
+                aria-label={translate('Refresh board state from server')}
               >
                 <RefreshCw className={isRefreshingBoard ? 'w-4 h-4 animate-spin' : 'w-4 h-4'} />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">Refresh board state from server</TooltipContent>
+            <TooltipContent side="bottom">
+              {translate('Refresh board state from server')}
+            </TooltipContent>
           </Tooltip>
         )}
         {/* Usage Popover - show if any provider is authenticated, only on desktop */}
@@ -204,7 +208,7 @@ export function BoardHeader({
               htmlFor="worktrees-toggle"
               className="text-xs font-medium cursor-pointer whitespace-nowrap"
             >
-              Worktree Bar
+              {translate('Worktree Bar')}
             </Label>
             <Switch
               id="worktrees-toggle"
@@ -226,12 +230,12 @@ export function BoardHeader({
               htmlFor="auto-mode-toggle"
               className="text-xs font-medium cursor-pointer whitespace-nowrap"
             >
-              Auto Mode
+              {translate('Auto Mode')}
             </Label>
             <span
               className="text-[10px] font-medium text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded"
               data-testid="auto-mode-max-concurrency"
-              title="Max concurrent agents"
+              title={translate('Max concurrent agents')}
             >
               {maxConcurrency}
             </span>
@@ -269,7 +273,7 @@ export function BoardHeader({
               data-testid="plan-backlog-button"
             >
               <Wand2 className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Plan</span>
+              <span className="text-sm font-medium">{translate('Plan')}</span>
             </button>
             <PlanSettingsPopover
               planUseSelectedWorktreeBranch={planUseSelectedWorktreeBranch}

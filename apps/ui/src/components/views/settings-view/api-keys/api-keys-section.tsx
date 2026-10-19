@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useAppStore } from '@/store/app-store';
 import { useSetupStore } from '@/store/setup-store';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ import { getElectronAPI } from '@/lib/electron';
 import { toast } from 'sonner';
 
 export function ApiKeysSection() {
+  useUiLocale();
   const { apiKeys, setApiKeys } = useAppStore();
   const { claudeAuthStatus, setClaudeAuthStatus, setCodexAuthStatus } = useSetupStore();
   const [isDeletingAnthropicKey, setIsDeletingAnthropicKey] = useState(false);
@@ -28,7 +30,7 @@ export function ApiKeysSection() {
     try {
       const api = getElectronAPI();
       if (!api.setup?.deleteApiKey) {
-        toast.error('Delete API not available');
+        toast.error(translate('Delete API not available'));
         return;
       }
 
@@ -40,12 +42,12 @@ export function ApiKeysSection() {
           method: 'none',
           hasCredentialsFile: claudeAuthStatus?.hasCredentialsFile || false,
         });
-        toast.success('Anthropic API key deleted');
+        toast.success(translate('Anthropic API key deleted'));
       } else {
-        toast.error(result.error || 'Failed to delete API key');
+        toast.error(result.error || translate('Failed to delete API key'));
       }
     } catch {
-      toast.error('Failed to delete API key');
+      toast.error(translate('Failed to delete API key'));
     } finally {
       setIsDeletingAnthropicKey(false);
     }
@@ -57,7 +59,7 @@ export function ApiKeysSection() {
     try {
       const api = getElectronAPI();
       if (!api.setup?.deleteApiKey) {
-        toast.error('Delete API not available');
+        toast.error(translate('Delete API not available'));
         return;
       }
 
@@ -68,12 +70,12 @@ export function ApiKeysSection() {
           authenticated: false,
           method: 'none',
         });
-        toast.success('OpenAI API key deleted');
+        toast.success(translate('OpenAI API key deleted'));
       } else {
-        toast.error(result.error || 'Failed to delete API key');
+        toast.error(result.error || translate('Failed to delete API key'));
       }
     } catch {
-      toast.error('Failed to delete API key');
+      toast.error(translate('Failed to delete API key'));
     } finally {
       setIsDeletingOpenaiKey(false);
     }
@@ -93,10 +95,14 @@ export function ApiKeysSection() {
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500/20 to-brand-600/10 flex items-center justify-center border border-brand-500/20">
             <Key className="w-5 h-5 text-brand-500" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground tracking-tight">API Keys</h2>
+          <h2 className="text-lg font-semibold text-foreground tracking-tight">
+            {translate('API Keys')}
+          </h2>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Configure your AI provider API keys. Keys are stored locally in your browser.
+          {translate(
+            'Configure your AI provider API keys. Keys are stored locally in your browser.'
+          )}
         </p>
       </div>
       <div className="p-6 space-y-6">
@@ -112,19 +118,26 @@ export function ApiKeysSection() {
                   <div className="text-xs text-muted-foreground space-y-1">
                     <p>
                       <span className="font-medium text-foreground/80">
-                        Using Claude Compatible Providers?
+                        {translate('Using Claude Compatible Providers?')}
                       </span>{' '}
-                      Add a provider in <span className="text-blue-500">AI Providers → Claude</span>{' '}
-                      with{' '}
+                      {translate('Add a provider in ')}
+                      <span className="text-blue-500">
+                        {translate('AI Providers → Claude')}
+                      </span>{' '}
+                      {translate('with')}{' '}
                       <span className="font-mono text-[10px] bg-muted/50 px-1 rounded">
-                        credentials
+                        {translate('credentials')}
                       </span>{' '}
-                      as the API key source to use this key.
+                      {translate('as the API key source to use this key.')}
                     </p>
                     <p>
-                      For alternative providers (z.AI GLM, MiniMax, OpenRouter), add a provider with{' '}
-                      <span className="font-mono text-[10px] bg-muted/50 px-1 rounded">inline</span>{' '}
-                      key source and enter the provider's API key directly.
+                      {translate(
+                        'For alternative providers (z.AI GLM, MiniMax, OpenRouter), add a provider with'
+                      )}{' '}
+                      <span className="font-mono text-[10px] bg-muted/50 px-1 rounded">
+                        {translate('inline')}
+                      </span>{' '}
+                      {translate("key source and enter the provider's API key directly.")}
                     </p>
                   </div>
                 </div>
@@ -154,10 +167,10 @@ export function ApiKeysSection() {
             {saved ? (
               <>
                 <CheckCircle2 className="w-4 h-4 mr-2" />
-                Saved!
+                {translate('Saved!')}
               </>
             ) : (
-              'Save API Keys'
+              translate('Save API Keys')
             )}
           </Button>
 
@@ -174,7 +187,7 @@ export function ApiKeysSection() {
               ) : (
                 <Trash2 className="w-4 h-4 mr-2" />
               )}
-              Delete Anthropic Key
+              {translate('Delete Anthropic Key')}
             </Button>
           )}
 
@@ -191,7 +204,7 @@ export function ApiKeysSection() {
               ) : (
                 <Trash2 className="w-4 h-4 mr-2" />
               )}
-              Delete OpenAI Key
+              {translate('Delete OpenAI Key')}
             </Button>
           )}
         </div>

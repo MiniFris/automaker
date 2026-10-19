@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import { useState } from 'react';
 import { Folder, LucideIcon } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
@@ -20,6 +21,7 @@ export function ProjectSwitcherItem({
   onClick,
   onContextMenu,
 }: ProjectSwitcherItemProps) {
+  useUiLocale();
   const [imageError, setImageError] = useState(false);
 
   // Convert index to hotkey label: 0 -> "1", 1 -> "2", ..., 8 -> "9", 9 -> "0"

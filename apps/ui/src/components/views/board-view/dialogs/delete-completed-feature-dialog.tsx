@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import {
   Dialog,
   DialogContent,
@@ -21,6 +22,7 @@ export function DeleteCompletedFeatureDialog({
   onClose,
   onConfirm,
 }: DeleteCompletedFeatureDialogProps) {
+  useUiLocale();
   if (!feature) return null;
 
   return (
@@ -29,22 +31,24 @@ export function DeleteCompletedFeatureDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <Trash2 className="w-5 h-5" />
-            Delete Feature
+            {translate('Delete Feature')}
           </DialogTitle>
           <DialogDescription>
-            Are you sure you want to permanently delete this feature?
+            {translate('Are you sure you want to permanently delete this feature?')}
             <span className="block mt-2 font-medium text-foreground">
-              &quot;{feature.description?.slice(0, 100)}
-              {(feature.description?.length ?? 0) > 100 ? '...' : ''}&quot;
+              {translate('"')}
+              {feature.description?.slice(0, 100)}
+              {(feature.description?.length ?? 0) > 100 ? '...' : ''}
+              {translate('"')}
             </span>
             <span className="block mt-2 text-destructive font-medium">
-              This action cannot be undone.
+              {translate('This action cannot be undone.')}
             </span>
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} data-testid="cancel-delete-completed-button">
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button
             variant="destructive"
@@ -52,7 +56,7 @@ export function DeleteCompletedFeatureDialog({
             data-testid="confirm-delete-completed-button"
           >
             <Trash2 className="w-4 h-4 mr-2" />
-            Delete
+            {translate('Delete')}
           </Button>
         </DialogFooter>
       </DialogContent>

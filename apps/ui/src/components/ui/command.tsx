@@ -1,3 +1,5 @@
+import { translate } from '@/lib/i18n';
+import { useUiLocale } from '@/lib/i18n';
 import * as React from 'react';
 import { Command as CommandPrimitive } from 'cmdk';
 import { SearchIcon } from 'lucide-react';
@@ -12,6 +14,7 @@ import {
 } from '@/components/ui/dialog';
 
 function Command({ className, ...props }: React.ComponentProps<typeof CommandPrimitive>) {
+  useUiLocale();
   return (
     <CommandPrimitive
       data-slot="command"
@@ -25,8 +28,8 @@ function Command({ className, ...props }: React.ComponentProps<typeof CommandPri
 }
 
 function CommandDialog({
-  title = 'Command Palette',
-  description = 'Search for a command to run...',
+  title = translate('Command Palette'),
+  description = translate('Search for a command to run...'),
   children,
   className,
   showCloseButton = true,
@@ -37,6 +40,7 @@ function CommandDialog({
   className?: string;
   showCloseButton?: boolean;
 }) {
+  useUiLocale();
   return (
     <Dialog {...props}>
       <DialogHeader className="sr-only">
@@ -59,6 +63,7 @@ function CommandInput({
   className,
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.Input>) {
+  useUiLocale();
   return (
     <div data-slot="command-input-wrapper" className="flex h-9 items-center gap-2 border-b px-3">
       <SearchIcon className="size-4 shrink-0 opacity-50" />
@@ -75,6 +80,7 @@ function CommandInput({
 }
 
 function CommandList({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.List>) {
+  useUiLocale();
   return (
     <CommandPrimitive.List
       data-slot="command-list"
@@ -92,6 +98,7 @@ function CommandList({ className, ...props }: React.ComponentProps<typeof Comman
 }
 
 function CommandEmpty({ ...props }: React.ComponentProps<typeof CommandPrimitive.Empty>) {
+  useUiLocale();
   return (
     <CommandPrimitive.Empty
       data-slot="command-empty"
@@ -105,6 +112,7 @@ function CommandGroup({
   className,
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.Group>) {
+  useUiLocale();
   return (
     <CommandPrimitive.Group
       data-slot="command-group"
@@ -121,6 +129,7 @@ function CommandSeparator({
   className,
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.Separator>) {
+  useUiLocale();
   return (
     <CommandPrimitive.Separator
       data-slot="command-separator"
@@ -131,6 +140,7 @@ function CommandSeparator({
 }
 
 function CommandItem({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.Item>) {
+  useUiLocale();
   return (
     <CommandPrimitive.Item
       data-slot="command-item"
@@ -144,6 +154,7 @@ function CommandItem({ className, ...props }: React.ComponentProps<typeof Comman
 }
 
 function CommandShortcut({ className, ...props }: React.ComponentProps<'span'>) {
+  useUiLocale();
   return (
     <span
       data-slot="command-shortcut"

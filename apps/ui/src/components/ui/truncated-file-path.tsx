@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
 interface TruncatedFilePathProps {
@@ -17,6 +18,7 @@ interface TruncatedFilePathProps {
  * Example: "src/components/...dialog.tsx" instead of "src/components/views/boa..."
  */
 export function TruncatedFilePath({ path, className }: TruncatedFilePathProps) {
+  useUiLocale();
   const lastSlash = path.lastIndexOf('/');
 
   // If there's no directory component, just render with normal truncation

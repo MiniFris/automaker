@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useCallback } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import {
@@ -69,6 +70,7 @@ export function MergeRebaseDialog({
   worktree,
   onCreateConflictResolutionFeature,
 }: MergeRebaseDialogProps) {
+  useUiLocale();
   const [remotes, setRemotes] = useState<RemoteInfo[]>([]);
   const [selectedRemote, setSelectedRemote] = useState<string>('');
   const [selectedBranch, setSelectedBranch] = useState<string>('');
@@ -146,14 +148,14 @@ export function MergeRebaseDialog({
       if (result.success && result.result) {
         setRemotes(result.result.remotes);
         if (result.result.remotes.length === 0) {
-          setError('No remotes found in this repository');
+          setError(translate('No remotes found in this repository'));
         }
       } else {
-        setError(result.error || 'Failed to fetch remotes');
+        setError(result.error || translate('Failed to fetch remotes'));
       }
     } catch (err) {
       logger.error('Failed to fetch remotes:', err);
-      setError('Failed to fetch remotes');
+      setError(translate('Failed to fetch remotes'));
     } finally {
       setIsLoading(false);
     }
@@ -171,13 +173,13 @@ export function MergeRebaseDialog({
 
       if (result.success && result.result) {
         setRemotes(result.result.remotes);
-        toast.success('Remotes refreshed');
+        toast.success(translate('Remotes refreshed'));
       } else {
-        toast.error(result.error || 'Failed to refresh remotes');
+        toast.error(result.error || translate('Failed to refresh remotes'));
       }
     } catch (err) {
       logger.error('Failed to refresh remotes:', err);
-      toast.error('Failed to refresh remotes');
+      toast.error(translate('Failed to refresh remotes'));
     } finally {
       setIsRefreshing(false);
     }
@@ -197,7 +199,7 @@ export function MergeRebaseDialog({
         const result = await api.worktree.rebase(worktree.path, selectedBranch, selectedRemote);
 
         if (result.success) {
-          toast.success(`Rebased onto ${selectedBranch}`, {
+          toast.success(translate('Rebased onto {value1}', { value1: selectedBranch }), {
             description: result.result?.message || 'Rebase completed successfully',
           });
           setStep('success');
@@ -211,7 +213,7 @@ export function MergeRebaseDialog({
           });
           setStep('conflict');
         } else {
-          toast.error('Rebase failed', {
+          toast.error(translate('Rebase failed'), {
             description: result.error || 'Unknown error',
           });
           setStep('select');
@@ -248,7 +250,7 @@ export function MergeRebaseDialog({
             });
             setStep('conflict');
           } else {
-            toast.success(`Merged ${selectedBranch}`, {
+            toast.success(translate('Merged {value1}', { value1: selectedBranch }), {
               description: result.result.message || 'Merge completed successfully',
             });
             setStep('success');
@@ -311,8 +313,8 @@ export function MergeRebaseDialog({
   }, [worktree, conflictState, onCreateConflictResolutionFeature, onOpenChange]);
 
   const handleResolveManually = useCallback(() => {
-    toast.info('Conflict markers left in place', {
-      description: 'Edit the conflicting files to resolve conflicts manually.',
+    toast.info(translate('Conflict markers left in place'), {
+      description: translate('Edit the conflicting files to resolve conflicts manually.'),
       duration: 6000,
     });
     onOpenChange(false);
@@ -332,28 +334,29 @@ export function MergeRebaseDialog({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-orange-500" />
-              {isRebase ? 'Rebase' : 'Merge'} Conflicts Detected
+              {isRebase ? translate('Rebase') : translate('Merge')}{' '}
+              {translate(' Conflicts Detected')}
             </DialogTitle>
             <DialogDescription asChild>
               <div className="space-y-4">
                 <span className="block">
                   {isRebase ? (
                     <>
-                      Conflicts detected when rebasing{' '}
+                      {translate('Conflicts detected when rebasing')}{' '}
                       <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>{' '}
-                      onto{' '}
+                      {translate('onto')}{' '}
                       <code className="font-mono bg-muted px-1 rounded">
                         {conflictState.remoteBranch}
                       </code>
-                      . The rebase was aborted and no changes were applied.
+                      {translate('. The rebase was aborted and no changes were applied.')}
                     </>
                   ) : (
                     <>
-                      Conflicts detected when merging{' '}
+                      {translate('Conflicts detected when merging')}{' '}
                       <code className="font-mono bg-muted px-1 rounded">
                         {conflictState.remoteBranch}
                       </code>{' '}
-                      into{' '}
+                      {translate('into')}{' '}
                       <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>.
                     </>
                   )}
@@ -362,7 +365,8 @@ export function MergeRebaseDialog({
                 {conflictState.conflictFiles.length > 0 && (
                   <div className="space-y-1.5">
                     <span className="text-sm font-medium text-foreground">
-                      Conflicting files ({conflictState.conflictFiles.length}):
+                      {translate('Conflicting files (')}
+                      {conflictState.conflictFiles.length}):
                     </span>
                     <div className="border border-border rounded-lg overflow-hidden max-h-[200px] overflow-y-auto scrollbar-visible">
                       {conflictState.conflictFiles.map((file) => (
@@ -380,18 +384,19 @@ export function MergeRebaseDialog({
 
                 <div className="mt-2 p-3 rounded-md bg-muted/50 border border-border">
                   <p className="text-sm text-muted-foreground font-medium mb-2">
-                    Choose how to resolve:
+                    {translate('Choose how to resolve:')}
                   </p>
                   <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
                     <li>
-                      <strong>Resolve with AI</strong> &mdash; Creates a task to{' '}
-                      {isRebase ? 'rebase and ' : ''}resolve conflicts automatically
+                      <strong>{translate('Resolve with AI')}</strong>{' '}
+                      {translate(' — Creates a task to')} {isRebase ? translate('rebase and ') : ''}
+                      {translate('resolve conflicts automatically')}
                     </li>
                     <li>
-                      <strong>Resolve Manually</strong> &mdash;{' '}
+                      <strong>{translate('Resolve Manually')}</strong> {translate(' —')}{' '}
                       {isRebase
-                        ? 'Leaves the branch unchanged for you to rebase manually'
-                        : 'Leaves conflict markers in place for you to edit directly'}
+                        ? translate('Leaves the branch unchanged for you to rebase manually')
+                        : translate('Leaves conflict markers in place for you to edit directly')}
                     </li>
                   </ul>
                 </div>
@@ -407,18 +412,18 @@ export function MergeRebaseDialog({
                 setConflictState(null);
               }}
             >
-              Back
+              {translate('Back')}
             </Button>
             <Button variant="outline" onClick={handleResolveManually}>
               <Wrench className="w-4 h-4 mr-2" />
-              Resolve Manually
+              {translate('Resolve Manually')}
             </Button>
             <Button
               onClick={handleResolveWithAI}
               className="bg-purple-600 hover:bg-purple-700 text-white"
             >
               <Sparkles className="w-4 h-4 mr-2" />
-              Resolve with AI
+              {translate('Resolve with AI')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -438,17 +443,25 @@ export function MergeRebaseDialog({
               ) : (
                 <GitMerge className="w-5 h-5 text-purple-500 animate-pulse" />
               )}
-              {selectedStrategy === 'rebase' ? 'Rebasing...' : 'Merging...'}
+              {selectedStrategy === 'rebase' ? translate('Rebasing...') : translate('Merging...')}
             </DialogTitle>
             <DialogDescription>
               {selectedStrategy === 'rebase'
-                ? `Rebasing ${worktree.branch} onto ${selectedBranch}...`
-                : `Merging ${selectedBranch} into ${worktree.branch}...`}
+                ? translate('Rebasing {value1} onto {value2}...', {
+                    value1: worktree.branch,
+                    value2: selectedBranch,
+                  })
+                : translate('Merging {value1} into {value2}...', {
+                    value1: selectedBranch,
+                    value2: worktree.branch,
+                  })}
             </DialogDescription>
           </DialogHeader>
           <div className="flex items-center justify-center py-8">
             <Spinner size="md" />
-            <span className="ml-3 text-sm text-muted-foreground">This may take a moment...</span>
+            <span className="ml-3 text-sm text-muted-foreground">
+              {translate('This may take a moment...')}
+            </span>
           </div>
         </DialogContent>
       </Dialog>
@@ -462,12 +475,12 @@ export function MergeRebaseDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <GitMerge className="w-5 h-5 text-purple-500" />
-            Merge & Rebase
+            {translate('Merge & Rebase')}
           </DialogTitle>
           <DialogDescription>
-            Select a remote branch to merge or rebase with{' '}
+            {translate('Select a remote branch to merge or rebase with')}{' '}
             <span className="font-mono text-foreground">
-              {worktree?.branch || 'current branch'}
+              {worktree?.branch || translate('current branch')}
             </span>
           </DialogDescription>
         </DialogHeader>
@@ -484,14 +497,14 @@ export function MergeRebaseDialog({
             </div>
             <Button variant="outline" size="sm" onClick={fetchRemotes}>
               <RefreshCw className="w-4 h-4 mr-2" />
-              Retry
+              {translate('Retry')}
             </Button>
           </div>
         ) : (
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="remote-select">Remote</Label>
+                <Label htmlFor="remote-select">{translate('Remote')}</Label>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -504,12 +517,12 @@ export function MergeRebaseDialog({
                   ) : (
                     <RefreshCw className="w-3 h-3 mr-1" />
                   )}
-                  Refresh
+                  {translate('Refresh')}
                 </Button>
               </div>
               <Select value={selectedRemote} onValueChange={setSelectedRemote}>
                 <SelectTrigger id="remote-select">
-                  <SelectValue placeholder="Select a remote" />
+                  <SelectValue placeholder={translate('Select a remote')} />
                 </SelectTrigger>
                 <SelectContent>
                   {remotes.map((remote) => (
@@ -530,18 +543,20 @@ export function MergeRebaseDialog({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="branch-select">Branch</Label>
+              <Label htmlFor="branch-select">{translate('Branch')}</Label>
               <Select
                 value={selectedBranch}
                 onValueChange={setSelectedBranch}
                 disabled={!selectedRemote || branches.length === 0}
               >
                 <SelectTrigger id="branch-select">
-                  <SelectValue placeholder="Select a branch" />
+                  <SelectValue placeholder={translate('Select a branch')} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectLabel>{selectedRemote} branches</SelectLabel>
+                    <SelectLabel>
+                      {selectedRemote} {translate(' branches')}
+                    </SelectLabel>
                     {branches.map((branch) => (
                       <SelectItem key={branch.fullRef} value={branch.fullRef}>
                         {branch.name}
@@ -551,44 +566,46 @@ export function MergeRebaseDialog({
                 </SelectContent>
               </Select>
               {selectedRemote && branches.length === 0 && (
-                <p className="text-sm text-muted-foreground">No branches found for this remote</p>
+                <p className="text-sm text-muted-foreground">
+                  {translate('No branches found for this remote')}
+                </p>
               )}
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="strategy-select">Strategy</Label>
+              <Label htmlFor="strategy-select">{translate('Strategy')}</Label>
               <Select
                 value={selectedStrategy}
                 onValueChange={(value) => setSelectedStrategy(value as PullStrategy)}
               >
                 <SelectTrigger id="strategy-select">
-                  <SelectValue placeholder="Select a strategy" />
+                  <SelectValue placeholder={translate('Select a strategy')} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem
                     value="merge"
                     description={
                       <span className="text-xs text-muted-foreground">
-                        Creates a merge commit preserving history
+                        {translate('Creates a merge commit preserving history')}
                       </span>
                     }
                   >
                     <span className="flex items-center gap-2">
                       <GitMerge className="w-3.5 h-3.5 text-purple-500" />
-                      <span className="font-medium">Merge</span>
+                      <span className="font-medium">{translate('Merge')}</span>
                     </span>
                   </SelectItem>
                   <SelectItem
                     value="rebase"
                     description={
                       <span className="text-xs text-muted-foreground">
-                        Replays commits on top for linear history
+                        {translate('Replays commits on top for linear history')}
                       </span>
                     }
                   >
                     <span className="flex items-center gap-2">
                       <GitBranch className="w-3.5 h-3.5 text-blue-500" />
-                      <span className="font-medium">Rebase</span>
+                      <span className="font-medium">{translate('Rebase')}</span>
                     </span>
                   </SelectItem>
                 </SelectContent>
@@ -598,19 +615,25 @@ export function MergeRebaseDialog({
             {selectedBranch && (
               <div className="mt-2 p-3 rounded-md bg-muted/50 border border-border">
                 <p className="text-sm text-muted-foreground">
-                  This will attempt to{' '}
+                  {translate('This will attempt to')}{' '}
                   {selectedStrategy === 'rebase' ? (
                     <>
-                      rebase <span className="font-mono text-foreground">{worktree?.branch}</span>{' '}
-                      onto <span className="font-mono text-foreground">{selectedBranch}</span>
+                      {translate('rebase ')}
+                      <span className="font-mono text-foreground">{worktree?.branch}</span>{' '}
+                      {translate('onto ')}
+                      <span className="font-mono text-foreground">{selectedBranch}</span>
                     </>
                   ) : (
                     <>
-                      merge <span className="font-mono text-foreground">{selectedBranch}</span> into{' '}
+                      {translate('merge ')}
+                      <span className="font-mono text-foreground">{selectedBranch}</span>{' '}
+                      {translate(' into')}{' '}
                       <span className="font-mono text-foreground">{worktree?.branch}</span>
                     </>
                   )}
-                  . If conflicts arise, you can choose to resolve them manually or with AI.
+                  {translate(
+                    '. If conflicts arise, you can choose to resolve them manually or with AI.'
+                  )}
                 </p>
               </div>
             )}
@@ -619,7 +642,7 @@ export function MergeRebaseDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button
             onClick={handleExecuteOperation}
@@ -629,12 +652,12 @@ export function MergeRebaseDialog({
             {selectedStrategy === 'rebase' ? (
               <>
                 <GitBranch className="w-4 h-4 mr-2" />
-                Rebase
+                {translate('Rebase')}
               </>
             ) : (
               <>
                 <GitMerge className="w-4 h-4 mr-2" />
-                Merge
+                {translate('Merge')}
               </>
             )}
           </Button>

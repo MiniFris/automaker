@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 import type { FeatureCount } from './types';
 
 // Delay before reloading spec file to ensure it's written to disk
@@ -19,12 +20,28 @@ export const FEATURE_COUNT_OPTIONS: {
 
 // Phase display labels for UI
 export const PHASE_LABELS: Record<string, string> = {
-  initialization: 'Initializing...',
-  setup: 'Setting up tools...',
-  analysis: 'Analyzing project structure...',
-  spec_complete: 'Spec created! Generating features...',
-  feature_generation: 'Creating features from roadmap...',
-  working: 'Working...',
-  complete: 'Complete!',
-  error: 'Error occurred',
+  get initialization() {
+    return translate('Initializing...');
+  },
+  get setup() {
+    return translate('Setting up tools...');
+  },
+  get analysis() {
+    return translate('Analyzing project structure...');
+  },
+  get spec_complete() {
+    return translate('Spec created! Generating features...');
+  },
+  get feature_generation() {
+    return translate('Creating features from roadmap...');
+  },
+  get working() {
+    return translate('Working...');
+  },
+  get complete() {
+    return translate('Complete!');
+  },
+  get error() {
+    return translate('Error occurred');
+  },
 };

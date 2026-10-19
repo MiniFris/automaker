@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 /**
  * Ideation Mutation Hooks
  *
@@ -98,9 +99,15 @@ export function useGenerateIdeationSuggestions(projectPath: string) {
       updateJobStatus(data.jobId, 'ready', data.suggestions);
 
       // Show success toast
-      toast.success(`Generated ${data.suggestions.length} ideas for "${data.promptTitle}"`, {
-        duration: 10000,
-      });
+      toast.success(
+        translate('Generated {value1} ideas for "{value2}"', {
+          value1: data.suggestions.length,
+          value2: data.promptTitle,
+        }),
+        {
+          duration: 10000,
+        }
+      );
 
       // Invalidate ideation ideas cache
       queryClient.invalidateQueries({
@@ -113,7 +120,7 @@ export function useGenerateIdeationSuggestions(projectPath: string) {
       updateJobStatus(variables.jobId, 'error', undefined, error.message);
 
       // Show error toast
-      toast.error(`Failed to generate ideas: ${error.message}`);
+      toast.error(translate('Failed to generate ideas: {value1}', { value1: error.message }));
     },
   });
 }

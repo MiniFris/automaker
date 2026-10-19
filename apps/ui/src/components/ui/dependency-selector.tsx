@@ -1,3 +1,5 @@
+import { translate, useUiLocale } from '@/lib/i18n';
+import { getWorkflowStatusLabel } from '@/lib/workflow-labels';
 import * as React from 'react';
 import { ChevronsUpDown, X, GitBranch, ArrowUp, ArrowDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -44,6 +46,7 @@ export function DependencySelector({
   disabled = false,
   'data-testid': testId,
 }: DependencySelectorProps) {
+  useUiLocale();
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState('');
   const [triggerWidth, setTriggerWidth] = React.useState<number>(0);
@@ -170,13 +173,13 @@ export function DependencySelector({
         >
           <Command shouldFilter={false}>
             <CommandInput
-              placeholder="Search features..."
+              placeholder={translate('Search features...')}
               className="h-9"
               value={inputValue}
               onValueChange={setInputValue}
             />
             <CommandList>
-              <CommandEmpty>No features found.</CommandEmpty>
+              <CommandEmpty>{translate('No features found.')}</CommandEmpty>
               <CommandGroup>
                 {filteredFeatures.map((feature) => {
                   const willCreateCycle = wouldCreateCycle(feature.id);
@@ -198,11 +201,13 @@ export function DependencySelector({
                       <GitBranch className="w-4 h-4 mr-2 text-muted-foreground" />
                       <span className="flex-1 truncate">{label}</span>
                       {willCreateCycle && (
-                        <span className="ml-2 text-xs text-destructive">(circular)</span>
+                        <span className="ml-2 text-xs text-destructive">
+                          {translate('(circular)')}
+                        </span>
                       )}
                       {feature.status && (
                         <Badge variant="outline" className="ml-2 text-xs">
-                          {feature.status}
+                          {getWorkflowStatusLabel(feature.status)}
                         </Badge>
                       )}
                     </CommandItem>

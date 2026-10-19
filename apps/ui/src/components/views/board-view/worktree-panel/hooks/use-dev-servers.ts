@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { getElectronAPI } from '@/lib/electron';
@@ -45,11 +46,11 @@ function buildDevServerBrowserUrl(serverUrl: string, preserveHost = false): stri
  */
 function showUrlDetectedToast(url: string, port: number, preserveHost = false): void {
   const browserUrl = buildDevServerBrowserUrl(url, preserveHost);
-  toast.success(`Dev server running on port ${port}`, {
+  toast.success(translate('Dev server running on port {value1}', { value1: port }), {
     description: browserUrl ? browserUrl : url,
     action: browserUrl
       ? {
-          label: 'Open in Browser',
+          label: translate('Open in Browser'),
           onClick: () => {
             window.open(browserUrl, '_blank', 'noopener,noreferrer');
           },
@@ -161,11 +162,12 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
         }
 
         // If we get here, the backend also hasn't detected the URL - show warning
-        toast.warning('Port detection is taking longer than expected', {
-          description:
-            'The dev server may be slow to start, or the port output format is not recognized.',
+        toast.warning(translate('Port detection is taking longer than expected'), {
+          description: translate(
+            'The dev server may be slow to start, or the port output format is not recognized.'
+          ),
           action: {
-            label: 'Retry',
+            label: translate('Retry'),
             onClick: () => {
               // Use ref to get the latest startPortDetectionTimer, avoiding stale closure
               startPortDetectionTimerRef.current(key);
@@ -484,7 +486,7 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
       try {
         const api = getElectronAPI();
         if (!api?.worktree?.startDevServer) {
-          toast.error('Start dev server API not available');
+          toast.error(translate('Start dev server API not available'));
           return;
         }
 
@@ -513,17 +515,17 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
           // Start port detection timeout
           startPortDetectionTimer(key);
           if (result.result.sessionId) void fetchDevServers();
-          toast.success('Dev server started, detecting port...', {
-            description: 'Logs are now visible in the dev server panel.',
+          toast.success(translate('Dev server started, detecting port...'), {
+            description: translate('Logs are now visible in the dev server panel.'),
           });
         } else {
-          toast.error(result.error || 'Failed to start dev server', {
-            description: 'Check the dev server logs panel for details.',
+          toast.error(result.error || translate('Failed to start dev server'), {
+            description: translate('Check the dev server logs panel for details.'),
           });
         }
       } catch (error) {
         logger.error('Start dev server failed:', error);
-        toast.error('Failed to start dev server', {
+        toast.error(translate('Failed to start dev server'), {
           description: error instanceof Error ? error.message : undefined,
         });
       } finally {
@@ -538,7 +540,7 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
       try {
         const api = getElectronAPI();
         if (!api?.worktree?.stopDevServer) {
-          toast.error('Stop dev server API not available');
+          toast.error(translate('Stop dev server API not available'));
           return;
         }
 
@@ -561,13 +563,13 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
           });
           // Clear toast tracking so future restarts get a fresh toast
           toastShownForRef.current.delete(key);
-          toast.success(result.result?.message || 'Dev server stopped');
+          toast.success(result.result?.message || translate('Dev server stopped'));
         } else {
-          toast.error(result.error || 'Failed to stop dev server');
+          toast.error(result.error || translate('Failed to stop dev server'));
         }
       } catch (error) {
         logger.error('Stop dev server failed:', error);
-        toast.error('Failed to stop dev server');
+        toast.error(translate('Failed to stop dev server'));
       }
     },
     [projectPath, clearPortDetectionTimer, runningDevServers]
@@ -578,8 +580,8 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
       const serverInfo = runningDevServers.get(getWorktreeKey(worktree));
       if (!serverInfo) {
         logger.warn('No dev server info found for worktree:', getWorktreeKey(worktree));
-        toast.error('Dev server not found', {
-          description: 'The dev server may have stopped. Try starting it again.',
+        toast.error(translate('Dev server not found'), {
+          description: translate('The dev server may have stopped. Try starting it again.'),
         });
         return;
       }
@@ -587,8 +589,8 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
       const browserUrl = buildDevServerBrowserUrl(serverInfo.url, serverInfo.preserveUrlHost);
       if (!browserUrl) {
         logger.error('Invalid dev server URL:', serverInfo.url);
-        toast.error('Invalid dev server URL', {
-          description: 'The server returned an unsupported URL protocol.',
+        toast.error(translate('Invalid dev server URL'), {
+          description: translate('The server returned an unsupported URL protocol.'),
         });
         return;
       }

@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FileCode, Terminal } from 'lucide-react';
@@ -33,6 +34,7 @@ export function ClaudeMdSettings({
   useClaudeCodeSystemPrompt,
   onUseClaudeCodeSystemPromptChange,
 }: ClaudeMdSettingsProps) {
+  useUiLocale();
   return (
     <div
       className={cn(
@@ -48,10 +50,12 @@ export function ClaudeMdSettings({
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500/20 to-brand-600/10 flex items-center justify-center border border-brand-500/20">
             <Terminal className="w-5 h-5 text-brand-500" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground tracking-tight">Claude Agent SDK</h2>
+          <h2 className="text-lg font-semibold text-foreground tracking-tight">
+            {translate('Claude Agent SDK')}
+          </h2>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Configure Claude Code system prompt and project instructions.
+          {translate('Configure Claude Code system prompt and project instructions.')}
         </p>
       </div>
       <div className="p-6 space-y-2">
@@ -69,12 +73,12 @@ export function ClaudeMdSettings({
               className="text-foreground cursor-pointer font-medium flex items-center gap-2"
             >
               <Terminal className="w-4 h-4 text-brand-500" />
-              Use Claude Code System Prompt
+              {translate('Use Claude Code System Prompt')}
             </Label>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">
-              Use Claude Code&apos;s built-in system prompt as the base for all agent sessions.
-              Automaker&apos;s prompts are appended on top. When disabled, only Automaker&apos;s
-              custom system prompt is used.
+              {translate(
+                "Use Claude Code's built-in system prompt as the base for all agent sessions. Automaker's prompts are appended on top. When disabled, only Automaker's custom system prompt is used."
+              )}
             </p>
           </div>
         </div>
@@ -92,15 +96,16 @@ export function ClaudeMdSettings({
               className="text-foreground cursor-pointer font-medium flex items-center gap-2"
             >
               <FileCode className="w-4 h-4 text-brand-500" />
-              Auto-load CLAUDE.md Files
+              {translate('Auto-load CLAUDE.md Files')}
             </Label>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">
-              Automatically load project instructions from{' '}
+              {translate('Automatically load project instructions from')}{' '}
               <code className="text-[10px] px-1 py-0.5 rounded bg-accent/50">
                 .claude/CLAUDE.md
               </code>{' '}
-              files. When enabled, Claude will read and follow conventions specified in your
-              project&apos;s CLAUDE.md file. Project settings override global settings.
+              {translate(
+                "files. When enabled, Claude will read and follow conventions specified in your project's CLAUDE.md file. Project settings override global settings."
+              )}
             </p>
           </div>
         </div>

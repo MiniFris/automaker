@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -92,18 +93,21 @@ export function ModelTimeoutFields({
   disabled?: boolean;
   provider?: ModelTimeoutProvider;
 }) {
+  useUiLocale();
   return (
     <fieldset disabled={disabled} className="space-y-3">
-      <legend className="font-medium">Timeouts (seconds)</legend>
+      <legend className="font-medium">{translate('Timeouts (seconds)')}</legend>
       <p className="text-xs text-muted-foreground">
-        Leave blank to use provider defaults. Connection overrides inherit when blank. Positive
-        values only; 0 does not disable a deadline. When deadlines overlap, the earliest one
-        applies.
+        {translate(
+          'Leave blank to use provider defaults. Connection overrides inherit when blank. Positive values only; 0 does not disable a deadline. When deadlines overlap, the earliest one applies.'
+        )}
       </p>
       <div className="grid gap-4 sm:grid-cols-2">
         {keys.map((key) => (
           <div key={key} className="space-y-1">
-            <Label htmlFor={`${prefix}-${key}`}>{descriptions[key][0]} (seconds)</Label>
+            <Label htmlFor={`${prefix}-${key}`}>
+              {translate(descriptions[key][0])} {translate(' (seconds)')}
+            </Label>
             <Input
               id={`${prefix}-${key}`}
               type="number"
@@ -111,7 +115,9 @@ export function ModelTimeoutFields({
               max={MAX_MODEL_TIMEOUT_MS / 1000}
               step={0.001}
               value={value[key] === undefined ? '' : value[key] / 1000}
-              placeholder={`Inherit / default ${DEFAULT_MODEL_TIMEOUTS[key] / 1000}s`}
+              placeholder={translate('Inherit / default {value1}s', {
+                value1: DEFAULT_MODEL_TIMEOUTS[key] / 1000,
+              })}
               onChange={(event) => {
                 const next = { ...value };
                 if (event.target.value === '') delete next[key];
@@ -121,12 +127,16 @@ export function ModelTimeoutFields({
             />
             <p className="text-xs text-muted-foreground">
               {key === 'requestTimeoutMs' && provider === 'claude'
-                ? 'Claude API request deadline. An existing Claude connection timeout takes precedence.'
+                ? translate(
+                    'Claude API request deadline. An existing Claude connection timeout takes precedence.'
+                  )
                 : key === 'connectionTestTimeoutMs' && provider && provider !== 'openai-compatible'
-                  ? 'Authentication probe deadline for this provider.'
+                  ? translate('Authentication probe deadline for this provider.')
                   : key === 'cliIdleTimeoutMs' && provider === 'claude'
-                    ? 'Remote Docker/SSH SDK no-output deadline, before reasoning multipliers. Heartbeats count as output; native Claude SDK has no extra idle timer.'
-                    : descriptions[key][1]}
+                    ? translate(
+                        'Remote Docker/SSH SDK no-output deadline, before reasoning multipliers. Heartbeats count as output; native Claude SDK has no extra idle timer.'
+                      )
+                    : translate(descriptions[key][1])}
             </p>
           </div>
         ))}
@@ -142,10 +152,11 @@ type ProviderTimeoutProps = {
   title?: string;
 };
 export function ProviderModelTimeoutSettings(props: ProviderTimeoutProps) {
+  useUiLocale();
   return (
     <details key={props.provider} className="rounded-lg border p-4">
       <summary className="cursor-pointer font-semibold">
-        {props.title ?? 'Provider timeouts'}
+        {props.title ?? translate('Provider timeouts')}
       </summary>
       <ProviderTimeoutEditor key={props.provider} {...props} />
     </details>
@@ -155,6 +166,7 @@ function ProviderTimeoutEditor({
   provider,
   keys = PROVIDER_TIMEOUT_KEYS[provider],
 }: ProviderTimeoutProps) {
+  useUiLocale();
   const cache = useQueryClient();
   const [draft, setDraft] = useState<ModelTimeoutSettings | null>(null);
   const [busy, setBusy] = useState(false);
@@ -170,14 +182,16 @@ function ProviderTimeoutEditor({
       return result.timeouts;
     },
   });
-  if (query.isPending) return <p>Loading model timeouts…</p>;
-  if (query.error || !query.data) return <p role="alert">Unable to load model timeout settings.</p>;
+  if (query.isPending) return <p>{translate('Loading model timeouts…')}</p>;
+  if (query.error || !query.data)
+    return <p role="alert">{translate('Unable to load model timeout settings.')}</p>;
   return (
-    <section className="space-y-4 pt-4" aria-label="Provider timeout settings">
+    <section className="space-y-4 pt-4" aria-label={translate('Provider timeout settings')}>
       <div>
         <p className="text-sm text-muted-foreground">
-          Applies only to this provider. Clearing a field restores its built-in default.
-          Connection-specific overrides take precedence. Changes apply to new requests.
+          {translate(
+            'Applies only to this provider. Clearing a field restores its built-in default. Connection-specific overrides take precedence. Changes apply to new requests.'
+          )}
         </p>
       </div>
       <ModelTimeoutFields
@@ -209,15 +223,17 @@ function ProviderTimeoutEditor({
                 throw new Error(result.error || 'Cannot save model timeouts.');
               cache.setQueryData([...MODEL_TIMEOUTS_QUERY_KEY, provider], result.timeouts);
               setDraft(null);
-              setMessage('Model timeouts saved. Applied to new requests.');
+              setMessage(translate('Model timeouts saved. Applied to new requests.'));
             } catch (error) {
-              setMessage(error instanceof Error ? error.message : 'Cannot save model timeouts.');
+              setMessage(
+                error instanceof Error ? error.message : translate('Cannot save model timeouts.')
+              );
             } finally {
               setBusy(false);
             }
           }}
         >
-          Save model timeouts
+          {translate('Save model timeouts')}
         </Button>
         <Button
           variant="outline"
@@ -228,7 +244,7 @@ function ProviderTimeoutEditor({
             setDraft(next);
           }}
         >
-          Clear overrides
+          {translate('Clear overrides')}
         </Button>
       </div>
     </section>

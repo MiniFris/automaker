@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect, useCallback } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import {
@@ -45,6 +46,7 @@ export function PushToRemoteDialog({
   worktree,
   onConfirm,
 }: PushToRemoteDialogProps) {
+  useUiLocale();
   const [remotes, setRemotes] = useState<RemoteInfo[]>([]);
   const [selectedRemote, setSelectedRemote] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -95,7 +97,7 @@ export function PushToRemoteDialog({
         const remoteInfos = transformRemoteData(result.result.remotes);
         updateRemotesState(remoteInfos);
       } else {
-        setError(result.error || 'Failed to fetch remotes');
+        setError(result.error || translate('Failed to fetch remotes'));
       }
     } catch (err) {
       logger.error('Failed to fetch remotes:', err);
@@ -153,9 +155,9 @@ export function PushToRemoteDialog({
       if (result.success && result.result) {
         const remoteInfos = transformRemoteData(result.result.remotes);
         updateRemotesState(remoteInfos);
-        toast.success('Remotes refreshed');
+        toast.success(translate('Remotes refreshed'));
       } else {
-        toast.error(result.error || 'Failed to refresh remotes');
+        toast.error(result.error || translate('Failed to refresh remotes'));
       }
     } catch (err) {
       logger.error('Failed to refresh remotes:', err);
@@ -214,16 +216,16 @@ export function PushToRemoteDialog({
         <Link className="w-4 h-4" />
         <span className="text-sm">
           {remotes.length === 0
-            ? 'No remotes found. Add a remote to push your branch.'
-            : 'Add a new remote'}
+            ? translate('No remotes found. Add a remote to push your branch.')
+            : translate('Add a new remote')}
         </span>
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="remote-name">Remote Name</Label>
+        <Label htmlFor="remote-name">{translate('Remote Name')}</Label>
         <Input
           id="remote-name"
-          placeholder="origin"
+          placeholder={translate('origin')}
           value={newRemoteName}
           onChange={(e) => {
             setNewRemoteName(e.target.value);
@@ -234,7 +236,7 @@ export function PushToRemoteDialog({
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="remote-url">Remote URL</Label>
+        <Label htmlFor="remote-url">{translate('Remote URL')}</Label>
         <Input
           id="remote-url"
           placeholder="https://github.com/user/repo.git"
@@ -256,7 +258,7 @@ export function PushToRemoteDialog({
           disabled={isAddingRemote}
         />
         <p className="text-xs text-muted-foreground">
-          Supports HTTPS, SSH (git@github.com:user/repo.git), or git:// URLs
+          {translate('Supports HTTPS, SSH (git@github.com:user/repo.git), or git:// URLs')}
         </p>
       </div>
 
@@ -273,7 +275,7 @@ export function PushToRemoteDialog({
     <div className="grid gap-4 py-4">
       <div className="grid gap-2">
         <div className="flex items-center justify-between">
-          <Label htmlFor="remote-select">Select Remote</Label>
+          <Label htmlFor="remote-select">{translate('Select Remote')}</Label>
           <div className="flex items-center gap-1">
             <Button
               variant="ghost"
@@ -282,7 +284,7 @@ export function PushToRemoteDialog({
               className="h-6 px-2 text-xs"
             >
               <Plus className="w-3 h-3 mr-1" />
-              Add
+              {translate('Add')}
             </Button>
             <Button
               variant="ghost"
@@ -296,13 +298,13 @@ export function PushToRemoteDialog({
               ) : (
                 <RefreshCw className="w-3 h-3 mr-1" />
               )}
-              Refresh
+              {translate('Refresh')}
             </Button>
           </div>
         </div>
         <Select value={selectedRemote} onValueChange={setSelectedRemote}>
           <SelectTrigger id="remote-select">
-            <SelectValue placeholder="Select a remote" />
+            <SelectValue placeholder={translate('Select a remote')} />
           </SelectTrigger>
           <SelectContent>
             {remotes.map((remote) => (
@@ -325,11 +327,11 @@ export function PushToRemoteDialog({
       {selectedRemote && (
         <div className="mt-2 p-3 rounded-md bg-muted/50 border border-border">
           <p className="text-sm text-muted-foreground">
-            This will create a new remote branch{' '}
+            {translate('This will create a new remote branch')}{' '}
             <span className="font-mono text-foreground">
               {selectedRemote}/{worktree?.branch}
             </span>{' '}
-            and set up tracking.
+            {translate('and set up tracking.')}
           </p>
         </div>
       )}
@@ -346,11 +348,11 @@ export function PushToRemoteDialog({
               onClick={() => setShowAddRemoteForm(false)}
               disabled={isAddingRemote}
             >
-              Back
+              {translate('Back')}
             </Button>
           )}
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isAddingRemote}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button
             onClick={handleAddRemote}
@@ -359,12 +361,12 @@ export function PushToRemoteDialog({
             {isAddingRemote ? (
               <>
                 <Spinner size="sm" className="mr-2" />
-                Adding...
+                {translate('Adding...')}
               </>
             ) : (
               <>
                 <Plus className="w-4 h-4 mr-2" />
-                Add Remote
+                {translate('Add Remote')}
               </>
             )}
           </Button>
@@ -375,11 +377,12 @@ export function PushToRemoteDialog({
     return (
       <DialogFooter>
         <Button variant="outline" onClick={() => onOpenChange(false)}>
-          Cancel
+          {translate('Cancel')}
         </Button>
         <Button onClick={handleConfirm} disabled={!selectedRemote || isLoading}>
           <Upload className="w-4 h-4 mr-2" />
-          Push to {selectedRemote || 'Remote'}
+          {translate('Push to ')}
+          {selectedRemote || translate('Remote')}
         </Button>
       </DialogFooter>
     );
@@ -393,29 +396,29 @@ export function PushToRemoteDialog({
             {showAddRemoteForm ? (
               <>
                 <Plus className="w-5 h-5 text-primary" />
-                Add Remote
+                {translate('Add Remote')}
               </>
             ) : (
               <>
                 <Upload className="w-5 h-5 text-primary" />
-                Push New Branch to Remote
+                {translate('Push New Branch to Remote')}
                 <span className="inline-flex items-center gap-1 text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full ml-2">
                   <Sparkles className="w-3 h-3" />
-                  new
+                  {translate('new')}
                 </span>
               </>
             )}
           </DialogTitle>
           <DialogDescription>
             {showAddRemoteForm ? (
-              <>Add a remote repository to push your changes to.</>
+              <>{translate('Add a remote repository to push your changes to.')}</>
             ) : (
               <>
-                Push{' '}
+                {translate('Push')}{' '}
                 <span className="font-mono text-foreground">
-                  {worktree?.branch || 'current branch'}
+                  {worktree?.branch || translate('current branch')}
                 </span>{' '}
-                to a remote repository for the first time.
+                {translate('to a remote repository for the first time.')}
               </>
             )}
           </DialogDescription>
@@ -433,7 +436,7 @@ export function PushToRemoteDialog({
             </div>
             <Button variant="outline" size="sm" onClick={fetchRemotes}>
               <RefreshCw className="w-4 h-4 mr-2" />
-              Retry
+              {translate('Retry')}
             </Button>
           </div>
         ) : showAddRemoteForm ? (

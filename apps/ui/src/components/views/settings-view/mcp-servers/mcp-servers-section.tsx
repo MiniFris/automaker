@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Plug } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMCPServers } from './hooks';
@@ -12,6 +13,7 @@ import {
 } from './dialogs';
 
 export function MCPServersSection() {
+  useUiLocale();
   const {
     // Store state
     mcpServers,
@@ -95,8 +97,8 @@ export function MCPServersSection() {
         {mcpServers.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <Plug className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p className="text-sm">No MCP servers configured</p>
-            <p className="text-xs mt-1">Add a server to extend agent capabilities</p>
+            <p className="text-sm">{translate('No MCP servers configured')}</p>
+            <p className="text-xs mt-1">{translate('Add a server to extend agent capabilities')}</p>
           </div>
         ) : (
           <div className="space-y-3">

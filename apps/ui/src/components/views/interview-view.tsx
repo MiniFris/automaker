@@ -1,3 +1,5 @@
+import { getFormattingLocale } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { useAppStore, Feature } from '@/store/app-store';
@@ -60,6 +62,7 @@ const INTERVIEW_QUESTIONS = [
 ];
 
 export function InterviewView() {
+  useUiLocale();
   const { addProject, setCurrentProject, setAppSpec } = useAppStore();
   const { openFileBrowser } = useFileBrowser();
   const navigate = useNavigate();
@@ -303,8 +306,8 @@ export function InterviewView() {
 
   const handleSelectDirectory = async () => {
     const selectedPath = await openFileBrowser({
-      title: 'Select Base Directory',
-      description: 'Choose the parent directory where your new project will be created',
+      title: translate('Select Base Directory'),
+      description: translate('Choose the parent directory where your new project will be created'),
       initialPath: projectPath || undefined,
     });
 
@@ -334,7 +337,7 @@ export function InterviewView() {
       // Create project directory
       const mkdirResult = await api.mkdir(fullProjectPath);
       if (!mkdirResult.success) {
-        toast.error('Failed to create project directory', {
+        toast.error(translate('Failed to create project directory'), {
           description: mkdirResult.error || 'Unknown error occurred',
         });
         setIsGenerating(false);
@@ -348,7 +351,7 @@ export function InterviewView() {
       const initialFeature: Feature = {
         id: generateUUID(),
         category: 'Core',
-        description: 'Initial project setup',
+        description: translate('Initial project setup'),
         status: 'backlog',
         skipTests: true,
         steps: [],
@@ -405,11 +408,14 @@ export function InterviewView() {
           </Button>
           <Sparkles className="w-5 h-5 text-primary" />
           <div>
-            <h1 className="text-xl font-bold">New Project Interview</h1>
+            <h1 className="text-xl font-bold">{translate('New Project Interview')}</h1>
             <p className="text-sm text-muted-foreground">
               {isComplete
-                ? 'Specification generated!'
-                : `Question ${currentQuestionIndex + 1} of ${INTERVIEW_QUESTIONS.length}`}
+                ? translate('Specification generated!')
+                : translate('Question {value1} of {value2}', {
+                    value1: currentQuestionIndex + 1,
+                    value2: INTERVIEW_QUESTIONS.length,
+                  })}
             </p>
           </div>
         </div>
@@ -478,7 +484,7 @@ export function InterviewView() {
                     message.role === 'user' ? 'text-muted-foreground' : 'text-primary/70'
                   )}
                 >
-                  {message.timestamp.toLocaleTimeString()}
+                  {message.timestamp.toLocaleTimeString(getFormattingLocale())}
                 </p>
               </CardContent>
             </Card>
@@ -494,7 +500,9 @@ export function InterviewView() {
               <CardContent className="p-3">
                 <div className="flex items-center gap-2">
                   <Spinner size="sm" />
-                  <span className="text-sm text-primary">Generating specification...</span>
+                  <span className="text-sm text-primary">
+                    {translate('Generating specification...')}
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -508,13 +516,13 @@ export function InterviewView() {
               <CardContent className="p-6 space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <FileText className="w-5 h-5 text-primary" />
-                  <h3 className="text-lg font-semibold">Create Your Project</h3>
+                  <h3 className="text-lg font-semibold">{translate('Create Your Project')}</h3>
                 </div>
 
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <label htmlFor="project-name" className="text-sm font-medium text-zinc-300">
-                      Project Name
+                      {translate('Project Name')}
                     </label>
                     <Input
                       id="project-name"
@@ -528,7 +536,7 @@ export function InterviewView() {
 
                   <div className="space-y-2">
                     <label htmlFor="project-path" className="text-sm font-medium text-zinc-300">
-                      Parent Directory
+                      {translate('Parent Directory')}
                     </label>
                     <div className="flex gap-2">
                       <Input
@@ -545,7 +553,7 @@ export function InterviewView() {
                         className="bg-white/5 hover:bg-white/10 text-white border border-white/10"
                         data-testid="interview-browse-directory"
                       >
-                        Browse
+                        {translate('Browse')}
                       </Button>
                     </div>
                   </div>
@@ -553,7 +561,7 @@ export function InterviewView() {
                   {/* Preview of generated spec */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-zinc-300">
-                      Generated Specification Preview
+                      {translate('Generated Specification Preview')}
                     </label>
                     <div
                       className="bg-zinc-950/50 border border-white/10 rounded-md p-3 max-h-48 overflow-y-auto"
@@ -574,12 +582,12 @@ export function InterviewView() {
                     {isGenerating ? (
                       <>
                         <Spinner size="sm" variant="foreground" className="mr-2" />
-                        Creating...
+                        {translate('Creating...')}
                       </>
                     ) : (
                       <>
                         <CheckCircle className="w-4 h-4 mr-2" />
-                        Create Project
+                        {translate('Create Project')}
                       </>
                     )}
                   </Button>
@@ -596,7 +604,7 @@ export function InterviewView() {
           <div className="flex gap-2">
             <Input
               ref={inputRef}
-              placeholder="Type your answer..."
+              placeholder={translate('Type your answer...')}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}

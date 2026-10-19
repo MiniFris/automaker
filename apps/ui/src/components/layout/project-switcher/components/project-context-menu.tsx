@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useEffect, useRef, useState, memo, useCallback, useMemo } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { Edit2, Trash2, Palette, ChevronRight, Moon, Sun, Monitor, LogOut } from 'lucide-react';
@@ -74,6 +75,7 @@ const ThemeButton = memo(function ThemeButton({
   onPointerLeave,
   onClick,
 }: ThemeButtonProps) {
+  useUiLocale();
   const Icon = option.icon;
   return (
     <button
@@ -132,6 +134,7 @@ const ThemeColumn = memo(function ThemeColumn({
   onPreviewLeave,
   onSelect,
 }: ThemeColumnProps) {
+  useUiLocale();
   return (
     <div className="flex-1">
       <div className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium text-muted-foreground">
@@ -193,6 +196,7 @@ export function ProjectContextMenu({
   onClose,
   onEdit,
 }: ProjectContextMenuProps) {
+  useUiLocale();
   const menuRef = useRef<HTMLDivElement>(null);
   const {
     moveProjectToTrash,
@@ -343,8 +347,10 @@ export function ProjectContextMenu({
 
   const handleConfirmRemove = useCallback(() => {
     moveProjectToTrash(project.id);
-    toast.success('Project removed', {
-      description: `${project.name} has been removed from your projects list`,
+    toast.success(translate('Project removed'), {
+      description: translate('{value1} has been removed from your projects list', {
+        value1: project.name,
+      }),
     });
   }, [moveProjectToTrash, project.id, project.name]);
 
@@ -367,8 +373,10 @@ export function ProjectContextMenu({
 
   const handleConfirmRemoveFromAutomaker = useCallback(() => {
     removeProject(project.id);
-    toast.success('Project removed from Automaker', {
-      description: `${project.name} has been removed. The folder remains on disk.`,
+    toast.success(translate('Project removed from Automaker'), {
+      description: translate('{value1} has been removed. The folder remains on disk.', {
+        value1: project.name,
+      }),
     });
   }, [removeProject, project.id, project.name]);
 
@@ -413,7 +421,7 @@ export function ProjectContextMenu({
               data-testid="edit-project-button"
             >
               <Edit2 className="w-4 h-4" />
-              <span>Edit Name & Icon</span>
+              <span>{translate('Edit Name & Icon')}</span>
             </button>
 
             {/* Theme Submenu Trigger */}
@@ -433,7 +441,7 @@ export function ProjectContextMenu({
                 data-testid="theme-project-button"
               >
                 <Palette className="w-4 h-4" />
-                <span className="flex-1">Project Theme</span>
+                <span className="flex-1">{translate('Project Theme')}</span>
                 {project.theme && (
                   <span className="text-[10px] text-muted-foreground capitalize">
                     {project.theme}
@@ -480,7 +488,7 @@ export function ProjectContextMenu({
                       data-testid="project-theme-global"
                     >
                       <Monitor className="w-4 h-4" />
-                      <span>Use Global</span>
+                      <span>{translate('Use Global')}</span>
                       <span className="text-[10px] text-muted-foreground ml-1 capitalize">
                         ({globalTheme})
                       </span>
@@ -497,7 +505,7 @@ export function ProjectContextMenu({
                       }}
                     >
                       <ThemeColumn
-                        title="Dark"
+                        title={translate('Dark')}
                         icon={Moon}
                         themes={PROJECT_DARK_THEMES as ThemeOption[]}
                         selectedTheme={project.theme as ThemeMode | null}
@@ -506,7 +514,7 @@ export function ProjectContextMenu({
                         onSelect={handleThemeSelect}
                       />
                       <ThemeColumn
-                        title="Light"
+                        title={translate('Light')}
                         icon={Sun}
                         themes={PROJECT_LIGHT_THEMES as ThemeOption[]}
                         selectedTheme={project.theme as ThemeMode | null}
@@ -532,7 +540,7 @@ export function ProjectContextMenu({
               data-testid="remove-project-button"
             >
               <Trash2 className="w-4 h-4" />
-              <span>Move to Trash</span>
+              <span>{translate('Move to Trash')}</span>
             </button>
 
             <button
@@ -547,7 +555,7 @@ export function ProjectContextMenu({
               data-testid="remove-from-automaker-button"
             >
               <LogOut className="w-4 h-4" />
-              <span>Remove from Automaker</span>
+              <span>{translate('Remove from Automaker')}</span>
             </button>
           </div>
         </div>
@@ -557,11 +565,14 @@ export function ProjectContextMenu({
         open={showRemoveDialog}
         onOpenChange={handleDialogClose}
         onConfirm={handleConfirmRemove}
-        title="Move to Trash"
-        description={`Are you sure you want to move "${project.name}" to Trash? You can restore it later from the Recycle Bin.`}
+        title={translate('Move to Trash')}
+        description={translate(
+          'Are you sure you want to move "{value1}" to Trash? You can restore it later from the Recycle Bin.',
+          { value1: project.name }
+        )}
         icon={Trash2}
         iconClassName="text-destructive"
-        confirmText="Move to Trash"
+        confirmText={translate('Move to Trash')}
         confirmVariant="destructive"
       />
 
@@ -569,11 +580,14 @@ export function ProjectContextMenu({
         open={showRemoveFromAutomakerDialog}
         onOpenChange={handleRemoveFromAutomakerDialogClose}
         onConfirm={handleConfirmRemoveFromAutomaker}
-        title="Remove from Automaker"
-        description={`Remove "${project.name}" from Automaker? The folder will remain on disk and can be re-added later by opening it.`}
+        title={translate('Remove from Automaker')}
+        description={translate(
+          'Remove "{value1}" from Automaker? The folder will remain on disk and can be re-added later by opening it.',
+          { value1: project.name }
+        )}
         icon={LogOut}
         iconClassName="text-muted-foreground"
-        confirmText="Remove from Automaker"
+        confirmText={translate('Remove from Automaker')}
         confirmVariant="secondary"
       />
     </>

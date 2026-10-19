@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import { useState, useCallback, useEffect } from 'react';
 import { useAppStore } from '@/store/app-store';
 import { useSetupStore } from '@/store/setup-store';
@@ -15,6 +16,7 @@ import type { CodexModelId } from '@automaker/types';
 const logger = createLogger('CodexSettings');
 
 export function CodexSettingsTab() {
+  useUiLocale();
   const {
     codexAutoLoadAgents,
     codexEnableWebSearch,

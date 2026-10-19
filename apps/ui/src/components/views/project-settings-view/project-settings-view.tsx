@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/store/app-store';
 import { ExecutionEnvironmentSettings } from '@/components/shared/execution-environment-settings';
@@ -33,6 +34,7 @@ interface SettingsProject {
 }
 
 export function ProjectSettingsView() {
+  useUiLocale();
   const { currentProject, moveProjectToTrash, removeProject } = useAppStore();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showRemoveFromAutomakerDialog, setShowRemoveFromAutomakerDialog] = useState(false);
@@ -140,9 +142,13 @@ export function ProjectSettingsView() {
             <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-muted/50 flex items-center justify-center">
               <FolderOpen className="w-8 h-8 text-muted-foreground/50" />
             </div>
-            <h2 className="text-lg font-semibold text-foreground mb-2">No Project Selected</h2>
+            <h2 className="text-lg font-semibold text-foreground mb-2">
+              {translate('No Project Selected')}
+            </h2>
             <p className="text-sm text-muted-foreground">
-              Select a project from the sidebar to configure project-specific settings.
+              {translate(
+                'Select a project from the sidebar to configure project-specific settings.'
+              )}
             </p>
           </div>
         </div>
@@ -160,9 +166,10 @@ export function ProjectSettingsView() {
         <div className="flex items-center gap-3">
           <Settings className="w-5 h-5 text-muted-foreground" />
           <div>
-            <h1 className="text-xl font-bold">Project Settings</h1>
+            <h1 className="text-xl font-bold">{translate('Project Settings')}</h1>
             <p className="text-sm text-muted-foreground">
-              Configure settings for {currentProject.name}
+              {translate('Configure settings for ')}
+              {currentProject.name}
             </p>
           </div>
         </div>
@@ -172,7 +179,9 @@ export function ProjectSettingsView() {
           size="sm"
           onClick={() => setShowNavigation(!showNavigation)}
           className="lg:hidden h-8 w-8 p-0"
-          aria-label={showNavigation ? 'Close navigation menu' : 'Open navigation menu'}
+          aria-label={
+            showNavigation ? translate('Close navigation menu') : translate('Open navigation menu')
+          }
         >
           {showNavigation ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
         </Button>

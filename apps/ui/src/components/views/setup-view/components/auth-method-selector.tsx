@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import { ReactNode } from 'react';
 
 interface AuthMethodOption {
@@ -49,6 +50,7 @@ const getBadgeClasses = (badgeColor: string) => {
 };
 
 export function AuthMethodSelector({ options, onSelect }: AuthMethodSelectorProps) {
+  useUiLocale();
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {options.map((option) => {

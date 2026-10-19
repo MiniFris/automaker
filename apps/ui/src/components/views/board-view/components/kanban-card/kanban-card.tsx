@@ -1,4 +1,5 @@
 // @ts-nocheck - dnd-kit draggable/droppable ref combination type incompatibilities
+import { useUiLocale } from '@/lib/i18n';
 import React, { memo, useLayoutEffect, useState, useCallback } from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { cn } from '@/lib/utils';
@@ -108,6 +109,7 @@ export const KanbanCard = memo(function KanbanCard({
   onToggleSelect,
   selectionTarget = null,
 }: KanbanCardProps) {
+  useUiLocale();
   const { useWorktrees, currentProject } = useAppStore(
     useShallow((state) => ({
       useWorktrees: state.useWorktrees,

@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -33,6 +34,7 @@ interface SpinnerProps {
  * Use variant='foreground' when placing on primary-colored backgrounds.
  */
 export function Spinner({ size = 'md', variant = 'primary', className }: SpinnerProps) {
+  useUiLocale();
   return (
     <Loader2
       className={cn(sizeClasses[size], 'animate-spin', variantClasses[variant], className)}

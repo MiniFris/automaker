@@ -1,3 +1,6 @@
+import { useLocalizedMemo } from '@/lib/i18n';
+import { formatCount } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -195,6 +198,7 @@ function RemoteActionMenuItem({
   onAction: () => void;
   onSetTracking?: () => void;
 }) {
+  useUiLocale();
   if (onSetTracking) {
     return (
       <DropdownMenuSub key={remote.name}>
@@ -208,7 +212,7 @@ function RemoteActionMenuItem({
             {remote.name}
             {trackingRemote === remote.name && (
               <span className="ml-auto text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded mr-2">
-                tracking
+                {translate('tracking')}
               </span>
             )}
           </DropdownMenuItem>
@@ -224,7 +228,7 @@ function RemoteActionMenuItem({
             className="text-xs"
           >
             <GitBranch className="w-3.5 h-3.5 mr-2" />
-            Set as Tracking Branch
+            {translate('Set as Tracking Branch')}
           </DropdownMenuItem>
         </DropdownMenuSubContent>
       </DropdownMenuSub>
@@ -318,6 +322,7 @@ export function WorktreeActionsDropdown({
   onSwapWorktree,
   pinnedBranches,
 }: WorktreeActionsDropdownProps) {
+  useUiLocale();
   // Get available editors for the "Open In" submenu
   const { editors } = useAvailableEditors();
 
@@ -387,7 +392,7 @@ export function WorktreeActionsDropdown({
   const hasDestructiveSectionContent = worktree.hasChanges || !worktree.isMain;
 
   // Pre-compute PR info for the PR submenu (avoids an IIFE in JSX)
-  const prInfo = useMemo<PRInfo | null>(() => {
+  const prInfo = useLocalizedMemo<PRInfo | null>(() => {
     if (!showPRInfo || !worktree.pr) return null;
     return {
       number: worktree.pr.number,
@@ -404,7 +409,7 @@ export function WorktreeActionsDropdown({
   const viewDevServerLogsItem = (
     <DropdownMenuItem onClick={() => onViewDevServerLogs(worktree)} className="text-xs">
       <ScrollText className="w-3.5 h-3.5 mr-2" />
-      View Dev Server Logs
+      {translate('View Dev Server Logs')}
     </DropdownMenuItem>
   );
 
@@ -432,17 +437,16 @@ export function WorktreeActionsDropdown({
             <DropdownMenuLabel className="text-xs flex items-center gap-2 text-red-600 dark:text-red-400">
               <AlertTriangle className="w-3.5 h-3.5" />
               {worktree.conflictType === 'merge'
-                ? 'Merge'
+                ? translate('Merge')
                 : worktree.conflictType === 'rebase'
-                  ? 'Rebase'
+                  ? translate('Rebase')
                   : worktree.conflictType === 'cherry-pick'
-                    ? 'Cherry-pick'
-                    : 'Operation'}{' '}
-              Conflicts
+                    ? translate('Cherry-pick')
+                    : translate('Operation')}{' '}
+              {translate('Conflicts')}
               {worktree.conflictFiles && worktree.conflictFiles.length > 0 && (
                 <span className="ml-auto text-[10px] bg-red-500/20 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">
-                  {worktree.conflictFiles.length} file
-                  {worktree.conflictFiles.length !== 1 ? 's' : ''}
+                  {formatCount(worktree.conflictFiles.length, 'file')}
                 </span>
               )}
             </DropdownMenuLabel>
@@ -452,14 +456,14 @@ export function WorktreeActionsDropdown({
                 className="text-xs text-destructive focus:text-destructive"
               >
                 <XCircle className="w-3.5 h-3.5 mr-2" />
-                Abort{' '}
+                {translate('Abort')}{' '}
                 {worktree.conflictType === 'merge'
-                  ? 'Merge'
+                  ? translate('Merge')
                   : worktree.conflictType === 'rebase'
-                    ? 'Rebase'
+                    ? translate('Rebase')
                     : worktree.conflictType === 'cherry-pick'
-                      ? 'Cherry-pick'
-                      : 'Operation'}
+                      ? translate('Cherry-pick')
+                      : translate('Operation')}
               </DropdownMenuItem>
             )}
             {onContinueOperation && (
@@ -468,14 +472,14 @@ export function WorktreeActionsDropdown({
                 className="text-xs text-green-600 focus:text-green-700"
               >
                 <CheckCircle className="w-3.5 h-3.5 mr-2" />
-                Continue{' '}
+                {translate('Continue')}{' '}
                 {worktree.conflictType === 'merge'
-                  ? 'Merge'
+                  ? translate('Merge')
                   : worktree.conflictType === 'rebase'
-                    ? 'Rebase'
+                    ? translate('Rebase')
                     : worktree.conflictType === 'cherry-pick'
-                      ? 'Cherry-pick'
-                      : 'Operation'}
+                      ? translate('Cherry-pick')
+                      : translate('Operation')}
               </DropdownMenuItem>
             )}
             {onCreateConflictResolutionFeature && (
@@ -492,7 +496,7 @@ export function WorktreeActionsDropdown({
                 className="text-xs text-purple-500 focus:text-purple-600"
               >
                 <Sparkles className="w-3.5 h-3.5 mr-2" />
-                Resolve with AI
+                {translate('Resolve with AI')}
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
@@ -503,7 +507,7 @@ export function WorktreeActionsDropdown({
           <>
             <DropdownMenuLabel className="text-xs flex items-center gap-2 text-muted-foreground">
               <Spinner size="xs" variant="muted" />
-              Checking git status...
+              {translate('Checking git status...')}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
           </>
@@ -527,12 +531,12 @@ export function WorktreeActionsDropdown({
                   <Zap className="w-3.5 h-3.5 text-yellow-500" />
                   <span className="ml-1.5 h-2 w-2 rounded-full bg-green-500 animate-pulse" />
                 </span>
-                Stop Auto Mode
+                {translate('Stop Auto Mode')}
               </DropdownMenuItem>
             ) : (
               <DropdownMenuItem onClick={() => onToggleAutoMode(worktree)} className="text-xs">
                 <Zap className="w-3.5 h-3.5 mr-2" />
-                Start Auto Mode
+                {translate('Start Auto Mode')}
               </DropdownMenuItem>
             )}
           </>
@@ -542,8 +546,8 @@ export function WorktreeActionsDropdown({
             <DropdownMenuLabel className="text-xs flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               {devServerInfo?.urlDetected === false
-                ? 'Dev Server Starting...'
-                : `Dev Server Running (:${devServerInfo?.port})`}
+                ? translate('Dev Server Starting...')
+                : translate('Dev Server Running (:{value1})', { value1: devServerInfo?.port })}
             </DropdownMenuLabel>
             {devServerInfo != null &&
               devServerInfo.port != null &&
@@ -551,10 +555,12 @@ export function WorktreeActionsDropdown({
                 <DropdownMenuItem
                   onClick={() => onOpenDevServerUrl(worktree)}
                   className="text-xs"
-                  aria-label={`Open dev server on port ${devServerInfo.port} in browser`}
+                  aria-label={translate('Open dev server on port {value1} in browser', {
+                    value1: devServerInfo.port,
+                  })}
                 >
                   <Globe className="w-3.5 h-3.5 mr-2" aria-hidden="true" />
-                  Open in Browser
+                  {translate('Open in Browser')}
                 </DropdownMenuItem>
               )}
             {/* Stop Dev Server - split button: click main area to stop, chevron for view logs */}
@@ -565,7 +571,7 @@ export function WorktreeActionsDropdown({
                   className="text-xs flex-1 pr-0 rounded-r-none text-destructive focus:text-destructive"
                 >
                   <Square className="w-3.5 h-3.5 mr-2" />
-                  Stop Dev Server
+                  {translate('Stop Dev Server')}
                 </DropdownMenuItem>
                 <DropdownMenuSubTrigger className="text-xs px-1 rounded-l-none border-l border-border/30 h-8" />
               </div>
@@ -590,8 +596,8 @@ export function WorktreeActionsDropdown({
                     )}
                   />
                   {isStartingAnyDevServer || isDevServerStarting
-                    ? 'Starting...'
-                    : 'Start Dev Server'}
+                    ? translate('Starting...')
+                    : translate('Start Dev Server')}
                 </DropdownMenuItem>
                 <DropdownMenuSubTrigger
                   className={cn(
@@ -614,12 +620,12 @@ export function WorktreeActionsDropdown({
               <>
                 <DropdownMenuLabel className="text-xs flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                  Tests Running
+                  {translate('Tests Running')}
                 </DropdownMenuLabel>
                 {onViewTestLogs && (
                   <DropdownMenuItem onClick={() => onViewTestLogs(worktree)} className="text-xs">
                     <ScrollText className="w-3.5 h-3.5 mr-2" />
-                    View Test Logs
+                    {translate('View Test Logs')}
                   </DropdownMenuItem>
                 )}
                 {onStopTests && (
@@ -628,7 +634,7 @@ export function WorktreeActionsDropdown({
                     className="text-xs text-destructive focus:text-destructive"
                   >
                     <Square className="w-3.5 h-3.5 mr-2" />
-                    Stop Tests
+                    {translate('Stop Tests')}
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
@@ -643,20 +649,20 @@ export function WorktreeActionsDropdown({
                   <FlaskConical
                     className={cn('w-3.5 h-3.5 mr-2', isStartingTests && 'animate-pulse')}
                   />
-                  {isStartingTests ? 'Starting Tests...' : 'Run Tests'}
+                  {isStartingTests ? translate('Starting Tests...') : translate('Run Tests')}
                 </DropdownMenuItem>
                 {onViewTestLogs && testSessionInfo && (
                   <DropdownMenuItem onClick={() => onViewTestLogs(worktree)} className="text-xs">
                     <ScrollText className="w-3.5 h-3.5 mr-2" />
-                    View Last Test Results
+                    {translate('View Last Test Results')}
                     {testSessionInfo.status === 'passed' && (
                       <span className="ml-auto text-[10px] bg-green-500/20 text-green-600 px-1.5 py-0.5 rounded">
-                        passed
+                        {translate('passed')}
                       </span>
                     )}
                     {testSessionInfo.status === 'failed' && (
                       <span className="ml-auto text-[10px] bg-red-500/20 text-red-600 px-1.5 py-0.5 rounded">
-                        failed
+                        {translate('failed')}
                       </span>
                     )}
                   </DropdownMenuItem>
@@ -676,7 +682,8 @@ export function WorktreeActionsDropdown({
                 className="text-xs flex-1 pr-0 rounded-r-none"
               >
                 {DefaultEditorIcon && <DefaultEditorIcon className="w-3.5 h-3.5 mr-2" />}
-                Open in {effectiveDefaultEditor.name}
+                {translate('Open in ')}
+                {effectiveDefaultEditor.name}
               </DropdownMenuItem>
               {/* Chevron trigger for submenu with other editors and Copy Path */}
               <DropdownMenuSubTrigger className="text-xs px-1 rounded-l-none border-l border-border/30 h-8" />
@@ -701,15 +708,15 @@ export function WorktreeActionsDropdown({
                 onClick={async () => {
                   try {
                     await navigator.clipboard.writeText(worktree.path);
-                    toast.success('Path copied to clipboard');
+                    toast.success(translate('Path copied to clipboard'));
                   } catch {
-                    toast.error('Failed to copy path to clipboard');
+                    toast.error(translate('Failed to copy path to clipboard'));
                   }
                 }}
                 className="text-xs"
               >
                 <Copy className="w-3.5 h-3.5 mr-2" />
-                Copy Path
+                {translate('Copy Path')}
               </DropdownMenuItem>
             </DropdownMenuSubContent>
           </DropdownMenuSub>
@@ -732,7 +739,8 @@ export function WorktreeActionsDropdown({
               className="text-xs flex-1 pr-0 rounded-r-none"
             >
               <DefaultTerminalIcon className="w-3.5 h-3.5 mr-2" />
-              Open in {effectiveDefaultTerminal?.name ?? 'Terminal'}
+              {translate('Open in ')}
+              {effectiveDefaultTerminal?.name ?? translate('Terminal')}
             </DropdownMenuItem>
             {/* Chevron trigger for submenu with all terminals */}
             <DropdownMenuSubTrigger className="text-xs px-1 rounded-l-none border-l border-border/30 h-8" />
@@ -742,9 +750,11 @@ export function WorktreeActionsDropdown({
             <DropdownMenuSub>
               <DropdownMenuSubTrigger className="text-xs">
                 <Terminal className="w-3.5 h-3.5 mr-2" />
-                Terminal
+                {translate('Terminal')}
                 {!effectiveDefaultTerminal && (
-                  <span className="ml-auto mr-2 text-[10px] text-muted-foreground">(default)</span>
+                  <span className="ml-auto mr-2 text-[10px] text-muted-foreground">
+                    {translate('(default)')}
+                  </span>
                 )}
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
@@ -753,14 +763,14 @@ export function WorktreeActionsDropdown({
                   className="text-xs"
                 >
                   <SquarePlus className="w-3.5 h-3.5 mr-2" />
-                  New Tab
+                  {translate('New Tab')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => onOpenInIntegratedTerminal(worktree, 'split')}
                   className="text-xs"
                 >
                   <SplitSquareHorizontal className="w-3.5 h-3.5 mr-2" />
-                  Split
+                  {translate('Split')}
                 </DropdownMenuItem>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
@@ -778,7 +788,9 @@ export function WorktreeActionsDropdown({
                   <TerminalIcon className="w-3.5 h-3.5 mr-2" />
                   {terminal.name}
                   {isDefault && (
-                    <span className="ml-auto text-[10px] text-muted-foreground">(default)</span>
+                    <span className="ml-auto text-[10px] text-muted-foreground">
+                      {translate('(default)')}
+                    </span>
                   )}
                 </DropdownMenuItem>
               );
@@ -789,7 +801,7 @@ export function WorktreeActionsDropdown({
         <DropdownMenuSub>
           <DropdownMenuSubTrigger className="text-xs">
             <ScrollText className="w-3.5 h-3.5 mr-2" />
-            Scripts
+            {translate('Scripts')}
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent className="w-52">
             {/* Re-run Init Script - always shown for non-main worktrees, disabled when no init script configured or no handler */}
@@ -801,7 +813,7 @@ export function WorktreeActionsDropdown({
                   disabled={!hasInitScript}
                 >
                   <RefreshCw className="w-3.5 h-3.5 mr-2" />
-                  Re-run Init Script
+                  {translate('Re-run Init Script')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
               </>
@@ -821,7 +833,7 @@ export function WorktreeActionsDropdown({
               ))
             ) : (
               <DropdownMenuItem disabled className="text-xs text-muted-foreground">
-                No scripts configured
+                {translate('No scripts configured')}
               </DropdownMenuItem>
             )}
             {/* Divider before Edit Commands & Scripts */}
@@ -832,7 +844,7 @@ export function WorktreeActionsDropdown({
               disabled={!onEditScripts}
             >
               <Settings2 className="w-3.5 h-3.5 mr-2" />
-              Edit Commands & Scripts
+              {translate('Edit Commands & Scripts')}
             </DropdownMenuItem>
           </DropdownMenuSubContent>
         </DropdownMenuSub>
@@ -852,19 +864,20 @@ export function WorktreeActionsDropdown({
                   )}
                 >
                   <Download className={cn('w-3.5 h-3.5 mr-2', isPulling && 'animate-pulse')} />
-                  {isPulling ? 'Pulling...' : 'Pull'}
+                  {isPulling ? translate('Pulling...') : translate('Pull')}
                   {!isGitOpsAvailable && (
                     <AlertCircle className="w-3 h-3 ml-auto text-muted-foreground" />
                   )}
                   {isGitOpsAvailable && !isOnDifferentRemote && behindCount > 0 && (
                     <span className="ml-auto text-[10px] bg-muted px-1.5 py-0.5 rounded">
-                      {behindCount} behind
+                      {behindCount} {translate(' behind')}
                     </span>
                   )}
                   {isGitOpsAvailable && isOnDifferentRemote && (
                     <span className="ml-auto inline-flex items-center gap-0.5 text-[10px] bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded">
                       <Globe className="w-2.5 h-2.5" />
-                      on {otherRemotesWithBranch.join(', ')}
+                      {translate('on ')}
+                      {otherRemotesWithBranch.join(', ')}
                     </span>
                   )}
                 </DropdownMenuItem>
@@ -878,7 +891,7 @@ export function WorktreeActionsDropdown({
               </div>
               <DropdownMenuSubContent>
                 <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
-                  Pull from remote
+                  {translate('Pull from remote')}
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {remotes.map((remote) => (
@@ -907,19 +920,20 @@ export function WorktreeActionsDropdown({
               className={cn('text-xs', !isGitOpsAvailable && 'opacity-50 cursor-not-allowed')}
             >
               <Download className={cn('w-3.5 h-3.5 mr-2', isPulling && 'animate-pulse')} />
-              {isPulling ? 'Pulling...' : 'Pull'}
+              {isPulling ? translate('Pulling...') : translate('Pull')}
               {!isGitOpsAvailable && (
                 <AlertCircle className="w-3 h-3 ml-auto text-muted-foreground" />
               )}
               {isGitOpsAvailable && !isOnDifferentRemote && behindCount > 0 && (
                 <span className="ml-auto text-[10px] bg-muted px-1.5 py-0.5 rounded">
-                  {behindCount} behind
+                  {behindCount} {translate(' behind')}
                 </span>
               )}
               {isGitOpsAvailable && isOnDifferentRemote && (
                 <span className="ml-auto inline-flex items-center gap-0.5 text-[10px] bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded">
                   <Globe className="w-2.5 h-2.5" />
-                  on {otherRemotesWithBranch.join(', ')}
+                  {translate('on ')}
+                  {otherRemotesWithBranch.join(', ')}
                 </span>
               )}
             </DropdownMenuItem>
@@ -951,20 +965,21 @@ export function WorktreeActionsDropdown({
                   )}
                 >
                   <Upload className={cn('w-3.5 h-3.5 mr-2', isPushing && 'animate-pulse')} />
-                  {isPushing ? 'Pushing...' : 'Push'}
+                  {isPushing ? translate('Pushing...') : translate('Push')}
                   {!isGitOpsAvailable && (
                     <AlertCircle className="w-3 h-3 ml-auto text-muted-foreground" />
                   )}
                   {isGitOpsAvailable && !hasRemoteBranch && (
                     <span className="ml-auto inline-flex items-center gap-0.5 text-[10px] bg-amber-500/20 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded">
                       <CloudOff className="w-2.5 h-2.5" />
-                      local only
+                      {translate('local only')}
                     </span>
                   )}
                   {isGitOpsAvailable && hasRemoteBranch && isOnDifferentRemote && (
                     <span className="ml-auto inline-flex items-center gap-0.5 text-[10px] bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded">
                       <Globe className="w-2.5 h-2.5" />
-                      on {otherRemotesWithBranch.join(', ')}
+                      {translate('on ')}
+                      {otherRemotesWithBranch.join(', ')}
                     </span>
                   )}
                   {isGitOpsAvailable &&
@@ -972,7 +987,7 @@ export function WorktreeActionsDropdown({
                     !isOnDifferentRemote &&
                     aheadCount > 0 && (
                       <span className="ml-auto text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded">
-                        {aheadCount} ahead
+                        {aheadCount} {translate(' ahead')}
                       </span>
                     )}
                   {isGitOpsAvailable &&
@@ -999,7 +1014,7 @@ export function WorktreeActionsDropdown({
               </div>
               <DropdownMenuSubContent>
                 <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
-                  Push to remote
+                  {translate('Push to remote')}
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {remotes.map((remote) => (
@@ -1039,25 +1054,26 @@ export function WorktreeActionsDropdown({
               className={cn('text-xs', !isGitOpsAvailable && 'opacity-50 cursor-not-allowed')}
             >
               <Upload className={cn('w-3.5 h-3.5 mr-2', isPushing && 'animate-pulse')} />
-              {isPushing ? 'Pushing...' : 'Push'}
+              {isPushing ? translate('Pushing...') : translate('Push')}
               {!isGitOpsAvailable && (
                 <AlertCircle className="w-3 h-3 ml-auto text-muted-foreground" />
               )}
               {isGitOpsAvailable && !hasRemoteBranch && (
                 <span className="ml-auto inline-flex items-center gap-0.5 text-[10px] bg-amber-500/20 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded">
                   <CloudOff className="w-2.5 h-2.5" />
-                  local only
+                  {translate('local only')}
                 </span>
               )}
               {isGitOpsAvailable && hasRemoteBranch && isOnDifferentRemote && (
                 <span className="ml-auto inline-flex items-center gap-0.5 text-[10px] bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded">
                   <Globe className="w-2.5 h-2.5" />
-                  on {otherRemotesWithBranch.join(', ')}
+                  {translate('on ')}
+                  {otherRemotesWithBranch.join(', ')}
                 </span>
               )}
               {isGitOpsAvailable && hasRemoteBranch && !isOnDifferentRemote && aheadCount > 0 && (
                 <span className="ml-auto text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded">
-                  {aheadCount} ahead
+                  {aheadCount} {translate(' ahead')}
                 </span>
               )}
               {isGitOpsAvailable && hasRemoteBranch && !isOnDifferentRemote && trackingRemote && (
@@ -1090,7 +1106,7 @@ export function WorktreeActionsDropdown({
                     )}
                   >
                     <RefreshCw className={cn('w-3.5 h-3.5 mr-2', isSyncing && 'animate-spin')} />
-                    {isSyncing ? 'Syncing...' : 'Sync'}
+                    {isSyncing ? translate('Syncing...') : translate('Sync')}
                     {!isGitOpsAvailable && (
                       <AlertCircle className="w-3 h-3 ml-auto text-muted-foreground" />
                     )}
@@ -1105,7 +1121,7 @@ export function WorktreeActionsDropdown({
                 </div>
                 <DropdownMenuSubContent>
                   <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
-                    Sync with remote
+                    {translate('Sync with remote')}
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {remotes.map((remote) => (
@@ -1131,7 +1147,7 @@ export function WorktreeActionsDropdown({
                 className={cn('text-xs', !isGitOpsAvailable && 'opacity-50 cursor-not-allowed')}
               >
                 <RefreshCw className={cn('w-3.5 h-3.5 mr-2', isSyncing && 'animate-spin')} />
-                {isSyncing ? 'Syncing...' : 'Sync'}
+                {isSyncing ? translate('Syncing...') : translate('Sync')}
                 {!isGitOpsAvailable && (
                   <AlertCircle className="w-3 h-3 ml-auto text-muted-foreground" />
                 )}
@@ -1149,7 +1165,7 @@ export function WorktreeActionsDropdown({
             )}
           >
             <GitMerge className="w-3.5 h-3.5 mr-2" />
-            Merge & Rebase
+            {translate('Merge & Rebase')}
             {!isGitOpsAvailable && (
               <AlertCircle className="w-3 h-3 ml-auto text-muted-foreground" />
             )}
@@ -1169,7 +1185,7 @@ export function WorktreeActionsDropdown({
               )}
             >
               <GitMerge className="w-3.5 h-3.5 mr-2" />
-              Integrate Branch
+              {translate('Integrate Branch')}
               {!isGitOpsAvailable && (
                 <AlertCircle className="w-3 h-3 ml-auto text-muted-foreground" />
               )}
@@ -1195,7 +1211,7 @@ export function WorktreeActionsDropdown({
                   )}
                 >
                   <History className="w-3.5 h-3.5 mr-2" />
-                  View Commits
+                  {translate('View Commits')}
                   {!isGitOpsAvailable && (
                     <AlertCircle className="w-3 h-3 ml-auto text-muted-foreground" />
                   )}
@@ -1218,7 +1234,7 @@ export function WorktreeActionsDropdown({
                 className={cn('text-xs', !isGitOpsAvailable && 'opacity-50 cursor-not-allowed')}
               >
                 <Cherry className="w-3.5 h-3.5 mr-2" />
-                Cherry Pick
+                {translate('Cherry Pick')}
                 {!isGitOpsAvailable && (
                   <AlertCircle className="w-3 h-3 ml-auto text-muted-foreground" />
                 )}
@@ -1236,7 +1252,7 @@ export function WorktreeActionsDropdown({
               className={cn('text-xs', !isGitOpsAvailable && 'opacity-50 cursor-not-allowed')}
             >
               <History className="w-3.5 h-3.5 mr-2" />
-              View Commits
+              {translate('View Commits')}
               {!isGitOpsAvailable && (
                 <AlertCircle className="w-3 h-3 ml-auto text-muted-foreground" />
               )}
@@ -1260,7 +1276,7 @@ export function WorktreeActionsDropdown({
                 className="text-xs flex-1 pr-0 rounded-r-none"
               >
                 <Eye className="w-3.5 h-3.5 mr-2" />
-                View Changes
+                {translate('View Changes')}
               </DropdownMenuItem>
               {/* Chevron trigger for submenu with stash options */}
               <DropdownMenuSubTrigger className="text-xs px-1 rounded-l-none border-l border-border/30 h-8" />
@@ -1280,7 +1296,7 @@ export function WorktreeActionsDropdown({
                     className={cn('text-xs', !isGitOpsAvailable && 'opacity-50 cursor-not-allowed')}
                   >
                     <Archive className="w-3.5 h-3.5 mr-2" />
-                    Create Stash
+                    {translate('Create Stash')}
                     {!isGitOpsAvailable && (
                       <AlertCircle className="w-3 h-3 ml-auto text-muted-foreground" />
                     )}
@@ -1290,7 +1306,7 @@ export function WorktreeActionsDropdown({
               {onViewStashes && (
                 <DropdownMenuItem onClick={() => onViewStashes(worktree)} className="text-xs">
                   <Eye className="w-3.5 h-3.5 mr-2" />
-                  View Stashes
+                  {translate('View Stashes')}
                 </DropdownMenuItem>
               )}
             </DropdownMenuSubContent>
@@ -1298,12 +1314,12 @@ export function WorktreeActionsDropdown({
         ) : worktree.hasChanges ? (
           <DropdownMenuItem onClick={() => onViewChanges(worktree)} className="text-xs">
             <Eye className="w-3.5 h-3.5 mr-2" />
-            View Changes
+            {translate('View Changes')}
           </DropdownMenuItem>
         ) : onViewStashes ? (
           <DropdownMenuItem onClick={() => onViewStashes(worktree)} className="text-xs">
             <Eye className="w-3.5 h-3.5 mr-2" />
-            View Stashes
+            {translate('View Stashes')}
           </DropdownMenuItem>
         ) : null}
         {worktree.hasChanges && (
@@ -1317,7 +1333,7 @@ export function WorktreeActionsDropdown({
               className={cn('text-xs', !isGitOpsAvailable && 'opacity-50 cursor-not-allowed')}
             >
               <GitCommit className="w-3.5 h-3.5 mr-2" />
-              Commit Changes
+              {translate('Commit Changes')}
               {!isGitOpsAvailable && (
                 <AlertCircle className="w-3 h-3 ml-auto text-muted-foreground" />
               )}
@@ -1336,7 +1352,7 @@ export function WorktreeActionsDropdown({
               className={cn('text-xs', !isGitOpsAvailable && 'opacity-50 cursor-not-allowed')}
             >
               <GitPullRequest className="w-3.5 h-3.5 mr-2" />
-              Create Pull Request
+              {translate('Create Pull Request')}
               {!isGitOpsAvailable && (
                 <AlertCircle className="w-3 h-3 ml-auto text-muted-foreground" />
               )}
@@ -1355,7 +1371,8 @@ export function WorktreeActionsDropdown({
                 className="text-xs flex-1 pr-0 rounded-r-none"
               >
                 <GitPullRequest className="w-3 h-3 mr-2" />
-                PR #{worktree.pr.number}
+                {translate('PR #')}
+                {worktree.pr.number}
                 <span
                   className={cn(
                     'ml-auto mr-1 text-[10px] px-1.5 py-0.5 rounded uppercase',
@@ -1378,19 +1395,19 @@ export function WorktreeActionsDropdown({
                 className="text-xs text-blue-500 focus:text-blue-600"
               >
                 <MessageSquare className="w-3.5 h-3.5 mr-2" />
-                Manage PR Comments
+                {translate('Manage PR Comments')}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => onAutoAddressPRComments(worktree, prInfo)}
                 className="text-xs text-blue-500 focus:text-blue-600"
               >
                 <Zap className="w-3.5 h-3.5 mr-2" />
-                Address PR Comments
+                {translate('Address PR Comments')}
               </DropdownMenuItem>
               {onChangePRNumber && (
                 <DropdownMenuItem onClick={() => onChangePRNumber(worktree)} className="text-xs">
                   <Hash className="w-3.5 h-3.5 mr-2" />
-                  Change PR Number
+                  {translate('Change PR Number')}
                 </DropdownMenuItem>
               )}
             </DropdownMenuSubContent>
@@ -1411,7 +1428,7 @@ export function WorktreeActionsDropdown({
               )}
             >
               <Undo2 className="w-3.5 h-3.5 mr-2" />
-              Discard Changes
+              {translate('Discard Changes')}
               {!isGitOpsAvailable && (
                 <AlertCircle className="w-3 h-3 ml-auto text-muted-foreground" />
               )}
@@ -1427,7 +1444,7 @@ export function WorktreeActionsDropdown({
             <DropdownMenuSub>
               <DropdownMenuSubTrigger className="text-xs">
                 <ArrowLeftRight className="w-3.5 h-3.5 mr-2" />
-                Swap Worktree
+                {translate('Swap Worktree')}
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent className="w-64 max-h-80 overflow-y-auto">
                 {availableWorktreesForSwap
@@ -1454,7 +1471,7 @@ export function WorktreeActionsDropdown({
             className="text-xs text-destructive focus:text-destructive"
           >
             <Trash2 className="w-3.5 h-3.5 mr-2" />
-            Delete Worktree
+            {translate('Delete Worktree')}
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>

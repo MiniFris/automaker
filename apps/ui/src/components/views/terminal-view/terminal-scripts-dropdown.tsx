@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useCallback, useMemo } from 'react';
 import { ScrollText, Play, Settings2, SquareArrowOutUpRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -37,6 +38,7 @@ export function TerminalScriptsDropdown({
   isConnected,
   onOpenSettings,
 }: TerminalScriptsDropdownProps) {
+  useUiLocale();
   const currentProject = useAppStore((state) => state.currentProject);
   const { data: projectSettings } = useProjectSettings(currentProject?.path);
 
@@ -73,7 +75,7 @@ export function TerminalScriptsDropdown({
           size="icon"
           className="h-5 w-5 text-muted-foreground hover:text-foreground"
           onClick={(e) => e.stopPropagation()}
-          title="Quick Scripts"
+          title={translate('Quick Scripts')}
           disabled={!isConnected}
         >
           <ScrollText className="h-3 w-3" />
@@ -86,7 +88,7 @@ export function TerminalScriptsDropdown({
         onClick={(e) => e.stopPropagation()}
       >
         <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
-          Quick Scripts
+          {translate('Quick Scripts')}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {scripts.map((script) => (
@@ -112,7 +114,7 @@ export function TerminalScriptsDropdown({
                   'transition-colors',
                   !isConnected && 'pointer-events-none opacity-50'
                 )}
-                title="Run in new tab"
+                title={translate('Run in new tab')}
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
@@ -138,7 +140,7 @@ export function TerminalScriptsDropdown({
           disabled={!onOpenSettings}
         >
           <Settings2 className="h-3.5 w-3.5 shrink-0" />
-          <span className="text-sm">Edit Commands & Scripts</span>
+          <span className="text-sm">{translate('Edit Commands & Scripts')}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

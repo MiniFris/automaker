@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 import React, { Component, ErrorInfo } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { AlertCircle, RefreshCw } from 'lucide-react';
@@ -60,20 +61,24 @@ export class TerminalErrorBoundary extends Component<Props, State> {
             <AlertCircle className="w-6 h-6 text-destructive" />
           </div>
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-foreground">Terminal Crashed</h3>
+            <h3 className="text-lg font-semibold text-foreground">
+              {translate('Terminal Crashed')}
+            </h3>
             <p className="text-sm text-muted-foreground max-w-sm">
               {this.state.error?.message?.includes('WebGL')
-                ? 'WebGL context was lost. This can happen with GPU driver issues.'
-                : 'An unexpected error occurred in the terminal.'}
+                ? translate('WebGL context was lost. This can happen with GPU driver issues.')
+                : translate('An unexpected error occurred in the terminal.')}
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={this.handleRestart} className="gap-2">
             <RefreshCw className="w-4 h-4" />
-            Restart Terminal
+            {translate('Restart Terminal')}
           </Button>
           {this.state.error && (
             <details className="text-xs text-muted-foreground max-w-md">
-              <summary className="cursor-pointer hover:text-foreground">Technical details</summary>
+              <summary className="cursor-pointer hover:text-foreground">
+                {translate('Technical details')}
+              </summary>
               <pre className="mt-2 p-2 bg-muted/50 rounded text-left overflow-auto max-h-32">
                 {this.state.error.message}
               </pre>

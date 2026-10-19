@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useRef, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -16,6 +17,7 @@ interface ProjectIdentitySectionProps {
 }
 
 export function ProjectIdentitySection({ project }: ProjectIdentitySectionProps) {
+  useUiLocale();
   const { setProjectIcon, setProjectName, setProjectCustomIcon } = useAppStore();
   const [projectName, setProjectNameLocal] = useState(project.name || '');
   const [projectIcon, setProjectIconLocal] = useState<string | null>(project.icon || null);
@@ -62,16 +64,16 @@ export function ProjectIdentitySection({ project }: ProjectIdentitySectionProps)
     // Validate file type
     const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (!validTypes.includes(file.type)) {
-      toast.error('Invalid file type', {
-        description: 'Please upload a PNG, JPG, GIF, or WebP image.',
+      toast.error(translate('Invalid file type'), {
+        description: translate('Please upload a PNG, JPG, GIF, or WebP image.'),
       });
       return;
     }
 
     // Validate file size (max 5MB for icons - allows animated GIFs)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('File too large', {
-        description: 'Please upload an image smaller than 5MB.',
+      toast.error(translate('File too large'), {
+        description: translate('Please upload an image smaller than 5MB.'),
       });
       return;
     }
@@ -91,29 +93,29 @@ export function ProjectIdentitySection({ project }: ProjectIdentitySectionProps)
           );
           if (result.success && result.path) {
             handleCustomIconChange(result.path);
-            toast.success('Icon uploaded successfully');
+            toast.success(translate('Icon uploaded successfully'));
           } else {
-            toast.error('Failed to upload icon', {
+            toast.error(translate('Failed to upload icon'), {
               description: result.error || 'Please try again.',
             });
           }
         } catch {
-          toast.error('Failed to upload icon', {
-            description: 'Network error. Please try again.',
+          toast.error(translate('Failed to upload icon'), {
+            description: translate('Network error. Please try again.'),
           });
         } finally {
           setIsUploadingIcon(false);
         }
       };
       reader.onerror = () => {
-        toast.error('Failed to read file', {
-          description: 'Please try again with a different file.',
+        toast.error(translate('Failed to read file'), {
+          description: translate('Please try again with a different file.'),
         });
         setIsUploadingIcon(false);
       };
       reader.readAsDataURL(file);
     } catch {
-      toast.error('Failed to upload icon');
+      toast.error(translate('Failed to upload icon'));
       setIsUploadingIcon(false);
     }
   };
@@ -139,29 +141,31 @@ export function ProjectIdentitySection({ project }: ProjectIdentitySectionProps)
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500/20 to-brand-600/10 flex items-center justify-center border border-brand-500/20">
             <Palette className="w-5 h-5 text-brand-500" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground tracking-tight">Project Identity</h2>
+          <h2 className="text-lg font-semibold text-foreground tracking-tight">
+            {translate('Project Identity')}
+          </h2>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Customize how your project appears in the sidebar and project switcher.
+          {translate('Customize how your project appears in the sidebar and project switcher.')}
         </p>
       </div>
       <div className="p-6 space-y-6">
         {/* Project Name */}
         <div className="space-y-2">
-          <Label htmlFor="project-name-settings">Project Name</Label>
+          <Label htmlFor="project-name-settings">{translate('Project Name')}</Label>
           <Input
             id="project-name-settings"
             value={projectName}
             onChange={(e) => handleNameChange(e.target.value)}
-            placeholder="Enter project name"
+            placeholder={translate('Enter project name')}
           />
         </div>
 
         {/* Project Icon */}
         <div className="space-y-2">
-          <Label>Project Icon</Label>
+          <Label>{translate('Project Icon')}</Label>
           <p className="text-xs text-muted-foreground mb-2">
-            Choose a preset icon or upload a custom image
+            {translate('Choose a preset icon or upload a custom image')}
           </p>
 
           {/* Custom Icon Upload */}
@@ -171,7 +175,7 @@ export function ProjectIdentitySection({ project }: ProjectIdentitySectionProps)
                 <div className="relative">
                   <img
                     src={getAuthenticatedImageUrl(customIconPath, project.path)}
-                    alt="Custom project icon"
+                    alt={translate('Custom project icon')}
                     className="w-12 h-12 rounded-lg object-cover border border-border"
                   />
                   <button
@@ -205,10 +209,10 @@ export function ProjectIdentitySection({ project }: ProjectIdentitySectionProps)
                   className="gap-1.5"
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  {isUploadingIcon ? 'Uploading...' : 'Upload Custom Icon'}
+                  {isUploadingIcon ? translate('Uploading...') : translate('Upload Custom Icon')}
                 </Button>
                 <p className="text-xs text-muted-foreground mt-1">
-                  PNG, JPG, GIF or WebP. Max 5MB.
+                  {translate('PNG, JPG, GIF or WebP. Max 5MB.')}
                 </p>
               </div>
             </div>

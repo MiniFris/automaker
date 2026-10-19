@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, ArrowLeft, Check, Moon, Sun } from 'lucide-react';
@@ -11,6 +12,7 @@ interface ThemeStepProps {
 }
 
 export function ThemeStep({ onNext, onBack }: ThemeStepProps) {
+  useUiLocale();
   const { theme, setTheme, setPreviewTheme, currentProject, setProjectTheme } = useAppStore();
   const [activeTab, setActiveTab] = useState<'dark' | 'light'>('dark');
 
@@ -37,9 +39,11 @@ export function ThemeStep({ onNext, onBack }: ThemeStepProps) {
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-foreground mb-3">Choose Your Theme</h2>
+        <h2 className="text-3xl font-bold text-foreground mb-3">
+          {translate('Choose Your Theme')}
+        </h2>
         <p className="text-muted-foreground max-w-md mx-auto">
-          Pick a theme that suits your style. Hover to preview, click to select.
+          {translate('Pick a theme that suits your style. Hover to preview, click to select.')}
         </p>
       </div>
 
@@ -55,7 +59,7 @@ export function ThemeStep({ onNext, onBack }: ThemeStepProps) {
           )}
         >
           <Moon className="w-4 h-4" />
-          Dark Themes
+          {translate('Dark Themes')}
         </button>
         <button
           onClick={() => setActiveTab('light')}
@@ -67,7 +71,7 @@ export function ThemeStep({ onNext, onBack }: ThemeStepProps) {
           )}
         >
           <Sun className="w-4 h-4" />
-          Light Themes
+          {translate('Light Themes')}
         </button>
       </div>
 
@@ -106,7 +110,7 @@ export function ThemeStep({ onNext, onBack }: ThemeStepProps) {
       <div className="flex justify-between pt-4">
         <Button variant="ghost" onClick={onBack}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
+          {translate('Back')}
         </Button>
         <Button
           size="lg"
@@ -114,7 +118,7 @@ export function ThemeStep({ onNext, onBack }: ThemeStepProps) {
           onClick={onNext}
           data-testid="theme-continue-button"
         >
-          Continue
+          {translate('Continue')}
           <ArrowRight className="w-4 h-4 ml-2" />
         </Button>
       </div>

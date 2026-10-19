@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { ImageIcon, Upload, Trash2 } from 'lucide-react';
@@ -34,6 +35,7 @@ interface BoardBackgroundModalProps {
 }
 
 export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModalProps) {
+  useUiLocale();
   const { currentProject, boardBackgroundByProject } = useAppStore();
   const {
     setBoardBackground,
@@ -104,7 +106,7 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
   const processFile = useCallback(
     async (file: File) => {
       if (!currentProject) {
-        toast.error('No project selected');
+        toast.error(translate('No project selected'));
         return;
       }
 
@@ -134,14 +136,14 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
         if (result.success && result.path) {
           // Update store and persist to server
           await setBoardBackground(currentProject.path, result.path);
-          toast.success('Background image saved');
+          toast.success(translate('Background image saved'));
         } else {
-          toast.error(result.error || 'Failed to save background image');
+          toast.error(result.error || translate('Failed to save background image'));
           setPreviewImage(null);
         }
       } catch (error) {
         logger.error('Failed to process image:', error);
-        toast.error('Failed to process image');
+        toast.error(translate('Failed to process image'));
         setPreviewImage(null);
       } finally {
         setIsProcessing(false);
@@ -207,13 +209,13 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
       if (result.success) {
         await clearBoardBackground(currentProject.path);
         setPreviewImage(null);
-        toast.success('Background image cleared');
+        toast.success(translate('Background image cleared'));
       } else {
-        toast.error(result.error || 'Failed to clear background image');
+        toast.error(result.error || translate('Failed to clear background image'));
       }
     } catch (error) {
       logger.error('Failed to clear background:', error);
-      toast.error('Failed to clear background');
+      toast.error(translate('Failed to clear background'));
     } finally {
       setIsProcessing(false);
     }
@@ -320,17 +322,19 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
         >
           <SheetTitle className="flex items-center gap-2">
             <ImageIcon className="w-5 h-5 text-brand-500" />
-            Board Background Settings
+            {translate('Board Background Settings')}
           </SheetTitle>
           <SheetDescription className="text-muted-foreground">
-            Set a custom background image for your kanban board and adjust card/column opacity
+            {translate(
+              'Set a custom background image for your kanban board and adjust card/column opacity'
+            )}
           </SheetDescription>
         </SheetHeader>
 
         <div className="space-y-6 px-6 pb-6">
           {/* Image Upload Section */}
           <div className="space-y-3">
-            <Label>Background Image</Label>
+            <Label>{translate('Background Image')}</Label>
 
             {/* Hidden file input */}
             <input
@@ -364,7 +368,7 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
                   <div className="relative w-full h-48 rounded-md overflow-hidden border border-border bg-muted">
                     <img
                       src={previewImage}
-                      alt="Background preview"
+                      alt={translate('Background preview')}
                       className="w-full h-full object-cover"
                     />
                     {isProcessing && (
@@ -382,7 +386,7 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
                       className="flex-1"
                     >
                       <Upload className="w-4 h-4 mr-2" />
-                      Change Image
+                      {translate('Change Image')}
                     </Button>
                     <Button
                       variant="destructive"
@@ -391,7 +395,7 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
                       disabled={isProcessing}
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
-                      Clear
+                      {translate('Clear')}
                     </Button>
                   </div>
                 </div>
@@ -416,12 +420,13 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {isDragOver && !isProcessing
-                      ? 'Drop image here'
-                      : 'Click to upload or drag and drop'}
+                      ? translate('Drop image here')
+                      : translate('Click to upload or drag and drop')}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    JPG, PNG, GIF, or WebP (max {Math.round(DEFAULT_MAX_FILE_SIZE / (1024 * 1024))}
-                    MB)
+                    {translate('JPG, PNG, GIF, or WebP (max ')}
+                    {Math.round(DEFAULT_MAX_FILE_SIZE / (1024 * 1024))}
+                    {translate('MB)')}
                   </p>
                 </div>
               )}
@@ -432,7 +437,7 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
           <div className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Card Opacity</Label>
+                <Label>{translate('Card Opacity')}</Label>
                 <span className="text-sm text-muted-foreground">{localCardOpacity}%</span>
               </div>
               <Slider
@@ -448,7 +453,7 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Column Opacity</Label>
+                <Label>{translate('Column Opacity')}</Label>
                 <span className="text-sm text-muted-foreground">{localColumnOpacity}%</span>
               </div>
               <Slider
@@ -470,7 +475,7 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
                 onCheckedChange={handleColumnBorderToggle}
               />
               <Label htmlFor="column-border-toggle" className="cursor-pointer">
-                Show Column Borders
+                {translate('Show Column Borders')}
               </Label>
             </div>
 
@@ -482,7 +487,7 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
                 onCheckedChange={handleCardGlassmorphismToggle}
               />
               <Label htmlFor="card-glassmorphism-toggle" className="cursor-pointer">
-                Card Glassmorphism (blur effect)
+                {translate('Card Glassmorphism (blur effect)')}
               </Label>
             </div>
 
@@ -494,7 +499,7 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
                 onCheckedChange={handleCardBorderToggle}
               />
               <Label htmlFor="card-border-toggle" className="cursor-pointer">
-                Show Card Borders
+                {translate('Show Card Borders')}
               </Label>
             </div>
 
@@ -502,7 +507,7 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
             {cardBorderEnabled && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label>Card Border Opacity</Label>
+                  <Label>{translate('Card Border Opacity')}</Label>
                   <span className="text-sm text-muted-foreground">{localCardBorderOpacity}%</span>
                 </div>
                 <Slider
@@ -525,7 +530,7 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
                 onCheckedChange={handleHideScrollbarToggle}
               />
               <Label htmlFor="hide-scrollbar-toggle" className="cursor-pointer">
-                Hide Board Scrollbar
+                {translate('Hide Board Scrollbar')}
               </Label>
             </div>
           </div>

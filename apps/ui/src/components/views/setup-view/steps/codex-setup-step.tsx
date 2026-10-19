@@ -1,5 +1,8 @@
 // @ts-nocheck - Codex setup wizard with Electron API integration
-import { useMemo, useCallback } from 'react';
+import { useLocalizedMemo } from '@/lib/i18n';
+import { translate } from '@/lib/i18n';
+import { useUiLocale } from '@/lib/i18n';
+import { useCallback } from 'react';
 import { useSetupStore } from '@/store/setup-store';
 import { getElectronAPI } from '@/lib/electron';
 import { CliSetupStep } from './cli-setup-step';
@@ -12,6 +15,7 @@ interface CodexSetupStepProps {
 }
 
 export function CodexSetupStep({ onNext, onBack, onSkip }: CodexSetupStepProps) {
+  useUiLocale();
   const {
     codexCliStatus,
     codexAuthStatus,
@@ -36,14 +40,14 @@ export function CodexSetupStep({ onNext, onBack, onSkip }: CodexSetupStepProps) 
     []
   );
 
-  const config = useMemo(
+  const config = useLocalizedMemo(
     () => ({
       cliType: 'codex' as const,
-      displayName: 'Codex',
-      cliLabel: 'Codex CLI',
-      cliDescription: 'Use Codex CLI login',
-      apiKeyLabel: 'OpenAI API Key',
-      apiKeyDescription: 'Optional API key for Codex',
+      displayName: translate('Codex'),
+      cliLabel: translate('Codex CLI'),
+      cliDescription: translate('Use Codex CLI login'),
+      apiKeyLabel: translate('OpenAI API Key'),
+      apiKeyDescription: translate('Optional API key for Codex'),
       apiKeyProvider: 'openai' as const,
       apiKeyPlaceholder: 'sk-...',
       apiKeyDocsUrl: 'https://platform.openai.com/api-keys',

@@ -1,3 +1,4 @@
+import { useUiLocale } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/app-store';
 import type { ModelAlias, CursorModelId, PhaseModelKey, PhaseModelEntry } from '@automaker/types';
@@ -39,6 +40,7 @@ export function ModelOverrideTrigger({
   isOverridden = false,
   className,
 }: ModelOverrideTriggerProps) {
+  useUiLocale();
   const { phaseModels } = useAppStore();
 
   const handleChange = (entry: PhaseModelEntry) => {

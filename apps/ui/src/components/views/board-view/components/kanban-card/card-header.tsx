@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { memo, useState, useMemo } from 'react';
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
 import { Feature } from '@/store/app-store';
@@ -41,6 +42,7 @@ function DuplicateMenuItems({
   onDuplicateAsChild?: () => void;
   onDuplicateAsChildMultiple?: () => void;
 }) {
+  useUiLocale();
   if (!onDuplicate) return null;
 
   // When there's no sub-child action, render a simple menu item (no DropdownMenuSub wrapper)
@@ -54,7 +56,7 @@ function DuplicateMenuItems({
         className="text-xs"
       >
         <Copy className="w-3 h-3 mr-2" />
-        Duplicate
+        {translate('Duplicate')}
       </DropdownMenuItem>
     );
   }
@@ -71,7 +73,7 @@ function DuplicateMenuItems({
           className="flex-1 pr-0 rounded-r-none text-xs"
         >
           <Copy className="w-3 h-3 mr-2" />
-          Duplicate
+          {translate('Duplicate')}
         </DropdownMenuItem>
         <DropdownMenuSubTrigger className="px-1 rounded-l-none border-l border-border/30 h-8 text-xs" />
       </div>
@@ -84,7 +86,7 @@ function DuplicateMenuItems({
           className="text-xs"
         >
           <GitFork className="w-3 h-3 mr-2" />
-          Duplicate as Child
+          {translate('Duplicate as Child')}
         </DropdownMenuItem>
         {onDuplicateAsChildMultiple && (
           <DropdownMenuItem
@@ -95,7 +97,7 @@ function DuplicateMenuItems({
             className="text-xs"
           >
             <Repeat className="w-3 h-3 mr-2" />
-            Duplicate as Child ×N
+            {translate('Duplicate as Child ×N')}
           </DropdownMenuItem>
         )}
       </DropdownMenuSubContent>
@@ -136,6 +138,7 @@ export const CardHeaderSection = memo(function CardHeaderSection({
   dragHandleListeners,
   dragHandleAttributes,
 }: CardHeaderProps) {
+  useUiLocale();
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const showBacklogLogsButton = hasContext && !!onViewOutput;
@@ -200,7 +203,7 @@ export const CardHeaderSection = memo(function CardHeaderSection({
                 className="text-xs"
               >
                 <Edit className="w-3 h-3 mr-2" />
-                Edit
+                {translate('Edit')}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={(e) => {
@@ -211,7 +214,7 @@ export const CardHeaderSection = memo(function CardHeaderSection({
                 className="text-xs"
               >
                 <GitFork className="w-3 h-3 mr-2" />
-                Spawn Sub-Task
+                {translate('Spawn Sub-Task')}
               </DropdownMenuItem>
               <DuplicateMenuItems
                 onDuplicate={onDuplicate}
@@ -255,7 +258,7 @@ export const CardHeaderSection = memo(function CardHeaderSection({
               }}
               onPointerDown={(e) => e.stopPropagation()}
               data-testid={`spawn-backlog-${feature.id}`}
-              title="Spawn Sub-Task"
+              title={translate('Spawn Sub-Task')}
             >
               <GitFork className="w-4 h-4" />
             </Button>
@@ -270,7 +273,7 @@ export const CardHeaderSection = memo(function CardHeaderSection({
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
                 data-testid={`logs-backlog-${feature.id}`}
-                title="Logs"
+                title={translate('Logs')}
               >
                 <FileText className="w-4 h-4" />
               </Button>
@@ -330,7 +333,7 @@ export const CardHeaderSection = memo(function CardHeaderSection({
                 data-testid={`edit-${
                   feature.status === 'waiting_approval' ? 'waiting' : 'verified'
                 }-${feature.id}`}
-                title="Edit"
+                title={translate('Edit')}
               >
                 <Edit className="w-4 h-4" />
               </Button>
@@ -347,7 +350,7 @@ export const CardHeaderSection = memo(function CardHeaderSection({
                   data-testid={`logs-${
                     feature.status === 'waiting_approval' ? 'waiting' : 'verified'
                   }-${feature.id}`}
-                  title="Logs"
+                  title={translate('Logs')}
                 >
                   <FileText className="w-4 h-4" />
                 </Button>
@@ -361,7 +364,7 @@ export const CardHeaderSection = memo(function CardHeaderSection({
                 data-testid={`delete-${
                   feature.status === 'waiting_approval' ? 'waiting' : 'verified'
                 }-${feature.id}`}
-                title="Delete"
+                title={translate('Delete')}
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
@@ -392,7 +395,7 @@ export const CardHeaderSection = memo(function CardHeaderSection({
                     className="text-xs"
                   >
                     <GitFork className="w-3 h-3 mr-2" />
-                    Spawn Sub-Task
+                    {translate('Spawn Sub-Task')}
                   </DropdownMenuItem>
                   <DuplicateMenuItems
                     onDuplicate={onDuplicate}
@@ -416,7 +419,7 @@ export const CardHeaderSection = memo(function CardHeaderSection({
               onClick={handleDeleteClick}
               onPointerDown={(e) => e.stopPropagation()}
               data-testid={`delete-feature-${feature.id}`}
-              title="Delete"
+              title={translate('Delete')}
             >
               <Trash2 className="w-4 h-4" />
             </Button>
@@ -443,7 +446,7 @@ export const CardHeaderSection = memo(function CardHeaderSection({
                   className="text-xs"
                 >
                   <Edit className="w-3 h-3 mr-2" />
-                  Edit
+                  {translate('Edit')}
                 </DropdownMenuItem>
                 {onViewOutput && (
                   <DropdownMenuItem
@@ -455,7 +458,7 @@ export const CardHeaderSection = memo(function CardHeaderSection({
                     className="text-xs"
                   >
                     <FileText className="w-3 h-3 mr-2" />
-                    View Logs
+                    {translate('View Logs')}
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem
@@ -467,7 +470,7 @@ export const CardHeaderSection = memo(function CardHeaderSection({
                   className="text-xs"
                 >
                   <GitFork className="w-3 h-3 mr-2" />
-                  Spawn Sub-Task
+                  {translate('Spawn Sub-Task')}
                 </DropdownMenuItem>
                 <DuplicateMenuItems
                   onDuplicate={onDuplicate}
@@ -510,7 +513,9 @@ export const CardHeaderSection = memo(function CardHeaderSection({
           {feature.titleGenerating && !feature.title ? (
             <div className="flex items-center gap-1.5 mb-1">
               <Spinner size="xs" />
-              <span className="text-xs text-muted-foreground italic">Generating title...</span>
+              <span className="text-xs text-muted-foreground italic">
+                {translate('Generating title...')}
+              </span>
             </div>
           ) : feature.title ? (
             <CardTitle className="text-sm font-semibold text-foreground mb-1 line-clamp-2">
@@ -538,12 +543,12 @@ export const CardHeaderSection = memo(function CardHeaderSection({
               {isDescriptionExpanded ? (
                 <>
                   <ChevronUp className="w-3 h-3" />
-                  <span>Less</span>
+                  <span>{translate('Less')}</span>
                 </>
               ) : (
                 <>
                   <ChevronDown className="w-3 h-3" />
-                  <span>More</span>
+                  <span>{translate('More')}</span>
                 </>
               )}
             </button>
@@ -556,8 +561,10 @@ export const CardHeaderSection = memo(function CardHeaderSection({
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         onConfirm={handleConfirmDelete}
-        title="Delete Feature"
-        description="Are you sure you want to delete this feature? This action cannot be undone."
+        title={translate('Delete Feature')}
+        description={translate(
+          'Are you sure you want to delete this feature? This action cannot be undone.'
+        )}
         testId="delete-confirmation-dialog"
         confirmTestId="confirm-delete-button"
       />

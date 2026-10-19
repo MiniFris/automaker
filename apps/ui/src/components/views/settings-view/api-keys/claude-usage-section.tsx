@@ -1,3 +1,5 @@
+import { getFormattingLocale } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { useSetupStore } from '@/store/setup-store';
@@ -49,6 +51,7 @@ function UsageCard({
   percentage: number;
   resetText?: string;
 }) {
+  useUiLocale();
   const safePercentage = Math.min(Math.max(percentage, 0), MAX_PERCENTAGE);
 
   return (
@@ -75,6 +78,7 @@ function UsageCard({
 }
 
 export function ClaudeUsageSection() {
+  useUiLocale();
   const claudeAuthStatus = useSetupStore((state) => state.claudeAuthStatus);
 
   const canFetchUsage = !!claudeAuthStatus?.authenticated;
@@ -93,7 +97,7 @@ export function ClaudeUsageSection() {
   const hasUsage = !!claudeUsage;
 
   const lastUpdatedLabel = useMemo(() => {
-    return dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleString() : null;
+    return dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleString(getFormattingLocale()) : null;
   }, [dataUpdatedAt]);
 
   const errorMessage = error instanceof Error ? error.message : error ? String(error) : null;
@@ -117,7 +121,7 @@ export function ClaudeUsageSection() {
             <div className="w-5 h-5 rounded-full bg-indigo-500/50" />
           </div>
           <h2 className="text-lg font-semibold text-foreground tracking-tight">
-            {CLAUDE_USAGE_TITLE}
+            {translate(CLAUDE_USAGE_TITLE)}
           </h2>
           <Button
             variant="ghost"
@@ -126,12 +130,12 @@ export function ClaudeUsageSection() {
             disabled={isFetching}
             className="ml-auto h-9 w-9 rounded-lg hover:bg-accent/50"
             data-testid="refresh-claude-usage"
-            title={CLAUDE_REFRESH_LABEL}
+            title={translate(CLAUDE_REFRESH_LABEL)}
           >
             {isFetching ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
           </Button>
         </div>
-        <p className="text-sm text-muted-foreground/80 ml-12">{CLAUDE_USAGE_SUBTITLE}</p>
+        <p className="text-sm text-muted-foreground/80 ml-12">{translate(CLAUDE_USAGE_SUBTITLE)}</p>
       </div>
 
       <div className="p-6 space-y-4">
@@ -139,7 +143,8 @@ export function ClaudeUsageSection() {
           <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
             <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5" />
             <div className="text-sm text-amber-400">
-              {CLAUDE_AUTH_WARNING} Run <span className="font-mono">{CLAUDE_LOGIN_COMMAND}</span>.
+              {CLAUDE_AUTH_WARNING} {translate(' Run ')}
+              <span className="font-mono">{CLAUDE_LOGIN_COMMAND}</span>.
             </div>
           </div>
         )}
@@ -154,15 +159,15 @@ export function ClaudeUsageSection() {
         {hasUsage && (
           <div className="grid gap-3 sm:grid-cols-2">
             <UsageCard
-              title="Session Limit"
-              subtitle="5-hour rolling window"
+              title={translate('Session Limit')}
+              subtitle={translate('5-hour rolling window')}
               percentage={claudeUsage.sessionPercentage}
               resetText={claudeUsage.sessionResetText}
             />
 
             <UsageCard
-              title="Weekly Limit"
-              subtitle="Resets every Thursday"
+              title={translate('Weekly Limit')}
+              subtitle={translate('Resets every Thursday')}
               percentage={claudeUsage.weeklyPercentage}
               resetText={claudeUsage.weeklyResetText}
             />
@@ -177,7 +182,7 @@ export function ClaudeUsageSection() {
 
         {lastUpdatedLabel && (
           <div className="text-[10px] text-muted-foreground text-right">
-            {UPDATED_LABEL} {lastUpdatedLabel}
+            {translate(UPDATED_LABEL)} {lastUpdatedLabel}
           </div>
         )}
       </div>

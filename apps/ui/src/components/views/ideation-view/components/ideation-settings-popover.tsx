@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * IdeationSettingsPopover - Configure context sources for idea generation
  */
@@ -23,32 +24,48 @@ const IDEATION_CONTEXT_OPTIONS: Array<{
 }> = [
   {
     key: 'useAppSpec',
-    label: 'App Specification',
-    description: 'Overview, capabilities, features',
+    get label() {
+      return translate('App Specification');
+    },
+    get description() {
+      return translate('Overview, capabilities, features');
+    },
     icon: ScrollText,
   },
   {
     key: 'useContextFiles',
-    label: 'Context Files',
+    get label() {
+      return translate('Context Files');
+    },
     description: '.automaker/context/*.md|.txt',
     icon: FileText,
   },
   {
     key: 'useMemoryFiles',
-    label: 'Memory Files',
+    get label() {
+      return translate('Memory Files');
+    },
     description: '.automaker/memory/*.md',
     icon: Brain,
   },
   {
     key: 'useExistingFeatures',
-    label: 'Existing Features',
-    description: 'Board features list',
+    get label() {
+      return translate('Existing Features');
+    },
+    get description() {
+      return translate('Board features list');
+    },
     icon: LayoutGrid,
   },
   {
     key: 'useExistingIdeas',
-    label: 'Existing Ideas',
-    description: 'Ideation ideas list',
+    get label() {
+      return translate('Existing Ideas');
+    },
+    get description() {
+      return translate('Ideation ideas list');
+    },
     icon: Lightbulb,
   },
 ];
@@ -58,6 +75,7 @@ const IDEATION_CONTEXT_OPTIONS: Array<{
  * Merges defaults with stored overrides and persists changes via the ideation store.
  */
 export function IdeationSettingsPopover({ projectPath }: IdeationSettingsPopoverProps) {
+  useUiLocale();
   const { projectOverrides, setContextSource } = useIdeationStore(
     useShallow((state) => ({
       projectOverrides: state.contextSourcesByProject[projectPath],
@@ -75,8 +93,8 @@ export function IdeationSettingsPopover({ projectPath }: IdeationSettingsPopover
         <button
           type="button"
           className="p-1 border rounded hover:bg-accent/50 transition-colors"
-          title="Generation Settings"
-          aria-label="Generation settings"
+          title={translate('Generation Settings')}
+          aria-label={translate('Generation settings')}
           data-testid="ideation-context-settings-button"
         >
           <Settings2 className="w-4 h-4 text-muted-foreground" />
@@ -85,9 +103,9 @@ export function IdeationSettingsPopover({ projectPath }: IdeationSettingsPopover
       <PopoverContent className="w-80" align="end" sideOffset={8}>
         <div className="space-y-3">
           <div>
-            <h4 className="font-medium text-sm mb-1">Generation Settings</h4>
+            <h4 className="font-medium text-sm mb-1">{translate('Generation Settings')}</h4>
             <p className="text-xs text-muted-foreground">
-              Configure which context sources are included when generating ideas.
+              {translate('Configure which context sources are included when generating ideas.')}
             </p>
           </div>
 
@@ -127,7 +145,7 @@ export function IdeationSettingsPopover({ projectPath }: IdeationSettingsPopover
           </div>
 
           <p className="text-[10px] text-muted-foreground leading-relaxed">
-            Disable sources to generate more focused ideas or reduce context size.
+            {translate('Disable sources to generate more focused ideas or reduce context size.')}
           </p>
         </div>
       </PopoverContent>

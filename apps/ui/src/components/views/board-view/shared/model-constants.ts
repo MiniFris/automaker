@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 import type { ModelProvider, ThinkingLevel, ReasoningEffort } from '@automaker/types';
 import {
   CURSOR_MODEL_MAP,
@@ -32,23 +33,41 @@ export type ModelOption = {
 export const CLAUDE_MODELS: ModelOption[] = [
   {
     id: 'claude-haiku', // Canonical prefixed ID
-    label: 'Claude Haiku',
-    description: 'Fast and efficient for simple tasks.',
-    badge: 'Speed',
+    get label() {
+      return 'Claude Haiku';
+    },
+    get description() {
+      return translate('Fast and efficient for simple tasks.');
+    },
+    get badge() {
+      return translate('Speed');
+    },
     provider: 'claude',
   },
   {
     id: 'claude-sonnet', // Canonical prefixed ID
-    label: 'Claude Sonnet',
-    description: 'Balanced performance with strong reasoning.',
-    badge: 'Balanced',
+    get label() {
+      return 'Claude Sonnet';
+    },
+    get description() {
+      return translate('Balanced performance with strong reasoning.');
+    },
+    get badge() {
+      return translate('Balanced');
+    },
     provider: 'claude',
   },
   {
     id: 'claude-opus', // Canonical prefixed ID
-    label: 'Claude Opus',
-    description: 'Most capable model for complex work.',
-    badge: 'Premium',
+    get label() {
+      return 'Claude Opus';
+    },
+    get description() {
+      return translate('Most capable model for complex work.');
+    },
+    get badge() {
+      return translate('Premium');
+    },
     provider: 'claude',
   },
 ];
@@ -60,8 +79,12 @@ export const CLAUDE_MODELS: ModelOption[] = [
 export const CURSOR_MODELS: ModelOption[] = Object.entries(CURSOR_MODEL_MAP).map(
   ([id, config]) => ({
     id, // Already prefixed in canonical format
-    label: config.label,
-    description: config.description,
+    get label() {
+      return config.label;
+    },
+    get description() {
+      return translate(config.description);
+    },
     provider: 'cursor' as ModelProvider,
     hasThinking: config.hasThinking,
   })
@@ -74,41 +97,71 @@ export const CURSOR_MODELS: ModelOption[] = Object.entries(CURSOR_MODEL_MAP).map
 export const CODEX_MODELS: ModelOption[] = [
   {
     id: CODEX_MODEL_MAP.gpt52Codex,
-    label: 'GPT-5.2-Codex',
-    description: 'Most advanced agentic coding model for complex software engineering.',
-    badge: 'Premium',
+    get label() {
+      return 'GPT-5.2-Codex';
+    },
+    get description() {
+      return translate('Most advanced agentic coding model for complex software engineering.');
+    },
+    get badge() {
+      return translate('Premium');
+    },
     provider: 'codex',
     hasThinking: true,
   },
   {
     id: CODEX_MODEL_MAP.gpt51CodexMax,
-    label: 'GPT-5.1-Codex-Max',
-    description: 'Optimized for long-horizon, agentic coding tasks in Codex.',
-    badge: 'Premium',
+    get label() {
+      return 'GPT-5.1-Codex-Max';
+    },
+    get description() {
+      return translate('Optimized for long-horizon, agentic coding tasks in Codex.');
+    },
+    get badge() {
+      return translate('Premium');
+    },
     provider: 'codex',
     hasThinking: true,
   },
   {
     id: CODEX_MODEL_MAP.gpt51CodexMini,
-    label: 'GPT-5.1-Codex-Mini',
-    description: 'Smaller, more cost-effective version for faster workflows.',
-    badge: 'Speed',
+    get label() {
+      return 'GPT-5.1-Codex-Mini';
+    },
+    get description() {
+      return translate('Smaller, more cost-effective version for faster workflows.');
+    },
+    get badge() {
+      return translate('Speed');
+    },
     provider: 'codex',
     hasThinking: false,
   },
   {
     id: CODEX_MODEL_MAP.gpt52,
-    label: 'GPT-5.2',
-    description: 'Best general agentic model for tasks across industries and domains.',
-    badge: 'Balanced',
+    get label() {
+      return 'GPT-5.2';
+    },
+    get description() {
+      return translate('Best general agentic model for tasks across industries and domains.');
+    },
+    get badge() {
+      return translate('Balanced');
+    },
     provider: 'codex',
     hasThinking: true,
   },
   {
     id: CODEX_MODEL_MAP.gpt51,
-    label: 'GPT-5.1',
-    description: 'Great for coding and agentic tasks across domains.',
-    badge: 'Balanced',
+    get label() {
+      return 'GPT-5.1';
+    },
+    get description() {
+      return translate('Great for coding and agentic tasks across domains.');
+    },
+    get badge() {
+      return translate('Balanced');
+    },
     provider: 'codex',
     hasThinking: true,
   },
@@ -119,8 +172,12 @@ export const CODEX_MODELS: ModelOption[] = [
  */
 export const OPENCODE_MODELS: ModelOption[] = OPENCODE_MODEL_CONFIGS.map((config) => ({
   id: config.id,
-  label: config.label,
-  description: config.description,
+  get label() {
+    return config.label;
+  },
+  get description() {
+    return translate(config.description);
+  },
   badge: config.tier === 'free' ? 'Free' : config.tier === 'premium' ? 'Premium' : undefined,
   provider: config.provider as ModelProvider,
 }));
@@ -132,8 +189,12 @@ export const OPENCODE_MODELS: ModelOption[] = OPENCODE_MODEL_CONFIGS.map((config
 export const GEMINI_MODELS: ModelOption[] = Object.entries(GEMINI_MODEL_MAP).map(
   ([id, config]) => ({
     id, // IDs already have gemini- prefix (e.g., 'gemini-2.5-flash')
-    label: config.label,
-    description: config.description,
+    get label() {
+      return config.label;
+    },
+    get description() {
+      return translate(config.description);
+    },
     badge: config.supportsThinking ? 'Thinking' : 'Speed',
     provider: 'gemini' as ModelProvider,
     hasThinking: config.supportsThinking,
@@ -147,8 +208,12 @@ export const GEMINI_MODELS: ModelOption[] = Object.entries(GEMINI_MODEL_MAP).map
 export const COPILOT_MODELS: ModelOption[] = Object.entries(COPILOT_MODEL_MAP).map(
   ([id, config]) => ({
     id, // IDs already have copilot- prefix (e.g., 'copilot-gpt-4o')
-    label: config.label,
-    description: config.description,
+    get label() {
+      return config.label;
+    },
+    get description() {
+      return translate(config.description);
+    },
     badge: config.supportsVision ? 'Vision' : 'Standard',
     provider: 'copilot' as ModelProvider,
     hasThinking: false,
@@ -177,12 +242,24 @@ export const THINKING_LEVELS: ThinkingLevel[] = [
 ];
 
 export const THINKING_LEVEL_LABELS: Record<ThinkingLevel, string> = {
-  none: 'None',
-  low: 'Low',
-  medium: 'Med',
-  high: 'High',
-  ultrathink: 'Ultra',
-  adaptive: 'Adaptive',
+  get none() {
+    return translate('None');
+  },
+  get low() {
+    return translate('Low');
+  },
+  get medium() {
+    return translate('Med');
+  },
+  get high() {
+    return translate('High');
+  },
+  get ultrathink() {
+    return translate('Ultra');
+  },
+  get adaptive() {
+    return translate('Adaptive');
+  },
 };
 
 /**
@@ -199,12 +276,24 @@ export const REASONING_EFFORT_LEVELS: ReasoningEffort[] = [
 ];
 
 export const REASONING_EFFORT_LABELS: Record<ReasoningEffort, string> = {
-  none: 'None',
-  minimal: 'Min',
-  low: 'Low',
-  medium: 'Med',
-  high: 'High',
-  xhigh: 'XHigh',
+  get none() {
+    return translate('None');
+  },
+  get minimal() {
+    return translate('Min');
+  },
+  get low() {
+    return translate('Low');
+  },
+  get medium() {
+    return translate('Med');
+  },
+  get high() {
+    return translate('High');
+  },
+  get xhigh() {
+    return translate('XHigh');
+  },
 };
 
 // Profile icon mapping

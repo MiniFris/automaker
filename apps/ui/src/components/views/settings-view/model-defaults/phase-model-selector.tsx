@@ -1,3 +1,5 @@
+import { useLocalizedMemo } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/app-store';
@@ -70,22 +72,48 @@ const OPENCODE_MODEL_ID_SEPARATOR = '/';
 const OPENCODE_SECTION_GROUP_PADDING = 'pt-2';
 
 const OPENCODE_STATIC_PROVIDER_LABELS: Record<string, string> = {
-  [OPENCODE_PROVIDER_FALLBACK]: 'OpenCode (Free)',
+  get [OPENCODE_PROVIDER_FALLBACK]() {
+    return translate('OpenCode (Free)');
+  },
 };
 
 const OPENCODE_DYNAMIC_PROVIDER_LABELS: Record<string, string> = {
-  'github-copilot': 'GitHub Copilot',
-  'zai-coding-plan': 'Z.AI Coding Plan',
-  google: 'Google AI',
-  openai: 'OpenAI',
-  openrouter: 'OpenRouter',
-  anthropic: 'Anthropic',
-  xai: 'xAI',
-  deepseek: 'DeepSeek',
-  ollama: 'Ollama (Local)',
-  lmstudio: 'LM Studio (Local)',
-  azure: 'Azure OpenAI',
-  [OPENCODE_PROVIDER_FALLBACK]: 'OpenCode (Free)',
+  get 'github-copilot'() {
+    return translate('GitHub Copilot');
+  },
+  get 'zai-coding-plan'() {
+    return translate('Z.AI Coding Plan');
+  },
+  get google() {
+    return translate('Google AI');
+  },
+  get openai() {
+    return translate('OpenAI');
+  },
+  get openrouter() {
+    return translate('OpenRouter');
+  },
+  get anthropic() {
+    return translate('Anthropic');
+  },
+  get xai() {
+    return translate('xAI');
+  },
+  get deepseek() {
+    return translate('DeepSeek');
+  },
+  get ollama() {
+    return translate('Ollama (Local)');
+  },
+  get lmstudio() {
+    return translate('LM Studio (Local)');
+  },
+  get azure() {
+    return translate('Azure OpenAI');
+  },
+  get [OPENCODE_PROVIDER_FALLBACK]() {
+    return translate('OpenCode (Free)');
+  },
 };
 
 const OPENCODE_DYNAMIC_PROVIDER_ORDER = [
@@ -105,8 +133,12 @@ const OPENCODE_DYNAMIC_PROVIDER_ORDER = [
 const OPENCODE_SECTION_ORDER = ['free', 'dynamic'] as const;
 
 const OPENCODE_SECTION_LABELS: Record<(typeof OPENCODE_SECTION_ORDER)[number], string> = {
-  free: 'Free Tier',
-  dynamic: 'Connected Providers',
+  get free() {
+    return translate('Free Tier');
+  },
+  get dynamic() {
+    return translate('Connected Providers');
+  },
 };
 
 const OPENCODE_STATIC_PROVIDER_BY_ID = new Map(
@@ -132,7 +164,7 @@ function getOpencodeGroupLabel(
   sectionKey: (typeof OPENCODE_SECTION_ORDER)[number]
 ): string {
   if (sectionKey === 'free') {
-    return OPENCODE_STATIC_PROVIDER_LABELS[providerKey] || 'OpenCode Free Tier';
+    return OPENCODE_STATIC_PROVIDER_LABELS[providerKey] || translate('OpenCode Free Tier');
   }
   return OPENCODE_DYNAMIC_PROVIDER_LABELS[providerKey] || formatProviderLabel(providerKey);
 }
@@ -166,6 +198,7 @@ export function PhaseModelSelector({
   align = 'end',
   disabled = false,
 }: PhaseModelSelectorProps) {
+  useUiLocale();
   const [open, setOpen] = useState(false);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [expandedClaudeModel, setExpandedClaudeModel] = useState<ModelAlias | null>(null);
@@ -215,7 +248,13 @@ export function PhaseModelSelector({
   // without requiring a page refresh.
   const { data: dynamicOpencodeModels = [] } = useOpencodeModels();
   const { data: directSettings } = useDirectEndpoints();
-  const directEndpoints = useMemo(() => (directSettings?.endpoints ?? []).map((status) => status.endpoint).filter((endpoint) => endpoint.enabled && endpoint.protocol === 'chat-completions'), [directSettings]);
+  const directEndpoints = useMemo(
+    () =>
+      (directSettings?.endpoints ?? [])
+        .map((status) => status.endpoint)
+        .filter((endpoint) => endpoint.enabled && endpoint.protocol === 'chat-completions'),
+    [directSettings]
+  );
 
   // Detect mobile devices to use inline expansion instead of nested popovers
   const isMobile = useIsMobile();
@@ -337,7 +376,7 @@ export function PhaseModelSelector({
   }, [expandedProviderModel]);
 
   // Transform dynamic Codex models from store to component format
-  const transformedCodexModels = useMemo(() => {
+  const transformedCodexModels = useLocalizedMemo(() => {
     return codexModels.map((model) => ({
       id: model.id,
       label: model.label,
@@ -364,7 +403,7 @@ export function PhaseModelSelector({
   });
 
   // Helper to find current selected model details
-  const currentModel = useMemo(() => {
+  const currentModel = useLocalizedMemo(() => {
     const claudeModel = CLAUDE_MODELS.find((m) => m.id === selectedModel);
     if (claudeModel) {
       // Add thinking level to label if not 'none'
@@ -448,7 +487,15 @@ export function PhaseModelSelector({
     if (isDirectModel(selectedModel)) {
       const endpoint = directEndpoints.find((item) => item.id === selectedProviderId);
       const model = endpoint?.models.find((item) => item.id === stripProviderPrefix(selectedModel));
-      return { id: selectedModel, label: model ? `${model.displayName} (${endpoint!.name})` : `${selectedModel} (endpoint unavailable)`, description: endpoint?.name ?? 'Choose a configured endpoint', provider: 'openai-compatible' as const, icon: OpenAIIcon };
+      return {
+        id: selectedModel,
+        label: model
+          ? `${model.displayName} (${endpoint!.name})`
+          : `${selectedModel} (endpoint unavailable)`,
+        description: endpoint?.name ?? 'Choose a configured endpoint',
+        provider: 'openai-compatible' as const,
+        icon: OpenAIIcon,
+      };
     }
 
     // Check ClaudeCompatibleProvider models (when providerId is set)
@@ -545,7 +592,7 @@ export function PhaseModelSelector({
   ]);
 
   // Compute grouped vs standalone Cursor models
-  const { groupedModels, standaloneCursorModels } = useMemo(() => {
+  const { groupedModels, standaloneCursorModels } = useLocalizedMemo(() => {
     const grouped: GroupedModel[] = [];
     const standalone: typeof CURSOR_MODELS = [];
     const seenGroups = new Set<string>();
@@ -578,7 +625,7 @@ export function PhaseModelSelector({
   }, [availableCursorModels, enabledCursorModels]);
 
   // Combine static and dynamic OpenCode models
-  const allOpencodeModels: ModelOption[] = useMemo(() => {
+  const allOpencodeModels: ModelOption[] = useLocalizedMemo(() => {
     // Filter static models by what the user has enabled in Settings → AI Providers
     const staticModels = OPENCODE_MODELS.filter((model) =>
       (enabledOpencodeModels as string[]).includes(model.id)
@@ -719,7 +766,7 @@ export function PhaseModelSelector({
   ]);
 
   // Group OpenCode models by model type for better organization
-  const opencodeSections = useMemo(() => {
+  const opencodeSections = useLocalizedMemo(() => {
     type OpencodeSectionKey = (typeof OPENCODE_SECTION_ORDER)[number];
     type OpencodeGroup = { key: string; label: string; models: ModelOption[] };
     type OpencodeSection = {
@@ -837,7 +884,9 @@ export function PhaseModelSelector({
               <span className={cn('truncate font-medium', isSelected && 'text-primary')}>
                 {model.label}
               </span>
-              <span className="truncate text-xs text-muted-foreground">{model.description}</span>
+              <span className="truncate text-xs text-muted-foreground">
+                {translate(model.description)}
+              </span>
             </div>
           </div>
 
@@ -898,7 +947,9 @@ export function PhaseModelSelector({
                 </span>
                 <span className="truncate text-xs text-muted-foreground">
                   {isSelected && currentReasoning !== 'none'
-                    ? `Reasoning: ${REASONING_EFFORT_LABELS[currentReasoning]}`
+                    ? translate('Reasoning: {value1}', {
+                        value1: REASONING_EFFORT_LABELS[currentReasoning],
+                      })
                     : model.description}
                 </span>
               </div>
@@ -934,7 +985,7 @@ export function PhaseModelSelector({
                   'hover:bg-accent/80 transition-colors',
                   isExpanded && 'bg-accent'
                 )}
-                title="Adjust reasoning effort"
+                title={translate('Adjust reasoning effort')}
               >
                 <ChevronDown
                   className={cn(
@@ -950,7 +1001,7 @@ export function PhaseModelSelector({
           {isExpanded && (
             <div className="pl-6 pr-2 pb-2 space-y-1">
               <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
-                Reasoning Effort
+                {translate('Reasoning Effort')}
               </div>
               {REASONING_EFFORT_LEVELS.map((effort) => {
                 const isActiveEffort = isSelected && currentReasoning === effort;
@@ -978,12 +1029,12 @@ export function PhaseModelSelector({
                         {REASONING_EFFORT_LABELS[effort]}
                       </span>
                       <span className="text-[10px] text-muted-foreground">
-                        {effort === 'none' && 'No reasoning capability'}
-                        {effort === 'minimal' && 'Minimal reasoning'}
-                        {effort === 'low' && 'Light reasoning'}
-                        {effort === 'medium' && 'Moderate reasoning'}
-                        {effort === 'high' && 'Deep reasoning'}
-                        {effort === 'xhigh' && 'Maximum reasoning'}
+                        {effort === 'none' && translate('No reasoning capability')}
+                        {effort === 'minimal' && translate('Minimal reasoning')}
+                        {effort === 'low' && translate('Light reasoning')}
+                        {effort === 'medium' && translate('Moderate reasoning')}
+                        {effort === 'high' && translate('Deep reasoning')}
+                        {effort === 'xhigh' && translate('Maximum reasoning')}
                       </span>
                     </div>
                     {isActiveEffort && <Check className="h-3.5 w-3.5 text-primary" />}
@@ -1032,7 +1083,9 @@ export function PhaseModelSelector({
               </span>
               <span className="truncate text-xs text-muted-foreground">
                 {isSelected && currentReasoning !== 'none'
-                  ? `Reasoning: ${REASONING_EFFORT_LABELS[currentReasoning]}`
+                  ? translate('Reasoning: {value1}', {
+                      value1: REASONING_EFFORT_LABELS[currentReasoning],
+                    })
                   : model.description}
               </span>
             </div>
@@ -1083,7 +1136,7 @@ export function PhaseModelSelector({
                     'hover:bg-accent/80 transition-colors',
                     isExpanded && 'bg-accent'
                   )}
-                  title="Adjust reasoning effort"
+                  title={translate('Adjust reasoning effort')}
                 >
                   <ChevronDown
                     className={cn(
@@ -1103,7 +1156,7 @@ export function PhaseModelSelector({
               >
                 <div className="space-y-1">
                   <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground border-b border-border/50 mb-1">
-                    Reasoning Effort
+                    {translate('Reasoning Effort')}
                   </div>
                   {REASONING_EFFORT_LEVELS.map((effort) => {
                     const isActiveEffort = isSelected && currentReasoning === effort;
@@ -1131,12 +1184,12 @@ export function PhaseModelSelector({
                             {REASONING_EFFORT_LABELS[effort]}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            {effort === 'none' && 'No reasoning capability'}
-                            {effort === 'minimal' && 'Minimal reasoning'}
-                            {effort === 'low' && 'Light reasoning'}
-                            {effort === 'medium' && 'Moderate reasoning'}
-                            {effort === 'high' && 'Deep reasoning'}
-                            {effort === 'xhigh' && 'Maximum reasoning'}
+                            {effort === 'none' && translate('No reasoning capability')}
+                            {effort === 'minimal' && translate('Minimal reasoning')}
+                            {effort === 'low' && translate('Light reasoning')}
+                            {effort === 'medium' && translate('Moderate reasoning')}
+                            {effort === 'high' && translate('Deep reasoning')}
+                            {effort === 'xhigh' && translate('Maximum reasoning')}
                           </span>
                         </div>
                         {isActiveEffort && <Check className="h-3.5 w-3.5 text-primary" />}
@@ -1181,7 +1234,9 @@ export function PhaseModelSelector({
             <span className={cn('truncate font-medium', isSelected && 'text-primary')}>
               {model.label}
             </span>
-            <span className="truncate text-xs text-muted-foreground">{model.description}</span>
+            <span className="truncate text-xs text-muted-foreground">
+              {translate(model.description)}
+            </span>
           </div>
         </div>
 
@@ -1240,7 +1295,9 @@ export function PhaseModelSelector({
             <span className={cn('truncate font-medium', isSelected && 'text-primary')}>
               {model.label}
             </span>
-            <span className="truncate text-xs text-muted-foreground">{model.description}</span>
+            <span className="truncate text-xs text-muted-foreground">
+              {translate(model.description)}
+            </span>
           </div>
         </div>
 
@@ -1293,7 +1350,9 @@ export function PhaseModelSelector({
             <span className={cn('truncate font-medium', isSelected && 'text-primary')}>
               {model.label}
             </span>
-            <span className="truncate text-xs text-muted-foreground">{model.description}</span>
+            <span className="truncate text-xs text-muted-foreground">
+              {translate(model.description)}
+            </span>
           </div>
         </div>
 
@@ -1407,8 +1466,10 @@ export function PhaseModelSelector({
                 </span>
                 <span className="truncate text-xs text-muted-foreground">
                   {isSelected && currentThinking !== 'none'
-                    ? `Thinking: ${THINKING_LEVEL_LABELS[currentThinking]}`
-                    : `Maps to ${mappedModelLabel}`}
+                    ? translate('Thinking: {value1}', {
+                        value1: THINKING_LEVEL_LABELS[currentThinking],
+                      })
+                    : translate('Maps to {value1}', { value1: mappedModelLabel })}
                 </span>
               </div>
             </div>
@@ -1427,7 +1488,7 @@ export function PhaseModelSelector({
                   'hover:bg-accent/80 transition-colors',
                   isExpanded && 'bg-accent'
                 )}
-                title="Adjust thinking level"
+                title={translate('Adjust thinking level')}
               >
                 <ChevronDown
                   className={cn(
@@ -1443,7 +1504,7 @@ export function PhaseModelSelector({
           {isExpanded && (
             <div className="pl-6 pr-2 pb-2 space-y-1">
               <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
-                Thinking Level
+                {translate('Thinking Level')}
               </div>
               {getThinkingLevelsForModel(
                 model.mapsToClaudeModel === 'opus' ? 'claude-opus' : model.id || ''
@@ -1476,12 +1537,12 @@ export function PhaseModelSelector({
                         {THINKING_LEVEL_LABELS[level]}
                       </span>
                       <span className="text-[10px] text-muted-foreground">
-                        {level === 'none' && 'No extended thinking'}
-                        {level === 'low' && 'Light reasoning (1k tokens)'}
-                        {level === 'medium' && 'Moderate reasoning (10k tokens)'}
-                        {level === 'high' && 'Deep reasoning (16k tokens)'}
-                        {level === 'ultrathink' && 'Maximum reasoning (32k tokens)'}
-                        {level === 'adaptive' && 'Model decides reasoning depth'}
+                        {level === 'none' && translate('No extended thinking')}
+                        {level === 'low' && translate('Light reasoning (1k tokens)')}
+                        {level === 'medium' && translate('Moderate reasoning (10k tokens)')}
+                        {level === 'high' && translate('Deep reasoning (16k tokens)')}
+                        {level === 'ultrathink' && translate('Maximum reasoning (32k tokens)')}
+                        {level === 'adaptive' && translate('Model decides reasoning depth')}
                       </span>
                     </div>
                     {isActiveLevel && <Check className="h-3.5 w-3.5 text-primary" />}
@@ -1531,8 +1592,10 @@ export function PhaseModelSelector({
               </span>
               <span className="truncate text-xs text-muted-foreground">
                 {isSelected && currentThinking !== 'none'
-                  ? `Thinking: ${THINKING_LEVEL_LABELS[currentThinking]}`
-                  : `Maps to ${mappedModelLabel}`}
+                  ? translate('Thinking: {value1}', {
+                      value1: THINKING_LEVEL_LABELS[currentThinking],
+                    })
+                  : translate('Maps to {value1}', { value1: mappedModelLabel })}
               </span>
             </div>
           </div>
@@ -1566,7 +1629,7 @@ export function PhaseModelSelector({
                     'hover:bg-accent/80 transition-colors',
                     isExpanded && 'bg-accent'
                   )}
-                  title="Adjust thinking level"
+                  title={translate('Adjust thinking level')}
                 >
                   <ChevronDown
                     className={cn(
@@ -1586,7 +1649,7 @@ export function PhaseModelSelector({
               >
                 <div className="space-y-1">
                   <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground border-b border-border/50 mb-1">
-                    Thinking Level
+                    {translate('Thinking Level')}
                   </div>
                   {getThinkingLevelsForModel(
                     model.mapsToClaudeModel === 'opus' ? 'claude-opus' : model.id || ''
@@ -1619,12 +1682,12 @@ export function PhaseModelSelector({
                             {THINKING_LEVEL_LABELS[level]}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            {level === 'none' && 'No extended thinking'}
-                            {level === 'low' && 'Light reasoning (1k tokens)'}
-                            {level === 'medium' && 'Moderate reasoning (10k tokens)'}
-                            {level === 'high' && 'Deep reasoning (16k tokens)'}
-                            {level === 'ultrathink' && 'Maximum reasoning (32k tokens)'}
-                            {level === 'adaptive' && 'Model decides reasoning depth'}
+                            {level === 'none' && translate('No extended thinking')}
+                            {level === 'low' && translate('Light reasoning (1k tokens)')}
+                            {level === 'medium' && translate('Moderate reasoning (10k tokens)')}
+                            {level === 'high' && translate('Deep reasoning (16k tokens)')}
+                            {level === 'ultrathink' && translate('Maximum reasoning (32k tokens)')}
+                            {level === 'adaptive' && translate('Model decides reasoning depth')}
                           </span>
                         </div>
                         {isActiveLevel && <Check className="h-3.5 w-3.5 text-primary" />}
@@ -1667,7 +1730,9 @@ export function PhaseModelSelector({
             <span className={cn('truncate font-medium', isSelected && 'text-primary')}>
               {model.label}
             </span>
-            <span className="truncate text-xs text-muted-foreground">{model.description}</span>
+            <span className="truncate text-xs text-muted-foreground">
+              {translate(model.description)}
+            </span>
           </div>
         </div>
 
@@ -1741,7 +1806,9 @@ export function PhaseModelSelector({
                 </span>
                 <span className="truncate text-xs text-muted-foreground">
                   {isSelected && currentThinking !== 'none'
-                    ? `Thinking: ${THINKING_LEVEL_LABELS[currentThinking]}`
+                    ? translate('Thinking: {value1}', {
+                        value1: THINKING_LEVEL_LABELS[currentThinking],
+                      })
                     : model.description}
                 </span>
               </div>
@@ -1777,7 +1844,7 @@ export function PhaseModelSelector({
                   'hover:bg-accent/80 transition-colors',
                   isExpanded && 'bg-accent'
                 )}
-                title="Adjust thinking level"
+                title={translate('Adjust thinking level')}
               >
                 <ChevronDown
                   className={cn(
@@ -1793,7 +1860,7 @@ export function PhaseModelSelector({
           {isExpanded && (
             <div className="pl-6 pr-2 pb-2 space-y-1">
               <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
-                Thinking Level
+                {translate('Thinking Level')}
               </div>
               {getThinkingLevelsForModel(model.id).map((level) => {
                 const isActiveLevel = isSelected && currentThinking === level;
@@ -1823,12 +1890,12 @@ export function PhaseModelSelector({
                         {THINKING_LEVEL_LABELS[level]}
                       </span>
                       <span className="text-[10px] text-muted-foreground">
-                        {level === 'none' && 'No extended thinking'}
-                        {level === 'low' && 'Light reasoning (1k tokens)'}
-                        {level === 'medium' && 'Moderate reasoning (10k tokens)'}
-                        {level === 'high' && 'Deep reasoning (16k tokens)'}
-                        {level === 'ultrathink' && 'Maximum reasoning (32k tokens)'}
-                        {level === 'adaptive' && 'Model decides reasoning depth'}
+                        {level === 'none' && translate('No extended thinking')}
+                        {level === 'low' && translate('Light reasoning (1k tokens)')}
+                        {level === 'medium' && translate('Moderate reasoning (10k tokens)')}
+                        {level === 'high' && translate('Deep reasoning (16k tokens)')}
+                        {level === 'ultrathink' && translate('Maximum reasoning (32k tokens)')}
+                        {level === 'adaptive' && translate('Model decides reasoning depth')}
                       </span>
                     </div>
                     {isActiveLevel && <Check className="h-3.5 w-3.5 text-primary" />}
@@ -1879,7 +1946,9 @@ export function PhaseModelSelector({
               </span>
               <span className="truncate text-xs text-muted-foreground">
                 {isSelected && currentThinking !== 'none'
-                  ? `Thinking: ${THINKING_LEVEL_LABELS[currentThinking]}`
+                  ? translate('Thinking: {value1}', {
+                      value1: THINKING_LEVEL_LABELS[currentThinking],
+                    })
                   : model.description}
               </span>
             </div>
@@ -1930,7 +1999,7 @@ export function PhaseModelSelector({
                     'hover:bg-accent/80 transition-colors',
                     isExpanded && 'bg-accent'
                   )}
-                  title="Adjust thinking level"
+                  title={translate('Adjust thinking level')}
                 >
                   <ChevronDown
                     className={cn(
@@ -1950,7 +2019,7 @@ export function PhaseModelSelector({
               >
                 <div className="space-y-1">
                   <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground border-b border-border/50 mb-1">
-                    Thinking Level
+                    {translate('Thinking Level')}
                   </div>
                   {getThinkingLevelsForModel(model.id).map((level) => {
                     const isActiveLevel = isSelected && currentThinking === level;
@@ -1980,12 +2049,12 @@ export function PhaseModelSelector({
                             {THINKING_LEVEL_LABELS[level]}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            {level === 'none' && 'No extended thinking'}
-                            {level === 'low' && 'Light reasoning (1k tokens)'}
-                            {level === 'medium' && 'Moderate reasoning (10k tokens)'}
-                            {level === 'high' && 'Deep reasoning (16k tokens)'}
-                            {level === 'ultrathink' && 'Maximum reasoning (32k tokens)'}
-                            {level === 'adaptive' && 'Model decides reasoning depth'}
+                            {level === 'none' && translate('No extended thinking')}
+                            {level === 'low' && translate('Light reasoning (1k tokens)')}
+                            {level === 'medium' && translate('Moderate reasoning (10k tokens)')}
+                            {level === 'high' && translate('Deep reasoning (16k tokens)')}
+                            {level === 'ultrathink' && translate('Maximum reasoning (32k tokens)')}
+                            {level === 'adaptive' && translate('Model decides reasoning depth')}
                           </span>
                         </div>
                         {isActiveLevel && <Check className="h-3.5 w-3.5 text-primary" />}
@@ -2035,7 +2104,9 @@ export function PhaseModelSelector({
                   {group.label}
                 </span>
                 <span className="truncate text-xs text-muted-foreground">
-                  {selectedVariant ? `Selected: ${selectedVariant.label}` : group.description}
+                  {selectedVariant
+                    ? translate('Selected: {value1}', { value1: selectedVariant.label })
+                    : group.description}
                 </span>
               </div>
             </div>
@@ -2135,7 +2206,9 @@ export function PhaseModelSelector({
                     {group.label}
                   </span>
                   <span className="truncate text-xs text-muted-foreground">
-                    {selectedVariant ? `Selected: ${selectedVariant.label}` : group.description}
+                    {selectedVariant
+                      ? translate('Selected: {value1}', { value1: selectedVariant.label })
+                      : group.description}
                   </span>
                 </div>
               </div>
@@ -2201,7 +2274,7 @@ export function PhaseModelSelector({
   };
 
   // Compute a short badge label for the active thinking/reasoning level
-  const activeLevelBadge = useMemo(() => {
+  const activeLevelBadge = useLocalizedMemo(() => {
     if (selectedThinkingLevel !== 'none') {
       return { label: THINKING_LEVEL_LABELS[selectedThinkingLevel], type: 'thinking' as const };
     }
@@ -2216,7 +2289,7 @@ export function PhaseModelSelector({
 
   // Strip the thinking/reasoning parenthetical from the model name for the trigger
   // since we show it as a separate badge
-  const triggerModelName = useMemo(() => {
+  const triggerModelName = useLocalizedMemo(() => {
     const label = currentModel?.label || 'Select model...';
     // Remove " (Med Thinking)", " (High Reasoning)" etc. from label since badge shows it
     return label.replace(
@@ -2304,12 +2377,12 @@ export function PhaseModelSelector({
       }}
     >
       <Command>
-        <CommandInput placeholder="Search models..." />
+        <CommandInput placeholder={translate('Search models...')} />
         <CommandList
           ref={commandListRef}
           className="max-h-[300px] overflow-y-auto overscroll-contain touch-pan-y"
         >
-          <CommandEmpty>No model found.</CommandEmpty>
+          <CommandEmpty>{translate('No model found.')}</CommandEmpty>
 
           {favorites.length > 0 && (
             <>
@@ -2367,7 +2440,16 @@ export function PhaseModelSelector({
             </CommandGroup>
           )}
 
-          {!disabledProviders.includes('openai-compatible') && <DirectModelGroups endpoints={directEndpoints} value={value} onSelect={(selection) => { onChange(selection); setOpen(false); }} />}
+          {!disabledProviders.includes('openai-compatible') && (
+            <DirectModelGroups
+              endpoints={directEndpoints}
+              value={value}
+              onSelect={(selection) => {
+                onChange(selection);
+                setOpen(false);
+              }}
+            />
+          )}
 
           {/* ClaudeCompatibleProvider Models - each provider as separate group */}
           {enabledProviders.map((provider) => {

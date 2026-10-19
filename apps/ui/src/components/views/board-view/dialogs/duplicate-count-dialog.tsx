@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect } from 'react';
 import { Copy } from 'lucide-react';
 import {
@@ -25,6 +26,7 @@ export function DuplicateCountDialog({
   onConfirm,
   featureTitle,
 }: DuplicateCountDialogProps) {
+  useUiLocale();
   const [count, setCount] = useState(2);
 
   // Reset count when dialog opens
@@ -47,14 +49,16 @@ export function DuplicateCountDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Copy className="w-5 h-5 text-primary" />
-            Duplicate as Child ×N
+            {translate('Duplicate as Child ×N')}
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Creates a chain of duplicates where each is a child of the previous, so they execute
-            sequentially.
+            {translate(
+              'Creates a chain of duplicates where each is a child of the previous, so they execute sequentially.'
+            )}
             {featureTitle && (
               <span className="block mt-1 text-xs">
-                Source: <span className="font-medium">{featureTitle}</span>
+                {translate('Source: ')}
+                <span className="font-medium">{featureTitle}</span>
               </span>
             )}
           </DialogDescription>
@@ -62,7 +66,7 @@ export function DuplicateCountDialog({
 
         <div className="py-2">
           <label htmlFor="duplicate-count" className="text-sm text-muted-foreground mb-2 block">
-            Number of copies
+            {translate('Number of copies')}
           </label>
           <Input
             id="duplicate-count"
@@ -85,12 +89,14 @@ export function DuplicateCountDialog({
             className="w-full"
             autoFocus
           />
-          <p className="text-xs text-muted-foreground mt-1.5">Enter a number between 1 and 50</p>
+          <p className="text-xs text-muted-foreground mt-1.5">
+            {translate('Enter a number between 1 and 50')}
+          </p>
         </div>
 
         <DialogFooter className="gap-2 sm:gap-2 pt-2">
           <Button variant="ghost" onClick={() => onOpenChange(false)} className="px-4">
-            Cancel
+            {translate('Cancel')}
           </Button>
           <HotkeyButton
             variant="default"
@@ -101,7 +107,8 @@ export function DuplicateCountDialog({
             disabled={count < 1 || count > 50}
           >
             <Copy className="w-4 h-4 mr-2" />
-            Create {count} {count === 1 ? 'Copy' : 'Copies'}
+            {translate('Create ')}
+            {count} {count === 1 ? translate('Copy') : translate('Copies')}
           </HotkeyButton>
         </DialogFooter>
       </DialogContent>

@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -42,6 +43,7 @@ export function AddFeatureButton({
   testIdPrefix = 'add-feature',
   shortcut,
 }: AddFeatureButtonProps) {
+  useUiLocale();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   // Filter to only enabled templates and sort by order
@@ -64,7 +66,7 @@ export function AddFeatureButton({
           size="sm"
           className="h-6 w-6 p-0 rounded-r-none"
           onClick={onAddFeature}
-          title="Add Feature"
+          title={translate('Add Feature')}
           data-testid={`${testIdPrefix}-button`}
         >
           <Plus className="w-3.5 h-3.5" />
@@ -75,7 +77,7 @@ export function AddFeatureButton({
           size="sm"
           className="h-6 w-6 p-0 rounded-none border-l border-primary-foreground/20"
           onClick={onQuickAdd}
-          title="Quick Add"
+          title={translate('Quick Add')}
           data-testid={`${testIdPrefix}-quick-add-button`}
         >
           <Zap className="w-3 h-3" />
@@ -88,7 +90,7 @@ export function AddFeatureButton({
                 variant="default"
                 size="sm"
                 className="h-6 w-4 p-0 rounded-l-none border-l border-primary-foreground/20"
-                title="Templates"
+                title={translate('Templates')}
                 data-testid={`${testIdPrefix}-dropdown-trigger`}
               >
                 <ChevronDown className="w-3 h-3" />
@@ -124,7 +126,7 @@ export function AddFeatureButton({
         data-testid={`${testIdPrefix}-button`}
       >
         <Plus className="w-3.5 h-3.5 mr-1.5" />
-        Add Feature
+        {translate('Add Feature')}
         {shortcut && (
           <span className="ml-auto pl-2 text-[10px] font-mono opacity-70 bg-black/20 px-1 py-0.5 rounded">
             {shortcut}
@@ -143,7 +145,7 @@ export function AddFeatureButton({
         data-testid={`${testIdPrefix}-quick-add-button`}
       >
         <Zap className="w-3.5 h-3.5 mr-1" />
-        Quick
+        {translate('Quick')}
       </Button>
       {/* Segment 3: Templates dropdown */}
       <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
@@ -156,8 +158,8 @@ export function AddFeatureButton({
               enabledTemplates.length > 0 ? 'px-1.5' : 'w-7 p-0',
               fullWidth && 'flex-shrink-0'
             )}
-            aria-label="Templates"
-            title="Templates"
+            aria-label={translate('Templates')}
+            title={translate('Templates')}
             data-testid={`${testIdPrefix}-dropdown-trigger`}
           >
             <FileText className="w-3.5 h-3.5 mr-0.5" />
@@ -178,7 +180,7 @@ export function AddFeatureButton({
             ))
           ) : (
             <DropdownMenuItem disabled className="text-muted-foreground">
-              No templates configured
+              {translate('No templates configured')}
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>

@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useAppStore } from '@/store/app-store';
 import { useSetupStore } from '@/store/setup-store';
 import { Label } from '@/components/ui/label';
@@ -17,6 +18,7 @@ interface ProjectClaudeSectionProps {
 }
 
 export function ProjectClaudeSection({ project }: ProjectClaudeSectionProps) {
+  useUiLocale();
   const {
     claudeApiProfiles,
     activeClaudeApiProfileId: globalActiveProfileId,
@@ -61,9 +63,11 @@ export function ProjectClaudeSection({ project }: ProjectClaudeSectionProps) {
     return (
       <div className="text-center py-12 text-muted-foreground">
         <Bot className="w-12 h-12 mx-auto mb-3 opacity-50" />
-        <p className="text-sm">Claude not configured</p>
+        <p className="text-sm">{translate('Claude not configured')}</p>
         <p className="text-xs mt-1">
-          Enable Claude and configure providers in global settings to use per-project overrides.
+          {translate(
+            'Enable Claude and configure providers in global settings to use per-project overrides.'
+          )}
         </p>
       </div>
     );
@@ -95,32 +99,36 @@ export function ProjectClaudeSection({ project }: ProjectClaudeSectionProps) {
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500/20 to-brand-600/10 flex items-center justify-center border border-brand-500/20">
             <Bot className="w-5 h-5 text-brand-500" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground tracking-tight">Claude Provider</h2>
+          <h2 className="text-lg font-semibold text-foreground tracking-tight">
+            {translate('Claude Provider')}
+          </h2>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Override the Claude provider for this project only.
+          {translate('Override the Claude provider for this project only.')}
         </p>
       </div>
 
       <div className="p-6 space-y-4">
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Active Provider for This Project</Label>
+          <Label className="text-sm font-medium">
+            {translate('Active Provider for This Project')}
+          </Label>
           <Select value={selectValue} onValueChange={handleChange}>
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select provider" />
+              <SelectValue placeholder={translate('Select provider')} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="global">
                 <div className="flex items-center gap-2">
                   <Globe className="w-4 h-4 text-muted-foreground" />
-                  <span>Use Global Setting</span>
+                  <span>{translate('Use Global Setting')}</span>
                   <span className="text-xs text-muted-foreground ml-1">({globalProfileName})</span>
                 </div>
               </SelectItem>
               <SelectItem value="direct">
                 <div className="flex items-center gap-2">
                   <Cloud className="w-4 h-4 text-brand-500" />
-                  <span>Direct Anthropic API</span>
+                  <span>{translate('Direct Anthropic API')}</span>
                 </div>
               </SelectItem>
               {claudeApiProfiles.map((profile) => (
@@ -138,11 +146,13 @@ export function ProjectClaudeSection({ project }: ProjectClaudeSectionProps) {
 
         {/* Info about what this affects */}
         <div className="text-xs text-muted-foreground/70 pt-2 border-t border-border/30">
-          <p>This setting affects all Claude operations for this project including:</p>
+          <p>
+            {translate('This setting affects all Claude operations for this project including:')}
+          </p>
           <ul className="list-disc list-inside mt-1 space-y-0.5">
-            <li>Agent chat and feature implementation</li>
-            <li>Code analysis and suggestions</li>
-            <li>Commit message generation</li>
+            <li>{translate('Agent chat and feature implementation')}</li>
+            <li>{translate('Code analysis and suggestions')}</li>
+            <li>{translate('Commit message generation')}</li>
           </ul>
         </div>
       </div>

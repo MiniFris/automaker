@@ -1,3 +1,5 @@
+import { useUiLocale } from '@/lib/i18n';
+import { useEditorLocalization } from '@/lib/editor-localization';
 /**
  * CodeMirror-based unified diff viewer.
  *
@@ -8,7 +10,7 @@
 
 import { useMemo, useRef, useEffect } from 'react';
 import { EditorView } from '@codemirror/view';
-import { EditorState, type Extension } from '@codemirror/state';
+import { Compartment, EditorState, type Extension } from '@codemirror/state';
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { tags as t } from '@lezer/highlight';
 import { unifiedMergeView } from '@codemirror/merge';
@@ -156,6 +158,9 @@ export function CodeMirrorDiffView({
   maxHeight = '400px',
   className,
 }: CodeMirrorDiffViewProps) {
+  useUiLocale();
+  const editorLocalization = useEditorLocalization();
+  const localeCompartment = useMemo(() => new Compartment(), []);
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
 
@@ -163,6 +168,7 @@ export function CodeMirrorDiffView({
 
   const extensions = useMemo(() => {
     const exts: Extension[] = [
+      localeCompartment.of([]),
       EditorView.darkTheme.of(true),
       diffViewTheme,
       syntaxHighlighting(syntaxColors),
@@ -185,7 +191,7 @@ export function CodeMirrorDiffView({
     }
 
     return exts;
-  }, [oldContent, filePath]);
+  }, [oldContent, filePath, localeCompartment]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -213,6 +219,10 @@ export function CodeMirrorDiffView({
       viewRef.current = null;
     };
   }, [newContent, extensions]);
+
+  useEffect(() => {
+    viewRef.current?.dispatch({ effects: localeCompartment.reconfigure(editorLocalization) });
+  }, [editorLocalization, localeCompartment, newContent, extensions]);
 
   return (
     <div ref={containerRef} className={cn('overflow-auto', className)} style={{ maxHeight }} />

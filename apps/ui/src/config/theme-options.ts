@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 import {
   type LucideIcon,
   Atom,
@@ -87,7 +88,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   // Dark themes (20) - alphabetical, Dark first
   {
     value: 'dark',
-    label: 'Dark',
+    get label() {
+      return translate('Dark');
+    },
     Icon: Moon,
     testId: 'dark-mode-button',
     isDark: true,
@@ -95,7 +98,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'ayu-dark',
-    label: 'Ayu Dark',
+    get label() {
+      return translate('Ayu Dark');
+    },
     Icon: Moon,
     testId: 'ayu-dark-mode-button',
     isDark: true,
@@ -103,7 +108,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'ayu-mirage',
-    label: 'Ayu Mirage',
+    get label() {
+      return translate('Ayu Mirage');
+    },
     Icon: Sparkles,
     testId: 'ayu-mirage-mode-button',
     isDark: true,
@@ -111,7 +118,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'catppuccin',
-    label: 'Catppuccin',
+    get label() {
+      return translate('Catppuccin');
+    },
     Icon: Cat,
     testId: 'catppuccin-mode-button',
     isDark: true,
@@ -119,7 +128,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'dracula',
-    label: 'Dracula',
+    get label() {
+      return translate('Dracula');
+    },
     Icon: Ghost,
     testId: 'dracula-mode-button',
     isDark: true,
@@ -127,7 +138,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'ember',
-    label: 'Ember',
+    get label() {
+      return translate('Ember');
+    },
     Icon: Sunrise,
     testId: 'ember-mode-button',
     isDark: true,
@@ -135,7 +148,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'forest',
-    label: 'Forest',
+    get label() {
+      return translate('Forest');
+    },
     Icon: Leaf,
     testId: 'forest-mode-button',
     isDark: true,
@@ -143,7 +158,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'gray',
-    label: 'Gray',
+    get label() {
+      return translate('Gray');
+    },
     Icon: Square,
     testId: 'gray-mode-button',
     isDark: true,
@@ -151,7 +168,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'gruvbox',
-    label: 'Gruvbox',
+    get label() {
+      return translate('Gruvbox');
+    },
     Icon: Trees,
     testId: 'gruvbox-mode-button',
     isDark: true,
@@ -159,7 +178,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'matcha',
-    label: 'Matcha',
+    get label() {
+      return translate('Matcha');
+    },
     Icon: Leaf,
     testId: 'matcha-mode-button',
     isDark: true,
@@ -167,7 +188,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'monokai',
-    label: 'Monokai',
+    get label() {
+      return translate('Monokai');
+    },
     Icon: Flame,
     testId: 'monokai-mode-button',
     isDark: true,
@@ -175,7 +198,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'nord',
-    label: 'Nord',
+    get label() {
+      return translate('Nord');
+    },
     Icon: Snowflake,
     testId: 'nord-mode-button',
     isDark: true,
@@ -183,7 +208,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'ocean',
-    label: 'Ocean',
+    get label() {
+      return translate('Ocean');
+    },
     Icon: Waves,
     testId: 'ocean-mode-button',
     isDark: true,
@@ -191,7 +218,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'onedark',
-    label: 'One Dark',
+    get label() {
+      return translate('One Dark');
+    },
     Icon: Atom,
     testId: 'onedark-mode-button',
     isDark: true,
@@ -199,7 +228,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'red',
-    label: 'Red',
+    get label() {
+      return translate('Red');
+    },
     Icon: Heart,
     testId: 'red-mode-button',
     isDark: true,
@@ -207,7 +238,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'retro',
-    label: 'Retro',
+    get label() {
+      return translate('Retro');
+    },
     Icon: Terminal,
     testId: 'retro-mode-button',
     isDark: true,
@@ -215,7 +248,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'solarized',
-    label: 'Solarized Dark',
+    get label() {
+      return translate('Solarized Dark');
+    },
     Icon: Eclipse,
     testId: 'solarized-mode-button',
     isDark: true,
@@ -223,7 +258,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'sunset',
-    label: 'Sunset',
+    get label() {
+      return translate('Sunset');
+    },
     Icon: CloudSun,
     testId: 'sunset-mode-button',
     isDark: true,
@@ -231,7 +268,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'synthwave',
-    label: 'Synthwave',
+    get label() {
+      return translate('Synthwave');
+    },
     Icon: Radio,
     testId: 'synthwave-mode-button',
     isDark: true,
@@ -239,7 +278,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'tokyonight',
-    label: 'Tokyo Night',
+    get label() {
+      return translate('Tokyo Night');
+    },
     Icon: Sparkles,
     testId: 'tokyonight-mode-button',
     isDark: true,
@@ -248,7 +289,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   // Light themes (20) - alphabetical, Light first
   {
     value: 'light',
-    label: 'Light',
+    get label() {
+      return translate('Light');
+    },
     Icon: Sun,
     testId: 'light-mode-button',
     isDark: false,
@@ -256,7 +299,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'ayu-light',
-    label: 'Ayu Light',
+    get label() {
+      return translate('Ayu Light');
+    },
     Icon: Sun,
     testId: 'ayu-light-mode-button',
     isDark: false,
@@ -264,7 +309,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'blossom',
-    label: 'Blossom',
+    get label() {
+      return translate('Blossom');
+    },
     Icon: Cherry,
     testId: 'blossom-mode-button',
     isDark: false,
@@ -272,7 +319,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'bluloco',
-    label: 'Bluloco',
+    get label() {
+      return translate('Bluloco');
+    },
     Icon: Waves,
     testId: 'bluloco-mode-button',
     isDark: false,
@@ -280,7 +329,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'cream',
-    label: 'Cream',
+    get label() {
+      return translate('Cream');
+    },
     Icon: Coffee,
     testId: 'cream-mode-button',
     isDark: false,
@@ -288,7 +339,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'feather',
-    label: 'Feather',
+    get label() {
+      return translate('Feather');
+    },
     Icon: Feather,
     testId: 'feather-mode-button',
     isDark: false,
@@ -296,7 +349,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'github',
-    label: 'GitHub',
+    get label() {
+      return translate('GitHub');
+    },
     Icon: Github,
     testId: 'github-mode-button',
     isDark: false,
@@ -304,7 +359,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'gruvboxlight',
-    label: 'Gruvbox Light',
+    get label() {
+      return translate('Gruvbox Light');
+    },
     Icon: Trees,
     testId: 'gruvboxlight-mode-button',
     isDark: false,
@@ -312,7 +369,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'lavender',
-    label: 'Lavender',
+    get label() {
+      return translate('Lavender');
+    },
     Icon: Feather,
     testId: 'lavender-mode-button',
     isDark: false,
@@ -320,7 +379,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'mint',
-    label: 'Mint',
+    get label() {
+      return translate('Mint');
+    },
     Icon: Wind,
     testId: 'mint-mode-button',
     isDark: false,
@@ -328,7 +389,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'nordlight',
-    label: 'Nord Light',
+    get label() {
+      return translate('Nord Light');
+    },
     Icon: Snowflake,
     testId: 'nordlight-mode-button',
     isDark: false,
@@ -336,7 +399,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'onelight',
-    label: 'One Light',
+    get label() {
+      return translate('One Light');
+    },
     Icon: Atom,
     testId: 'onelight-mode-button',
     isDark: false,
@@ -344,7 +409,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'paper',
-    label: 'Paper',
+    get label() {
+      return translate('Paper');
+    },
     Icon: Scroll,
     testId: 'paper-mode-button',
     isDark: false,
@@ -352,7 +419,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'peach',
-    label: 'Peach',
+    get label() {
+      return translate('Peach');
+    },
     Icon: Cherry,
     testId: 'peach-mode-button',
     isDark: false,
@@ -360,7 +429,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'rose',
-    label: 'Rose',
+    get label() {
+      return translate('Rose');
+    },
     Icon: Flower2,
     testId: 'rose-mode-button',
     isDark: false,
@@ -368,7 +439,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'sand',
-    label: 'Sand',
+    get label() {
+      return translate('Sand');
+    },
     Icon: Palmtree,
     testId: 'sand-mode-button',
     isDark: false,
@@ -376,7 +449,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'sepia',
-    label: 'Sepia',
+    get label() {
+      return translate('Sepia');
+    },
     Icon: Coffee,
     testId: 'sepia-mode-button',
     isDark: false,
@@ -384,7 +459,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'sky',
-    label: 'Sky',
+    get label() {
+      return translate('Sky');
+    },
     Icon: Sun,
     testId: 'sky-mode-button',
     isDark: false,
@@ -392,7 +469,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'snow',
-    label: 'Snow',
+    get label() {
+      return translate('Snow');
+    },
     Icon: Snowflake,
     testId: 'snow-mode-button',
     isDark: false,
@@ -400,7 +479,9 @@ export const themeOptions: ReadonlyArray<ThemeOption> = [
   },
   {
     value: 'solarizedlight',
-    label: 'Solarized Light',
+    get label() {
+      return translate('Solarized Light');
+    },
     Icon: Sunrise,
     testId: 'solarizedlight-mode-button',
     isDark: false,

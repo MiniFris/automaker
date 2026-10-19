@@ -1,4 +1,6 @@
-import { memo, useMemo } from 'react';
+import { translate, useUiLocale, useLocalizedMemo } from '@/lib/i18n';
+import { getWorkflowStatusLabel } from '@/lib/workflow-labels';
+import { memo } from 'react';
 import { cn } from '@/lib/utils';
 import { COLUMNS, isPipelineStatus } from '../../constants';
 import type { FeatureStatusWithPipeline, PipelineConfig } from '@automaker/types';
@@ -18,31 +20,41 @@ interface StatusDisplay {
  */
 const BASE_STATUS_DISPLAY: Record<string, StatusDisplay> = {
   backlog: {
-    label: 'Backlog',
+    get label() {
+      return translate('Backlog');
+    },
     colorClass: 'text-[var(--status-backlog)]',
     bgClass: 'bg-[var(--status-backlog)]/15',
     borderClass: 'border-[var(--status-backlog)]/30',
   },
   merge_conflict: {
-    label: 'Merge Conflict',
+    get label() {
+      return translate('Merge Conflict');
+    },
     colorClass: 'text-[var(--status-warning)]',
     bgClass: 'bg-[var(--status-warning)]/15',
     borderClass: 'border-[var(--status-warning)]/30',
   },
   in_progress: {
-    label: 'In Progress',
+    get label() {
+      return translate('In Progress');
+    },
     colorClass: 'text-[var(--status-in-progress)]',
     bgClass: 'bg-[var(--status-in-progress)]/15',
     borderClass: 'border-[var(--status-in-progress)]/30',
   },
   waiting_approval: {
-    label: 'Waiting Approval',
+    get label() {
+      return translate('Waiting Approval');
+    },
     colorClass: 'text-[var(--status-waiting)]',
     bgClass: 'bg-[var(--status-waiting)]/15',
     borderClass: 'border-[var(--status-waiting)]/30',
   },
   verified: {
-    label: 'Verified',
+    get label() {
+      return translate('Verified');
+    },
     colorClass: 'text-[var(--status-success)]',
     bgClass: 'bg-[var(--status-success)]/15',
     borderClass: 'border-[var(--status-success)]/30',
@@ -72,7 +84,7 @@ function getPipelineStatusDisplay(
   const colorVar = step.colorClass?.match(/var\(([^)]+)\)/)?.[1] || '--status-in-progress';
 
   return {
-    label: step.name || 'Pipeline Step',
+    label: getWorkflowStatusLabel(status, pipelineConfig),
     colorClass: `text-[var(${colorVar})]`,
     bgClass: `bg-[var(${colorVar})]/15`,
     borderClass: `border-[var(${colorVar})]/30`,
@@ -94,7 +106,7 @@ function getStatusDisplay(
     }
     // Fallback for unknown pipeline status
     return {
-      label: status.replace('pipeline_', '').replace(/_/g, ' '),
+      label: getWorkflowStatusLabel(status, pipelineConfig),
       colorClass: 'text-[var(--status-in-progress)]',
       bgClass: 'bg-[var(--status-in-progress)]/15',
       borderClass: 'border-[var(--status-in-progress)]/30',
@@ -120,7 +132,7 @@ function getStatusDisplay(
 
   // Fallback for unknown status
   return {
-    label: status.replace(/_/g, ' '),
+    label: getWorkflowStatusLabel(status, pipelineConfig),
     colorClass: 'text-muted-foreground',
     bgClass: 'bg-muted/50',
     borderClass: 'border-border/50',
@@ -166,7 +178,11 @@ export const StatusBadge = memo(function StatusBadge({
   size = 'default',
   className,
 }: StatusBadgeProps) {
-  const display = useMemo(() => getStatusDisplay(status, pipelineConfig), [status, pipelineConfig]);
+  useUiLocale();
+  const display = useLocalizedMemo(
+    () => getStatusDisplay(status, pipelineConfig),
+    [status, pipelineConfig]
+  );
 
   const sizeClasses = {
     sm: 'px-1.5 py-0.5 text-[10px]',

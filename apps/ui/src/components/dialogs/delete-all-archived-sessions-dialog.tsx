@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import {
   Dialog,
   DialogContent,
@@ -22,23 +23,26 @@ export function DeleteAllArchivedSessionsDialog({
   archivedCount,
   onConfirm,
 }: DeleteAllArchivedSessionsDialogProps) {
+  useUiLocale();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent data-testid="delete-all-archived-sessions-dialog">
         <DialogHeader>
-          <DialogTitle>Delete All Archived Sessions</DialogTitle>
+          <DialogTitle>{translate('Delete All Archived Sessions')}</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete all archived sessions? This action cannot be undone.
+            {translate(
+              'Are you sure you want to delete all archived sessions? This action cannot be undone.'
+            )}
             {archivedCount > 0 && (
               <span className="block mt-2 text-yellow-500">
-                {archivedCount} session(s) will be deleted.
+                {archivedCount} {translate(' session(s) will be deleted.')}
               </span>
             )}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button
             variant="destructive"
@@ -46,7 +50,7 @@ export function DeleteAllArchivedSessionsDialog({
             data-testid="confirm-delete-all-archived-sessions"
           >
             <Trash2 className="w-4 h-4 mr-2" />
-            Delete All
+            {translate('Delete All')}
           </Button>
         </DialogFooter>
       </DialogContent>

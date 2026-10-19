@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useEffect } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import {
@@ -52,6 +53,7 @@ export function NewProjectModal({
   onCreateFromCustomUrl,
   isCreating,
 }: NewProjectModalProps) {
+  useUiLocale();
   const [activeTab, setActiveTab] = useState<'blank' | 'template'>('blank');
   const [projectName, setProjectName] = useState('');
   const [workspaceDir, setWorkspaceDir] = useState<string>('');
@@ -174,8 +176,8 @@ export function NewProjectModal({
 
   const handleBrowseDirectory = async () => {
     const selectedPath = await openFileBrowser({
-      title: 'Select Base Project Directory',
-      description: 'Choose the parent directory where your project will be created',
+      title: translate('Select Base Project Directory'),
+      description: translate('Choose the parent directory where your project will be created'),
       initialPath: workspaceDir || undefined,
     });
     if (selectedPath) {
@@ -205,9 +207,9 @@ export function NewProjectModal({
         data-testid="new-project-modal"
       >
         <DialogHeader className="pb-2">
-          <DialogTitle className="text-foreground">Create New Project</DialogTitle>
+          <DialogTitle className="text-foreground">{translate('Create New Project')}</DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Start with a blank project or choose from a starter template.
+            {translate('Start with a blank project or choose from a starter template.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -218,7 +220,8 @@ export function NewProjectModal({
               htmlFor="project-name"
               className={cn('text-foreground', errors.projectName && 'text-red-500')}
             >
-              Project Name {errors.projectName && <span className="text-red-500">*</span>}
+              {translate('Project Name ')}
+              {errors.projectName && <span className="text-red-500">*</span>}
             </Label>
             <Input
               id="project-name"
@@ -234,7 +237,9 @@ export function NewProjectModal({
               data-testid="project-name-input"
               autoFocus
             />
-            {errors.projectName && <p className="text-xs text-red-500">Project name is required</p>}
+            {errors.projectName && (
+              <p className="text-xs text-red-500">{translate('Project name is required')}</p>
+            )}
           </div>
 
           {/* Workspace Directory Display */}
@@ -247,10 +252,10 @@ export function NewProjectModal({
             <Folder className="w-4 h-4 shrink-0 mt-0.5" />
             <span className="flex-1 min-w-0 flex flex-col gap-1">
               {isLoadingWorkspace ? (
-                'Loading workspace...'
+                translate('Loading workspace...')
               ) : workspaceDir ? (
                 <>
-                  <span>Will be created at:</span>
+                  <span>{translate('Will be created at:')}</span>
                   <code
                     className="text-xs bg-muted px-1.5 py-0.5 rounded truncate block max-w-full"
                     title={projectPath || workspaceDir}
@@ -270,7 +275,7 @@ export function NewProjectModal({
               data-testid="browse-directory-button"
             >
               <FolderOpen className="w-3.5 h-3.5 mr-1" />
-              Browse
+              {translate('Browse')}
             </Button>
           </div>
         </div>
@@ -283,11 +288,11 @@ export function NewProjectModal({
           <TabsList className="w-full justify-start">
             <TabsTrigger value="blank" className="gap-2">
               <FolderPlus className="w-4 h-4" />
-              Blank Project
+              {translate('Blank Project')}
             </TabsTrigger>
             <TabsTrigger value="template" className="gap-2">
               <Rocket className="w-4 h-4" />
-              Starter Kit
+              {translate('Starter Kit')}
             </TabsTrigger>
           </TabsList>
 
@@ -295,8 +300,9 @@ export function NewProjectModal({
             <TabsContent value="blank" className="mt-0">
               <div className="p-4 rounded-lg bg-muted/50 border border-border">
                 <p className="text-sm text-muted-foreground">
-                  Create an empty project with the standard .automaker directory structure. Perfect
-                  for starting from scratch or importing an existing codebase.
+                  {translate(
+                    'Create an empty project with the standard .automaker directory structure. Perfect for starting from scratch or importing an existing codebase.'
+                  )}
                 </p>
               </div>
             </TabsContent>
@@ -306,7 +312,7 @@ export function NewProjectModal({
                 {/* Error message for template selection */}
                 {errors.templateSelection && (
                   <p className="text-sm text-red-500">
-                    Please select a template or enter a custom GitHub URL
+                    {translate('Please select a template or enter a custom GitHub URL')}
                   </p>
                 )}
 
@@ -350,17 +356,19 @@ export function NewProjectModal({
                             ))}
                             {template.techStack.length > 6 && (
                               <Badge variant="secondary" className="text-xs">
-                                +{template.techStack.length - 6} more
+                                +{template.techStack.length - 6} {translate(' more')}
                               </Badge>
                             )}
                           </div>
 
                           {/* Key Features */}
                           <div className="text-xs text-muted-foreground">
-                            <span className="font-medium">Features: </span>
+                            <span className="font-medium">{translate('Features: ')}</span>
                             {template.features.slice(0, 3).join(' · ')}
                             {template.features.length > 3 &&
-                              ` · +${template.features.length - 3} more`}
+                              translate(' · +{value1} more', {
+                                value1: template.features.length - 3,
+                              })}
                           </div>
                         </div>
 
@@ -374,7 +382,7 @@ export function NewProjectModal({
                           }}
                         >
                           <ExternalLink className="w-4 h-4 mr-1" />
-                          View
+                          {translate('View')}
                         </Button>
                       </div>
                     </div>
@@ -392,11 +400,13 @@ export function NewProjectModal({
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <Link className="w-4 h-4 text-muted-foreground" />
-                      <h4 className="font-medium text-foreground">Custom GitHub URL</h4>
+                      <h4 className="font-medium text-foreground">
+                        {translate('Custom GitHub URL')}
+                      </h4>
                       {useCustomUrl && <Check className="w-4 h-4 text-brand-500" />}
                     </div>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Clone any public GitHub repository as a starting point.
+                      {translate('Clone any public GitHub repository as a starting point.')}
                     </p>
 
                     {useCustomUrl && (
@@ -414,7 +424,9 @@ export function NewProjectModal({
                           data-testid="custom-url-input"
                         />
                         {errors.customUrl && (
-                          <p className="text-xs text-red-500">GitHub URL is required</p>
+                          <p className="text-xs text-red-500">
+                            {translate('GitHub URL is required')}
+                          </p>
                         )}
                       </div>
                     )}
@@ -431,7 +443,7 @@ export function NewProjectModal({
             onClick={() => onOpenChange(false)}
             className="text-muted-foreground hover:text-foreground hover:bg-accent"
           >
-            Cancel
+            {translate('Cancel')}
           </Button>
           <HotkeyButton
             onClick={validateAndCreate}
@@ -444,10 +456,10 @@ export function NewProjectModal({
             {isCreating ? (
               <>
                 <Spinner size="sm" className="mr-2" />
-                {activeTab === 'template' ? 'Cloning...' : 'Creating...'}
+                {activeTab === 'template' ? translate('Cloning...') : translate('Creating...')}
               </>
             ) : (
-              <>Create Project</>
+              <>{translate('Create Project')}</>
             )}
           </HotkeyButton>
         </DialogFooter>

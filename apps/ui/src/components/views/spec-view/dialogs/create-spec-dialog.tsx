@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Sparkles, Clock } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import {
@@ -30,9 +31,12 @@ export function CreateSpecDialog({
   onSkip,
   isCreatingSpec,
   showSkipButton = false,
-  title = 'Create App Specification',
-  description = "We didn't find an app_spec.txt file. Let us help you generate your app_spec.txt to help describe your project for our system. We'll analyze your project's tech stack and create a comprehensive specification.",
+  title = translate('Create App Specification'),
+  description = translate(
+    "We didn't find an app_spec.txt file. Let us help you generate your app_spec.txt to help describe your project for our system. We'll analyze your project's tech stack and create a comprehensive specification."
+  ),
 }: CreateSpecDialogProps) {
+  useUiLocale();
   const selectedOption = FEATURE_COUNT_OPTIONS.find((o) => o.value === featureCount);
 
   return (
@@ -53,16 +57,19 @@ export function CreateSpecDialog({
 
         <div className="space-y-4 py-4 overflow-y-auto">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Project Overview</label>
+            <label className="text-sm font-medium">{translate('Project Overview')}</label>
             <p className="text-xs text-muted-foreground">
-              Describe what your project does and what features you want to build. Be as detailed as
-              you want - this will help us create a better specification.
+              {translate(
+                'Describe what your project does and what features you want to build. Be as detailed as you want - this will help us create a better specification.'
+              )}
             </p>
             <textarea
               className="w-full h-48 p-3 rounded-md border border-border bg-background font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
               value={projectOverview}
               onChange={(e) => onProjectOverviewChange(e.target.value)}
-              placeholder="e.g., A project management tool that allows teams to track tasks, manage sprints, and visualize progress through kanban boards. It should support user authentication, real-time updates, and file attachments..."
+              placeholder={translate(
+                'e.g., A project management tool that allows teams to track tasks, manage sprints, and visualize progress through kanban boards. It should support user authentication, real-time updates, and file attachments...'
+              )}
               autoFocus
               disabled={isCreatingSpec}
             />
@@ -80,12 +87,12 @@ export function CreateSpecDialog({
                 htmlFor="create-analyze-project"
                 className={`text-sm font-medium ${isCreatingSpec ? '' : 'cursor-pointer'}`}
               >
-                Analyze current project for additional context
+                {translate('Analyze current project for additional context')}
               </label>
               <p className="text-xs text-muted-foreground">
-                If checked, the agent will research your existing codebase to understand the tech
-                stack. If unchecked, defaults to TanStack Start, Drizzle ORM, PostgreSQL, shadcn/ui,
-                Tailwind CSS, and React.
+                {translate(
+                  'If checked, the agent will research your existing codebase to understand the tech stack. If unchecked, defaults to TanStack Start, Drizzle ORM, PostgreSQL, shadcn/ui, Tailwind CSS, and React.'
+                )}
               </p>
             </div>
           </div>
@@ -102,11 +109,12 @@ export function CreateSpecDialog({
                 htmlFor="create-generate-features"
                 className={`text-sm font-medium ${isCreatingSpec ? '' : 'cursor-pointer'}`}
               >
-                Generate feature list
+                {translate('Generate feature list')}
               </label>
               <p className="text-xs text-muted-foreground">
-                Automatically create features in the features folder from the implementation roadmap
-                after the spec is generated.
+                {translate(
+                  'Automatically create features in the features folder from the implementation roadmap after the spec is generated.'
+                )}
               </p>
             </div>
           </div>
@@ -114,7 +122,7 @@ export function CreateSpecDialog({
           {/* Feature Count Selection - only shown when generateFeatures is enabled */}
           {generateFeatures && (
             <div className="space-y-2 pt-2 pl-7">
-              <label className="text-sm font-medium">Number of Features</label>
+              <label className="text-sm font-medium">{translate('Number of Features')}</label>
               <div className="flex gap-2">
                 {FEATURE_COUNT_OPTIONS.map((option) => (
                   <Button
@@ -149,11 +157,11 @@ export function CreateSpecDialog({
         <DialogFooter>
           {showSkipButton && onSkip ? (
             <Button variant="ghost" onClick={onSkip} disabled={isCreatingSpec}>
-              Skip for now
+              {translate('Skip for now')}
             </Button>
           ) : (
             <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isCreatingSpec}>
-              Cancel
+              {translate('Cancel')}
             </Button>
           )}
           <HotkeyButton
@@ -165,12 +173,12 @@ export function CreateSpecDialog({
             {isCreatingSpec ? (
               <>
                 <Spinner size="sm" className="mr-2" />
-                Generating...
+                {translate('Generating...')}
               </>
             ) : (
               <>
                 <Sparkles className="w-4 h-4 mr-2" />
-                Generate Spec
+                {translate('Generate Spec')}
               </>
             )}
           </HotkeyButton>

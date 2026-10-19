@@ -1,3 +1,5 @@
+import { getFormattingLocale } from '@/lib/i18n';
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * ProjectStatusCard - Individual project card for multi-project dashboard
  *
@@ -26,36 +28,47 @@ const healthStatusConfig: Record<
   active: {
     icon: Activity,
     color: 'text-green-500',
-    label: 'Active',
+    get label() {
+      return translate('Active');
+    },
     bgColor: 'bg-green-500/10',
   },
   idle: {
     icon: Pause,
     color: 'text-muted-foreground',
-    label: 'Idle',
+    get label() {
+      return translate('Idle');
+    },
     bgColor: 'bg-muted/50',
   },
   waiting: {
     icon: Clock,
     color: 'text-yellow-500',
-    label: 'Waiting',
+    get label() {
+      return translate('Waiting');
+    },
     bgColor: 'bg-yellow-500/10',
   },
   completed: {
     icon: CheckCircle2,
     color: 'text-blue-500',
-    label: 'Completed',
+    get label() {
+      return translate('Completed');
+    },
     bgColor: 'bg-blue-500/10',
   },
   error: {
     icon: XCircle,
     color: 'text-red-500',
-    label: 'Error',
+    get label() {
+      return translate('Error');
+    },
     bgColor: 'bg-red-500/10',
   },
 };
 
 export function ProjectStatusCard({ project, onProjectClick }: ProjectStatusCardProps) {
+  useUiLocale();
   const navigate = useNavigate();
   const { upsertAndSetCurrentProject } = useAppStore();
 
@@ -72,7 +85,7 @@ export function ProjectStatusCard({ project, onProjectClick }: ProjectStatusCard
     try {
       const initResult = await initializeProject(project.projectPath);
       if (!initResult.success) {
-        toast.error('Failed to open project', {
+        toast.error(translate('Failed to open project'), {
           description: initResult.error || 'Unknown error',
         });
         return;
@@ -81,7 +94,7 @@ export function ProjectStatusCard({ project, onProjectClick }: ProjectStatusCard
       upsertAndSetCurrentProject(project.projectPath, project.projectName);
       navigate({ to: '/board' });
     } catch (error) {
-      toast.error('Failed to open project', {
+      toast.error(translate('Failed to open project'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     }
@@ -108,7 +121,7 @@ export function ProjectStatusCard({ project, onProjectClick }: ProjectStatusCard
       )}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
-      aria-label={`Open project ${project.projectName}`}
+      aria-label={translate('Open project {value1}', { value1: project.projectName })}
       data-testid={`project-status-card-${project.projectId}`}
     >
       <div className="p-4">
@@ -159,46 +172,51 @@ export function ProjectStatusCard({ project, onProjectClick }: ProjectStatusCard
           {project.featureCounts.running > 0 && (
             <div className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-md bg-green-500/10 text-green-600 dark:text-green-400">
               <Activity className="w-3 h-3" />
-              {project.featureCounts.running} running
+              {project.featureCounts.running} {translate(' running')}
             </div>
           )}
           {project.featureCounts.pending > 0 && (
             <div className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-md bg-yellow-500/10 text-yellow-600 dark:text-yellow-400">
               <Clock className="w-3 h-3" />
-              {project.featureCounts.pending} pending
+              {project.featureCounts.pending} {translate(' pending')}
             </div>
           )}
           {project.featureCounts.completed > 0 && (
             <div className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400">
               <CheckCircle2 className="w-3 h-3" />
-              {project.featureCounts.completed} completed
+              {project.featureCounts.completed} {translate(' completed')}
             </div>
           )}
           {project.featureCounts.failed > 0 && (
             <div className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-md bg-red-500/10 text-red-600 dark:text-red-400">
               <XCircle className="w-3 h-3" />
-              {project.featureCounts.failed} failed
+              {project.featureCounts.failed} {translate(' failed')}
             </div>
           )}
           {project.featureCounts.verified > 0 && (
             <div className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400">
               <CheckCircle2 className="w-3 h-3" />
-              {project.featureCounts.verified} verified
+              {project.featureCounts.verified} {translate(' verified')}
             </div>
           )}
         </div>
 
         {/* Footer: Total features and auto-mode status */}
         <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
-          <span>{project.totalFeatures} total features</span>
+          <span>
+            {project.totalFeatures} {translate(' total features')}
+          </span>
           {project.isAutoModeRunning && (
             <div className="flex items-center gap-1.5 text-green-500">
               <Bot className="w-3.5 h-3.5 animate-pulse" />
-              <span className="font-medium">Auto-mode active</span>
+              <span className="font-medium">{translate('Auto-mode active')}</span>
             </div>
           )}
           {project.lastActivityAt && !project.isAutoModeRunning && (
-            <span>Last activity: {new Date(project.lastActivityAt).toLocaleDateString()}</span>
+            <span>
+              {translate('Last activity: ')}
+              {new Date(project.lastActivityAt).toLocaleDateString(getFormattingLocale())}
+            </span>
           )}
         </div>
       </div>

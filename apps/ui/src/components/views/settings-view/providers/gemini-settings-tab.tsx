@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useState, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -13,6 +14,7 @@ import type { GeminiAuthStatus } from '../cli-status/gemini-cli-status';
 import type { GeminiModelId } from '@automaker/types';
 
 export function GeminiSettingsTab() {
+  useUiLocale();
   const queryClient = useQueryClient();
   const { enabledGeminiModels, geminiDefaultModel, setGeminiDefaultModel, toggleGeminiModel } =
     useAppStore();
@@ -61,7 +63,7 @@ export function GeminiSettingsTab() {
   const handleRefreshGeminiCli = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: queryKeys.cli.gemini() });
     await refetchCliStatus();
-    toast.success('Gemini CLI refreshed');
+    toast.success(translate('Gemini CLI refreshed'));
   }, [queryClient, refetchCliStatus]);
 
   const handleDefaultModelChange = useCallback(
@@ -69,9 +71,9 @@ export function GeminiSettingsTab() {
       setIsSaving(true);
       try {
         setGeminiDefaultModel(model);
-        toast.success('Default model updated');
+        toast.success(translate('Default model updated'));
       } catch {
-        toast.error('Failed to update default model');
+        toast.error(translate('Failed to update default model'));
       } finally {
         setIsSaving(false);
       }
@@ -85,7 +87,7 @@ export function GeminiSettingsTab() {
       try {
         toggleGeminiModel(model, enabled);
       } catch {
-        toast.error('Failed to update models');
+        toast.error(translate('Failed to update models'));
       } finally {
         setIsSaving(false);
       }

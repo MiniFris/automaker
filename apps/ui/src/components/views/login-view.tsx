@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 /**
  * Login View - Web mode authentication
  *
@@ -197,7 +198,9 @@ async function checkServerAndSession(
         if (!signal?.aborted) {
           dispatch({
             type: 'SERVER_ERROR',
-            message: 'Unable to connect to server. Please check that the server is running.',
+            message: translate(
+              'Unable to connect to server. Please check that the server is running.'
+            ),
           });
         }
         return;
@@ -266,7 +269,7 @@ async function performLogin(
       dispatch({ type: 'LOGIN_ERROR', message: result.error || 'Invalid API key' });
     }
   } catch {
-    dispatch({ type: 'LOGIN_ERROR', message: 'Failed to connect to server' });
+    dispatch({ type: 'LOGIN_ERROR', message: translate('Failed to connect to server') });
   }
 }
 
@@ -275,6 +278,7 @@ async function performLogin(
 // =============================================================================
 
 export function LoginView() {
+  useUiLocale();
   const navigate = useNavigate();
   const setAuthState = useAuthStore((s) => s.setAuthState);
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -353,8 +357,13 @@ export function LoginView() {
         <div className="text-center space-y-4">
           <Spinner size="xl" className="mx-auto" />
           <p className="text-sm text-muted-foreground">
-            Connecting to server
-            {state.attempt > 1 ? ` (attempt ${state.attempt}/${MAX_RETRIES})` : '...'}
+            {translate('Connecting to server')}
+            {state.attempt > 1
+              ? translate(' (attempt {value1}/{value2})', {
+                  value1: state.attempt,
+                  value2: MAX_RETRIES,
+                })
+              : '...'}
           </p>
         </div>
       </div>
@@ -370,12 +379,12 @@ export function LoginView() {
             <ServerCrash className="h-8 w-8 text-destructive" />
           </div>
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold tracking-tight">Server Unavailable</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{translate('Server Unavailable')}</h1>
             <p className="text-sm text-muted-foreground">{state.message}</p>
           </div>
           <Button onClick={handleRetry} variant="outline" className="gap-2">
             <RefreshCw className="h-4 w-4" />
-            Retry Connection
+            {translate('Retry Connection')}
           </Button>
         </div>
       </div>
@@ -389,7 +398,9 @@ export function LoginView() {
         <div className="text-center space-y-4">
           <Spinner size="xl" className="mx-auto" />
           <p className="text-sm text-muted-foreground">
-            {state.phase === 'checking_setup' ? 'Loading settings...' : 'Redirecting...'}
+            {state.phase === 'checking_setup'
+              ? translate('Loading settings...')
+              : translate('Redirecting...')}
           </p>
         </div>
       </div>
@@ -409,9 +420,11 @@ export function LoginView() {
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
             <KeyRound className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="mt-6 text-2xl font-bold tracking-tight">Authentication Required</h1>
+          <h1 className="mt-6 text-2xl font-bold tracking-tight">
+            {translate('Authentication Required')}
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Enter the API key shown in the server console to continue.
+            {translate('Enter the API key shown in the server console to continue.')}
           </p>
         </div>
 
@@ -419,12 +432,12 @@ export function LoginView() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <label htmlFor="apiKey" className="text-sm font-medium">
-              API Key
+              {translate('API Key')}
             </label>
             <Input
               id="apiKey"
               type="password"
-              placeholder="Enter API key..."
+              placeholder={translate('Enter API key...')}
               value={apiKey}
               onChange={(e) => dispatch({ type: 'UPDATE_API_KEY', value: e.target.value })}
               disabled={isLoggingIn}
@@ -450,21 +463,21 @@ export function LoginView() {
             {isLoggingIn ? (
               <>
                 <Spinner size="sm" variant="foreground" className="mr-2" />
-                Authenticating...
+                {translate('Authenticating...')}
               </>
             ) : (
-              'Login'
+              translate('Login')
             )}
           </Button>
         </form>
 
         {/* Help Text */}
         <div className="rounded-lg border bg-muted/50 p-4 text-sm">
-          <p className="font-medium">Where to find the API key:</p>
+          <p className="font-medium">{translate('Where to find the API key:')}</p>
           <ol className="mt-2 list-inside list-decimal space-y-1 text-muted-foreground">
-            <li>Look at the server terminal/console output</li>
-            <li>Find the box labeled "API Key for Web Mode Authentication"</li>
-            <li>Copy the UUID displayed there</li>
+            <li>{translate('Look at the server terminal/console output')}</li>
+            <li>{translate('Find the box labeled "API Key for Web Mode Authentication"')}</li>
+            <li>{translate('Copy the UUID displayed there')}</li>
           </ol>
         </div>
       </div>

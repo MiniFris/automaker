@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { useCallback } from 'react';
 import type { NavigateOptions } from '@tanstack/react-router';
 import { cn } from '@/lib/utils';
@@ -41,6 +42,7 @@ export function SidebarFooter({
   runningAgentsCount,
   shortcuts,
 }: SidebarFooterProps) {
+  useUiLocale();
   const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0';
   const { os } = useOSDetection();
   const appMode = import.meta.env.VITE_APP_MODE || '?';
@@ -112,7 +114,7 @@ export function SidebarFooter({
                 </button>
               </TooltipTrigger>
               <TooltipContent side="right" sideOffset={8}>
-                Running Agents
+                {translate('Running Agents')}
                 {runningAgentsCount > 0 && (
                   <span className="ml-2 px-1.5 py-0.5 bg-brand-500 text-white rounded-full text-[10px]">
                     {runningAgentsCount}
@@ -149,7 +151,7 @@ export function SidebarFooter({
               </button>
             </TooltipTrigger>
             <TooltipContent side="right" sideOffset={8}>
-              Global Settings
+              {translate('Global Settings')}
               <span className="ml-2 px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono text-muted-foreground">
                 {formatShortcut(shortcuts.settings, true)}
               </span>
@@ -174,7 +176,7 @@ export function SidebarFooter({
                 </button>
               </TooltipTrigger>
               <TooltipContent side="right" sideOffset={8}>
-                Documentation
+                {translate('Documentation')}
               </TooltipContent>
             </Tooltip>
           )}
@@ -196,7 +198,7 @@ export function SidebarFooter({
               </button>
             </TooltipTrigger>
             <TooltipContent side="right" sideOffset={8}>
-              Feedback
+              {translate('Feedback')}
             </TooltipContent>
           </Tooltip>
         </div>
@@ -246,7 +248,7 @@ export function SidebarFooter({
                   : 'group-hover:text-brand-400'
               )}
             />
-            <span className="ml-3 text-sm flex-1 text-left">Running Agents</span>
+            <span className="ml-3 text-sm flex-1 text-left">{translate('Running Agents')}</span>
             {runningAgentsCount > 0 && (
               <span
                 className={cn(
@@ -294,7 +296,7 @@ export function SidebarFooter({
                 : 'group-hover:text-brand-400'
             )}
           />
-          <span className="ml-3 text-sm flex-1 text-left">Settings</span>
+          <span className="ml-3 text-sm flex-1 text-left">{translate('Settings')}</span>
           <span
             className={cn(
               'flex items-center justify-center min-w-5 h-5 px-1.5 text-[10px] font-mono rounded transition-all duration-200',
@@ -326,7 +328,7 @@ export function SidebarFooter({
             data-testid="documentation-button"
           >
             <BookOpen className="w-4 h-4 shrink-0" />
-            <span className="ml-2.5 text-xs">Documentation</span>
+            <span className="ml-2.5 text-xs">{translate('Documentation')}</span>
           </button>
         </div>
       )}
@@ -344,7 +346,7 @@ export function SidebarFooter({
           data-testid="feedback-button"
         >
           <MessageSquare className="w-4 h-4 shrink-0" />
-          <span className="ml-2.5 text-xs">Feedback</span>
+          <span className="ml-2.5 text-xs">{translate('Feedback')}</span>
           <ExternalLink className="w-3 h-3 ml-auto text-muted-foreground/50" />
         </button>
       </div>
@@ -352,7 +354,8 @@ export function SidebarFooter({
       {/* Version */}
       <div className="px-6 py-1.5 text-center">
         <span className="text-[9px] text-muted-foreground/40">
-          v{appVersion} {versionSuffix}
+          {translate('v')}
+          {appVersion} {versionSuffix}
         </span>
       </div>
     </div>

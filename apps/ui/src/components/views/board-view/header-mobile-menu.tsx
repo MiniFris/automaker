@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
@@ -52,15 +53,16 @@ export function HeaderMobileMenu({
   showZaiUsage = false,
   showGeminiUsage = false,
 }: HeaderMobileMenuProps) {
+  useUiLocale();
   return (
     <>
       <HeaderActionsPanelTrigger isOpen={isOpen} onToggle={onToggle} />
-      <HeaderActionsPanel isOpen={isOpen} onClose={onToggle} title="Board Controls">
+      <HeaderActionsPanel isOpen={isOpen} onClose={onToggle} title={translate('Board Controls')}>
         {/* Usage Bar - show if any provider is authenticated */}
         {(showClaudeUsage || showCodexUsage || showZaiUsage || showGeminiUsage) && (
           <div className="space-y-2">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Usage
+              {translate('Usage')}
             </span>
             <MobileUsageBar
               showClaudeUsage={showClaudeUsage}
@@ -74,7 +76,7 @@ export function HeaderMobileMenu({
         {/* Controls Section */}
         <div className="space-y-1">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            Controls
+            {translate('Controls')}
           </span>
 
           {/* Auto Mode Section */}
@@ -92,7 +94,7 @@ export function HeaderMobileMenu({
                     isAutoModeRunning ? 'text-yellow-500' : 'text-muted-foreground'
                   )}
                 />
-                <span className="text-sm font-medium">Auto Mode</span>
+                <span className="text-sm font-medium">{translate('Auto Mode')}</span>
               </div>
               <Switch
                 id="mobile-auto-mode-toggle"
@@ -111,7 +113,9 @@ export function HeaderMobileMenu({
             >
               <div className="flex items-center gap-2">
                 <FastForward className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Skip Verification</span>
+                <span className="text-sm text-muted-foreground">
+                  {translate('Skip Verification')}
+                </span>
               </div>
               <Switch
                 id="mobile-skip-verification-toggle"
@@ -129,7 +133,7 @@ export function HeaderMobileMenu({
             >
               <div className="flex items-center gap-2 mb-3">
                 <Bot className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Max Agents</span>
+                <span className="text-sm text-muted-foreground">{translate('Max Agents')}</span>
                 <span
                   className="text-sm text-muted-foreground ml-auto"
                   data-testid="mobile-concurrency-value"
@@ -157,7 +161,7 @@ export function HeaderMobileMenu({
           >
             <div className="flex items-center gap-2">
               <GitBranch className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Worktree Bar</span>
+              <span className="text-sm font-medium">{translate('Worktree Bar')}</span>
             </div>
             <Switch
               id="mobile-worktrees-toggle"
@@ -179,7 +183,7 @@ export function HeaderMobileMenu({
             data-testid="mobile-plan-button"
           >
             <Wand2 className="w-4 h-4 mr-2" />
-            Plan
+            {translate('Plan')}
           </Button>
         </div>
       </HeaderActionsPanel>

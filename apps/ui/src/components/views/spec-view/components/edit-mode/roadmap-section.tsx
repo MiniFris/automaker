@@ -1,3 +1,4 @@
+import { translate, useUiLocale } from '@/lib/i18n';
 import { Plus, X, Map as MapIcon } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -43,6 +44,7 @@ interface PhaseCardProps {
 }
 
 function PhaseCard({ phase, onChange, onRemove }: PhaseCardProps) {
+  useUiLocale();
   const handlePhaseNameChange = (name: string) => {
     onChange({ ...phase, phase: name });
   };
@@ -62,33 +64,33 @@ function PhaseCard({ phase, onChange, onRemove }: PhaseCardProps) {
           <div className="flex-1 space-y-3">
             <div className="flex flex-col sm:flex-row gap-2">
               <div className="flex-1">
-                <Label className="sr-only">Phase Name</Label>
+                <Label className="sr-only">{translate('Phase Name')}</Label>
                 <Input
                   value={phase.phase}
                   onChange={(e) => handlePhaseNameChange(e.target.value)}
-                  placeholder="Phase name..."
+                  placeholder={translate('Phase name...')}
                 />
               </div>
               <div className="w-full sm:w-40">
-                <Label className="sr-only">Status</Label>
+                <Label className="sr-only">{translate('Status')}</Label>
                 <Select value={phase.status} onValueChange={handleStatusChange}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder={translate('Status')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="pending">{translate('Pending')}</SelectItem>
+                    <SelectItem value="in_progress">{translate('In Progress')}</SelectItem>
+                    <SelectItem value="completed">{translate('Completed')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div>
-              <Label className="sr-only">Description</Label>
+              <Label className="sr-only">{translate('Description')}</Label>
               <Textarea
                 value={phase.description ?? ''}
                 onChange={(e) => handleDescriptionChange(e.target.value)}
-                placeholder="Describe what this phase involves..."
+                placeholder={translate('Describe what this phase involves...')}
                 rows={2}
               />
             </div>
@@ -109,6 +111,7 @@ function PhaseCard({ phase, onChange, onRemove }: PhaseCardProps) {
 }
 
 export function RoadmapSection({ phases, onChange }: RoadmapSectionProps) {
+  useUiLocale();
   // Track phases with stable IDs
   const [items, setItems] = useState<PhaseWithId[]>(() => phases.map(phaseToInternal));
 
@@ -162,13 +165,13 @@ export function RoadmapSection({ phases, onChange }: RoadmapSectionProps) {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <MapIcon className="w-5 h-5 text-primary" />
-          Implementation Roadmap
+          {translate('Implementation Roadmap')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {items.length === 0 ? (
           <p className="text-sm text-muted-foreground py-2">
-            No roadmap phases defined. Add phases to track implementation progress.
+            {translate('No roadmap phases defined. Add phases to track implementation progress.')}
           </p>
         ) : (
           <div className="space-y-2">
@@ -184,7 +187,7 @@ export function RoadmapSection({ phases, onChange }: RoadmapSectionProps) {
         )}
         <Button type="button" variant="outline" size="sm" onClick={handleAdd} className="gap-1">
           <Plus className="w-4 h-4" />
-          Add Phase
+          {translate('Add Phase')}
         </Button>
       </CardContent>
     </Card>

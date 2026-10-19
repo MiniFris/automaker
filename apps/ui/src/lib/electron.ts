@@ -1,3 +1,4 @@
+import { translate } from '@/lib/i18n';
 // Type definitions for Electron IPC API
 import type { SessionListItem, Message } from '@/types/electron';
 import type {
@@ -1077,9 +1078,13 @@ export interface ElectronAPI {
 const mockFeatures: Feature[] = [
   {
     id: 'mock-feature-1',
-    title: 'Sample Feature',
+    get title() {
+      return translate('Sample Feature');
+    },
     category: 'Core',
-    description: 'Sample Feature',
+    get description() {
+      return translate('Sample Feature');
+    },
     status: 'backlog',
     steps: ['Step 1', 'Step 2'],
     passes: false,
@@ -1524,7 +1529,7 @@ const _getMockElectronAPI = (): ElectronAPI => {
           return {
             success: true,
             authenticated: true,
-            message: 'Connection successful! z.ai API responded.',
+            message: translate('Connection successful! z.ai API responded.'),
           };
         }
         return {
@@ -1946,7 +1951,10 @@ function createMockSetupAPI(): SetupAPI {
 
     deleteApiKey: async (provider: string) => {
       console.log('[Mock] Deleting API key for:', provider);
-      return { success: true, message: `API key for ${provider} deleted` };
+      return {
+        success: true,
+        message: translate('API key for {value1} deleted', { value1: provider }),
+      };
     },
 
     getPlatform: async () => {
@@ -2120,7 +2128,7 @@ function createMockSetupAPI(): SetupAPI {
       console.log('[Mock] Clearing OpenCode cache');
       return {
         success: true,
-        message: 'Cache cleared',
+        message: translate('Cache cleared'),
       };
     },
 
@@ -2300,7 +2308,7 @@ function createMockWorktreeAPI(): WorktreeAPI {
       console.log('[Mock] Generating commit message for:', worktreePath);
       return {
         success: true,
-        message: 'feat: Add mock commit message generation',
+        message: translate('feat: Add mock commit message generation'),
       };
     },
 
@@ -2308,7 +2316,7 @@ function createMockWorktreeAPI(): WorktreeAPI {
       console.log('[Mock] Generating PR description for:', { worktreePath, baseBranch });
       return {
         success: true,
-        title: 'Add new feature implementation',
+        title: translate('Add new feature implementation'),
         body: '## Summary\n- Added new feature\n\n## Changes\n- Implementation details here',
       };
     },
@@ -2326,7 +2334,9 @@ function createMockWorktreeAPI(): WorktreeAPI {
         result: {
           branch: 'feature-branch',
           pushed: true,
-          message: `Successfully pushed to ${targetRemote}/feature-branch`,
+          message: translate('Successfully pushed to {value1}/feature-branch', {
+            value1: targetRemote,
+          }),
         },
       };
     },
@@ -2340,7 +2350,7 @@ function createMockWorktreeAPI(): WorktreeAPI {
           branch: 'feature-branch',
           pulled: true,
           pushed: true,
-          message: `Synced with ${targetRemote}`,
+          message: translate('Synced with {value1}', { value1: targetRemote }),
         },
       };
     },
@@ -2358,7 +2368,10 @@ function createMockWorktreeAPI(): WorktreeAPI {
           branch: targetBranch,
           remote,
           upstream: `${remote}/${targetBranch}`,
-          message: `Set tracking branch to ${remote}/${targetBranch}`,
+          message: translate('Set tracking branch to {value1}/{value2}', {
+            value1: remote,
+            value2: targetBranch,
+          }),
         },
       };
     },
@@ -2387,7 +2400,7 @@ function createMockWorktreeAPI(): WorktreeAPI {
           prInfo: {
             number: prNumber,
             url: `https://github.com/example/repo/pull/${prNumber}`,
-            title: `PR #${prNumber}`,
+            title: translate('PR #{value1}', { value1: prNumber }),
             state: 'OPEN',
             createdAt: new Date().toISOString(),
           },
@@ -2450,7 +2463,7 @@ function createMockWorktreeAPI(): WorktreeAPI {
         result: {
           branch: 'main',
           pulled: true,
-          message: `Pulled latest changes from ${targetRemote}`,
+          message: translate('Pulled latest changes from {value1}', { value1: targetRemote }),
           hasLocalChanges: false,
           hasConflicts: false,
           stashed: false,
@@ -2477,7 +2490,7 @@ function createMockWorktreeAPI(): WorktreeAPI {
         result: {
           previousBranch: 'main',
           newBranch: branchName,
-          message: `Created and checked out branch '${branchName}'`,
+          message: translate("Created and checked out branch '{value1}'", { value1: branchName }),
           hasConflicts: false,
           stashedChanges: stashChanges ?? false,
         },
@@ -2524,7 +2537,7 @@ function createMockWorktreeAPI(): WorktreeAPI {
         result: {
           previousBranch: 'main',
           currentBranch: branchName,
-          message: `Switched to branch '${branchName}'`,
+          message: translate("Switched to branch '{value1}'", { value1: branchName }),
           hasConflicts: false,
           stashedChanges: false,
         },
@@ -2559,7 +2572,10 @@ function createMockWorktreeAPI(): WorktreeAPI {
           remoteName,
           remoteUrl,
           fetched: true,
-          message: `Added remote '${remoteName}' (${remoteUrl})`,
+          message: translate("Added remote '{value1}' ({value2})", {
+            value1: remoteName,
+            value2: remoteUrl,
+          }),
         },
       };
     },
@@ -2590,7 +2606,10 @@ function createMockWorktreeAPI(): WorktreeAPI {
       return {
         success: true,
         result: {
-          message: `Opened ${worktreePath} in ${editorName}`,
+          message: translate('Opened {value1} in {value2}', {
+            value1: worktreePath,
+            value2: editorName,
+          }),
           editorName,
         },
       };
@@ -2628,7 +2647,7 @@ function createMockWorktreeAPI(): WorktreeAPI {
             { name: 'VS Code', command: 'code' },
             { name: 'Finder', command: 'open' },
           ],
-          message: 'Found 2 available editors',
+          message: translate('Found 2 available editors'),
         },
       };
     },
@@ -2667,7 +2686,7 @@ function createMockWorktreeAPI(): WorktreeAPI {
             { id: 'iterm2', name: 'iTerm2', command: 'open -a iTerm' },
             { id: 'terminal-macos', name: 'Terminal', command: 'open -a Terminal' },
           ],
-          message: 'Found 2 available terminals',
+          message: translate('Found 2 available terminals'),
         },
       };
     },
@@ -2677,7 +2696,10 @@ function createMockWorktreeAPI(): WorktreeAPI {
       return {
         success: true,
         result: {
-          message: `Opened ${worktreePath} in ${terminalId ?? 'default terminal'}`,
+          message: translate('Opened {value1} in {value2}', {
+            value1: worktreePath,
+            value2: terminalId ?? 'default terminal',
+          }),
           terminalName: terminalId ?? 'Terminal',
         },
       };
@@ -2689,7 +2711,7 @@ function createMockWorktreeAPI(): WorktreeAPI {
         success: true,
         result: {
           initialized: true,
-          message: `Initialized git repository in ${projectPath}`,
+          message: translate('Initialized git repository in {value1}', { value1: projectPath }),
         },
       };
     },
@@ -2702,7 +2724,7 @@ function createMockWorktreeAPI(): WorktreeAPI {
           worktreePath,
           port: 3001,
           url: 'http://localhost:3001',
-          message: 'Dev server started on port 3001',
+          message: translate('Dev server started on port 3001'),
         },
       };
     },
@@ -2713,7 +2735,7 @@ function createMockWorktreeAPI(): WorktreeAPI {
         success: true,
         result: {
           worktreePath,
-          message: 'Dev server stopped',
+          message: translate('Dev server stopped'),
         },
       };
     },
@@ -2784,7 +2806,7 @@ function createMockWorktreeAPI(): WorktreeAPI {
       console.log('[Mock] Running init script:', { projectPath, worktreePath, branch });
       return {
         success: true,
-        message: 'Init script started (mock)',
+        message: translate('Init script started (mock)'),
       };
     },
 
@@ -2805,7 +2827,7 @@ function createMockWorktreeAPI(): WorktreeAPI {
           filesDiscarded: 0,
           filesRemaining: 0,
           branch: 'main',
-          message: 'Mock: Changes discarded successfully',
+          message: translate('Mock: Changes discarded successfully'),
         },
       };
     },
@@ -2824,7 +2846,7 @@ function createMockWorktreeAPI(): WorktreeAPI {
           command: 'npm run test',
           status: 'running' as const,
           testFile: options?.testFile,
-          message: 'Tests started (mock)',
+          message: translate('Tests started (mock)'),
         },
       };
     },
@@ -2835,7 +2857,7 @@ function createMockWorktreeAPI(): WorktreeAPI {
         success: true,
         result: {
           sessionId,
-          message: 'Tests stopped (mock)',
+          message: translate('Tests stopped (mock)'),
         },
       };
     },
@@ -2909,7 +2931,7 @@ function createMockWorktreeAPI(): WorktreeAPI {
           conflictFiles: [] as string[],
           operation: pop ? ('pop' as const) : ('apply' as const),
           stashIndex,
-          message: `Stash ${pop ? 'popped' : 'applied'} successfully`,
+          message: translate('Stash {value1} successfully', { value1: pop ? 'popped' : 'applied' }),
         },
       };
     },
@@ -2920,7 +2942,7 @@ function createMockWorktreeAPI(): WorktreeAPI {
         result: {
           dropped: true,
           stashIndex,
-          message: `Stash stash@{${stashIndex}} dropped successfully`,
+          message: translate('Stash stash@{{value1}} dropped successfully', { value1: stashIndex }),
         },
       };
     },
@@ -2936,7 +2958,9 @@ function createMockWorktreeAPI(): WorktreeAPI {
           cherryPicked: true,
           commitHashes,
           branch: 'main',
-          message: `Cherry-picked ${commitHashes.length} commit(s) successfully`,
+          message: translate('Cherry-picked {value1} commit(s) successfully', {
+            value1: commitHashes.length,
+          }),
         },
       };
     },
@@ -2958,7 +2982,7 @@ function createMockWorktreeAPI(): WorktreeAPI {
         result: {
           branch: 'current-branch',
           ontoBranch,
-          message: `Successfully rebased onto ${ontoBranch}`,
+          message: translate('Successfully rebased onto {value1}', { value1: ontoBranch }),
         },
       };
     },
@@ -2969,7 +2993,7 @@ function createMockWorktreeAPI(): WorktreeAPI {
         success: true,
         result: {
           operation: 'merge',
-          message: 'Merge aborted successfully',
+          message: translate('Merge aborted successfully'),
         },
       };
     },
@@ -2980,7 +3004,7 @@ function createMockWorktreeAPI(): WorktreeAPI {
         success: true,
         result: {
           operation: 'merge',
-          message: 'Merge continued successfully',
+          message: translate('Merge continued successfully'),
         },
       };
     },
@@ -3122,7 +3146,7 @@ function createMockAutoModeAPI(): AutoModeAPI {
         type: 'auto_mode_feature_complete',
         featureId,
         passes: false,
-        message: 'Feature stopped by user',
+        message: translate('Feature stopped by user'),
       });
 
       return { success: true };
@@ -3209,20 +3233,20 @@ function createMockAutoModeAPI(): AutoModeAPI {
         feature: {
           id: analysisId,
           category: 'Project Analysis',
-          description: 'Analyzing project structure and tech stack',
+          description: translate('Analyzing project structure and tech stack'),
         },
       });
 
       // Simulate analysis phases
       await delay(300, analysisId);
       if (!mockRunningFeatures.has(analysisId))
-        return { success: false, message: 'Analysis aborted' };
+        return { success: false, message: translate('Analysis aborted') };
 
       emitAutoModeEvent({
         type: 'auto_mode_phase',
         featureId: analysisId,
         phase: 'planning',
-        message: 'Scanning project structure...',
+        message: translate('Scanning project structure...'),
       });
 
       emitAutoModeEvent({
@@ -3233,7 +3257,7 @@ function createMockAutoModeAPI(): AutoModeAPI {
 
       await delay(500, analysisId);
       if (!mockRunningFeatures.has(analysisId))
-        return { success: false, message: 'Analysis aborted' };
+        return { success: false, message: translate('Analysis aborted') };
 
       emitAutoModeEvent({
         type: 'auto_mode_tool',
@@ -3244,7 +3268,7 @@ function createMockAutoModeAPI(): AutoModeAPI {
 
       await delay(300, analysisId);
       if (!mockRunningFeatures.has(analysisId))
-        return { success: false, message: 'Analysis aborted' };
+        return { success: false, message: translate('Analysis aborted') };
 
       emitAutoModeEvent({
         type: 'auto_mode_progress',
@@ -3254,7 +3278,7 @@ function createMockAutoModeAPI(): AutoModeAPI {
 
       await delay(300, analysisId);
       if (!mockRunningFeatures.has(analysisId))
-        return { success: false, message: 'Analysis aborted' };
+        return { success: false, message: translate('Analysis aborted') };
 
       // Write mock app_spec.txt
       mockFileSystem[`${projectPath}/.automaker/app_spec.txt`] = `<project_specification>
@@ -3289,20 +3313,20 @@ function createMockAutoModeAPI(): AutoModeAPI {
         type: 'auto_mode_phase',
         featureId: analysisId,
         phase: 'verification',
-        message: 'Project analysis complete',
+        message: translate('Project analysis complete'),
       });
 
       emitAutoModeEvent({
         type: 'auto_mode_feature_complete',
         featureId: analysisId,
         passes: true,
-        message: 'Project analyzed successfully',
+        message: translate('Project analyzed successfully'),
       });
 
       mockRunningFeatures.delete(analysisId);
       mockAutoModeTimeouts.delete(analysisId);
 
-      return { success: true, message: 'Project analyzed successfully' };
+      return { success: true, message: translate('Project analyzed successfully') };
     },
 
     followUpFeature: async (
@@ -3357,7 +3381,7 @@ function createMockAutoModeAPI(): AutoModeAPI {
         feature: {
           id: featureId,
           category: 'Commit',
-          description: 'Committing changes',
+          description: translate('Committing changes'),
         },
       });
 
@@ -3367,7 +3391,7 @@ function createMockAutoModeAPI(): AutoModeAPI {
         type: 'auto_mode_phase',
         featureId,
         phase: 'action',
-        message: 'Committing changes to git...',
+        message: translate('Committing changes to git...'),
       });
 
       await delay(500, featureId);
@@ -3376,7 +3400,7 @@ function createMockAutoModeAPI(): AutoModeAPI {
         type: 'auto_mode_feature_complete',
         featureId,
         passes: true,
-        message: 'Changes committed successfully',
+        message: translate('Changes committed successfully'),
       });
 
       return { success: true };
@@ -3401,7 +3425,7 @@ function createMockAutoModeAPI(): AutoModeAPI {
 
     resumeInterrupted: async (projectPath: string) => {
       console.log('[Mock] Resume interrupted features for:', projectPath);
-      return { success: true, message: 'Mock: no interrupted features' };
+      return { success: true, message: translate('Mock: no interrupted features') };
     },
 
     onEvent: (callback: (event: AutoModeEvent) => void) => {
@@ -3421,7 +3445,7 @@ async function simulateAutoModeLoop(projectPath: string, featureId: string) {
   const mockFeature = {
     id: featureId,
     category: 'Core',
-    description: 'Sample Feature',
+    description: translate('Sample Feature'),
     steps: ['Step 1', 'Step 2'],
     passes: false,
   };
@@ -3441,7 +3465,9 @@ async function simulateAutoModeLoop(projectPath: string, featureId: string) {
     type: 'auto_mode_phase',
     featureId,
     phase: 'planning',
-    message: `Planning implementation for: ${mockFeature.description}`,
+    message: translate('Planning implementation for: {value1}', {
+      value1: mockFeature.description,
+    }),
   });
 
   emitAutoModeEvent({
@@ -3458,7 +3484,9 @@ async function simulateAutoModeLoop(projectPath: string, featureId: string) {
     type: 'auto_mode_phase',
     featureId,
     phase: 'action',
-    message: `Executing implementation for: ${mockFeature.description}`,
+    message: translate('Executing implementation for: {value1}', {
+      value1: mockFeature.description,
+    }),
   });
 
   emitAutoModeEvent({
@@ -3496,7 +3524,9 @@ async function simulateAutoModeLoop(projectPath: string, featureId: string) {
     type: 'auto_mode_phase',
     featureId,
     phase: 'verification',
-    message: `Verifying implementation for: ${mockFeature.description}`,
+    message: translate('Verifying implementation for: {value1}', {
+      value1: mockFeature.description,
+    }),
   });
 
   emitAutoModeEvent({
@@ -3519,7 +3549,7 @@ async function simulateAutoModeLoop(projectPath: string, featureId: string) {
     type: 'auto_mode_feature_complete',
     featureId,
     passes: true,
-    message: 'Feature implemented successfully',
+    message: translate('Feature implemented successfully'),
   });
 
   // Delete context file when feature is verified (matches real auto-mode-service behavior)
@@ -3628,7 +3658,7 @@ function createMockSpecRegenerationAPI(): SpecRegenerationAPI {
       setTimeout(() => {
         emitSpecRegenerationEvent({
           type: 'spec_regeneration_complete',
-          message: 'Spec synchronized successfully',
+          message: translate('Spec synchronized successfully'),
           projectPath,
         });
         mockSpecRegenerationRunning = false;
@@ -3745,7 +3775,7 @@ async function simulateSpecCreation(
   mockSpecRegenerationPhase = 'complete';
   emitSpecRegenerationEvent({
     type: 'spec_regeneration_complete',
-    message: 'All tasks completed!',
+    message: translate('All tasks completed!'),
     projectPath: projectPath,
   });
 
@@ -3825,7 +3855,7 @@ async function simulateSpecRegeneration(
   mockSpecRegenerationPhase = 'complete';
   emitSpecRegenerationEvent({
     type: 'spec_regeneration_complete',
-    message: 'All tasks completed!',
+    message: translate('All tasks completed!'),
     projectPath: projectPath,
   });
 
@@ -3879,7 +3909,7 @@ async function simulateFeatureGeneration(projectPath: string) {
 
   emitSpecRegenerationEvent({
     type: 'spec_regeneration_complete',
-    message: 'All tasks completed!',
+    message: translate('All tasks completed!'),
     projectPath: projectPath,
   });
 
@@ -3988,7 +4018,7 @@ function createMockFeaturesAPI(): FeaturesAPI {
       // Mock title generation - just take first few words
       const words = description.split(/\s+/).slice(0, 6).join(' ');
       const title = words.length > 40 ? words.substring(0, 40) + '...' : words;
-      return { success: true, title: `Add ${title}` };
+      return { success: true, title: translate('Add {value1}', { value1: title }) };
     },
     getOrphaned: async (_projectPath: string) => {
       return { success: true, orphanedFeatures: [] };
@@ -4023,8 +4053,8 @@ function createMockRunningAgentsAPI(): RunningAgentsAPI {
         projectPath: '/mock/project',
         projectName: 'Mock Project',
         isAutoMode: mockAutoModeRunning,
-        title: `Mock Feature Title for ${featureId}`,
-        description: 'This is a mock feature description for testing purposes.',
+        title: translate('Mock Feature Title for {value1}', { value1: featureId }),
+        description: translate('This is a mock feature description for testing purposes.'),
       }));
       return {
         success: true,
@@ -4117,7 +4147,7 @@ function createMockGitHubAPI(): GitHubAPI {
 
       return {
         success: true,
-        message: `Validation started for issue #${issue.issueNumber}`,
+        message: translate('Validation started for issue #{value1}', { value1: issue.issueNumber }),
         issueNumber: issue.issueNumber,
       };
     },
@@ -4133,7 +4163,7 @@ function createMockGitHubAPI(): GitHubAPI {
       console.log('[Mock] Stopping validation:', { projectPath, issueNumber });
       return {
         success: true,
-        message: `Validation for issue #${issueNumber} stopped`,
+        message: translate('Validation for issue #{value1} stopped', { value1: issueNumber }),
       };
     },
     getValidations: async (projectPath: string, issueNumber?: number) => {

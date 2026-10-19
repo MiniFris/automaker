@@ -1,4 +1,5 @@
 // @ts-nocheck - Electron IPC boundary typing with stream events and message queuing
+import { translate } from '@/lib/i18n';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Message, StreamEvent } from '@/types/electron';
 import { useMessageQueue } from './use-message-queue';
@@ -91,7 +92,7 @@ export function useElectronAgent({
     async (content: string, images?: ImageAttachment[], textFiles?: TextFileAttachment[]) => {
       const api = getElectronAPI();
       if (!api?.agent) {
-        setError('API not available');
+        setError(translate('API not available'));
         return;
       }
 
@@ -151,14 +152,14 @@ export function useElectronAgent({
         );
 
         if (!result.success) {
-          setError(result.error || 'Failed to send message');
+          setError(result.error || translate('Failed to send message'));
           setIsProcessing(false);
         }
         // Note: We don't set isProcessing to false here because
         // it will be set by the "complete" or "error" stream event
       } catch (err) {
         logger.error('Failed to send message:', err);
-        setError(err instanceof Error ? err.message : 'Failed to send message');
+        setError(err instanceof Error ? err.message : translate('Failed to send message'));
         setIsProcessing(false);
         throw err;
       }
@@ -181,7 +182,7 @@ export function useElectronAgent({
   useEffect(() => {
     const api = getElectronAPI();
     if (!api?.agent) {
-      setError('API not available.');
+      setError(translate('API not available.'));
       return;
     }
 
@@ -219,13 +220,13 @@ export function useElectronAgent({
             setIsProcessing(isRunning);
           }
         } else {
-          setError(result.error || 'Failed to start session');
+          setError(result.error || translate('Failed to start session'));
           setIsProcessing(false);
         }
       } catch (err) {
         if (!mounted) return;
         logger.error('Failed to initialize:', err);
-        setError(err instanceof Error ? err.message : 'Failed to initialize');
+        setError(err instanceof Error ? err.message : translate('Failed to initialize'));
         setIsProcessing(false);
       }
     };
@@ -385,7 +386,7 @@ export function useElectronAgent({
     async (content: string, images?: ImageAttachment[], textFiles?: TextFileAttachment[]) => {
       const api = getElectronAPI();
       if (!api?.agent) {
-        setError('API not available');
+        setError(translate('API not available'));
         return;
       }
 
@@ -446,14 +447,14 @@ export function useElectronAgent({
         );
 
         if (!result.success) {
-          setError(result.error || 'Failed to send message');
+          setError(result.error || translate('Failed to send message'));
           setIsProcessing(false);
         }
         // Note: We don't set isProcessing to false here because
         // it will be set by the "complete" or "error" stream event
       } catch (err) {
         logger.error('Failed to send message:', err);
-        setError(err instanceof Error ? err.message : 'Failed to send message');
+        setError(err instanceof Error ? err.message : translate('Failed to send message'));
         setIsProcessing(false);
       }
     },
@@ -464,7 +465,7 @@ export function useElectronAgent({
   const stopExecution = useCallback(async () => {
     const api = getElectronAPI();
     if (!api?.agent) {
-      setError('API not available');
+      setError(translate('API not available'));
       return;
     }
 
@@ -473,13 +474,13 @@ export function useElectronAgent({
       const result = await api.agent!.stop(sessionId);
 
       if (!result.success) {
-        setError(result.error || 'Failed to stop execution');
+        setError(result.error || translate('Failed to stop execution'));
       } else {
         setIsProcessing(false);
       }
     } catch (err) {
       logger.error('Failed to stop:', err);
-      setError(err instanceof Error ? err.message : 'Failed to stop execution');
+      setError(err instanceof Error ? err.message : translate('Failed to stop execution'));
     }
   }, [sessionId]);
 
@@ -487,7 +488,7 @@ export function useElectronAgent({
   const clearHistory = useCallback(async () => {
     const api = getElectronAPI();
     if (!api?.agent) {
-      setError('API not available');
+      setError(translate('API not available'));
       return;
     }
 
@@ -499,11 +500,11 @@ export function useElectronAgent({
         setMessages([]);
         setError(null);
       } else {
-        setError(result.error || 'Failed to clear history');
+        setError(result.error || translate('Failed to clear history'));
       }
     } catch (err) {
       logger.error('Failed to clear:', err);
-      setError(err instanceof Error ? err.message : 'Failed to clear history');
+      setError(err instanceof Error ? err.message : translate('Failed to clear history'));
     }
   }, [sessionId]);
 
@@ -512,7 +513,7 @@ export function useElectronAgent({
     async (message: string, images?: ImageAttachment[], textFiles?: TextFileAttachment[]) => {
       const api = getElectronAPI();
       if (!api?.agent?.queueAdd) {
-        setError('Queue API not available');
+        setError(translate('Queue API not available'));
         return;
       }
 
@@ -555,11 +556,11 @@ export function useElectronAgent({
         );
 
         if (!result.success) {
-          setError(result.error || 'Failed to add to queue');
+          setError(result.error || translate('Failed to add to queue'));
         }
       } catch (err) {
         logger.error('Failed to add to queue:', err);
-        setError(err instanceof Error ? err.message : 'Failed to add to queue');
+        setError(err instanceof Error ? err.message : translate('Failed to add to queue'));
       }
     },
     [sessionId, workingDirectory, model, providerId, thinkingLevel]
@@ -570,7 +571,7 @@ export function useElectronAgent({
     async (promptId: string) => {
       const api = getElectronAPI();
       if (!api?.agent?.queueRemove) {
-        setError('Queue API not available');
+        setError(translate('Queue API not available'));
         return;
       }
 
@@ -579,11 +580,11 @@ export function useElectronAgent({
         const result = await api.agent.queueRemove(sessionId, promptId);
 
         if (!result.success) {
-          setError(result.error || 'Failed to remove from queue');
+          setError(result.error || translate('Failed to remove from queue'));
         }
       } catch (err) {
         logger.error('Failed to remove from queue:', err);
-        setError(err instanceof Error ? err.message : 'Failed to remove from queue');
+        setError(err instanceof Error ? err.message : translate('Failed to remove from queue'));
       }
     },
     [sessionId]
@@ -593,7 +594,7 @@ export function useElectronAgent({
   const clearServerQueue = useCallback(async () => {
     const api = getElectronAPI();
     if (!api?.agent?.queueClear) {
-      setError('Queue API not available');
+      setError(translate('Queue API not available'));
       return;
     }
 
@@ -602,11 +603,11 @@ export function useElectronAgent({
       const result = await api.agent.queueClear(sessionId);
 
       if (!result.success) {
-        setError(result.error || 'Failed to clear queue');
+        setError(result.error || translate('Failed to clear queue'));
       }
     } catch (err) {
       logger.error('Failed to clear queue:', err);
-      setError(err instanceof Error ? err.message : 'Failed to clear queue');
+      setError(err instanceof Error ? err.message : translate('Failed to clear queue'));
     }
   }, [sessionId]);
 
