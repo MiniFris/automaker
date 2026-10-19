@@ -9,6 +9,7 @@ import { SkillsSection } from './claude-settings-tab/skills-section';
 import { SubagentsSection } from './claude-settings-tab/subagents-section';
 import { ApiProfilesSection } from './claude-settings-tab/api-profiles-section';
 import { ProviderToggle } from './provider-toggle';
+import { ProviderModelTimeoutSettings } from '@/components/shared/model-timeout-settings';
 import { Info } from 'lucide-react';
 
 export function ClaudeSettingsTab() {
@@ -34,6 +35,7 @@ export function ClaudeSettingsTab() {
     <div className="space-y-6">
       {/* Provider Visibility Toggle */}
       <ProviderToggle provider="claude" providerLabel="Claude" />
+      <ProviderModelTimeoutSettings provider="claude" />
 
       {/* Usage Info */}
       <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">

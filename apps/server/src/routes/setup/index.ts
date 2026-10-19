@@ -3,6 +3,7 @@
  */
 
 import { Router } from 'express';
+import type { SettingsService } from '../../services/settings-service.js';
 import { createClaudeStatusHandler } from './routes/claude-status.js';
 import { createInstallClaudeHandler } from './routes/install-claude.js';
 import { createAuthClaudeHandler } from './routes/auth-claude.js';
@@ -52,7 +53,7 @@ import {
   createGetExampleConfigHandler,
 } from './routes/cursor-config.js';
 
-export function createSetupRoutes(): Router {
+export function createSetupRoutes(settingsService?: SettingsService): Router {
   const router = Router();
 
   router.get('/claude-status', createClaudeStatusHandler());
@@ -63,8 +64,8 @@ export function createSetupRoutes(): Router {
   router.post('/delete-api-key', createDeleteApiKeyHandler());
   router.get('/api-keys', createApiKeysHandler());
   router.get('/platform', createPlatformHandler());
-  router.post('/verify-claude-auth', createVerifyClaudeAuthHandler());
-  router.post('/verify-codex-auth', createVerifyCodexAuthHandler());
+  router.post('/verify-claude-auth', createVerifyClaudeAuthHandler(settingsService));
+  router.post('/verify-codex-auth', createVerifyCodexAuthHandler(settingsService));
   router.get('/gh-status', createGhStatusHandler());
 
   // Cursor CLI routes

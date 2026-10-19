@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import path from 'path';
 import type { Feature } from '@automaker/types';
+import { toDirectModelId } from '@automaker/types';
+import { SSHFeatureService } from '../../../src/services/execution-environment/ssh-feature.js';
 
 /**
  * Helper to normalize paths for cross-platform test compatibility.
@@ -274,7 +276,143 @@ describe('execution-service.ts', () => {
     vi.clearAllMocks();
   });
 
+  it('fails SSH preflight before resolving local worktrees, loading source context or starting an agent', async () => {
+    vi.spyOn(SSHFeatureService.prototype, 'prepare').mockRejectedValue(
+      new Error('SSH fixture unavailable; no local fallback')
+    );
+    const settings = { getDataDirectory: () => '/unused-test-state' } as SettingsService;
+    const guarded = new ExecutionService(
+      mockEventBus,
+      mockConcurrencyManager,
+      mockWorktreeResolver,
+      settings,
+      mockRunAgentFn,
+      mockExecutePipelineFn,
+      mockUpdateFeatureStatusFn,
+      mockLoadFeatureFn,
+      mockGetPlanningPromptPrefixFn,
+      mockSaveFeatureSummaryFn,
+      mockRecordLearningsFn,
+      mockContextExistsFn,
+      mockResumeFeatureFn,
+      mockTrackFailureFn,
+      mockSignalPauseFn,
+      mockRecordSuccessFn,
+      mockSaveExecutionStateFn,
+      mockLoadContextFilesFn
+    );
+    vi.mocked(mockLoadFeatureFn).mockResolvedValue({
+      ...testFeature,
+      model: toDirectModelId('remote'),
+    });
+    await guarded.executeFeature('/test/project', 'feature-1', true);
+    expect(mockWorktreeResolver.findWorktreeForBranch).not.toHaveBeenCalled();
+    expect(mockLoadContextFilesFn).not.toHaveBeenCalled();
+    expect(mockRunAgentFn).not.toHaveBeenCalled();
+    expect(mockExecutePipelineFn).not.toHaveBeenCalled();
+    expect(mockEventBus.emitAutoModeEvent).toHaveBeenCalledWith(
+      'auto_mode_error',
+      expect.objectContaining({
+        error: expect.stringContaining('SSH fixture unavailable'),
+      })
+    );
+    expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1', undefined);
+  });
+
+  it.each([false, true])(
+    'routes managed memory and the learnings callback through the run writer (skipTests=%s)',
+    async (skipTests) => {
+      const feature = { ...testFeature, model: toDirectModelId('remote'), skipTests };
+      const run = {
+        binding: { type: 'ssh', cwd: '/test/project', sshWorkspace: { baseBranch: 'main' } },
+        environment: { cwd: '/remote/.worktrees/feature' },
+      };
+      vi.spyOn(SSHFeatureService.prototype, 'prepare').mockResolvedValue(run as never);
+      const memoryFiles = [
+        {
+          name: 'architecture.md',
+          path: '/remote/.automaker/memory/architecture.md',
+          content: 'Remote memory',
+          category: 'architecture',
+        },
+      ];
+      vi.spyOn(SSHFeatureService.prototype, 'context').mockResolvedValue({
+        files: [],
+        memoryFiles,
+        formattedPrompt: 'Remote context',
+      });
+      const writer = {
+        projectRoot: '/remote',
+        appendLearning: vi.fn().mockResolvedValue(undefined),
+      };
+      const memory = {
+        recordUsage: vi.fn().mockResolvedValue(undefined),
+        writer: vi.fn().mockReturnValue(writer),
+      };
+      vi.spyOn(SSHFeatureService.prototype, 'memory').mockReturnValue(memory as never);
+      vi.mocked(mockLoadFeatureFn).mockResolvedValue(feature);
+      vi.mocked(mockRecordLearningsFn).mockImplementation(
+        async (_project, _feature, _output, target) => {
+          await target!.appendLearning({
+            category: 'Architecture',
+            type: 'pattern',
+            content: 'Pinned memory',
+          });
+        }
+      );
+      const managed = new ExecutionService(
+        mockEventBus,
+        mockConcurrencyManager,
+        mockWorktreeResolver,
+        { getDataDirectory: () => '/unused-test-state' } as SettingsService,
+        mockRunAgentFn,
+        mockExecutePipelineFn,
+        mockUpdateFeatureStatusFn,
+        mockLoadFeatureFn,
+        mockGetPlanningPromptPrefixFn,
+        mockSaveFeatureSummaryFn,
+        mockRecordLearningsFn,
+        mockContextExistsFn,
+        mockResumeFeatureFn,
+        mockTrackFailureFn,
+        mockSignalPauseFn,
+        mockRecordSuccessFn,
+        mockSaveExecutionStateFn,
+        mockLoadContextFilesFn
+      );
+      await managed.executeFeature('/test/project', feature.id, true);
+      expect(memory.recordUsage).toHaveBeenCalledWith(
+        memoryFiles,
+        expect.any(String),
+        !skipTests,
+        expect.any(AbortSignal)
+      );
+      expect(mockRecordLearningsFn).toHaveBeenCalledWith(
+        '/test/project',
+        feature,
+        expect.any(String),
+        writer
+      );
+      expect(writer.appendLearning).toHaveBeenCalledOnce();
+      expect(mockLoadContextFilesFn).not.toHaveBeenCalled();
+      expect((await import('@automaker/utils')).recordMemoryUsage).not.toHaveBeenCalled();
+      expect(secureFs.writeFile).not.toHaveBeenCalled();
+    }
+  );
+
   describe('constructor', () => {
+    it('keeps a remote feature lease until its executor confirms cleanup after Stop', async () => {
+      const running = { ...createRunningFeature('feature-1'), remoteWorkspace: true };
+      vi.mocked(mockConcurrencyManager.getRunningFeature).mockReturnValue(running);
+      expect(await service.stopFeature('feature-1')).toBe(true);
+      expect(running.abortController.signal.aborted).toBe(true);
+      expect(mockConcurrencyManager.release).not.toHaveBeenCalled();
+      expect(mockUpdateFeatureStatusFn).toHaveBeenCalledWith(
+        '/test/project',
+        'feature-1',
+        'interrupted'
+      );
+    });
     it('creates service with all dependencies', () => {
       expect(service).toBeInstanceOf(ExecutionService);
     });

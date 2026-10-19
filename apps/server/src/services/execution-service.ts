@@ -4,6 +4,7 @@
 
 import path from 'path';
 import type { Feature } from '@automaker/types';
+import { isDirectModel } from '@automaker/types';
 import { createLogger, classifyError, loadContextFiles, recordMemoryUsage } from '@automaker/utils';
 import { resolveModelString, DEFAULT_MODELS } from '@automaker/model-resolver';
 import { getFeatureDir } from '@automaker/platform';
@@ -22,6 +23,7 @@ import type { ConcurrencyManager, RunningFeature } from './concurrency-manager.j
 import type { WorktreeResolver } from './worktree-resolver.js';
 import type { SettingsService } from './settings-service.js';
 import { pipelineService } from './pipeline-service.js';
+import { FeatureWorkspaceService } from './execution-environment/feature-workspace.js';
 
 // Re-export callback types from execution-types.ts for backward compatibility
 export type {
@@ -185,6 +187,19 @@ ${feature.spec}
       validateWorkingDirectory(projectPath);
       feature = await this.loadFeatureFn(projectPath, featureId);
       if (!feature) throw new Error(`Feature ${featureId} not found`);
+      const remoteService = this.settingsService
+        ? new FeatureWorkspaceService(this.settingsService)
+        : undefined;
+      const remote = await remoteService?.prepare(projectPath, feature, abortController.signal);
+      tempRunningFeature.remoteWorkspace = !!remote;
+      if (
+        remote &&
+        providedWorktreePath &&
+        path.resolve(providedWorktreePath) !== path.resolve(projectPath)
+      )
+        throw new Error(
+          'Managed features use their pinned workspace, not a supplied controller worktree path.'
+        );
 
       // Update status to in_progress immediately after acquiring the feature.
       // This prevents a race condition where the UI reloads features and sees the
@@ -221,9 +236,9 @@ ${feature.spec}
         }
       }
 
-      let worktreePath: string | null = providedWorktreePath ?? null;
+      let worktreePath: string | null = remote ? null : (providedWorktreePath ?? null);
       const branchName = feature.branchName;
-      if (!worktreePath && useWorktrees && branchName) {
+      if (!remote && !worktreePath && useWorktrees && branchName) {
         worktreePath = await this.worktreeResolver.findWorktreeForBranch(projectPath, branchName);
         if (!worktreePath) {
           throw new Error(
@@ -232,10 +247,17 @@ ${feature.spec}
         }
         logger.info(`Using worktree for branch "${branchName}": ${worktreePath}`);
       }
-      const workDir = worktreePath ? path.resolve(worktreePath) : path.resolve(projectPath);
+      const workDir = remote
+        ? remote.binding.cwd
+        : worktreePath
+          ? path.resolve(worktreePath)
+          : path.resolve(projectPath);
       validateWorkingDirectory(workDir);
-      tempRunningFeature.worktreePath = worktreePath;
-      tempRunningFeature.branchName = branchName ?? null;
+      tempRunningFeature.worktreePath = remote?.environment.cwd ?? worktreePath;
+      tempRunningFeature.branchName =
+        (remote?.binding.sshWorkspace ?? remote?.binding.featureWorkspace)?.baseBranch ??
+        branchName ??
+        null;
       // Ensure status is in_progress (may already be set from the early update above,
       // but internal/recursive calls skip the early update and need it here).
       // Mirror the external guard: only transition when the feature is still in
@@ -251,6 +273,7 @@ ${feature.spec}
       this.eventBus.emitAutoModeEvent('auto_mode_feature_start', {
         featureId,
         projectPath,
+        ...(remote && { executionEnvironment: remote.binding }),
         branchName: feature.branchName ?? null,
         feature: {
           id: featureId,
@@ -271,15 +294,20 @@ ${feature.spec}
       );
       const prompts = await getPromptCustomization(this.settingsService, '[ExecutionService]');
       let prompt: string;
-      const contextResult = await this.loadContextFilesFn({
-        projectPath,
-        fsModule: secureFs as Parameters<typeof loadContextFiles>[0]['fsModule'],
-        taskContext: {
-          title: feature.title ?? '',
-          description: feature.description ?? '',
-        },
-      });
-      const combinedSystemPrompt = filterClaudeMdFromContext(contextResult, autoLoadClaudeMd);
+      const contextResult = remote
+        ? await remoteService!.context(remote, abortController.signal)
+        : await this.loadContextFilesFn({
+            projectPath,
+            fsModule: secureFs as Parameters<typeof loadContextFiles>[0]['fsModule'],
+            taskContext: {
+              title: feature.title ?? '',
+              description: feature.description ?? '',
+            },
+          });
+      const combinedSystemPrompt = filterClaudeMdFromContext(
+        contextResult,
+        !remote && autoLoadClaudeMd && !isDirectModel(feature.model)
+      );
 
       if (options?.continuationPrompt) {
         prompt = options.continuationPrompt;
@@ -331,6 +359,7 @@ ${feature.spec}
         }
       );
 
+      abortController.signal.throwIfAborted();
       // Check for incomplete tasks after agent execution.
       // The agent may have finished early (hit max turns, decided it was done, etc.)
       // while tasks are still pending. If so, re-run the agent to complete remaining tasks.
@@ -412,6 +441,7 @@ Please continue from where you left off and complete all remaining tasks. Use th
         }
       }
 
+      abortController.signal.throwIfAborted();
       const pipelineConfig = await pipelineService.getPipelineConfig(projectPath);
       const excludedStepIds = new Set(feature.excludedPipelineSteps || []);
       const sortedSteps = [...(pipelineConfig?.steps || [])]
@@ -435,7 +465,10 @@ Please continue from where you left off and complete all remaining tasks. Use th
         pipelineCompleted = true;
         // Check if pipeline set a terminal status (e.g., merge_conflict) — don't overwrite it
         const refreshed = await this.loadFeatureFn(projectPath, featureId);
-        if (refreshed?.status === 'merge_conflict') {
+        if (
+          refreshed?.status === 'merge_conflict' ||
+          (remote && refreshed?.status === 'waiting_approval')
+        ) {
           return;
         }
       }
@@ -494,17 +527,34 @@ Please continue from where you left off and complete all remaining tasks. Use th
           if (summary) await this.saveFeatureSummaryFn(projectPath, featureId, summary);
         }
         if (contextResult.memoryFiles.length > 0 && agentOutput) {
-          await recordMemoryUsage(
-            projectPath,
-            contextResult.memoryFiles,
-            agentOutput,
-            true,
-            secureFs as Parameters<typeof recordMemoryUsage>[4]
-          );
+          if (remote)
+            await remoteService!
+              .memory(remote)
+              .recordUsage(
+                contextResult.memoryFiles,
+                agentOutput,
+                finalStatus === 'verified',
+                abortController.signal
+              );
+          else
+            await recordMemoryUsage(
+              projectPath,
+              contextResult.memoryFiles,
+              agentOutput,
+              true,
+              secureFs as Parameters<typeof recordMemoryUsage>[4]
+            );
         }
-        await this.recordLearningsFn(projectPath, feature, agentOutput);
-      } catch {
-        /* learnings recording failed */
+        if (remote)
+          await this.recordLearningsFn(
+            projectPath,
+            feature,
+            agentOutput,
+            remoteService!.memory(remote).writer(abortController.signal)
+          );
+        else await this.recordLearningsFn(projectPath, feature, agentOutput);
+      } catch (error) {
+        logger.warn('Feature summary/memory recording failed (no replay/fallback):', error);
       }
 
       const elapsedSeconds = Math.round((Date.now() - tempRunningFeature.startTime) / 1000);
@@ -605,7 +655,7 @@ Please continue from where you left off and complete all remaining tasks. Use th
     }
 
     running.abortController.abort();
-    this.releaseRunningFeature(featureId, { force: true });
+    if (!running.remoteWorkspace) this.releaseRunningFeature(featureId, { force: true });
     return true;
   }
 }

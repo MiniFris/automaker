@@ -55,7 +55,7 @@ export function AgentView() {
 
   // Session management hook - scoped to current worktree
   // Also handles model selection persistence per session
-  const { currentSessionId, handleSelectSession, modelSelection, setModelSelection } =
+  const { currentSessionId, handleSelectSession, modelSelection, modelSelectionReady, setModelSelection } =
     useAgentSession({
       projectPath: currentProject?.path,
       workingDirectory: effectiveWorkingDirectory,
@@ -77,6 +77,7 @@ export function AgentView() {
     sessionId: currentSessionId || '',
     workingDirectory: effectiveWorkingDirectory,
     model: modelSelection.model,
+    providerId: modelSelection.providerId,
     thinkingLevel: modelSelection.thinkingLevel,
     onToolUse: (toolName) => {
       setCurrentTool(toolName);
@@ -104,6 +105,7 @@ export function AgentView() {
 
   // Handle send message
   const handleSend = useCallback(async () => {
+    if (!modelSelectionReady) return;
     const {
       selectedImages,
       selectedTextFiles,
@@ -129,7 +131,7 @@ export function AgentView() {
     } else {
       await sendMessage(messageContent, messageImages, messageTextFiles);
     }
-  }, [input, fileAttachments, isProcessing, sendMessage, addToServerQueue]);
+  }, [input, fileAttachments, modelSelectionReady, isProcessing, sendMessage, addToServerQueue]);
 
   const handleClearChat = async () => {
     if (!confirm('Are you sure you want to clear this conversation?')) return;
@@ -271,6 +273,7 @@ export function AgentView() {
         {/* Input Area */}
         {currentSessionId && (
           <AgentInputArea
+            selectionReady={modelSelectionReady}
             input={input}
             onInputChange={setInput}
             onSend={handleSend}

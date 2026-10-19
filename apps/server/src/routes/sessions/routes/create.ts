@@ -9,11 +9,12 @@ import { getErrorMessage, logError } from '../common.js';
 export function createCreateHandler(agentService: AgentService) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
-      const { name, projectPath, workingDirectory, model } = req.body as {
+      const { name, projectPath, workingDirectory, model, providerId } = req.body as {
         name: string;
         projectPath?: string;
         workingDirectory?: string;
         model?: string;
+        providerId?: string;
       };
 
       if (!name) {
@@ -21,7 +22,7 @@ export function createCreateHandler(agentService: AgentService) {
         return;
       }
 
-      const session = await agentService.createSession(name, projectPath, workingDirectory, model);
+      const session = await agentService.createSession(name, projectPath, workingDirectory, model, providerId);
       res.json({ success: true, session });
     } catch (error) {
       logError(error, 'Create session failed');

@@ -632,6 +632,44 @@ describe('terminal-service.ts', () => {
     });
   });
 
+  it.each([{ cols: 0 }, { rows: 501 }, { cols: 1.5 }, { rows: Number.NaN }])(
+    'rejects invalid creation dimensions before spawning (%j)',
+    async (options) => {
+      await expect(service.createSession(options)).rejects.toMatchObject({
+        code: 'TERMINAL_DIMENSIONS_INVALID',
+      });
+      expect(pty.spawn).not.toHaveBeenCalled();
+    }
+  );
+  it.each([undefined, '/project'])(
+    'does not turn an unavailable scoped target into an unscoped controller terminal (%s)',
+    async (cwd) => {
+      await expect(
+        service.createSession({ cwd, environmentTargetId: 'a'.repeat(64) })
+      ).rejects.toMatchObject({ code: 'TERMINAL_TARGET_CHANGED' });
+      expect(pty.spawn).not.toHaveBeenCalled();
+    }
+  );
+  it('reserves the session limit while asynchronous creation is pending', async () => {
+    const previous = service.getMaxSessions();
+    service.setMaxSessions(1);
+    let release!: (value: Awaited<ReturnType<typeof secureFs.stat>>) => void;
+    vi.mocked(secureFs.stat).mockReturnValueOnce(
+      new Promise((resolve) => {
+        release = resolve;
+      })
+    );
+    try {
+      const first = service.createSession({ cwd: '/project' });
+      expect(await service.createSession({ cwd: '/other' })).toBeNull();
+      release({ isDirectory: () => true } as Awaited<ReturnType<typeof secureFs.stat>>);
+      expect(await first).not.toBeNull();
+      expect(pty.spawn).toHaveBeenCalledOnce();
+    } finally {
+      service.setMaxSessions(previous);
+    }
+  });
+
   describe('getTerminalService', () => {
     it('should return singleton instance', () => {
       const instance1 = getTerminalService();

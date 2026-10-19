@@ -34,6 +34,40 @@ describe('claude-provider.ts', () => {
   });
 
   describe('executeQuery', () => {
+    it.each([undefined, 450_000])(
+      'uses the shared request timeout unless a Claude connection overrides it (%s)',
+      async (connectionTimeout) => {
+        vi.mocked(sdk.query).mockReturnValue((async function* () {})());
+        await collectAsyncGenerator(
+          provider.executeQuery({
+            prompt: 'Test',
+            model: 'claude-opus-4-6',
+            cwd: '/test',
+            modelTimeouts: { requestTimeoutMs: 600_000 },
+            ...(connectionTimeout && {
+              claudeCompatibleProvider: {
+                id: 'fixture',
+                name: 'Fixture',
+                providerType: 'custom' as const,
+                apiKeySource: 'env' as const,
+                models: [],
+                baseUrl: 'http://localhost:8000',
+                timeoutMs: connectionTimeout,
+              },
+            }),
+          })
+        );
+        expect(sdk.query).toHaveBeenCalledWith(
+          expect.objectContaining({
+            options: expect.objectContaining({
+              env: expect.objectContaining({
+                API_TIMEOUT_MS: String(connectionTimeout ?? 600_000),
+              }),
+            }),
+          })
+        );
+      }
+    );
     it('should execute simple text query', async () => {
       const mockMessages = [
         { type: 'text', text: 'Response 1' },

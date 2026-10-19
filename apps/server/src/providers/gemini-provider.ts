@@ -24,7 +24,8 @@ import type {
 import { validateBareModelId } from '@automaker/types';
 import { GEMINI_MODEL_MAP, type GeminiAuthStatus } from '@automaker/types';
 import { createLogger, isAbortError } from '@automaker/utils';
-import { spawnJSONLProcess, type SubprocessOptions } from '@automaker/platform';
+import type { SubprocessOptions } from '@automaker/platform';
+import { remoteCliRuntime } from './environment-execution.js';
 import { normalizeTodos } from './tool-normalization.js';
 
 // Create logger for this module
@@ -544,12 +545,13 @@ export class GeminiProvider extends CliProvider {
    * Execute a prompt using Gemini CLI with streaming
    */
   async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
-    this.ensureCliDetected();
+    const runtime = remoteCliRuntime(options);
+    if (!runtime) this.ensureCliDetected();
 
     // Validate that model doesn't have a provider prefix (except gemini- which should already be stripped)
     validateBareModelId(options.model, 'GeminiProvider', 'gemini');
 
-    if (!this.cliPath) {
+    if (!runtime && !this.cliPath) {
       throw this.createError(
         GeminiErrorCode.NOT_INSTALLED,
         'Gemini CLI is not installed',
@@ -562,7 +564,7 @@ export class GeminiProvider extends CliProvider {
     // from scanning .git and node_modules directories during startup. This reduces
     // startup time significantly (reported: 35s → 11s) by skipping large directories
     // that Gemini CLI would otherwise traverse for context discovery.
-    await this.ensureGeminiIgnore(options.cwd || process.cwd());
+    if (!runtime) await this.ensureGeminiIgnore(options.cwd || process.cwd());
 
     // Embed system prompt into the user prompt so Gemini CLI receives
     // project context (CLAUDE.md, CODE_QUALITY.md, etc.) that would
@@ -579,7 +581,7 @@ export class GeminiProvider extends CliProvider {
     logger.debug(`GeminiProvider.executeQuery called with model: "${options.model}"`);
 
     try {
-      for await (const rawEvent of spawnJSONLProcess(subprocessOptions)) {
+      for await (const rawEvent of this.streamProcess(options, subprocessOptions)) {
         const event = rawEvent as GeminiStreamEvent;
 
         // Capture session ID from init event

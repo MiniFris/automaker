@@ -13,6 +13,8 @@ import type {
 import type { BaseProvider } from '../providers/base-provider.js';
 
 export interface AgentExecutionOptions {
+  /** Internal per-run observer; never persisted or accepted from request bodies. */
+  captureToolResult?: (id: string, content: string) => void;
   workDir: string;
   featureId: string;
   prompt: string;
@@ -20,6 +22,7 @@ export interface AgentExecutionOptions {
   abortController: AbortController;
   imagePaths?: string[];
   model?: string;
+  providerId?: string;
   planningMode?: PlanningMode;
   requirePlanApproval?: boolean;
   previousContent?: string;

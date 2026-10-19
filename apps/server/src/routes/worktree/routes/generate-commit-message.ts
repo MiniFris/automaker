@@ -11,19 +11,23 @@ import { promisify } from 'util';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { createLogger } from '@automaker/utils';
-import { isCursorModel, stripProviderPrefix } from '@automaker/types';
+import {
+  isCursorModel,
+  stripProviderPrefix,
+  modelTimeout,
+  providerModelTimeouts,
+  getModelProvider,
+} from '@automaker/types';
 import { resolvePhaseModel } from '@automaker/model-resolver';
 import { mergeCommitMessagePrompts } from '@automaker/prompts';
 import { ProviderFactory } from '../../../providers/provider-factory.js';
 import type { SettingsService } from '../../../services/settings-service.js';
 import { getErrorMessage, logError } from '../common.js';
 import { getPhaseModelWithOverrides } from '../../../lib/settings-helpers.js';
+import { prepareDirectExecution } from '../../../providers/openai-compatible/execution.js';
 
 const logger = createLogger('GenerateCommitMessage');
 const execFileAsync = promisify(execFile);
-
-/** Timeout for AI provider calls in milliseconds (30 seconds) */
-const AI_TIMEOUT_MS = 30_000;
 
 /**
  * Wraps an async generator with a timeout.
@@ -31,15 +35,16 @@ const AI_TIMEOUT_MS = 30_000;
  */
 async function* withTimeout<T>(
   generator: AsyncIterable<T>,
-  timeoutMs: number
+  timeoutMs: number,
+  controller: AbortController
 ): AsyncGenerator<T, void, unknown> {
   let timerId: ReturnType<typeof setTimeout> | undefined;
 
   const timeoutPromise = new Promise<never>((_, reject) => {
-    timerId = setTimeout(
-      () => reject(new Error(`AI provider timed out after ${timeoutMs}ms`)),
-      timeoutMs
-    );
+    timerId = setTimeout(() => {
+      reject(new Error(`AI provider timed out after ${timeoutMs}ms`));
+      controller.abort();
+    }, timeoutMs);
   });
 
   const iterator = generator[Symbol.asyncIterator]();
@@ -210,21 +215,40 @@ export function createGenerateCommitMessageHandler(
       logger.info(`Using ${aiProvider.getName()} provider for model: ${model}`);
 
       let responseText = '';
-      const stream = aiProvider.executeQuery({
-        prompt: effectivePrompt,
-        model: bareModel,
-        cwd: worktreePath,
-        systemPrompt: effectiveSystemPrompt,
-        maxTurns: 1,
-        allowedTools: [],
-        readOnly: true,
-        thinkingLevel, // Pass thinking level for extended thinking support
-        claudeCompatibleProvider, // Pass provider for alternative endpoint configuration
-        credentials, // Pass credentials for resolving 'credentials' apiKeySource
-      });
+      const abortController = new AbortController();
+      const stream = aiProvider.executeQuery(
+        await prepareDirectExecution(
+          {
+            prompt: effectivePrompt,
+            model: bareModel,
+            cwd: worktreePath,
+            systemPrompt: effectiveSystemPrompt,
+            maxTurns: 1,
+            allowedTools: [],
+            readOnly: true,
+            abortController,
+            thinkingLevel, // Pass thinking level for extended thinking support
+            claudeCompatibleProvider, // Pass provider for alternative endpoint configuration
+            credentials, // Pass credentials for resolving 'credentials' apiKeySource
+          },
+          settingsService,
+          { model, providerId: phaseModelEntry.providerId },
+          'text'
+        )
+      );
 
       // Wrap with timeout to prevent indefinite hangs
-      for await (const msg of withTimeout(stream, AI_TIMEOUT_MS)) {
+      for await (const msg of withTimeout(
+        stream,
+        modelTimeout(
+          providerModelTimeouts(
+            await settingsService?.getGlobalSettings(),
+            getModelProvider(model)
+          ),
+          'commitMessageTimeoutMs'
+        ),
+        abortController
+      )) {
         if (msg.type === 'assistant' && msg.message?.content) {
           for (const block of msg.message.content) {
             if (block.type === 'text' && block.text) {

@@ -82,7 +82,8 @@ export function EnhanceWithAI({
         enhancementMode,
         enhancementOverride.effectiveModel,
         enhancementOverride.effectiveModelEntry.thinkingLevel,
-        currentProjectPath
+        currentProjectPath,
+        enhancementOverride.effectiveModelEntry.providerId
       );
 
       if (result?.success && result.enhancedText) {

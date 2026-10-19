@@ -65,6 +65,7 @@ export function DevServerLogsPanel({
     exitCode,
     serverError,
     fetchLogs,
+    executionEnvironment,
   } = useDevServerLogs({
     worktreePath: open ? (worktree?.path ?? null) : null,
     autoSubscribe: open,
@@ -153,6 +154,14 @@ export function DevServerLogsPanel({
             <DialogTitle className="flex items-center gap-2 text-base">
               <Terminal className="w-4 h-4 text-primary" />
               <span>Dev Server</span>
+              {executionEnvironment && (
+                <span
+                  className="max-w-[240px] truncate text-xs font-mono text-muted-foreground"
+                  title={executionEnvironment.runtimeCwd}
+                >
+                  {executionEnvironment.type.toUpperCase()} · {executionEnvironment.runtimeCwd}
+                </span>
+              )}
               {isRunning ? (
                 <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 text-xs font-medium">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />

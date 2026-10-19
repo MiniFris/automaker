@@ -14,7 +14,7 @@ import {
   type Credentials,
   type ProjectSettings,
 } from '@/types/settings.js';
-import type { NtfyEndpointConfig } from '@automaker/types';
+import type { NtfyEndpointConfig, OpenAICompatibleEndpoint } from '@automaker/types';
 
 describe('settings-service.ts', () => {
   let testDataDir: string;
@@ -109,6 +109,42 @@ describe('settings-service.ts', () => {
   });
 
   describe('updateGlobalSettings', () => {
+    it('persists direct endpoints without inline keys and preserves them on unrelated updates', async () => {
+      const endpoint: OpenAICompatibleEndpoint = {
+        id: 'local',
+        name: 'Local endpoint',
+        enabled: true,
+        baseUrl: 'http://localhost:8000/v1',
+        protocol: 'chat-completions',
+        auth: { type: 'credentials', credentialId: 'local-key' },
+        models: [],
+      };
+      await settingsService.updateGlobalSettings({ openaiCompatibleEndpoints: [endpoint] });
+      await settingsService.updateGlobalSettings({ theme: 'light' });
+
+      const settings = await settingsService.getGlobalSettings();
+      expect(settings.openaiCompatibleEndpoints).toEqual([
+        expect.objectContaining({ ...endpoint, baseUrl: 'http://localhost:8000/v1/' }),
+      ]);
+      expect(endpoint.baseUrl).toBe('http://localhost:8000/v1');
+      // No schema bump or new defaults are required for older settings files.
+      expect(settings.version).toBe(SETTINGS_VERSION);
+      await settingsService.updateGlobalSettings({ openaiCompatibleEndpoints: [] });
+      expect((await settingsService.getGlobalSettings()).openaiCompatibleEndpoints).toEqual([]);
+    });
+
+    it('rejects invalid direct endpoints before saving other changes', async () => {
+      await expect(
+        settingsService.updateGlobalSettings({
+          theme: 'light',
+          openaiCompatibleEndpoints: [
+            { apiKey: 'must-not-be-saved' } as unknown as OpenAICompatibleEndpoint,
+          ],
+        })
+      ).rejects.toThrow('Invalid OpenAI-compatible configuration');
+      expect(await settingsService.getGlobalSettings()).toEqual(DEFAULT_GLOBAL_SETTINGS);
+    });
+
     it('should create settings file with updates', async () => {
       const updates: Partial<GlobalSettings> = {
         theme: 'light',
@@ -393,6 +429,26 @@ describe('settings-service.ts', () => {
   });
 
   describe('updateCredentials', () => {
+    it('merges direct endpoint keys separately and does not expose them in settings DTOs', async () => {
+      await settingsService.updateCredentials({
+        openaiCompatibleApiKeys: { local: 'local-secret', remote: 'remote-secret' },
+      });
+      await settingsService.updateCredentials({
+        openaiCompatibleApiKeys: { local: 'updated-secret' },
+      });
+
+      const credentials = await settingsService.getCredentials();
+      expect(credentials.openaiCompatibleApiKeys).toEqual({
+        local: 'updated-secret',
+        remote: 'remote-secret',
+      });
+      expect(credentials.apiKeys).toEqual(DEFAULT_CREDENTIALS.apiKeys);
+      expect(await settingsService.getGlobalSettings()).not.toHaveProperty(
+        'openaiCompatibleApiKeys'
+      );
+      expect(JSON.stringify(await settingsService.getMaskedCredentials())).not.toContain('secret');
+    });
+
     it('should create credentials file with updates', async () => {
       const updates: Partial<Credentials> = {
         apiKeys: {

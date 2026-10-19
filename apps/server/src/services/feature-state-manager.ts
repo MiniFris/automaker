@@ -15,7 +15,7 @@
 
 import path from 'path';
 import type { Feature, FeatureStatusWithPipeline, ParsedTask, PlanSpec } from '@automaker/types';
-import { isPipelineStatus } from '@automaker/types';
+import { isPipelineStatus, isDirectModel } from '@automaker/types';
 import {
   atomicWriteJson,
   readJsonWithRecovery,
@@ -322,7 +322,9 @@ export class FeatureStateManager {
 
         if (isActiveState) {
           const hasApprovedPlan = feature.planSpec?.status === 'approved';
-          feature.status = hasApprovedPlan ? 'ready' : 'backlog';
+          // A crashed direct tool may have committed without returning a result.
+          // Keep it out of the automatic ready/backlog queue until explicit review/resume.
+          feature.status = isDirectModel(feature.model) ? 'interrupted' : hasApprovedPlan ? 'ready' : 'backlog';
           needsUpdate = true;
           logger.info(
             `[${callerLabel}] Reset feature ${feature.id} from ${originalStatus} to ${feature.status}`

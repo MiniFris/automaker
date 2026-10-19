@@ -57,7 +57,7 @@ import { createSettingsRoutes } from './routes/settings/index.js';
 import { AgentService } from './services/agent-service.js';
 import { FeatureLoader } from './services/feature-loader.js';
 import { AutoModeServiceCompat } from './services/auto-mode/index.js';
-import { getTerminalService } from './services/terminal-service.js';
+import { getTerminalService, claimTerminalStartup } from './services/terminal-service.js';
 import { SettingsService } from './services/settings-service.js';
 import { createSpecRegenerationRoutes } from './routes/app-spec/index.js';
 import { createClaudeRoutes } from './routes/claude/index.js';
@@ -87,6 +87,12 @@ import { getNotificationService } from './services/notification-service.js';
 import { createEventHistoryRoutes } from './routes/event-history/index.js';
 import { getEventHistoryService } from './services/event-history-service.js';
 import { getTestRunnerService } from './services/test-runner-service.js';
+import { getManagedTestRunnerService } from './services/execution-environment/test-runner.js';
+import { getManagedDevServerService } from './services/execution-environment/dev-server.js';
+import {
+  previewApiGuard,
+  isPreviewApiRequest,
+} from './services/execution-environment/preview-policy.js';
 import { createProjectsRoutes } from './routes/projects/index.js';
 
 // Load environment variables
@@ -290,6 +296,7 @@ function isLocalOrigin(origin: string): boolean {
   }
 }
 
+app.use('/api', previewApiGuard);
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -479,7 +486,7 @@ app.use('/api', requireJsonContentType);
 // Mount API routes - health, auth, and setup are unauthenticated
 app.use('/api/health', createHealthRoutes());
 app.use('/api/auth', createAuthRoutes());
-app.use('/api/setup', createSetupRoutes());
+app.use('/api/setup', createSetupRoutes(settingsService));
 
 // Apply authentication to all other routes
 app.use('/api', authMiddleware);
@@ -496,9 +503,17 @@ app.use(
 );
 app.use('/api/auto-mode', createAutoModeRoutes(autoModeService));
 app.use('/api/enhance-prompt', createEnhancePromptRoutes(settingsService));
-app.use('/api/worktree', createWorktreeRoutes(events, settingsService, featureLoader));
-app.use('/api/git', createGitRoutes());
-app.use('/api/models', createModelsRoutes());
+app.use(
+  '/api/worktree',
+  createWorktreeRoutes(events, settingsService, featureLoader, (projectPath) =>
+    autoModeService.isProjectRunning(projectPath)
+  )
+);
+app.use(
+  '/api/git',
+  createGitRoutes(settingsService, (projectPath) => autoModeService.isProjectRunning(projectPath))
+);
+app.use('/api/models', createModelsRoutes(settingsService));
 app.use('/api/spec-regeneration', createSpecRegenerationRoutes(events, settingsService));
 app.use('/api/running-agents', createRunningAgentsRoutes(autoModeService));
 app.use('/api/workspace', createWorkspaceRoutes());
@@ -569,6 +584,10 @@ function authenticateWebSocket(request: import('http').IncomingMessage): boolean
 
 // Handle HTTP upgrade requests manually to route to correct WebSocket server
 server.on('upgrade', (request, socket, head) => {
+  if (isPreviewApiRequest(request)) {
+    socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
+    return;
+  }
   const { pathname } = new URL(request.url || '', `http://${request.headers.host}`);
 
   // Authenticate all WebSocket connections
@@ -611,6 +630,13 @@ wss.on('connection', (ws: WebSocket) => {
     });
 
     if (ws.readyState === WebSocket.OPEN) {
+      if (ws.bufferedAmount > 1024 * 1024) {
+        ws.close(
+          4008,
+          'Event client is too slow. Reconnect and refresh state; commands are not replayed.'
+        );
+        return;
+      }
       const message = JSON.stringify({ type, payload });
       ws.send(message);
     } else {
@@ -689,6 +715,7 @@ terminalWss.on('connection', (ws: WebSocket, req: import('http').IncomingMessage
   }
 
   logger.info(`Client connected to session ${sessionId}`);
+  const allowInitialCommand = claimTerminalStartup(session);
 
   // Track this connection
   if (!terminalConnections.has(sessionId)) {
@@ -703,6 +730,12 @@ terminalWss.on('connection', (ws: WebSocket, req: import('http').IncomingMessage
       sessionId,
       shell: session.shell,
       cwd: session.cwd,
+      executionEnvironment: session.executionEnvironment ?? {
+        type: 'local',
+        runtimeCwd: session.cwd,
+        legacy: true,
+      },
+      allowInitialCommand,
     })
   );
 
@@ -721,6 +754,13 @@ terminalWss.on('connection', (ws: WebSocket, req: import('http').IncomingMessage
   // NOW subscribe to terminal data (after scrollback is sent)
   const unsubscribeData = terminalService.onData((sid, data) => {
     if (sid === sessionId && ws.readyState === WebSocket.OPEN) {
+      if (ws.bufferedAmount > 1024 * 1024) {
+        ws.close(
+          4008,
+          'Terminal client is too slow. Reconnect to the same session; commands are not replayed.'
+        );
+        return;
+      }
       ws.send(JSON.stringify({ type: 'data', data }));
     }
   });
@@ -963,6 +1003,8 @@ const gracefulShutdown = async (signal: string) => {
   await autoModeService.markAllRunningFeaturesInterrupted(`${signal} signal received`);
 
   terminalService.cleanup();
+  await getManagedTestRunnerService(settingsService, events).cleanup();
+  await getManagedDevServerService(settingsService, events).cleanup();
   server.close(() => {
     clearTimeout(forceExitTimeout);
     logger.info('Server closed');

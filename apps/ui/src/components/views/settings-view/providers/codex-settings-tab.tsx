@@ -6,6 +6,7 @@ import { CodexSettings } from '../codex/codex-settings';
 import { CodexUsageSection } from '../codex/codex-usage-section';
 import { CodexModelConfiguration } from './codex-model-configuration';
 import { ProviderToggle } from './provider-toggle';
+import { ProviderModelTimeoutSettings } from '@/components/shared/model-timeout-settings';
 import { getElectronAPI } from '@/lib/electron';
 import { createLogger } from '@automaker/utils/logger';
 import type { CliStatus as SharedCliStatus } from '../shared/types';
@@ -192,6 +193,7 @@ export function CodexSettingsTab() {
     <div className="space-y-6">
       {/* Provider Visibility Toggle */}
       <ProviderToggle provider="codex" providerLabel="Codex" />
+      <ProviderModelTimeoutSettings provider="codex" />
 
       <CodexCliStatus
         status={codexCliStatus}

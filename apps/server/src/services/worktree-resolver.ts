@@ -15,6 +15,7 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
+import type { SettingsService } from './settings-service.js';
 
 const execAsync = promisify(exec);
 
@@ -39,6 +40,7 @@ export interface WorktreeInfo {
  * 3. Listing all worktrees with normalized paths
  */
 export class WorktreeResolver {
+  constructor(private readonly settings?: SettingsService | null) {}
   private normalizeBranchName(branchName: string | null | undefined): string | null {
     if (!branchName) return null;
     let normalized = branchName.trim();
@@ -58,6 +60,16 @@ export class WorktreeResolver {
    * @returns The current branch name, or null if not in a git repo or on detached HEAD
    */
   async getCurrentBranch(projectPath: string): Promise<string | null> {
+    // AutoMode's primary-branch filtering must follow the authoritative SSH checkout.
+    // Keep this outside the legacy catch: an SSH failure never authorizes local Git.
+    if (this.settings) {
+      const { SSHFeatureService } = await import('./execution-environment/ssh-feature.js');
+      const remote = await new SSHFeatureService(this.settings).projectBranch(
+        projectPath,
+        new AbortController().signal
+      );
+      if (remote !== undefined) return remote;
+    }
     try {
       const { stdout } = await execAsync('git branch --show-current', { cwd: projectPath });
       const branch = stdout.trim();

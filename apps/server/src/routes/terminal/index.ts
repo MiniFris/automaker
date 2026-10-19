@@ -19,6 +19,7 @@ import { createSessionsListHandler, createSessionsCreateHandler } from './routes
 import { createSessionDeleteHandler } from './routes/session-delete.js';
 import { createSessionResizeHandler } from './routes/session-resize.js';
 import { createSettingsGetHandler, createSettingsUpdateHandler } from './routes/settings.js';
+import { getTerminalService } from '../../services/terminal-service.js';
 
 // Re-export for use in main index.ts
 export { validateTerminalToken, isTerminalEnabled, isTerminalPasswordRequired };
@@ -34,6 +35,25 @@ export function createTerminalRoutes(): Router {
   router.use(terminalAuthMiddleware);
 
   router.get('/sessions', createSessionsListHandler());
+  router.get('/sessions/:id', (req, res) => {
+    const session = getTerminalService().getSession(req.params.id);
+    if (!session) {
+      res.status(404).json({
+        success: false,
+        error: 'Terminal session ended; create a new terminal explicitly.',
+      });
+      return;
+    }
+    res.json({
+      success: true,
+      data: {
+        id: session.id,
+        cwd: session.cwd,
+        shell: session.shell,
+        executionEnvironment: session.executionEnvironment,
+      },
+    });
+  });
   router.post('/sessions', createSessionsCreateHandler());
   router.delete('/sessions/:id', createSessionDeleteHandler());
   router.post('/sessions/:id/resize', createSessionResizeHandler());

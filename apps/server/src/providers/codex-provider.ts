@@ -6,6 +6,8 @@
 
 import path from 'path';
 import { BaseProvider } from './base-provider.js';
+import { remoteCliRuntime } from './environment-execution.js';
+import { executeRemoteSdk } from './remote-sdk.js';
 import {
   spawnJSONLProcess,
   spawnProcess,
@@ -33,6 +35,8 @@ import {
   supportsReasoningEffort,
   validateBareModelId,
   calculateReasoningTimeout,
+  modelTimeout,
+  MAX_MODEL_TIMEOUT_MS,
   type CodexApprovalPolicy,
   type CodexSandboxMode,
   type CodexAuthStatus,
@@ -87,19 +91,6 @@ const CODEX_ITEM_TYPES = {
 const SYSTEM_PROMPT_LABEL = 'System instructions';
 const HISTORY_HEADER = 'Current request:\n';
 const TEXT_ENCODING = 'utf-8';
-/**
- * Default timeout for Codex CLI operations in milliseconds.
- * This is the "no output" timeout - if the CLI doesn't produce any JSONL output
- * for this duration, the process is killed. For reasoning models with high
- * reasoning effort, this timeout is dynamically extended via calculateReasoningTimeout().
- *
- * For feature generation (which can generate 50+ features), we use a much longer
- * base timeout (5 minutes) since Codex models are slower at generating large JSON responses.
- *
- * @see calculateReasoningTimeout from @automaker/types
- */
-const CODEX_CLI_TIMEOUT_MS = 120000; // 2 minutes — matches CLI provider base timeout
-const CODEX_FEATURE_GENERATION_BASE_TIMEOUT_MS = 300000; // 5 minutes for feature generation
 const SYSTEM_PROMPT_SEPARATOR = '\n\n';
 const CODEX_INSTRUCTIONS_DIR = '.codex';
 const CODEX_INSTRUCTIONS_SECTION = 'Codex Project Instructions';
@@ -742,6 +733,10 @@ export class CodexProvider extends BaseProvider {
     // Validate that model doesn't have a provider prefix (except codex- which should already be stripped)
     // AgentService should strip prefixes before passing to providers
     validateBareModelId(options.model, 'CodexProvider', 'codex');
+    if (remoteCliRuntime(options)) {
+      yield* executeRemoteSdk('codex', options);
+      return;
+    }
 
     try {
       const mcpServers = options.mcpServers ?? {};
@@ -900,13 +895,16 @@ export class CodexProvider extends BaseProvider {
       // for the model to generate reasoning tokens before producing output.
       // This fixes GitHub issue #530 where features would get stuck with reasoning models.
       //
-      // For feature generation with 'xhigh', use the extended 5-minute base timeout
+      // For feature generation with 'xhigh', use the extended base timeout (default 5 minutes)
       // since generating 50+ features takes significantly longer than normal operations.
       const baseTimeout =
         options.reasoningEffort === 'xhigh'
-          ? CODEX_FEATURE_GENERATION_BASE_TIMEOUT_MS
-          : CODEX_CLI_TIMEOUT_MS;
-      const timeout = calculateReasoningTimeout(options.reasoningEffort, baseTimeout);
+          ? modelTimeout(options.modelTimeouts, 'codexExtendedIdleTimeoutMs')
+          : modelTimeout(options.modelTimeouts, 'cliIdleTimeoutMs');
+      const timeout = Math.min(
+        MAX_MODEL_TIMEOUT_MS,
+        calculateReasoningTimeout(options.reasoningEffort, baseTimeout)
+      );
 
       const stream = spawnJSONLProcess({
         command: commandPath,

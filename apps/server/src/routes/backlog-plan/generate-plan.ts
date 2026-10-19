@@ -13,6 +13,7 @@ import type { Feature, BacklogPlanResult } from '@automaker/types';
 import {
   DEFAULT_PHASE_MODELS,
   isCursorModel,
+  isDirectModel,
   stripProviderPrefix,
   type ThinkingLevel,
   type SystemPromptPreset,
@@ -21,6 +22,7 @@ import { resolvePhaseModel } from '@automaker/model-resolver';
 import { getCurrentBranch } from '@automaker/git-utils';
 import { FeatureLoader } from '../../services/feature-loader.js';
 import { ProviderFactory } from '../../providers/provider-factory.js';
+import { prepareDirectExecution } from '../../providers/openai-compatible/execution.js';
 import { extractJsonWithArray } from '../../lib/json-extractor.js';
 import {
   logger,
@@ -164,7 +166,8 @@ export async function generateBacklogPlan(
   abortController: AbortController,
   settingsService?: SettingsService,
   model?: string,
-  branchName?: string
+  branchName?: string,
+  providerId?: string
 ): Promise<BacklogPlanResult> {
   try {
     // Load current features
@@ -273,6 +276,7 @@ export async function generateBacklogPlan(
       effectiveModel = resolved.model;
       thinkingLevel = resolved.thinkingLevel;
       claudeCompatibleProvider = phaseResult.provider;
+      providerId = phaseResult.phaseModel.providerId;
       credentials = phaseResult.credentials;
     } else {
       // Fallback to defaults
@@ -340,7 +344,7 @@ ${userPrompt}`;
     }
 
     // Execute the query with retry logic for transient CLI failures
-    const queryOptions = {
+    const queryOptions = await prepareDirectExecution({
       prompt: finalPrompt,
       model: bareModel,
       cwd: projectPath,
@@ -352,14 +356,15 @@ ${userPrompt}`;
       thinkingLevel, // Pass thinking level for extended thinking
       claudeCompatibleProvider, // Pass provider for alternative endpoint configuration
       credentials, // Pass credentials for resolving 'credentials' apiKeySource
-    };
+    }, settingsService, { model: effectiveModel, providerId }, 'text');
 
     let responseText = '';
     let bestResponseText = ''; // Preserve best response across all retry attempts
     let recoveredResult: BacklogPlanResult | null = null;
     let lastError: unknown = null;
+    const retryLimit = isDirectModel(effectiveModel) ? 0 : MAX_RETRIES;
 
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    for (let attempt = 0; attempt <= retryLimit; attempt++) {
       if (abortController.signal.aborted) {
         throw new Error('Generation aborted');
       }
@@ -386,6 +391,9 @@ ${userPrompt}`;
             throw new Error('Generation aborted');
           }
 
+          if (isDirectModel(effectiveModel) && (msg.type === 'error' || (msg.type === 'result' && msg.subtype !== 'success')))
+            throw new Error(msg.error || 'Direct plan generation did not complete successfully.');
+
           if (msg.type === 'assistant') {
             if (msg.message?.content) {
               for (const block of msg.message.content) {
@@ -410,6 +418,9 @@ ${userPrompt}`;
         lastError = null;
         break;
       } catch (error) {
+        // Direct transport owns its retries. Never recover a partial protocol response
+        // or replay it through the CLI-specific fallback below.
+        if (isDirectModel(effectiveModel)) throw error;
         lastError = error;
         const errorMessage = error instanceof Error ? error.message : String(error);
         responseText = selectBestResponseText(accumulatedText, providerResultText);

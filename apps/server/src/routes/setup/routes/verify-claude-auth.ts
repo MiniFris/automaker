@@ -4,6 +4,8 @@
  */
 
 import type { Request, Response } from 'express';
+import { modelTimeout, providerModelTimeouts } from '@automaker/types';
+import type { SettingsService } from '../../../services/settings-service.js';
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import { createLogger } from '@automaker/utils';
 import { getClaudeAuthIndicators } from '@automaker/platform';
@@ -77,7 +79,7 @@ function containsAuthError(text: string): boolean {
   return AUTH_ERROR_PATTERNS.some((pattern) => lowerText.includes(pattern.toLowerCase()));
 }
 
-export function createVerifyClaudeAuthHandler() {
+export function createVerifyClaudeAuthHandler(settingsService?: SettingsService) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
       // In E2E/CI mock mode, skip real API calls
@@ -109,9 +111,15 @@ export function createVerifyClaudeAuthHandler() {
         `[Setup] Verifying Claude authentication using method: ${authMethod || 'auto'}${apiKey ? ' (with provided key)' : ''}`
       );
 
-      // Create an AbortController with a 30-second timeout
+      // Keep authentication probes bounded, with the shared saved connection-test deadline.
       const abortController = new AbortController();
-      const timeoutId = setTimeout(() => abortController.abort(), 30000);
+      const timeoutId = setTimeout(
+        () => abortController.abort(),
+        modelTimeout(
+          providerModelTimeouts(await settingsService?.getGlobalSettings(), 'claude'),
+          'connectionTestTimeoutMs'
+        )
+      );
 
       let authenticated = false;
       let errorMessage = '';

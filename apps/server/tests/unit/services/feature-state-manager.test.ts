@@ -560,6 +560,13 @@ describe('FeatureStateManager', () => {
   });
 
   describe('resetStuckFeatures', () => {
+    it('keeps an interrupted direct feature out of the automatic ready/backlog queue', async () => {
+      (secureFs.readdir as Mock).mockResolvedValue([{ name: 'feature-123', isDirectory: () => true }]);
+      (readJsonWithRecovery as Mock).mockResolvedValue({ data: { ...mockFeature, model: 'direct-Vendor/Model:Tag', providerId: 'endpoint', status: 'in_progress', planSpec: { status: 'approved', version: 1, reviewedByUser: true } }, recovered: false, source: 'main' });
+      await manager.resetStuckFeatures('/project');
+      expect((atomicWriteJson as Mock).mock.calls[0][1]).toMatchObject({ status: 'interrupted', providerId: 'endpoint' });
+    });
+
     it('should reset in_progress features to ready if has approved plan', async () => {
       const stuckFeature: Feature = {
         ...mockFeature,

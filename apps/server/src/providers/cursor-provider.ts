@@ -42,7 +42,8 @@ import {
   CURSOR_MODEL_MAP,
 } from '@automaker/types';
 import { createLogger, isAbortError } from '@automaker/utils';
-import { spawnJSONLProcess, execInWsl } from '@automaker/platform';
+import { execInWsl } from '@automaker/platform';
+import { remoteCliRuntime } from './environment-execution.js';
 
 // Create logger for this module
 const logger = createLogger('CursorProvider');
@@ -426,7 +427,7 @@ export class CursorProvider extends CliProvider {
     const cliArgs: string[] = [];
 
     // If using Cursor IDE (cliPath is 'cursor' not 'cursor-agent'), add 'agent' subcommand
-    if (this.cliPath && !this.cliPath.includes('cursor-agent')) {
+    if (!remoteCliRuntime(options) && this.cliPath && !this.cliPath.includes('cursor-agent')) {
       cliArgs.push('agent');
     }
 
@@ -841,14 +842,15 @@ export class CursorProvider extends CliProvider {
    * - Text block deduplication (Cursor sends duplicate chunks)
    */
   async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
-    this.ensureCliDetected();
+    const runtime = remoteCliRuntime(options);
+    if (!runtime) this.ensureCliDetected();
 
     // Validate that model doesn't have a provider prefix (except cursor- which should already be stripped)
     // AgentService should strip prefixes before passing to providers
     // Note: Cursor's Gemini models (e.g., "gemini-3-pro") legitimately start with "gemini-"
     validateBareModelId(options.model, 'CursorProvider', 'cursor');
 
-    if (!this.cliPath) {
+    if (!runtime && !this.cliPath) {
       throw this.createError(
         CursorErrorCode.NOT_INSTALLED,
         'Cursor CLI is not installed',
@@ -889,11 +891,13 @@ export class CursorProvider extends CliProvider {
     logger.debug(`CursorProvider.executeQuery called with model: "${options.model}"`);
 
     // Get effective permissions for this project and detect the active profile
-    const effectivePermissions = await getEffectivePermissions(options.cwd || process.cwd());
-    const activeProfile = detectProfile(effectivePermissions);
-    logger.debug(
-      `Active permission profile: ${activeProfile ?? 'none'}, permissions: ${JSON.stringify(effectivePermissions)}`
-    );
+    if (!runtime) {
+      const effectivePermissions = await getEffectivePermissions(options.cwd || process.cwd());
+      const activeProfile = detectProfile(effectivePermissions);
+      logger.debug(
+        `Active permission profile: ${activeProfile ?? 'none'}, permissions: ${JSON.stringify(effectivePermissions)}`
+      );
+    }
 
     // Debug: log raw events when AUTOMAKER_DEBUG_RAW_OUTPUT is enabled
     const debugRawEvents =
@@ -901,7 +905,7 @@ export class CursorProvider extends CliProvider {
       process.env.AUTOMAKER_DEBUG_RAW_OUTPUT === '1';
 
     try {
-      for await (const rawEvent of spawnJSONLProcess(subprocessOptions)) {
+      for await (const rawEvent of this.streamProcess(options, subprocessOptions)) {
         const event = rawEvent as CursorStreamEvent;
 
         // Log raw event for debugging

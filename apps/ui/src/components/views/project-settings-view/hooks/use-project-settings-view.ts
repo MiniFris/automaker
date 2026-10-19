@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 
 export type ProjectSettingsViewId =
   | 'identity'
+  | 'execution-environment'
   | 'theme'
   | 'worktrees'
   | 'commands'

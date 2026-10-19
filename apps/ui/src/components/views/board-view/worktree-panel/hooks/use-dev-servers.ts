@@ -25,14 +25,14 @@ interface UseDevServersOptions {
  * to match the current window's hostname (supports remote access).
  * Returns null if the URL is invalid or uses an unsupported protocol.
  */
-function buildDevServerBrowserUrl(serverUrl: string): string | null {
+function buildDevServerBrowserUrl(serverUrl: string, preserveHost = false): string | null {
   try {
     const devServerUrl = new URL(serverUrl);
     // Security: Only allow http/https protocols
     if (devServerUrl.protocol !== 'http:' && devServerUrl.protocol !== 'https:') {
       return null;
     }
-    devServerUrl.hostname = window.location.hostname;
+    if (!preserveHost) devServerUrl.hostname = window.location.hostname;
     return devServerUrl.toString();
   } catch {
     return null;
@@ -43,8 +43,8 @@ function buildDevServerBrowserUrl(serverUrl: string): string | null {
  * Show a toast notification for a detected dev server URL.
  * Extracted to avoid duplication between event handler and reconciliation paths.
  */
-function showUrlDetectedToast(url: string, port: number): void {
-  const browserUrl = buildDevServerBrowserUrl(url);
+function showUrlDetectedToast(url: string, port: number, preserveHost = false): void {
+  const browserUrl = buildDevServerBrowserUrl(url, preserveHost);
   toast.success(`Dev server running on port ${port}`, {
     description: browserUrl ? browserUrl : url,
     action: browserUrl
@@ -134,7 +134,11 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
               });
               if (!toastShownForRef.current.has(key)) {
                 toastShownForRef.current.add(key);
-                showUrlDetectedToast(backendServer.url, backendServer.port);
+                showUrlDetectedToast(
+                  backendServer.url,
+                  backendServer.port,
+                  backendServer.preserveUrlHost
+                );
               }
               return;
             }
@@ -275,7 +279,7 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
                 clearPortDetectionTimer(key);
                 if (!toastShownForRef.current.has(key)) {
                   toastShownForRef.current.add(key);
-                  showUrlDetectedToast(server.url, server.port);
+                  showUrlDetectedToast(server.url, server.port, server.preserveUrlHost);
                 }
               });
               next.set(key, {
@@ -366,6 +370,7 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
           if (!existing) {
             const next = new Map(prev);
             next.set(key, {
+              ...event.payload,
               worktreePath,
               url,
               port,
@@ -379,6 +384,7 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
           const next = new Map(prev);
           next.set(key, {
             ...existing,
+            ...event.payload,
             url,
             port,
             urlDetected: true,
@@ -387,11 +393,13 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
           return next;
         });
         if (didUpdate) {
-          logger.info(`Dev server URL detected for ${worktreePath}: ${url} (port ${port})`);
+          logger.info(
+            `Dev server URL detected for ${worktreePath}: ${url.split('#')[0]} (port ${port})`
+          );
           // Only show toast on the transition from undetected → detected (not on re-renders/polls)
           if (!toastShownForRef.current.has(key)) {
             toastShownForRef.current.add(key);
-            showUrlDetectedToast(url, port);
+            showUrlDetectedToast(url, port, event.payload.preserveUrlHost);
           }
         }
       } else if (event.type === 'dev-server:stopped') {
@@ -402,6 +410,12 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
         clearPortDetectionTimer(key);
         setRunningDevServers((prev) => {
           if (!prev.has(key)) return prev;
+          if (
+            event.payload.sessionId &&
+            prev.get(key)?.sessionId &&
+            prev.get(key)?.sessionId !== event.payload.sessionId
+          )
+            return prev;
           const next = new Map(prev);
           next.delete(key);
           return next;
@@ -427,10 +441,11 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
         setRunningDevServers((prev) => {
           const next = new Map(prev);
           next.set(key, {
+            ...event.payload,
             worktreePath,
             port,
             url,
-            urlDetected: false,
+            urlDetected: event.payload.urlDetected ?? false,
           });
           return next;
         });
@@ -483,15 +498,21 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
           setRunningDevServers((prev) => {
             const next = new Map(prev);
             next.set(key, {
+              ...result.result!,
               worktreePath: result.result!.worktreePath,
               port: result.result!.port,
               url: result.result!.url,
-              urlDetected: false,
+              urlDetected:
+                (prev.get(key)?.sessionId === result.result!.sessionId &&
+                  prev.get(key)?.urlDetected) ||
+                result.result!.urlDetected ||
+                false,
             });
             return next;
           });
           // Start port detection timeout
           startPortDetectionTimer(key);
+          if (result.result.sessionId) void fetchDevServers();
           toast.success('Dev server started, detecting port...', {
             description: 'Logs are now visible in the dev server panel.',
           });
@@ -509,7 +530,7 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
         setIsStartingAnyDevServer(false);
       }
     },
-    [isStartingAnyDevServer, projectPath, startPortDetectionTimer]
+    [isStartingAnyDevServer, projectPath, startPortDetectionTimer, fetchDevServers]
   );
 
   const handleStopDevServer = useCallback(
@@ -522,13 +543,18 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
         }
 
         const targetPath = worktree.isMain ? projectPath : worktree.path;
-        const result = await api.worktree.stopDevServer(targetPath);
+        const captured = runningDevServers.get(normalizePath(targetPath))?.sessionId;
+        const result = captured
+          ? await api.worktree.stopDevServer(targetPath, captured)
+          : await api.worktree.stopDevServer(targetPath);
 
         if (result.success) {
           const key = normalizePath(targetPath);
           // Clear port detection timeout
           clearPortDetectionTimer(key);
           setRunningDevServers((prev) => {
+            if (captured && prev.get(key)?.sessionId && prev.get(key)?.sessionId !== captured)
+              return prev;
             const next = new Map(prev);
             next.delete(key);
             return next;
@@ -544,7 +570,7 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
         toast.error('Failed to stop dev server');
       }
     },
-    [projectPath, clearPortDetectionTimer]
+    [projectPath, clearPortDetectionTimer, runningDevServers]
   );
 
   const handleOpenDevServerUrl = useCallback(
@@ -558,7 +584,7 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
         return;
       }
 
-      const browserUrl = buildDevServerBrowserUrl(serverInfo.url);
+      const browserUrl = buildDevServerBrowserUrl(serverInfo.url, serverInfo.preserveUrlHost);
       if (!browserUrl) {
         logger.error('Invalid dev server URL:', serverInfo.url);
         toast.error('Invalid dev server URL', {
