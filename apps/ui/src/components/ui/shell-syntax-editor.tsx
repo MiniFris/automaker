@@ -1,3 +1,5 @@
+import { useUiLocale } from '@/lib/i18n';
+import { useEditorLocalization } from '@/lib/editor-localization';
 import CodeMirror from '@uiw/react-codemirror';
 import { StreamLanguage } from '@codemirror/language';
 import { shell } from '@codemirror/legacy-modes/mode/shell';
@@ -111,6 +113,8 @@ export function ShellSyntaxEditor({
   maxHeight,
   'data-testid': testId,
 }: ShellSyntaxEditorProps) {
+  useUiLocale();
+  const editorLocalization = useEditorLocalization();
   return (
     <div
       className={cn('w-full rounded-lg border border-border bg-background', className)}
@@ -120,7 +124,7 @@ export function ShellSyntaxEditor({
       <CodeMirror
         value={value}
         onChange={onChange}
-        extensions={extensions}
+        extensions={[...extensions, editorLocalization]}
         theme="none"
         placeholder={placeholder}
         height={maxHeight}

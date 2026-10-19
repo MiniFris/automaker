@@ -1,3 +1,5 @@
+import { useUiLocale } from '@/lib/i18n';
+import { useEditorLocalization } from '@/lib/editor-localization';
 import { useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import CodeMirror, { type ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { EditorView, keymap, Decoration, WidgetType } from '@codemirror/view';
@@ -412,6 +414,8 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(function
   },
   ref
 ) {
+  useUiLocale();
+  const editorLocalization = useEditorLocalization();
   const editorRef = useRef<ReactCodeMirrorRef>(null);
   const isMobile = useIsMobile();
 
@@ -624,6 +628,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(function
   // when parent passes inline arrow functions
   const extensions = useMemo(() => {
     const exts: Extension[] = [
+      editorLocalization,
       syntaxHighlighting(syntaxColors),
       editorTheme,
       search(),
@@ -679,7 +684,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(function
     }
 
     return exts;
-  }, [filePath, wordWrap, tabSize, editorTheme, diffContent]);
+  }, [filePath, wordWrap, tabSize, editorTheme, diffContent, editorLocalization]);
 
   return (
     <div className={cn('h-full w-full', className)}>
