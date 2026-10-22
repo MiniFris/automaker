@@ -1,4 +1,5 @@
 import { translate, useUiLocale } from '@/lib/i18n';
+import { getFeatureCategoryLabel } from '@/lib/feature-category-labels';
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import type { NodeProps } from '@xyflow/react';
@@ -464,7 +465,7 @@ export const TaskNode = memo(function TaskNode({ data, selected }: TaskNodeProps
         <div className="relative px-3 py-2">
           {/* Category */}
           <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
-            {data.category}
+            {getFeatureCategoryLabel(data.category)}
           </span>
 
           {/* Title */}

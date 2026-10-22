@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { RemoteProviderSetup } from '@/components/shared/remote-provider-setup';
+import { selectOption, setupSelectMocks } from '../../utils/select';
 
 const api = vi.hoisted(() => ({
   inspectProvider: vi.fn(),
@@ -24,6 +25,7 @@ const status = {
   authentication: 'not-detected',
 };
 beforeEach(() => {
+  setupSelectMocks();
   vi.clearAllMocks();
   api.inspectProvider.mockResolvedValue({ success: true, status });
   api.installProvider.mockResolvedValue({ success: true, status: { ...status, installed: true } });
@@ -38,7 +40,10 @@ beforeEach(() => {
     },
   });
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 it('does not connect or install on mount and shows an explicit inspection action', () => {
   render(<RemoteProviderSetup projectPath="/project" />);
   expect(api.inspectProvider).not.toHaveBeenCalled();
@@ -90,7 +95,7 @@ it('resets consent/status/key when the provider changes', async () => {
   fireEvent.change(screen.getByLabelText('Target API key / Copilot token'), {
     target: { value: 'target-test-token' },
   });
-  fireEvent.change(screen.getByLabelText('SDK provider'), { target: { value: 'codex' } });
+  await selectOption('SDK provider', 'Codex');
   expect(screen.queryByLabelText('Target API key / Copilot token')).not.toBeInTheDocument();
   expect(api.saveProviderKey).not.toHaveBeenCalled();
 });

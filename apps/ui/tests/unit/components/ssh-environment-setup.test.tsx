@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SSHEnvironmentProfile, SSHEnvironmentStatus } from '@automaker/types';
 import { SSHEnvironmentSetup } from '@/components/shared/ssh-environment-setup';
+import { selectOption, setupSelectMocks } from '../../utils/select';
 
 const api = vi.hoisted(() => ({
   scanSSH: vi.fn(),
@@ -32,6 +33,7 @@ describe('SSH connection setup', () => {
   };
   const fingerprint = 'SHA256:' + 'a'.repeat(43);
   beforeEach(() => {
+    setupSelectMocks();
     cache = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     });
@@ -44,6 +46,7 @@ describe('SSH connection setup', () => {
   afterEach(() => {
     cleanup();
     cache.clear();
+    vi.unstubAllGlobals();
   });
   function open(status?: SSHEnvironmentStatus, projectPath?: string, selected = profile) {
     return render(
@@ -107,9 +110,7 @@ describe('SSH connection setup', () => {
     expect(api.prepareSSHProject).not.toHaveBeenCalled();
     expect(screen.getByText(/may include project secrets/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('checkbox', { name: /I allow remote worker installation/ }));
-    fireEvent.change(screen.getByLabelText('Initial remote checkout'), {
-      target: { value: 'existing' },
-    });
+    await selectOption('Initial remote checkout', 'Use an existing clean remote Git checkout');
     fireEvent.change(screen.getByLabelText('Existing remote repository path'), {
       target: { value: '/srv/existing' },
     });
