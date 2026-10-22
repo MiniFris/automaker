@@ -15,7 +15,7 @@ HTTP/WebSocket API, файловый формат `.automaker/`, поддерж�
 
 ## Исходная точка
 
-- около 299 зарегистрированных HTTP handlers;
+- 305 зарегистрированных HTTP endpoints по автоматически проверяемому inventory;
 - два raw WebSocket endpoint: `/api/events` и `/api/terminal/ws`;
 - 133 серверных test/spec files;
 - примерно 28 тысяч строк в `src/routes`, 35 тысяч в `src/services` и 19 тысяч
@@ -197,6 +197,16 @@ refactor/backend-nestjs-migration
 - [ ] Документация deployment и разработки обновлена.
 
 ## Внешние опорные материалы
+
+Внутренние baseline-артефакты:
+
+- [Current architecture inventory](artifacts/current-architecture.md)
+- [Legacy WebSocket contracts](artifacts/websocket-contracts.md)
+- [Storage, packaging and lifecycle](artifacts/storage-packaging-lifecycle.md)
+- [Accepted architecture decisions](artifacts/architecture-decisions.md)
+- [Generated HTTP route inventory](artifacts/http-routes.json)
+- [Generated dependency inventory](artifacts/server-dependencies.json)
+- [Generated UI API consumer inventory](artifacts/api-consumers.json)
 
 - [NestJS migration guide](https://docs.nestjs.com/migration-guide)
 - [NestJS testing](https://docs.nestjs.com/fundamentals/testing)

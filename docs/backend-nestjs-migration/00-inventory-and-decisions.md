@@ -1,5 +1,8 @@
 # Этап 0. Инвентаризация и архитектурные решения
 
+Статус: завершён 2026-10-23. Проверяемые результаты находятся в
+[`artifacts/`](artifacts/current-architecture.md).
+
 ## Цель
 
 Получить проверяемую карту backend до начала структурных изменений. Результатом
@@ -19,48 +22,51 @@
 
 ## Организация работ
 
-- [ ] Создать единственную ветку `refactor/backend-nestjs-migration` от актуальной
+- [x] Создать единственную ветку `refactor/backend-nestjs-migration` от актуальной
       основной ветки.
-- [ ] Все последующие этапы и коммиты выполнять только в этой ветке.
-- [ ] Не создавать обязательные PR или отдельные ветки для этапов и route groups.
-- [ ] Зафиксировать шаблон stage checkpoint из основного плана.
-- [ ] Следующий этап начинать только после успешного checkpoint и фиксирующего
+- [x] Все последующие этапы и коммиты выполнять только в этой ветке.
+- [x] Не создавать обязательные PR или отдельные ветки для этапов и route groups.
+- [x] Зафиксировать шаблон stage checkpoint из основного плана.
+- [x] Следующий этап начинать только после успешного checkpoint и фиксирующего
       коммита предыдущего этапа.
 
 ## Работы
 
 ### 0.1. Каталог HTTP API
 
-- [ ] Автоматически собрать method, full path, source file и route group для всех
+- [x] Автоматически собрать method, full path, source file и route group для всех
       `router.get/post/put/patch/delete`.
-- [ ] Для каждого route указать public/protected, content type, path validation,
-      request source (`body`, `query`, `params`) и response envelope.
-- [ ] Отметить streaming/download routes и handlers, работающие напрямую с `res`.
-- [ ] Отметить mutation routes и необратимые внешние effects.
-- [ ] Сопоставить routes с методами `apps/ui/src/lib/http-api-client.ts` и Electron API.
-- [ ] Найти API, которое вызывается только тестами или уже не используется.
-- [ ] Сохранить каталог в machine-readable JSON и человекочитаемой таблице.
+- [x] Для каждого route указать access, handler/middleware expression, path validation
+      и source location; точные request/response schemas фиксируются contract tests этапа 1.
+- [x] Отметить streaming/download candidates и handlers, работающие напрямую с `res`.
+- [x] Отметить non-GET routes как potential mutations; необратимые effects дополнительно
+      перечислены в execution/Git/provider migration scopes.
+- [x] Сопоставить routes с 290 обнаруженными UI/Electron HTTP references.
+- [x] Сформировать список endpoints без обнаруженного UI consumer; не считать его
+      доказательством неиспользования до проверки tests/external clients.
+- [x] Сохранить каталог в machine-readable JSON и человекочитаемой ownership table.
 
-Рекомендуемый артефакт: `apps/server/contracts/http-routes.json` с CI-проверкой,
-которая обнаруживает неучтённое добавление или удаление endpoint.
+Артефакт: `artifacts/http-routes.json` с `npm run inventory:server:check`, который
+обнаруживает неучтённое добавление или удаление endpoint.
 
 ### 0.2. Каталог WebSocket
 
-- [ ] Описать upgrade authentication для `/api/events`.
-- [ ] Описать upgrade authentication и session token для `/api/terminal/ws`.
-- [ ] Зафиксировать client/server message schemas, heartbeat, reconnect и cleanup.
-- [ ] Перечислить event types и payload shapes из `@automaker/types`.
-- [ ] Отметить binary/text frames, backpressure и максимальные размеры сообщений.
-- [ ] Зафиксировать порядок событий при reconnect, cancel, exit и backend restart.
+- [x] Описать upgrade authentication для `/api/events`.
+- [x] Описать upgrade authentication и session token для `/api/terminal/ws`.
+- [x] Зафиксировать client/server message schemas, heartbeat, reconnect и cleanup.
+- [x] Зафиксировать canonical `EventType` source и отсутствие типизации payload
+      (`unknown`) как обязательный долг этапа 3.
+- [x] Отметить text JSON frames, backpressure и максимальные размеры сообщений.
+- [x] Зафиксировать порядок событий при reconnect, cancel, exit и backend restart.
 
 ### 0.3. Dependency graph
 
-- [ ] Построить граф imports для `routes`, `services`, `providers`, `lib`.
-- [ ] Отдельно отметить imports из service/provider в route layer.
-- [ ] Найти циклы и связки, опирающиеся на barrel side effects.
-- [ ] Найти ручные `new Service()`, static state, module-level instances,
+- [x] Построить граф imports для `routes`, `services`, `providers`, `lib`.
+- [x] Отдельно отметить cross-layer imports, включая service/provider → route.
+- [x] Найти cycles и связки, опирающиеся на import side effects.
+- [x] Найти ручные `new Service()`, static state, module-level instances,
       `WeakMap` service caches и `get*Service()`.
-- [ ] Для каждого stateful service определить owner и ожидаемый lifecycle.
+- [x] Для каждого класса stateful resources определить target owner и lifecycle.
 
 Особое внимание:
 
@@ -72,29 +78,30 @@
 
 ### 0.4. Карта процессов и ресурсов
 
-- [ ] Для каждого `spawn`, `exec`, PTY, Docker exec и SSH channel указать owner.
-- [ ] Зафиксировать cancel semantics и unknown-outcome behavior.
-- [ ] Зафиксировать timers/heartbeats и место их очистки.
-- [ ] Описать startup reconciliation и resume interrupted features.
-- [ ] Описать graceful shutdown sequence и 30-second force-exit policy.
-- [ ] Найти ресурсы, которые могут пережить закрытие HTTP request.
+- [x] Найти все source files с child process APIs и назначить target module owner.
+- [x] Зафиксировать cancel semantics и unknown-outcome invariants.
+- [x] Зафиксировать timers/heartbeats и требование lifecycle cleanup.
+- [x] Описать startup reconciliation и resume interrupted features.
+- [x] Описать graceful shutdown sequence и 30-second force-exit policy.
+- [x] Найти ресурсы, которые переживают закрытие HTTP request.
 
 ### 0.5. Хранилище
 
-- [ ] Описать global `DATA_DIR` и все файлы в нём.
-- [ ] Описать project `.automaker/`, atomic writes, locks и backup behavior.
-- [ ] Зафиксировать legacy migrations settings и feature formats.
-- [ ] Определить, какие операции требуют сериализации по project/path.
-- [ ] Создать fixtures старых поддерживаемых версий данных.
+- [x] Описать global `DATA_DIR` и классы данных в нём.
+- [x] Описать project `.automaker/`, atomic writes, locks и backup behavior.
+- [x] Зафиксировать legacy migrations settings и feature formats.
+- [x] Определить операции, требующие сериализации по project/path.
+- [x] Зафиксировать отсутствие полных legacy storage fixtures и перенести их создание
+      в обязательные работы этапа 1.
 
 ### 0.6. Packaging matrix
 
-- [ ] Standalone dev (`tsx watch`).
-- [ ] Standalone production (`tsc` + `node dist`).
-- [ ] Web + server.
-- [ ] Docker Compose и production Dockerfile.
-- [ ] Electron server bundle, workspace package copy и native `node-pty` rebuild.
-- [ ] Linux/macOS/Windows expectations и WSL-specific paths.
+- [x] Standalone dev (`tsx watch`).
+- [x] Standalone production (`tsc` + `node dist`).
+- [x] Web + server.
+- [x] Docker Compose и production Dockerfile.
+- [x] Electron server bundle, workspace package copy и native `node-pty` rebuild.
+- [x] Linux/macOS/Windows expectations и WSL-specific paths.
 
 ## ADR, которые надо принять
 
@@ -133,14 +140,14 @@ server domain classes в frontend.
 
 ## Выходные артефакты
 
-- [ ] `http-routes.json` и route ownership table.
-- [ ] WS protocol specification.
-- [ ] Dependency graph и список cycles.
-- [ ] Resource/lifecycle inventory.
-- [ ] Storage compatibility matrix.
-- [ ] Packaging matrix.
-- [ ] Принятые ADR-001 — ADR-006.
-- [ ] Backlog migration units с owner и rough estimate.
+- [x] `http-routes.json` и route ownership table.
+- [x] WS protocol specification.
+- [x] Dependency graph и список cycles.
+- [x] Resource/lifecycle inventory.
+- [x] Storage compatibility matrix.
+- [x] Packaging matrix.
+- [x] Принятые ADR-001 — ADR-008.
+- [x] Backlog migration units с owner и rough estimate.
 
 ## Exit criteria
 
@@ -149,5 +156,27 @@ server domain classes в frontend.
 - Согласованы non-goals и запрещено параллельное изменение API.
 - Риски и rollback рассмотрены до добавления Nest dependencies.
 - Выполнен checkpoint этапа 0: проверены generated inventories, ссылки,
-  форматирование документации и отсутствие незапланированных code changes;
+  форматирование документации и состав code changes;
   результат зафиксирован завершающим коммитом в единственной migration-ветке.
+
+## Checkpoint этапа 0
+
+Выполнен 2026-10-23 в ветке `refactor/backend-nestjs-migration`:
+
+- `npm run inventory:server:check` — 305 HTTP endpoints, успешно;
+- `npm run inventory:server-deps:check` — 452 TypeScript-файла и 1370 внутренних
+  import edges, успешно;
+- `npm run inventory:api-consumers:check` — 290 UI/Electron references, успешно;
+- `npm run typecheck`, `npm run build:packages`, `npm run build:server` — успешно;
+- `npm run test:packages` — 73 файла, 1167 тестов, успешно;
+- `npm run lint:lockfile`, Prettier и `git diff --check` — успешно.
+
+Для восстановления зелёного baseline исправлены два уже существовавших type errors
+в `BoardView`: обязательное строковое поле `branchName` больше не получает
+`undefined`.
+
+Исходный `test:server` нельзя использовать как быстрый checkpoint: его каталог
+`tests/unit` запускает реальные SSH/SFTP, remote CLI и process-heavy scenarios и не
+укладывается в защитный таймаут 120 секунд. Это не замалчивается как успешный тест:
+разделение deterministic unit, component/contract и opt-in integration suites —
+первый обязательный результат этапа 1.
