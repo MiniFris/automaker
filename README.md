@@ -716,6 +716,7 @@ data/
 - [Contributing Guide](./CONTRIBUTING.md) - How to contribute to Automaker
 - [Project Documentation](./docs/) - Architecture guides, patterns, and developer docs
 - [Shared Packages Guide](./docs/llm-shared-packages.md) - Using monorepo packages
+- [Backend NestJS Migration Plan](./docs/backend-nestjs-migration/README.md) - Staged plan for the complete backend migration
 
 ### Community
 
