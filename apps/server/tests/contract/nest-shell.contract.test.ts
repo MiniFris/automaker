@@ -402,6 +402,54 @@ describe('Nest shell and legacy bridge contract', () => {
       expect(deleteFeature.status).toBe(200);
       expect(await deleteFeature.json()).toEqual({ success: true });
 
+      const createSession = await fetch(`${baseUrl}/api/sessions`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ name: 'Contract session', projectPath }),
+      });
+      expect(createSession.status).toBe(200);
+      const createdSession = (await createSession.json()) as {
+        success: boolean;
+        session: { id: string };
+      };
+      expect(createdSession.success).toBe(true);
+
+      const updateSession = await fetch(
+        `${baseUrl}/api/sessions/${encodeURIComponent(createdSession.session.id)}`,
+        {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({ name: 'Renamed session', tags: ['contract'] }),
+        }
+      );
+      expect(updateSession.status).toBe(200);
+      expect(await updateSession.json()).toMatchObject({
+        success: true,
+        session: { name: 'Renamed session', tags: ['contract'] },
+      });
+
+      const archivedSession = await fetch(
+        `${baseUrl}/api/sessions/${encodeURIComponent(createdSession.session.id)}/archive`,
+        { method: 'POST', headers, body: '{}' }
+      );
+      expect(archivedSession.status).toBe(200);
+
+      const sessionList = await fetch(`${baseUrl}/api/sessions?includeArchived=true`, { headers });
+      expect(sessionList.status).toBe(200);
+      expect(await sessionList.json()).toMatchObject({
+        success: true,
+        sessions: expect.arrayContaining([
+          expect.objectContaining({ id: createdSession.session.id, isArchived: true }),
+        ]),
+      });
+
+      const deleteSession = await fetch(
+        `${baseUrl}/api/sessions/${encodeURIComponent(createdSession.session.id)}`,
+        { method: 'DELETE', headers }
+      );
+      expect(deleteSession.status).toBe(200);
+      expect(await deleteSession.json()).toEqual({ success: true });
+
       for (const route of ['notifications/list', 'event-history/list']) {
         const response = await fetch(`${baseUrl}/api/${route}`, {
           method: 'POST',

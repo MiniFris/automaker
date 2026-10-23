@@ -12,7 +12,7 @@ export const ROUTE_GROUP_OWNERS: Readonly<Record<string, RouteOwner>> = {
   setup: 'legacy',
   fs: 'nest',
   agent: 'legacy',
-  sessions: 'legacy',
+  sessions: 'nest',
   features: 'nest',
   'auto-mode': 'legacy',
   'enhance-prompt': 'legacy',
