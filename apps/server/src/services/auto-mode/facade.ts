@@ -172,6 +172,7 @@ export class AutoModeServiceFacade {
       settingsService = null,
       featureLoader = new FeatureLoader(),
       notificationService = null,
+      providerRegistry,
       sharedServices,
     } = options;
 
@@ -270,8 +271,10 @@ export class AutoModeServiceFacade {
           settingsService &&
           (await hasRemoteEnvironment(settingsService, pPath, `feature:${pPath}:${featureId}`));
         const provider = remoteCLI
-          ? ProviderFactory.getProviderForModel(resolvedModel, { throwOnDisconnected: false })
-          : ProviderFactory.getProviderForModel(resolvedModel);
+          ? (providerRegistry?.providerForModel(resolvedModel, { throwOnDisconnected: false }) ??
+            ProviderFactory.getProviderForModel(resolvedModel, { throwOnDisconnected: false }))
+          : (providerRegistry?.providerForModel(resolvedModel) ??
+            ProviderFactory.getProviderForModel(resolvedModel));
         const effectiveBareModel = stripProviderPrefix(resolvedModel);
 
         // Resolve custom provider (GLM, MiniMax, etc.) for baseUrl and credentials
@@ -539,7 +542,8 @@ export class AutoModeServiceFacade {
         );
       },
       (_pPath) => getFacade().saveExecutionState(),
-      loadContextFiles
+      loadContextFiles,
+      providerRegistry
     );
 
     // RecoveryService

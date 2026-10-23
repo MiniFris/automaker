@@ -40,6 +40,7 @@ import { extractXmlElements, extractImplementedFeatures } from '../lib/xml-extra
 import { createLogger, loadContextFiles, isAbortError } from '@automaker/utils';
 import { atomicWriteJson, DEFAULT_BACKUP_COUNT } from '@automaker/utils';
 import { ProviderFactory } from '../providers/provider-factory.js';
+import type { ProviderRegistry } from '../modules/providers/provider-registry.service.js';
 import { prepareDirectExecution } from '../providers/openai-compatible/execution.js';
 import type { SettingsService } from './settings-service.js';
 import type { FeatureLoader } from './feature-loader.js';
@@ -66,15 +67,18 @@ export class IdeationService {
   private events: EventEmitter;
   private settingsService: SettingsService | null = null;
   private featureLoader: FeatureLoader | null = null;
+  private providerRegistry: ProviderRegistry | null = null;
 
   constructor(
     events: EventEmitter,
     settingsService?: SettingsService,
-    featureLoader?: FeatureLoader
+    featureLoader?: FeatureLoader,
+    providerRegistry?: ProviderRegistry
   ) {
     this.events = events;
     this.settingsService = settingsService ?? null;
     this.featureLoader = featureLoader ?? null;
+    this.providerRegistry = providerRegistry ?? null;
   }
 
   // ============================================================================
@@ -246,7 +250,9 @@ export class IdeationService {
         abortController: activeSession.abortController!,
       });
 
-      const provider = ProviderFactory.getProviderForModel(modelId);
+      const provider = this.providerRegistry
+        ? this.providerRegistry.providerForModel(modelId)
+        : ProviderFactory.getProviderForModel(modelId);
 
       // Strip provider prefix - providers need bare model IDs
       const bareModel = stripProviderPrefix(modelId);
@@ -739,7 +745,9 @@ export class IdeationService {
         abortController: new AbortController(),
       });
 
-      const provider = ProviderFactory.getProviderForModel(modelId);
+      const provider = this.providerRegistry
+        ? this.providerRegistry.providerForModel(modelId)
+        : ProviderFactory.getProviderForModel(modelId);
 
       // Strip provider prefix - providers need bare model IDs
       const bareModel = stripProviderPrefix(modelId);

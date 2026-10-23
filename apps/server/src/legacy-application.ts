@@ -375,7 +375,8 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
     serviceOverrides.providerRegistry ??
     new ProviderRegistry(createProviderRegistrations(settingsService), providerConnections);
   const agentService =
-    serviceOverrides.agentService ?? new AgentService(dataDir, events, settingsService);
+    serviceOverrides.agentService ??
+    new AgentService(dataDir, events, settingsService, providerRegistry);
   const featureLoader = serviceOverrides.featureLoader ?? new FeatureLoader();
 
   // Shared stateful services are constructed once and passed explicitly to both
@@ -387,7 +388,14 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   // Auto-mode services: compatibility layer provides old interface while using new architecture
   const autoModeService =
     serviceOverrides.autoModeService ??
-    new AutoModeServiceCompat(events, settingsService, featureLoader, null, notificationService);
+    new AutoModeServiceCompat(
+      events,
+      settingsService,
+      featureLoader,
+      null,
+      notificationService,
+      providerRegistry
+    );
   const claudeUsageService = serviceOverrides.claudeUsageService ?? new ClaudeUsageService();
   const codexAppServerService =
     serviceOverrides.codexAppServerService ?? new CodexAppServerService();
@@ -400,7 +408,8 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   const geminiUsageService = serviceOverrides.geminiUsageService ?? new GeminiUsageService();
   const mcpTestService = serviceOverrides.mcpTestService ?? new MCPTestService(settingsService);
   const ideationService =
-    serviceOverrides.ideationService ?? new IdeationService(events, settingsService, featureLoader);
+    serviceOverrides.ideationService ??
+    new IdeationService(events, settingsService, featureLoader, providerRegistry);
 
   // Initialize DevServerService with event emitter for real-time log streaming
   const devServerService = serviceOverrides.devServerService ?? getDevServerService();

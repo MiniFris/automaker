@@ -17,6 +17,7 @@ import type { WorktreeResolver } from '../worktree-resolver.js';
 import type { TypedEventBus } from '../typed-event-bus.js';
 import type { ClaudeUsageService } from '../claude-usage-service.js';
 import type { NotificationService } from '../notification-service.js';
+import type { ProviderRegistry } from '../../modules/providers/provider-registry.service.js';
 
 // Re-export types from extracted services for route consumption
 export type { AutoModeConfig, ProjectAutoLoopState } from '../auto-loop-coordinator.js';
@@ -61,6 +62,8 @@ export interface FacadeOptions {
   claudeUsageService?: ClaudeUsageService | null;
   /** Notification service shared with HTTP and background workflows. */
   notificationService?: NotificationService | null;
+  /** Explicit provider registry shared with the application composition root. */
+  providerRegistry?: ProviderRegistry;
 }
 
 /**

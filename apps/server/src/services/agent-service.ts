@@ -19,6 +19,7 @@ import {
   DEFAULT_BACKUP_COUNT,
 } from '@automaker/utils';
 import { ProviderFactory } from '../providers/provider-factory.js';
+import type { ProviderRegistry } from '../modules/providers/provider-registry.service.js';
 import { createChatOptions, validateWorkingDirectory } from '../lib/sdk-options.js';
 import { prepareDirectExecution } from '../providers/openai-compatible/execution.js';
 import { hasRemoteEnvironment } from '../providers/environment-execution.js';
@@ -98,13 +99,20 @@ export class AgentService {
   private metadataFile: string;
   private events: EventEmitter;
   private settingsService: SettingsService | null = null;
+  private providerRegistry: ProviderRegistry | null = null;
   private logger = createLogger('AgentService');
 
-  constructor(dataDir: string, events: EventEmitter, settingsService?: SettingsService) {
+  constructor(
+    dataDir: string,
+    events: EventEmitter,
+    settingsService?: SettingsService,
+    providerRegistry?: ProviderRegistry
+  ) {
     this.stateDir = path.join(dataDir, 'agent-sessions');
     this.metadataFile = path.join(dataDir, 'sessions-metadata.json');
     this.events = events;
     this.settingsService = settingsService ?? null;
+    this.providerRegistry = providerRegistry ?? null;
   }
 
   async initialize(): Promise<void> {
@@ -328,7 +336,9 @@ export class AgentService {
     // Validate vision support before processing images
     const effectiveModel = model || session.model;
     if (imagePaths && imagePaths.length > 0 && effectiveModel) {
-      const supportsVision = ProviderFactory.modelSupportsVision(effectiveModel);
+      const supportsVision = this.providerRegistry
+        ? this.providerRegistry.supportsVision(effectiveModel)
+        : ProviderFactory.modelSupportsVision(effectiveModel);
       if (!supportsVision) {
         throw new Error(
           `This model (${effectiveModel}) does not support image input. ` +
@@ -662,9 +672,14 @@ export class AgentService {
               }
             : [base, targetContext.formattedPrompt].filter(Boolean).join('\n\n');
       }
-      const provider =
+      const allowDisconnected =
         prepared.executionEnvironmentBinding?.type === 'ssh' ||
-        prepared.executionEnvironmentBinding?.type === 'docker'
+        prepared.executionEnvironmentBinding?.type === 'docker';
+      const provider = this.providerRegistry
+        ? this.providerRegistry.providerForModel(modelForProvider, {
+            throwOnDisconnected: !allowDisconnected,
+          })
+        : allowDisconnected
           ? ProviderFactory.getProviderForModel(modelForProvider, { throwOnDisconnected: false })
           : ProviderFactory.getProviderForModel(modelForProvider);
       const stream = provider.executeQuery(prepared);
