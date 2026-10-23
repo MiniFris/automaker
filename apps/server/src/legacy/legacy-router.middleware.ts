@@ -40,7 +40,15 @@ export const ROUTE_GROUP_OWNERS: Readonly<Record<string, RouteOwner>> = {
   projects: 'legacy',
 };
 
-export const NEST_OWNED_ROUTE_PATHS = new Set<string>();
+export const NEST_OWNED_ROUTE_PATHS = new Set<string>([
+  'GET /api/settings/status',
+  'GET /api/settings/global',
+  'GET /api/settings/credentials',
+  'POST /api/settings/project',
+  'POST /api/settings/agents/discover',
+  'GET /api/settings/model-timeouts',
+  'GET /api/settings/openai-compatible',
+]);
 
 export function getApiRouteGroup(request: Pick<Request, 'originalUrl'>): string | undefined {
   const pathname = request.originalUrl.split(/[?#]/, 1)[0];
@@ -65,7 +73,11 @@ export class LegacyRouterMiddleware implements NestMiddleware {
   use(request: Request, response: Response, next: NextFunction): void {
     const group = getApiRouteGroup(request);
     const pathname = request.originalUrl.split(/[?#]/, 1)[0];
-    if (NEST_OWNED_ROUTE_PATHS.has(pathname) || (group && ROUTE_GROUP_OWNERS[group] === 'nest')) {
+    if (
+      NEST_OWNED_ROUTE_PATHS.has(`${request.method} ${pathname}`) ||
+      (request.method === 'GET' && pathname.startsWith('/api/settings/model-timeouts/')) ||
+      (group && ROUTE_GROUP_OWNERS[group] === 'nest')
+    ) {
       next();
       return;
     }

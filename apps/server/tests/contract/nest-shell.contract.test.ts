@@ -190,6 +190,38 @@ describe('Nest shell and legacy bridge contract', () => {
       expect(workspace.status).toBe(200);
       expect(await workspace.json()).toMatchObject({ success: true });
 
+      for (const route of [
+        'settings/status',
+        'settings/global',
+        'settings/credentials',
+        'settings/model-timeouts',
+        'settings/openai-compatible',
+      ]) {
+        const response = await fetch(`${baseUrl}/api/${route}`, { headers });
+        expect(response.status, route).toBe(200);
+        expect(await response.json()).toMatchObject({ success: true });
+      }
+
+      const projectSettings = await fetch(`${baseUrl}/api/settings/project`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ projectPath }),
+      });
+      expect(projectSettings.status).toBe(200);
+      expect(await projectSettings.json()).toMatchObject({ success: true });
+
+      const invalidSettings = await fetch(`${baseUrl}/api/settings/project`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ projectPath, unexpected: true }),
+      });
+      expect(invalidSettings.status).toBe(400);
+
+      const invalidProvider = await fetch(`${baseUrl}/api/settings/model-timeouts/not-a-provider`, {
+        headers,
+      });
+      expect(invalidProvider.status).toBe(400);
+
       for (const route of ['notifications/list', 'event-history/list']) {
         const response = await fetch(`${baseUrl}/api/${route}`, {
           method: 'POST',

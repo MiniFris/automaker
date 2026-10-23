@@ -4,6 +4,8 @@ import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import { ProviderFactory } from '../../providers/provider-factory.js';
 import { SettingsService } from '../../services/settings-service.js';
 import { SettingsFileRepository } from './settings-file.repository.js';
+import { SettingsController } from './settings.controller.js';
+import { SettingsQueryService } from './settings-query.service.js';
 
 /**
  * Connects providers that are still created by the legacy registry to the one
@@ -20,9 +22,11 @@ class SettingsProviderBridge implements OnModuleInit {
 
 @Global()
 @Module({
+  controllers: [SettingsController],
   providers: [
     { provide: SettingsService, useExisting: LEGACY_SERVICES.settings },
     SettingsFileRepository,
+    SettingsQueryService,
     SettingsProviderBridge,
   ],
   exports: [SettingsService, SettingsFileRepository],
