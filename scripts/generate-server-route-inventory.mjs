@@ -9,7 +9,6 @@ const repositoryRoot = resolve(import.meta.dirname, '..');
 const routeRoot = join(repositoryRoot, 'apps/server/src/routes');
 const nestSourceRoot = join(repositoryRoot, 'apps/server/src');
 const serverEntry = join(repositoryRoot, 'apps/server/src/legacy-application.ts');
-const ownershipSource = join(repositoryRoot, 'apps/server/src/legacy/legacy-router.middleware.ts');
 const outputPath = join(repositoryRoot, 'docs/backend-nestjs-migration/artifacts/http-routes.json');
 const methods = new Set(['get', 'post', 'put', 'patch', 'delete']);
 const nestMethods = new Map([
@@ -342,33 +341,7 @@ function buildSummary(endpoints) {
   );
 }
 
-function parseRouteGroupOwners(sourceText) {
-  const owners = new Map();
-  for (const match of sourceText.matchAll(
-    /^\s*(?:'([^']+)'|([A-Za-z0-9-]+)):\s*'(nest|legacy)'/gm
-  )) {
-    owners.set(match[1] ?? match[2], match[3]);
-  }
-  if (owners.size === 0) {
-    throw new Error('Could not parse ROUTE_GROUP_OWNERS');
-  }
-  return owners;
-}
-
-function parseNestOwnedRoutePaths(sourceText) {
-  const declaration = sourceText.match(
-    /export const NEST_OWNED_ROUTE_PATHS = new Set<string>\(\[([\s\S]*?)\]\);/
-  );
-  if (!declaration) {
-    throw new Error('Could not parse NEST_OWNED_ROUTE_PATHS');
-  }
-  return new Set([...declaration[1].matchAll(/'([A-Z]+ \/api\/[^']+)'/g)].map((match) => match[1]));
-}
-
 async function generate() {
-  const ownershipText = await readFile(ownershipSource, 'utf8');
-  const routeGroupOwners = parseRouteGroupOwners(ownershipText);
-  const nestOwnedRoutePaths = parseNestOwnedRoutePaths(ownershipText);
   const files = await walk(routeRoot);
   const nestControllerFiles = (await walk(nestSourceRoot)).filter((file) =>
     file.endsWith('.controller.ts')
@@ -382,14 +355,7 @@ async function generate() {
     endpoints.push(...parseNestControllerEndpoints(file, await readFile(file, 'utf8')));
   }
   endpoints.push(...middlewareOnlyEndpoints);
-  const activeEndpoints = endpoints.filter((endpoint) => {
-    if (endpoint.owner !== 'legacy-express') return true;
-    const apiGroup = endpoint.path.split('/')[2];
-    return (
-      routeGroupOwners.get(apiGroup) !== 'nest' &&
-      !nestOwnedRoutePaths.has(`${endpoint.method} ${endpoint.path}`)
-    );
-  });
+  const activeEndpoints = endpoints.filter((endpoint) => endpoint.owner !== 'legacy-express');
   sortEndpoints(activeEndpoints);
   return {
     schemaVersion: 2,

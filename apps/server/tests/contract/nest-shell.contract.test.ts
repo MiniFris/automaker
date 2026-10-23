@@ -14,11 +14,6 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 import WebSocket from 'ws';
 
 import { createNestApplication } from '../../src/main.js';
-import {
-  assertSingleRouteOwner,
-  getApiRouteGroup,
-  ROUTE_GROUP_OWNERS,
-} from '../../src/legacy/legacy-router.middleware.js';
 import { LEGACY_APPLICATION, LEGACY_SERVICES } from '../../src/legacy/legacy.tokens.js';
 import { SettingsService } from '../../src/services/settings-service.js';
 
@@ -75,25 +70,19 @@ describe('Nest shell and legacy bridge contract', () => {
     expect(runtime.app.get(SettingsService)).toBe(services.settingsService);
   });
 
-  it('has one explicit owner for every API route group', () => {
-    expect(() => assertSingleRouteOwner(ROUTE_GROUP_OWNERS)).not.toThrow();
-    expect(new Set(Object.values(ROUTE_GROUP_OWNERS))).toEqual(new Set(['nest']));
-    expect(ROUTE_GROUP_OWNERS.worktree).toBe('nest');
-    expect(ROUTE_GROUP_OWNERS.agent).toBe('nest');
-    expect(ROUTE_GROUP_OWNERS.setup).toBe('nest');
-    expect(ROUTE_GROUP_OWNERS.pipeline).toBe('nest');
-    expect(ROUTE_GROUP_OWNERS.mcp).toBe('nest');
-    expect(ROUTE_GROUP_OWNERS['enhance-prompt']).toBe('nest');
-    expect(ROUTE_GROUP_OWNERS.github).toBe('nest');
-    expect(ROUTE_GROUP_OWNERS['auto-mode']).toBe('nest');
-    expect(ROUTE_GROUP_OWNERS.terminal).toBe('nest');
-    expect(ROUTE_GROUP_OWNERS.claude).toBe('nest');
-    expect(ROUTE_GROUP_OWNERS.codex).toBe('nest');
-    expect(ROUTE_GROUP_OWNERS.gemini).toBe('nest');
-    expect(ROUTE_GROUP_OWNERS.zai).toBe('nest');
-    expect(ROUTE_GROUP_OWNERS['running-agents']).toBe('nest');
-    expect(getApiRouteGroup({ originalUrl: '/api/features/feature-1?tab=plan' })).toBe('features');
-    expect(getApiRouteGroup({ originalUrl: '/not-api/features' })).toBeUndefined();
+  it('has Nest as the only owner in the generated API inventory', async () => {
+    const inventory = JSON.parse(
+      await readFile(
+        path.resolve(
+          import.meta.dirname,
+          '../../../../docs/backend-nestjs-migration/artifacts/http-routes.json'
+        ),
+        'utf8'
+      )
+    ) as { total: number; endpoints: Array<{ owner: string }> };
+
+    expect(inventory.total).toBeGreaterThan(0);
+    expect(new Set(inventory.endpoints.map(({ owner }) => owner))).toEqual(new Set(['nestjs']));
   });
 
   it('serves the unchanged public health contract through Nest', async () => {

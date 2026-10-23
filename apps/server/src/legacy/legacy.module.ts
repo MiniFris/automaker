@@ -9,7 +9,6 @@ import {
 
 import type { LegacyApplication } from '../legacy-application.js';
 import { ReadinessStateService } from '../core/lifecycle/readiness-state.service.js';
-import { LegacyRouterMiddleware } from './legacy-router.middleware.js';
 import {
   DATA_DIRECTORY,
   LEGACY_APPLICATION,
@@ -86,7 +85,6 @@ export class LegacyModule {
           useValue: legacy.services.providerConnections,
         },
         { provide: LEGACY_SERVICES.providerRegistry, useValue: legacy.services.providerRegistry },
-        LegacyRouterMiddleware,
         LegacyLifecycle,
       ],
       exports: [

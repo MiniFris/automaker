@@ -13,7 +13,6 @@ import { ObservabilityModule } from './core/observability/observability.module.j
 import { SecurityModule } from './core/security/index.js';
 import { ValidationModule } from './core/validation/validation.module.js';
 import { LegacyModule } from './legacy/legacy.module.js';
-import { LegacyRouterMiddleware } from './legacy/legacy-router.middleware.js';
 import { ModelsModule } from './modules/models/models.module.js';
 import { EventHistoryModule } from './modules/event-history/event-history.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
@@ -96,11 +95,7 @@ export class AppModule {
   configure(consumer: MiddlewareConsumer): void {
     // Nest adds the global /api prefix to middleware routes as well.
     consumer
-      .apply(
-        RequestContextMiddleware,
-        ...createPlatformMiddleware(this.config),
-        LegacyRouterMiddleware
-      )
+      .apply(RequestContextMiddleware, ...createPlatformMiddleware(this.config))
       .forRoutes({ path: '{*splat}', method: RequestMethod.ALL });
   }
 }
