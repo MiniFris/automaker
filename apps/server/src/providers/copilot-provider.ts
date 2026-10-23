@@ -538,11 +538,11 @@ export class CopilotProvider extends CliProvider {
     // Note: We don't use validateBareModelId here because Copilot's model IDs
     // legitimately contain prefixes like claude-, gemini-, gpt- which are the
     // actual model names from the Copilot CLI. We only need to ensure the
-    // copilot- prefix has been stripped by the ProviderFactory.
+    // The application strips the copilot- prefix before calling the adapter.
     if (options.model?.startsWith('copilot-')) {
       throw new Error(
         `[CopilotProvider] Model ID should not have 'copilot-' prefix. Got: '${options.model}'. ` +
-          `The ProviderFactory should strip this prefix before passing to the provider.`
+          `The application should strip this prefix before passing to the provider.`
       );
     }
 

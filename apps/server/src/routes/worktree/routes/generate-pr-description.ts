@@ -20,7 +20,7 @@ import {
   getModelProvider,
 } from '@automaker/types';
 import { resolvePhaseModel } from '@automaker/model-resolver';
-import { ProviderFactory } from '../../../providers/provider-factory.js';
+import type { ProviderRegistry } from '../../../modules/providers/provider-registry.service.js';
 import type { SettingsService } from '../../../services/settings-service.js';
 import { getErrorMessage, logError } from '../common.js';
 import { getPhaseModelWithOverrides } from '../../../lib/settings-helpers.js';
@@ -116,7 +116,8 @@ interface GeneratePRDescriptionErrorResponse {
 }
 
 export function createGeneratePRDescriptionHandler(
-  settingsService?: SettingsService
+  settingsService: SettingsService | undefined,
+  providers: ProviderRegistry
 ): (req: Request, res: Response) => Promise<void> {
   return async (req: Request, res: Response): Promise<void> => {
     try {
@@ -369,7 +370,7 @@ export function createGeneratePRDescriptionHandler(
       );
 
       // Get provider for the model type
-      const aiProvider = ProviderFactory.getProviderForModel(model);
+      const aiProvider = providers.providerForModel(model);
       const bareModel = stripProviderPrefix(model);
 
       // For Cursor models, combine prompts

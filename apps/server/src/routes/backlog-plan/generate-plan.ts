@@ -21,7 +21,6 @@ import {
 import { resolvePhaseModel } from '@automaker/model-resolver';
 import { getCurrentBranch } from '@automaker/git-utils';
 import { FeatureLoader } from '../../services/feature-loader.js';
-import { ProviderFactory } from '../../providers/provider-factory.js';
 import type { ProviderRegistry } from '../../modules/providers/provider-registry.service.js';
 import { prepareDirectExecution } from '../../providers/openai-compatible/execution.js';
 import { extractJsonWithArray } from '../../lib/json-extractor.js';
@@ -165,11 +164,11 @@ export async function generateBacklogPlan(
   prompt: string,
   events: EventEmitter,
   abortController: AbortController,
-  settingsService?: SettingsService,
-  model?: string,
-  branchName?: string,
-  providerId?: string,
-  providerRegistry?: ProviderRegistry
+  settingsService: SettingsService | undefined,
+  model: string | undefined,
+  branchName: string | undefined,
+  providerId: string | undefined,
+  providerRegistry: ProviderRegistry
 ): Promise<BacklogPlanResult> {
   try {
     // Load current features
@@ -292,9 +291,7 @@ export async function generateBacklogPlan(
       claudeCompatibleProvider ? `via provider: ${claudeCompatibleProvider.name}` : 'direct API'
     );
 
-    const provider = providerRegistry
-      ? providerRegistry.providerForModel(effectiveModel)
-      : ProviderFactory.getProviderForModel(effectiveModel);
+    const provider = providerRegistry.providerForModel(effectiveModel);
     // Strip provider prefix - providers expect bare model IDs
     const bareModel = stripProviderPrefix(effectiveModel);
 

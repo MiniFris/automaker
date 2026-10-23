@@ -52,10 +52,9 @@ export { GeminiProvider, GeminiErrorCode } from './gemini-provider.js';
 // Copilot provider (GitHub Copilot SDK)
 export { CopilotProvider, CopilotErrorCode } from './copilot-provider.js';
 
-// Provider factory
+// OpenAI-compatible adapter
 export { OpenAICompatibleProvider } from './openai-compatible-provider.js';
 export { AgentCheckpointStore, parseCheckpoint } from './openai-compatible/checkpoint.js';
-export { ProviderFactory } from './provider-factory.js';
 
 // Simple query service - unified interface for basic AI queries
 export { simpleQuery, streamingQuery } from './simple-query-service.js';

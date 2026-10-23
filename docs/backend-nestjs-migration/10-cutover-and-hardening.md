@@ -7,10 +7,10 @@
 
 ## 10.1. Legacy removal
 
-- [ ] Route inventory показывает Nest owner для каждого endpoint.
-- [ ] Удалить legacy router module/middleware.
+- [x] Route inventory показывает Nest owner для каждого endpoint.
+- [x] Удалить legacy router module/middleware.
 - [ ] Удалить Express route factories и неиспользуемые common helpers.
-- [ ] Удалить старый `src/index.ts` из production build.
+- [x] Удалить старый `src/index.ts` из production build.
 - [x] Удалить wrapper providers, которые только выдавали legacy instances.
 - [ ] Удалить singleton getters и side-effect registration.
 - [ ] Удалить временные feature flags/route ownership registry.
@@ -31,6 +31,14 @@ Production lifecycle smoke выполняется командой `npm run smok
 реальные startup tasks, readiness, auth guard и завершение отдельных processes по
 SIGTERM/SIGINT. Текущий benchmark использует Nest entrypoint и завершается естественно.
 Числа и ограничения измерения записаны в `artifacts/performance-baseline.md`.
+
+Последующий cleanup удалил неиспользуемые legacy routers context, enhance-prompt,
+features, setup, GitHub, backlog-plan и app-spec, а также их неиспользуемые generation
+handlers. Worktree router пока остаётся для adapter acceptance и получает registry
+явно. Статический provider factory и compatibility `src/index.ts` удалены. Server
+build очищает только генерируемый `apps/server/dist` перед `tsc`, поэтому удалённые
+entrypoints и adapters не остаются в production artifact. Остальные legacy handlers,
+service tokens и lifecycle adapter ещё требуют переноса.
 
 ## 10.2. Dependency rules
 

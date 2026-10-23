@@ -89,13 +89,13 @@ async function runValidation(
   model: ModelId,
   events: EventEmitter,
   abortController: AbortController,
-  settingsService?: SettingsService,
-  providerId?: string,
-  comments?: ValidationComment[],
-  linkedPRs?: ValidationLinkedPR[],
-  thinkingLevel?: ThinkingLevel,
-  reasoningEffort?: ReasoningEffort,
-  providerRegistry?: ProviderRegistry
+  settingsService: SettingsService | undefined,
+  providerId: string | undefined,
+  comments: ValidationComment[] | undefined,
+  linkedPRs: ValidationLinkedPR[] | undefined,
+  thinkingLevel: ThinkingLevel | undefined,
+  reasoningEffort: ReasoningEffort | undefined,
+  providerRegistry: ProviderRegistry
 ): Promise<void> {
   // Emit start event
   const startEvent: IssueValidationEvent = {
@@ -314,8 +314,8 @@ ${basePrompt}`;
  */
 export function createValidateIssueHandler(
   events: EventEmitter,
-  settingsService?: SettingsService,
-  providerRegistry?: ProviderRegistry
+  settingsService: SettingsService | undefined,
+  providerRegistry: ProviderRegistry
 ) {
   return async (req: Request, res: Response): Promise<void> => {
     try {

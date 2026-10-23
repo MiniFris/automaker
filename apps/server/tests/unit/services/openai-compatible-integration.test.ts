@@ -10,7 +10,6 @@ import { toDirectModelId } from '@automaker/types';
 import { SettingsService } from '@/services/settings-service.js';
 import { AgentService } from '@/services/agent-service.js';
 import { AgentExecutor } from '@/services/agent-executor.js';
-import { ProviderFactory } from '@/providers/provider-factory.js';
 import { prepareDirectExecution } from '@/providers/openai-compatible/execution.js';
 import { simpleQuery, streamingQuery } from '@/providers/simple-query-service.js';
 import { getPhaseModelWithOverrides } from '@/lib/settings-helpers.js';
@@ -134,13 +133,16 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     for (const providerId of ['first', 'second'])
       expect(
         (
-          await simpleQuery({
-            prompt: 'Text',
-            model,
-            providerId,
-            settingsService: settings,
-            cwd: root,
-          })
+          await simpleQuery(
+            {
+              prompt: 'Text',
+              model,
+              providerId,
+              settingsService: settings,
+              cwd: root,
+            },
+            createTestProviderRegistry(settings)
+          )
         ).text
       ).toBe('Completed once');
     expect(requests.map((request) => request.auth)).toEqual([
@@ -156,16 +158,22 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
 
   it('never chooses a direct endpoint by model alone and never falls back to Claude', async () => {
     await expect(
-      simpleQuery({ prompt: 'Text', model, settingsService: settings, cwd: root })
+      simpleQuery(
+        { prompt: 'Text', model, settingsService: settings, cwd: root },
+        createTestProviderRegistry(settings)
+      )
     ).rejects.toThrow('providerId');
     await expect(
-      simpleQuery({
-        prompt: 'Text',
-        model,
-        providerId: 'missing',
-        settingsService: settings,
-        cwd: root,
-      })
+      simpleQuery(
+        {
+          prompt: 'Text',
+          model,
+          providerId: 'missing',
+          settingsService: settings,
+          cwd: root,
+        },
+        createTestProviderRegistry(settings)
+      )
     ).rejects.toThrow('providerId');
     expect(requests).toHaveLength(0);
   });
@@ -291,16 +299,19 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     };
     const onText = vi.fn();
     const onToolUse = vi.fn();
-    const result = await streamingQuery({
-      prompt: 'Read answer',
-      cwd: root,
-      model,
-      providerId: 'first',
-      settingsService: settings,
-      readOnly: true,
-      onText,
-      onToolUse,
-    });
+    const result = await streamingQuery(
+      {
+        prompt: 'Read answer',
+        cwd: root,
+        model,
+        providerId: 'first',
+        settingsService: settings,
+        readOnly: true,
+        onText,
+        onToolUse,
+      },
+      createTestProviderRegistry(settings)
+    );
     expect(result.text).toBe('The answer is 41');
     expect(onText.mock.calls.flat().join('')).toBe('The answer is 41');
     expect(onToolUse).toHaveBeenCalledTimes(1);
@@ -322,12 +333,15 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     const phase = await getPhaseModelWithOverrides('enhancementModel', settings, root);
     expect(phase.isProjectOverride).toBe(true);
     expect(phase.phaseModel.providerId).toBe('second');
-    await simpleQuery({
-      prompt: 'Text',
-      cwd: root,
-      ...phase.phaseModel,
-      settingsService: settings,
-    });
+    await simpleQuery(
+      {
+        prompt: 'Text',
+        cwd: root,
+        ...phase.phaseModel,
+        settingsService: settings,
+      },
+      createTestProviderRegistry(settings)
+    );
     expect(requests[0].auth).toBe('Bearer second-private-key');
   });
 
@@ -485,7 +499,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
           model,
           providerId: 'first',
           effectiveBareModel: endpoint.models[0].id,
-          provider: ProviderFactory.getProviderForModel(model),
+          provider: createTestProviderRegistry(settings).providerForModel(model),
           abortController: new AbortController(),
           planningMode: 'spec',
           requirePlanApproval: true,
@@ -569,7 +583,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
         model,
         providerId: 'second',
         effectiveBareModel: endpoint.models[0].id,
-        provider: ProviderFactory.getProviderForModel(model),
+        provider: createTestProviderRegistry(settings).providerForModel(model),
         abortController: new AbortController(),
         existingApprovedPlanContent: 'Previously approved plan',
         persistedTasks: [
@@ -623,7 +637,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
             model: routedModel,
             providerId: controls.providerId,
             effectiveBareModel: endpoint.models[0].id,
-            provider: ProviderFactory.getProviderForModel(routedModel),
+            provider: createTestProviderRegistry(settings).providerForModel(routedModel),
             status: controls.status,
             systemPrompt: controls.systemPrompt,
           },
@@ -731,7 +745,9 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       { model, providerId: 'first' }
     );
     const messages = [];
-    for await (const message of ProviderFactory.getProviderForModel(model).executeQuery(prepared))
+    for await (const message of createTestProviderRegistry(settings)
+      .providerForModel(model)
+      .executeQuery(prepared))
       messages.push(message);
     expect(messages.at(-1)).toMatchObject({ type: 'result', subtype: 'success' });
     expect(await fs.readFile(path.join(root, 'result.txt'), 'utf8')).toBe('42');
@@ -748,9 +764,9 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       settings,
       { model, providerId: 'first' }
     );
-    for await (const _message of ProviderFactory.getProviderForModel(model).executeQuery(
-      prepared
-    )) {
+    for await (const _message of createTestProviderRegistry(settings)
+      .providerForModel(model)
+      .executeQuery(prepared)) {
       /* drain */
     }
     expect(requests[0].body.tools?.map((tool) => tool.function.name)).toEqual([
@@ -769,10 +785,12 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       { model, providerId: 'first' }
     );
     const messages = [];
-    for await (const message of ProviderFactory.getProviderForModel(model).executeQuery({
-      ...prepared,
-      executionEnvironmentRuntime: { type: 'local', cwd: root, capabilities: { shell: true } },
-    }))
+    for await (const message of createTestProviderRegistry(settings)
+      .providerForModel(model)
+      .executeQuery({
+        ...prepared,
+        executionEnvironmentRuntime: { type: 'local', cwd: root, capabilities: { shell: true } },
+      }))
       messages.push(message);
     expect(messages.at(-1)).toMatchObject({ type: 'result', subtype: 'error_during_execution' });
     expect(requests).toHaveLength(0);

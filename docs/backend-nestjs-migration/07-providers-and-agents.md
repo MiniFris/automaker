@@ -40,11 +40,11 @@ AgentsModule
 
 ## 7.2. ProviderRegistry
 
-- [ ] Удалить module-import registration side effects.
-- [ ] Удалить static методы `ProviderFactory`.
-- [ ] Зарегистрировать adapters явным factory provider.
-- [ ] Сохранить aliases и model matching priorities.
-- [ ] Вынести disconnected markers в provider connection repository.
+- [x] Удалить module-import registration side effects.
+- [x] Удалить static методы `ProviderFactory`.
+- [x] Зарегистрировать adapters явным factory provider.
+- [x] Сохранить aliases и model matching priorities.
+- [x] Вынести disconnected markers в provider connection repository.
 - [ ] Ввести duplicate alias/model ownership checks при startup.
 - [ ] Поддержать mock provider только через test module override.
 
@@ -62,13 +62,22 @@ Nest не предоставляет неявный multi-binding, поэтом�
 
 Unit tests передают registry mocks напрямую. Transport acceptance создаёт явный
 registry с реальными adapters через `tests/helpers/provider-registry.ts`, включая
-restart/default-change сценарии. Это ещё не завершение пункта удаления статического
-registry: `simple-query-service` и отдельные legacy workflow handlers пока имеют
-fallback на `ProviderFactory` и должны быть перенесены следующими срезами.
+restart/default-change сценарии. Следующий срез удалил сам `ProviderFactory`, его
+barrel export и последние fallback в simple-query, backlog planning, Codex auth и
+legacy worktree text handlers. Все source/test callers передают registry явно.
+45 routing/catalog/alias tests сохранены в `provider-registrations.test.ts`.
 
-Checkpoint среза: server build и lint, 2900 unit-тестов, 228 HTTP/WS contracts,
-37 remote CLI/SDK/SSH acceptance tests и отдельный настоящий SSH planning/approval
-workflow. Production process smoke по SIGTERM/SIGINT также завершился с кодом 0.
+Spec → feature generation передаёт тот же registry и abort controller во вторую
+фазу. Contract с fake provider и реальным файловым хранилищем проверяет сохранение
+spec, создание backlog feature и отмену между фазами без второго model call.
+
+Checkpoint удаления factory: server build и lint, 2900 unit-тестов (40 skipped),
+230 HTTP/WS contracts, 34 managed SSH/Git/preview теста (1 skipped), 11 реальных
+Docker acceptance тестов (4 opt-in skipped) и три выбранных remote CLI/SDK/SSH
+chat/restart сценария. SSH suite использует отдельный preview port range
+43200–43219, чтобы не конкурировать с production listeners. Все три inventory
+checks актуальны. Production process smoke по SIGTERM/SIGINT завершился с кодом 0.
+Пропущенные opt-in проверки не доказывают завершение этапа 7 целиком.
 
 ## 7.3. Перенос providers
 

@@ -14,7 +14,6 @@ import {
   prepareDirectExecution,
   runDirectShellCommand,
 } from '@/providers/openai-compatible/execution.js';
-import { ProviderFactory } from '@/providers/provider-factory.js';
 import { AgentService } from '@/services/agent-service.js';
 import { createEventEmitter } from '@/lib/events.js';
 import { AutoModeServiceFacade } from '@/services/auto-mode/facade.js';
@@ -142,9 +141,11 @@ const send=event=>process.stdout.write(JSON.stringify(event)+'\\n');
           { model, projectPath: project, runKey: `chat:${model}` }
         );
         const messages = [];
-        for await (const message of ProviderFactory.getProviderForModel(model, {
-          throwOnDisconnected: false,
-        }).executeQuery(prepared))
+        for await (const message of createTestProviderRegistry(settings)
+          .providerForModel(model, {
+            throwOnDisconnected: false,
+          })
+          .executeQuery(prepared))
           messages.push(message);
         expect(messages.some((message) => message.type === 'assistant')).toBe(true);
         expect(messages.some((message) => message.type === 'result')).toBe(true);
@@ -219,9 +220,11 @@ const send=event=>process.stdout.write(JSON.stringify(event)+'\\n');
         }
       );
       expect(prepared.cwd).toBe(run.environment.cwd);
-      for await (const _message of ProviderFactory.getProviderForModel(feature.model, {
-        throwOnDisconnected: false,
-      }).executeQuery(prepared)) {
+      for await (const _message of createTestProviderRegistry(settings)
+        .providerForModel(feature.model, {
+          throwOnDisconnected: false,
+        })
+        .executeQuery(prepared)) {
         /* drain */
       }
       expect(
@@ -323,9 +326,11 @@ const send=event=>process.stdout.write(JSON.stringify(event)+'\\n');
         settings,
         { model: 'cursor-auto', projectPath: project, runKey: 'chat:readonly' }
       );
-      for await (const _message of ProviderFactory.getProviderForModel('cursor-auto', {
-        throwOnDisconnected: false,
-      }).executeQuery(prepared)) {
+      for await (const _message of createTestProviderRegistry(settings)
+        .providerForModel('cursor-auto', {
+          throwOnDisconnected: false,
+        })
+        .executeQuery(prepared)) {
         /* drain */
       }
       const invocation = JSON.parse(

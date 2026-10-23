@@ -15,7 +15,6 @@ import { ManagedSSH } from '@/services/execution-environment/ssh.js';
 import { ProviderSetupService } from '@/services/execution-environment/provider-setup.js';
 import { providerManifest } from '@/services/execution-environment/provider-catalog.js';
 import { prepareDirectExecution } from '@/providers/openai-compatible/execution.js';
-import { ProviderFactory } from '@/providers/provider-factory.js';
 import { AgentService } from '@/services/agent-service.js';
 import { AutoModeServiceFacade } from '@/services/auto-mode/facade.js';
 import { FeatureLoader } from '@/services/feature-loader.js';
@@ -130,9 +129,11 @@ describe.skipIf(process.platform !== 'linux')('target-side SDK setup and executi
         { model, projectPath: project, runKey: 'chat:actual' }
       );
       const messages = [];
-      for await (const message of ProviderFactory.getProviderForModel(model, {
-        throwOnDisconnected: false,
-      }).executeQuery(options))
+      for await (const message of createTestProviderRegistry(settings)
+        .providerForModel(model, {
+          throwOnDisconnected: false,
+        })
+        .executeQuery(options))
         messages.push(message);
       expect(messages.at(-1)).toMatchObject({
         type: 'result',
@@ -200,9 +201,11 @@ describe.skipIf(process.platform !== 'linux')('target-side SDK setup and executi
         { model, projectPath: project, runKey: 'chat:sdk' }
       );
       const messages = [];
-      for await (const message of ProviderFactory.getProviderForModel(model, {
-        throwOnDisconnected: false,
-      }).executeQuery(options))
+      for await (const message of createTestProviderRegistry(settings)
+        .providerForModel(model, {
+          throwOnDisconnected: false,
+        })
+        .executeQuery(options))
         messages.push(message);
       expect(messages.at(-1)).toMatchObject({
         type: 'result',
@@ -300,9 +303,11 @@ describe.skipIf(process.platform !== 'linux')('target-side SDK setup and executi
         settings,
         { model, projectPath: project, runKey: 'chat:plan' }
       );
-      for await (const _message of ProviderFactory.getProviderForModel(model, {
-        throwOnDisconnected: false,
-      }).executeQuery(options)) {
+      for await (const _message of createTestProviderRegistry(settings)
+        .providerForModel(model, {
+          throwOnDisconnected: false,
+        })
+        .executeQuery(options)) {
         /* drain */
       }
       const invocation = JSON.parse(
@@ -332,7 +337,8 @@ describe.skipIf(process.platform !== 'linux')('target-side SDK setup and executi
       { model, projectPath: project, runKey: 'chat:failure' }
     );
     await expect(
-      ProviderFactory.getProviderForModel(model, { throwOnDisconnected: false })
+      createTestProviderRegistry(settings)
+        .providerForModel(model, { throwOnDisconnected: false })
         .executeQuery(options)
         .next()
     ).rejects.toMatchObject({ code: 'REMOTE_SDK_NOT_INSTALLED' });
@@ -344,13 +350,15 @@ describe.skipIf(process.platform !== 'linux')('target-side SDK setup and executi
     await install('codex');
     options = { ...options, prompt: 'FAIL' };
     await expect(
-      ProviderFactory.getProviderForModel(model, { throwOnDisconnected: false })
+      createTestProviderRegistry(settings)
+        .providerForModel(model, { throwOnDisconnected: false })
         .executeQuery(options)
         .next()
     ).rejects.toThrow('[REDACTED]');
     options = { ...options, prompt: 'Continue', sdkSessionId: 'missing-session' };
     await expect(
-      ProviderFactory.getProviderForModel(model, { throwOnDisconnected: false })
+      createTestProviderRegistry(settings)
+        .providerForModel(model, { throwOnDisconnected: false })
         .executeQuery(options)
         .next()
     ).rejects.toThrow('Session not found');

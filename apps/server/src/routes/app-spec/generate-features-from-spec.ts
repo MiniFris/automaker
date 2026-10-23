@@ -90,10 +90,10 @@ export async function generateFeaturesFromSpec(
   projectPath: string,
   events: EventEmitter,
   abortController: AbortController,
-  maxFeatures?: number,
-  settingsService?: SettingsService,
-  notificationService?: NotificationService,
-  providerRegistry?: ProviderRegistry
+  maxFeatures: number | undefined,
+  settingsService: SettingsService | undefined,
+  notificationService: NotificationService | undefined,
+  providerRegistry: ProviderRegistry
 ): Promise<void> {
   const featureCount = maxFeatures ?? DEFAULT_MAX_FEATURES;
   logger.debug('========== generateFeaturesFromSpec() started ==========');

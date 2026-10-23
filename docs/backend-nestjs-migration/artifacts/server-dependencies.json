@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 611,
-    "internalEdges": 1993,
+    "files": 593,
+    "internalEdges": 1857,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -30,20 +30,20 @@
     "modules -> types": 2,
     "providers -> lib": 5,
     "providers -> modules": 1,
-    "providers -> providers": 100,
-    "providers -> services": 22,
+    "providers -> providers": 89,
+    "providers -> services": 21,
     "root -> core": 14,
     "root -> legacy": 2,
     "root -> lib": 2,
     "root -> modules": 28,
     "root -> root": 4,
     "root -> services": 21,
-    "routes -> lib": 123,
-    "routes -> middleware": 11,
-    "routes -> modules": 6,
-    "routes -> providers": 28,
-    "routes -> routes": 452,
-    "routes -> services": 220,
+    "routes -> lib": 105,
+    "routes -> middleware": 8,
+    "routes -> modules": 9,
+    "routes -> providers": 20,
+    "routes -> routes": 378,
+    "routes -> services": 196,
     "routes -> types": 3,
     "services -> lib": 70,
     "services -> modules": 9,
@@ -88,7 +88,6 @@
       "apps/server/src/providers/openai-compatible/config.ts",
       "apps/server/src/providers/openai-compatible/workspace.ts",
       "apps/server/src/providers/opencode-provider.ts",
-      "apps/server/src/providers/provider-factory.ts",
       "apps/server/src/providers/remote-sdk-worker.ts",
       "apps/server/src/routes/app-spec/common.ts",
       "apps/server/src/routes/fs/routes/resolve-directory.ts",
@@ -144,11 +143,8 @@
       "apps/server/src/providers/cursor-provider.ts",
       "apps/server/src/providers/gemini-provider.ts",
       "apps/server/src/providers/openai-compatible/workspace.ts",
-      "apps/server/src/providers/provider-factory.ts",
       "apps/server/src/providers/remote-sdk-worker.ts",
       "apps/server/src/providers/simple-query-service.ts",
-      "apps/server/src/routes/enhance-prompt/routes/enhance.ts",
-      "apps/server/src/routes/features/routes/generate-title.ts",
       "apps/server/src/routes/fs/routes/resolve-directory.ts",
       "apps/server/src/routes/setup/common.ts",
       "apps/server/src/routes/setup/get-claude-status.ts",
@@ -315,11 +311,11 @@
     "@automaker/contracts": 9,
     "@automaker/dependency-resolver": 1,
     "@automaker/git-utils": 12,
-    "@automaker/model-resolver": 24,
-    "@automaker/platform": 82,
+    "@automaker/model-resolver": 20,
+    "@automaker/platform": 80,
     "@automaker/prompts": 3,
-    "@automaker/types": 176,
-    "@automaker/utils": 174,
+    "@automaker/types": 173,
+    "@automaker/utils": 166,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
@@ -337,8 +333,8 @@
     "crypto": 5,
     "dotenv": 1,
     "events": 1,
-    "express": 266,
-    "fs": 23,
+    "express": 250,
+    "fs": 22,
     "fs/promises": 18,
     "net": 1,
     "node-pty": 2,
@@ -358,7 +354,7 @@
     "node:timers/promises": 3,
     "node:util": 12,
     "os": 16,
-    "path": 96,
+    "path": 93,
     "readline": 1,
     "reflect-metadata": 1,
     "ssh2": 3,
@@ -3667,50 +3663,6 @@
       "target": "apps/server/src/providers/types.ts"
     },
     {
-      "source": "apps/server/src/providers/provider-factory.ts",
-      "target": "apps/server/src/providers/base-provider.ts"
-    },
-    {
-      "source": "apps/server/src/providers/provider-factory.ts",
-      "target": "apps/server/src/providers/claude-provider.ts"
-    },
-    {
-      "source": "apps/server/src/providers/provider-factory.ts",
-      "target": "apps/server/src/providers/codex-provider.ts"
-    },
-    {
-      "source": "apps/server/src/providers/provider-factory.ts",
-      "target": "apps/server/src/providers/copilot-provider.ts"
-    },
-    {
-      "source": "apps/server/src/providers/provider-factory.ts",
-      "target": "apps/server/src/providers/cursor-provider.ts"
-    },
-    {
-      "source": "apps/server/src/providers/provider-factory.ts",
-      "target": "apps/server/src/providers/gemini-provider.ts"
-    },
-    {
-      "source": "apps/server/src/providers/provider-factory.ts",
-      "target": "apps/server/src/providers/mock-provider.ts"
-    },
-    {
-      "source": "apps/server/src/providers/provider-factory.ts",
-      "target": "apps/server/src/providers/openai-compatible-provider.ts"
-    },
-    {
-      "source": "apps/server/src/providers/provider-factory.ts",
-      "target": "apps/server/src/providers/opencode-provider.ts"
-    },
-    {
-      "source": "apps/server/src/providers/provider-factory.ts",
-      "target": "apps/server/src/providers/types.ts"
-    },
-    {
-      "source": "apps/server/src/providers/provider-factory.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
       "source": "apps/server/src/providers/remote-sdk-worker.ts",
       "target": "apps/server/src/services/execution-environment/provider-catalog.ts"
     },
@@ -3745,10 +3697,6 @@
     {
       "source": "apps/server/src/providers/simple-query-service.ts",
       "target": "apps/server/src/providers/openai-compatible/execution.ts"
-    },
-    {
-      "source": "apps/server/src/providers/simple-query-service.ts",
-      "target": "apps/server/src/providers/provider-factory.ts"
     },
     {
       "source": "apps/server/src/providers/simple-query-service.ts",
@@ -3979,42 +3927,6 @@
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
-      "source": "apps/server/src/routes/app-spec/index.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/index.ts",
-      "target": "apps/server/src/routes/app-spec/routes/create.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/index.ts",
-      "target": "apps/server/src/routes/app-spec/routes/generate-features.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/index.ts",
-      "target": "apps/server/src/routes/app-spec/routes/generate.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/index.ts",
-      "target": "apps/server/src/routes/app-spec/routes/status.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/index.ts",
-      "target": "apps/server/src/routes/app-spec/routes/stop.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/index.ts",
-      "target": "apps/server/src/routes/app-spec/routes/sync.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/index.ts",
-      "target": "apps/server/src/services/notification-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/index.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
       "source": "apps/server/src/routes/app-spec/parse-and-create-features.ts",
       "target": "apps/server/src/lib/events.ts"
     },
@@ -4035,92 +3947,12 @@
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
-      "source": "apps/server/src/routes/app-spec/routes/create.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/routes/create.ts",
-      "target": "apps/server/src/routes/app-spec/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/routes/create.ts",
-      "target": "apps/server/src/routes/app-spec/generate-spec.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/routes/create.ts",
-      "target": "apps/server/src/services/notification-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/routes/create.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/routes/generate-features.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/routes/generate-features.ts",
-      "target": "apps/server/src/routes/app-spec/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/routes/generate-features.ts",
-      "target": "apps/server/src/routes/app-spec/generate-features-from-spec.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/routes/generate-features.ts",
-      "target": "apps/server/src/services/notification-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/routes/generate-features.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/routes/generate.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/routes/generate.ts",
-      "target": "apps/server/src/routes/app-spec/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/routes/generate.ts",
-      "target": "apps/server/src/routes/app-spec/generate-spec.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/routes/generate.ts",
-      "target": "apps/server/src/services/notification-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/routes/generate.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
       "source": "apps/server/src/routes/app-spec/routes/status.ts",
       "target": "apps/server/src/routes/app-spec/common.ts"
     },
     {
       "source": "apps/server/src/routes/app-spec/routes/stop.ts",
       "target": "apps/server/src/routes/app-spec/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/routes/sync.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/routes/sync.ts",
-      "target": "apps/server/src/routes/app-spec/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/routes/sync.ts",
-      "target": "apps/server/src/routes/app-spec/sync-spec.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/routes/sync.ts",
-      "target": "apps/server/src/services/notification-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/routes/sync.ts",
-      "target": "apps/server/src/services/settings-service.ts"
     },
     {
       "source": "apps/server/src/routes/app-spec/sync-spec.ts",
@@ -4364,10 +4196,6 @@
     },
     {
       "source": "apps/server/src/routes/backlog-plan/generate-plan.ts",
-      "target": "apps/server/src/providers/provider-factory.ts"
-    },
-    {
-      "source": "apps/server/src/routes/backlog-plan/generate-plan.ts",
       "target": "apps/server/src/routes/backlog-plan/common.ts"
     },
     {
@@ -4376,38 +4204,6 @@
     },
     {
       "source": "apps/server/src/routes/backlog-plan/generate-plan.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/backlog-plan/index.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/backlog-plan/index.ts",
-      "target": "apps/server/src/middleware/validate-paths.ts"
-    },
-    {
-      "source": "apps/server/src/routes/backlog-plan/index.ts",
-      "target": "apps/server/src/routes/backlog-plan/routes/apply.ts"
-    },
-    {
-      "source": "apps/server/src/routes/backlog-plan/index.ts",
-      "target": "apps/server/src/routes/backlog-plan/routes/clear.ts"
-    },
-    {
-      "source": "apps/server/src/routes/backlog-plan/index.ts",
-      "target": "apps/server/src/routes/backlog-plan/routes/generate.ts"
-    },
-    {
-      "source": "apps/server/src/routes/backlog-plan/index.ts",
-      "target": "apps/server/src/routes/backlog-plan/routes/status.ts"
-    },
-    {
-      "source": "apps/server/src/routes/backlog-plan/index.ts",
-      "target": "apps/server/src/routes/backlog-plan/routes/stop.ts"
-    },
-    {
-      "source": "apps/server/src/routes/backlog-plan/index.ts",
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
@@ -4425,22 +4221,6 @@
     {
       "source": "apps/server/src/routes/backlog-plan/routes/clear.ts",
       "target": "apps/server/src/routes/backlog-plan/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/backlog-plan/routes/generate.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/backlog-plan/routes/generate.ts",
-      "target": "apps/server/src/routes/backlog-plan/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/backlog-plan/routes/generate.ts",
-      "target": "apps/server/src/routes/backlog-plan/generate-plan.ts"
-    },
-    {
-      "source": "apps/server/src/routes/backlog-plan/routes/generate.ts",
-      "target": "apps/server/src/services/settings-service.ts"
     },
     {
       "source": "apps/server/src/routes/backlog-plan/routes/status.ts",
@@ -4461,86 +4241,6 @@
     {
       "source": "apps/server/src/routes/codex/index.ts",
       "target": "apps/server/src/services/codex-usage-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/context/index.ts",
-      "target": "apps/server/src/routes/context/routes/describe-file.ts"
-    },
-    {
-      "source": "apps/server/src/routes/context/index.ts",
-      "target": "apps/server/src/routes/context/routes/describe-image.ts"
-    },
-    {
-      "source": "apps/server/src/routes/context/index.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/context/routes/describe-file.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/context/routes/describe-file.ts",
-      "target": "apps/server/src/lib/settings-helpers.ts"
-    },
-    {
-      "source": "apps/server/src/routes/context/routes/describe-file.ts",
-      "target": "apps/server/src/providers/simple-query-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/context/routes/describe-file.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/context/routes/describe-image.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/context/routes/describe-image.ts",
-      "target": "apps/server/src/lib/settings-helpers.ts"
-    },
-    {
-      "source": "apps/server/src/routes/context/routes/describe-image.ts",
-      "target": "apps/server/src/providers/simple-query-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/context/routes/describe-image.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/enhance-prompt/index.ts",
-      "target": "apps/server/src/routes/enhance-prompt/routes/enhance.ts"
-    },
-    {
-      "source": "apps/server/src/routes/enhance-prompt/index.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/enhance-prompt/routes/enhance.ts",
-      "target": "apps/server/src/lib/enhancement-prompts.ts"
-    },
-    {
-      "source": "apps/server/src/routes/enhance-prompt/routes/enhance.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/enhance-prompt/routes/enhance.ts",
-      "target": "apps/server/src/lib/settings-helpers.ts"
-    },
-    {
-      "source": "apps/server/src/routes/enhance-prompt/routes/enhance.ts",
-      "target": "apps/server/src/lib/xml-extractor.ts"
-    },
-    {
-      "source": "apps/server/src/routes/enhance-prompt/routes/enhance.ts",
-      "target": "apps/server/src/providers/simple-query-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/enhance-prompt/routes/enhance.ts",
-      "target": "apps/server/src/services/feature-loader.ts"
-    },
-    {
-      "source": "apps/server/src/routes/enhance-prompt/routes/enhance.ts",
-      "target": "apps/server/src/services/settings-service.ts"
     },
     {
       "source": "apps/server/src/routes/environment-dev-server.ts",
@@ -4623,74 +4323,6 @@
       "target": "apps/server/src/routes/common.ts"
     },
     {
-      "source": "apps/server/src/routes/features/index.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/features/index.ts",
-      "target": "apps/server/src/middleware/validate-paths.ts"
-    },
-    {
-      "source": "apps/server/src/routes/features/index.ts",
-      "target": "apps/server/src/routes/features/routes/agent-output.ts"
-    },
-    {
-      "source": "apps/server/src/routes/features/index.ts",
-      "target": "apps/server/src/routes/features/routes/bulk-delete.ts"
-    },
-    {
-      "source": "apps/server/src/routes/features/index.ts",
-      "target": "apps/server/src/routes/features/routes/bulk-update.ts"
-    },
-    {
-      "source": "apps/server/src/routes/features/index.ts",
-      "target": "apps/server/src/routes/features/routes/create.ts"
-    },
-    {
-      "source": "apps/server/src/routes/features/index.ts",
-      "target": "apps/server/src/routes/features/routes/delete.ts"
-    },
-    {
-      "source": "apps/server/src/routes/features/index.ts",
-      "target": "apps/server/src/routes/features/routes/export.ts"
-    },
-    {
-      "source": "apps/server/src/routes/features/index.ts",
-      "target": "apps/server/src/routes/features/routes/generate-title.ts"
-    },
-    {
-      "source": "apps/server/src/routes/features/index.ts",
-      "target": "apps/server/src/routes/features/routes/get.ts"
-    },
-    {
-      "source": "apps/server/src/routes/features/index.ts",
-      "target": "apps/server/src/routes/features/routes/import.ts"
-    },
-    {
-      "source": "apps/server/src/routes/features/index.ts",
-      "target": "apps/server/src/routes/features/routes/list.ts"
-    },
-    {
-      "source": "apps/server/src/routes/features/index.ts",
-      "target": "apps/server/src/routes/features/routes/orphaned.ts"
-    },
-    {
-      "source": "apps/server/src/routes/features/index.ts",
-      "target": "apps/server/src/routes/features/routes/update.ts"
-    },
-    {
-      "source": "apps/server/src/routes/features/index.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
-    },
-    {
-      "source": "apps/server/src/routes/features/index.ts",
-      "target": "apps/server/src/services/feature-loader.ts"
-    },
-    {
-      "source": "apps/server/src/routes/features/index.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
       "source": "apps/server/src/routes/features/routes/agent-output.ts",
       "target": "apps/server/src/routes/features/common.ts"
     },
@@ -4745,18 +4377,6 @@
     {
       "source": "apps/server/src/routes/features/routes/export.ts",
       "target": "apps/server/src/services/feature-loader.ts"
-    },
-    {
-      "source": "apps/server/src/routes/features/routes/generate-title.ts",
-      "target": "apps/server/src/lib/settings-helpers.ts"
-    },
-    {
-      "source": "apps/server/src/routes/features/routes/generate-title.ts",
-      "target": "apps/server/src/providers/simple-query-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/features/routes/generate-title.ts",
-      "target": "apps/server/src/services/settings-service.ts"
     },
     {
       "source": "apps/server/src/routes/features/routes/get.ts",
@@ -5129,50 +4749,6 @@
     {
       "source": "apps/server/src/routes/git/routes/stage-files.ts",
       "target": "apps/server/src/services/stage-files-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/index.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/index.ts",
-      "target": "apps/server/src/middleware/validate-paths.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/index.ts",
-      "target": "apps/server/src/routes/github/routes/check-github-remote.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/index.ts",
-      "target": "apps/server/src/routes/github/routes/list-comments.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/index.ts",
-      "target": "apps/server/src/routes/github/routes/list-issues.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/index.ts",
-      "target": "apps/server/src/routes/github/routes/list-pr-review-comments.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/index.ts",
-      "target": "apps/server/src/routes/github/routes/list-prs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/index.ts",
-      "target": "apps/server/src/routes/github/routes/resolve-pr-comment.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/index.ts",
-      "target": "apps/server/src/routes/github/routes/validate-issue.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/index.ts",
-      "target": "apps/server/src/routes/github/routes/validation-endpoints.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/index.ts",
-      "target": "apps/server/src/services/settings-service.ts"
     },
     {
       "source": "apps/server/src/routes/github/routes/check-github-remote.ts",
@@ -5979,130 +5555,6 @@
       "target": "apps/server/src/routes/setup/common.ts"
     },
     {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/api-keys.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/auth-claude.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/auth-codex.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/auth-copilot.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/auth-cursor.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/auth-gemini.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/auth-opencode.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/claude-status.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/codex-status.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/copilot-models.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/copilot-status.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/cursor-config.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/cursor-status.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/deauth-claude.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/deauth-codex.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/deauth-copilot.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/deauth-cursor.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/deauth-gemini.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/deauth-opencode.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/delete-api-key.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/gemini-status.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/gh-status.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/install-claude.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/install-codex.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/opencode-models.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/opencode-status.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/platform.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/store-api-key.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/verify-claude-auth.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/routes/setup/routes/verify-codex-auth.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/index.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
       "source": "apps/server/src/routes/setup/routes/api-keys.ts",
       "target": "apps/server/src/routes/setup/common.ts"
     },
@@ -6288,10 +5740,6 @@
     },
     {
       "source": "apps/server/src/routes/setup/routes/verify-codex-auth.ts",
-      "target": "apps/server/src/providers/provider-factory.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/verify-codex-auth.ts",
       "target": "apps/server/src/routes/setup/common.ts"
     },
     {
@@ -6393,6 +5841,10 @@
     {
       "source": "apps/server/src/routes/worktree/index.ts",
       "target": "apps/server/src/middleware/validate-paths.ts"
+    },
+    {
+      "source": "apps/server/src/routes/worktree/index.ts",
+      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
     },
     {
       "source": "apps/server/src/routes/worktree/index.ts",
@@ -6812,11 +6264,11 @@
     },
     {
       "source": "apps/server/src/routes/worktree/routes/generate-commit-message.ts",
-      "target": "apps/server/src/providers/openai-compatible/execution.ts"
+      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
     },
     {
       "source": "apps/server/src/routes/worktree/routes/generate-commit-message.ts",
-      "target": "apps/server/src/providers/provider-factory.ts"
+      "target": "apps/server/src/providers/openai-compatible/execution.ts"
     },
     {
       "source": "apps/server/src/routes/worktree/routes/generate-commit-message.ts",
@@ -6832,11 +6284,11 @@
     },
     {
       "source": "apps/server/src/routes/worktree/routes/generate-pr-description.ts",
-      "target": "apps/server/src/providers/openai-compatible/execution.ts"
+      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
     },
     {
       "source": "apps/server/src/routes/worktree/routes/generate-pr-description.ts",
-      "target": "apps/server/src/providers/provider-factory.ts"
+      "target": "apps/server/src/providers/openai-compatible/execution.ts"
     },
     {
       "source": "apps/server/src/routes/worktree/routes/generate-pr-description.ts",

@@ -14,7 +14,6 @@
  * - Eliminates duplicate extractTextFromStream() functions
  */
 
-import { ProviderFactory } from './provider-factory.js';
 import type {
   ThinkingLevel,
   ReasoningEffort,
@@ -117,18 +116,17 @@ const DEFAULT_MODEL = 'claude-sonnet-4-6';
  *   systemPrompt: 'You are a title generator...',
  *   maxTurns: 1,
  *   allowedTools: [],
- * });
+ * }, providerRegistry);
  * console.log(result.text); // "Add user authentication"
  * ```
  */
 export async function simpleQuery(
   options: SimpleQueryOptions,
-  providerRegistry?: ProviderRegistry
+  providerRegistry: ProviderRegistry
 ): Promise<SimpleQueryResult> {
+  options.abortController?.signal.throwIfAborted();
   const model = options.model || DEFAULT_MODEL;
-  const provider = providerRegistry
-    ? providerRegistry.providerForModel(model)
-    : ProviderFactory.getProviderForModel(model);
+  const provider = providerRegistry.providerForModel(model);
   const bareModel = stripProviderPrefix(model);
 
   let responseText = '';
@@ -214,17 +212,16 @@ export async function simpleQuery(
  *   allowedTools: ['Read', 'Glob', 'Grep'],
  *   onText: (text) => emitProgress(text),
  *   onToolUse: (tool, input) => emitToolUse(tool, input),
- * });
+ * }, providerRegistry);
  * ```
  */
 export async function streamingQuery(
   options: StreamingQueryOptions,
-  providerRegistry?: ProviderRegistry
+  providerRegistry: ProviderRegistry
 ): Promise<SimpleQueryResult> {
+  options.abortController?.signal.throwIfAborted();
   const model = options.model || DEFAULT_MODEL;
-  const provider = providerRegistry
-    ? providerRegistry.providerForModel(model)
-    : ProviderFactory.getProviderForModel(model);
+  const provider = providerRegistry.providerForModel(model);
   const bareModel = stripProviderPrefix(model);
 
   let responseText = '';

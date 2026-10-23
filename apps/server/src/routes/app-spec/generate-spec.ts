@@ -32,12 +32,12 @@ export async function generateSpec(
   projectOverview: string,
   events: EventEmitter,
   abortController: AbortController,
-  generateFeatures?: boolean,
-  analyzeProject?: boolean,
-  maxFeatures?: number,
-  settingsService?: SettingsService,
-  notificationService?: NotificationService,
-  providerRegistry?: ProviderRegistry
+  generateFeatures: boolean | undefined,
+  analyzeProject: boolean | undefined,
+  maxFeatures: number | undefined,
+  settingsService: SettingsService | undefined,
+  notificationService: NotificationService | undefined,
+  providerRegistry: ProviderRegistry
 ): Promise<void> {
   logger.info('========== generateSpec() started ==========');
   logger.info('projectPath:', projectPath);
@@ -301,16 +301,15 @@ Your entire response should be valid JSON starting with { and ending with }. No 
   // If generate features was requested, generate them from the spec
   if (generateFeatures) {
     logger.info('Starting feature generation from spec...');
-    // Create a new abort controller for feature generation
-    const featureAbortController = new AbortController();
     try {
       await generateFeaturesFromSpec(
         projectPath,
         events,
-        featureAbortController,
+        abortController,
         maxFeatures,
         settingsService,
-        notificationService
+        notificationService,
+        providerRegistry
       );
       // Final completion will be emitted by generateFeaturesFromSpec -> parseAndCreateFeatures
     } catch (featureError) {

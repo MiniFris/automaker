@@ -1,3 +1,4 @@
+import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -101,7 +102,13 @@ describe.skipIf(process.platform !== 'linux')(
       );
       app.use(
         '/api/worktree',
-        createWorktreeRoutes(createEventEmitter(), settings, undefined, () => busy)
+        createWorktreeRoutes(
+          createTestProviderRegistry(settings),
+          createEventEmitter(),
+          settings,
+          undefined,
+          () => busy
+        )
       );
       server = app.listen(0, '127.0.0.1');
       await once(server, 'listening');

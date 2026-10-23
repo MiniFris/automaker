@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BacklogPlanResult, ProviderMessage } from '@automaker/types';
+import type { ProviderRegistry } from '@/modules/providers/provider-registry.service.js';
 
 const {
   mockGetAll,
@@ -27,13 +28,9 @@ vi.mock('@/services/feature-loader.js', () => ({
   },
 }));
 
-vi.mock('@/providers/provider-factory.js', () => ({
-  ProviderFactory: {
-    getProviderForModel: vi.fn(() => ({
-      executeQuery: mockExecuteQuery,
-    })),
-  },
-}));
+const providers = {
+  providerForModel: vi.fn(() => ({ executeQuery: mockExecuteQuery })),
+} as unknown as ProviderRegistry;
 
 vi.mock('@/routes/backlog-plan/common.js', () => ({
   logger: {
@@ -120,7 +117,10 @@ describe('generateBacklogPlan', () => {
       events as any,
       abortController,
       undefined,
-      'claude-opus'
+      'claude-opus',
+      undefined,
+      undefined,
+      providers
     );
 
     expect(mockExecuteQuery).toHaveBeenCalledTimes(1);
@@ -204,7 +204,10 @@ describe('generateBacklogPlan', () => {
       events as any,
       abortController,
       undefined,
-      'claude-opus'
+      'claude-opus',
+      undefined,
+      undefined,
+      providers
     );
 
     expect(result).toEqual(recoveredResult);

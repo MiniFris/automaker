@@ -22,7 +22,6 @@ import {
   prepareDirectExecution,
   runDirectShellCommand,
 } from '@/providers/openai-compatible/execution.js';
-import { ProviderFactory } from '@/providers/provider-factory.js';
 import { ProviderSetupService } from '@/services/execution-environment/provider-setup.js';
 import { providerManifest } from '@/services/execution-environment/provider-catalog.js';
 import { FeatureWorkspaceService } from '@/services/execution-environment/feature-workspace.js';
@@ -333,7 +332,9 @@ describe.skipIf(!base || process.platform !== 'linux')('real managed Docker Engi
       );
       expect(prepared.executionEnvironmentBinding?.type).toBe('docker');
       const messages = [];
-      for await (const message of ProviderFactory.getProviderForModel(model).executeQuery(prepared))
+      for await (const message of createTestProviderRegistry(settings)
+        .providerForModel(model)
+        .executeQuery(prepared))
         messages.push(message);
       expect(messages.at(-1)).toMatchObject({ type: 'result', subtype: 'success' });
       expect(count).toBe(4);
@@ -438,9 +439,11 @@ process.stdout.write(JSON.stringify({type:'result',subtype:'success'})+'\\n');
       );
       expect(prepared.executionEnvironmentBinding?.type).toBe('docker');
       const messages = [];
-      for await (const message of ProviderFactory.getProviderForModel('cursor-auto', {
-        throwOnDisconnected: false,
-      }).executeQuery(prepared))
+      for await (const message of createTestProviderRegistry(settings)
+        .providerForModel('cursor-auto', {
+          throwOnDisconnected: false,
+        })
+        .executeQuery(prepared))
         messages.push(message);
       expect(messages.at(-1)).toMatchObject({ type: 'result' });
       expect(await fs.readFile(path.join(project, 'docker-cli.txt'), 'utf8')).toBe(
@@ -780,9 +783,9 @@ process.stdout.write(JSON.stringify({type:'result',subtype:'success'})+'\\n');
         );
         expect(options.cwd).toBe(run.environment.cwd);
         const messages = [];
-        for await (const message of ProviderFactory.getProviderForModel(model).executeQuery(
-          options
-        ))
+        for await (const message of createTestProviderRegistry(settings)
+          .providerForModel(model)
+          .executeQuery(options))
           messages.push(message);
         expect(messages.at(-1)).toMatchObject({ type: 'result', subtype: 'success' });
         expect(calls).toBe(3);
@@ -854,9 +857,11 @@ process.stdout.write(JSON.stringify({type:'result',subtype:'success'})+'\\n');
           { model, projectPath: sdkProject, runKey: `chat:${provider}:docker` }
         );
         const messages = [];
-        for await (const message of ProviderFactory.getProviderForModel(model, {
-          throwOnDisconnected: false,
-        }).executeQuery(options))
+        for await (const message of createTestProviderRegistry(settings)
+          .providerForModel(model, {
+            throwOnDisconnected: false,
+          })
+          .executeQuery(options))
           messages.push(message);
         expect(messages.at(-1)).toMatchObject({
           type: 'result',
@@ -882,9 +887,11 @@ process.stdout.write(JSON.stringify({type:'result',subtype:'success'})+'\\n');
           }
         );
         expect(featureOptions.cwd).toBe(run.environment.cwd);
-        for await (const _message of ProviderFactory.getProviderForModel(model, {
-          throwOnDisconnected: false,
-        }).executeQuery(featureOptions)) {
+        for await (const _message of createTestProviderRegistry(settings)
+          .providerForModel(model, {
+            throwOnDisconnected: false,
+          })
+          .executeQuery(featureOptions)) {
           /* drain */
         }
         expect(await fs.readFile(path.join(run.environment.cwd, 'sdk-result.txt'), 'utf8')).toBe(

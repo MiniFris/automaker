@@ -1,3 +1,4 @@
+import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -129,7 +130,11 @@ describe.skipIf(process.platform !== 'linux')('manual test runner on real SSH', 
     vi.stubEnv('AUTOMAKER_API_KEY', 'fixture-secret');
     const app = express();
     app.use(express.json());
-    app.use('/worktree', authMiddleware, createWorktreeRoutes(events, settings));
+    app.use(
+      '/worktree',
+      authMiddleware,
+      createWorktreeRoutes(createTestProviderRegistry(settings), events, settings)
+    );
     server = app.listen(0, '127.0.0.1');
     await once(server, 'listening');
     url = `http://127.0.0.1:${(server.address() as { port: number }).port}/worktree`;

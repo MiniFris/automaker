@@ -13,7 +13,7 @@
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "dev:test": "tsx src/main.ts",
-    "build": "tsc",
+    "build": "node scripts/clean-build.mjs && tsc",
     "start": "node dist/main.js",
     "lint": "eslint src/",
     "test": "vitest",

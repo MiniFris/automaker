@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ProviderFactory } from '@/providers/provider-factory.js';
+import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
+import { SettingsService } from '@/services/settings-service.js';
 import { ClaudeProvider } from '@/providers/claude-provider.js';
 import { CursorProvider } from '@/providers/cursor-provider.js';
 import { CodexProvider } from '@/providers/codex-provider.js';
@@ -8,7 +9,8 @@ import { GeminiProvider } from '@/providers/gemini-provider.js';
 import { CopilotProvider } from '@/providers/copilot-provider.js';
 import { OpenAICompatibleProvider } from '@/providers/openai-compatible-provider.js';
 
-describe('provider-factory.ts', () => {
+describe('explicit provider registrations', () => {
+  let registry: ReturnType<typeof createTestProviderRegistry>;
   let consoleSpy: any;
   let detectClaudeSpy: any;
   let detectCursorSpy: any;
@@ -18,6 +20,7 @@ describe('provider-factory.ts', () => {
   let detectCopilotSpy: any;
 
   beforeEach(() => {
+    registry = createTestProviderRegistry(new SettingsService('/unused-provider-registry-test'));
     consoleSpy = {
       warn: vi.spyOn(console, 'warn').mockImplementation(() => {}),
     };
@@ -57,55 +60,55 @@ describe('provider-factory.ts', () => {
     it.each(['direct-Qwen/Qwen3-Coder:latest', 'direct-claude-sonnet-custom', 'direct-gpt-5.2'])(
       'routes %s explicitly without falling back to an existing CLI',
       (model) => {
-        expect(ProviderFactory.getProviderNameForModel(model)).toBe('openai-compatible');
-        expect(ProviderFactory.getProviderForModelName(model)).toBe('openai-compatible');
-        expect(ProviderFactory.getProviderForModel(model)).toBeInstanceOf(OpenAICompatibleProvider);
-        expect(ProviderFactory.modelSupportsVision(model)).toBe(false);
+        expect(registry.providerNameForModel(model)).toBe('openai-compatible');
+        expect(registry.providerNameForModel(model)).toBe('openai-compatible');
+        expect(registry.providerForModel(model)).toBeInstanceOf(OpenAICompatibleProvider);
+        expect(registry.supportsVision(model)).toBe(false);
       }
     );
 
     describe('Claude models (claude-* prefix)', () => {
       it('should return ClaudeProvider for claude-opus-4-6', () => {
-        const provider = ProviderFactory.getProviderForModel('claude-opus-4-6');
+        const provider = registry.providerForModel('claude-opus-4-6');
         expect(provider).toBeInstanceOf(ClaudeProvider);
       });
 
       it('should return ClaudeProvider for claude-sonnet-4-6', () => {
-        const provider = ProviderFactory.getProviderForModel('claude-sonnet-4-6');
+        const provider = registry.providerForModel('claude-sonnet-4-6');
         expect(provider).toBeInstanceOf(ClaudeProvider);
       });
 
       it('should return ClaudeProvider for claude-haiku-4-5', () => {
-        const provider = ProviderFactory.getProviderForModel('claude-haiku-4-5');
+        const provider = registry.providerForModel('claude-haiku-4-5');
         expect(provider).toBeInstanceOf(ClaudeProvider);
       });
 
       it('should be case-insensitive for claude models', () => {
-        const provider = ProviderFactory.getProviderForModel('CLAUDE-OPUS-4-6');
+        const provider = registry.providerForModel('CLAUDE-OPUS-4-6');
         expect(provider).toBeInstanceOf(ClaudeProvider);
       });
     });
 
     describe('Claude aliases', () => {
       it("should return ClaudeProvider for 'haiku'", () => {
-        const provider = ProviderFactory.getProviderForModel('haiku');
+        const provider = registry.providerForModel('haiku');
         expect(provider).toBeInstanceOf(ClaudeProvider);
       });
 
       it("should return ClaudeProvider for 'sonnet'", () => {
-        const provider = ProviderFactory.getProviderForModel('sonnet');
+        const provider = registry.providerForModel('sonnet');
         expect(provider).toBeInstanceOf(ClaudeProvider);
       });
 
       it("should return ClaudeProvider for 'opus'", () => {
-        const provider = ProviderFactory.getProviderForModel('opus');
+        const provider = registry.providerForModel('opus');
         expect(provider).toBeInstanceOf(ClaudeProvider);
       });
 
       it('should be case-insensitive for aliases', () => {
-        const provider1 = ProviderFactory.getProviderForModel('HAIKU');
-        const provider2 = ProviderFactory.getProviderForModel('Sonnet');
-        const provider3 = ProviderFactory.getProviderForModel('Opus');
+        const provider1 = registry.providerForModel('HAIKU');
+        const provider2 = registry.providerForModel('Sonnet');
+        const provider3 = registry.providerForModel('Opus');
 
         expect(provider1).toBeInstanceOf(ClaudeProvider);
         expect(provider2).toBeInstanceOf(ClaudeProvider);
@@ -115,44 +118,44 @@ describe('provider-factory.ts', () => {
 
     describe('Cursor models (cursor-* prefix)', () => {
       it('should return CursorProvider for cursor-auto', () => {
-        const provider = ProviderFactory.getProviderForModel('cursor-auto');
+        const provider = registry.providerForModel('cursor-auto');
         expect(provider).toBeInstanceOf(CursorProvider);
       });
 
       it('should return CursorProvider for cursor-sonnet-4.5', () => {
-        const provider = ProviderFactory.getProviderForModel('cursor-sonnet-4.5');
+        const provider = registry.providerForModel('cursor-sonnet-4.5');
         expect(provider).toBeInstanceOf(CursorProvider);
       });
 
       it('should return CursorProvider for cursor-gpt-5.2', () => {
-        const provider = ProviderFactory.getProviderForModel('cursor-gpt-5.2');
+        const provider = registry.providerForModel('cursor-gpt-5.2');
         expect(provider).toBeInstanceOf(CursorProvider);
       });
 
       it('should be case-insensitive for cursor models', () => {
-        const provider = ProviderFactory.getProviderForModel('CURSOR-AUTO');
+        const provider = registry.providerForModel('CURSOR-AUTO');
         expect(provider).toBeInstanceOf(CursorProvider);
       });
 
       it('should return CursorProvider for known cursor model ID without prefix', () => {
-        const provider = ProviderFactory.getProviderForModel('auto');
+        const provider = registry.providerForModel('auto');
         expect(provider).toBeInstanceOf(CursorProvider);
       });
     });
 
     describe('Unknown models', () => {
       it('should default to ClaudeProvider for unknown model', () => {
-        const provider = ProviderFactory.getProviderForModel('unknown-model-123');
+        const provider = registry.providerForModel('unknown-model-123');
         expect(provider).toBeInstanceOf(ClaudeProvider);
       });
 
       it('should handle empty string by defaulting to ClaudeProvider', () => {
-        const provider = ProviderFactory.getProviderForModel('');
+        const provider = registry.providerForModel('');
         expect(provider).toBeInstanceOf(ClaudeProvider);
       });
 
       it('should default to ClaudeProvider for completely unknown prefixes', () => {
-        const provider = ProviderFactory.getProviderForModel('random-xyz-model');
+        const provider = registry.providerForModel('random-xyz-model');
         expect(provider).toBeInstanceOf(ClaudeProvider);
       });
     });
@@ -161,17 +164,17 @@ describe('provider-factory.ts', () => {
       it('should return CodexProvider for gpt-5.2 (Codex model, not Cursor)', () => {
         // gpt-5.2 is in both CURSOR_MODEL_MAP and CODEX_MODEL_CONFIG_MAP
         // It should route to Codex since Codex models take priority
-        const provider = ProviderFactory.getProviderForModel('gpt-5.2');
+        const provider = registry.providerForModel('gpt-5.2');
         expect(provider).toBeInstanceOf(CodexProvider);
       });
 
       it('should return CursorProvider for grok (valid Cursor model)', () => {
-        const provider = ProviderFactory.getProviderForModel('grok');
+        const provider = registry.providerForModel('grok');
         expect(provider).toBeInstanceOf(CursorProvider);
       });
 
       it('should return CursorProvider for gemini-3-pro (valid Cursor model)', () => {
-        const provider = ProviderFactory.getProviderForModel('gemini-3-pro');
+        const provider = registry.providerForModel('gemini-3-pro');
         expect(provider).toBeInstanceOf(CursorProvider);
       });
     });
@@ -179,42 +182,42 @@ describe('provider-factory.ts', () => {
 
   describe('getAllProviders', () => {
     it('should return array of all providers', () => {
-      const providers = ProviderFactory.getAllProviders();
+      const providers = registry.all();
       expect(Array.isArray(providers)).toBe(true);
     });
 
     it('should include ClaudeProvider', () => {
-      const providers = ProviderFactory.getAllProviders();
+      const providers = registry.all();
       const hasClaudeProvider = providers.some((p) => p instanceof ClaudeProvider);
       expect(hasClaudeProvider).toBe(true);
     });
 
     it('should return exactly 7 providers', () => {
-      const providers = ProviderFactory.getAllProviders();
+      const providers = registry.all();
       expect(providers).toHaveLength(7);
     });
 
     it('should include CopilotProvider', () => {
-      const providers = ProviderFactory.getAllProviders();
+      const providers = registry.all();
       const hasCopilotProvider = providers.some((p) => p instanceof CopilotProvider);
       expect(hasCopilotProvider).toBe(true);
     });
 
     it('should include GeminiProvider', () => {
-      const providers = ProviderFactory.getAllProviders();
+      const providers = registry.all();
       const hasGeminiProvider = providers.some((p) => p instanceof GeminiProvider);
       expect(hasGeminiProvider).toBe(true);
     });
 
     it('should include CursorProvider', () => {
-      const providers = ProviderFactory.getAllProviders();
+      const providers = registry.all();
       const hasCursorProvider = providers.some((p) => p instanceof CursorProvider);
       expect(hasCursorProvider).toBe(true);
     });
 
     it('should create new instances each time', () => {
-      const providers1 = ProviderFactory.getAllProviders();
-      const providers2 = ProviderFactory.getAllProviders();
+      const providers1 = registry.all();
+      const providers2 = registry.all();
 
       expect(providers1[0]).not.toBe(providers2[0]);
     });
@@ -222,19 +225,19 @@ describe('provider-factory.ts', () => {
 
   describe('checkAllProviders', () => {
     it('should return installation status for all providers', async () => {
-      const statuses = await ProviderFactory.checkAllProviders();
+      const statuses = await registry.statuses();
 
       expect(statuses).toHaveProperty('claude');
     });
 
     it('should call detectInstallation on each provider', async () => {
-      const statuses = await ProviderFactory.checkAllProviders();
+      const statuses = await registry.statuses();
 
       expect(statuses.claude).toHaveProperty('installed');
     });
 
     it('should return correct provider names as keys', async () => {
-      const statuses = await ProviderFactory.checkAllProviders();
+      const statuses = await registry.statuses();
       const keys = Object.keys(statuses);
 
       expect(keys).toContain('claude');
@@ -248,7 +251,7 @@ describe('provider-factory.ts', () => {
     });
 
     it('should include cursor status', async () => {
-      const statuses = await ProviderFactory.checkAllProviders();
+      const statuses = await registry.statuses();
 
       expect(statuses.cursor).toHaveProperty('installed');
     });
@@ -256,24 +259,24 @@ describe('provider-factory.ts', () => {
 
   describe('getProviderByName', () => {
     it("should return ClaudeProvider for 'claude'", () => {
-      const provider = ProviderFactory.getProviderByName('claude');
+      const provider = registry.byName('claude');
       expect(provider).toBeInstanceOf(ClaudeProvider);
     });
 
     it("should return ClaudeProvider for 'anthropic'", () => {
-      const provider = ProviderFactory.getProviderByName('anthropic');
+      const provider = registry.byName('anthropic');
       expect(provider).toBeInstanceOf(ClaudeProvider);
     });
 
     it("should return CursorProvider for 'cursor'", () => {
-      const provider = ProviderFactory.getProviderByName('cursor');
+      const provider = registry.byName('cursor');
       expect(provider).toBeInstanceOf(CursorProvider);
     });
 
     it('should be case-insensitive', () => {
-      const provider1 = ProviderFactory.getProviderByName('CLAUDE');
-      const provider2 = ProviderFactory.getProviderByName('ANTHROPIC');
-      const provider3 = ProviderFactory.getProviderByName('CURSOR');
+      const provider1 = registry.byName('CLAUDE');
+      const provider2 = registry.byName('ANTHROPIC');
+      const provider3 = registry.byName('CURSOR');
 
       expect(provider1).toBeInstanceOf(ClaudeProvider);
       expect(provider2).toBeInstanceOf(ClaudeProvider);
@@ -281,18 +284,18 @@ describe('provider-factory.ts', () => {
     });
 
     it('should return null for unknown provider', () => {
-      const provider = ProviderFactory.getProviderByName('unknown');
+      const provider = registry.byName('unknown');
       expect(provider).toBeNull();
     });
 
     it('should return null for empty string', () => {
-      const provider = ProviderFactory.getProviderByName('');
+      const provider = registry.byName('');
       expect(provider).toBeNull();
     });
 
     it('should create new instance each time', () => {
-      const provider1 = ProviderFactory.getProviderByName('claude');
-      const provider2 = ProviderFactory.getProviderByName('claude');
+      const provider1 = registry.byName('claude');
+      const provider2 = registry.byName('claude');
 
       expect(provider1).not.toBe(provider2);
       expect(provider1).toBeInstanceOf(ClaudeProvider);
@@ -302,17 +305,17 @@ describe('provider-factory.ts', () => {
 
   describe('getAllAvailableModels', () => {
     it('should return array of models', () => {
-      const models = ProviderFactory.getAllAvailableModels();
+      const models = registry.allModels();
       expect(Array.isArray(models)).toBe(true);
     });
 
     it('should include models from all providers', () => {
-      const models = ProviderFactory.getAllAvailableModels();
+      const models = registry.allModels();
       expect(models.length).toBeGreaterThan(0);
     });
 
     it('should return models with required fields', () => {
-      const models = ProviderFactory.getAllAvailableModels();
+      const models = registry.allModels();
 
       models.forEach((model) => {
         expect(model).toHaveProperty('id');
@@ -323,7 +326,7 @@ describe('provider-factory.ts', () => {
     });
 
     it('should include Claude models', () => {
-      const models = ProviderFactory.getAllAvailableModels();
+      const models = registry.allModels();
 
       // Claude models should include claude-* in their IDs
       const hasClaudeModels = models.some((m) => m.id.toLowerCase().includes('claude'));
@@ -332,7 +335,7 @@ describe('provider-factory.ts', () => {
     });
 
     it('should include Cursor models', () => {
-      const models = ProviderFactory.getAllAvailableModels();
+      const models = registry.allModels();
 
       // Cursor models should include cursor provider
       const hasCursorModels = models.some((m) => m.provider === 'cursor');

@@ -20,7 +20,7 @@ import {
 } from '@automaker/types';
 import { resolvePhaseModel } from '@automaker/model-resolver';
 import { mergeCommitMessagePrompts } from '@automaker/prompts';
-import { ProviderFactory } from '../../../providers/provider-factory.js';
+import type { ProviderRegistry } from '../../../modules/providers/provider-registry.service.js';
 import type { SettingsService } from '../../../services/settings-service.js';
 import { getErrorMessage, logError } from '../common.js';
 import { getPhaseModelWithOverrides } from '../../../lib/settings-helpers.js';
@@ -99,7 +99,8 @@ interface GenerateCommitMessageErrorResponse {
 }
 
 export function createGenerateCommitMessageHandler(
-  settingsService?: SettingsService
+  settingsService: SettingsService | undefined,
+  providers: ProviderRegistry
 ): (req: Request, res: Response) => Promise<void> {
   return async (req: Request, res: Response): Promise<void> => {
     try {
@@ -203,7 +204,7 @@ export function createGenerateCommitMessageHandler(
       const systemPrompt = await getSystemPrompt(settingsService);
 
       // Get provider for the model type
-      const aiProvider = ProviderFactory.getProviderForModel(model);
+      const aiProvider = providers.providerForModel(model);
       const bareModel = stripProviderPrefix(model);
 
       // For Cursor models, combine prompts since Cursor doesn't support systemPrompt separation

@@ -19,7 +19,6 @@ import {
   prepareDirectExecution,
   runDirectShellCommand,
 } from '@/providers/openai-compatible/execution.js';
-import { ProviderFactory } from '@/providers/provider-factory.js';
 import { AgentService } from '@/services/agent-service.js';
 import { createEventEmitter } from '@/lib/events.js';
 import { sshPeer, testSSHKey } from '../../helpers/ssh-peer.js';
@@ -614,9 +613,9 @@ describe.skipIf(process.platform !== 'linux')(
             settings,
             { model, providerId: 'model', projectPath: project, runKey: `chat:${session.id}` }
           );
-          for await (const _message of ProviderFactory.getProviderForModel(model).executeQuery(
-            prepared
-          )) {
+          for await (const _message of createTestProviderRegistry(settings)
+            .providerForModel(model)
+            .executeQuery(prepared)) {
             /* drain */
           }
           expect(bodies.at(-1)!.tools?.map((tool) => tool.function.name)).toEqual([

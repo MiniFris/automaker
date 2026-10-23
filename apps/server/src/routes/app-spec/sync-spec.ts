@@ -81,9 +81,9 @@ export async function syncSpec(
   projectPath: string,
   events: EventEmitter,
   abortController: AbortController,
-  settingsService?: SettingsService,
-  notificationService?: NotificationService,
-  providerRegistry?: ProviderRegistry
+  settingsService: SettingsService | undefined,
+  notificationService: NotificationService | undefined,
+  providerRegistry: ProviderRegistry
 ): Promise<SyncResult> {
   logger.info('========== syncSpec() started ==========');
   logger.info('projectPath:', projectPath);

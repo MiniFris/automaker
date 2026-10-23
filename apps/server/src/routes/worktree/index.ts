@@ -76,7 +76,10 @@ import { environmentGitDispatcher } from '../environment-git.js';
 import { environmentTestDispatcher } from '../environment-tests.js';
 import { environmentDevDispatcher } from '../environment-dev-server.js';
 
+import type { ProviderRegistry } from '../../modules/providers/provider-registry.service.js';
+
 export function createWorktreeRoutes(
+  providers: ProviderRegistry,
   events: EventEmitter,
   settingsService?: SettingsService,
   featureLoader?: FeatureLoader,
@@ -128,7 +131,7 @@ export function createWorktreeRoutes(
     '/generate-commit-message',
     validatePathParams('worktreePath'),
     requireGitRepoOnly,
-    createGenerateCommitMessageHandler(settingsService)
+    createGenerateCommitMessageHandler(settingsService, providers)
   );
   router.post(
     '/push',
@@ -303,7 +306,7 @@ export function createWorktreeRoutes(
     '/generate-pr-description',
     validatePathParams('worktreePath'),
     requireGitRepoOnly,
-    createGeneratePRDescriptionHandler(settingsService)
+    createGeneratePRDescriptionHandler(settingsService, providers)
   );
 
   // Branch commit log route (get commits from a specific branch)

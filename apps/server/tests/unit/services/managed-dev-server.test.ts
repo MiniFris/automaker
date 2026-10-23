@@ -1,3 +1,4 @@
+import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -132,7 +133,10 @@ const wss=new WebSocketServer({server});wss.on('connection',ws=>ws.on('message',
     const app = express();
     app.use(express.json());
     app.use('/api', previewApiGuard, authMiddleware);
-    app.use('/api/worktree', createWorktreeRoutes(createEventEmitter(), settings));
+    app.use(
+      '/api/worktree',
+      createWorktreeRoutes(createTestProviderRegistry(settings), createEventEmitter(), settings)
+    );
     server = createServer(app);
     server.listen(0, '127.0.0.1');
     await once(server, 'listening');

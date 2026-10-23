@@ -6,13 +6,14 @@ import type { Request, Response } from 'express';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { ExecuteOptions } from '@automaker/types';
 import { SettingsService } from '@/services/settings-service.js';
-import { ProviderFactory } from '@/providers/provider-factory.js';
+import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
 import { createGenerateCommitMessageHandler } from '@/routes/worktree/routes/generate-commit-message.js';
 import { createGeneratePRDescriptionHandler } from '@/routes/worktree/routes/generate-pr-description.js';
 import { createVerifyClaudeAuthHandler } from '@/routes/setup/routes/verify-claude-auth.js';
 import { createVerifyCodexAuthHandler } from '@/routes/setup/routes/verify-codex-auth.js';
 
 let directory: string, project: string, settings: SettingsService;
+let providers: ReturnType<typeof createTestProviderRegistry>;
 beforeEach(async () => {
   directory = await fs.mkdtemp(path.join(os.tmpdir(), 'model-helper-timeouts-'));
   project = path.join(directory, 'project');
@@ -33,6 +34,7 @@ beforeEach(async () => {
   git('checkout', '-b', 'feature');
   await fs.writeFile(path.join(project, 'fixture.txt'), 'after\n');
   settings = new SettingsService(path.join(directory, 'data'));
+  providers = createTestProviderRegistry(settings);
   await settings.updateGlobalSettings({
     modelTimeouts: { commitMessageTimeoutMs: 1000, prDescriptionTimeoutMs: 1000 },
     providerModelTimeouts: { claude: { commitMessageTimeoutMs: 20, prDescriptionTimeoutMs: 20 } },
@@ -52,7 +54,7 @@ it.each([
   async (_label, create) => {
     let signal: AbortSignal | undefined;
     let cleaned = false;
-    vi.spyOn(ProviderFactory, 'getProviderForModel').mockReturnValue({
+    vi.spyOn(providers, 'providerForModel').mockReturnValue({
       getName: () => 'fixture',
       async *executeQuery(options: ExecuteOptions) {
         signal = options.abortController!.signal;
@@ -68,7 +70,7 @@ it.each([
     } as never);
     const json = vi.fn();
     const status = vi.fn().mockReturnThis();
-    await create(settings)(
+    await create(settings, providers)(
       { body: { worktreePath: project, baseBranch: 'main' } } as Request,
       { json, status } as unknown as Response
     );
@@ -100,7 +102,7 @@ it.each([
     });
     const timer = vi.spyOn(globalThis, 'setTimeout');
     const json = vi.fn();
-    await create(settings)(
+    await create(settings, providers)(
       { body: { authMethod: 'api_key', apiKey: 'invalid' }, ip: 'fixture' } as Request,
       { json } as unknown as Response
     );

@@ -6,6 +6,10 @@ export default defineConfig({
   test: {
     ...serverTestDefaults,
     name: 'server-ssh',
+    env: {
+      AUTOMAKER_PREVIEW_PORT_FIRST: '43200',
+      AUTOMAKER_PREVIEW_PORT_LAST: '43219',
+    },
     reporters: ['default', 'hanging-process'],
     include: [
       'tests/unit/routes/environment-git.test.ts',
