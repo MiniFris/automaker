@@ -20,6 +20,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { TemplatesModule } from './modules/templates/templates.module.js';
 import { WorkspaceModule } from './modules/workspace/workspace.module.js';
 import { SettingsModule } from './modules/settings/settings.module.js';
+import { ProjectsModule } from './modules/projects/projects.module.js';
 
 @Module({})
 export class AppModule {
@@ -42,6 +43,7 @@ export class AppModule {
         SecurityModule,
         ValidationModule,
         SettingsModule,
+        ProjectsModule,
         HealthModule,
         ModelsModule,
         NotificationsModule,

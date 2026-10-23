@@ -37,7 +37,7 @@ export const ROUTE_GROUP_OWNERS: Readonly<Record<string, RouteOwner>> = {
   ideation: 'legacy',
   notifications: 'nest',
   'event-history': 'nest',
-  projects: 'legacy',
+  projects: 'nest',
 };
 
 export const NEST_OWNED_ROUTE_PATHS = new Set<string>([

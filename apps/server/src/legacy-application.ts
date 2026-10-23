@@ -91,7 +91,6 @@ import {
   previewApiGuard,
   isPreviewApiRequest,
 } from './services/execution-environment/preview-policy.js';
-import { createProjectsRoutes } from './routes/projects/index.js';
 
 // Load environment variables
 dotenv.config();
@@ -621,10 +620,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   app.use('/api/mcp', createMCPRoutes(mcpTestService));
   app.use('/api/pipeline', createPipelineRoutes(pipelineService));
   app.use('/api/ideation', createIdeationRoutes(events, ideationService, featureLoader));
-  app.use(
-    '/api/projects',
-    createProjectsRoutes(featureLoader, autoModeService, settingsService, notificationService)
-  );
 
   // Create HTTP server
   const server = options.httpServer ?? createServer(app);

@@ -190,6 +190,14 @@ describe('Nest shell and legacy bridge contract', () => {
       expect(workspace.status).toBe(200);
       expect(await workspace.json()).toMatchObject({ success: true });
 
+      const projects = await fetch(`${baseUrl}/api/projects/overview`, { headers });
+      expect(projects.status).toBe(200);
+      expect(await projects.json()).toMatchObject({
+        success: true,
+        projects: expect.any(Array),
+        aggregate: expect.any(Object),
+      });
+
       for (const route of [
         'settings/status',
         'settings/global',
