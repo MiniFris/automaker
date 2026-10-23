@@ -92,7 +92,8 @@ it.each([
 ] as const)(
   'uses the shared connection-test timeout for the %s authentication probe',
   async (_label, create) => {
-    vi.stubEnv('AUTOMAKER_MOCK_AGENT', 'false');
+    // The retired flag must not turn a real auth probe into a successful mock.
+    vi.stubEnv('AUTOMAKER_MOCK_AGENT', 'true');
     await settings.updateGlobalSettings({
       modelTimeouts: { connectionTestTimeoutMs: 9999 },
       providerModelTimeouts: {

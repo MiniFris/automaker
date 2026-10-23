@@ -82,12 +82,6 @@ function containsAuthError(text: string): boolean {
 export function createVerifyClaudeAuthHandler(settingsService?: SettingsService) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
-      // In E2E/CI mock mode, skip real API calls
-      if (process.env.AUTOMAKER_MOCK_AGENT === 'true') {
-        res.json({ success: true, authenticated: true });
-        return;
-      }
-
       // Get the auth method and optional API key from the request body
       const { authMethod, apiKey } = req.body as {
         authMethod?: 'cli' | 'api_key';

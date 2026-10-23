@@ -435,10 +435,10 @@ npm run test:all                 # Packages + server tests
 
 #### Test Configuration
 
-- E2E tests run on ports 3007 (UI) and 3008 (server)
+- E2E tests run on ports 3107 (UI) and 3108 (server)
 - Automatically starts test servers before running
 - Uses Chromium browser via Playwright
-- Mock agent mode available in CI with `AUTOMAKER_MOCK_AGENT=true`
+- Fake AI providers are registered only in the separate Nest E2E test composition
 
 ### Linting
 

@@ -30,7 +30,6 @@ async function smoke(signal) {
       PORT: String(port),
       DATA_DIR: temporary,
       AUTOMAKER_API_KEY: 'automaker-lifecycle-smoke-key',
-      AUTOMAKER_MOCK_AGENT: 'false',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });

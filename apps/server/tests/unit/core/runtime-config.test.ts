@@ -4,6 +4,11 @@ import { describe, expect, it } from 'vitest';
 import { parseRuntimeConfig, RuntimeConfigError } from '../../../src/core/config/index.js';
 
 describe('runtime config', () => {
+  it('does not expose environment-controlled mock providers', () => {
+    const config = parseRuntimeConfig({ AUTOMAKER_MOCK_AGENT: 'true' });
+    expect(config.providers).not.toHaveProperty('mockAgent');
+  });
+
   it('treats empty optional environment variables as unset', () => {
     const config = parseRuntimeConfig(
       {

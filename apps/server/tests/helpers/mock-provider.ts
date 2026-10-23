@@ -1,19 +1,29 @@
 /**
  * Mock Provider - No-op AI provider for E2E and CI testing
  *
- * When AUTOMAKER_MOCK_AGENT=true, the server uses this provider instead of
- * real backends (Claude, Codex, etc.) so tests never call external APIs.
+ * Registered only by the Nest test composition; never included in production.
  */
 
 import type { ExecuteOptions } from '@automaker/types';
-import { BaseProvider } from './base-provider.js';
-import type { ProviderMessage, InstallationStatus, ModelDefinition } from './types.js';
+import { BaseProvider } from '../../src/providers/base-provider.js';
+import type {
+  ProviderMessage,
+  InstallationStatus,
+  ModelDefinition,
+} from '../../src/providers/types.js';
 
 const MOCK_TEXT = 'Mock agent output for testing.';
 
 export class MockProvider extends BaseProvider {
+  constructor(
+    private readonly providerName = 'mock',
+    private readonly models?: ModelDefinition[]
+  ) {
+    super();
+  }
+
   getName(): string {
-    return 'mock';
+    return this.providerName ?? 'mock';
   }
 
   async *executeQuery(_options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
@@ -40,14 +50,16 @@ export class MockProvider extends BaseProvider {
   }
 
   getAvailableModels(): ModelDefinition[] {
-    return [
-      {
-        id: 'mock-model',
-        name: 'Mock Model',
-        modelString: 'mock-model',
-        provider: 'mock',
-        description: 'Mock model for testing',
-      },
-    ];
+    return (
+      this.models ?? [
+        {
+          id: `${this.getName()}-mock-model`,
+          name: 'Mock Model',
+          modelString: `${this.getName()}-mock-model`,
+          provider: this.getName(),
+          description: 'Mock model for testing',
+        },
+      ]
+    );
   }
 }

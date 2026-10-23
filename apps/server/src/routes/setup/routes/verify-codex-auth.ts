@@ -85,12 +85,6 @@ export function createVerifyCodexAuthHandler(
   providerRegistry: ProviderRegistry
 ) {
   return async (req: Request, res: Response): Promise<void> => {
-    // In E2E/CI mock mode, skip real API calls
-    if (process.env.AUTOMAKER_MOCK_AGENT === 'true') {
-      res.json({ success: true, authenticated: true });
-      return;
-    }
-
     const { authMethod, apiKey } = req.body as {
       authMethod?: 'cli' | 'api_key';
       apiKey?: string;

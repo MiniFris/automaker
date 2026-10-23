@@ -574,14 +574,17 @@ The following checks must pass before your PR can be merged:
 
 #### CI Testing Environment
 
-For CI environments, Automaker supports a mock agent mode:
+Playwright starts a separate Nest test composition with explicit provider overrides:
 
 ```bash
-# Enable mock agent mode for CI testing
-AUTOMAKER_MOCK_AGENT=true npm run test
+# Start only the test backend (Playwright normally does this automatically)
+npm run dev:e2e --workspace=apps/server
 ```
 
-This allows tests to run without requiring a real Claude API connection.
+The test backend uses temporary storage and fake providers/auth probes without a real
+AI API connection. Login authentication and rate limits remain enabled. Production
+bootstrap does not support `AUTOMAKER_MOCK_AGENT`; do not use the test entrypoint for
+production or live-provider acceptance tests.
 
 #### Viewing CI Results
 

@@ -53,21 +53,21 @@ export class AuthController {
     @Body(new ZodValidationPipe(LoginRequestSchema)) input: LoginRequest
   ): Promise<Record<string, unknown>> {
     const clientIp = this.clientIp(request);
-    if (!this.config.providers.mockAgent) {
-      const rateLimit = this.attempts.check(clientIp);
-      if (!rateLimit.allowed)
-        throw new HttpException(
-          {
-            success: false,
-            error: 'Too many login attempts. Please try again later.',
-            retryAfter: rateLimit.retryAfterSeconds,
-          },
-          429
-        );
+    const rateLimit = this.attempts.check(clientIp);
+    if (!rateLimit.allowed)
+      throw new HttpException(
+        {
+          success: false,
+          error: 'Too many login attempts. Please try again later.',
+          retryAfter: rateLimit.retryAfterSeconds,
+        },
+        429
+      );
+    if (!this.auth.validateApiKey(input.apiKey)) {
       this.attempts.recordFailure(clientIp);
-    }
-    if (!this.auth.validateApiKey(input.apiKey))
       throw new UnauthorizedDomainError('Invalid API key.');
+    }
+    this.attempts.reset(clientIp);
     const token = await this.auth.createSession();
     response.cookie(this.auth.sessionCookieName, token, this.auth.sessionCookieOptions);
     return { success: true, message: 'Logged in successfully.', token };

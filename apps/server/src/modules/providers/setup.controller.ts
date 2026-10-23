@@ -10,6 +10,9 @@ export class SetupController {
   constructor(@Inject(SetupHandlersService) private readonly handlers: SetupHandlersService) {}
 
   private run(name: SetupHandlerName, request: Request, response: Response) {
+    // Express handlers historically defaulted to 200; Nest POST defaults to 201.
+    // Individual handlers may still replace this with an explicit error status.
+    response.status(200);
     return this.handlers.run(name, request, response);
   }
 

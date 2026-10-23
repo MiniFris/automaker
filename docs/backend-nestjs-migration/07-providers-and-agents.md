@@ -46,7 +46,7 @@ AgentsModule
 - [x] Сохранить aliases и model matching priorities.
 - [x] Вынести disconnected markers в provider connection repository.
 - [x] Ввести duplicate alias/model ownership checks при startup.
-- [ ] Поддержать mock provider только через test module override.
+- [x] Поддержать mock provider только через test module override.
 
 Nest не предоставляет неявный multi-binding, поэтому registry должен получать
 явный массив provider tokens или собираться factory с перечисленными dependencies.
@@ -93,6 +93,32 @@ catalogs; приоритеты predicate matching и aliases не меняютс
 CLI probes при startup validation. Nest contract проверяет отказ запуска при
 конфликте каталогов. Checkpoint: build, lint, 2906 unit tests (40 skipped),
 231 HTTP/WS contracts, dependency inventory check и production SIGTERM/SIGINT smoke.
+
+### Test-only providers и Playwright composition
+
+`MockProvider` перенесён из production source в `tests/helpers`. Отдельный entrypoint
+`npm run dev:e2e --workspace=apps/server` собирает `AppModule` через Nest testing
+module и явно переопределяет registry и две auth probes. Каталоги, aliases и
+приоритеты production registrations сохраняются; AI execution заменён fake adapter.
+Playwright и E2E workflow используют этот entrypoint, а не production mock flag.
+
+`AUTOMAKER_MOCK_AGENT` больше не влияет на production config, login rate limit или
+Claude/Codex auth verification. Успешный login сбрасывает счётчик ошибок; после пяти
+неудачных попыток действует rate limit независимо от старого флага. Setup handlers
+явно сохраняют прежний HTTP 200 вместо стандартного Nest POST 201.
+
+Standalone test entrypoint создаёт собственный временный `DATA_DIR` до импорта
+legacy readers, слушает только loopback, запрещён при `NODE_ENV=production` и
+удаляет хранилище при shutdown. In-process contract fixtures пока разделяют старый
+module-level auth store; его перенос в instance-scoped repository ещё не завершён.
+Background startup tasks в E2E composition отключены, поэтому этот harness не
+заменяет production lifecycle или live-provider acceptance.
+
+Checkpoint: 2907 unit tests (40 skipped), 235 HTTP/WS contracts, server build/lint,
+UI typecheck, все три inventory checks и production SIGTERM/SIGINT smoke. Contract
+запускает настоящий test server process и проверяет readiness, exit 0 и удаление
+его временного хранилища после SIGTERM. Chromium smoke создания Agent Chat Session
+пройден с новым test composition; полный UI suite ещё не подтверждён.
 
 ## 7.3. Перенос providers
 

@@ -1,10 +1,8 @@
 import 'reflect-metadata';
 
 import express from 'express';
-import { createServer, type Server } from 'node:http';
-import type { NestApplicationOptions } from '@nestjs/common';
+import { createServer } from 'node:http';
 import { NestFactory } from '@nestjs/core';
-import { ExpressAdapter } from '@nestjs/platform-express';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { createLogger } from '@automaker/utils';
 
@@ -13,22 +11,11 @@ import { parseRuntimeConfig } from './core/config/index.js';
 import type { LegacyApplication, LegacyApplicationOptions } from './legacy-application.js';
 import { LEGACY_APPLICATION } from './legacy/legacy.tokens.js';
 import { NestLogger } from './nest-logger.js';
+import { SharedHttpServerExpressAdapter } from './core/http/shared-http-server.adapter.js';
 
 const logger = createLogger('ServerBootstrap');
 
 const DEFAULT_PORT = 3008;
-
-class SharedHttpServerExpressAdapter extends ExpressAdapter {
-  constructor(instance: ReturnType<typeof express>, server: Server) {
-    super(instance);
-    this.setHttpServer(server);
-  }
-
-  override initHttpServer(_options: NestApplicationOptions): void {
-    // The server is created before the legacy graph so HTTP and WebSocket traffic
-    // share exactly one native server. Nest must not replace it during bootstrap.
-  }
-}
 
 export interface NestApplicationFactoryOptions extends Pick<
   LegacyApplicationOptions,

@@ -3,7 +3,7 @@
   "sourceRoot": "apps/server/src",
   "summary": {
     "files": 593,
-    "internalEdges": 1857,
+    "internalEdges": 1856,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -30,9 +30,9 @@
     "modules -> types": 2,
     "providers -> lib": 5,
     "providers -> modules": 1,
-    "providers -> providers": 89,
+    "providers -> providers": 87,
     "providers -> services": 21,
-    "root -> core": 14,
+    "root -> core": 15,
     "root -> legacy": 2,
     "root -> lib": 2,
     "root -> modules": 28,
@@ -314,7 +314,7 @@
     "@automaker/model-resolver": 20,
     "@automaker/platform": 80,
     "@automaker/prompts": 3,
-    "@automaker/types": 173,
+    "@automaker/types": 172,
     "@automaker/utils": 166,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
@@ -333,7 +333,7 @@
     "crypto": 5,
     "dotenv": 1,
     "events": 1,
-    "express": 250,
+    "express": 251,
     "fs": 22,
     "fs/promises": 18,
     "net": 1,
@@ -343,7 +343,7 @@
     "node:crypto": 25,
     "node:fs": 6,
     "node:fs/promises": 14,
-    "node:http": 6,
+    "node:http": 7,
     "node:net": 2,
     "node:os": 6,
     "node:path": 34,
@@ -1013,6 +1013,10 @@
     {
       "source": "apps/server/src/main.ts",
       "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/main.ts",
+      "target": "apps/server/src/core/http/shared-http-server.adapter.ts"
     },
     {
       "source": "apps/server/src/main.ts",
@@ -3420,14 +3424,6 @@
     },
     {
       "source": "apps/server/src/providers/gemini-provider.ts",
-      "target": "apps/server/src/providers/types.ts"
-    },
-    {
-      "source": "apps/server/src/providers/mock-provider.ts",
-      "target": "apps/server/src/providers/base-provider.ts"
-    },
-    {
-      "source": "apps/server/src/providers/mock-provider.ts",
       "target": "apps/server/src/providers/types.ts"
     },
     {

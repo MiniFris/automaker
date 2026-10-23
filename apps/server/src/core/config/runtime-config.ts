@@ -29,7 +29,6 @@ const RuntimeEnvironmentSchema = z.object({
   TERMINAL_MAX_SESSIONS: z.coerce.number().int().positive().max(10_000).default(1000),
   ENABLE_REQUEST_LOGGING: booleanValue(true),
   AUTOMAKER_DEBUG_RAW_OUTPUT: booleanValue(false),
-  AUTOMAKER_MOCK_AGENT: booleanValue(false),
   ANTHROPIC_API_KEY: optionalString,
   IS_CONTAINERIZED: booleanValue(false),
   AUTOMAKER_SKIP_SANDBOX_WARNING: booleanValue(false),
@@ -66,7 +65,6 @@ export interface RuntimeConfig {
   providers: {
     debugRawOutput: boolean;
     anthropicApiKeyConfigured: boolean;
-    mockAgent: boolean;
     isEnvironmentVariableConfigured(name: string): boolean;
   };
   execution: {
@@ -143,7 +141,6 @@ export function parseRuntimeConfig(
     providers: {
       debugRawOutput: value.AUTOMAKER_DEBUG_RAW_OUTPUT,
       anthropicApiKeyConfigured: Boolean(value.ANTHROPIC_API_KEY),
-      mockAgent: value.AUTOMAKER_MOCK_AGENT,
       isEnvironmentVariableConfigured: (name) => {
         const candidate = environment[name];
         return typeof candidate === 'string' && candidate.trim().length > 0;
