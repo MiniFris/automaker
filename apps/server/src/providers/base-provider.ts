@@ -58,7 +58,9 @@ export abstract class BaseProvider implements ProviderAdapter {
       text: true,
       streaming: true,
       vision: models.some((model) => model.supportsVision === true),
-      tools: this.supportsFeature('tools') || models.some((model) => model.supportsTools === true),
+      // Model metadata is authoritative. The legacy provider-level feature flag is
+      // too broad and must not grant tools to a model that explicitly disables them.
+      tools: models.some((model) => model.supportsTools === true),
       reasoning: models.some((model) => model.hasReasoning === true),
       mcp: this.supportsFeature('mcp'),
       remoteExecution: this.supportsFeature('remoteExecution'),
