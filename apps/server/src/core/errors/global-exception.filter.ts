@@ -24,6 +24,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           error: exception instanceof Error ? exception.message : exception,
         })
       );
+    const httpResponse = exception instanceof HttpException ? exception.getResponse() : undefined;
+    if (httpResponse && typeof httpResponse === 'object' && !domainError) {
+      response.status(status).json({
+        ...(redactSecrets(httpResponse) as Record<string, unknown>),
+        ...(correlationId && { correlationId }),
+      });
+      return;
+    }
     response.status(status).json({
       success: false,
       error,

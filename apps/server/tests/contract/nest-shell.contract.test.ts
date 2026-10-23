@@ -1,5 +1,6 @@
 import type { AddressInfo } from 'node:net';
-import { readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 
 import { HealthResponseSchema } from '@automaker/contracts';
@@ -168,6 +169,55 @@ describe('Nest shell and legacy bridge contract', () => {
 
     expect(socket.readyState).toBe(WebSocket.OPEN);
     socket.close();
+  });
+
+  it('serves migrated edge modules exclusively through Nest', async () => {
+    const projectPath = await mkdtemp(path.join(os.tmpdir(), 'nest-edge-contract-'));
+    const address = runtime.legacy.server.address() as AddressInfo;
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+    const headers = {
+      'Content-Type': 'application/json',
+      'x-api-key': 'automaker-test-api-key',
+    };
+    try {
+      const models = await fetch(`${baseUrl}/api/models/available`, { headers });
+      expect(models.status).toBe(200);
+      expect(await models.json()).toMatchObject({ success: true, models: expect.any(Array) });
+
+      const workspace = await fetch(`${baseUrl}/api/workspace/config`, { headers });
+      expect(workspace.status).toBe(200);
+      expect(await workspace.json()).toMatchObject({ success: true });
+
+      for (const route of ['notifications/list', 'event-history/list']) {
+        const response = await fetch(`${baseUrl}/api/${route}`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ projectPath }),
+        });
+        expect(response.status, route).toBe(200);
+        expect(await response.json()).toMatchObject({ success: true });
+      }
+
+      const strictRequest = await fetch(`${baseUrl}/api/notifications/list`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ projectPath, unexpected: true }),
+      });
+      expect(strictRequest.status).toBe(400);
+
+      const invalidTemplate = await fetch(`${baseUrl}/api/templates/clone`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          repoUrl: 'https://example.com/x',
+          projectName: 'x',
+          parentDir: projectPath,
+        }),
+      });
+      expect(invalidTemplate.status).toBe(400);
+    } finally {
+      await rm(projectPath, { recursive: true });
+    }
   });
 
   it('preserves authentication for every protected endpoint through Nest', async () => {

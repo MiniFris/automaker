@@ -14,6 +14,11 @@ import { SecurityModule } from './core/security/index.js';
 import { ValidationModule } from './core/validation/validation.module.js';
 import { LegacyModule } from './legacy/legacy.module.js';
 import { LegacyRouterMiddleware } from './legacy/legacy-router.middleware.js';
+import { ModelsModule } from './modules/models/models.module.js';
+import { EventHistoryModule } from './modules/event-history/event-history.module.js';
+import { NotificationsModule } from './modules/notifications/notifications.module.js';
+import { TemplatesModule } from './modules/templates/templates.module.js';
+import { WorkspaceModule } from './modules/workspace/workspace.module.js';
 
 @Module({})
 export class AppModule {
@@ -36,6 +41,11 @@ export class AppModule {
         SecurityModule,
         ValidationModule,
         HealthModule,
+        ModelsModule,
+        NotificationsModule,
+        EventHistoryModule,
+        TemplatesModule,
+        WorkspaceModule,
         LegacyModule.register(legacy, config.storage.dataDirectory),
       ],
     };

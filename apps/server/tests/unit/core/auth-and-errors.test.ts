@@ -51,6 +51,15 @@ describe('Nest auth and errors', () => {
     expect(store.check('client', 1_200)).toEqual({ allowed: true });
   });
 
+  it('starts with an empty brute-force window after an application restart', () => {
+    const previousProcessStore = new LoginAttemptStore(1, 60_000);
+    previousProcessStore.recordFailure('client', 100);
+    expect(previousProcessStore.check('client', 200).allowed).toBe(false);
+
+    const restartedProcessStore = new LoginAttemptStore(1, 60_000);
+    expect(restartedProcessStore.check('client', 200)).toEqual({ allowed: true });
+  });
+
   it('returns a legacy-compatible safe error envelope', () => {
     const status = vi.fn().mockReturnThis();
     const json = vi.fn();

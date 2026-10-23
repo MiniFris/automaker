@@ -23,6 +23,7 @@ import type {
 } from '@automaker/types';
 import { DEFAULT_EVENT_HISTORY_INDEX } from '@automaker/types';
 import { randomUUID } from 'crypto';
+import { Injectable } from '@nestjs/common';
 
 const logger = createLogger('EventHistoryService');
 
@@ -82,6 +83,7 @@ export interface StoreEventInput {
 /**
  * EventHistoryService - Manages persistent storage of events
  */
+@Injectable()
 export class EventHistoryService {
   /**
    * Store a new event to history
@@ -317,17 +319,4 @@ export class EventHistoryService {
     const parts = projectPath.split(/[/\\]/);
     return parts[parts.length - 1] || projectPath;
   }
-}
-
-// Singleton instance
-let eventHistoryServiceInstance: EventHistoryService | null = null;
-
-/**
- * Get the singleton event history service instance
- */
-export function getEventHistoryService(): EventHistoryService {
-  if (!eventHistoryServiceInstance) {
-    eventHistoryServiceInstance = new EventHistoryService();
-  }
-  return eventHistoryServiceInstance;
 }

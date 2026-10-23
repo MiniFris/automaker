@@ -15,6 +15,7 @@ import { parseAndCreateFeatures } from './parse-and-create-features.js';
 import { extractJsonWithArray } from '../../lib/json-extractor.js';
 import { getAppSpecPath } from '@automaker/platform';
 import type { SettingsService } from '../../services/settings-service.js';
+import type { NotificationService } from '../../services/notification-service.js';
 import {
   getAutoLoadClaudeMdSetting,
   getPromptCustomization,
@@ -89,7 +90,8 @@ export async function generateFeaturesFromSpec(
   events: EventEmitter,
   abortController: AbortController,
   maxFeatures?: number,
-  settingsService?: SettingsService
+  settingsService?: SettingsService,
+  notificationService?: NotificationService
 ): Promise<void> {
   const featureCount = maxFeatures ?? DEFAULT_MAX_FEATURES;
   logger.debug('========== generateFeaturesFromSpec() started ==========');
@@ -325,7 +327,13 @@ Your entire response should be valid JSON starting with { and ending with }. No 
     }
   }
 
-  await parseAndCreateFeatures(projectPath, contentForParsing, events, settingsService);
+  await parseAndCreateFeatures(
+    projectPath,
+    contentForParsing,
+    events,
+    settingsService,
+    notificationService
+  );
 
   logger.debug('========== generateFeaturesFromSpec() completed ==========');
 }

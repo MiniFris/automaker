@@ -27,7 +27,7 @@ import { getFeatureDir, getFeaturesDir } from '@automaker/platform';
 import * as secureFs from '../lib/secure-fs.js';
 import type { EventEmitter } from '../lib/events.js';
 import type { AutoModeEventType } from './typed-event-bus.js';
-import { getNotificationService } from './notification-service.js';
+import type { NotificationService } from './notification-service.js';
 import { FeatureLoader } from './feature-loader.js';
 import { pipelineService } from './pipeline-service.js';
 
@@ -75,11 +75,17 @@ interface AutoModeEventPayload {
 export class FeatureStateManager {
   private events: EventEmitter;
   private featureLoader: FeatureLoader;
+  private notificationService: NotificationService | null;
   private unsubscribe: (() => void) | null = null;
 
-  constructor(events: EventEmitter, featureLoader: FeatureLoader) {
+  constructor(
+    events: EventEmitter,
+    featureLoader: FeatureLoader,
+    notificationService: NotificationService | null = null
+  ) {
     this.events = events;
     this.featureLoader = featureLoader;
+    this.notificationService = notificationService;
 
     // Subscribe to error events to create notifications
     this.unsubscribe = events.subscribe((type, payload) => {
@@ -181,10 +187,10 @@ export class FeatureStateManager {
       // Create notifications for important status changes
       // Wrapped in try-catch so failures don't block syncFeatureToAppSpec below
       try {
-        const notificationService = getNotificationService();
+        const notificationService = this.notificationService;
         const displayName = this.getFeatureDisplayName(feature, featureId);
 
-        if (status === 'waiting_approval') {
+        if (notificationService && status === 'waiting_approval') {
           await notificationService.createNotification({
             type: NOTIFICATION_TYPE_WAITING_APPROVAL,
             title: displayName,
@@ -192,7 +198,7 @@ export class FeatureStateManager {
             featureId,
             projectPath,
           });
-        } else if (status === 'verified') {
+        } else if (notificationService && status === 'verified') {
           await notificationService.createNotification({
             type: NOTIFICATION_TYPE_VERIFIED,
             title: displayName,
@@ -768,7 +774,8 @@ export class FeatureStateManager {
     if (!projectPath) return;
 
     try {
-      const notificationService = getNotificationService();
+      const notificationService = this.notificationService;
+      if (!notificationService) return;
 
       // Determine notification type and title based on event type
       // Only auto_mode_feature_complete events should create feature_error notifications

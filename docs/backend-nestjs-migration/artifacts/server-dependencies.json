@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 496,
-    "internalEdges": 1443,
+    "files": 488,
+    "internalEdges": 1450,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
-    "core -> core": 38,
+    "core -> core": 47,
     "core -> lib": 5,
     "core -> middleware": 1,
     "core -> services": 1,
@@ -16,6 +16,12 @@
     "legacy -> root": 2,
     "lib -> lib": 3,
     "lib -> services": 1,
+    "modules -> core": 13,
+    "modules -> legacy": 4,
+    "modules -> lib": 2,
+    "modules -> modules": 27,
+    "modules -> providers": 1,
+    "modules -> services": 6,
     "providers -> lib": 5,
     "providers -> providers": 98,
     "providers -> services": 21,
@@ -23,20 +29,20 @@
     "root -> legacy": 2,
     "root -> lib": 3,
     "root -> middleware": 1,
+    "root -> modules": 5,
     "root -> root": 4,
-    "root -> routes": 32,
+    "root -> routes": 25,
     "root -> services": 22,
-    "routes -> core": 1,
-    "routes -> lib": 128,
-    "routes -> middleware": 13,
-    "routes -> providers": 30,
-    "routes -> routes": 490,
-    "routes -> services": 228,
+    "routes -> lib": 121,
+    "routes -> middleware": 11,
+    "routes -> providers": 28,
+    "routes -> routes": 454,
+    "routes -> services": 220,
     "routes -> types": 3,
     "services -> lib": 69,
     "services -> providers": 14,
     "services -> routes": 2,
-    "services -> services": 204,
+    "services -> services": 207,
     "services -> types": 2,
     "tests -> lib": 2
   },
@@ -78,11 +84,7 @@
       "apps/server/src/providers/provider-factory.ts",
       "apps/server/src/providers/remote-sdk-worker.ts",
       "apps/server/src/routes/app-spec/common.ts",
-      "apps/server/src/routes/auth/index.ts",
       "apps/server/src/routes/fs/routes/resolve-directory.ts",
-      "apps/server/src/routes/health/routes/detailed.ts",
-      "apps/server/src/routes/health/routes/environment.ts",
-      "apps/server/src/routes/models/routes/providers.ts",
       "apps/server/src/routes/settings/openai-compatible.ts",
       "apps/server/src/routes/setup/get-claude-status.ts",
       "apps/server/src/routes/setup/routes/api-keys.ts",
@@ -178,13 +180,14 @@
     "childProcess": [
       "apps/server/src/lib/auth-utils.ts",
       "apps/server/src/lib/cli-detection.ts",
+      "apps/server/src/modules/event-history/event-replay.service.ts",
+      "apps/server/src/modules/templates/template-command.runner.ts",
       "apps/server/src/providers/cli-provider.ts",
       "apps/server/src/providers/copilot-provider.ts",
       "apps/server/src/providers/cursor-provider.ts",
       "apps/server/src/providers/gemini-provider.ts",
       "apps/server/src/providers/openai-compatible/shell-tool.ts",
       "apps/server/src/providers/opencode-provider.ts",
-      "apps/server/src/routes/event-history/routes/replay.ts",
       "apps/server/src/routes/fs/routes/download.ts",
       "apps/server/src/routes/git/routes/details.ts",
       "apps/server/src/routes/git/routes/enhanced-status.ts",
@@ -194,7 +197,6 @@
       "apps/server/src/routes/github/routes/list-issues.ts",
       "apps/server/src/routes/setup/get-claude-status.ts",
       "apps/server/src/routes/setup/routes/gh-status.ts",
-      "apps/server/src/routes/templates/routes/clone.ts",
       "apps/server/src/routes/worktree/common.ts",
       "apps/server/src/routes/worktree/routes/add-remote.ts",
       "apps/server/src/routes/worktree/routes/commit.ts",
@@ -242,12 +244,12 @@
       "apps/server/src/lib/auth-utils.ts",
       "apps/server/src/lib/error-handler.ts",
       "apps/server/src/lib/git.ts",
+      "apps/server/src/modules/event-history/event-replay.service.ts",
       "apps/server/src/providers/openai-compatible/agent-loop.ts",
       "apps/server/src/providers/openai-compatible/shell-tool.ts",
       "apps/server/src/providers/openai-compatible/transport.ts",
       "apps/server/src/providers/remote-sdk-worker.ts",
       "apps/server/src/routes/backlog-plan/generate-plan.ts",
-      "apps/server/src/routes/event-history/routes/replay.ts",
       "apps/server/src/routes/github/routes/list-comments.ts",
       "apps/server/src/routes/github/routes/validate-issue.ts",
       "apps/server/src/routes/setup/routes/verify-claude-auth.ts",
@@ -286,13 +288,11 @@
     ],
     "singletonFactories": [
       "apps/server/src/services/dev-server-service.ts",
-      "apps/server/src/services/event-history-service.ts",
       "apps/server/src/services/execution-environment/dev-server.ts",
       "apps/server/src/services/execution-environment/test-runner.ts",
       "apps/server/src/services/feature-export-service.ts",
       "apps/server/src/services/gemini-usage-service.ts",
       "apps/server/src/services/init-script-service.ts",
-      "apps/server/src/services/notification-service.ts",
       "apps/server/src/services/terminal-service.ts",
       "apps/server/src/services/test-runner-service.ts"
     ],
@@ -304,31 +304,32 @@
   },
   "externalImports": {
     "@anthropic-ai/claude-agent-sdk": 3,
+    "@automaker/contracts": 3,
     "@automaker/dependency-resolver": 1,
     "@automaker/git-utils": 12,
     "@automaker/model-resolver": 19,
-    "@automaker/platform": 80,
+    "@automaker/platform": 77,
     "@automaker/prompts": 2,
     "@automaker/types": 152,
-    "@automaker/utils": 167,
+    "@automaker/utils": 163,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 28,
+    "@nestjs/common": 49,
     "@nestjs/core": 6,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
     "ajv": 4,
-    "child_process": 45,
+    "child_process": 43,
     "cookie": 1,
     "cookie-parser": 2,
     "cors": 2,
     "crypto": 5,
     "dotenv": 1,
     "events": 1,
-    "express": 276,
+    "express": 252,
     "fs": 23,
     "fs/promises": 18,
     "http": 1,
@@ -336,31 +337,31 @@
     "net": 1,
     "node-pty": 2,
     "node:async_hooks": 1,
-    "node:child_process": 7,
+    "node:child_process": 9,
     "node:crypto": 19,
     "node:fs": 4,
     "node:fs/promises": 13,
     "node:http": 3,
     "node:net": 2,
     "node:os": 4,
-    "node:path": 21,
+    "node:path": 23,
     "node:perf_hooks": 2,
     "node:stream": 4,
     "node:stream/web": 1,
     "node:string_decoder": 3,
     "node:timers/promises": 3,
-    "node:util": 9,
+    "node:util": 10,
     "os": 16,
-    "path": 99,
+    "path": 96,
     "readline": 1,
     "reflect-metadata": 1,
     "ssh2": 3,
     "url": 1,
-    "util": 29,
+    "util": 28,
     "vitest": 1,
     "ws": 1,
     "yaml": 1,
-    "zod": 3
+    "zod": 7
   },
   "edges": [
     {
@@ -420,6 +421,54 @@
       "target": "apps/server/src/legacy/legacy.module.ts"
     },
     {
+      "source": "apps/server/src/app.module.ts",
+      "target": "apps/server/src/modules/event-history/event-history.module.ts"
+    },
+    {
+      "source": "apps/server/src/app.module.ts",
+      "target": "apps/server/src/modules/models/models.module.ts"
+    },
+    {
+      "source": "apps/server/src/app.module.ts",
+      "target": "apps/server/src/modules/notifications/notifications.module.ts"
+    },
+    {
+      "source": "apps/server/src/app.module.ts",
+      "target": "apps/server/src/modules/templates/templates.module.ts"
+    },
+    {
+      "source": "apps/server/src/app.module.ts",
+      "target": "apps/server/src/modules/workspace/workspace.module.ts"
+    },
+    {
+      "source": "apps/server/src/core/auth/auth.controller.ts",
+      "target": "apps/server/src/core/auth/auth.schemas.ts"
+    },
+    {
+      "source": "apps/server/src/core/auth/auth.controller.ts",
+      "target": "apps/server/src/core/auth/auth.service.ts"
+    },
+    {
+      "source": "apps/server/src/core/auth/auth.controller.ts",
+      "target": "apps/server/src/core/auth/login-attempt.store.ts"
+    },
+    {
+      "source": "apps/server/src/core/auth/auth.controller.ts",
+      "target": "apps/server/src/core/auth/public.decorator.ts"
+    },
+    {
+      "source": "apps/server/src/core/auth/auth.controller.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/core/auth/auth.controller.ts",
+      "target": "apps/server/src/core/errors/index.ts"
+    },
+    {
+      "source": "apps/server/src/core/auth/auth.controller.ts",
+      "target": "apps/server/src/core/validation/zod-validation.pipe.ts"
+    },
+    {
       "source": "apps/server/src/core/auth/auth.guard.ts",
       "target": "apps/server/src/core/auth/auth.service.ts"
     },
@@ -441,6 +490,10 @@
     },
     {
       "source": "apps/server/src/core/auth/auth.module.ts",
+      "target": "apps/server/src/core/auth/auth.controller.ts"
+    },
+    {
+      "source": "apps/server/src/core/auth/auth.module.ts",
       "target": "apps/server/src/core/auth/auth.guard.ts"
     },
     {
@@ -450,6 +503,10 @@
     {
       "source": "apps/server/src/core/auth/auth.module.ts",
       "target": "apps/server/src/core/auth/login-attempt.store.ts"
+    },
+    {
+      "source": "apps/server/src/core/auth/auth.service.ts",
+      "target": "apps/server/src/core/config/index.ts"
     },
     {
       "source": "apps/server/src/core/auth/auth.service.ts",
@@ -633,10 +690,6 @@
     },
     {
       "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/routes/auth/index.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/auto-mode/index.ts"
     },
     {
@@ -658,10 +711,6 @@
     {
       "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/enhance-prompt/index.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/routes/event-history/index.ts"
     },
     {
       "source": "apps/server/src/legacy-application.ts",
@@ -689,23 +738,11 @@
     },
     {
       "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/routes/health/index.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/ideation/index.ts"
     },
     {
       "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/mcp/index.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/routes/models/index.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/routes/notifications/index.ts"
     },
     {
       "source": "apps/server/src/legacy-application.ts",
@@ -733,15 +770,7 @@
     },
     {
       "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/routes/templates/index.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/terminal/index.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/routes/workspace/index.ts"
     },
     {
       "source": "apps/server/src/legacy-application.ts",
@@ -894,6 +923,218 @@
     {
       "source": "apps/server/src/main.ts",
       "target": "apps/server/src/nest-logger.ts"
+    },
+    {
+      "source": "apps/server/src/modules/event-history/event-history.controller.ts",
+      "target": "apps/server/src/core/security/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/event-history/event-history.controller.ts",
+      "target": "apps/server/src/core/validation/zod-validation.pipe.ts"
+    },
+    {
+      "source": "apps/server/src/modules/event-history/event-history.controller.ts",
+      "target": "apps/server/src/modules/event-history/event-history.schemas.ts"
+    },
+    {
+      "source": "apps/server/src/modules/event-history/event-history.controller.ts",
+      "target": "apps/server/src/modules/event-history/event-history.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/event-history/event-history.controller.ts",
+      "target": "apps/server/src/modules/event-history/event-replay.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/event-history/event-history.module.ts",
+      "target": "apps/server/src/legacy/legacy.tokens.ts"
+    },
+    {
+      "source": "apps/server/src/modules/event-history/event-history.module.ts",
+      "target": "apps/server/src/modules/event-history/event-history.controller.ts"
+    },
+    {
+      "source": "apps/server/src/modules/event-history/event-history.module.ts",
+      "target": "apps/server/src/modules/event-history/event-history.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/event-history/event-history.module.ts",
+      "target": "apps/server/src/modules/event-history/event-replay.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/event-history/event-history.module.ts",
+      "target": "apps/server/src/services/event-history-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/event-history/event-history.service.ts",
+      "target": "apps/server/src/core/errors/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/event-history/event-history.service.ts",
+      "target": "apps/server/src/modules/event-history/event-history.schemas.ts"
+    },
+    {
+      "source": "apps/server/src/modules/event-history/event-history.service.ts",
+      "target": "apps/server/src/services/event-history-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/event-history/event-replay.service.ts",
+      "target": "apps/server/src/legacy/legacy.tokens.ts"
+    },
+    {
+      "source": "apps/server/src/modules/event-history/event-replay.service.ts",
+      "target": "apps/server/src/modules/event-history/event-history.schemas.ts"
+    },
+    {
+      "source": "apps/server/src/modules/event-history/event-replay.service.ts",
+      "target": "apps/server/src/modules/event-history/event-history.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/event-history/event-replay.service.ts",
+      "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/models/models-catalog.service.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/models/models-catalog.service.ts",
+      "target": "apps/server/src/legacy/legacy.tokens.ts"
+    },
+    {
+      "source": "apps/server/src/modules/models/models-catalog.service.ts",
+      "target": "apps/server/src/providers/provider-factory.ts"
+    },
+    {
+      "source": "apps/server/src/modules/models/models-catalog.service.ts",
+      "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/models/models.controller.ts",
+      "target": "apps/server/src/modules/models/models-catalog.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/models/models.module.ts",
+      "target": "apps/server/src/modules/models/models-catalog.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/models/models.module.ts",
+      "target": "apps/server/src/modules/models/models.controller.ts"
+    },
+    {
+      "source": "apps/server/src/modules/notifications/notifications.controller.ts",
+      "target": "apps/server/src/core/security/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/notifications/notifications.controller.ts",
+      "target": "apps/server/src/core/validation/zod-validation.pipe.ts"
+    },
+    {
+      "source": "apps/server/src/modules/notifications/notifications.controller.ts",
+      "target": "apps/server/src/modules/notifications/notifications.schemas.ts"
+    },
+    {
+      "source": "apps/server/src/modules/notifications/notifications.controller.ts",
+      "target": "apps/server/src/modules/notifications/notifications.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/notifications/notifications.module.ts",
+      "target": "apps/server/src/legacy/legacy.tokens.ts"
+    },
+    {
+      "source": "apps/server/src/modules/notifications/notifications.module.ts",
+      "target": "apps/server/src/modules/notifications/notifications.controller.ts"
+    },
+    {
+      "source": "apps/server/src/modules/notifications/notifications.module.ts",
+      "target": "apps/server/src/modules/notifications/notifications.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/notifications/notifications.module.ts",
+      "target": "apps/server/src/services/notification-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/notifications/notifications.service.ts",
+      "target": "apps/server/src/core/errors/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/notifications/notifications.service.ts",
+      "target": "apps/server/src/modules/notifications/notifications.schemas.ts"
+    },
+    {
+      "source": "apps/server/src/modules/notifications/notifications.service.ts",
+      "target": "apps/server/src/services/notification-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/templates/templates.controller.ts",
+      "target": "apps/server/src/core/validation/zod-validation.pipe.ts"
+    },
+    {
+      "source": "apps/server/src/modules/templates/templates.controller.ts",
+      "target": "apps/server/src/modules/templates/templates.schemas.ts"
+    },
+    {
+      "source": "apps/server/src/modules/templates/templates.controller.ts",
+      "target": "apps/server/src/modules/templates/templates.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/templates/templates.module.ts",
+      "target": "apps/server/src/modules/templates/template-command.runner.ts"
+    },
+    {
+      "source": "apps/server/src/modules/templates/templates.module.ts",
+      "target": "apps/server/src/modules/templates/templates.controller.ts"
+    },
+    {
+      "source": "apps/server/src/modules/templates/templates.module.ts",
+      "target": "apps/server/src/modules/templates/templates.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/templates/templates.service.ts",
+      "target": "apps/server/src/core/errors/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/templates/templates.service.ts",
+      "target": "apps/server/src/core/security/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/templates/templates.service.ts",
+      "target": "apps/server/src/lib/secure-fs.ts"
+    },
+    {
+      "source": "apps/server/src/modules/templates/templates.service.ts",
+      "target": "apps/server/src/modules/templates/template-command.runner.ts"
+    },
+    {
+      "source": "apps/server/src/modules/templates/templates.service.ts",
+      "target": "apps/server/src/modules/templates/templates.schemas.ts"
+    },
+    {
+      "source": "apps/server/src/modules/workspace/workspace.controller.ts",
+      "target": "apps/server/src/modules/workspace/workspace.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/workspace/workspace.module.ts",
+      "target": "apps/server/src/modules/workspace/workspace.controller.ts"
+    },
+    {
+      "source": "apps/server/src/modules/workspace/workspace.module.ts",
+      "target": "apps/server/src/modules/workspace/workspace.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/workspace/workspace.service.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/workspace/workspace.service.ts",
+      "target": "apps/server/src/core/errors/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/workspace/workspace.service.ts",
+      "target": "apps/server/src/core/security/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/workspace/workspace.service.ts",
+      "target": "apps/server/src/lib/secure-fs.ts"
     },
     {
       "source": "apps/server/src/providers/base-provider.ts",
@@ -1561,6 +1802,10 @@
     },
     {
       "source": "apps/server/src/routes/app-spec/generate-features-from-spec.ts",
+      "target": "apps/server/src/services/notification-service.ts"
+    },
+    {
+      "source": "apps/server/src/routes/app-spec/generate-features-from-spec.ts",
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
@@ -1593,6 +1838,10 @@
     },
     {
       "source": "apps/server/src/routes/app-spec/generate-spec.ts",
+      "target": "apps/server/src/services/notification-service.ts"
+    },
+    {
+      "source": "apps/server/src/routes/app-spec/generate-spec.ts",
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
@@ -1622,6 +1871,10 @@
     {
       "source": "apps/server/src/routes/app-spec/index.ts",
       "target": "apps/server/src/routes/app-spec/routes/sync.ts"
+    },
+    {
+      "source": "apps/server/src/routes/app-spec/index.ts",
+      "target": "apps/server/src/services/notification-service.ts"
     },
     {
       "source": "apps/server/src/routes/app-spec/index.ts",
@@ -1660,6 +1913,14 @@
       "target": "apps/server/src/routes/app-spec/generate-spec.ts"
     },
     {
+      "source": "apps/server/src/routes/app-spec/routes/create.ts",
+      "target": "apps/server/src/services/notification-service.ts"
+    },
+    {
+      "source": "apps/server/src/routes/app-spec/routes/create.ts",
+      "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
       "source": "apps/server/src/routes/app-spec/routes/generate-features.ts",
       "target": "apps/server/src/lib/events.ts"
     },
@@ -1670,6 +1931,10 @@
     {
       "source": "apps/server/src/routes/app-spec/routes/generate-features.ts",
       "target": "apps/server/src/routes/app-spec/generate-features-from-spec.ts"
+    },
+    {
+      "source": "apps/server/src/routes/app-spec/routes/generate-features.ts",
+      "target": "apps/server/src/services/notification-service.ts"
     },
     {
       "source": "apps/server/src/routes/app-spec/routes/generate-features.ts",
@@ -1686,6 +1951,10 @@
     {
       "source": "apps/server/src/routes/app-spec/routes/generate.ts",
       "target": "apps/server/src/routes/app-spec/generate-spec.ts"
+    },
+    {
+      "source": "apps/server/src/routes/app-spec/routes/generate.ts",
+      "target": "apps/server/src/services/notification-service.ts"
     },
     {
       "source": "apps/server/src/routes/app-spec/routes/generate.ts",
@@ -1710,6 +1979,10 @@
     {
       "source": "apps/server/src/routes/app-spec/routes/sync.ts",
       "target": "apps/server/src/routes/app-spec/sync-spec.ts"
+    },
+    {
+      "source": "apps/server/src/routes/app-spec/routes/sync.ts",
+      "target": "apps/server/src/services/notification-service.ts"
     },
     {
       "source": "apps/server/src/routes/app-spec/routes/sync.ts",
@@ -1750,14 +2023,6 @@
     {
       "source": "apps/server/src/routes/app-spec/sync-spec.ts",
       "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auth/index.ts",
-      "target": "apps/server/src/core/auth/login-attempt.store.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auth/index.ts",
-      "target": "apps/server/src/lib/auth.ts"
     },
     {
       "source": "apps/server/src/routes/auto-mode/common.ts",
@@ -2218,86 +2483,6 @@
     {
       "source": "apps/server/src/routes/environment-tests.ts",
       "target": "apps/server/src/services/test-runner-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/event-history/common.ts",
-      "target": "apps/server/src/routes/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/event-history/index.ts",
-      "target": "apps/server/src/middleware/validate-paths.ts"
-    },
-    {
-      "source": "apps/server/src/routes/event-history/index.ts",
-      "target": "apps/server/src/routes/event-history/routes/clear.ts"
-    },
-    {
-      "source": "apps/server/src/routes/event-history/index.ts",
-      "target": "apps/server/src/routes/event-history/routes/delete.ts"
-    },
-    {
-      "source": "apps/server/src/routes/event-history/index.ts",
-      "target": "apps/server/src/routes/event-history/routes/get.ts"
-    },
-    {
-      "source": "apps/server/src/routes/event-history/index.ts",
-      "target": "apps/server/src/routes/event-history/routes/list.ts"
-    },
-    {
-      "source": "apps/server/src/routes/event-history/index.ts",
-      "target": "apps/server/src/routes/event-history/routes/replay.ts"
-    },
-    {
-      "source": "apps/server/src/routes/event-history/index.ts",
-      "target": "apps/server/src/services/event-history-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/event-history/index.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/event-history/routes/clear.ts",
-      "target": "apps/server/src/routes/event-history/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/event-history/routes/clear.ts",
-      "target": "apps/server/src/services/event-history-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/event-history/routes/delete.ts",
-      "target": "apps/server/src/routes/event-history/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/event-history/routes/delete.ts",
-      "target": "apps/server/src/services/event-history-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/event-history/routes/get.ts",
-      "target": "apps/server/src/routes/event-history/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/event-history/routes/get.ts",
-      "target": "apps/server/src/services/event-history-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/event-history/routes/list.ts",
-      "target": "apps/server/src/routes/event-history/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/event-history/routes/list.ts",
-      "target": "apps/server/src/services/event-history-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/event-history/routes/replay.ts",
-      "target": "apps/server/src/routes/event-history/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/event-history/routes/replay.ts",
-      "target": "apps/server/src/services/event-history-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/event-history/routes/replay.ts",
-      "target": "apps/server/src/services/settings-service.ts"
     },
     {
       "source": "apps/server/src/routes/features/common.ts",
@@ -2956,30 +3141,6 @@
       "target": "apps/server/src/routes/github/routes/validation-common.ts"
     },
     {
-      "source": "apps/server/src/routes/health/common.ts",
-      "target": "apps/server/src/routes/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/health/index.ts",
-      "target": "apps/server/src/routes/health/routes/environment.ts"
-    },
-    {
-      "source": "apps/server/src/routes/health/index.ts",
-      "target": "apps/server/src/routes/health/routes/index.ts"
-    },
-    {
-      "source": "apps/server/src/routes/health/routes/detailed.ts",
-      "target": "apps/server/src/lib/auth.ts"
-    },
-    {
-      "source": "apps/server/src/routes/health/routes/detailed.ts",
-      "target": "apps/server/src/lib/version.ts"
-    },
-    {
-      "source": "apps/server/src/routes/health/routes/index.ts",
-      "target": "apps/server/src/lib/version.ts"
-    },
-    {
       "source": "apps/server/src/routes/ideation/common.ts",
       "target": "apps/server/src/routes/common.ts"
     },
@@ -3222,106 +3383,6 @@
     {
       "source": "apps/server/src/routes/mcp/routes/test-server.ts",
       "target": "apps/server/src/services/mcp-test-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/models/common.ts",
-      "target": "apps/server/src/routes/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/models/index.ts",
-      "target": "apps/server/src/routes/models/routes/available.ts"
-    },
-    {
-      "source": "apps/server/src/routes/models/index.ts",
-      "target": "apps/server/src/routes/models/routes/providers.ts"
-    },
-    {
-      "source": "apps/server/src/routes/models/index.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/models/routes/available.ts",
-      "target": "apps/server/src/providers/provider-factory.ts"
-    },
-    {
-      "source": "apps/server/src/routes/models/routes/available.ts",
-      "target": "apps/server/src/routes/models/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/models/routes/available.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/models/routes/providers.ts",
-      "target": "apps/server/src/providers/provider-factory.ts"
-    },
-    {
-      "source": "apps/server/src/routes/models/routes/providers.ts",
-      "target": "apps/server/src/routes/models/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/models/routes/providers.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/notifications/common.ts",
-      "target": "apps/server/src/routes/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/notifications/index.ts",
-      "target": "apps/server/src/middleware/validate-paths.ts"
-    },
-    {
-      "source": "apps/server/src/routes/notifications/index.ts",
-      "target": "apps/server/src/routes/notifications/routes/dismiss.ts"
-    },
-    {
-      "source": "apps/server/src/routes/notifications/index.ts",
-      "target": "apps/server/src/routes/notifications/routes/list.ts"
-    },
-    {
-      "source": "apps/server/src/routes/notifications/index.ts",
-      "target": "apps/server/src/routes/notifications/routes/mark-read.ts"
-    },
-    {
-      "source": "apps/server/src/routes/notifications/index.ts",
-      "target": "apps/server/src/routes/notifications/routes/unread-count.ts"
-    },
-    {
-      "source": "apps/server/src/routes/notifications/index.ts",
-      "target": "apps/server/src/services/notification-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/notifications/routes/dismiss.ts",
-      "target": "apps/server/src/routes/notifications/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/notifications/routes/dismiss.ts",
-      "target": "apps/server/src/services/notification-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/notifications/routes/list.ts",
-      "target": "apps/server/src/routes/notifications/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/notifications/routes/list.ts",
-      "target": "apps/server/src/services/notification-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/notifications/routes/mark-read.ts",
-      "target": "apps/server/src/routes/notifications/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/notifications/routes/mark-read.ts",
-      "target": "apps/server/src/services/notification-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/notifications/routes/unread-count.ts",
-      "target": "apps/server/src/routes/notifications/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/notifications/routes/unread-count.ts",
-      "target": "apps/server/src/services/notification-service.ts"
     },
     {
       "source": "apps/server/src/routes/pipeline/common.ts",
@@ -4092,22 +4153,6 @@
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
-      "source": "apps/server/src/routes/templates/common.ts",
-      "target": "apps/server/src/routes/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/templates/index.ts",
-      "target": "apps/server/src/routes/templates/routes/clone.ts"
-    },
-    {
-      "source": "apps/server/src/routes/templates/routes/clone.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/templates/routes/clone.ts",
-      "target": "apps/server/src/routes/templates/common.ts"
-    },
-    {
       "source": "apps/server/src/routes/terminal/common.ts",
       "target": "apps/server/src/routes/common.ts"
     },
@@ -4190,34 +4235,6 @@
     {
       "source": "apps/server/src/routes/terminal/routes/status.ts",
       "target": "apps/server/src/services/terminal-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/workspace/common.ts",
-      "target": "apps/server/src/routes/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/workspace/index.ts",
-      "target": "apps/server/src/routes/workspace/routes/config.ts"
-    },
-    {
-      "source": "apps/server/src/routes/workspace/index.ts",
-      "target": "apps/server/src/routes/workspace/routes/directories.ts"
-    },
-    {
-      "source": "apps/server/src/routes/workspace/routes/config.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/workspace/routes/config.ts",
-      "target": "apps/server/src/routes/workspace/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/workspace/routes/directories.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/workspace/routes/directories.ts",
-      "target": "apps/server/src/routes/workspace/common.ts"
     },
     {
       "source": "apps/server/src/routes/worktree/common.ts",
@@ -5081,6 +5098,10 @@
     },
     {
       "source": "apps/server/src/services/auto-mode/compat.ts",
+      "target": "apps/server/src/services/notification-service.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/compat.ts",
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
@@ -5193,6 +5214,10 @@
     },
     {
       "source": "apps/server/src/services/auto-mode/global-service.ts",
+      "target": "apps/server/src/services/notification-service.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/global-service.ts",
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
@@ -5230,6 +5255,10 @@
     {
       "source": "apps/server/src/services/auto-mode/types.ts",
       "target": "apps/server/src/services/feature-loader.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/types.ts",
+      "target": "apps/server/src/services/notification-service.ts"
     },
     {
       "source": "apps/server/src/services/auto-mode/types.ts",

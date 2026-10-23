@@ -16,6 +16,7 @@ import { streamingQuery } from '../../providers/simple-query-service.js';
 import { generateFeaturesFromSpec } from './generate-features-from-spec.js';
 import { ensureAutomakerDir, getAppSpecPath } from '@automaker/platform';
 import type { SettingsService } from '../../services/settings-service.js';
+import type { NotificationService } from '../../services/notification-service.js';
 import {
   getAutoLoadClaudeMdSetting,
   getPromptCustomization,
@@ -32,7 +33,8 @@ export async function generateSpec(
   generateFeatures?: boolean,
   analyzeProject?: boolean,
   maxFeatures?: number,
-  settingsService?: SettingsService
+  settingsService?: SettingsService,
+  notificationService?: NotificationService
 ): Promise<void> {
   logger.info('========== generateSpec() started ==========');
   logger.info('projectPath:', projectPath);
@@ -301,7 +303,8 @@ Your entire response should be valid JSON starting with { and ending with }. No 
         events,
         featureAbortController,
         maxFeatures,
-        settingsService
+        settingsService,
+        notificationService
       );
       // Final completion will be emitted by generateFeaturesFromSpec -> parseAndCreateFeatures
     } catch (featureError) {

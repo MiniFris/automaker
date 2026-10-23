@@ -286,7 +286,7 @@ export function validateApiKey(key: string): boolean {
 /**
  * Get session cookie options
  */
-export function getSessionCookieOptions(): {
+export function getSessionCookieOptions(production = process.env.NODE_ENV === 'production'): {
   httpOnly: boolean;
   secure: boolean;
   sameSite: 'strict' | 'lax' | 'none';
@@ -295,7 +295,7 @@ export function getSessionCookieOptions(): {
 } {
   return {
     httpOnly: true, // JavaScript cannot access this cookie
-    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    secure: production, // HTTPS only in production
     sameSite: 'lax', // Sent for same-site requests and top-level navigations, but not cross-origin fetch/XHR
     maxAge: SESSION_MAX_AGE_MS,
     path: '/',

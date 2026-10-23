@@ -193,12 +193,12 @@
       "method": "POST",
       "path": "/api/auth/login",
       "group": "auth",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/auth/index.ts",
-      "line": 94,
+      "source": "apps/server/src/core/auth/auth.controller.ts",
+      "line": 48,
       "middleware": [
-        "async (req, res) => { const clientIp = getClientIp(req); // Skip rate limiting in test mode to allow parallel E2E tests if (!isTestMode) { // Check rate limit before processing ..."
+        "AuthController.login"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -208,12 +208,12 @@
       "method": "POST",
       "path": "/api/auth/logout",
       "group": "auth",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/auth/index.ts",
-      "line": 180,
+      "source": "apps/server/src/core/auth/auth.controller.ts",
+      "line": 82,
       "middleware": [
-        "async (req, res) => { const cookieName = getSessionCookieName(); const sessionToken = req.cookies?.[cookieName] as string | undefined; if (sessionToken) { await invalidateSessio..."
+        "AuthController.logout"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -223,12 +223,12 @@
       "method": "GET",
       "path": "/api/auth/status",
       "group": "auth",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/auth/index.ts",
-      "line": 62,
+      "source": "apps/server/src/core/auth/auth.controller.ts",
+      "line": 30,
       "middleware": [
-        "async (req, res) => { let authenticated = isRequestAuthenticated(req); // Auto-login for development: create session automatically if enabled // Only works in non-production env..."
+        "AuthController.status"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -238,12 +238,12 @@
       "method": "GET",
       "path": "/api/auth/token",
       "group": "auth",
-      "owner": "legacy-express",
-      "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/auth/index.ts",
-      "line": 155,
+      "owner": "nestjs",
+      "access": "protected",
+      "source": "apps/server/src/core/auth/auth.controller.ts",
+      "line": 76,
       "middleware": [
-        "(req, res) => { // Validate the session is still valid (via cookie, API key, or session token header) if (!isRequestAuthenticated(req)) { res.status(401).json({ success: false, ..."
+        "AuthController.token"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -677,13 +677,12 @@
       "method": "POST",
       "path": "/api/event-history/clear",
       "group": "event-history",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/event-history/index.ts",
-      "line": 58,
+      "source": "apps/server/src/modules/event-history/event-history.controller.ts",
+      "line": 51,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createClearHandler(eventHistoryService)"
+        "EventHistoryController.clear"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -693,13 +692,12 @@
       "method": "POST",
       "path": "/api/event-history/delete",
       "group": "event-history",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/event-history/index.ts",
-      "line": 51,
+      "source": "apps/server/src/modules/event-history/event-history.controller.ts",
+      "line": 43,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createDeleteHandler(eventHistoryService)"
+        "EventHistoryController.delete"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -709,13 +707,12 @@
       "method": "POST",
       "path": "/api/event-history/get",
       "group": "event-history",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/event-history/index.ts",
-      "line": 48,
+      "source": "apps/server/src/modules/event-history/event-history.controller.ts",
+      "line": 35,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createGetHandler(eventHistoryService)"
+        "EventHistoryController.get"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -725,13 +722,12 @@
       "method": "POST",
       "path": "/api/event-history/list",
       "group": "event-history",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/event-history/index.ts",
-      "line": 45,
+      "source": "apps/server/src/modules/event-history/event-history.controller.ts",
+      "line": 27,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createListHandler(eventHistoryService)"
+        "EventHistoryController.list"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -741,13 +737,12 @@
       "method": "POST",
       "path": "/api/event-history/replay",
       "group": "event-history",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/event-history/index.ts",
-      "line": 61,
+      "source": "apps/server/src/modules/event-history/event-history.controller.ts",
+      "line": 59,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createReplayHandler(eventHistoryService, settingsService)"
+        "EventHistoryController.replay"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -1616,7 +1611,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/core/health/health.controller.ts",
-      "line": 26,
+      "line": 42,
       "middleware": [
         "HealthController.detailed"
       ],
@@ -1628,12 +1623,12 @@
       "method": "GET",
       "path": "/api/health/environment",
       "group": "health",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/health/index.ts",
-      "line": 24,
+      "source": "apps/server/src/core/health/health.controller.ts",
+      "line": 21,
       "middleware": [
-        "createEnvironmentHandler()"
+        "HealthController.environment"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -1646,7 +1641,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/core/health/health.controller.ts",
-      "line": 14,
+      "line": 30,
       "middleware": [
         "HealthController.live"
       ],
@@ -1661,7 +1656,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/core/health/health.controller.ts",
-      "line": 19,
+      "line": 35,
       "middleware": [
         "HealthController.ready"
       ],
@@ -1673,12 +1668,12 @@
       "method": "GET",
       "path": "/api/health",
       "group": "health",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/health/index.ts",
-      "line": 20,
+      "source": "apps/server/src/core/health/health.controller.ts",
+      "line": 15,
       "middleware": [
-        "createIndexHandler()"
+        "HealthController.index"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -1970,12 +1965,12 @@
       "method": "GET",
       "path": "/api/models/available",
       "group": "models",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/models/index.ts",
-      "line": 13,
+      "source": "apps/server/src/modules/models/models.controller.ts",
+      "line": 8,
       "middleware": [
-        "createAvailableHandler(settingsService)"
+        "ModelsController.listAvailable"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -1985,12 +1980,12 @@
       "method": "GET",
       "path": "/api/models/providers",
       "group": "models",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/models/index.ts",
-      "line": 14,
+      "source": "apps/server/src/modules/models/models.controller.ts",
+      "line": 13,
       "middleware": [
-        "createProvidersHandler(settingsService)"
+        "ModelsController.getProviders"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -2000,13 +1995,12 @@
       "method": "POST",
       "path": "/api/notifications/dismiss",
       "group": "notifications",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/notifications/index.ts",
-      "line": 55,
+      "source": "apps/server/src/modules/notifications/notifications.controller.ts",
+      "line": 46,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createDismissHandler(notificationService)"
+        "NotificationsController.dismiss"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -2016,13 +2010,12 @@
       "method": "POST",
       "path": "/api/notifications/list",
       "group": "notifications",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/notifications/index.ts",
-      "line": 38,
+      "source": "apps/server/src/modules/notifications/notifications.controller.ts",
+      "line": 21,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createListHandler(notificationService)"
+        "NotificationsController.list"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -2032,13 +2025,12 @@
       "method": "POST",
       "path": "/api/notifications/mark-read",
       "group": "notifications",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/notifications/index.ts",
-      "line": 48,
+      "source": "apps/server/src/modules/notifications/notifications.controller.ts",
+      "line": 37,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createMarkReadHandler(notificationService)"
+        "NotificationsController.markRead"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -2048,13 +2040,12 @@
       "method": "POST",
       "path": "/api/notifications/unread-count",
       "group": "notifications",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/notifications/index.ts",
-      "line": 41,
+      "source": "apps/server/src/modules/notifications/notifications.controller.ts",
+      "line": 29,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createUnreadCountHandler(notificationService)"
+        "NotificationsController.unreadCount"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -3514,9 +3505,9 @@
       "owner": "legacy-express",
       "access": "protected",
       "source": "apps/server/src/routes/app-spec/index.ts",
-      "line": 21,
+      "line": 23,
       "middleware": [
-        "createCreateHandler(events)"
+        "createCreateHandler(events, settingsService, notificationService)"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3529,9 +3520,9 @@
       "owner": "legacy-express",
       "access": "protected",
       "source": "apps/server/src/routes/app-spec/index.ts",
-      "line": 23,
+      "line": 25,
       "middleware": [
-        "createGenerateFeaturesHandler(events, settingsService)"
+        "createGenerateFeaturesHandler(events, settingsService, notificationService)"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3544,9 +3535,9 @@
       "owner": "legacy-express",
       "access": "protected",
       "source": "apps/server/src/routes/app-spec/index.ts",
-      "line": 22,
+      "line": 24,
       "middleware": [
-        "createGenerateHandler(events, settingsService)"
+        "createGenerateHandler(events, settingsService, notificationService)"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3559,7 +3550,7 @@
       "owner": "legacy-express",
       "access": "protected",
       "source": "apps/server/src/routes/app-spec/index.ts",
-      "line": 26,
+      "line": 31,
       "middleware": [
         "createStatusHandler()"
       ],
@@ -3574,7 +3565,7 @@
       "owner": "legacy-express",
       "access": "protected",
       "source": "apps/server/src/routes/app-spec/index.ts",
-      "line": 25,
+      "line": 30,
       "middleware": [
         "createStopHandler()"
       ],
@@ -3589,9 +3580,9 @@
       "owner": "legacy-express",
       "access": "protected",
       "source": "apps/server/src/routes/app-spec/index.ts",
-      "line": 24,
+      "line": 29,
       "middleware": [
-        "createSyncHandler(events, settingsService)"
+        "createSyncHandler(events, settingsService, notificationService)"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3601,12 +3592,12 @@
       "method": "POST",
       "path": "/api/templates/clone",
       "group": "templates",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/templates/index.ts",
-      "line": 12,
+      "source": "apps/server/src/modules/templates/templates.controller.ts",
+      "line": 10,
       "middleware": [
-        "createCloneHandler()"
+        "TemplatesController.clone"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3766,12 +3757,12 @@
       "method": "GET",
       "path": "/api/workspace/config",
       "group": "workspace",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/workspace/index.ts",
-      "line": 13,
+      "source": "apps/server/src/modules/workspace/workspace.controller.ts",
+      "line": 8,
       "middleware": [
-        "createConfigHandler()"
+        "WorkspaceController.getConfig"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -3781,12 +3772,12 @@
       "method": "GET",
       "path": "/api/workspace/directories",
       "group": "workspace",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/workspace/index.ts",
-      "line": 14,
+      "source": "apps/server/src/modules/workspace/workspace.controller.ts",
+      "line": 13,
       "middleware": [
-        "createDirectoriesHandler()"
+        "WorkspaceController.listDirectories"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,

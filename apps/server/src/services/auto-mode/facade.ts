@@ -171,6 +171,7 @@ export class AutoModeServiceFacade {
       events,
       settingsService = null,
       featureLoader = new FeatureLoader(),
+      notificationService = null,
       sharedServices,
     } = options;
 
@@ -182,7 +183,7 @@ export class AutoModeServiceFacade {
     const concurrencyManager =
       sharedServices?.concurrencyManager ??
       new ConcurrencyManager((p) => worktreeResolver.getCurrentBranch(p));
-    const featureStateManager = new FeatureStateManager(events, featureLoader);
+    const featureStateManager = new FeatureStateManager(events, featureLoader, notificationService);
     const planApprovalService = new PlanApprovalService(
       eventBus,
       featureStateManager,

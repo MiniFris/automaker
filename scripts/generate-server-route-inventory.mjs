@@ -77,7 +77,8 @@ function slash(path) {
 
 function joinUrl(base, routePath) {
   const normalizedBase = base === '/' ? '' : base.replace(/\/$/, '');
-  const normalizedRoute = routePath === '/' ? '' : `/${routePath.replace(/^\//, '')}`;
+  const normalizedRoute =
+    routePath === '/' || routePath === '' ? '' : `/${routePath.replace(/^\//, '')}`;
   return `${normalizedBase}${normalizedRoute}` || '/';
 }
 
@@ -310,7 +311,10 @@ function parseNestControllerEndpoints(sourcePath, sourceText) {
           line,
           middleware: [`${statement.name?.text ?? '<anonymous>'}.${handler}`],
           potentialMutation: method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS',
-          validatesProjectPath: Boolean(decoratorCall(member, 'AllowedPath')),
+          validatesProjectPath: Boolean(
+            decoratorCall(statement, 'AllowedPathFields') ||
+            decoratorCall(member, 'AllowedPathFields')
+          ),
           streamsResponse: false,
         });
       }

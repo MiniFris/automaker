@@ -14,10 +14,15 @@ import {
 } from '../common.js';
 import { generateSpec } from '../generate-spec.js';
 import type { SettingsService } from '../../../services/settings-service.js';
+import type { NotificationService } from '../../../services/notification-service.js';
 
 const logger = createLogger('SpecRegeneration');
 
-export function createGenerateHandler(events: EventEmitter, settingsService?: SettingsService) {
+export function createGenerateHandler(
+  events: EventEmitter,
+  settingsService?: SettingsService,
+  notificationService?: NotificationService
+) {
   return async (req: Request, res: Response): Promise<void> => {
     logger.info('========== /generate endpoint called ==========');
     logger.debug('Request body:', JSON.stringify(req.body, null, 2));
@@ -69,7 +74,8 @@ export function createGenerateHandler(events: EventEmitter, settingsService?: Se
         generateFeatures,
         analyzeProject,
         maxFeatures,
-        settingsService
+        settingsService,
+        notificationService
       )
         .catch((error) => {
           logError(error, 'Generation failed with error');

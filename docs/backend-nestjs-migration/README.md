@@ -1,7 +1,7 @@
 # Полный перенос backend Automaker на NestJS
 
-Обновлено: 2026-10-23. Статус: этапы 0–3 завершены; следующий — периферийные
-HTTP-модули.
+Обновлено: 2026-10-23. Статус: этапы 0–4 завершены; следующий — проектные данные
+и workflow.
 
 ## Цель
 
@@ -62,11 +62,11 @@ HTTP/WebSocket API, файловый формат `.automaker/`, поддерж�
 | 2   | [Nest shell и legacy bridge](02-nest-shell-and-legacy-bridge.md)        | Процесс стартует через Nest без смены поведения        | 1–2 недели |
 | 3   | [Core platform](03-core-platform.md)                                    | Config, auth, errors, security, lifecycle и event bus  | 2–3 недели |
 | 4   | [Периферийные HTTP-модули](04-edge-http-modules.md)                     | Первые route groups полностью удалены из legacy        | 2–3 недели |
-| 5   | [Проектные данные и workflow](05-project-domain-modules.md)             | Settings, projects, files, features, sessions и specs  | 3–5 недель |
-| 6   | [Execution, Git и worktrees](06-execution-git-worktrees.md)             | Среды выполнения и Git изолированы за портами          | 4–6 недель |
-| 7   | [AI providers и agents](07-providers-and-agents.md)                     | Provider registry и агентские сессии работают через DI | 3–5 недель |
-| 8   | [Оркестрация и интеграции](08-orchestration-and-integrations.md)        | Auto mode, pipelines, ideation, GitHub и MCP           | 3–5 недель |
-| 9   | [WebSocket и terminal](09-websockets-and-terminal.md)                   | Оба WS-протокола принадлежат Nest lifecycle            | 2–4 недели |
+| 5   | [Проектные данные и workflow](05-project-domain-modules.md)             | Settings, projects, files, features, sessions и specs  | 4–6 недель |
+| 6   | [Execution, Git и worktrees](06-execution-git-worktrees.md)             | Среды выполнения и Git изолированы за портами          | 5–7 недель |
+| 7   | [AI providers и agents](07-providers-and-agents.md)                     | Provider registry и агентские сессии работают через DI | 4–6 недель |
+| 8   | [Оркестрация и интеграции](08-orchestration-and-integrations.md)        | Auto mode, pipelines, ideation, GitHub и MCP           | 4–6 недель |
+| 9   | [WebSocket и terminal](09-websockets-and-terminal.md)                   | Оба WS-протокола принадлежат Nest lifecycle            | 3–4 недели |
 | 10  | [Cutover и production hardening](10-cutover-and-hardening.md)           | Legacy Express composition удалён                      | 2–3 недели |
 | 11  | [Post-migration refactor](11-post-migration-refactor.md)                | Разделены god services и усилены границы               | 3–6 недель |
 

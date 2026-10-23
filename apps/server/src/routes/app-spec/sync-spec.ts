@@ -30,7 +30,7 @@ import {
   updateRoadmapPhaseStatus,
   type ImplementedFeature,
 } from '../../lib/xml-extractor.js';
-import { getNotificationService } from '../../services/notification-service.js';
+import type { NotificationService } from '../../services/notification-service.js';
 
 const logger = createLogger('SpecSync');
 
@@ -79,7 +79,8 @@ export async function syncSpec(
   projectPath: string,
   events: EventEmitter,
   abortController: AbortController,
-  settingsService?: SettingsService
+  settingsService?: SettingsService,
+  notificationService?: NotificationService
 ): Promise<SyncResult> {
   logger.info('========== syncSpec() started ==========');
   logger.info('projectPath:', projectPath);
@@ -370,13 +371,14 @@ CRITICAL INSTRUCTIONS:
   result.summary = summaryParts.length > 0 ? summaryParts.join(', ') : 'Spec is already up to date';
 
   // Create notification
-  const notificationService = getNotificationService();
-  await notificationService.createNotification({
-    type: 'spec_regeneration_complete',
-    title: 'Spec Sync Complete',
-    message: result.summary,
-    projectPath,
-  });
+  if (notificationService) {
+    await notificationService.createNotification({
+      type: 'spec_regeneration_complete',
+      title: 'Spec Sync Complete',
+      message: result.summary,
+      projectPath,
+    });
+  }
 
   events.emit('spec-regeneration:event', {
     type: 'spec_regeneration_complete',

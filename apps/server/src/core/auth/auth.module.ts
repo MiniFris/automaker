@@ -3,6 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './auth.guard.js';
 import { AuthService } from './auth.service.js';
 import { LoginAttemptStore } from './login-attempt.store.js';
+import { AuthController } from './auth.controller.js';
 
 @Global()
 @Module({})
@@ -11,6 +12,7 @@ export class AuthModule {
     return {
       global: true,
       module: AuthModule,
+      controllers: [AuthController],
       providers: [
         AuthService,
         { provide: LoginAttemptStore, useValue: loginAttemptStore },

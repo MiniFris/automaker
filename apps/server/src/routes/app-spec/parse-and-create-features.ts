@@ -8,7 +8,7 @@ import type { EventEmitter } from '../../lib/events.js';
 import { createLogger, atomicWriteJson, DEFAULT_BACKUP_COUNT } from '@automaker/utils';
 import { getFeaturesDir } from '@automaker/platform';
 import { extractJsonWithArray } from '../../lib/json-extractor.js';
-import { getNotificationService } from '../../services/notification-service.js';
+import type { NotificationService } from '../../services/notification-service.js';
 import type { SettingsService } from '../../services/settings-service.js';
 import { resolvePhaseModel } from '@automaker/model-resolver';
 
@@ -18,7 +18,8 @@ export async function parseAndCreateFeatures(
   projectPath: string,
   content: string,
   events: EventEmitter,
-  settingsService?: SettingsService
+  settingsService?: SettingsService,
+  notificationService?: NotificationService
 ): Promise<void> {
   logger.info('========== parseAndCreateFeatures() started ==========');
   logger.info(`Content length: ${content.length} chars`);
@@ -135,13 +136,14 @@ export async function parseAndCreateFeatures(
     });
 
     // Create notification for spec generation completion
-    const notificationService = getNotificationService();
-    await notificationService.createNotification({
-      type: 'spec_regeneration_complete',
-      title: 'Spec Generation Complete',
-      message: `Created ${createdFeatures.length} features from the project specification.`,
-      projectPath: projectPath,
-    });
+    if (notificationService) {
+      await notificationService.createNotification({
+        type: 'spec_regeneration_complete',
+        title: 'Spec Generation Complete',
+        message: `Created ${createdFeatures.length} features from the project specification.`,
+        projectPath: projectPath,
+      });
+    }
   } catch (error) {
     logger.error('❌ parseAndCreateFeatures() failed:');
     logger.error('Error:', error);

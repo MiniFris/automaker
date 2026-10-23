@@ -2,7 +2,6 @@ import type { AddressInfo } from 'node:net';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { HealthResponseSchema } from '@automaker/contracts';
 import { afterAll, describe, expect, it } from 'vitest';
 import WebSocket from 'ws';
 
@@ -23,13 +22,13 @@ describe('legacy application lifecycle contract', () => {
     expect(application.server.listening).toBe(false);
   });
 
-  it('starts explicitly and preserves the public health response', async () => {
+  it('starts explicitly without reclaiming Nest-owned health routes', async () => {
     await application.start();
     const address = application.server.address() as AddressInfo;
     const response = await fetch(`http://127.0.0.1:${address.port}/api/health`);
 
-    expect(response.status).toBe(200);
-    expect(HealthResponseSchema.parse(await response.json())).toMatchObject({ status: 'ok' });
+    expect(application.server.listening).toBe(true);
+    expect(response.status).toBe(401);
   });
 
   it('preserves events WebSocket upgrade authentication', async () => {

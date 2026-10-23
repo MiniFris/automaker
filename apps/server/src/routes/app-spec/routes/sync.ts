@@ -14,10 +14,15 @@ import {
 } from '../common.js';
 import { syncSpec } from '../sync-spec.js';
 import type { SettingsService } from '../../../services/settings-service.js';
+import type { NotificationService } from '../../../services/notification-service.js';
 
 const logger = createLogger('SpecSync');
 
-export function createSyncHandler(events: EventEmitter, settingsService?: SettingsService) {
+export function createSyncHandler(
+  events: EventEmitter,
+  settingsService?: SettingsService,
+  notificationService?: NotificationService
+) {
   return async (req: Request, res: Response): Promise<void> => {
     logger.info('========== /sync endpoint called ==========');
     logger.debug('Request body:', JSON.stringify(req.body, null, 2));
@@ -48,7 +53,7 @@ export function createSyncHandler(events: EventEmitter, settingsService?: Settin
       setRunningState(projectPath, true, abortController, 'sync');
       logger.info('Starting background spec sync task...');
 
-      syncSpec(projectPath, events, abortController, settingsService)
+      syncSpec(projectPath, events, abortController, settingsService, notificationService)
         .then((result) => {
           logger.info('Spec sync completed successfully');
           logger.info('Result:', JSON.stringify(result, null, 2));

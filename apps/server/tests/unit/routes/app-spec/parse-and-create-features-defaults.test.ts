@@ -9,13 +9,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import path from 'path';
 
 // Use vi.hoisted to create mock functions that can be referenced in vi.mock factories
-const { mockMkdir, mockAtomicWriteJson, mockExtractJsonWithArray, mockCreateNotification } =
-  vi.hoisted(() => ({
-    mockMkdir: vi.fn().mockResolvedValue(undefined),
-    mockAtomicWriteJson: vi.fn().mockResolvedValue(undefined),
-    mockExtractJsonWithArray: vi.fn(),
-    mockCreateNotification: vi.fn().mockResolvedValue(undefined),
-  }));
+const { mockMkdir, mockAtomicWriteJson, mockExtractJsonWithArray } = vi.hoisted(() => ({
+  mockMkdir: vi.fn().mockResolvedValue(undefined),
+  mockAtomicWriteJson: vi.fn().mockResolvedValue(undefined),
+  mockExtractJsonWithArray: vi.fn(),
+}));
 
 vi.mock('@/lib/secure-fs.js', () => ({
   mkdir: mockMkdir,
@@ -38,12 +36,6 @@ vi.mock('@automaker/platform', () => ({
 
 vi.mock('@/lib/json-extractor.js', () => ({
   extractJsonWithArray: mockExtractJsonWithArray,
-}));
-
-vi.mock('@/services/notification-service.js', () => ({
-  getNotificationService: vi.fn(() => ({
-    createNotification: mockCreateNotification,
-  })),
 }));
 
 // Import after mocks are set up

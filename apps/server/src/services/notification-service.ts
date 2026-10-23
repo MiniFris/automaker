@@ -16,6 +16,7 @@ import type { Notification, NotificationsFile, NotificationType } from '@automak
 import { DEFAULT_NOTIFICATIONS_FILE } from '@automaker/types';
 import type { EventEmitter } from '../lib/events.js';
 import { randomUUID } from 'crypto';
+import { Injectable } from '@nestjs/common';
 
 const logger = createLogger('NotificationService');
 
@@ -73,6 +74,7 @@ export interface CreateNotificationInput {
  * Handles reading and writing notifications to JSON files with atomic operations
  * for reliability. Each project has its own notifications.json file.
  */
+@Injectable()
 export class NotificationService {
   private events: EventEmitter | null = null;
 
@@ -264,17 +266,4 @@ export class NotificationService {
 
     return count;
   }
-}
-
-// Singleton instance
-let notificationServiceInstance: NotificationService | null = null;
-
-/**
- * Get the singleton notification service instance
- */
-export function getNotificationService(): NotificationService {
-  if (!notificationServiceInstance) {
-    notificationServiceInstance = new NotificationService();
-  }
-  return notificationServiceInstance;
 }

@@ -26,7 +26,10 @@ const RuntimeEnvironmentSchema = z.object({
   TERMINAL_MAX_SESSIONS: z.coerce.number().int().positive().max(10_000).default(1000),
   ENABLE_REQUEST_LOGGING: booleanValue(true),
   AUTOMAKER_DEBUG_RAW_OUTPUT: booleanValue(false),
+  AUTOMAKER_MOCK_AGENT: booleanValue(false),
+  ANTHROPIC_API_KEY: optionalString,
   IS_CONTAINERIZED: booleanValue(false),
+  AUTOMAKER_SKIP_SANDBOX_WARNING: booleanValue(false),
   AUTOMAKER_DOCKER_CONTROLLER: optionalString,
   AUTOMAKER_PREVIEW_PORT_FIRST: z.coerce.number().int().min(1).max(65_535).default(3100),
   AUTOMAKER_PREVIEW_PORT_LAST: z.coerce.number().int().min(1).max(65_535).default(3119),
@@ -59,9 +62,12 @@ export interface RuntimeConfig {
   };
   providers: {
     debugRawOutput: boolean;
+    anthropicApiKeyConfigured: boolean;
+    mockAgent: boolean;
   };
   execution: {
     containerized: boolean;
+    skipSandboxWarning: boolean;
     dockerController?: string;
   };
   preview: {
@@ -130,9 +136,14 @@ export function parseRuntimeConfig(
       password: value.TERMINAL_PASSWORD,
       maxSessions: value.TERMINAL_MAX_SESSIONS,
     },
-    providers: { debugRawOutput: value.AUTOMAKER_DEBUG_RAW_OUTPUT },
+    providers: {
+      debugRawOutput: value.AUTOMAKER_DEBUG_RAW_OUTPUT,
+      anthropicApiKeyConfigured: Boolean(value.ANTHROPIC_API_KEY),
+      mockAgent: value.AUTOMAKER_MOCK_AGENT,
+    },
     execution: {
       containerized: value.IS_CONTAINERIZED,
+      skipSandboxWarning: value.AUTOMAKER_SKIP_SANDBOX_WARNING,
       dockerController: value.AUTOMAKER_DOCKER_CONTROLLER,
     },
     preview: {

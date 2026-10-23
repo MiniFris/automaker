@@ -44,12 +44,6 @@ vi.mock('@automaker/platform', () => ({
   getFeaturesDir: vi.fn(),
 }));
 
-vi.mock('@/services/notification-service.js', () => ({
-  getNotificationService: vi.fn(() => ({
-    createNotification: vi.fn(),
-  })),
-}));
-
 vi.mock('@/services/pipeline-service.js', () => ({
   pipelineService: {
     getStepIdFromStatus: vi.fn((status: string) => {

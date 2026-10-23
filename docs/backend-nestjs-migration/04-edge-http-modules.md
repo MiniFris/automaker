@@ -10,38 +10,39 @@ packaging, rollout и rollback работают как повторяемый ш
 
 ### Wave 4.1: Health
 
-- [ ] `HealthController` для legacy paths и новых live/ready probes.
-- [ ] Public metadata и detailed protected endpoint.
-- [ ] Удаление legacy health router.
+- [x] `HealthController` для legacy paths и новых live/ready probes.
+- [x] Public metadata и detailed protected endpoint.
+- [x] Удаление legacy health router.
 
 ### Wave 4.2: Models и workspace
 
-- [ ] `ModelsModule` с read-only catalog use case.
-- [ ] `WorkspaceModule` с явной path/security dependency.
-- [ ] Никакого provider process launch из model list request.
-- [ ] Удаление обоих legacy routers.
+- [x] `ModelsModule` с read-only catalog use case.
+- [x] `WorkspaceModule` с явной path/security dependency.
+- [x] Никакого provider process launch из model list request.
+- [x] Удаление обоих legacy routers.
 
 ### Wave 4.3: Templates
 
-- [ ] Разделить read operations и clone mutation.
-- [ ] Clone выполняется application service, а не controller.
-- [ ] Path validation, conflict и cleanup при partial failure.
-- [ ] Удаление legacy templates router.
+- [x] У существующего templates API нет read endpoints; единственная clone mutation
+      отделена в application service.
+- [x] Clone выполняется application service, а не controller.
+- [x] Path validation, conflict и cleanup при partial failure.
+- [x] Удаление legacy templates router.
 
 ### Wave 4.4: Notifications и event history
 
-- [ ] Превратить singleton services в Nest providers.
-- [ ] Сохранить notification/event identifiers и ordering.
-- [ ] Перенести list/filter/replay/clear contracts.
-- [ ] Проверить bounded history и cleanup.
-- [ ] Удалить legacy routes и singleton factories.
+- [x] Превратить singleton services в Nest providers.
+- [x] Сохранить notification/event identifiers и ordering.
+- [x] Перенести list/filter/replay/clear contracts.
+- [x] Проверить bounded history и cleanup.
+- [x] Удалить legacy routes и singleton factories.
 
 ### Wave 4.5: Auth endpoints
 
-- [ ] Перенести login/session/logout/token endpoints после стабилизации guard.
-- [ ] Сохранить cookie attributes и Electron/web различия.
-- [ ] Проверить brute-force store lifecycle и restart behavior.
-- [ ] Удалить legacy auth router, не меняя global guard.
+- [x] Перенести login/session/logout/token endpoints после стабилизации guard.
+- [x] Сохранить cookie attributes и Electron/web различия.
+- [x] Проверить brute-force store lifecycle и restart behavior.
+- [x] Удалить legacy auth router, не меняя global guard.
 
 ## Шаблон миграции route group
 
@@ -95,3 +96,25 @@ packaging, rollout и rollback работают как повторяемый ш
 - Команда измерила фактическую скорость migration и обновила оценки этапов 5–10.
 - Полный checkpoint этапа 4 успешно выполнен после всех waves и зафиксирован
   завершающим коммитом в единственной migration-ветке.
+
+## Результат выполнения
+
+- Nest стал единственным владельцем 7 route groups и 23 endpoints: health, auth,
+  models, workspace, templates, notifications и event history. Старые routers и
+  handler factories удалены, дублирующего ownership в inventory нет.
+- Notification и event-history instances теперь создаются один раз composition
+  root, передаются в фоновые workflow явно и экспортируются Nest-модулями без
+  module-level singleton getter.
+- Characterization и module tests проверяют metadata-only model catalog, строгие
+  DTO, безопасный template clone и cleanup, notification not-found mapping,
+  ordering/limit/cleanup event history и restart semantics login limiter.
+- Фактическая скорость conveyor: 23 endpoint в 7 группах за один этап; сложность
+  оказалась определена не числом handlers, а количеством stateful dependencies и
+  фоновых consumers. Поэтому оценки этапов 5–10 в README пересчитаны с повышающим
+  коэффициентом для storage, execution, providers и WebSocket lifecycle.
+- Stage checkpoint: 2798 server unit tests (40 skipped), 219 HTTP/WS contracts,
+  8 integration tests и 1171 package/UI tests прошли; server/UI и упакованный
+  Electron artifact с пересобранными native modules, typecheck, inventories и
+  lockfile проверены. Docker smoke выполнен на локальном Node 22/Git image:
+  11 daemon-backed tests прошли, 4 дополнительных сценария пропущены по отдельным
+  opt-in feature flags.

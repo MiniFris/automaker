@@ -1,5 +1,6 @@
 import {
   DynamicModule,
+  Global,
   Inject,
   Injectable,
   type BeforeApplicationShutdown,
@@ -39,6 +40,7 @@ class LegacyLifecycle implements OnApplicationBootstrap, BeforeApplicationShutdo
   }
 }
 
+@Global()
 export class LegacyModule {
   static register(legacy: LegacyApplication, dataDirectory: string): DynamicModule {
     return {

@@ -203,6 +203,10 @@
         "to": "server/package.json"
       },
       {
+        "from": "server-bundle/package-lock.json",
+        "to": "server/package-lock.json"
+      },
+      {
         "from": "../../.env",
         "to": ".env",
         "filter": [

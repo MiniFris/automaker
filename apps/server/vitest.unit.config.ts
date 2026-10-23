@@ -24,6 +24,7 @@ export default defineConfig({
     include: [
       'tests/unit/core/**/*.test.ts',
       'tests/unit/lib/**/*.test.ts',
+      'tests/unit/modules/**/*.test.ts',
       'tests/unit/providers/**/*.test.ts',
       'tests/unit/services/**/*.test.ts',
       'tests/unit/types/**/*.test.ts',

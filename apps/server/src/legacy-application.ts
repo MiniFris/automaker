@@ -33,14 +33,12 @@ const LOG_LEVEL_MAP: Record<string, LogLevel> = {
 import { authMiddleware, validateWsConnectionToken, checkRawAuthentication } from './lib/auth.js';
 import { requireJsonContentType } from './middleware/require-json-content-type.js';
 import { isRequestLoggingEnabled, setRequestLoggingEnabled } from './lib/request-logging-state.js';
-import { createAuthRoutes } from './routes/auth/index.js';
 import { LoginAttemptStore } from './core/auth/login-attempt.store.js';
 import {
   createCorrelationId,
   runWithCorrelationContext,
 } from './core/observability/request-context.js';
 import { createFsRoutes } from './routes/fs/index.js';
-import { createHealthRoutes } from './routes/health/index.js';
 import { createAgentRoutes } from './routes/agent/index.js';
 import { createSessionsRoutes } from './routes/sessions/index.js';
 import { createFeaturesRoutes } from './routes/features/index.js';
@@ -49,10 +47,7 @@ import { createEnhancePromptRoutes } from './routes/enhance-prompt/index.js';
 import { createWorktreeRoutes } from './routes/worktree/index.js';
 import { createGitRoutes } from './routes/git/index.js';
 import { createSetupRoutes } from './routes/setup/index.js';
-import { createModelsRoutes } from './routes/models/index.js';
 import { createRunningAgentsRoutes } from './routes/running-agents/index.js';
-import { createWorkspaceRoutes } from './routes/workspace/index.js';
-import { createTemplatesRoutes } from './routes/templates/index.js';
 import {
   createTerminalRoutes,
   validateTerminalToken,
@@ -88,10 +83,8 @@ import { createIdeationRoutes } from './routes/ideation/index.js';
 import { IdeationService } from './services/ideation-service.js';
 import { getDevServerService } from './services/dev-server-service.js';
 import { eventHookService as defaultEventHookService } from './services/event-hook-service.js';
-import { createNotificationsRoutes } from './routes/notifications/index.js';
-import { getNotificationService } from './services/notification-service.js';
-import { createEventHistoryRoutes } from './routes/event-history/index.js';
-import { getEventHistoryService } from './services/event-history-service.js';
+import { NotificationService } from './services/notification-service.js';
+import { EventHistoryService } from './services/event-history-service.js';
 import { getTestRunnerService } from './services/test-runner-service.js';
 import { getManagedTestRunnerService } from './services/execution-environment/test-runner.js';
 import { getManagedDevServerService } from './services/execution-environment/dev-server.js';
@@ -250,8 +243,8 @@ export interface LegacyServiceOverrides {
   mcpTestService: MCPTestService;
   ideationService: IdeationService;
   devServerService: ReturnType<typeof getDevServerService>;
-  notificationService: ReturnType<typeof getNotificationService>;
-  eventHistoryService: ReturnType<typeof getEventHistoryService>;
+  notificationService: NotificationService;
+  eventHistoryService: EventHistoryService;
   testRunnerService: ReturnType<typeof getTestRunnerService>;
   terminalService: ReturnType<typeof getTerminalService>;
   pipelineService: typeof defaultPipelineService;
@@ -390,10 +383,16 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
     serviceOverrides.agentService ?? new AgentService(dataDir, events, settingsService);
   const featureLoader = serviceOverrides.featureLoader ?? new FeatureLoader();
 
+  // Shared stateful services are constructed once and passed explicitly to both
+  // legacy workflows and Nest providers during the transition.
+  const notificationService = serviceOverrides.notificationService ?? new NotificationService();
+  notificationService.setEventEmitter(events);
+  const eventHistoryService = serviceOverrides.eventHistoryService ?? new EventHistoryService();
+
   // Auto-mode services: compatibility layer provides old interface while using new architecture
   const autoModeService =
     serviceOverrides.autoModeService ??
-    new AutoModeServiceCompat(events, settingsService, featureLoader);
+    new AutoModeServiceCompat(events, settingsService, featureLoader, null, notificationService);
   const claudeUsageService = serviceOverrides.claudeUsageService ?? new ClaudeUsageService();
   const codexAppServerService =
     serviceOverrides.codexAppServerService ?? new CodexAppServerService();
@@ -410,13 +409,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
 
   // Initialize DevServerService with event emitter for real-time log streaming
   const devServerService = serviceOverrides.devServerService ?? getDevServerService();
-
-  // Initialize Notification Service with event emitter for real-time updates
-  const notificationService = serviceOverrides.notificationService ?? getNotificationService();
-  notificationService.setEventEmitter(events);
-
-  // Initialize Event History Service
-  const eventHistoryService = serviceOverrides.eventHistoryService ?? getEventHistoryService();
 
   // Initialize Test Runner Service with event emitter for real-time test output streaming
   const testRunnerService = serviceOverrides.testRunnerService ?? getTestRunnerService();
@@ -590,8 +582,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   app.use('/api', requireJsonContentType);
 
   // Mount API routes - health, auth, and setup are unauthenticated
-  app.use('/api/health', createHealthRoutes());
-  app.use('/api/auth', createAuthRoutes(loginAttemptStore));
   app.use('/api/setup', createSetupRoutes(settingsService));
 
   // Apply authentication to all other routes
@@ -616,11 +606,11 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
     '/api/git',
     createGitRoutes(settingsService, (projectPath) => autoModeService.isProjectRunning(projectPath))
   );
-  app.use('/api/models', createModelsRoutes(settingsService));
-  app.use('/api/spec-regeneration', createSpecRegenerationRoutes(events, settingsService));
+  app.use(
+    '/api/spec-regeneration',
+    createSpecRegenerationRoutes(events, settingsService, notificationService)
+  );
   app.use('/api/running-agents', createRunningAgentsRoutes(autoModeService));
-  app.use('/api/workspace', createWorkspaceRoutes());
-  app.use('/api/templates', createTemplatesRoutes());
   app.use('/api/terminal', createTerminalRoutes());
   app.use('/api/settings', createSettingsRoutes(settingsService));
   app.use('/api/claude', createClaudeRoutes(claudeUsageService));
@@ -633,8 +623,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   app.use('/api/mcp', createMCPRoutes(mcpTestService));
   app.use('/api/pipeline', createPipelineRoutes(pipelineService));
   app.use('/api/ideation', createIdeationRoutes(events, ideationService, featureLoader));
-  app.use('/api/notifications', createNotificationsRoutes(notificationService));
-  app.use('/api/event-history', createEventHistoryRoutes(eventHistoryService, settingsService));
   app.use(
     '/api/projects',
     createProjectsRoutes(featureLoader, autoModeService, settingsService, notificationService)

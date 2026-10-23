@@ -11,17 +11,22 @@ import { createSyncHandler } from './routes/sync.js';
 import { createStopHandler } from './routes/stop.js';
 import { createStatusHandler } from './routes/status.js';
 import type { SettingsService } from '../../services/settings-service.js';
+import type { NotificationService } from '../../services/notification-service.js';
 
 export function createSpecRegenerationRoutes(
   events: EventEmitter,
-  settingsService?: SettingsService
+  settingsService?: SettingsService,
+  notificationService?: NotificationService
 ): Router {
   const router = Router();
 
-  router.post('/create', createCreateHandler(events));
-  router.post('/generate', createGenerateHandler(events, settingsService));
-  router.post('/generate-features', createGenerateFeaturesHandler(events, settingsService));
-  router.post('/sync', createSyncHandler(events, settingsService));
+  router.post('/create', createCreateHandler(events, settingsService, notificationService));
+  router.post('/generate', createGenerateHandler(events, settingsService, notificationService));
+  router.post(
+    '/generate-features',
+    createGenerateFeaturesHandler(events, settingsService, notificationService)
+  );
+  router.post('/sync', createSyncHandler(events, settingsService, notificationService));
   router.post('/stop', createStopHandler());
   router.get('/status', createStatusHandler());
 

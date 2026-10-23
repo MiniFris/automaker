@@ -10,6 +10,22 @@ export class HealthController {
     @Inject(ReadinessStateService) private readonly readiness: ReadinessStateService,
     @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig
   ) {}
+
+  @Public()
+  @Get()
+  index(): { status: 'ok'; timestamp: string; version: string } {
+    return { status: 'ok', timestamp: new Date().toISOString(), version: getVersion() };
+  }
+
+  @Public()
+  @Get('environment')
+  environment(): { isContainerized: boolean; skipSandboxWarning?: boolean } {
+    return {
+      isContainerized: this.config.execution.containerized,
+      skipSandboxWarning: this.config.execution.skipSandboxWarning,
+    };
+  }
+
   @Public()
   @Get('live')
   live(): { status: 'ok'; timestamp: string } {

@@ -7,8 +7,8 @@ import { LEGACY_APPLICATION } from './legacy.tokens.js';
 export type RouteOwner = 'legacy' | 'nest';
 
 export const ROUTE_GROUP_OWNERS: Readonly<Record<string, RouteOwner>> = {
-  health: 'legacy',
-  auth: 'legacy',
+  health: 'nest',
+  auth: 'nest',
   setup: 'legacy',
   fs: 'legacy',
   agent: 'legacy',
@@ -18,11 +18,11 @@ export const ROUTE_GROUP_OWNERS: Readonly<Record<string, RouteOwner>> = {
   'enhance-prompt': 'legacy',
   worktree: 'legacy',
   git: 'legacy',
-  models: 'legacy',
+  models: 'nest',
   'spec-regeneration': 'legacy',
   'running-agents': 'legacy',
-  workspace: 'legacy',
-  templates: 'legacy',
+  workspace: 'nest',
+  templates: 'nest',
   terminal: 'legacy',
   settings: 'legacy',
   claude: 'legacy',
@@ -35,16 +35,12 @@ export const ROUTE_GROUP_OWNERS: Readonly<Record<string, RouteOwner>> = {
   mcp: 'legacy',
   pipeline: 'legacy',
   ideation: 'legacy',
-  notifications: 'legacy',
-  'event-history': 'legacy',
+  notifications: 'nest',
+  'event-history': 'nest',
   projects: 'legacy',
 };
 
-export const NEST_OWNED_ROUTE_PATHS = new Set([
-  '/api/health/live',
-  '/api/health/ready',
-  '/api/health/detailed',
-]);
+export const NEST_OWNED_ROUTE_PATHS = new Set<string>();
 
 export function getApiRouteGroup(request: Pick<Request, 'originalUrl'>): string | undefined {
   const pathname = request.originalUrl.split(/[?#]/, 1)[0];
