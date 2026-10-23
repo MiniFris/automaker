@@ -40,7 +40,6 @@ import {
 } from './core/observability/request-context.js';
 import { createAutoModeRoutes } from './routes/auto-mode/index.js';
 import { createEnhancePromptRoutes } from './routes/enhance-prompt/index.js';
-import { createSetupRoutes } from './routes/setup/index.js';
 import {
   createTerminalRoutes,
   validateTerminalToken,
@@ -565,8 +564,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   app.use('/api', requireJsonContentType);
 
   // Mount API routes - health, auth, and setup are unauthenticated
-  app.use('/api/setup', createSetupRoutes(settingsService));
-
   // Apply authentication to all other routes
   app.use('/api', authMiddleware);
 

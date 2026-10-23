@@ -24,10 +24,12 @@ import {
 } from './provider-registry.service.js';
 import { ProviderUsageController } from './provider-usage.controller.js';
 import { ProviderUsageService } from './provider-usage.service.js';
+import { SetupController } from './setup.controller.js';
+import { SetupHandlersService } from './setup-handlers.service.js';
 
 @Global()
 @Module({
-  controllers: [ProviderUsageController],
+  controllers: [ProviderUsageController, SetupController],
   providers: [
     ProviderConnectionRepository,
     {
@@ -86,6 +88,7 @@ import { ProviderUsageService } from './provider-usage.service.js';
     },
     ProviderRegistry,
     ProviderUsageService,
+    SetupHandlersService,
   ],
   exports: [ProviderRegistry, ProviderConnectionRepository],
 })

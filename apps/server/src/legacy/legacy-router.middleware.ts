@@ -9,7 +9,7 @@ export type RouteOwner = 'legacy' | 'nest';
 export const ROUTE_GROUP_OWNERS: Readonly<Record<string, RouteOwner>> = {
   health: 'nest',
   auth: 'nest',
-  setup: 'legacy',
+  setup: 'nest',
   fs: 'nest',
   agent: 'nest',
   sessions: 'nest',

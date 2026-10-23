@@ -78,6 +78,7 @@ describe('Nest shell and legacy bridge contract', () => {
     expect(Object.values(ROUTE_GROUP_OWNERS)).toEqual(expect.arrayContaining(['legacy']));
     expect(ROUTE_GROUP_OWNERS.worktree).toBe('nest');
     expect(ROUTE_GROUP_OWNERS.agent).toBe('nest');
+    expect(ROUTE_GROUP_OWNERS.setup).toBe('nest');
     expect(ROUTE_GROUP_OWNERS.claude).toBe('nest');
     expect(ROUTE_GROUP_OWNERS.codex).toBe('nest');
     expect(ROUTE_GROUP_OWNERS.gemini).toBe('nest');
@@ -138,6 +139,18 @@ describe('Nest shell and legacy bridge contract', () => {
     expect(cookie).toBeTruthy();
     const cookieResponse = await fetch(detailedUrl, { headers: { Cookie: cookie! } });
     expect(cookieResponse.status).toBe(200);
+  });
+
+  it('keeps setup endpoints public after their Nest cutover', async () => {
+    const address = runtime.legacy.server.address() as AddressInfo;
+    const response = await fetch(`http://127.0.0.1:${address.port}/api/setup/platform`);
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      success: true,
+      platform: process.platform,
+      arch: process.arch,
+    });
   });
 
   it('preserves content-type, authentication, CORS, cookie and body-limit middleware', async () => {

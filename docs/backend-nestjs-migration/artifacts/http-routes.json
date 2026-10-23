@@ -2833,12 +2833,12 @@
       "method": "GET",
       "path": "/api/setup/api-keys",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 65,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 34,
       "middleware": [
-        "createApiKeysHandler()"
+        "SetupController.apiKeys"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -2848,12 +2848,12 @@
       "method": "POST",
       "path": "/api/setup/auth-claude",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 61,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 22,
       "middleware": [
-        "createAuthClaudeHandler()"
+        "SetupController.authClaude"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -2863,12 +2863,12 @@
       "method": "POST",
       "path": "/api/setup/auth-codex",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 79,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 64,
       "middleware": [
-        "createAuthCodexHandler()"
+        "SetupController.authCodex"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -2878,12 +2878,12 @@
       "method": "POST",
       "path": "/api/setup/auth-copilot",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 94,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 91,
       "middleware": [
-        "createAuthCopilotHandler()"
+        "SetupController.authCopilot"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -2893,12 +2893,12 @@
       "method": "POST",
       "path": "/api/setup/auth-cursor",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 73,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 52,
       "middleware": [
-        "createAuthCursorHandler()"
+        "SetupController.authCursor"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -2908,12 +2908,12 @@
       "method": "POST",
       "path": "/api/setup/auth-gemini",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 89,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 82,
       "middleware": [
-        "createAuthGeminiHandler()"
+        "SetupController.authGemini"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -2923,12 +2923,12 @@
       "method": "POST",
       "path": "/api/setup/auth-opencode",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 84,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 73,
       "middleware": [
-        "createAuthOpencodeHandler()"
+        "SetupController.authOpencode"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -2938,12 +2938,12 @@
       "method": "GET",
       "path": "/api/setup/claude-status",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 59,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 16,
       "middleware": [
-        "createClaudeStatusHandler()"
+        "SetupController.claudeStatus"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -2953,12 +2953,12 @@
       "method": "GET",
       "path": "/api/setup/codex-status",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 77,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 58,
       "middleware": [
-        "createCodexStatusHandler(settingsService)"
+        "SetupController.codexStatus"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -2968,12 +2968,12 @@
       "method": "GET",
       "path": "/api/setup/copilot-status",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 93,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 88,
       "middleware": [
-        "createCopilotStatusHandler()"
+        "SetupController.copilotStatus"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -2983,12 +2983,12 @@
       "method": "POST",
       "path": "/api/setup/copilot/cache/clear",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 100,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 103,
       "middleware": [
-        "createClearCopilotCacheHandler()"
+        "SetupController.clearCopilotCache"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -2998,12 +2998,12 @@
       "method": "POST",
       "path": "/api/setup/copilot/models/refresh",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 99,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 100,
       "middleware": [
-        "createRefreshCopilotModelsHandler()"
+        "SetupController.refreshCopilotModels"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3013,12 +3013,12 @@
       "method": "GET",
       "path": "/api/setup/copilot/models",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 98,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 97,
       "middleware": [
-        "createGetCopilotModelsHandler()"
+        "SetupController.copilotModels"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -3028,12 +3028,12 @@
       "method": "POST",
       "path": "/api/setup/cursor-config/default-model",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 108,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 121,
       "middleware": [
-        "createSetCursorDefaultModelHandler()"
+        "SetupController.setCursorDefaultModel"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3043,12 +3043,12 @@
       "method": "POST",
       "path": "/api/setup/cursor-config/models",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 109,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 127,
       "middleware": [
-        "createSetCursorModelsHandler()"
+        "SetupController.setCursorModels"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3058,12 +3058,12 @@
       "method": "GET",
       "path": "/api/setup/cursor-config",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 107,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 118,
       "middleware": [
-        "createGetCursorConfigHandler()"
+        "SetupController.cursorConfig"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -3073,12 +3073,12 @@
       "method": "POST",
       "path": "/api/setup/cursor-permissions/custom",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 114,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 139,
       "middleware": [
-        "createSetCustomPermissionsHandler()"
+        "SetupController.setCustomPermissions"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3088,12 +3088,12 @@
       "method": "GET",
       "path": "/api/setup/cursor-permissions/example",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 116,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 145,
       "middleware": [
-        "createGetExampleConfigHandler()"
+        "SetupController.exampleCursorConfig"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -3103,12 +3103,12 @@
       "method": "POST",
       "path": "/api/setup/cursor-permissions/profile",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 113,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 133,
       "middleware": [
-        "createApplyPermissionProfileHandler()"
+        "SetupController.applyPermissionProfile"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3118,12 +3118,12 @@
       "method": "DELETE",
       "path": "/api/setup/cursor-permissions",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 115,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 142,
       "middleware": [
-        "createDeleteProjectPermissionsHandler()"
+        "SetupController.deleteProjectPermissions"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3133,12 +3133,12 @@
       "method": "GET",
       "path": "/api/setup/cursor-permissions",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 112,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 130,
       "middleware": [
-        "createGetCursorPermissionsHandler()"
+        "SetupController.cursorPermissions"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -3148,12 +3148,12 @@
       "method": "GET",
       "path": "/api/setup/cursor-status",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 72,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 49,
       "middleware": [
-        "createCursorStatusHandler()"
+        "SetupController.cursorStatus"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -3163,12 +3163,12 @@
       "method": "POST",
       "path": "/api/setup/deauth-claude",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 62,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 25,
       "middleware": [
-        "createDeauthClaudeHandler()"
+        "SetupController.deauthClaude"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3178,12 +3178,12 @@
       "method": "POST",
       "path": "/api/setup/deauth-codex",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 80,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 67,
       "middleware": [
-        "createDeauthCodexHandler()"
+        "SetupController.deauthCodex"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3193,12 +3193,12 @@
       "method": "POST",
       "path": "/api/setup/deauth-copilot",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 95,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 94,
       "middleware": [
-        "createDeauthCopilotHandler()"
+        "SetupController.deauthCopilot"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3208,12 +3208,12 @@
       "method": "POST",
       "path": "/api/setup/deauth-cursor",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 74,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 55,
       "middleware": [
-        "createDeauthCursorHandler()"
+        "SetupController.deauthCursor"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3223,12 +3223,12 @@
       "method": "POST",
       "path": "/api/setup/deauth-gemini",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 90,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 85,
       "middleware": [
-        "createDeauthGeminiHandler()"
+        "SetupController.deauthGemini"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3238,12 +3238,12 @@
       "method": "POST",
       "path": "/api/setup/deauth-opencode",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 85,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 76,
       "middleware": [
-        "createDeauthOpencodeHandler()"
+        "SetupController.deauthOpencode"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3253,12 +3253,12 @@
       "method": "POST",
       "path": "/api/setup/delete-api-key",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 64,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 31,
       "middleware": [
-        "createDeleteApiKeyHandler()"
+        "SetupController.deleteApiKey"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3268,12 +3268,12 @@
       "method": "GET",
       "path": "/api/setup/gemini-status",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 88,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 79,
       "middleware": [
-        "createGeminiStatusHandler()"
+        "SetupController.geminiStatus"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -3283,12 +3283,12 @@
       "method": "GET",
       "path": "/api/setup/gh-status",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 69,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 46,
       "middleware": [
-        "createGhStatusHandler()"
+        "SetupController.ghStatus"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -3298,12 +3298,12 @@
       "method": "POST",
       "path": "/api/setup/install-claude",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 60,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 19,
       "middleware": [
-        "createInstallClaudeHandler()"
+        "SetupController.installClaude"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3313,12 +3313,12 @@
       "method": "POST",
       "path": "/api/setup/install-codex",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 78,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 61,
       "middleware": [
-        "createInstallCodexHandler()"
+        "SetupController.installCodex"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3328,12 +3328,12 @@
       "method": "GET",
       "path": "/api/setup/opencode-status",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 83,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 70,
       "middleware": [
-        "createOpencodeStatusHandler()"
+        "SetupController.opencodeStatus"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -3343,12 +3343,12 @@
       "method": "POST",
       "path": "/api/setup/opencode/cache/clear",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 106,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 115,
       "middleware": [
-        "createClearOpencodeCacheHandler()"
+        "SetupController.clearOpencodeCache"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3358,12 +3358,12 @@
       "method": "POST",
       "path": "/api/setup/opencode/models/refresh",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 104,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 109,
       "middleware": [
-        "createRefreshOpencodeModelsHandler()"
+        "SetupController.refreshOpencodeModels"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3373,12 +3373,12 @@
       "method": "GET",
       "path": "/api/setup/opencode/models",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 103,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 106,
       "middleware": [
-        "createGetOpencodeModelsHandler()"
+        "SetupController.opencodeModels"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -3388,12 +3388,12 @@
       "method": "GET",
       "path": "/api/setup/opencode/providers",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 105,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 112,
       "middleware": [
-        "createGetOpencodeProvidersHandler()"
+        "SetupController.opencodeProviders"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -3403,12 +3403,12 @@
       "method": "GET",
       "path": "/api/setup/platform",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 66,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 37,
       "middleware": [
-        "createPlatformHandler()"
+        "SetupController.platform"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -3418,12 +3418,12 @@
       "method": "POST",
       "path": "/api/setup/store-api-key",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 63,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 28,
       "middleware": [
-        "createStoreApiKeyHandler()"
+        "SetupController.storeApiKey"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3433,12 +3433,12 @@
       "method": "POST",
       "path": "/api/setup/verify-claude-auth",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 67,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 40,
       "middleware": [
-        "createVerifyClaudeAuthHandler(settingsService)"
+        "SetupController.verifyClaudeAuth"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3448,12 +3448,12 @@
       "method": "POST",
       "path": "/api/setup/verify-codex-auth",
       "group": "setup",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "public-before-global-auth",
-      "source": "apps/server/src/routes/setup/index.ts",
-      "line": 68,
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "line": 43,
       "middleware": [
-        "createVerifyCodexAuthHandler(settingsService)"
+        "SetupController.verifyCodexAuth"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
