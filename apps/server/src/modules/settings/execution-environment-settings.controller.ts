@@ -98,6 +98,116 @@ export class ExecutionEnvironmentSettingsController {
     );
   }
 
+  @Post('providers/inspect')
+  @HttpCode(200)
+  inspectProvider(
+    @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.abortable(request, response, (signal) =>
+      this.environments.providerOperation('inspect', body, signal)
+    );
+  }
+
+  @Post('providers/install')
+  @HttpCode(200)
+  installProvider(
+    @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.abortable(request, response, (signal) =>
+      this.environments.providerOperation('install', body, signal)
+    );
+  }
+
+  @Post('providers/key')
+  @HttpCode(200)
+  updateProviderKey(
+    @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.abortable(request, response, (signal) =>
+      this.environments.providerOperation('key', body, signal)
+    );
+  }
+
+  @Post('ssh/scan')
+  @HttpCode(200)
+  scanSSH(
+    @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.abortable(request, response, (signal) => this.environments.scanSSH(body, signal));
+  }
+
+  @Post('ssh/trust')
+  @HttpCode(200)
+  trustSSH(
+    @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.abortable(request, response, (signal) => this.environments.trustSSH(body, signal));
+  }
+
+  @Post('ssh/key')
+  @HttpCode(200)
+  updateSSHKey(
+    @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>
+  ) {
+    return this.environments.updateSSHKey(body);
+  }
+
+  @Post('ssh/check')
+  @HttpCode(200)
+  checkSSH(
+    @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.abortable(request, response, (signal) => this.environments.checkSSH(body, signal));
+  }
+
+  @Post('ssh/prepare')
+  @HttpCode(200)
+  prepareSSH(
+    @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.abortable(request, response, (signal) =>
+      this.environments.prepareSSH(body, signal)
+    );
+  }
+
+  @Post('ssh/project')
+  @HttpCode(200)
+  prepareSSHProject(
+    @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.abortable(request, response, (signal) =>
+      this.environments.prepareSSHProject(body, signal)
+    );
+  }
+
+  @Post('ssh/recover')
+  @HttpCode(200)
+  recoverSSH(
+    @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.abortable(request, response, (signal) =>
+      this.environments.recoverSSH(body, signal)
+    );
+  }
+
   private async abortable<T>(
     _request: Request,
     response: Response,

@@ -128,7 +128,7 @@ describe('Nest shell and legacy bridge contract', () => {
     const address = runtime.legacy.server.address() as AddressInfo;
     const baseUrl = `http://127.0.0.1:${address.port}`;
 
-    const protectedResponse = await fetch(`${baseUrl}/api/settings`);
+    const protectedResponse = await fetch(`${baseUrl}/api/settings/status`);
     expect(protectedResponse.status).toBe(401);
 
     const missingContentType = await fetch(`${baseUrl}/api/auth/login`, {

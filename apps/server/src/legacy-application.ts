@@ -54,7 +54,6 @@ import {
   isTerminalEnabled,
   isTerminalPasswordRequired,
 } from './routes/terminal/index.js';
-import { createSettingsRoutes } from './routes/settings/index.js';
 import { AgentService } from './services/agent-service.js';
 import { FeatureLoader } from './services/feature-loader.js';
 import { AutoModeServiceCompat } from './services/auto-mode/index.js';
@@ -612,7 +611,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   );
   app.use('/api/running-agents', createRunningAgentsRoutes(autoModeService));
   app.use('/api/terminal', createTerminalRoutes());
-  app.use('/api/settings', createSettingsRoutes(settingsService));
   app.use('/api/claude', createClaudeRoutes(claudeUsageService));
   app.use('/api/codex', createCodexRoutes(codexUsageService, codexModelCacheService));
   app.use('/api/zai', createZaiRoutes(zaiUsageService, settingsService));

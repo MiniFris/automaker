@@ -24,7 +24,7 @@ export const ROUTE_GROUP_OWNERS: Readonly<Record<string, RouteOwner>> = {
   workspace: 'nest',
   templates: 'nest',
   terminal: 'legacy',
-  settings: 'legacy',
+  settings: 'nest',
   claude: 'legacy',
   codex: 'legacy',
   zai: 'legacy',
@@ -68,6 +68,16 @@ export const NEST_OWNED_ROUTE_PATHS = new Set<string>([
   'POST /api/settings/execution-environments/auto/revoke',
   'POST /api/settings/execution-environments/docker/check',
   'POST /api/settings/execution-environments/docker/prepare',
+  'POST /api/settings/execution-environments/providers/inspect',
+  'POST /api/settings/execution-environments/providers/install',
+  'POST /api/settings/execution-environments/providers/key',
+  'POST /api/settings/execution-environments/ssh/scan',
+  'POST /api/settings/execution-environments/ssh/trust',
+  'POST /api/settings/execution-environments/ssh/key',
+  'POST /api/settings/execution-environments/ssh/check',
+  'POST /api/settings/execution-environments/ssh/prepare',
+  'POST /api/settings/execution-environments/ssh/project',
+  'POST /api/settings/execution-environments/ssh/recover',
 ]);
 
 export function getApiRouteGroup(request: Pick<Request, 'originalUrl'>): string | undefined {
