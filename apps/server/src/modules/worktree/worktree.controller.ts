@@ -7,17 +7,21 @@ import {
   WorktreeBranchesSchema,
   WorktreeBranchCommitLogSchema,
   WorktreeCommitLogSchema,
+  WorktreeCommitSchema,
   WorktreeFeatureSchema,
   WorktreeFileSchema,
   WorktreePathSchema,
   WorktreeProjectSchema,
+  WorktreeStageFilesSchema,
   type WorktreeBranchesRequest,
   type WorktreeBranchCommitLogRequest,
   type WorktreeCommitLogRequest,
+  type WorktreeCommitRequest,
   type WorktreeFeatureRequest,
   type WorktreeFileRequest,
   type WorktreePathRequest,
   type WorktreeProjectRequest,
+  type WorktreeStageFilesRequest,
 } from './worktree.schemas.js';
 
 @Controller('worktree')
@@ -112,6 +116,26 @@ export class WorktreeController {
     @Res({ passthrough: true }) response: Response
   ) {
     return this.cancel(response, (signal) => this.worktrees.listRemotes(body, signal));
+  }
+
+  @Post('stage-files')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath')
+  stageFiles(
+    @Body(new ZodValidationPipe(WorktreeStageFilesSchema)) body: WorktreeStageFilesRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.stageFiles(body, signal));
+  }
+
+  @Post('commit')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath')
+  commit(
+    @Body(new ZodValidationPipe(WorktreeCommitSchema)) body: WorktreeCommitRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.commit(body, signal));
   }
 
   @Post('commit-log')

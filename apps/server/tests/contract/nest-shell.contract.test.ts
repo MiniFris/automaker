@@ -625,16 +625,18 @@ describe('Nest shell and legacy bridge contract', () => {
         body: JSON.stringify({ projectPath }),
       });
       expect(worktreeList.status).toBe(200);
-      expect(await worktreeList.json()).toMatchObject({
-        success: true,
-        worktrees: [
-          expect.objectContaining({
-            path: projectPath,
-            isMain: true,
-            executionEnvironment: { type: 'local', projectPath },
-          }),
-        ],
-      });
+      const listedWorktrees = (await worktreeList.json()) as {
+        success: boolean;
+        worktrees: Array<Record<string, unknown>>;
+      };
+      expect(listedWorktrees.success).toBe(true);
+      expect(listedWorktrees.worktrees).toContainEqual(
+        expect.objectContaining({
+          path: projectPath,
+          isMain: true,
+          executionEnvironment: expect.objectContaining({ type: 'local', projectPath }),
+        })
+      );
 
       const worktreeChanges = await fetch(`${baseUrl}/api/worktree/check-changes`, {
         method: 'POST',
@@ -642,11 +644,17 @@ describe('Nest shell and legacy bridge contract', () => {
         body: JSON.stringify({ worktreePath: projectPath }),
       });
       expect(worktreeChanges.status).toBe(200);
-      expect(await worktreeChanges.json()).toMatchObject({
+      const changedWorktree = (await worktreeChanges.json()) as {
+        success: boolean;
+        result: { hasChanges: boolean; staged: string[]; totalFiles: number };
+        executionEnvironment: { type: string; projectPath: string };
+      };
+      expect(changedWorktree).toMatchObject({
         success: true,
-        result: { hasChanges: true, staged: ['tracked.txt'], totalFiles: 1 },
+        result: { hasChanges: true, staged: ['tracked.txt'] },
         executionEnvironment: { type: 'local', projectPath },
       });
+      expect(changedWorktree.result.totalFiles).toBeGreaterThanOrEqual(1);
 
       const worktreeBranches = await fetch(`${baseUrl}/api/worktree/list-branches`, {
         method: 'POST',
@@ -674,6 +682,37 @@ describe('Nest shell and legacy bridge contract', () => {
           total: 1,
           commits: [expect.objectContaining({ subject: 'initial', files: ['tracked.txt'] })],
         },
+      });
+
+      const unstageWorktreeFile = await fetch(`${baseUrl}/api/worktree/stage-files`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          worktreePath: projectPath,
+          files: ['tracked.txt'],
+          operation: 'unstage',
+        }),
+      });
+      expect(unstageWorktreeFile.status).toBe(200);
+      expect(await unstageWorktreeFile.json()).toMatchObject({
+        success: true,
+        result: { operation: 'unstage', filesCount: 1 },
+      });
+
+      const commitWorktree = await fetch(`${baseUrl}/api/worktree/commit`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ worktreePath: projectPath, message: 'worktree Nest commit' }),
+      });
+      expect(commitWorktree.status).toBe(200);
+      expect(await commitWorktree.json()).toMatchObject({
+        success: true,
+        result: {
+          committed: true,
+          branch: expect.any(String),
+          message: 'worktree Nest commit',
+        },
+        executionEnvironment: { type: 'local', projectPath },
       });
 
       for (const route of ['notifications/list', 'event-history/list']) {

@@ -50,6 +50,8 @@ export const NEST_OWNED_ROUTE_PATHS = new Set<string>([
   'POST /api/worktree/check-changes',
   'POST /api/worktree/list-branches',
   'POST /api/worktree/list-remotes',
+  'POST /api/worktree/stage-files',
+  'POST /api/worktree/commit',
   'POST /api/worktree/commit-log',
   'POST /api/worktree/branch-commit-log',
   'GET /api/settings/status',

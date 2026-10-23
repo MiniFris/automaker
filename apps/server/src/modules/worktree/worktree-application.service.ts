@@ -1,22 +1,32 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { EventEmitter } from '../../lib/events.js';
 import { LEGACY_EVENT_EMITTER } from '../../legacy/legacy.tokens.js';
-import { ProjectGitService } from '../../services/execution-environment/project-git.js';
+import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
+import type { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
+import {
+  ProjectGitService,
+  gitWriteActions,
+} from '../../services/execution-environment/project-git.js';
+import { ExecutionEnvironmentError } from '../../services/execution-environment/runtime.js';
+import { sshSerialized } from '../../services/execution-environment/ssh-state.js';
 import type {
   WorktreeBranchesRequest,
   WorktreeBranchCommitLogRequest,
   WorktreeCommitLogRequest,
+  WorktreeCommitRequest,
   WorktreeFeatureRequest,
   WorktreeFileRequest,
   WorktreePathRequest,
   WorktreeProjectRequest,
+  WorktreeStageFilesRequest,
 } from './worktree.schemas.js';
 
 @Injectable()
 export class WorktreeApplicationService {
   constructor(
     @Inject(ProjectGitService) private readonly git: ProjectGitService,
-    @Inject(LEGACY_EVENT_EMITTER) private readonly events: EventEmitter
+    @Inject(LEGACY_EVENT_EMITTER) private readonly events: EventEmitter,
+    @Inject(LEGACY_SERVICES.autoMode) private readonly autoMode: AutoModeServiceCompat
   ) {}
 
   async environment(input: WorktreeProjectRequest) {
@@ -57,6 +67,14 @@ export class WorktreeApplicationService {
 
   listRemotes(input: WorktreePathRequest, signal: AbortSignal) {
     return this.runPath('list-remotes', input.worktreePath, input, signal);
+  }
+
+  stageFiles(input: WorktreeStageFilesRequest, signal: AbortSignal) {
+    return this.runPath('stage-files', input.worktreePath, input, signal);
+  }
+
+  commit(input: WorktreeCommitRequest, signal: AbortSignal) {
+    return this.runPath('commit', input.worktreePath, input, signal);
   }
 
   async commitLog(input: WorktreeCommitLogRequest, signal: AbortSignal) {
@@ -123,7 +141,27 @@ export class WorktreeApplicationService {
     signal: AbortSignal
   ) {
     const target = await this.git.resolveOrLocal(requested);
-    return this.git.run(target, action, body, signal);
+    const effectiveBody = {
+      ...body,
+      ...(gitWriteActions.has(action) && !body.environmentTargetId
+        ? { environmentTargetId: target.environment.targetId }
+        : {}),
+    };
+    const operation = async () => {
+      if (
+        gitWriteActions.has(action) &&
+        (await this.autoMode.isProjectRunning(target.environment.projectPath))
+      ) {
+        throw new ExecutionEnvironmentError(
+          'GIT_PROJECT_BUSY',
+          'Stop active project features before changing Git state from the UI.'
+        );
+      }
+      return this.git.run(target, action, effectiveBody, signal);
+    };
+    return gitWriteActions.has(action)
+      ? sshSerialized(`git-ui\0${target.environment.projectPath}`, operation)
+      : operation();
   }
 
   private message(error: unknown) {

@@ -39,6 +39,18 @@ export const WorktreeBranchCommitLogSchema = WorktreeCommitLogSchema.extend({
   branchName: z.string().trim().min(1).max(1_024).optional(),
 }).strict();
 
+export const WorktreeStageFilesSchema = WorktreePathSchema.extend({
+  files: z.array(RelativeFileSchema).min(1).max(1_000),
+  operation: z.enum(['stage', 'unstage']),
+  environmentTargetId: z.string().optional(),
+}).strict();
+
+export const WorktreeCommitSchema = WorktreePathSchema.extend({
+  message: z.string().trim().min(1).max(10_000),
+  files: z.array(RelativeFileSchema).min(1).max(1_000).optional(),
+  environmentTargetId: z.string().optional(),
+}).strict();
+
 export type WorktreeProjectRequest = z.infer<typeof WorktreeProjectSchema>;
 export type WorktreeFeatureRequest = z.infer<typeof WorktreeFeatureSchema>;
 export type WorktreeFileRequest = z.infer<typeof WorktreeFileSchema>;
@@ -46,3 +58,5 @@ export type WorktreePathRequest = z.infer<typeof WorktreePathSchema>;
 export type WorktreeBranchesRequest = z.infer<typeof WorktreeBranchesSchema>;
 export type WorktreeCommitLogRequest = z.infer<typeof WorktreeCommitLogSchema>;
 export type WorktreeBranchCommitLogRequest = z.infer<typeof WorktreeBranchCommitLogSchema>;
+export type WorktreeStageFilesRequest = z.infer<typeof WorktreeStageFilesSchema>;
+export type WorktreeCommitRequest = z.infer<typeof WorktreeCommitSchema>;

@@ -11,7 +11,11 @@ describe('WorktreeApplicationService', () => {
       resolveOrLocal: vi.fn().mockResolvedValue(target),
       run: vi.fn().mockResolvedValue({ success: true }),
     };
-    const service = new WorktreeApplicationService(git as never, { emit: vi.fn() } as never);
+    const service = new WorktreeApplicationService(
+      git as never,
+      { emit: vi.fn() } as never,
+      { isProjectRunning: vi.fn().mockResolvedValue(false) } as never
+    );
     const signal = new AbortController().signal;
 
     await service.diffs(
@@ -33,7 +37,11 @@ describe('WorktreeApplicationService', () => {
       resolveOrLocal: vi.fn().mockResolvedValue(target),
       run: vi.fn().mockResolvedValue({ success: true }),
     };
-    const service = new WorktreeApplicationService(git as never, { emit: vi.fn() } as never);
+    const service = new WorktreeApplicationService(
+      git as never,
+      { emit: vi.fn() } as never,
+      { isProjectRunning: vi.fn().mockResolvedValue(false) } as never
+    );
 
     await service.diffs(
       { projectPath: '/project', featureId: 'feature/one', useWorktrees: false },
@@ -52,7 +60,11 @@ describe('WorktreeApplicationService', () => {
       }),
     };
     const events = { emit: vi.fn() };
-    const service = new WorktreeApplicationService(git as never, events as never);
+    const service = new WorktreeApplicationService(
+      git as never,
+      events as never,
+      { isProjectRunning: vi.fn().mockResolvedValue(false) } as never
+    );
 
     await service.commitLog({ worktreePath: '/project', limit: 20 }, new AbortController().signal);
 
@@ -61,5 +73,22 @@ describe('WorktreeApplicationService', () => {
       'commitLog:progress',
       'commitLog:complete',
     ]);
+  });
+
+  it('serializes writes and refuses them while the project is active', async () => {
+    const git = {
+      resolveOrLocal: vi.fn().mockResolvedValue(target),
+      run: vi.fn(),
+    };
+    const service = new WorktreeApplicationService(
+      git as never,
+      { emit: vi.fn() } as never,
+      { isProjectRunning: vi.fn().mockResolvedValue(true) } as never
+    );
+
+    await expect(
+      service.commit({ worktreePath: '/project', message: 'blocked' }, new AbortController().signal)
+    ).rejects.toMatchObject({ code: 'GIT_PROJECT_BUSY' });
+    expect(git.run).not.toHaveBeenCalled();
   });
 });
