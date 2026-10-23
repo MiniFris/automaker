@@ -38,6 +38,7 @@ import {
 } from '@automaker/platform';
 import { extractXmlElements, extractImplementedFeatures } from '../lib/xml-extractor.js';
 import { createLogger, loadContextFiles, isAbortError } from '@automaker/utils';
+import { atomicWriteJson, DEFAULT_BACKUP_COUNT } from '@automaker/utils';
 import { ProviderFactory } from '../providers/provider-factory.js';
 import { prepareDirectExecution } from '../providers/openai-compatible/execution.js';
 import type { SettingsService } from './settings-service.js';
@@ -392,11 +393,9 @@ export class IdeationService {
     // Save to disk
     const ideaDir = getIdeaDir(projectPath, ideaId);
     await secureFs.mkdir(ideaDir, { recursive: true });
-    await secureFs.writeFile(
-      getIdeaPath(projectPath, ideaId),
-      JSON.stringify(idea, null, 2),
-      'utf-8'
-    );
+    await atomicWriteJson(getIdeaPath(projectPath, ideaId), idea, {
+      backupCount: DEFAULT_BACKUP_COUNT,
+    });
 
     return idea;
   }
@@ -470,11 +469,9 @@ export class IdeationService {
       updatedAt: new Date().toISOString(),
     };
 
-    await secureFs.writeFile(
-      getIdeaPath(projectPath, ideaId),
-      JSON.stringify(updatedIdea, null, 2),
-      'utf-8'
-    );
+    await atomicWriteJson(getIdeaPath(projectPath, ideaId), updatedIdea, {
+      backupCount: DEFAULT_BACKUP_COUNT,
+    });
 
     return updatedIdea;
   }
@@ -550,11 +547,9 @@ export class IdeationService {
       };
 
       // Cache the result
-      await secureFs.writeFile(
-        getIdeationAnalysisPath(projectPath),
-        JSON.stringify(result, null, 2),
-        'utf-8'
-      );
+      await atomicWriteJson(getIdeationAnalysisPath(projectPath), result, {
+        backupCount: DEFAULT_BACKUP_COUNT,
+      });
 
       this.emitAnalysisEvent('ideation:analysis-complete', {
         projectPath,
@@ -1855,11 +1850,9 @@ ${contextSection}${existingWorkSection}`;
   ): Promise<void> {
     await secureFs.mkdir(getIdeationSessionsDir(projectPath), { recursive: true });
     const data = { session, messages };
-    await secureFs.writeFile(
-      getIdeationSessionPath(projectPath, session.id),
-      JSON.stringify(data, null, 2),
-      'utf-8'
-    );
+    await atomicWriteJson(getIdeationSessionPath(projectPath, session.id), data, {
+      backupCount: DEFAULT_BACKUP_COUNT,
+    });
   }
 
   private async loadSessionFromDisk(

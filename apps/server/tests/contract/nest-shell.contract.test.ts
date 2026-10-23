@@ -483,6 +483,77 @@ describe('Nest shell and legacy bridge contract', () => {
       expect(applyEmptyPlan.status).toBe(200);
       expect(await applyEmptyPlan.json()).toEqual({ success: true, appliedChanges: [] });
 
+      const ideationPrompts = await fetch(`${baseUrl}/api/ideation/prompts`, { headers });
+      expect(ideationPrompts.status).toBe(200);
+      expect(await ideationPrompts.json()).toMatchObject({
+        success: true,
+        prompts: expect.any(Array),
+        categories: expect.any(Array),
+      });
+
+      const createIdea = await fetch(`${baseUrl}/api/ideation/ideas/create`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          projectPath,
+          idea: {
+            title: 'Contract idea',
+            description: 'Persisted through Nest',
+            category: 'feature',
+          },
+        }),
+      });
+      expect(createIdea.status).toBe(200);
+      const createdIdea = (await createIdea.json()) as {
+        success: boolean;
+        idea: { id: string };
+      };
+      expect(createdIdea.success).toBe(true);
+
+      const updateIdea = await fetch(`${baseUrl}/api/ideation/ideas/update`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          projectPath,
+          ideaId: createdIdea.idea.id,
+          updates: { status: 'ready' },
+        }),
+      });
+      expect(updateIdea.status).toBe(200);
+      expect(await updateIdea.json()).toMatchObject({
+        success: true,
+        idea: { id: createdIdea.idea.id, status: 'ready' },
+      });
+
+      const listIdeas = await fetch(`${baseUrl}/api/ideation/ideas/list`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ projectPath }),
+      });
+      expect(listIdeas.status).toBe(200);
+      expect(await listIdeas.json()).toMatchObject({
+        success: true,
+        ideas: [expect.objectContaining({ id: createdIdea.idea.id })],
+      });
+
+      const invalidIdea = await fetch(`${baseUrl}/api/ideation/ideas/create`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          projectPath,
+          idea: { title: 'Invalid', description: 'Invalid', category: 'unknown' },
+        }),
+      });
+      expect(invalidIdea.status).toBe(400);
+
+      const deleteIdea = await fetch(`${baseUrl}/api/ideation/ideas/delete`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ projectPath, ideaId: createdIdea.idea.id }),
+      });
+      expect(deleteIdea.status).toBe(200);
+      expect(await deleteIdea.json()).toEqual({ success: true });
+
       for (const route of ['notifications/list', 'event-history/list']) {
         const response = await fetch(`${baseUrl}/api/${route}`, {
           method: 'POST',

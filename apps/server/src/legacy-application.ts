@@ -72,7 +72,6 @@ import { createMCPRoutes } from './routes/mcp/index.js';
 import { MCPTestService } from './services/mcp-test-service.js';
 import { createPipelineRoutes } from './routes/pipeline/index.js';
 import { pipelineService as defaultPipelineService } from './services/pipeline-service.js';
-import { createIdeationRoutes } from './routes/ideation/index.js';
 import { IdeationService } from './services/ideation-service.js';
 import { getDevServerService } from './services/dev-server-service.js';
 import { eventHookService as defaultEventHookService } from './services/event-hook-service.js';
@@ -601,7 +600,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   app.use('/api/github', createGitHubRoutes(events, settingsService));
   app.use('/api/mcp', createMCPRoutes(mcpTestService));
   app.use('/api/pipeline', createPipelineRoutes(pipelineService));
-  app.use('/api/ideation', createIdeationRoutes(events, ideationService, featureLoader));
 
   // Create HTTP server
   const server = options.httpServer ?? createServer(app);
