@@ -42,7 +42,6 @@ import {
   createCorrelationId,
   runWithCorrelationContext,
 } from './core/observability/request-context.js';
-import { createAutoModeRoutes } from './routes/auto-mode/index.js';
 import {
   createTerminalRoutes,
   validateTerminalToken,
@@ -588,7 +587,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   // Apply authentication to all other routes
   app.use('/api', authMiddleware);
 
-  app.use('/api/auto-mode', createAutoModeRoutes(autoModeService));
   app.use('/api/terminal', createTerminalRoutes());
 
   // Create HTTP server

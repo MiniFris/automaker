@@ -250,13 +250,12 @@
       "method": "POST",
       "path": "/api/auto-mode/analyze-project",
       "group": "auto-mode",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "line": 71,
+      "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
+      "line": 65,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createAnalyzeProjectHandler(autoModeService)"
+        "AutoModeController.analyzeProject"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -266,13 +265,12 @@
       "method": "POST",
       "path": "/api/auto-mode/approve-plan",
       "group": "auto-mode",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "line": 86,
+      "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
+      "line": 83,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createApprovePlanHandler(autoModeService)"
+        "AutoModeController.approvePlan"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -282,13 +280,12 @@
       "method": "POST",
       "path": "/api/auto-mode/commit-feature",
       "group": "auto-mode",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "line": 81,
+      "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
+      "line": 77,
       "middleware": [
-        "validatePathParams('projectPath', 'worktreePath?')",
-        "createCommitFeatureHandler(autoModeService)"
+        "AutoModeController.commitFeature"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -298,13 +295,12 @@
       "method": "POST",
       "path": "/api/auto-mode/context-exists",
       "group": "auto-mode",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "line": 66,
+      "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
+      "line": 59,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createContextExistsHandler(autoModeService)"
+        "AutoModeController.contextExists"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -314,13 +310,12 @@
       "method": "POST",
       "path": "/api/auto-mode/follow-up-feature",
       "group": "auto-mode",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "line": 76,
+      "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
+      "line": 71,
       "middleware": [
-        "validatePathParams('projectPath', 'imagePaths[]')",
-        "createFollowUpFeatureHandler(autoModeService)"
+        "AutoModeController.followUpFeature"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -330,13 +325,12 @@
       "method": "POST",
       "path": "/api/auto-mode/merge-environment-feature",
       "group": "auto-mode",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "line": 34,
+      "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
+      "line": 17,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createMergeSSHFeatureHandler(autoModeService, true)"
+        "AutoModeController.mergeEnvironmentFeature"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -346,13 +340,12 @@
       "method": "POST",
       "path": "/api/auto-mode/merge-ssh-feature",
       "group": "auto-mode",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "line": 39,
+      "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
+      "line": 23,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createMergeSSHFeatureHandler(autoModeService)"
+        "AutoModeController.mergeSshFeature"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -362,13 +355,12 @@
       "method": "POST",
       "path": "/api/auto-mode/reconcile",
       "group": "auto-mode",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "line": 96,
+      "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
+      "line": 95,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createReconcileHandler(autoModeService)"
+        "AutoModeController.reconcile"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -378,13 +370,12 @@
       "method": "POST",
       "path": "/api/auto-mode/resume-feature",
       "group": "auto-mode",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "line": 61,
+      "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
+      "line": 53,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createResumeFeatureHandler(autoModeService)"
+        "AutoModeController.resumeFeature"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -394,13 +385,12 @@
       "method": "POST",
       "path": "/api/auto-mode/resume-interrupted",
       "group": "auto-mode",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "line": 91,
+      "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
+      "line": 89,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createResumeInterruptedHandler(autoModeService)"
+        "AutoModeController.resumeInterrupted"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -410,13 +400,12 @@
       "method": "POST",
       "path": "/api/auto-mode/run-feature",
       "group": "auto-mode",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "line": 51,
+      "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
+      "line": 41,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createRunFeatureHandler(autoModeService)"
+        "AutoModeController.runFeature"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -426,13 +415,12 @@
       "method": "POST",
       "path": "/api/auto-mode/start",
       "group": "auto-mode",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "line": 46,
+      "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
+      "line": 29,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createStartHandler(autoModeService)"
+        "AutoModeController.start"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -442,13 +430,12 @@
       "method": "POST",
       "path": "/api/auto-mode/status",
       "group": "auto-mode",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "line": 50,
+      "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
+      "line": 38,
       "middleware": [
-        "validatePathParams('projectPath?')",
-        "createStatusHandler(autoModeService)"
+        "AutoModeController.status"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -458,12 +445,12 @@
       "method": "POST",
       "path": "/api/auto-mode/stop-feature",
       "group": "auto-mode",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "line": 49,
+      "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
+      "line": 35,
       "middleware": [
-        "createStopFeatureHandler(autoModeService)"
+        "AutoModeController.stopFeature"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -473,13 +460,12 @@
       "method": "POST",
       "path": "/api/auto-mode/stop",
       "group": "auto-mode",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "line": 47,
+      "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
+      "line": 32,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createStopHandler(autoModeService)"
+        "AutoModeController.stop"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -489,13 +475,12 @@
       "method": "POST",
       "path": "/api/auto-mode/verify-feature",
       "group": "auto-mode",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "line": 56,
+      "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
+      "line": 47,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createVerifyFeatureHandler(autoModeService)"
+        "AutoModeController.verifyFeature"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,

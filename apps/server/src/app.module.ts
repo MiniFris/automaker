@@ -37,6 +37,7 @@ import { PipelineModule } from './modules/pipeline/pipeline.module.js';
 import { MCPModule } from './modules/mcp/mcp.module.js';
 import { PromptEnhancementModule } from './modules/prompt-enhancement/prompt-enhancement.module.js';
 import { GithubModule } from './modules/github/github.module.js';
+import { AutoModeModule } from './modules/auto-mode/auto-mode.module.js';
 
 @Module({})
 export class AppModule {
@@ -65,6 +66,7 @@ export class AppModule {
         MCPModule,
         PromptEnhancementModule,
         GithubModule,
+        AutoModeModule,
         ProjectsModule,
         FilesModule,
         ContextModule,

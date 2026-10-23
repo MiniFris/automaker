@@ -25,11 +25,22 @@ export class AllowedPathGuard implements CanActivate {
       ...request.params,
       ...(request.body as object | undefined),
     } as Record<string, unknown>;
-    for (const field of fields) {
+    for (const descriptor of fields) {
+      const isArray = descriptor.endsWith('[]');
+      const withoutArray = isArray ? descriptor.slice(0, -2) : descriptor;
+      const isOptional = withoutArray.endsWith('?');
+      const field = isOptional ? withoutArray.slice(0, -1) : withoutArray;
       const value = values[field];
-      if (typeof value !== 'string')
-        throw new ValidationDomainError(`${field} must be a path string.`);
-      this.security.validateLocalPath(value, `${request.method} ${request.path}`);
+      if (isOptional && (value === undefined || value === null)) continue;
+      const paths = isArray ? value : [value];
+      if (!Array.isArray(paths) || paths.some((path) => typeof path !== 'string')) {
+        throw new ValidationDomainError(
+          `${field} must be ${isArray ? 'an array of path strings' : 'a path string'}.`
+        );
+      }
+      for (const path of paths) {
+        this.security.validateLocalPath(path as string, `${request.method} ${request.path}`);
+      }
     }
     return true;
   }
