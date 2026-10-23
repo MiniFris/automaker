@@ -1897,12 +1897,12 @@
       "method": "POST",
       "path": "/api/mcp/test",
       "group": "mcp",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/mcp/index.ts",
-      "line": 30,
+      "source": "apps/server/src/modules/mcp/mcp.controller.ts",
+      "line": 13,
       "middleware": [
-        "createTestServerHandler(mcpTestService)"
+        "MCPController.test"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -1912,12 +1912,12 @@
       "method": "POST",
       "path": "/api/mcp/tools",
       "group": "mcp",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/mcp/index.ts",
-      "line": 33,
+      "source": "apps/server/src/modules/mcp/mcp.controller.ts",
+      "line": 19,
       "middleware": [
-        "createListToolsHandler(mcpTestService)"
+        "MCPController.tools"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,

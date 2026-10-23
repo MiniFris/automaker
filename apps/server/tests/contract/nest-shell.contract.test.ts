@@ -82,6 +82,7 @@ describe('Nest shell and legacy bridge contract', () => {
     expect(ROUTE_GROUP_OWNERS.agent).toBe('nest');
     expect(ROUTE_GROUP_OWNERS.setup).toBe('nest');
     expect(ROUTE_GROUP_OWNERS.pipeline).toBe('nest');
+    expect(ROUTE_GROUP_OWNERS.mcp).toBe('nest');
     expect(ROUTE_GROUP_OWNERS.claude).toBe('nest');
     expect(ROUTE_GROUP_OWNERS.codex).toBe('nest');
     expect(ROUTE_GROUP_OWNERS.gemini).toBe('nest');
@@ -154,6 +155,33 @@ describe('Nest shell and legacy bridge contract', () => {
       platform: process.platform,
       arch: process.arch,
     });
+  });
+
+  it('serves MCP connection checks through Nest without accepting arbitrary configs', async () => {
+    const address = runtime.legacy.server.address() as AddressInfo;
+    const url = `http://127.0.0.1:${address.port}/api/mcp/test`;
+    const headers = {
+      'Content-Type': 'application/json',
+      'x-api-key': 'automaker-test-api-key',
+    };
+
+    const missing = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ serverId: '__missing-contract-server__' }),
+    });
+    expect(missing.status).toBe(200);
+    expect(await missing.json()).toMatchObject({
+      success: false,
+      error: 'Server with ID "__missing-contract-server__" not found',
+    });
+
+    const arbitraryConfig = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ serverConfig: { command: 'echo', args: ['unsafe'] } }),
+    });
+    expect(arbitraryConfig.status).toBe(400);
   });
 
   it('preserves content-type, authentication, CORS, cookie and body-limit middleware', async () => {

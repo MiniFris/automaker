@@ -34,6 +34,7 @@ import { WorktreeModule } from './modules/worktree/worktree.module.js';
 import { ProvidersModule } from './modules/providers/providers.module.js';
 import { AgentsModule } from './modules/agents/agents.module.js';
 import { PipelineModule } from './modules/pipeline/pipeline.module.js';
+import { MCPModule } from './modules/mcp/mcp.module.js';
 
 @Module({})
 export class AppModule {
@@ -59,6 +60,7 @@ export class AppModule {
         ProvidersModule,
         AgentsModule,
         PipelineModule,
+        MCPModule,
         ProjectsModule,
         FilesModule,
         ContextModule,

@@ -63,7 +63,6 @@ import { ZaiUsageService } from './services/zai-usage-service.js';
 import { GeminiUsageService } from './services/gemini-usage-service.js';
 import { createGitHubRoutes } from './routes/github/index.js';
 import { cleanupStaleValidations } from './routes/github/routes/validation-common.js';
-import { createMCPRoutes } from './routes/mcp/index.js';
 import { MCPTestService } from './services/mcp-test-service.js';
 import { pipelineService as defaultPipelineService } from './services/pipeline-service.js';
 import { IdeationService } from './services/ideation-service.js';
@@ -595,7 +594,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   app.use('/api/enhance-prompt', createEnhancePromptRoutes(settingsService));
   app.use('/api/terminal', createTerminalRoutes());
   app.use('/api/github', createGitHubRoutes(events, settingsService));
-  app.use('/api/mcp', createMCPRoutes(mcpTestService));
 
   // Create HTTP server
   const server = options.httpServer ?? createServer(app);
