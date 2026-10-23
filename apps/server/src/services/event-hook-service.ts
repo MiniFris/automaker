@@ -28,7 +28,6 @@ import type {
   EventHookShellAction,
   EventHookHttpAction,
   EventHookNtfyAction,
-  NtfyEndpointConfig,
   EventHookContext,
 } from '@automaker/types';
 import { ntfyService, type NtfyContext } from './ntfy-service.js';
@@ -712,6 +711,3 @@ export class EventHookService {
     return parts[parts.length - 1] || projectPath;
   }
 }
-
-// Singleton instance
-export const eventHookService = new EventHookService();

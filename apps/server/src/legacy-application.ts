@@ -58,12 +58,11 @@ import { CodexAppServerService } from './services/codex-app-server-service.js';
 import { CodexModelCacheService } from './services/codex-model-cache-service.js';
 import { ZaiUsageService } from './services/zai-usage-service.js';
 import { GeminiUsageService } from './services/gemini-usage-service.js';
-import { cleanupStaleValidations } from './routes/github/routes/validation-common.js';
 import { MCPTestService } from './services/mcp-test-service.js';
 import { pipelineService as defaultPipelineService } from './services/pipeline-service.js';
 import { IdeationService } from './services/ideation-service.js';
 import { getDevServerService } from './services/dev-server-service.js';
-import { eventHookService as defaultEventHookService } from './services/event-hook-service.js';
+import { EventHookService } from './services/event-hook-service.js';
 import { NotificationService } from './services/notification-service.js';
 import { EventHistoryService } from './services/event-history-service.js';
 import { getTestRunnerService } from './services/test-runner-service.js';
@@ -228,7 +227,7 @@ export interface LegacyServiceOverrides {
   testRunnerService: ReturnType<typeof getTestRunnerService>;
   terminalService: ReturnType<typeof getTerminalService>;
   pipelineService: typeof defaultPipelineService;
-  eventHookService: typeof defaultEventHookService;
+  eventHookService: EventHookService;
   loginAttemptStore: LoginAttemptStore;
   providerConnections: ProviderConnectionRepository;
   providerRegistry: ProviderRegistry;
@@ -417,7 +416,7 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   testRunnerService.setEventEmitter(events);
 
   const pipelineService = serviceOverrides.pipelineService ?? defaultPipelineService;
-  const eventHookService = serviceOverrides.eventHookService ?? defaultEventHookService;
+  const eventHookService = serviceOverrides.eventHookService ?? new EventHookService();
   const loginAttemptStore = serviceOverrides.loginAttemptStore ?? new LoginAttemptStore();
 
   // Initialize services
@@ -513,10 +512,7 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
     });
   }
 
-  // Run stale validation cleanup every hour to prevent memory leaks from crashed validations
-  const VALIDATION_CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
   const STARTUP_TASK_TIMEOUT_MS = 120_000;
-  let validationCleanupInterval: NodeJS.Timeout | undefined;
   let startupTasksPromise: Promise<void> | undefined;
 
   async function runNamedStartupTask(
@@ -561,13 +557,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
         () => devServerService.initialize(dataDir, events),
         'log-and-continue'
       );
-
-      eventHookService.initialize(events, settingsService, eventHistoryService, featureLoader);
-      validationCleanupInterval = setInterval(() => {
-        const cleaned = cleanupStaleValidations();
-        if (cleaned > 0) logger.info(`Cleaned up ${cleaned} stale validation entries`);
-      }, VALIDATION_CLEANUP_INTERVAL_MS);
-      validationCleanupInterval.unref();
 
       void runNamedStartupTask(
         'claude-authentication-detection',
@@ -1092,10 +1081,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
     terminalService.cleanup();
     await getManagedTestRunnerService(settingsService, events).cleanup();
     await getManagedDevServerService(settingsService, events).cleanup();
-    if (validationCleanupInterval) {
-      clearInterval(validationCleanupInterval);
-      validationCleanupInterval = undefined;
-    }
     if (closeHttpServer) {
       await new Promise<void>((resolve, reject) => {
         if (!server.listening) {
