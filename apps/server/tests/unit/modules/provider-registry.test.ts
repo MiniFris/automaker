@@ -10,6 +10,11 @@ const provider = (name: string, supportsVision = false) =>
     getAvailableModels: () => [
       { id: `${name}-model`, modelString: `${name}-model`, name, supportsVision },
     ],
+    getModelCapabilities: (modelId: string) => ({
+      vision: modelId === `${name}-model` && supportsVision,
+      tools: false,
+      reasoning: false,
+    }),
   }) as unknown as BaseProvider;
 
 const connections = (disconnected = false) => ({ isDisconnected: () => disconnected });

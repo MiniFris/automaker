@@ -10,11 +10,16 @@ import type {
   ValidationResult,
   ModelDefinition,
 } from './types.js';
+import type {
+  ModelCapabilities,
+  ProviderAdapter,
+  ProviderCapabilities,
+} from './provider-contract.js';
 
 /**
  * Base provider class that all provider implementations must extend
  */
-export abstract class BaseProvider {
+export abstract class BaseProvider implements ProviderAdapter {
   protected config: ProviderConfig;
   protected name: string;
 
@@ -46,6 +51,54 @@ export abstract class BaseProvider {
    * @returns Array of model definitions
    */
   abstract getAvailableModels(): ModelDefinition[];
+
+  getCapabilities(): ProviderCapabilities {
+    const models = this.getAvailableModels();
+    return Object.freeze({
+      text: true,
+      streaming: true,
+      vision: models.some((model) => model.supportsVision === true),
+      tools: models.some((model) => model.supportsTools === true),
+      reasoning: models.some((model) => model.hasReasoning === true),
+      mcp: this.supportsFeature('mcp'),
+      remoteExecution: this.supportsFeature('remoteExecution'),
+      followUp: true,
+      cancellation: true,
+    });
+  }
+
+  getModelCapabilities(modelId: string): ModelCapabilities {
+    const normalized = modelId.toLowerCase();
+    const model = this.getAvailableModels().find((candidate) => {
+      const id = candidate.id.toLowerCase();
+      const modelString = candidate.modelString.toLowerCase();
+      return (
+        id === normalized ||
+        modelString === normalized ||
+        id.endsWith(`-${normalized}`) ||
+        modelString.endsWith(`-${normalized}`)
+      );
+    });
+    return Object.freeze({
+      vision: model?.supportsVision === true,
+      tools: model?.supportsTools === true,
+      reasoning: model?.hasReasoning === true,
+    });
+  }
+
+  start(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+    return this.executeQuery(options);
+  }
+
+  followUp(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+    return this.executeQuery(options);
+  }
+
+  cancel(controller: AbortController): void {
+    controller.abort();
+  }
+
+  async dispose(): Promise<void> {}
 
   /**
    * Validate the provider configuration

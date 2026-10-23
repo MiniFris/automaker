@@ -4,6 +4,14 @@
 
 // Base providers
 export { BaseProvider } from './base-provider.js';
+export { terminalReason } from './provider-contract.js';
+export type {
+  ModelCapabilities,
+  ProviderAdapter,
+  ProviderCapabilities,
+  ProviderCapability,
+  ProviderTerminalReason,
+} from './provider-contract.js';
 export {
   CliProvider,
   type SpawnStrategy,

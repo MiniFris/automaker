@@ -105,16 +105,7 @@ export class ProviderRegistry {
 
   supportsVision(modelId: string): boolean {
     if (isDirectModel(modelId.toLowerCase())) return false;
-    const model = this.providerForModel(modelId)
-      .getAvailableModels()
-      .find(
-        (candidate) =>
-          candidate.id === modelId ||
-          candidate.modelString === modelId ||
-          candidate.id.endsWith(`-${modelId}`) ||
-          candidate.modelString.endsWith(`-${modelId}`)
-      );
-    return model?.supportsVision ?? false;
+    return this.providerForModel(modelId).getModelCapabilities(modelId).vision;
   }
 
   private sorted(): ProviderRegistration[] {
