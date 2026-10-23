@@ -4,6 +4,8 @@ Measured 2026-10-23 with Node `v22.22.2` on the migration workstation using
 `npm run baseline:server`. The command builds the production server, imports the
 legacy factory, starts it on an ephemeral loopback port without startup recovery,
 performs 100 sequential `/api/health` requests, records memory and shuts it down.
+Это историческое измерение до cutover: текущая команда `baseline:server` запускает
+Nest backend; для воспроизведения legacy baseline нужен исходный migration artifact.
 
 | Metric                   | Baseline |
 | ------------------------ | -------: |
@@ -50,3 +52,35 @@ shutdown smoke test must distinguish them from client-side keep-alive resources.
 
 Active-agent, real PTY, SSH and Docker measurements remain runner-specific and are
 collected by their opt-in suites rather than the deterministic stage checkpoint.
+
+## Native Nest service composition checkpoint
+
+Повторное измерение production build выполнено 2026-10-24 (Europe/Moscow), Node
+`v22.22.2`, 100 последовательных health requests, startup recovery отключён:
+
+| Metric                   | Native Nest |
+| ------------------------ | ----------: |
+| Production module import |    457.3 ms |
+| Nest composition/init    |     45.3 ms |
+| Explicit HTTP startup    |      3.1 ms |
+| `/api/health` p50        |     0.63 ms |
+| `/api/health` p95        |     1.22 ms |
+| RSS after requests       |   192.2 MiB |
+| Heap used after requests |    69.8 MiB |
+| Application shutdown     |      2.7 ms |
+
+Composition/init измеряется отдельно: предыдущие таблицы не включали эту фазу
+в explicit HTTP startup, поэтому сравнивать их как полное время запуска нельзя.
+RSS выше исходного baseline примерно на 25%; это локальный результат после переноса
+всех controllers, а не подтверждённая production regression или утверждённый budget.
+Performance/load acceptance этапа 10 остаётся незавершённым.
+
+Benchmark больше не вызывает `process.exit()`: процесс завершился самостоятельно.
+После shutdown snapshot содержит `TCPServerWrap` и два `TCPSocketWrap` (включая
+локальный HTTP client pool), без application-owned `Timeout`. Снимок одного тика
+не доказывает отсутствие утечек при рабочих agent/PTY нагрузках.
+
+`npm run smoke:server:lifecycle` проверяет отдельный production process с реальными
+startup tasks и временным DATA_DIR: readiness, protected HTTP 401, затем SIGTERM
+и SIGINT. Обе проверки завершились с exit code 0, примерно за 20 ms после сигнала.
+Они не заменяют tests активных PTY, Docker/SSH jobs и packaged Electron acceptance.

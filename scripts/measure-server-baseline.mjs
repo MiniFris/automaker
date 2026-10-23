@@ -6,7 +6,6 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const repositoryRoot = resolve(import.meta.dirname, '..');
-const measureNestShell = process.argv.includes('--nest');
 const dataDirectory = await mkdtemp(join(tmpdir(), 'automaker-server-baseline-'));
 process.env.NODE_ENV = 'test';
 process.env.DATA_DIR = dataDirectory;
@@ -20,27 +19,18 @@ const quantile = (values, percentile) => {
 
 const importedAt = performance.now();
 const serverModule = await import(
-  pathToFileURL(
-    join(
-      repositoryRoot,
-      measureNestShell ? 'apps/server/dist/main.js' : 'apps/server/dist/legacy-application.js'
-    )
-  ).href
+  pathToFileURL(join(repositoryRoot, 'apps/server/dist/main.js')).href
 );
 const importDurationMs = performance.now() - importedAt;
-const application = measureNestShell
-  ? await serverModule.createNestApplication({
-      host: '127.0.0.1',
-      port: 0,
-      runStartupTasks: false,
-      enableShutdownHooks: false,
-    })
-  : serverModule.createLegacyApplication({
-      host: '127.0.0.1',
-      port: 0,
-      runStartupTasks: false,
-    });
-const server = measureNestShell ? application.legacy.server : application.server;
+const compositionStartedAt = performance.now();
+const application = await serverModule.createNestApplication({
+  host: '127.0.0.1',
+  port: 0,
+  runStartupTasks: false,
+  enableShutdownHooks: false,
+});
+const compositionDurationMs = performance.now() - compositionStartedAt;
+const server = application.app.getHttpServer();
 
 try {
   const startedAt = performance.now();
@@ -60,8 +50,7 @@ try {
 
   const memory = process.memoryUsage();
   const shutdownAt = performance.now();
-  if (measureNestShell) await application.app.close();
-  else await application.shutdown('baseline measurement');
+  await application.app.close();
   const shutdownDurationMs = performance.now() - shutdownAt;
   await new Promise((resolve) => setImmediate(resolve));
   const activeResourcesAfterShutdown = process.getActiveResourcesInfo();
@@ -69,11 +58,12 @@ try {
   console.log(
     JSON.stringify(
       {
-        mode: measureNestShell ? 'nest-shell' : 'legacy',
+        mode: 'nestjs',
         measuredAt: new Date().toISOString(),
         node: process.version,
         samples: durations.length,
         importDurationMs,
+        compositionDurationMs,
         startupDurationMs,
         healthLatencyMs: {
           p50: quantile(durations, 0.5),
@@ -93,12 +83,9 @@ try {
   );
 } finally {
   if (server.listening) {
-    if (measureNestShell) await application.app.close();
-    else await application.shutdown('baseline cleanup');
+    await application.app.close();
   }
   await rm(dataDirectory, { recursive: true, force: true });
 }
 
-// Legacy singleton services install process-level handles outside the application
-// lifecycle. Reporting them is the purpose of this baseline; do not let them hang CI.
-process.exit(0);
+// Allow the process to exit naturally so leaked handles fail the benchmark job deadline.

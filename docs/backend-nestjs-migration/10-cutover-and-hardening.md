@@ -27,6 +27,10 @@ stateful service отдельным Nest factory provider с явным `inject`
 подтверждает изоляцию экземпляров и shutdown. Compatibility tokens и startup/shutdown
 adapter пока остаются и подлежат дальнейшему удалению. Checkpoint среза: server build,
 lint, 2900 unit-тестов и 228 HTTP/WS contract-тестов.
+Production lifecycle smoke выполняется командой `npm run smoke:server:lifecycle`:
+реальные startup tasks, readiness, auth guard и завершение отдельных processes по
+SIGTERM/SIGINT. Текущий benchmark использует Nest entrypoint и завершается естественно.
+Числа и ограничения измерения записаны в `artifacts/performance-baseline.md`.
 
 ## 10.2. Dependency rules
 

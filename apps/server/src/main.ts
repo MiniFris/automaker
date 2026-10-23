@@ -17,7 +17,6 @@ import { NestLogger } from './nest-logger.js';
 const logger = createLogger('ServerBootstrap');
 
 const DEFAULT_PORT = 3008;
-const DEFAULT_HOST = '0.0.0.0';
 
 class SharedHttpServerExpressAdapter extends ExpressAdapter {
   constructor(instance: ReturnType<typeof express>, server: Server) {
@@ -60,7 +59,6 @@ export async function createNestApplication(
   const workingDirectory = options.workingDirectory ?? process.cwd();
   const config = parseRuntimeConfig(environment, workingDirectory);
   const { host, port } = config.server;
-  const dataDirectory = config.storage.dataDirectory;
 
   const expressApplication = express();
   const httpServer = createServer(expressApplication);
@@ -81,8 +79,7 @@ export async function createNestApplication(
 
   app.setGlobalPrefix('api');
   if (options.enableShutdownHooks ?? true) {
-    // Several legacy services still register their own signal listeners. Re-emitting
-    // the signal after Nest shutdown would therefore keep the process alive.
+    // Exit only after Nest has completed the application cleanup hooks.
     app.enableShutdownHooks([], { useProcessExit: true });
   }
 
