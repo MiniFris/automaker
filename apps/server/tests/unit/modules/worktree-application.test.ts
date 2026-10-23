@@ -117,4 +117,37 @@ describe('WorktreeApplicationService', () => {
       'cherry-pick:success',
     ]);
   });
+
+  it('keeps the merge response contract and emits its lifecycle', async () => {
+    const git = {
+      resolveOrLocal: vi.fn().mockResolvedValue(target),
+      run: vi.fn().mockResolvedValue({
+        success: true,
+        result: { mergedBranch: 'feature/one', targetBranch: 'main', hasConflicts: false },
+      }),
+    };
+    const events = { emit: vi.fn() };
+    const service = new WorktreeApplicationService(
+      git as never,
+      events as never,
+      { isProjectRunning: vi.fn().mockResolvedValue(false) } as never
+    );
+
+    const response = await service.merge(
+      {
+        projectPath: '/project',
+        worktreePath: '/project/.worktrees/one',
+        branchName: 'feature/one',
+        targetBranch: 'main',
+      },
+      new AbortController().signal
+    );
+
+    expect(response).toMatchObject({
+      success: true,
+      mergedBranch: 'feature/one',
+      targetBranch: 'main',
+    });
+    expect(events.emit.mock.calls.map(([name]) => name)).toEqual(['merge:start', 'merge:success']);
+  });
 });

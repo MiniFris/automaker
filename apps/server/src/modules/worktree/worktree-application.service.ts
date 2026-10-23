@@ -16,6 +16,7 @@ import type {
   WorktreeCommitRequest,
   WorktreeCheckoutBranchRequest,
   WorktreeCherryPickRequest,
+  WorktreeMergeRequest,
   WorktreeDiscardRequest,
   WorktreeFeatureRequest,
   WorktreeFileRequest,
@@ -174,6 +175,39 @@ export class WorktreeApplicationService {
       return response;
     } catch (error) {
       this.events.emit('cherry-pick:failure', { error: this.message(error) });
+      throw error;
+    }
+  }
+
+  async merge(input: WorktreeMergeRequest, signal: AbortSignal) {
+    this.events.emit('merge:start', {
+      branchName: input.branchName,
+      targetBranch: input.targetBranch,
+      worktreePath: input.worktreePath,
+    });
+    try {
+      const response = await this.runPath('merge', input.projectPath, input, signal);
+      const result = response.result as {
+        hasConflicts?: boolean;
+        conflictFiles?: string[];
+        mergedBranch?: string;
+        targetBranch?: string;
+        deleted?: unknown;
+      };
+      this.events.emit(result.hasConflicts ? 'merge:conflict' : 'merge:success', {
+        branchName: input.branchName,
+        targetBranch: input.targetBranch,
+        conflictFiles: result.conflictFiles,
+        mergedBranch: result.mergedBranch,
+        deleted: result.deleted,
+      });
+      return { ...response, ...result };
+    } catch (error) {
+      this.events.emit('merge:error', {
+        branchName: input.branchName,
+        targetBranch: input.targetBranch,
+        error: this.message(error),
+      });
       throw error;
     }
   }

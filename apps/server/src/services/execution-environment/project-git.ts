@@ -53,6 +53,7 @@ export const gitWriteActions = new Set([
   'sync',
   'rebase',
   'cherry-pick',
+  'merge',
 ]);
 export function workspaceAlias(binding: ExecutionEnvironmentBinding) {
   const root = binding.ssh?.remotePath ?? binding.projectPath;
@@ -286,11 +287,23 @@ export class ProjectGitService {
       await this.docker.start(runtime.binding, signal);
       await this.docker.verifyStorage(runtime.binding, signal);
     }
+    let workerBody: Record<string, unknown> = {
+      ...body,
+      workspaceBranch: target.workspaceBranch,
+    };
+    if (action === 'merge' && typeof body.worktreePath === 'string') {
+      const source = (
+        await new EnvironmentBindingStore(this.settings).workspaceBindings(
+          target.environment.projectPath
+        )
+      ).find((binding) => workspaceAlias(binding) === path.resolve(body.worktreePath as string));
+      if (source) workerBody = { ...workerBody, sourceBindingId: source.id };
+    }
     const result = await target.runtime.exec(
       nodeCommand(PROJECT_GIT_WORKER, [
         JSON.stringify({
           action,
-          body: { ...body, workspaceBranch: target.workspaceBranch },
+          body: workerBody,
           root: target.root,
           cwd: target.runtime.cwd,
           controllerRoot: target.environment.projectPath,
@@ -344,6 +357,18 @@ export class ProjectGitService {
       ...response!,
       executionEnvironment: described(resolvedCwd, target.binding),
     };
+    if (action === 'merge') {
+      const merge = value.result as
+        | { deleted?: { worktreeDeleted?: boolean }; deletedBindingId?: string }
+        | undefined;
+      if (merge?.deleted?.worktreeDeleted && merge.deletedBindingId) {
+        await new EnvironmentBindingStore(this.settings).removeWorkspaceBinding(
+          target.environment.projectPath,
+          merge.deletedBindingId
+        );
+        delete merge.deletedBindingId;
+      }
+    }
     if (Array.isArray(value.worktrees)) {
       const pins = await this.pinnedEntries(target.environment.projectPath);
       const currentIdentity = identityHash(

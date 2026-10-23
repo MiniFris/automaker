@@ -166,6 +166,28 @@ export class EnvironmentBindingStore {
     }
     return result;
   }
+  /** Remove one verified workspace routing record after its target workspace was deleted. */
+  async removeWorkspaceBinding(projectPath: string, id: string): Promise<boolean> {
+    if (!/^[a-f0-9]{64}$/.test(id))
+      throw new EnvironmentConfigurationError('Invalid workspace binding identity.');
+    const canonical = await fs.realpath(projectPath);
+    const file = path.join(this.directory, 'bindings', `${id}.json`);
+    return serialized(file, async () => {
+      const stored = (await read(file)) as { binding?: ExecutionEnvironmentBinding } | undefined;
+      if (!stored) return false;
+      if (
+        !stored.binding ||
+        stored.binding.version !== 1 ||
+        stored.binding.id !== id ||
+        stored.binding.projectPath !== canonical
+      )
+        throw new EnvironmentConfigurationError(
+          'Workspace binding does not match the deleted project workspace.'
+        );
+      await fs.unlink(file);
+      return true;
+    });
+  }
   async consent(projectPath?: string): Promise<LocalExecutionConsentStatus> {
     const projectScope = projectPath ? await fs.realpath(projectPath) : undefined;
     const identity = await this.consentIdentity();

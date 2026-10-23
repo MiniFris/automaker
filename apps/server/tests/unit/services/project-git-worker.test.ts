@@ -223,6 +223,28 @@ describe.skipIf(process.platform !== 'linux')('fixed target-side Git worker with
       code: 'GIT_COMMIT_MISSING',
     });
   });
+  it('merges a registered source worktree into the checked-out target branch', async () => {
+    const created = await run('create', { branchName: 'feature/merge', baseBranch: 'main' });
+    const worktreePath = created.worktree.path as string;
+    await fs.writeFile(path.join(worktreePath, 'merged.txt'), 'merged\n');
+    expect(
+      (await run('commit', { message: 'feature commit', files: ['merged.txt'] }, worktreePath))
+        .success
+    ).toBe(true);
+
+    const merged = await run('merge', {
+      branchName: 'feature/merge',
+      worktreePath,
+      targetBranch: 'main',
+    });
+
+    expect(merged.result).toMatchObject({
+      mergedBranch: 'feature/merge',
+      targetBranch: 'main',
+      hasConflicts: false,
+    });
+    expect(await fs.readFile(path.join(root, 'merged.txt'), 'utf8')).toBe('merged\n');
+  });
   it('does not invoke external diff commands or fsmonitor hooks', async () => {
     await environment.exec(
       "git config diff.external 'touch diff-leak' && git config core.fsmonitor 'touch monitor-leak'",

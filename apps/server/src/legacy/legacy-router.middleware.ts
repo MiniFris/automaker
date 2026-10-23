@@ -75,6 +75,7 @@ export const NEST_OWNED_ROUTE_PATHS = new Set<string>([
   'POST /api/worktree/sync',
   'POST /api/worktree/rebase',
   'POST /api/worktree/cherry-pick',
+  'POST /api/worktree/merge',
   'POST /api/worktree/commit-log',
   'POST /api/worktree/branch-commit-log',
   'GET /api/settings/status',

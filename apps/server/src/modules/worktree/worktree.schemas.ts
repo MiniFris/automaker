@@ -184,6 +184,25 @@ export const WorktreeCherryPickSchema = WorktreeMutationSchema.extend({
     .optional(),
 }).strict();
 
+export const WorktreeMergeSchema = z
+  .object({
+    projectPath: ProjectPathSchema,
+    branchName: BranchNameSchema,
+    worktreePath: ProjectPathSchema,
+    targetBranch: BranchNameSchema.optional().default('main'),
+    options: z
+      .object({
+        squash: z.boolean().optional(),
+        message: z.string().trim().min(1).max(10_000).optional(),
+        deleteWorktreeAndBranch: z.boolean().optional(),
+        remote: RemoteNameSchema.optional(),
+      })
+      .strict()
+      .optional(),
+    environmentTargetId: z.string().optional(),
+  })
+  .strict();
+
 export type WorktreeProjectRequest = z.infer<typeof WorktreeProjectSchema>;
 export type WorktreeFeatureRequest = z.infer<typeof WorktreeFeatureSchema>;
 export type WorktreeFileRequest = z.infer<typeof WorktreeFileSchema>;
@@ -212,3 +231,4 @@ export type WorktreePushRequest = z.infer<typeof WorktreePushSchema>;
 export type WorktreeSyncRequest = z.infer<typeof WorktreeSyncSchema>;
 export type WorktreeRebaseRequest = z.infer<typeof WorktreeRebaseSchema>;
 export type WorktreeCherryPickRequest = z.infer<typeof WorktreeCherryPickSchema>;
+export type WorktreeMergeRequest = z.infer<typeof WorktreeMergeSchema>;
