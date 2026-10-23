@@ -180,6 +180,32 @@ describe.skipIf(process.platform !== 'linux')('fixed target-side Git worker with
     });
     await expect(fs.stat(path.join(root, 'untracked.txt'))).rejects.toThrow();
   });
+  it('runs explicit network operations against the selected target remote', async () => {
+    const bare = path.join(root, 'remote.git');
+    await fs.appendFile(path.join(root, '.git', 'info', 'exclude'), '\nremote.git/\n');
+    expect((await environment.exec(`git init --bare -q ${bare}`, active())).exitCode).toBe(0);
+    expect((await environment.exec(`git remote add origin ${bare}`, active())).exitCode).toBe(0);
+
+    expect((await run('push', { remote: 'origin' })).result).toMatchObject({
+      branch: 'main',
+      pushed: true,
+    });
+    expect((await run('pull', { remote: 'origin' })).result).toMatchObject({
+      branch: 'main',
+      pulled: true,
+      hasConflicts: false,
+    });
+    expect((await run('sync', { remote: 'origin' })).result).toMatchObject({
+      branch: 'main',
+      pulled: true,
+      pushed: true,
+    });
+    expect((await run('checkout-branch', { branchName: 'rebase-me' })).success).toBe(true);
+    expect((await run('rebase', { ontoBranch: 'main' })).result).toMatchObject({
+      branch: 'rebase-me',
+      ontoBranch: 'main',
+    });
+  });
   it('does not invoke external diff commands or fsmonitor hooks', async () => {
     await environment.exec(
       "git config diff.external 'touch diff-leak' && git config core.fsmonitor 'touch monitor-leak'",

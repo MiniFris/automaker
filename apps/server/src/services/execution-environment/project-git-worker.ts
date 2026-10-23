@@ -5,6 +5,7 @@ const p=JSON.parse(process.argv[1]),b=p.body;
 const bad=(code,error)=>{throw Object.assign(Error(error),{code});};
 const git=(cwd,...args)=>execFileSync('git',['--no-pager','--literal-pathspecs','-c','color.ui=false','-c','core.hooksPath=/dev/null','-c','commit.gpgSign=false','-c','core.fsmonitor=false','-C',cwd,...args],{encoding:'utf8',stdio:['ignore','pipe','pipe'],maxBuffer:3*1024*1024,env:{...process.env,GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0'}});
 const optional=(cwd,...args)=>{try{return git(cwd,...args).trim();}catch(e){if(e.status===1||e.status===128)return '';throw e;}};
+const succeeds=(cwd,...args)=>{try{git(cwd,...args);return true;}catch{return false;}};
 const inside=(root,file)=>file===root||file.startsWith(root+'/');
 let cwd=p.cwd;
 const root=fs.realpathSync(p.root);
@@ -45,6 +46,8 @@ const branch=value=>{if(typeof value!=='string'||!value||value.startsWith('-'))b
 const remote=value=>{if(typeof value!=='string'||!/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,249}$/.test(value))bad('GIT_REMOTE_INVALID','Remote name is invalid.');return value;};
 const stashIndex=value=>{const number=Number(value);if(!Number.isInteger(number)||number<0||number>100000)bad('GIT_STASH_INVALID','stashIndex must be a non-negative integer.');return number;};
 const operation=()=>{const dir=path.resolve(cwd,git(cwd,'rev-parse','--git-dir').trim());return fs.existsSync(path.join(dir,'rebase-merge'))||fs.existsSync(path.join(dir,'rebase-apply'))?'rebase':fs.existsSync(path.join(dir,'MERGE_HEAD'))?'merge':fs.existsSync(path.join(dir,'CHERRY_PICK_HEAD'))?'cherry-pick':undefined;};
+const currentBranch=()=>optional(cwd,'symbolic-ref','--quiet','--short','HEAD')||bad('GIT_DETACHED_HEAD','This network operation requires a checked-out branch.');
+const conflictFiles=()=>entries(cwd).filter(x=>x.isConflicted).map(x=>x.path);
 const head=dir=>optional(dir,'rev-parse','--verify','HEAD');
 const fileDiff=(dir,name)=>{
  file(name);const untracked=git(dir,'ls-files','--others','--exclude-standard','-z','--',name).split('\0').includes(name);
@@ -142,6 +145,18 @@ try{
  }
  else if(p.action==='discard-changes'){
   const before=entries(cwd),current=optional(cwd,'symbolic-ref','--quiet','--short','HEAD')||'HEAD';if(!before.length)result={result:{discarded:false,message:'No changes to discard'}};else{if(b.files!==undefined){const names=files();if(head(cwd))optional(cwd,'reset','HEAD','--',...names);optional(cwd,'checkout','HEAD','--',...names);git(cwd,'clean','-ffd','--',...names);}else{if(head(cwd))git(cwd,'reset','--hard','HEAD');git(cwd,'clean','-ffd','--');}const remaining=entries(cwd).length,discarded=Math.max(0,before.length-remaining);result={result:{discarded:true,filesDiscarded:discarded,filesRemaining:remaining,branch:current,message:'Discarded '+discarded+(remaining?', '+remaining+' files remaining':' files')}};}
+ }
+ else if(p.action==='pull'){
+  const name=remote(b.remote??'origin'),current=currentBranch(),requested=b.remoteBranch?branch(b.remoteBranch):current,local=entries(cwd),changed=local.map(x=>x.path);let stashed=false;if(local.length&&!b.stashIfNeeded)result={result:{branch:current,pulled:false,hasLocalChanges:true,localChangedFiles:changed,hasConflicts:false,stashed:false,stashRestored:false,message:'Local changes must be stashed or committed before pulling.'}};else{if(local.length){git(cwd,'stash','push','--include-untracked','-m','Automaker pre-pull stash');stashed=true;}git(cwd,'fetch',name,'--',requested);const before=head(cwd),source=name+'/'+requested;let mergeError;try{git(cwd,'merge','--no-edit',source);}catch(error){mergeError=error;}const conflicts=conflictFiles();if(mergeError&&!conflicts.length){if(stashed)optional(cwd,'stash','pop');throw mergeError;}let restored=false,stashConflicts=[];if(stashed&&!conflicts.length){try{git(cwd,'stash','pop');restored=true;}catch(error){stashConflicts=conflictFiles();if(!stashConflicts.length)throw error;}}const after=head(cwd),allConflicts=conflicts.length?conflicts:stashConflicts;result={result:{branch:current,pulled:!mergeError,hasLocalChanges:local.length>0,localChangedFiles:changed,hasConflicts:allConflicts.length>0,conflictSource:conflicts.length?'pull':stashConflicts.length?'stash':undefined,conflictFiles:allConflicts,stashed,stashRestored:restored,message:allConflicts.length?'Pull produced conflicts':before===after?'Already up to date':'Pulled successfully',isFastForward:!mergeError&&before!==after&&succeeds(cwd,'merge-base','--is-ancestor',before,after),isMerge:!mergeError&&before!==after&&git(cwd,'rev-list','--parents','-n','1',after).trim().split(/\s+/).length>2}};}
+ }
+ else if(p.action==='push'){
+  const name=remote(b.remote??'origin'),current=currentBranch(),args=['push',name,current];if(b.force)args.push('--force-with-lease');let pushed=true,autoResolved=false;try{git(cwd,...args);}catch(error){if(!b.autoResolve)throw error;git(cwd,'fetch',name,'--',current);try{git(cwd,'merge','--no-edit',name+'/'+current);}catch(mergeError){const conflicts=conflictFiles();if(conflicts.length){result={result:{branch:current,pushed:false,diverged:true,autoResolved:false,hasConflicts:true,conflictFiles:conflicts,message:'Push auto-resolution produced conflicts'}};pushed=false;}else throw mergeError;}if(pushed){git(cwd,...args);autoResolved=true;}}if(!result)result={result:{branch:current,pushed:true,diverged:autoResolved,autoResolved,message:autoResolved?'Pulled divergent changes and pushed':'Pushed successfully'}};
+ }
+ else if(p.action==='sync'){
+  const name=remote(b.remote??'origin'),current=currentBranch(),local=entries(cwd);let stashed=false;if(local.length){git(cwd,'stash','push','--include-untracked','-m','Automaker pre-sync stash');stashed=true;}git(cwd,'fetch',name,'--',current);const before=head(cwd);let mergeError;try{git(cwd,'merge','--no-edit',name+'/'+current);}catch(error){mergeError=error;}const conflicts=conflictFiles();if(mergeError&&!conflicts.length)throw mergeError;if(conflicts.length)result={result:{branch:current,pulled:false,pushed:false,hasConflicts:true,conflictFiles:conflicts,conflictSource:'pull',message:'Sync pull produced conflicts'}};else{if(stashed)git(cwd,'stash','pop');git(cwd,'push',name,current);const after=head(cwd);result={result:{branch:current,pulled:true,pushed:true,isFastForward:before===after||succeeds(cwd,'merge-base','--is-ancestor',before,after),isMerge:before!==after&&git(cwd,'rev-list','--parents','-n','1',after).trim().split(/\s+/).length>2,autoResolved:false,message:'Synchronized successfully'}};}
+ }
+ else if(p.action==='rebase'){
+  const onto=branch(b.ontoBranch),name=b.remote?remote(b.remote):undefined,current=currentBranch();if(name)git(cwd,'fetch',name,'--quiet');try{git(cwd,'rebase',onto);result={result:{branch:current,ontoBranch:onto,message:'Rebased successfully'}};}catch(error){const conflicts=conflictFiles();if(!conflicts.length)throw error;result={result:{branch:current,ontoBranch:onto,hasConflicts:true,conflictFiles:conflicts,aborted:false,message:'Rebase has conflicts; resolve and continue or abort.'}};}
  }
  else if(p.action==='create'){
   if(cwd!==root||p.pinned)bad('GIT_PINNED_WORKSPACE','Create worktrees only from the project root.');

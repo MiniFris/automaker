@@ -36,8 +36,12 @@ import {
   WorktreeFeatureSchema,
   WorktreeFileSchema,
   WorktreePathSchema,
+  WorktreePullSchema,
+  WorktreePushSchema,
+  WorktreeRebaseSchema,
   WorktreeProjectSchema,
   WorktreeStageFilesSchema,
+  WorktreeSyncSchema,
   type WorktreeBranchesRequest,
   type WorktreeBranchCommitLogRequest,
   type WorktreeCommitLogRequest,
@@ -47,6 +51,9 @@ import {
   type WorktreeFeatureRequest,
   type WorktreeFileRequest,
   type WorktreePathRequest,
+  type WorktreePullRequest,
+  type WorktreePushRequest,
+  type WorktreeRebaseRequest,
   type WorktreeProjectRequest,
   type WorktreeStageFilesRequest,
   type DevSessionRequest,
@@ -61,6 +68,7 @@ import {
   type WorktreeStashPushRequest,
   type WorktreeTrackingRequest,
   type WorktreeSwitchBranchRequest,
+  type WorktreeSyncRequest,
 } from './worktree.schemas.js';
 
 @Controller('worktree')
@@ -287,6 +295,46 @@ export class WorktreeController {
     @Res({ passthrough: true }) response: Response
   ) {
     return this.cancel(response, (signal) => this.worktrees.discardChanges(body, signal));
+  }
+
+  @Post('pull')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath')
+  pull(
+    @Body(new ZodValidationPipe(WorktreePullSchema)) body: WorktreePullRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.pull(body, signal));
+  }
+
+  @Post('push')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath')
+  push(
+    @Body(new ZodValidationPipe(WorktreePushSchema)) body: WorktreePushRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.push(body, signal));
+  }
+
+  @Post('sync')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath')
+  sync(
+    @Body(new ZodValidationPipe(WorktreeSyncSchema)) body: WorktreeSyncRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.sync(body, signal));
+  }
+
+  @Post('rebase')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath')
+  rebase(
+    @Body(new ZodValidationPipe(WorktreeRebaseSchema)) body: WorktreeRebaseRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.rebase(body, signal));
   }
 
   @Post('commit-log')

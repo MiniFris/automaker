@@ -20,6 +20,9 @@ import type {
   WorktreeFileRequest,
   WorktreePathRequest,
   WorktreeProjectRequest,
+  WorktreePullRequest,
+  WorktreePushRequest,
+  WorktreeRebaseRequest,
   WorktreeMutationRequest,
   WorktreeRemoteAddRequest,
   WorktreeStashApplyRequest,
@@ -28,6 +31,7 @@ import type {
   WorktreeStageFilesRequest,
   WorktreeTrackingRequest,
   WorktreeSwitchBranchRequest,
+  WorktreeSyncRequest,
 } from './worktree.schemas.js';
 
 @Injectable()
@@ -128,6 +132,22 @@ export class WorktreeApplicationService {
 
   discardChanges(input: WorktreeDiscardRequest, signal: AbortSignal) {
     return this.runPath('discard-changes', input.worktreePath, input, signal);
+  }
+
+  pull(input: WorktreePullRequest, signal: AbortSignal) {
+    return this.runPath('pull', input.worktreePath, input, signal);
+  }
+
+  push(input: WorktreePushRequest, signal: AbortSignal) {
+    return this.runPath('push', input.worktreePath, input, signal);
+  }
+
+  sync(input: WorktreeSyncRequest, signal: AbortSignal) {
+    return this.runPath('sync', input.worktreePath, input, signal);
+  }
+
+  rebase(input: WorktreeRebaseRequest, signal: AbortSignal) {
+    return this.runPath('rebase', input.worktreePath, input, signal);
   }
 
   async commitLog(input: WorktreeCommitLogRequest, signal: AbortSignal) {

@@ -148,6 +148,29 @@ export const WorktreeDiscardSchema = WorktreeMutationSchema.extend({
   files: z.array(RelativeFileSchema).min(1).max(1_000).optional(),
 }).strict();
 
+const RemoteNameSchema = z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,249}$/);
+
+export const WorktreePullSchema = WorktreeMutationSchema.extend({
+  remote: RemoteNameSchema.optional(),
+  remoteBranch: BranchNameSchema.optional(),
+  stashIfNeeded: z.boolean().optional(),
+}).strict();
+
+export const WorktreePushSchema = WorktreeMutationSchema.extend({
+  remote: RemoteNameSchema.optional(),
+  force: z.boolean().optional(),
+  autoResolve: z.boolean().optional(),
+}).strict();
+
+export const WorktreeSyncSchema = WorktreeMutationSchema.extend({
+  remote: RemoteNameSchema.optional(),
+}).strict();
+
+export const WorktreeRebaseSchema = WorktreeMutationSchema.extend({
+  ontoBranch: BranchNameSchema,
+  remote: RemoteNameSchema.optional(),
+}).strict();
+
 export type WorktreeProjectRequest = z.infer<typeof WorktreeProjectSchema>;
 export type WorktreeFeatureRequest = z.infer<typeof WorktreeFeatureSchema>;
 export type WorktreeFileRequest = z.infer<typeof WorktreeFileSchema>;
@@ -171,3 +194,7 @@ export type WorktreeStashDropRequest = z.infer<typeof WorktreeStashDropSchema>;
 export type WorktreeCheckoutBranchRequest = z.infer<typeof WorktreeCheckoutBranchSchema>;
 export type WorktreeSwitchBranchRequest = z.infer<typeof WorktreeSwitchBranchSchema>;
 export type WorktreeDiscardRequest = z.infer<typeof WorktreeDiscardSchema>;
+export type WorktreePullRequest = z.infer<typeof WorktreePullSchema>;
+export type WorktreePushRequest = z.infer<typeof WorktreePushSchema>;
+export type WorktreeSyncRequest = z.infer<typeof WorktreeSyncSchema>;
+export type WorktreeRebaseRequest = z.infer<typeof WorktreeRebaseSchema>;
