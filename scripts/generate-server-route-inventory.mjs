@@ -355,8 +355,20 @@ function parseRouteGroupOwners(sourceText) {
   return owners;
 }
 
+function parseNestOwnedRoutePaths(sourceText) {
+  const declaration = sourceText.match(
+    /export const NEST_OWNED_ROUTE_PATHS = new Set<string>\(\[([\s\S]*?)\]\);/
+  );
+  if (!declaration) {
+    throw new Error('Could not parse NEST_OWNED_ROUTE_PATHS');
+  }
+  return new Set([...declaration[1].matchAll(/'([A-Z]+ \/api\/[^']+)'/g)].map((match) => match[1]));
+}
+
 async function generate() {
-  const routeGroupOwners = parseRouteGroupOwners(await readFile(ownershipSource, 'utf8'));
+  const ownershipText = await readFile(ownershipSource, 'utf8');
+  const routeGroupOwners = parseRouteGroupOwners(ownershipText);
+  const nestOwnedRoutePaths = parseNestOwnedRoutePaths(ownershipText);
   const files = await walk(routeRoot);
   const nestControllerFiles = (await walk(nestSourceRoot)).filter((file) =>
     file.endsWith('.controller.ts')
@@ -373,7 +385,10 @@ async function generate() {
   const activeEndpoints = endpoints.filter((endpoint) => {
     if (endpoint.owner !== 'legacy-express') return true;
     const apiGroup = endpoint.path.split('/')[2];
-    return routeGroupOwners.get(apiGroup) !== 'nest';
+    return (
+      routeGroupOwners.get(apiGroup) !== 'nest' &&
+      !nestOwnedRoutePaths.has(`${endpoint.method} ${endpoint.path}`)
+    );
   });
   sortEndpoints(activeEndpoints);
   return {

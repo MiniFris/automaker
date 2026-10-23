@@ -1303,13 +1303,12 @@
       "method": "POST",
       "path": "/api/git/details",
       "group": "git",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/git/index.ts",
-      "line": 29,
+      "source": "apps/server/src/modules/git/git.controller.ts",
+      "line": 59,
       "middleware": [
-        "validatePathParams('projectPath', 'filePath?')",
-        "createDetailsHandler()"
+        "GitController.details"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -1319,13 +1318,12 @@
       "method": "POST",
       "path": "/api/git/diffs",
       "group": "git",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/git/index.ts",
-      "line": 22,
+      "source": "apps/server/src/modules/git/git.controller.ts",
+      "line": 29,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createDiffsHandler()"
+        "GitController.diffs"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -1335,13 +1333,12 @@
       "method": "POST",
       "path": "/api/git/enhanced-status",
       "group": "git",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/git/index.ts",
-      "line": 30,
+      "source": "apps/server/src/modules/git/git.controller.ts",
+      "line": 69,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createEnhancedStatusHandler()"
+        "GitController.enhancedStatus"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -1351,28 +1348,27 @@
       "method": "POST",
       "path": "/api/git/environment",
       "group": "git",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/environment-git.ts",
-      "line": 39,
+      "source": "apps/server/src/modules/git/git.controller.ts",
+      "line": 22,
       "middleware": [
-        "environmentGitDispatcher(settings, 'git', isProjectBusy)"
+        "GitController.environment"
       ],
       "potentialMutation": true,
-      "validatesProjectPath": false,
+      "validatesProjectPath": true,
       "streamsResponse": false
     },
     {
       "method": "POST",
       "path": "/api/git/file-diff",
       "group": "git",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/git/index.ts",
-      "line": 23,
+      "source": "apps/server/src/modules/git/git.controller.ts",
+      "line": 39,
       "middleware": [
-        "validatePathParams('projectPath', 'filePath')",
-        "createFileDiffHandler()"
+        "GitController.fileDiff"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -1382,13 +1378,12 @@
       "method": "POST",
       "path": "/api/git/stage-files",
       "group": "git",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/git/index.ts",
-      "line": 24,
+      "source": "apps/server/src/modules/git/git.controller.ts",
+      "line": 49,
       "middleware": [
-        "validatePathParams('projectPath', 'files[]')",
-        "createStageFilesHandler()"
+        "GitController.stageFiles"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -3820,14 +3815,12 @@
       "method": "POST",
       "path": "/api/worktree/branch-commit-log",
       "group": "worktree",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "line": 310,
+      "source": "apps/server/src/modules/worktree/worktree.controller.ts",
+      "line": 127,
       "middleware": [
-        "validatePathParams('worktreePath')",
-        "requireValidWorktree",
-        "createBranchCommitLogHandler(events)"
+        "WorktreeController.branchCommitLog"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -3837,14 +3830,12 @@
       "method": "POST",
       "path": "/api/worktree/check-changes",
       "group": "worktree",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "line": 163,
+      "source": "apps/server/src/modules/worktree/worktree.controller.ts",
+      "line": 87,
       "middleware": [
-        "validatePathParams('worktreePath')",
-        "requireGitRepoOnly",
-        "createCheckChangesHandler()"
+        "WorktreeController.checkChanges"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -3888,14 +3879,12 @@
       "method": "POST",
       "path": "/api/worktree/commit-log",
       "group": "worktree",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "line": 260,
+      "source": "apps/server/src/modules/worktree/worktree.controller.ts",
+      "line": 117,
       "middleware": [
-        "validatePathParams('worktreePath')",
-        "requireValidWorktree",
-        "createCommitLogHandler(events)"
+        "WorktreeController.commitLog"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -4032,13 +4021,12 @@
       "method": "POST",
       "path": "/api/worktree/diffs",
       "group": "worktree",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "line": 95,
+      "source": "apps/server/src/modules/worktree/worktree.controller.ts",
+      "line": 67,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createDiffsHandler()"
+        "WorktreeController.diffs"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -4065,28 +4053,27 @@
       "method": "POST",
       "path": "/api/worktree/environment",
       "group": "worktree",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/environment-git.ts",
-      "line": 39,
+      "source": "apps/server/src/modules/worktree/worktree.controller.ts",
+      "line": 30,
       "middleware": [
-        "environmentGitDispatcher(settings, 'worktree', isProjectBusy)"
+        "WorktreeController.environment"
       ],
       "potentialMutation": true,
-      "validatesProjectPath": false,
+      "validatesProjectPath": true,
       "streamsResponse": false
     },
     {
       "method": "POST",
       "path": "/api/worktree/file-diff",
       "group": "worktree",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "line": 96,
+      "source": "apps/server/src/modules/worktree/worktree.controller.ts",
+      "line": 77,
       "middleware": [
-        "validatePathParams('projectPath', 'filePath')",
-        "createFileDiffHandler()"
+        "WorktreeController.fileDiff"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -4130,13 +4117,12 @@
       "method": "POST",
       "path": "/api/worktree/info",
       "group": "worktree",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "line": 92,
+      "source": "apps/server/src/modules/worktree/worktree.controller.ts",
+      "line": 47,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createInfoHandler()"
+        "WorktreeController.info"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -4209,14 +4195,12 @@
       "method": "POST",
       "path": "/api/worktree/list-branches",
       "group": "worktree",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "line": 169,
+      "source": "apps/server/src/modules/worktree/worktree.controller.ts",
+      "line": 97,
       "middleware": [
-        "validatePathParams('worktreePath')",
-        "requireValidWorktree",
-        "createListBranchesHandler()"
+        "WorktreeController.listBranches"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -4241,14 +4225,12 @@
       "method": "POST",
       "path": "/api/worktree/list-remotes",
       "group": "worktree",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "line": 244,
+      "source": "apps/server/src/modules/worktree/worktree.controller.ts",
+      "line": 107,
       "middleware": [
-        "validatePathParams('worktreePath')",
-        "requireValidWorktree",
-        "createListRemotesHandler()"
+        "WorktreeController.listRemotes"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -4258,15 +4240,15 @@
       "method": "POST",
       "path": "/api/worktree/list",
       "group": "worktree",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "line": 94,
+      "source": "apps/server/src/modules/worktree/worktree.controller.ts",
+      "line": 37,
       "middleware": [
-        "createListHandler()"
+        "WorktreeController.list"
       ],
       "potentialMutation": true,
-      "validatesProjectPath": false,
+      "validatesProjectPath": true,
       "streamsResponse": false
     },
     {
@@ -4599,13 +4581,12 @@
       "method": "POST",
       "path": "/api/worktree/status",
       "group": "worktree",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "line": 93,
+      "source": "apps/server/src/modules/worktree/worktree.controller.ts",
+      "line": 57,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createStatusHandler()"
+        "WorktreeController.status"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,

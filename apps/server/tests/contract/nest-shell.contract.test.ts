@@ -619,6 +619,63 @@ describe('Nest shell and legacy bridge contract', () => {
         result: { operation: 'stage', filesCount: 1 },
       });
 
+      const worktreeList = await fetch(`${baseUrl}/api/worktree/list`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ projectPath }),
+      });
+      expect(worktreeList.status).toBe(200);
+      expect(await worktreeList.json()).toMatchObject({
+        success: true,
+        worktrees: [
+          expect.objectContaining({
+            path: projectPath,
+            isMain: true,
+            executionEnvironment: { type: 'local', projectPath },
+          }),
+        ],
+      });
+
+      const worktreeChanges = await fetch(`${baseUrl}/api/worktree/check-changes`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ worktreePath: projectPath }),
+      });
+      expect(worktreeChanges.status).toBe(200);
+      expect(await worktreeChanges.json()).toMatchObject({
+        success: true,
+        result: { hasChanges: true, staged: ['tracked.txt'], totalFiles: 1 },
+        executionEnvironment: { type: 'local', projectPath },
+      });
+
+      const worktreeBranches = await fetch(`${baseUrl}/api/worktree/list-branches`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ worktreePath: projectPath, includeRemote: false }),
+      });
+      expect(worktreeBranches.status).toBe(200);
+      expect(await worktreeBranches.json()).toMatchObject({
+        success: true,
+        result: {
+          currentBranch: expect.any(String),
+          branches: [expect.objectContaining({ isCurrent: true, isRemote: false })],
+        },
+      });
+
+      const worktreeLog = await fetch(`${baseUrl}/api/worktree/commit-log`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ worktreePath: projectPath, limit: 1 }),
+      });
+      expect(worktreeLog.status).toBe(200);
+      expect(await worktreeLog.json()).toMatchObject({
+        success: true,
+        result: {
+          total: 1,
+          commits: [expect.objectContaining({ subject: 'initial', files: ['tracked.txt'] })],
+        },
+      });
+
       for (const route of ['notifications/list', 'event-history/list']) {
         const response = await fetch(`${baseUrl}/api/${route}`, {
           method: 'POST',

@@ -41,6 +41,17 @@ export const ROUTE_GROUP_OWNERS: Readonly<Record<string, RouteOwner>> = {
 };
 
 export const NEST_OWNED_ROUTE_PATHS = new Set<string>([
+  'POST /api/worktree/environment',
+  'POST /api/worktree/list',
+  'POST /api/worktree/info',
+  'POST /api/worktree/status',
+  'POST /api/worktree/diffs',
+  'POST /api/worktree/file-diff',
+  'POST /api/worktree/check-changes',
+  'POST /api/worktree/list-branches',
+  'POST /api/worktree/list-remotes',
+  'POST /api/worktree/commit-log',
+  'POST /api/worktree/branch-commit-log',
   'GET /api/settings/status',
   'GET /api/settings/global',
   'GET /api/settings/credentials',
