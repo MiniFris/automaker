@@ -38,6 +38,9 @@ import {
   WorktreeOpenTerminalSchema,
   WorktreeGenerateCommitMessageSchema,
   WorktreeGeneratePrDescriptionSchema,
+  WorktreePrInfoSchema,
+  WorktreeUpdatePrNumberSchema,
+  WorktreeCreatePrSchema,
   WorktreeDiscardSchema,
   WorktreeMutationSchema,
   WorktreeRemoteAddSchema,
@@ -77,6 +80,9 @@ import {
   type WorktreeOpenTerminalRequest,
   type WorktreeGenerateCommitMessageRequest,
   type WorktreeGeneratePrDescriptionRequest,
+  type WorktreePrInfoRequest,
+  type WorktreeUpdatePrNumberRequest,
+  type WorktreeCreatePrRequest,
   type WorktreeDiscardRequest,
   type WorktreeFeatureRequest,
   type WorktreeFileRequest,
@@ -547,6 +553,36 @@ export class WorktreeController {
     return this.cancelController(response, (controller) =>
       this.text.generatePrDescription(body, controller)
     );
+  }
+
+  @Post('pr-info')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath')
+  prInfo(
+    @Body(new ZodValidationPipe(WorktreePrInfoSchema)) body: WorktreePrInfoRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.prInfo(body, signal));
+  }
+
+  @Post('update-pr-number')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath', 'projectPath')
+  updatePrNumber(
+    @Body(new ZodValidationPipe(WorktreeUpdatePrNumberSchema)) body: WorktreeUpdatePrNumberRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.updatePrNumber(body, signal));
+  }
+
+  @Post('create-pr')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath', 'projectPath')
+  createPr(
+    @Body(new ZodValidationPipe(WorktreeCreatePrSchema)) body: WorktreeCreatePrRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.createPr(body, signal));
   }
 
   @Post('commit-log')

@@ -265,6 +265,26 @@ export const WorktreeGeneratePrDescriptionSchema = WorktreePathSchema.extend({
   baseBranch: BranchNameSchema.optional(),
 }).strict();
 
+export const WorktreePrInfoSchema = WorktreePathSchema.extend({
+  branchName: BranchNameSchema,
+}).strict();
+
+export const WorktreeUpdatePrNumberSchema = WorktreeMutationSchema.extend({
+  projectPath: ProjectPathSchema.optional(),
+  prNumber: z.coerce.number().int().positive().max(2_147_483_647),
+}).strict();
+
+export const WorktreeCreatePrSchema = WorktreeMutationSchema.extend({
+  projectPath: ProjectPathSchema.optional(),
+  commitMessage: z.string().trim().min(1).max(10_000).optional(),
+  prTitle: z.string().trim().min(1).max(1_024).optional(),
+  prBody: z.string().max(1_000_000).optional(),
+  baseBranch: BranchNameSchema.optional(),
+  draft: z.boolean().optional(),
+  remote: RemoteNameSchema.optional(),
+  targetRemote: RemoteNameSchema.optional(),
+}).strict();
+
 export type WorktreeProjectRequest = z.infer<typeof WorktreeProjectSchema>;
 export type WorktreeFeatureRequest = z.infer<typeof WorktreeFeatureSchema>;
 export type WorktreeFileRequest = z.infer<typeof WorktreeFileSchema>;
@@ -309,3 +329,6 @@ export type WorktreeGenerateCommitMessageRequest = z.infer<
 export type WorktreeGeneratePrDescriptionRequest = z.infer<
   typeof WorktreeGeneratePrDescriptionSchema
 >;
+export type WorktreePrInfoRequest = z.infer<typeof WorktreePrInfoSchema>;
+export type WorktreeUpdatePrNumberRequest = z.infer<typeof WorktreeUpdatePrNumberSchema>;
+export type WorktreeCreatePrRequest = z.infer<typeof WorktreeCreatePrSchema>;

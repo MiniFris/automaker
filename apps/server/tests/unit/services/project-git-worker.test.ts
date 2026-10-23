@@ -216,6 +216,33 @@ describe.skipIf(process.platform !== 'linux')('fixed target-side Git worker with
     expect(context.diff).toContain('context.txt');
     expect(context.commitLog).toContain('context commit');
   });
+  it('runs PR metadata and push operations on the selected target', async () => {
+    const bare = path.join(root, 'pr-remote.git');
+    await fs.appendFile(path.join(root, '.git', 'info', 'exclude'), '\npr-remote.git/\n');
+    expect((await environment.exec(`git init --bare -q ${bare}`, active())).exitCode).toBe(0);
+    expect((await environment.exec(`git remote add origin ${bare}`, active())).exitCode).toBe(0);
+    expect((await run('checkout-branch', { branchName: 'feature/pr' })).success).toBe(true);
+    await fs.writeFile(path.join(root, 'pr.txt'), 'pull request\n');
+
+    const created = await run('create-pr', {
+      commitMessage: 'prepare pr',
+      prTitle: 'Prepare PR',
+      baseBranch: 'main',
+      remote: 'origin',
+    });
+    if (!created.success) throw new Error(JSON.stringify(created));
+    expect(created.result).toMatchObject({
+      branch: 'feature/pr',
+      committed: true,
+      pushed: true,
+    });
+    const tracked = await run('update-pr-number', { prNumber: 42 });
+    expect(tracked.result).toMatchObject({ branch: 'feature/pr', prInfo: { number: 42 } });
+    expect(await run('pr-info', { branchName: 'feature/pr' })).toMatchObject({
+      success: true,
+      result: { hasPR: false },
+    });
+  });
   it('lists cached remote refs without running fetch or credential helpers', async () => {
     await environment.exec(
       "git remote add origin https://example.invalid/repo && git config credential.helper '!touch credential-leak'",

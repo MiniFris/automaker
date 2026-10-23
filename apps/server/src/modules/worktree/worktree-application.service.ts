@@ -27,6 +27,9 @@ import type {
   WorktreeInitScriptQuery,
   WorktreeInitScriptWriteRequest,
   WorktreeRunInitScriptRequest,
+  WorktreePrInfoRequest,
+  WorktreeUpdatePrNumberRequest,
+  WorktreeCreatePrRequest,
   WorktreeDiscardRequest,
   WorktreeFeatureRequest,
   WorktreeFileRequest,
@@ -321,6 +324,18 @@ export class WorktreeApplicationService {
       message: 'No migration needed - .automaker is stored in project directory',
       path: getAutomakerDir(input.projectPath),
     };
+  }
+
+  prInfo(input: WorktreePrInfoRequest, signal: AbortSignal) {
+    return this.runPath('pr-info', input.worktreePath, input, signal);
+  }
+
+  updatePrNumber(input: WorktreeUpdatePrNumberRequest, signal: AbortSignal) {
+    return this.runPath('update-pr-number', input.worktreePath, input, signal);
+  }
+
+  createPr(input: WorktreeCreatePrRequest, signal: AbortSignal) {
+    return this.runPath('create-pr', input.worktreePath, input, signal);
   }
 
   private startInitScript(input: WorktreeRunInitScriptRequest) {
