@@ -31,6 +31,7 @@ import { IdeationModule } from './modules/ideation/ideation.module.js';
 import { ExecutionModule } from './modules/execution/execution.module.js';
 import { GitModule } from './modules/git/git.module.js';
 import { WorktreeModule } from './modules/worktree/worktree.module.js';
+import { ProvidersModule } from './modules/providers/providers.module.js';
 
 @Module({})
 export class AppModule {
@@ -53,6 +54,7 @@ export class AppModule {
         SecurityModule,
         ValidationModule,
         SettingsModule,
+        ProvidersModule,
         ProjectsModule,
         FilesModule,
         ContextModule,

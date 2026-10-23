@@ -3,19 +3,20 @@ import { toDirectModelId } from '@automaker/types';
 
 import { RUNTIME_CONFIG, type RuntimeConfig } from '../../core/config/index.js';
 import { SettingsService } from '../../services/settings-service.js';
-import { ProviderFactory } from '../../providers/provider-factory.js';
+import { ProviderRegistry } from '../providers/provider-registry.service.js';
 
 @Injectable()
 export class ModelsCatalogService {
   constructor(
     @Inject(SettingsService) private readonly settingsService: SettingsService,
-    @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig
+    @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig,
+    @Inject(ProviderRegistry) private readonly providers: ProviderRegistry
   ) {}
 
   async listAvailable(): Promise<Record<string, unknown>> {
     // This is intentionally metadata-only. Provider availability probes belong to
     // getProviders() and are never launched while rendering the model catalog.
-    const models = ProviderFactory.getAllAvailableModels();
+    const models = this.providers.allModels();
     const global = await this.settingsService.getGlobalSettings();
     for (const endpoint of global.openaiCompatibleEndpoints ?? []) {
       if (!endpoint.enabled || endpoint.protocol !== 'chat-completions') continue;
@@ -37,7 +38,7 @@ export class ModelsCatalogService {
   }
 
   async getProviders(): Promise<Record<string, unknown>> {
-    const statuses = await ProviderFactory.checkAllProviders();
+    const statuses = await this.providers.statuses();
     const global = await this.settingsService.getGlobalSettings();
     return {
       success: true,

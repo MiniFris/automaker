@@ -12,18 +12,18 @@ import {
   type TemplateCommandRunner,
 } from '../../../src/modules/templates/template-command.runner.js';
 import { TemplatesService } from '../../../src/modules/templates/templates.service.js';
-import { ProviderFactory } from '../../../src/providers/provider-factory.js';
+import { ProviderRegistry } from '../../../src/modules/providers/provider-registry.service.js';
 import { SettingsService } from '../../../src/services/settings-service.js';
 
 describe('migrated edge Nest modules', () => {
   afterEach(() => vi.restoreAllMocks());
 
   it('builds the model catalog without launching provider probes', async () => {
-    const checkProviders = vi.spyOn(ProviderFactory, 'checkAllProviders');
-    vi.spyOn(ProviderFactory, 'getAllAvailableModels').mockReturnValue([]);
+    const providers = { allModels: vi.fn().mockReturnValue([]), statuses: vi.fn() };
     const module = await Test.createTestingModule({
       providers: [
         ModelsCatalogService,
+        { provide: ProviderRegistry, useValue: providers },
         {
           provide: SettingsService,
           useValue: { getGlobalSettings: vi.fn().mockResolvedValue({}) },
@@ -39,7 +39,7 @@ describe('migrated edge Nest modules', () => {
       success: true,
       models: [],
     });
-    expect(checkProviders).not.toHaveBeenCalled();
+    expect(providers.statuses).not.toHaveBeenCalled();
     await module.close();
   });
 
