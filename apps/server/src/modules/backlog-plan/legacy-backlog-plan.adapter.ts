@@ -6,12 +6,14 @@ import { generateBacklogPlan } from '../../routes/backlog-plan/generate-plan.js'
 import { SettingsService } from '../../services/settings-service.js';
 import type { BacklogPlanStore, BacklogPlanWorkflow } from './backlog-plan.ports.js';
 import type { BacklogGenerateRequest } from './backlog-plan.schemas.js';
+import { ProviderRegistry } from '../providers/provider-registry.service.js';
 
 @Injectable()
 export class LegacyBacklogPlanAdapter implements BacklogPlanWorkflow, BacklogPlanStore {
   constructor(
     @Inject(LEGACY_EVENT_EMITTER) private readonly events: EventEmitter,
-    @Inject(SettingsService) private readonly settings: SettingsService
+    @Inject(SettingsService) private readonly settings: SettingsService,
+    @Inject(ProviderRegistry) private readonly providers: ProviderRegistry
   ) {}
 
   generate(input: BacklogGenerateRequest, abortController: AbortController) {
@@ -23,7 +25,8 @@ export class LegacyBacklogPlanAdapter implements BacklogPlanWorkflow, BacklogPla
       this.settings,
       input.model,
       input.branchName,
-      input.providerId
+      input.providerId,
+      this.providers
     );
   }
 

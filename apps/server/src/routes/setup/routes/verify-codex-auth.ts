@@ -7,6 +7,7 @@ import type { SettingsService } from '../../../services/settings-service.js';
 import { createLogger } from '@automaker/utils';
 import { CODEX_MODEL_MAP, modelTimeout, providerModelTimeouts } from '@automaker/types';
 import { ProviderFactory } from '../../../providers/provider-factory.js';
+import type { ProviderRegistry } from '../../../modules/providers/provider-registry.service.js';
 import { getApiKey } from '../common.js';
 import { getCodexAuthIndicators } from '@automaker/platform';
 import {
@@ -80,7 +81,10 @@ function isRateLimitError(text: string): boolean {
   return RATE_LIMIT_PATTERNS.some((pattern) => lowerText.includes(pattern));
 }
 
-export function createVerifyCodexAuthHandler(settingsService?: SettingsService) {
+export function createVerifyCodexAuthHandler(
+  settingsService?: SettingsService,
+  providerRegistry?: ProviderRegistry
+) {
   return async (req: Request, res: Response): Promise<void> => {
     // In E2E/CI mock mode, skip real API calls
     if (process.env.AUTOMAKER_MOCK_AGENT === 'true') {
@@ -168,7 +172,9 @@ export function createVerifyCodexAuthHandler(settingsService?: SettingsService) 
 
         // Use Codex provider explicitly (not ProviderFactory.getProviderForModel)
         // because Cursor also supports GPT models and has higher priority
-        const provider = ProviderFactory.getProviderByName('codex');
+        const provider = providerRegistry
+          ? providerRegistry.byName('codex')
+          : ProviderFactory.getProviderByName('codex');
         if (!provider) {
           throw new Error('Codex provider not available');
         }

@@ -26,6 +26,7 @@ import { stripProviderPrefix, isDirectModel } from '@automaker/types';
 import type { ExecuteOptions } from '@automaker/types';
 import type { SettingsService } from '../services/settings-service.js';
 import { prepareDirectExecution } from './openai-compatible/execution.js';
+import type { ProviderRegistry } from '../modules/providers/provider-registry.service.js';
 
 /**
  * Options for simple query execution
@@ -120,9 +121,14 @@ const DEFAULT_MODEL = 'claude-sonnet-4-6';
  * console.log(result.text); // "Add user authentication"
  * ```
  */
-export async function simpleQuery(options: SimpleQueryOptions): Promise<SimpleQueryResult> {
+export async function simpleQuery(
+  options: SimpleQueryOptions,
+  providerRegistry?: ProviderRegistry
+): Promise<SimpleQueryResult> {
   const model = options.model || DEFAULT_MODEL;
-  const provider = ProviderFactory.getProviderForModel(model);
+  const provider = providerRegistry
+    ? providerRegistry.providerForModel(model)
+    : ProviderFactory.getProviderForModel(model);
   const bareModel = stripProviderPrefix(model);
 
   let responseText = '';
@@ -211,9 +217,14 @@ export async function simpleQuery(options: SimpleQueryOptions): Promise<SimpleQu
  * });
  * ```
  */
-export async function streamingQuery(options: StreamingQueryOptions): Promise<SimpleQueryResult> {
+export async function streamingQuery(
+  options: StreamingQueryOptions,
+  providerRegistry?: ProviderRegistry
+): Promise<SimpleQueryResult> {
   const model = options.model || DEFAULT_MODEL;
-  const provider = ProviderFactory.getProviderForModel(model);
+  const provider = providerRegistry
+    ? providerRegistry.providerForModel(model)
+    : ProviderFactory.getProviderForModel(model);
   const bareModel = stripProviderPrefix(model);
 
   let responseText = '';

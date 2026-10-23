@@ -50,6 +50,7 @@ import { createStoreApiKeyHandler } from '../../routes/setup/routes/store-api-ke
 import { createVerifyClaudeAuthHandler } from '../../routes/setup/routes/verify-claude-auth.js';
 import { createVerifyCodexAuthHandler } from '../../routes/setup/routes/verify-codex-auth.js';
 import { SettingsService } from '../../services/settings-service.js';
+import { ProviderRegistry } from './provider-registry.service.js';
 
 export type SetupHandlerName = keyof ReturnType<SetupHandlersService['createHandlers']>;
 
@@ -61,8 +62,11 @@ export type SetupHandlerName = keyof ReturnType<SetupHandlersService['createHand
 export class SetupHandlersService {
   private readonly handlers: Record<string, RequestHandler>;
 
-  constructor(@Inject(SettingsService) settings: SettingsService) {
-    this.handlers = this.createHandlers(settings);
+  constructor(
+    @Inject(SettingsService) settings: SettingsService,
+    @Inject(ProviderRegistry) providers: ProviderRegistry
+  ) {
+    this.handlers = this.createHandlers(settings, providers);
   }
 
   run(name: SetupHandlerName, request: Request, response: Response): Promise<void> {
@@ -74,7 +78,7 @@ export class SetupHandlersService {
     );
   }
 
-  private createHandlers(settings: SettingsService) {
+  private createHandlers(settings: SettingsService, providers: ProviderRegistry) {
     return {
       claudeStatus: createClaudeStatusHandler(),
       installClaude: createInstallClaudeHandler(),
@@ -85,7 +89,7 @@ export class SetupHandlersService {
       apiKeys: createApiKeysHandler(),
       platform: createPlatformHandler(),
       verifyClaudeAuth: createVerifyClaudeAuthHandler(settings),
-      verifyCodexAuth: createVerifyCodexAuthHandler(settings),
+      verifyCodexAuth: createVerifyCodexAuthHandler(settings, providers),
       ghStatus: createGhStatusHandler(),
       cursorStatus: createCursorStatusHandler(),
       authCursor: createAuthCursorHandler(),
