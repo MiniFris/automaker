@@ -655,15 +655,15 @@
       "method": "POST",
       "path": "/api/enhance-prompt",
       "group": "enhance-prompt",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/enhance-prompt/index.ts",
-      "line": 21,
+      "source": "apps/server/src/modules/prompt-enhancement/prompt-enhancement.controller.ts",
+      "line": 26,
       "middleware": [
-        "createEnhanceHandler(settingsService)"
+        "PromptEnhancementController.enhance"
       ],
       "potentialMutation": true,
-      "validatesProjectPath": false,
+      "validatesProjectPath": true,
       "streamsResponse": false
     },
     {

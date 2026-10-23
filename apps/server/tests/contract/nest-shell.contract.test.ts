@@ -83,6 +83,7 @@ describe('Nest shell and legacy bridge contract', () => {
     expect(ROUTE_GROUP_OWNERS.setup).toBe('nest');
     expect(ROUTE_GROUP_OWNERS.pipeline).toBe('nest');
     expect(ROUTE_GROUP_OWNERS.mcp).toBe('nest');
+    expect(ROUTE_GROUP_OWNERS['enhance-prompt']).toBe('nest');
     expect(ROUTE_GROUP_OWNERS.claude).toBe('nest');
     expect(ROUTE_GROUP_OWNERS.codex).toBe('nest');
     expect(ROUTE_GROUP_OWNERS.gemini).toBe('nest');

@@ -43,7 +43,6 @@ import {
   runWithCorrelationContext,
 } from './core/observability/request-context.js';
 import { createAutoModeRoutes } from './routes/auto-mode/index.js';
-import { createEnhancePromptRoutes } from './routes/enhance-prompt/index.js';
 import {
   createTerminalRoutes,
   validateTerminalToken,
@@ -591,7 +590,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   app.use('/api', authMiddleware);
 
   app.use('/api/auto-mode', createAutoModeRoutes(autoModeService));
-  app.use('/api/enhance-prompt', createEnhancePromptRoutes(settingsService));
   app.use('/api/terminal', createTerminalRoutes());
   app.use('/api/github', createGitHubRoutes(events, settingsService));
 

@@ -35,6 +35,7 @@ import { ProvidersModule } from './modules/providers/providers.module.js';
 import { AgentsModule } from './modules/agents/agents.module.js';
 import { PipelineModule } from './modules/pipeline/pipeline.module.js';
 import { MCPModule } from './modules/mcp/mcp.module.js';
+import { PromptEnhancementModule } from './modules/prompt-enhancement/prompt-enhancement.module.js';
 
 @Module({})
 export class AppModule {
@@ -61,6 +62,7 @@ export class AppModule {
         AgentsModule,
         PipelineModule,
         MCPModule,
+        PromptEnhancementModule,
         ProjectsModule,
         FilesModule,
         ContextModule,
