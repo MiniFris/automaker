@@ -20,12 +20,15 @@ import {
   StartTestsSchema,
   StopTestsSchema,
   TestLogsSchema,
+  WorktreeCheckoutBranchSchema,
+  WorktreeDiscardSchema,
   WorktreeMutationSchema,
   WorktreeRemoteAddSchema,
   WorktreeStashApplySchema,
   WorktreeStashDropSchema,
   WorktreeStashPushSchema,
   WorktreeTrackingSchema,
+  WorktreeSwitchBranchSchema,
   WorktreeBranchesSchema,
   WorktreeBranchCommitLogSchema,
   WorktreeCommitLogSchema,
@@ -39,6 +42,8 @@ import {
   type WorktreeBranchCommitLogRequest,
   type WorktreeCommitLogRequest,
   type WorktreeCommitRequest,
+  type WorktreeCheckoutBranchRequest,
+  type WorktreeDiscardRequest,
   type WorktreeFeatureRequest,
   type WorktreeFileRequest,
   type WorktreePathRequest,
@@ -55,6 +60,7 @@ import {
   type WorktreeStashDropRequest,
   type WorktreeStashPushRequest,
   type WorktreeTrackingRequest,
+  type WorktreeSwitchBranchRequest,
 } from './worktree.schemas.js';
 
 @Controller('worktree')
@@ -250,6 +256,37 @@ export class WorktreeController {
     @Res({ passthrough: true }) response: Response
   ) {
     return this.cancel(response, (signal) => this.worktrees.stashDrop(body, signal));
+  }
+
+  @Post('checkout-branch')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath')
+  checkoutBranch(
+    @Body(new ZodValidationPipe(WorktreeCheckoutBranchSchema))
+    body: WorktreeCheckoutBranchRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.checkoutBranch(body, signal));
+  }
+
+  @Post('switch-branch')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath')
+  switchBranch(
+    @Body(new ZodValidationPipe(WorktreeSwitchBranchSchema)) body: WorktreeSwitchBranchRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.switchBranch(body, signal));
+  }
+
+  @Post('discard-changes')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath')
+  discardChanges(
+    @Body(new ZodValidationPipe(WorktreeDiscardSchema)) body: WorktreeDiscardRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.discardChanges(body, signal));
   }
 
   @Post('commit-log')

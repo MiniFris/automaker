@@ -45,6 +45,9 @@ export const gitWriteActions = new Set([
   'stash-push',
   'stash-apply',
   'stash-drop',
+  'checkout-branch',
+  'switch-branch',
+  'discard-changes',
 ]);
 export function workspaceAlias(binding: ExecutionEnvironmentBinding) {
   const root = binding.ssh?.remotePath ?? binding.projectPath;

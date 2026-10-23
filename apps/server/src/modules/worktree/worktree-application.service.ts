@@ -14,6 +14,8 @@ import type {
   WorktreeBranchCommitLogRequest,
   WorktreeCommitLogRequest,
   WorktreeCommitRequest,
+  WorktreeCheckoutBranchRequest,
+  WorktreeDiscardRequest,
   WorktreeFeatureRequest,
   WorktreeFileRequest,
   WorktreePathRequest,
@@ -25,6 +27,7 @@ import type {
   WorktreeStashPushRequest,
   WorktreeStageFilesRequest,
   WorktreeTrackingRequest,
+  WorktreeSwitchBranchRequest,
 } from './worktree.schemas.js';
 
 @Injectable()
@@ -113,6 +116,18 @@ export class WorktreeApplicationService {
 
   stashDrop(input: WorktreeStashDropRequest, signal: AbortSignal) {
     return this.runPath('stash-drop', input.worktreePath, input, signal);
+  }
+
+  checkoutBranch(input: WorktreeCheckoutBranchRequest, signal: AbortSignal) {
+    return this.runPath('checkout-branch', input.worktreePath, input, signal);
+  }
+
+  switchBranch(input: WorktreeSwitchBranchRequest, signal: AbortSignal) {
+    return this.runPath('switch-branch', input.worktreePath, input, signal);
+  }
+
+  discardChanges(input: WorktreeDiscardRequest, signal: AbortSignal) {
+    return this.runPath('discard-changes', input.worktreePath, input, signal);
   }
 
   async commitLog(input: WorktreeCommitLogRequest, signal: AbortSignal) {

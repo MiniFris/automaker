@@ -753,6 +753,38 @@ describe('Nest shell and legacy bridge contract', () => {
         result: { dropped: true, stashIndex: 0 },
       });
 
+      const { stdout: originalBranchOutput } = await execFileAsync(
+        'git',
+        ['branch', '--show-current'],
+        { cwd: projectPath }
+      );
+      const originalBranch = originalBranchOutput.trim();
+      const checkoutBranch = await fetch(`${baseUrl}/api/worktree/checkout-branch`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          worktreePath: projectPath,
+          branchName: 'contract/nest-branch',
+          baseBranch: originalBranch,
+        }),
+      });
+      expect(checkoutBranch.status).toBe(200);
+      expect(await checkoutBranch.json()).toMatchObject({
+        success: true,
+        result: { previousBranch: originalBranch, newBranch: 'contract/nest-branch' },
+      });
+
+      const switchBranch = await fetch(`${baseUrl}/api/worktree/switch-branch`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ worktreePath: projectPath, branchName: originalBranch }),
+      });
+      expect(switchBranch.status).toBe(200);
+      expect(await switchBranch.json()).toMatchObject({
+        success: true,
+        result: { previousBranch: 'contract/nest-branch', currentBranch: originalBranch },
+      });
+
       const devServers = await fetch(`${baseUrl}/api/worktree/list-dev-servers`, {
         method: 'POST',
         headers,

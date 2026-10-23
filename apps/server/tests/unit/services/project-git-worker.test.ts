@@ -150,6 +150,36 @@ describe.skipIf(process.platform !== 'linux')('fixed target-side Git worker with
       result: { remoteName: 'upstream', fetched: false },
     });
   });
+  it('creates and switches branches from cached refs without fetching', async () => {
+    const created = await run('checkout-branch', {
+      branchName: 'feature/branch-api',
+      baseBranch: 'main',
+    });
+    expect(created.result).toMatchObject({
+      previousBranch: 'main',
+      newBranch: 'feature/branch-api',
+    });
+    const switched = await run('switch-branch', { branchName: 'main' });
+    expect(switched.result).toMatchObject({
+      previousBranch: 'feature/branch-api',
+      currentBranch: 'main',
+    });
+  });
+  it('discards selected paths before an explicit full cleanup', async () => {
+    await fs.writeFile(path.join(root, 'source.txt'), 'changed\n');
+    await fs.writeFile(path.join(root, 'untracked.txt'), 'untracked\n');
+    expect((await run('discard-changes', { files: ['source.txt'] })).result).toMatchObject({
+      discarded: true,
+      filesDiscarded: 1,
+      filesRemaining: 1,
+    });
+    expect(await fs.readFile(path.join(root, 'source.txt'), 'utf8')).toBe('base\n');
+    expect((await run('discard-changes')).result).toMatchObject({
+      discarded: true,
+      filesRemaining: 0,
+    });
+    await expect(fs.stat(path.join(root, 'untracked.txt'))).rejects.toThrow();
+  });
   it('does not invoke external diff commands or fsmonitor hooks', async () => {
     await environment.exec(
       "git config diff.external 'touch diff-leak' && git config core.fsmonitor 'touch monitor-leak'",
