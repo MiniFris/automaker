@@ -48,6 +48,7 @@ import {
   logger,
 } from './validation-common.js';
 import type { SettingsService } from '../../../services/settings-service.js';
+import type { ProviderRegistry } from '../../../modules/providers/provider-registry.service.js';
 
 /**
  * Request body for issue validation
@@ -93,7 +94,8 @@ async function runValidation(
   comments?: ValidationComment[],
   linkedPRs?: ValidationLinkedPR[],
   thinkingLevel?: ThinkingLevel,
-  reasoningEffort?: ReasoningEffort
+  reasoningEffort?: ReasoningEffort,
+  providerRegistry?: ProviderRegistry
 ): Promise<void> {
   // Emit start event
   const startEvent: IssueValidationEvent = {
@@ -205,38 +207,41 @@ ${basePrompt}`;
     logger.info(`Using model: ${effectiveModel}`);
 
     // Use streamingQuery with event callbacks
-    const result = await streamingQuery({
-      settingsService,
-      providerId,
-      prompt: finalPrompt,
-      model: effectiveModel,
-      cwd: projectPath,
-      systemPrompt: useStructuredOutput ? issueValidationSystemPrompt : undefined,
-      abortController,
-      thinkingLevel: effectiveThinkingLevel,
-      reasoningEffort: effectiveReasoningEffort,
-      readOnly: true, // Issue validation only reads code, doesn't write
-      settingSources: autoLoadClaudeMd ? ['user', 'project', 'local'] : undefined,
-      claudeCompatibleProvider, // Pass provider for alternative endpoint configuration
-      credentials, // Pass credentials for resolving 'credentials' apiKeySource
-      outputFormat: useStructuredOutput
-        ? {
-            type: 'json_schema',
-            schema: issueValidationSchema as Record<string, unknown>,
-          }
-        : undefined,
-      onText: (text) => {
-        responseText += text;
-        // Emit progress event
-        const progressEvent: IssueValidationEvent = {
-          type: 'issue_validation_progress',
-          issueNumber,
-          content: text,
-          projectPath,
-        };
-        events.emit('issue-validation:event', progressEvent);
+    const result = await streamingQuery(
+      {
+        settingsService,
+        providerId,
+        prompt: finalPrompt,
+        model: effectiveModel,
+        cwd: projectPath,
+        systemPrompt: useStructuredOutput ? issueValidationSystemPrompt : undefined,
+        abortController,
+        thinkingLevel: effectiveThinkingLevel,
+        reasoningEffort: effectiveReasoningEffort,
+        readOnly: true, // Issue validation only reads code, doesn't write
+        settingSources: autoLoadClaudeMd ? ['user', 'project', 'local'] : undefined,
+        claudeCompatibleProvider, // Pass provider for alternative endpoint configuration
+        credentials, // Pass credentials for resolving 'credentials' apiKeySource
+        outputFormat: useStructuredOutput
+          ? {
+              type: 'json_schema',
+              schema: issueValidationSchema as Record<string, unknown>,
+            }
+          : undefined,
+        onText: (text) => {
+          responseText += text;
+          // Emit progress event
+          const progressEvent: IssueValidationEvent = {
+            type: 'issue_validation_progress',
+            issueNumber,
+            content: text,
+            projectPath,
+          };
+          events.emit('issue-validation:event', progressEvent);
+        },
       },
-    });
+      providerRegistry
+    );
 
     // Clear timeout
     clearTimeout(timeoutId);
@@ -309,7 +314,8 @@ ${basePrompt}`;
  */
 export function createValidateIssueHandler(
   events: EventEmitter,
-  settingsService?: SettingsService
+  settingsService?: SettingsService,
+  providerRegistry?: ProviderRegistry
 ) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
@@ -420,7 +426,8 @@ export function createValidateIssueHandler(
         validationComments,
         validationLinkedPRs,
         thinkingLevel,
-        reasoningEffort
+        reasoningEffort,
+        providerRegistry
       )
         .catch(() => {
           // Error is already handled inside runValidation (event emitted)

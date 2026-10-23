@@ -17,6 +17,7 @@ import {
   createValidationStopHandler,
 } from '../../routes/github/routes/validation-endpoints.js';
 import { SettingsService } from '../../services/settings-service.js';
+import { ProviderRegistry } from '../providers/provider-registry.service.js';
 
 export type GithubHandlerName = keyof ReturnType<GithubHandlersService['createHandlers']>;
 
@@ -30,9 +31,10 @@ export class GithubHandlersService {
 
   constructor(
     @Inject(LEGACY_EVENT_EMITTER) events: EventEmitter,
-    @Inject(SettingsService) settings: SettingsService
+    @Inject(SettingsService) settings: SettingsService,
+    @Inject(ProviderRegistry) providers: ProviderRegistry
   ) {
-    this.handlers = this.createHandlers(events, settings);
+    this.handlers = this.createHandlers(events, settings, providers);
   }
 
   run(name: GithubHandlerName, request: Request, response: Response): Promise<void> {
@@ -43,7 +45,11 @@ export class GithubHandlersService {
     );
   }
 
-  private createHandlers(events: EventEmitter, settings: SettingsService) {
+  private createHandlers(
+    events: EventEmitter,
+    settings: SettingsService,
+    providers: ProviderRegistry
+  ) {
     return {
       checkRemote: createCheckGitHubRemoteHandler(),
       issues: createListIssuesHandler(),
@@ -51,7 +57,7 @@ export class GithubHandlersService {
       issueComments: createListCommentsHandler(),
       prReviewComments: createListPRReviewCommentsHandler(),
       resolvePrComment: createResolvePRCommentHandler(),
-      validateIssue: createValidateIssueHandler(events, settings),
+      validateIssue: createValidateIssueHandler(events, settings, providers),
       validationStatus: createValidationStatusHandler(),
       validationStop: createValidationStopHandler(),
       validations: createGetValidationsHandler(),

@@ -3,7 +3,7 @@ import { GithubHandlersService } from '../../../src/modules/github/github-handle
 
 describe('GithubHandlersService', () => {
   it('runs validation state queries behind the Nest boundary', async () => {
-    const service = new GithubHandlersService({ emit: vi.fn() } as never, {} as never);
+    const service = new GithubHandlersService({ emit: vi.fn() } as never, {} as never, {} as never);
     const json = vi.fn();
     const response = {
       json,
