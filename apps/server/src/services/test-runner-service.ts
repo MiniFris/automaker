@@ -661,22 +661,5 @@ export function getTestRunnerService(): TestRunnerService {
   return testRunnerServiceInstance;
 }
 
-// Cleanup on process exit
-process.on('SIGTERM', () => {
-  if (testRunnerServiceInstance) {
-    testRunnerServiceInstance.cleanup().catch((err) => {
-      logger.error('Cleanup failed on SIGTERM:', err);
-    });
-  }
-});
-
-process.on('SIGINT', () => {
-  if (testRunnerServiceInstance) {
-    testRunnerServiceInstance.cleanup().catch((err) => {
-      logger.error('Cleanup failed on SIGINT:', err);
-    });
-  }
-});
-
 // Export the class for testing purposes
 export { TestRunnerService };

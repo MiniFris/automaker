@@ -1,13 +1,13 @@
 /**
- * Transitional Automaker service graph
+ * Transitional startup and shutdown tasks for the Nest application
  *
- * Constructs stateful services that are being moved into native Nest providers.
+ * Stateful dependencies are supplied by Nest; this adapter only coordinates lifecycle tasks.
  */
 
 import type { Server } from 'node:http';
 import dotenv from 'dotenv';
 
-import { createEventEmitter, type EventEmitter } from './lib/events.js';
+import type { EventEmitter } from './lib/events.js';
 import { initAllowedPaths, getClaudeAuthIndicators } from '@automaker/platform';
 import { createLogger, setLogLevel, LogLevel } from '@automaker/utils';
 
@@ -23,34 +23,32 @@ const LOG_LEVEL_MAP: Record<string, LogLevel> = {
   debug: LogLevel.DEBUG,
 };
 import { setRequestLoggingEnabled } from './lib/request-logging-state.js';
-import { LoginAttemptStore } from './core/auth/login-attempt.store.js';
-import { ProviderConnectionRepository } from './modules/providers/provider-connection.repository.js';
-import { createProviderRegistrations } from './modules/providers/provider-registrations.js';
-import { ProviderRegistry } from './modules/providers/provider-registry.service.js';
-import { ToolPolicyService } from './modules/providers/tool-policy.service.js';
+import type { LoginAttemptStore } from './core/auth/login-attempt.store.js';
+import type { ProviderConnectionRepository } from './modules/providers/provider-connection.repository.js';
+import type { ProviderRegistry } from './modules/providers/provider-registry.service.js';
 import {
   createCorrelationId,
   runWithCorrelationContext,
 } from './core/observability/request-context.js';
-import { AgentService } from './services/agent-service.js';
-import { FeatureLoader } from './services/feature-loader.js';
-import { AutoModeServiceCompat } from './services/auto-mode/index.js';
-import { TerminalService } from './services/terminal-service.js';
-import { SettingsService } from './services/settings-service.js';
-import { ClaudeUsageService } from './services/claude-usage-service.js';
-import { CodexUsageService } from './services/codex-usage-service.js';
-import { CodexAppServerService } from './services/codex-app-server-service.js';
-import { CodexModelCacheService } from './services/codex-model-cache-service.js';
-import { ZaiUsageService } from './services/zai-usage-service.js';
-import { GeminiUsageService } from './services/gemini-usage-service.js';
-import { MCPTestService } from './services/mcp-test-service.js';
-import { pipelineService as defaultPipelineService } from './services/pipeline-service.js';
-import { IdeationService } from './services/ideation-service.js';
-import { getDevServerService } from './services/dev-server-service.js';
-import { EventHookService } from './services/event-hook-service.js';
-import { NotificationService } from './services/notification-service.js';
-import { EventHistoryService } from './services/event-history-service.js';
-import { getTestRunnerService } from './services/test-runner-service.js';
+import type { AgentService } from './services/agent-service.js';
+import type { FeatureLoader } from './services/feature-loader.js';
+import type { AutoModeServiceCompat } from './services/auto-mode/index.js';
+import type { TerminalService } from './services/terminal-service.js';
+import type { SettingsService } from './services/settings-service.js';
+import type { ClaudeUsageService } from './services/claude-usage-service.js';
+import type { CodexUsageService } from './services/codex-usage-service.js';
+import type { CodexAppServerService } from './services/codex-app-server-service.js';
+import type { CodexModelCacheService } from './services/codex-model-cache-service.js';
+import type { ZaiUsageService } from './services/zai-usage-service.js';
+import type { GeminiUsageService } from './services/gemini-usage-service.js';
+import type { MCPTestService } from './services/mcp-test-service.js';
+import type { PipelineService } from './services/pipeline-service.js';
+import type { IdeationService } from './services/ideation-service.js';
+import type { DevServerService } from './services/dev-server-service.js';
+import type { EventHookService } from './services/event-hook-service.js';
+import type { NotificationService } from './services/notification-service.js';
+import type { EventHistoryService } from './services/event-history-service.js';
+import type { TestRunnerService } from './services/test-runner-service.js';
 import { getManagedTestRunnerService } from './services/execution-environment/test-runner.js';
 import { getManagedDevServerService } from './services/execution-environment/dev-server.js';
 
@@ -197,12 +195,12 @@ export interface LegacyServiceOverrides {
   geminiUsageService: GeminiUsageService;
   mcpTestService: MCPTestService;
   ideationService: IdeationService;
-  devServerService: ReturnType<typeof getDevServerService>;
+  devServerService: DevServerService;
   notificationService: NotificationService;
   eventHistoryService: EventHistoryService;
-  testRunnerService: ReturnType<typeof getTestRunnerService>;
+  testRunnerService: TestRunnerService;
   terminalService: TerminalService;
-  pipelineService: typeof defaultPipelineService;
+  pipelineService: PipelineService;
   eventHookService: EventHookService;
   loginAttemptStore: LoginAttemptStore;
   providerConnections: ProviderConnectionRepository;
@@ -230,76 +228,24 @@ export interface LegacyApplication {
   installExceptionHandlers(): void;
 }
 
-export function createLegacyApplication(options: LegacyApplicationOptions): LegacyApplication {
+export function createLegacyApplication(
+  options: Omit<LegacyApplicationOptions, 'services'> & { services: LegacyServiceOverrides }
+): LegacyApplication {
   const dataDir = options.dataDir ?? DATA_DIR;
-  const workingDirectory = options.workingDirectory ?? process.cwd();
-  const serviceOverrides = options.services ?? {};
   const server = options.httpServer;
+  const services = options.services;
+  const {
+    events,
+    settingsService,
+    agentService,
+    autoModeService,
+    codexModelCacheService,
+    devServerService,
+    testRunnerService,
+    terminalService,
+  } = services;
 
-  // Initialize shared filesystem security before constructing services.
   initAllowedPaths();
-
-  // Create shared event emitter for streaming
-  const events: EventEmitter = serviceOverrides.events ?? createEventEmitter();
-
-  // Create services
-  // Note: settingsService is created first so it can be injected into other services
-  const settingsService = serviceOverrides.settingsService ?? new SettingsService(dataDir);
-  const providerConnections =
-    serviceOverrides.providerConnections ??
-    ProviderConnectionRepository.forWorkingDirectory(workingDirectory);
-  const providerRegistry =
-    serviceOverrides.providerRegistry ??
-    new ProviderRegistry(createProviderRegistrations(settingsService), providerConnections);
-  const toolPolicy = new ToolPolicyService();
-  const agentService =
-    serviceOverrides.agentService ??
-    new AgentService(dataDir, events, settingsService, providerRegistry, toolPolicy);
-  const featureLoader = serviceOverrides.featureLoader ?? new FeatureLoader();
-
-  // Shared stateful services are constructed once and passed explicitly to both
-  // legacy workflows and Nest providers during the transition.
-  const notificationService = serviceOverrides.notificationService ?? new NotificationService();
-  notificationService.setEventEmitter(events);
-  const eventHistoryService = serviceOverrides.eventHistoryService ?? new EventHistoryService();
-
-  // Auto-mode services: compatibility layer provides old interface while using new architecture
-  const autoModeService =
-    serviceOverrides.autoModeService ??
-    new AutoModeServiceCompat(
-      events,
-      settingsService,
-      featureLoader,
-      null,
-      notificationService,
-      providerRegistry,
-      toolPolicy
-    );
-  const claudeUsageService = serviceOverrides.claudeUsageService ?? new ClaudeUsageService();
-  const codexAppServerService =
-    serviceOverrides.codexAppServerService ?? new CodexAppServerService();
-  const codexModelCacheService =
-    serviceOverrides.codexModelCacheService ??
-    new CodexModelCacheService(dataDir, codexAppServerService);
-  const codexUsageService =
-    serviceOverrides.codexUsageService ?? new CodexUsageService(codexAppServerService);
-  const zaiUsageService = serviceOverrides.zaiUsageService ?? new ZaiUsageService();
-  const geminiUsageService = serviceOverrides.geminiUsageService ?? new GeminiUsageService();
-  const mcpTestService = serviceOverrides.mcpTestService ?? new MCPTestService(settingsService);
-  const ideationService =
-    serviceOverrides.ideationService ??
-    new IdeationService(events, settingsService, featureLoader, providerRegistry);
-
-  // Initialize DevServerService with event emitter for real-time log streaming
-  const devServerService = serviceOverrides.devServerService ?? getDevServerService();
-
-  // Initialize Test Runner Service with event emitter for real-time test output streaming
-  const testRunnerService = serviceOverrides.testRunnerService ?? getTestRunnerService();
-  testRunnerService.setEventEmitter(events);
-
-  const pipelineService = serviceOverrides.pipelineService ?? defaultPipelineService;
-  const eventHookService = serviceOverrides.eventHookService ?? new EventHookService();
-  const loginAttemptStore = serviceOverrides.loginAttemptStore ?? new LoginAttemptStore();
 
   // Initialize services
   async function initializeServices(): Promise<void> {
@@ -450,8 +396,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions): Lega
     return startupTasksPromise;
   }
 
-  const terminalService = serviceOverrides.terminalService ?? new TerminalService(settingsService);
-
   // Global error handlers are installed only by the production entry point.
   const handleUnhandledRejection = (reason: unknown, _promise: Promise<unknown>) => {
     logger.error('Unhandled Promise Rejection:', {
@@ -511,37 +455,13 @@ export function createLegacyApplication(options: LegacyApplicationOptions): Lega
     autoModeService.interruptForShutdown();
 
     terminalService.cleanup();
+    await testRunnerService.cleanup();
+    await devServerService.stopAll();
     await getManagedTestRunnerService(settingsService, events).cleanup();
     await getManagedDevServerService(settingsService, events).cleanup();
     clearTimeout(forceExitTimeout);
     logger.info('Application services stopped');
     if (exitProcess) process.exit(0);
-  };
-
-  const services: LegacyServiceOverrides = {
-    events,
-    settingsService,
-    agentService,
-    featureLoader,
-    autoModeService,
-    claudeUsageService,
-    codexAppServerService,
-    codexModelCacheService,
-    codexUsageService,
-    zaiUsageService,
-    geminiUsageService,
-    mcpTestService,
-    ideationService,
-    devServerService,
-    notificationService,
-    eventHistoryService,
-    testRunnerService,
-    terminalService,
-    pipelineService,
-    eventHookService,
-    loginAttemptStore,
-    providerConnections,
-    providerRegistry,
   };
 
   return {

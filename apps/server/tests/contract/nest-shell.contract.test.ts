@@ -70,6 +70,32 @@ describe('Nest shell and legacy bridge contract', () => {
     expect(runtime.app.get(SettingsService)).toBe(services.settingsService);
   });
 
+  it('isolates stateful providers and shutdown between two Nest applications', async () => {
+    const second = await createNestApplication({
+      host: '127.0.0.1',
+      port: 0,
+      runStartupTasks: false,
+      enableShutdownHooks: false,
+    });
+    try {
+      for (const [name, token] of Object.entries(LEGACY_SERVICES)) {
+        expect(second.app.get(token), name).not.toBe(runtime.app.get(token));
+      }
+      const firstCleanup = vi.spyOn(runtime.legacy.services.devServerService, 'stopAll');
+      try {
+        await second.app.close();
+        expect(firstCleanup).not.toHaveBeenCalled();
+      } finally {
+        firstCleanup.mockRestore();
+      }
+      expect(runtime.legacy.services.mcpTestService).not.toBe(
+        second.legacy.services.mcpTestService
+      );
+    } finally {
+      await second.app.close();
+    }
+  });
+
   it('has Nest as the only owner in the generated API inventory', async () => {
     const inventory = JSON.parse(
       await readFile(

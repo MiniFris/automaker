@@ -140,7 +140,7 @@ const MAX_PORT = 3099; // Safety limit
 // Common livereload ports that may need cleanup when stopping dev servers
 const LIVERELOAD_PORTS = [35729, 35730, 35731] as const;
 
-class DevServerService {
+export class DevServerService {
   private runningServers: Map<string, DevServerInfo> = new Map();
   private startingServers: Set<string> = new Set();
   private allocatedPorts: Set<number> = new Set();
@@ -1307,16 +1307,3 @@ export function getDevServerService(): DevServerService {
   }
   return devServerServiceInstance;
 }
-
-// Cleanup on process exit
-process.on('SIGTERM', async () => {
-  if (devServerServiceInstance) {
-    await devServerServiceInstance.stopAll();
-  }
-});
-
-process.on('SIGINT', async () => {
-  if (devServerServiceInstance) {
-    await devServerServiceInstance.stopAll();
-  }
-});

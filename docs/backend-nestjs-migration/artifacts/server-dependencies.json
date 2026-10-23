@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 610,
-    "internalEdges": 1970,
+    "files": 611,
+    "internalEdges": 1997,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -12,9 +12,12 @@
     "core -> lib": 5,
     "core -> middleware": 1,
     "core -> services": 1,
-    "legacy -> core": 1,
-    "legacy -> legacy": 1,
-    "legacy -> root": 1,
+    "legacy -> core": 3,
+    "legacy -> legacy": 3,
+    "legacy -> lib": 1,
+    "legacy -> modules": 4,
+    "legacy -> root": 2,
+    "legacy -> services": 19,
     "lib -> lib": 4,
     "lib -> services": 1,
     "modules -> core": 81,
@@ -32,7 +35,7 @@
     "root -> core": 14,
     "root -> legacy": 2,
     "root -> lib": 2,
-    "root -> modules": 30,
+    "root -> modules": 28,
     "root -> root": 4,
     "root -> services": 21,
     "routes -> lib": 123,
@@ -177,9 +180,7 @@
     "processOn": [
       "apps/server/src/legacy-application.ts",
       "apps/server/src/providers/remote-sdk-worker.ts",
-      "apps/server/src/services/dev-server-service.ts",
-      "apps/server/src/services/execution-environment/docker-worker.ts",
-      "apps/server/src/services/test-runner-service.ts"
+      "apps/server/src/services/execution-environment/docker-worker.ts"
     ],
     "childProcess": [
       "apps/server/src/lib/auth-utils.ts",
@@ -324,7 +325,7 @@
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 144,
+    "@nestjs/common": 145,
     "@nestjs/core": 7,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
@@ -775,15 +776,7 @@
     },
     {
       "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/modules/providers/provider-registrations.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/modules/providers/provider-registry.service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/modules/providers/tool-policy.service.ts"
     },
     {
       "source": "apps/server/src/legacy-application.ts",
@@ -870,12 +863,128 @@
       "target": "apps/server/src/services/zai-usage-service.ts"
     },
     {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/core/auth/login-attempt.store.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/legacy-application.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/legacy/legacy.tokens.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/lib/events.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/modules/providers/provider-connection.repository.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/modules/providers/provider-registrations.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/modules/providers/tool-policy.service.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/agent-service.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/auto-mode/index.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/claude-usage-service.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/codex-app-server-service.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/codex-model-cache-service.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/codex-usage-service.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/dev-server-service.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/event-history-service.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/event-hook-service.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/feature-loader.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/gemini-usage-service.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/ideation-service.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/mcp-test-service.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/notification-service.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/pipeline-service.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/terminal-service.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/test-runner-service.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/zai-usage-service.ts"
+    },
+    {
       "source": "apps/server/src/legacy/legacy.module.ts",
       "target": "apps/server/src/core/lifecycle/readiness-state.service.ts"
     },
     {
       "source": "apps/server/src/legacy/legacy.module.ts",
       "target": "apps/server/src/legacy-application.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/legacy.module.ts",
+      "target": "apps/server/src/legacy/application-service.providers.ts"
     },
     {
       "source": "apps/server/src/legacy/legacy.module.ts",

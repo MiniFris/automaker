@@ -2,13 +2,13 @@ import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundDomainError, ValidationDomainError } from '../../core/errors/index.js';
 import { LEGACY_EVENT_EMITTER, LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import type { EventEmitter } from '../../lib/events.js';
-import type { getDevServerService } from '../../services/dev-server-service.js';
+import type { DevServerService } from '../../services/dev-server-service.js';
 import { getManagedDevServerService } from '../../services/execution-environment/dev-server.js';
 import { ProjectGitService } from '../../services/execution-environment/project-git.js';
 import { ExecutionEnvironmentError } from '../../services/execution-environment/runtime.js';
 import { getManagedTestRunnerService } from '../../services/execution-environment/test-runner.js';
 import { SettingsService } from '../../services/settings-service.js';
-import type { getTestRunnerService } from '../../services/test-runner-service.js';
+import type { TestRunnerService } from '../../services/test-runner-service.js';
 import type {
   DevSessionRequest,
   StartDevRequest,
@@ -27,9 +27,9 @@ export class WorktreeProcessService {
     @Inject(ProjectGitService) private readonly git: ProjectGitService,
     @Inject(LEGACY_EVENT_EMITTER) events: EventEmitter,
     @Inject(LEGACY_SERVICES.devServer)
-    private readonly localDev: ReturnType<typeof getDevServerService>,
+    private readonly localDev: DevServerService,
     @Inject(LEGACY_SERVICES.testRunner)
-    private readonly localTests: ReturnType<typeof getTestRunnerService>
+    private readonly localTests: TestRunnerService
   ) {
     this.managedDev = getManagedDevServerService(settings, events);
     this.managedTests = getManagedTestRunnerService(settings, events);

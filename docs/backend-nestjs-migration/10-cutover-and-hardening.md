@@ -11,13 +11,22 @@
 - [ ] Удалить legacy router module/middleware.
 - [ ] Удалить Express route factories и неиспользуемые common helpers.
 - [ ] Удалить старый `src/index.ts` из production build.
-- [ ] Удалить wrapper providers, которые только выдавали legacy instances.
+- [x] Удалить wrapper providers, которые только выдавали legacy instances.
 - [ ] Удалить singleton getters и side-effect registration.
 - [ ] Удалить временные feature flags/route ownership registry.
 - [ ] Проверить отсутствие imports из удалённых paths.
 
 Express остаётся transitive platform через `@nestjs/platform-express`; удаляется
 ручная Express composition, а не сам adapter.
+
+Промежуточный срез composition: `application-service.providers.ts` создаёт каждый
+stateful service отдельным Nest factory provider с явным `inject`. Lifecycle adapter
+получает готовые зависимости и больше не создаёт services. Local dev/test runners
+и pipeline имеют отдельный экземпляр на приложение; их module-level signal handlers
+удалены, cleanup выполняет application lifecycle. Contract двух Nest applications
+подтверждает изоляцию экземпляров и shutdown. Compatibility tokens и startup/shutdown
+adapter пока остаются и подлежат дальнейшему удалению. Checkpoint среза: server build,
+lint, 2900 unit-тестов и 228 HTTP/WS contract-тестов.
 
 ## 10.2. Dependency rules
 
