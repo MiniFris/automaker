@@ -50,7 +50,7 @@ import {
 import { AgentService } from './services/agent-service.js';
 import { FeatureLoader } from './services/feature-loader.js';
 import { AutoModeServiceCompat } from './services/auto-mode/index.js';
-import { getTerminalService, claimTerminalStartup } from './services/terminal-service.js';
+import { TerminalService, claimTerminalStartup } from './services/terminal-service.js';
 import { SettingsService } from './services/settings-service.js';
 import { ClaudeUsageService } from './services/claude-usage-service.js';
 import { CodexUsageService } from './services/codex-usage-service.js';
@@ -225,7 +225,7 @@ export interface LegacyServiceOverrides {
   notificationService: NotificationService;
   eventHistoryService: EventHistoryService;
   testRunnerService: ReturnType<typeof getTestRunnerService>;
-  terminalService: ReturnType<typeof getTerminalService>;
+  terminalService: TerminalService;
   pipelineService: typeof defaultPipelineService;
   eventHookService: EventHookService;
   loginAttemptStore: LoginAttemptStore;
@@ -579,7 +579,7 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   // Create HTTP server
   const server = options.httpServer ?? createServer(app);
 
-  const terminalService = serviceOverrides.terminalService ?? getTerminalService(settingsService);
+  const terminalService = serviceOverrides.terminalService ?? new TerminalService(settingsService);
 
   if (options.attachWebSockets ?? true) {
     // WebSocket servers using noServer mode for proper multi-path support

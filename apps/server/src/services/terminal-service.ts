@@ -64,11 +64,6 @@ const MAX_SCROLLBACK_SIZE = 50000; // ~50KB per terminal
 export const MIN_MAX_SESSIONS = 1;
 export const MAX_MAX_SESSIONS = 1000;
 
-// Maximum number of concurrent terminal sessions
-// Can be overridden via TERMINAL_MAX_SESSIONS environment variable
-// Default set to 1000 - effectively unlimited for most use cases
-let maxSessions = parseInt(process.env.TERMINAL_MAX_SESSIONS || '1000', 10);
-
 // Throttle output to prevent overwhelming WebSocket under heavy load
 // Using 4ms for responsive input feedback while still preventing flood
 // Note: 16ms caused perceived input lag, especially with backspace
@@ -220,6 +215,7 @@ export function claimTerminalStartup(
 }
 
 export class TerminalService extends EventEmitter {
+  private maxSessions: number;
   private pendingCreations = 0;
   private sessions: Map<string, TerminalSession> = new Map();
   private dataCallbacks: Set<DataCallback> = new Set();
@@ -233,9 +229,11 @@ export class TerminalService extends EventEmitter {
   private useConptyFallback = false; // Track if we need to use winpty fallback on Windows
   private settingsService: SettingsService | null = null;
 
-  constructor(settingsService?: SettingsService) {
+  constructor(settingsService?: SettingsService, initialMaxSessions?: number) {
     super();
     this.settingsService = settingsService || null;
+    this.maxSessions =
+      initialMaxSessions ?? Number.parseInt(process.env.TERMINAL_MAX_SESSIONS || '1000', 10);
   }
 
   /**
@@ -432,7 +430,7 @@ export class TerminalService extends EventEmitter {
    * Get maximum allowed sessions
    */
   getMaxSessions(): number {
-    return maxSessions;
+    return this.maxSessions;
   }
 
   /**
@@ -440,7 +438,7 @@ export class TerminalService extends EventEmitter {
    */
   setMaxSessions(limit: number): void {
     if (limit >= MIN_MAX_SESSIONS && limit <= MAX_MAX_SESSIONS) {
-      maxSessions = limit;
+      this.maxSessions = limit;
       logger.info(`Max sessions limit updated to ${limit}`);
     }
   }
@@ -450,7 +448,7 @@ export class TerminalService extends EventEmitter {
    * Returns null if the maximum session limit has been reached
    */
   async createSession(options: TerminalOptions = {}): Promise<TerminalSession | null> {
-    if (this.sessions.size + this.pendingCreations >= maxSessions) return null;
+    if (this.sessions.size + this.pendingCreations >= this.maxSessions) return null;
     this.pendingCreations++;
     try {
       return await this.createSessionInternal(options);
@@ -476,8 +474,8 @@ export class TerminalService extends EventEmitter {
         'Invalid terminal dimensions.'
       );
     // Check session limit
-    if (this.sessions.size >= maxSessions) {
-      logger.error(`Max sessions (${maxSessions}) reached, refusing new session`);
+    if (this.sessions.size >= this.maxSessions) {
+      logger.error(`Max sessions (${this.maxSessions}) reached, refusing new session`);
       return null;
     }
 

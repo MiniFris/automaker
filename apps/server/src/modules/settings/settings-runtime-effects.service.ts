@@ -2,7 +2,8 @@ import { Inject, Injectable, type OnModuleDestroy, type OnModuleInit } from '@ne
 import { createLogger, LogLevel, setLogLevel } from '@automaker/utils';
 
 import { setRequestLoggingEnabled } from '../../lib/request-logging-state.js';
-import { getTerminalService } from '../../services/terminal-service.js';
+import { TerminalService } from '../../services/terminal-service.js';
+import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import { SettingsService } from '../../services/settings-service.js';
 import { SettingsDomainEvents, type GlobalSettingsUpdatedEvent } from './settings-domain-events.js';
 
@@ -20,7 +21,8 @@ export class SettingsRuntimeEffectsService implements OnModuleInit, OnModuleDest
 
   constructor(
     @Inject(SettingsDomainEvents) private readonly events: SettingsDomainEvents,
-    @Inject(SettingsService) private readonly settings: SettingsService
+    @Inject(SettingsService) private readonly settings: SettingsService,
+    @Inject(LEGACY_SERVICES.terminal) private readonly terminal: TerminalService
   ) {}
 
   onModuleInit(): void {
@@ -44,7 +46,6 @@ export class SettingsRuntimeEffectsService implements OnModuleInit, OnModuleDest
     }
     if (!event.changed.has('theme') || event.previous.theme === event.current.theme) return;
 
-    const terminal = getTerminalService(this.settings);
     for (const project of event.current.projects ?? []) {
       try {
         const projectSettings = await this.settings.getProjectSettings(project.path);
@@ -52,7 +53,7 @@ export class SettingsRuntimeEffectsService implements OnModuleInit, OnModuleDest
           projectSettings.terminalConfig?.enabled !== false &&
           event.current.terminalConfig?.enabled === true
         ) {
-          await terminal.onThemeChange(project.path, event.current.theme);
+          await this.terminal.onThemeChange(project.path, event.current.theme);
         }
       } catch (error) {
         logger.warn(`Failed to refresh terminal config for ${project.name}`, error);
