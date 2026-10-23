@@ -23,4 +23,6 @@ export const LEGACY_SERVICES = {
   pipeline: Symbol('LEGACY_PIPELINE_SERVICE'),
   eventHook: Symbol('LEGACY_EVENT_HOOK_SERVICE'),
   loginAttemptStore: Symbol('LEGACY_LOGIN_ATTEMPT_STORE'),
+  providerConnections: Symbol('LEGACY_PROVIDER_CONNECTION_REPOSITORY'),
+  providerRegistry: Symbol('LEGACY_PROVIDER_REGISTRY'),
 } as const;

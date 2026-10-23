@@ -74,6 +74,7 @@ export async function createNestApplication(
     runStartupTasks: options.runStartupTasks ?? true,
     services: options.services,
     httpServer,
+    workingDirectory,
   });
   const adapter = new SharedHttpServerExpressAdapter(expressApplication, httpServer);
   const app = await NestFactory.create<NestExpressApplication>(

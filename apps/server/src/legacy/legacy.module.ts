@@ -81,6 +81,11 @@ export class LegacyModule {
         { provide: LEGACY_SERVICES.pipeline, useValue: legacy.services.pipelineService },
         { provide: LEGACY_SERVICES.eventHook, useValue: legacy.services.eventHookService },
         { provide: LEGACY_SERVICES.loginAttemptStore, useValue: legacy.services.loginAttemptStore },
+        {
+          provide: LEGACY_SERVICES.providerConnections,
+          useValue: legacy.services.providerConnections,
+        },
+        { provide: LEGACY_SERVICES.providerRegistry, useValue: legacy.services.providerRegistry },
         LegacyRouterMiddleware,
         LegacyLifecycle,
       ],

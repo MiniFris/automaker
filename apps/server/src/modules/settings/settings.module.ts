@@ -1,7 +1,6 @@
-import { Global, Injectable, Module, type OnModuleInit } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 
 import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
-import { ProviderFactory } from '../../providers/provider-factory.js';
 import { SettingsService } from '../../services/settings-service.js';
 import { SettingsFileRepository } from './settings-file.repository.js';
 import { SettingsController } from './settings.controller.js';
@@ -12,19 +11,6 @@ import { SettingsRuntimeEffectsService } from './settings-runtime-effects.servic
 import { DirectSettingsCommandService } from './direct-settings-command.service.js';
 import { ExecutionEnvironmentSettingsController } from './execution-environment-settings.controller.js';
 import { ExecutionEnvironmentSettingsService } from './execution-environment-settings.service.js';
-
-/**
- * Connects providers that are still created by the legacy registry to the one
- * settings instance registered in the Nest application graph.
- */
-@Injectable()
-class SettingsProviderBridge implements OnModuleInit {
-  constructor(private readonly settingsService: SettingsService) {}
-
-  onModuleInit(): void {
-    ProviderFactory.configure({ settingsService: this.settingsService });
-  }
-}
 
 @Global()
 @Module({
@@ -38,7 +24,6 @@ class SettingsProviderBridge implements OnModuleInit {
     SettingsRuntimeEffectsService,
     DirectSettingsCommandService,
     ExecutionEnvironmentSettingsService,
-    SettingsProviderBridge,
   ],
   exports: [SettingsService, SettingsFileRepository],
 })

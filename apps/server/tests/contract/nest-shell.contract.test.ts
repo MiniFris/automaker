@@ -65,6 +65,8 @@ describe('Nest shell and legacy bridge contract', () => {
       pipeline: services.pipelineService,
       eventHook: services.eventHookService,
       loginAttemptStore: services.loginAttemptStore,
+      providerConnections: services.providerConnections,
+      providerRegistry: services.providerRegistry,
     };
 
     for (const [name, token] of Object.entries(LEGACY_SERVICES)) {

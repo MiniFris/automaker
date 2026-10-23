@@ -34,6 +34,9 @@ import { authMiddleware, validateWsConnectionToken, checkRawAuthentication } fro
 import { requireJsonContentType } from './middleware/require-json-content-type.js';
 import { isRequestLoggingEnabled, setRequestLoggingEnabled } from './lib/request-logging-state.js';
 import { LoginAttemptStore } from './core/auth/login-attempt.store.js';
+import { ProviderConnectionRepository } from './modules/providers/provider-connection.repository.js';
+import { createProviderRegistrations } from './modules/providers/provider-registrations.js';
+import { ProviderRegistry } from './modules/providers/provider-registry.service.js';
 import {
   createCorrelationId,
   runWithCorrelationContext,
@@ -232,6 +235,8 @@ export interface LegacyServiceOverrides {
   pipelineService: typeof defaultPipelineService;
   eventHookService: typeof defaultEventHookService;
   loginAttemptStore: LoginAttemptStore;
+  providerConnections: ProviderConnectionRepository;
+  providerRegistry: ProviderRegistry;
 }
 
 export interface LegacyApplicationOptions {
@@ -240,6 +245,7 @@ export interface LegacyApplicationOptions {
   port?: number;
   runStartupTasks?: boolean;
   httpServer?: ReturnType<typeof createServer>;
+  workingDirectory?: string;
   services?: Partial<LegacyServiceOverrides>;
 }
 
@@ -264,6 +270,7 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   const port = options.port ?? PORT;
   const host = options.host ?? HOST;
   const dataDir = options.dataDir ?? DATA_DIR;
+  const workingDirectory = options.workingDirectory ?? process.cwd();
   const serviceOverrides = options.services ?? {};
 
   // Initialize security
@@ -361,6 +368,12 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   // Create services
   // Note: settingsService is created first so it can be injected into other services
   const settingsService = serviceOverrides.settingsService ?? new SettingsService(dataDir);
+  const providerConnections =
+    serviceOverrides.providerConnections ??
+    ProviderConnectionRepository.forWorkingDirectory(workingDirectory);
+  const providerRegistry =
+    serviceOverrides.providerRegistry ??
+    new ProviderRegistry(createProviderRegistrations(settingsService), providerConnections);
   const agentService =
     serviceOverrides.agentService ?? new AgentService(dataDir, events, settingsService);
   const featureLoader = serviceOverrides.featureLoader ?? new FeatureLoader();
@@ -1114,6 +1127,8 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
     pipelineService,
     eventHookService,
     loginAttemptStore,
+    providerConnections,
+    providerRegistry,
   };
 
   return {
