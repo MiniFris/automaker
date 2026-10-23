@@ -33,7 +33,7 @@ export const ROUTE_GROUP_OWNERS: Readonly<Record<string, RouteOwner>> = {
   context: 'nest',
   'backlog-plan': 'nest',
   mcp: 'legacy',
-  pipeline: 'legacy',
+  pipeline: 'nest',
   ideation: 'nest',
   notifications: 'nest',
   'event-history': 'nest',

@@ -33,6 +33,7 @@ import { GitModule } from './modules/git/git.module.js';
 import { WorktreeModule } from './modules/worktree/worktree.module.js';
 import { ProvidersModule } from './modules/providers/providers.module.js';
 import { AgentsModule } from './modules/agents/agents.module.js';
+import { PipelineModule } from './modules/pipeline/pipeline.module.js';
 
 @Module({})
 export class AppModule {
@@ -57,6 +58,7 @@ export class AppModule {
         SettingsModule,
         ProvidersModule,
         AgentsModule,
+        PipelineModule,
         ProjectsModule,
         FilesModule,
         ContextModule,

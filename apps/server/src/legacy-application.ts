@@ -65,7 +65,6 @@ import { createGitHubRoutes } from './routes/github/index.js';
 import { cleanupStaleValidations } from './routes/github/routes/validation-common.js';
 import { createMCPRoutes } from './routes/mcp/index.js';
 import { MCPTestService } from './services/mcp-test-service.js';
-import { createPipelineRoutes } from './routes/pipeline/index.js';
 import { pipelineService as defaultPipelineService } from './services/pipeline-service.js';
 import { IdeationService } from './services/ideation-service.js';
 import { getDevServerService } from './services/dev-server-service.js';
@@ -597,7 +596,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   app.use('/api/terminal', createTerminalRoutes());
   app.use('/api/github', createGitHubRoutes(events, settingsService));
   app.use('/api/mcp', createMCPRoutes(mcpTestService));
-  app.use('/api/pipeline', createPipelineRoutes(pipelineService));
 
   // Create HTTP server
   const server = options.httpServer ?? createServer(app);
@@ -1089,7 +1087,9 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
     }, SHUTDOWN_TIMEOUT_MS);
 
     // Persist interrupted state before aborting provider processes so jobs can recover on restart.
-    await agentService.interruptActiveSessions(`${signal} signal received`);
+    if (typeof agentService.interruptActiveSessions === 'function') {
+      await agentService.interruptActiveSessions(`${signal} signal received`);
+    }
 
     // Mark all running features as interrupted before shutdown
     // This ensures they can be resumed when the server restarts

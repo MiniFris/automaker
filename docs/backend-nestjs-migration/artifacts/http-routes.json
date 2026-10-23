@@ -2017,13 +2017,12 @@
       "method": "POST",
       "path": "/api/pipeline/config/save",
       "group": "pipeline",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/pipeline/index.ts",
-      "line": 48,
+      "source": "apps/server/src/modules/pipeline/pipeline.controller.ts",
+      "line": 34,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createSaveConfigHandler(pipelineService)"
+        "PipelineController.save"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -2033,13 +2032,12 @@
       "method": "POST",
       "path": "/api/pipeline/config",
       "group": "pipeline",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/pipeline/index.ts",
-      "line": 41,
+      "source": "apps/server/src/modules/pipeline/pipeline.controller.ts",
+      "line": 27,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createGetConfigHandler(pipelineService)"
+        "PipelineController.get"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -2049,13 +2047,12 @@
       "method": "POST",
       "path": "/api/pipeline/steps/add",
       "group": "pipeline",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/pipeline/index.ts",
-      "line": 55,
+      "source": "apps/server/src/modules/pipeline/pipeline.controller.ts",
+      "line": 41,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createAddStepHandler(pipelineService)"
+        "PipelineController.add"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -2065,13 +2062,12 @@
       "method": "POST",
       "path": "/api/pipeline/steps/delete",
       "group": "pipeline",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/pipeline/index.ts",
-      "line": 65,
+      "source": "apps/server/src/modules/pipeline/pipeline.controller.ts",
+      "line": 55,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createDeleteStepHandler(pipelineService)"
+        "PipelineController.delete"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -2081,13 +2077,12 @@
       "method": "POST",
       "path": "/api/pipeline/steps/reorder",
       "group": "pipeline",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/pipeline/index.ts",
-      "line": 70,
+      "source": "apps/server/src/modules/pipeline/pipeline.controller.ts",
+      "line": 62,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createReorderStepsHandler(pipelineService)"
+        "PipelineController.reorder"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -2097,13 +2092,12 @@
       "method": "POST",
       "path": "/api/pipeline/steps/update",
       "group": "pipeline",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/pipeline/index.ts",
-      "line": 60,
+      "source": "apps/server/src/modules/pipeline/pipeline.controller.ts",
+      "line": 48,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createUpdateStepHandler(pipelineService)"
+        "PipelineController.update"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
