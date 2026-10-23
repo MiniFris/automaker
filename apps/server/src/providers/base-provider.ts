@@ -58,7 +58,7 @@ export abstract class BaseProvider implements ProviderAdapter {
       text: true,
       streaming: true,
       vision: models.some((model) => model.supportsVision === true),
-      tools: models.some((model) => model.supportsTools === true),
+      tools: this.supportsFeature('tools') || models.some((model) => model.supportsTools === true),
       reasoning: models.some((model) => model.hasReasoning === true),
       mcp: this.supportsFeature('mcp'),
       remoteExecution: this.supportsFeature('remoteExecution'),

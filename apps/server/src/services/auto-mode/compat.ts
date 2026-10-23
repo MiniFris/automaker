@@ -18,6 +18,7 @@ import type { ClaudeUsageService } from '../claude-usage-service.js';
 import type { NotificationService } from '../notification-service.js';
 import type { FacadeOptions, AutoModeStatus, RunningAgentInfo } from './types.js';
 import type { ProviderRegistry } from '../../modules/providers/provider-registry.service.js';
+import type { ToolPolicyService } from '../../modules/providers/tool-policy.service.js';
 
 /**
  * AutoModeServiceCompat wraps GlobalAutoModeService and facades to provide
@@ -34,7 +35,8 @@ export class AutoModeServiceCompat {
     featureLoader: FeatureLoader,
     claudeUsageService?: ClaudeUsageService | null,
     notificationService?: NotificationService | null,
-    providerRegistry?: ProviderRegistry
+    providerRegistry?: ProviderRegistry,
+    toolPolicy?: ToolPolicyService
   ) {
     this.globalService = new GlobalAutoModeService(
       events,
@@ -52,6 +54,7 @@ export class AutoModeServiceCompat {
       claudeUsageService: claudeUsageService ?? null,
       notificationService: notificationService ?? null,
       providerRegistry,
+      toolPolicy,
     };
   }
 

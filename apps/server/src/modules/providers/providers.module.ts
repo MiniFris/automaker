@@ -6,6 +6,7 @@ import { ProviderUsageController } from './provider-usage.controller.js';
 import { ProviderUsageService } from './provider-usage.service.js';
 import { SetupController } from './setup.controller.js';
 import { SetupHandlersService } from './setup-handlers.service.js';
+import { ToolPolicyService } from './tool-policy.service.js';
 
 @Global()
 @Module({
@@ -15,7 +16,8 @@ import { SetupHandlersService } from './setup-handlers.service.js';
     { provide: ProviderRegistry, useExisting: LEGACY_SERVICES.providerRegistry },
     ProviderUsageService,
     SetupHandlersService,
+    ToolPolicyService,
   ],
-  exports: [ProviderRegistry, ProviderConnectionRepository],
+  exports: [ProviderRegistry, ProviderConnectionRepository, ToolPolicyService],
 })
 export class ProvidersModule {}

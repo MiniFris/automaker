@@ -37,6 +37,7 @@ import { LoginAttemptStore } from './core/auth/login-attempt.store.js';
 import { ProviderConnectionRepository } from './modules/providers/provider-connection.repository.js';
 import { createProviderRegistrations } from './modules/providers/provider-registrations.js';
 import { ProviderRegistry } from './modules/providers/provider-registry.service.js';
+import { ToolPolicyService } from './modules/providers/tool-policy.service.js';
 import {
   createCorrelationId,
   runWithCorrelationContext,
@@ -374,9 +375,10 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   const providerRegistry =
     serviceOverrides.providerRegistry ??
     new ProviderRegistry(createProviderRegistrations(settingsService), providerConnections);
+  const toolPolicy = new ToolPolicyService();
   const agentService =
     serviceOverrides.agentService ??
-    new AgentService(dataDir, events, settingsService, providerRegistry);
+    new AgentService(dataDir, events, settingsService, providerRegistry, toolPolicy);
   const featureLoader = serviceOverrides.featureLoader ?? new FeatureLoader();
 
   // Shared stateful services are constructed once and passed explicitly to both
@@ -394,7 +396,8 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
       featureLoader,
       null,
       notificationService,
-      providerRegistry
+      providerRegistry,
+      toolPolicy
     );
   const claudeUsageService = serviceOverrides.claudeUsageService ?? new ClaudeUsageService();
   const codexAppServerService =

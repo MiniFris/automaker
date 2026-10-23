@@ -173,6 +173,7 @@ export class AutoModeServiceFacade {
       featureLoader = new FeatureLoader(),
       notificationService = null,
       providerRegistry,
+      toolPolicy,
       sharedServices,
     } = options;
 
@@ -344,6 +345,17 @@ export class AutoModeServiceFacade {
             `provider=${provider.getName()}`
         );
 
+        const allowedTools = toolPolicy
+          ? toolPolicy.resolve({
+              requested: sdkOpts.allowedTools as string[] | undefined,
+              readOnly:
+                opts?.planningMode !== undefined &&
+                opts.planningMode !== 'skip' &&
+                opts.requirePlanApproval === true,
+              providerSupportsTools: provider.getCapabilities().tools,
+            })
+          : (sdkOpts.allowedTools as string[] | undefined);
+
         await agentExecutor.execute(
           {
             workDir,
@@ -371,7 +383,7 @@ export class AutoModeServiceFacade {
             mcpServers,
             sdkOptions: {
               maxTurns: sdkOpts.maxTurns,
-              allowedTools: sdkOpts.allowedTools as string[] | undefined,
+              allowedTools,
               systemPrompt: sdkOpts.systemPrompt,
               settingSources: sdkOpts.settingSources as
                 | Array<'user' | 'project' | 'local'>

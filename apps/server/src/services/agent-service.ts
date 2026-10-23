@@ -20,6 +20,7 @@ import {
 } from '@automaker/utils';
 import { ProviderFactory } from '../providers/provider-factory.js';
 import type { ProviderRegistry } from '../modules/providers/provider-registry.service.js';
+import type { ToolPolicyService } from '../modules/providers/tool-policy.service.js';
 import { createChatOptions, validateWorkingDirectory } from '../lib/sdk-options.js';
 import { prepareDirectExecution } from '../providers/openai-compatible/execution.js';
 import { hasRemoteEnvironment } from '../providers/environment-execution.js';
@@ -100,19 +101,22 @@ export class AgentService {
   private events: EventEmitter;
   private settingsService: SettingsService | null = null;
   private providerRegistry: ProviderRegistry | null = null;
+  private toolPolicy: ToolPolicyService | null = null;
   private logger = createLogger('AgentService');
 
   constructor(
     dataDir: string,
     events: EventEmitter,
     settingsService?: SettingsService,
-    providerRegistry?: ProviderRegistry
+    providerRegistry?: ProviderRegistry,
+    toolPolicy?: ToolPolicyService
   ) {
     this.stateDir = path.join(dataDir, 'agent-sessions');
     this.metadataFile = path.join(dataDir, 'sessions-metadata.json');
     this.events = events;
     this.settingsService = settingsService ?? null;
     this.providerRegistry = providerRegistry ?? null;
+    this.toolPolicy = toolPolicy ?? null;
   }
 
   async initialize(): Promise<void> {
@@ -590,6 +594,17 @@ export class AgentService {
       const modelForProvider = claudeCompatibleProvider
         ? (requestedModel ?? effectiveModel)
         : effectiveModel;
+
+      if (this.toolPolicy && this.providerRegistry) {
+        const capabilities = this.providerRegistry
+          .byName(this.providerRegistry.providerNameForModel(modelForProvider))
+          ?.getCapabilities();
+        allowedTools = this.toolPolicy.resolve({
+          requested: allowedTools,
+          readOnly: false,
+          providerSupportsTools: capabilities?.tools === true,
+        });
+      }
 
       // Strip provider prefix - providers should receive bare model IDs
       // CRITICAL: For custom providers (GLM, MiniMax), pass the provider's model ID (e.g. "GLM-4.7")
