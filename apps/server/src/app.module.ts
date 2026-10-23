@@ -25,6 +25,8 @@ import { FilesModule } from './modules/files/files.module.js';
 import { ContextModule } from './modules/context/context.module.js';
 import { FeaturesModule } from './modules/features/features.module.js';
 import { SessionsModule } from './modules/sessions/sessions.module.js';
+import { AppSpecModule } from './modules/app-spec/app-spec.module.js';
+import { BacklogPlanModule } from './modules/backlog-plan/backlog-plan.module.js';
 
 @Module({})
 export class AppModule {
@@ -52,6 +54,8 @@ export class AppModule {
         ContextModule,
         FeaturesModule,
         SessionsModule,
+        AppSpecModule,
+        BacklogPlanModule,
         HealthModule,
         ModelsModule,
         NotificationsModule,

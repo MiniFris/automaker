@@ -22,6 +22,7 @@ import {
   getPromptCustomization,
   getPhaseModelWithOverrides,
 } from '../../lib/settings-helpers.js';
+import { atomicWriteText } from '../../lib/atomic-write-text.js';
 
 const logger = createLogger('SpecRegeneration');
 
@@ -264,7 +265,7 @@ Your entire response should be valid JSON starting with { and ending with }. No 
   logger.info('Saving spec to:', specPath);
   logger.info(`Content to save (${xmlContent.length} chars)`);
 
-  await secureFs.writeFile(specPath, xmlContent);
+  await atomicWriteText(specPath, xmlContent);
 
   // Verify the file was written
   const savedContent = await secureFs.readFile(specPath, 'utf-8');

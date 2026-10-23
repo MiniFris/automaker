@@ -31,6 +31,7 @@ import {
   type ImplementedFeature,
 } from '../../lib/xml-extractor.js';
 import type { NotificationService } from '../../services/notification-service.js';
+import { atomicWriteText } from '../../lib/atomic-write-text.js';
 
 const logger = createLogger('SpecSync');
 
@@ -348,7 +349,7 @@ CRITICAL INSTRUCTIONS:
   }
 
   // Save updated spec
-  await secureFs.writeFile(specPath, specContent, 'utf-8');
+  await atomicWriteText(specPath, specContent);
   logger.info('Spec saved successfully');
 
   // Build summary

@@ -2,7 +2,7 @@
  * Common utilities for backlog plan routes
  */
 
-import { createLogger } from '@automaker/utils';
+import { atomicWriteJson, createLogger, DEFAULT_BACKUP_COUNT } from '@automaker/utils';
 import { ensureAutomakerDir, getAutomakerDir } from '@automaker/platform';
 import * as secureFs from '../../lib/secure-fs.js';
 import path from 'path';
@@ -70,7 +70,7 @@ function getBacklogPlanPath(projectPath: string): string {
 export async function saveBacklogPlan(projectPath: string, plan: StoredBacklogPlan): Promise<void> {
   await ensureAutomakerDir(projectPath);
   const filePath = getBacklogPlanPath(projectPath);
-  await secureFs.writeFile(filePath, JSON.stringify(plan, null, 2), 'utf-8');
+  await atomicWriteJson(filePath, plan, { backupCount: DEFAULT_BACKUP_COUNT });
 }
 
 export async function loadBacklogPlan(projectPath: string): Promise<StoredBacklogPlan | null> {

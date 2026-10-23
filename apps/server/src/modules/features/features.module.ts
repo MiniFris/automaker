@@ -21,6 +21,6 @@ import { ContextModule } from '../context/context.module.js';
     LegacyFeatureRepository,
     { provide: FEATURE_REPOSITORY, useExisting: LegacyFeatureRepository },
   ],
-  exports: [FEATURE_REPOSITORY],
+  exports: [FEATURE_REPOSITORY, ProjectFeatureSerializer, FeatureTransitionService],
 })
 export class FeaturesModule {}

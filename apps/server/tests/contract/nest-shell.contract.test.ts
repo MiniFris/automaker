@@ -450,6 +450,39 @@ describe('Nest shell and legacy bridge contract', () => {
       expect(deleteSession.status).toBe(200);
       expect(await deleteSession.json()).toEqual({ success: true });
 
+      const specStatus = await fetch(
+        `${baseUrl}/api/spec-regeneration/status?projectPath=${encodeURIComponent(projectPath)}`,
+        { headers }
+      );
+      expect(specStatus.status).toBe(200);
+      expect(await specStatus.json()).toMatchObject({
+        success: true,
+        isRunning: false,
+        projectPath,
+      });
+
+      const backlogStatus = await fetch(
+        `${baseUrl}/api/backlog-plan/status?projectPath=${encodeURIComponent(projectPath)}`,
+        { headers }
+      );
+      expect(backlogStatus.status).toBe(200);
+      expect(await backlogStatus.json()).toMatchObject({
+        success: true,
+        isRunning: false,
+        savedPlan: null,
+      });
+
+      const applyEmptyPlan = await fetch(`${baseUrl}/api/backlog-plan/apply`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          projectPath,
+          plan: { changes: [], summary: 'Approved empty plan', dependencyUpdates: [] },
+        }),
+      });
+      expect(applyEmptyPlan.status).toBe(200);
+      expect(await applyEmptyPlan.json()).toEqual({ success: true, appliedChanges: [] });
+
       for (const route of ['notifications/list', 'event-history/list']) {
         const response = await fetch(`${baseUrl}/api/${route}`, {
           method: 'POST',

@@ -56,7 +56,6 @@ import { FeatureLoader } from './services/feature-loader.js';
 import { AutoModeServiceCompat } from './services/auto-mode/index.js';
 import { getTerminalService, claimTerminalStartup } from './services/terminal-service.js';
 import { SettingsService } from './services/settings-service.js';
-import { createSpecRegenerationRoutes } from './routes/app-spec/index.js';
 import { createClaudeRoutes } from './routes/claude/index.js';
 import { ClaudeUsageService } from './services/claude-usage-service.js';
 import { createCodexRoutes } from './routes/codex/index.js';
@@ -68,7 +67,6 @@ import { ZaiUsageService } from './services/zai-usage-service.js';
 import { createGeminiRoutes } from './routes/gemini/index.js';
 import { GeminiUsageService } from './services/gemini-usage-service.js';
 import { createGitHubRoutes } from './routes/github/index.js';
-import { createBacklogPlanRoutes } from './routes/backlog-plan/index.js';
 import { cleanupStaleValidations } from './routes/github/routes/validation-common.js';
 import { createMCPRoutes } from './routes/mcp/index.js';
 import { MCPTestService } from './services/mcp-test-service.js';
@@ -594,10 +592,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
     '/api/git',
     createGitRoutes(settingsService, (projectPath) => autoModeService.isProjectRunning(projectPath))
   );
-  app.use(
-    '/api/spec-regeneration',
-    createSpecRegenerationRoutes(events, settingsService, notificationService)
-  );
   app.use('/api/running-agents', createRunningAgentsRoutes(autoModeService));
   app.use('/api/terminal', createTerminalRoutes());
   app.use('/api/claude', createClaudeRoutes(claudeUsageService));
@@ -605,7 +599,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   app.use('/api/zai', createZaiRoutes(zaiUsageService, settingsService));
   app.use('/api/gemini', createGeminiRoutes(geminiUsageService, events));
   app.use('/api/github', createGitHubRoutes(events, settingsService));
-  app.use('/api/backlog-plan', createBacklogPlanRoutes(events, settingsService));
   app.use('/api/mcp', createMCPRoutes(mcpTestService));
   app.use('/api/pipeline', createPipelineRoutes(pipelineService));
   app.use('/api/ideation', createIdeationRoutes(events, ideationService, featureLoader));
