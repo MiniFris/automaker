@@ -6,6 +6,7 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const repositoryRoot = resolve(import.meta.dirname, '..');
+const measureNestShell = process.argv.includes('--nest');
 const dataDirectory = await mkdtemp(join(tmpdir(), 'automaker-server-baseline-'));
 process.env.NODE_ENV = 'test';
 process.env.DATA_DIR = dataDirectory;
@@ -18,21 +19,34 @@ const quantile = (values, percentile) => {
 };
 
 const importedAt = performance.now();
-const { createLegacyApplication } = await import(
-  pathToFileURL(join(repositoryRoot, 'apps/server/dist/legacy-application.js')).href
+const serverModule = await import(
+  pathToFileURL(
+    join(
+      repositoryRoot,
+      measureNestShell ? 'apps/server/dist/main.js' : 'apps/server/dist/legacy-application.js'
+    )
+  ).href
 );
 const importDurationMs = performance.now() - importedAt;
-const application = createLegacyApplication({
-  host: '127.0.0.1',
-  port: 0,
-  runStartupTasks: false,
-});
+const application = measureNestShell
+  ? await serverModule.createNestApplication({
+      host: '127.0.0.1',
+      port: 0,
+      runStartupTasks: false,
+      enableShutdownHooks: false,
+    })
+  : serverModule.createLegacyApplication({
+      host: '127.0.0.1',
+      port: 0,
+      runStartupTasks: false,
+    });
+const server = measureNestShell ? application.legacy.server : application.server;
 
 try {
   const startedAt = performance.now();
   await application.start();
   const startupDurationMs = performance.now() - startedAt;
-  const address = application.server.address();
+  const address = server.address();
   if (!address || typeof address === 'string') throw new Error('Expected an ephemeral TCP port.');
 
   const durations = [];
@@ -46,7 +60,8 @@ try {
 
   const memory = process.memoryUsage();
   const shutdownAt = performance.now();
-  await application.shutdown('baseline measurement');
+  if (measureNestShell) await application.app.close();
+  else await application.shutdown('baseline measurement');
   const shutdownDurationMs = performance.now() - shutdownAt;
   await new Promise((resolve) => setImmediate(resolve));
   const activeResourcesAfterShutdown = process.getActiveResourcesInfo();
@@ -54,6 +69,7 @@ try {
   console.log(
     JSON.stringify(
       {
+        mode: measureNestShell ? 'nest-shell' : 'legacy',
         measuredAt: new Date().toISOString(),
         node: process.version,
         samples: durations.length,
@@ -76,7 +92,10 @@ try {
     )
   );
 } finally {
-  if (application.server.listening) await application.shutdown('baseline cleanup');
+  if (server.listening) {
+    if (measureNestShell) await application.app.close();
+    else await application.shutdown('baseline cleanup');
+  }
   await rm(dataDirectory, { recursive: true, force: true });
 }
 

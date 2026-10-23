@@ -1616,7 +1616,7 @@
       "owner": "legacy-express",
       "access": "protected",
       "source": "apps/server/src/legacy-application.ts",
-      "line": 546,
+      "line": 593,
       "middleware": [
         "createDetailedHandler()"
       ],

@@ -197,7 +197,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 # Start server
-CMD ["node", "apps/server/dist/index.js"]
+CMD ["node", "apps/server/dist/main.js"]
 
 # Opt-in controller image. The ordinary server target keeps its existing isolation.
 # Only CLI/buildx binaries are copied; no daemon is started inside Automaker.

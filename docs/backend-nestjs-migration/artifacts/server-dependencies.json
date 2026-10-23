@@ -2,19 +2,22 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 454,
-    "internalEdges": 1372,
+    "files": 460,
+    "internalEdges": 1382,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
+    "legacy -> legacy": 3,
+    "legacy -> root": 2,
     "lib -> lib": 3,
     "lib -> services": 1,
     "providers -> lib": 5,
     "providers -> providers": 98,
     "providers -> services": 21,
+    "root -> legacy": 2,
     "root -> lib": 3,
     "root -> middleware": 1,
-    "root -> root": 1,
+    "root -> root": 4,
     "root -> routes": 32,
     "root -> services": 22,
     "routes -> lib": 128,
@@ -54,6 +57,7 @@
       "apps/server/src/lib/git.ts",
       "apps/server/src/lib/request-logging-state.ts",
       "apps/server/src/lib/sdk-options.ts",
+      "apps/server/src/main.ts",
       "apps/server/src/providers/claude-provider.ts",
       "apps/server/src/providers/cli-provider.ts",
       "apps/server/src/providers/codex-provider.ts",
@@ -297,12 +301,15 @@
     "@automaker/platform": 79,
     "@automaker/prompts": 2,
     "@automaker/types": 150,
-    "@automaker/utils": 161,
+    "@automaker/utils": 163,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
+    "@nestjs/common": 5,
+    "@nestjs/core": 1,
+    "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
     "ajv": 4,
     "child_process": 45,
@@ -312,7 +319,7 @@
     "crypto": 5,
     "dotenv": 1,
     "events": 1,
-    "express": 268,
+    "express": 270,
     "fs": 23,
     "fs/promises": 18,
     "http": 1,
@@ -323,7 +330,7 @@
     "node:crypto": 18,
     "node:fs": 3,
     "node:fs/promises": 13,
-    "node:http": 2,
+    "node:http": 3,
     "node:net": 2,
     "node:os": 4,
     "node:path": 18,
@@ -336,6 +343,7 @@
     "os": 16,
     "path": 99,
     "readline": 1,
+    "reflect-metadata": 1,
     "ssh2": 3,
     "url": 1,
     "util": 29,
@@ -345,8 +353,16 @@
   },
   "edges": [
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/app.module.ts",
       "target": "apps/server/src/legacy-application.ts"
+    },
+    {
+      "source": "apps/server/src/app.module.ts",
+      "target": "apps/server/src/legacy/legacy-router.middleware.ts"
+    },
+    {
+      "source": "apps/server/src/app.module.ts",
+      "target": "apps/server/src/legacy/legacy.module.ts"
     },
     {
       "source": "apps/server/src/legacy-application.ts",
@@ -581,6 +597,26 @@
       "target": "apps/server/src/services/zai-usage-service.ts"
     },
     {
+      "source": "apps/server/src/legacy/legacy-router.middleware.ts",
+      "target": "apps/server/src/legacy-application.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/legacy-router.middleware.ts",
+      "target": "apps/server/src/legacy/legacy.tokens.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/legacy.module.ts",
+      "target": "apps/server/src/legacy-application.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/legacy.module.ts",
+      "target": "apps/server/src/legacy/legacy-router.middleware.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/legacy.module.ts",
+      "target": "apps/server/src/legacy/legacy.tokens.ts"
+    },
+    {
       "source": "apps/server/src/lib/auth.ts",
       "target": "apps/server/src/lib/secure-fs.ts"
     },
@@ -595,6 +631,18 @@
     {
       "source": "apps/server/src/lib/worktree-metadata.ts",
       "target": "apps/server/src/lib/secure-fs.ts"
+    },
+    {
+      "source": "apps/server/src/main.ts",
+      "target": "apps/server/src/app.module.ts"
+    },
+    {
+      "source": "apps/server/src/main.ts",
+      "target": "apps/server/src/legacy-application.ts"
+    },
+    {
+      "source": "apps/server/src/main.ts",
+      "target": "apps/server/src/nest-logger.ts"
     },
     {
       "source": "apps/server/src/providers/base-provider.ts",

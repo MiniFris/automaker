@@ -1,0 +1,167 @@
+import type { AddressInfo } from 'node:net';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+
+import { HealthResponseSchema } from '@automaker/contracts';
+import { afterAll, describe, expect, it, vi } from 'vitest';
+import WebSocket from 'ws';
+
+import { createNestApplication } from '../../src/main.js';
+import {
+  assertSingleRouteOwner,
+  getApiRouteGroup,
+  ROUTE_GROUP_OWNERS,
+} from '../../src/legacy/legacy-router.middleware.js';
+import { LEGACY_APPLICATION, LEGACY_SERVICES } from '../../src/legacy/legacy.tokens.js';
+
+const runtime = await createNestApplication({
+  host: '127.0.0.1',
+  port: 0,
+  runStartupTasks: false,
+  enableShutdownHooks: false,
+});
+
+afterAll(async () => {
+  await runtime.app.close();
+});
+
+describe('Nest shell and legacy bridge contract', () => {
+  it('creates the application without listening and shares one HTTP server', () => {
+    expect(runtime.app.getHttpServer()).toBe(runtime.legacy.server);
+    expect(runtime.legacy.server.listening).toBe(false);
+    expect(runtime.app.get(LEGACY_APPLICATION)).toBe(runtime.legacy);
+  });
+
+  it('registers the existing stateful service instances without duplicates', () => {
+    const services = runtime.legacy.services;
+    const expected = {
+      settings: services.settingsService,
+      agent: services.agentService,
+      featureLoader: services.featureLoader,
+      autoMode: services.autoModeService,
+      claudeUsage: services.claudeUsageService,
+      codexAppServer: services.codexAppServerService,
+      codexModelCache: services.codexModelCacheService,
+      codexUsage: services.codexUsageService,
+      zaiUsage: services.zaiUsageService,
+      geminiUsage: services.geminiUsageService,
+      mcpTest: services.mcpTestService,
+      ideation: services.ideationService,
+      devServer: services.devServerService,
+      notification: services.notificationService,
+      eventHistory: services.eventHistoryService,
+      testRunner: services.testRunnerService,
+      terminal: services.terminalService,
+      pipeline: services.pipelineService,
+      eventHook: services.eventHookService,
+    };
+
+    for (const [name, token] of Object.entries(LEGACY_SERVICES)) {
+      expect(runtime.app.get(token), name).toBe(expected[name as keyof typeof expected]);
+    }
+  });
+
+  it('has one explicit owner for every API route group', () => {
+    expect(() => assertSingleRouteOwner(ROUTE_GROUP_OWNERS)).not.toThrow();
+    expect(Object.values(ROUTE_GROUP_OWNERS)).toEqual(expect.arrayContaining(['legacy']));
+    expect(getApiRouteGroup({ originalUrl: '/api/features/feature-1?tab=plan' })).toBe('features');
+    expect(getApiRouteGroup({ originalUrl: '/not-api/features' })).toBeUndefined();
+  });
+
+  it('serves the unchanged public health contract through Nest', async () => {
+    await runtime.start();
+    const address = runtime.legacy.server.address() as AddressInfo;
+    const response = await fetch(`http://127.0.0.1:${address.port}/api/health`);
+
+    expect(response.status).toBe(200);
+    expect(HealthResponseSchema.parse(await response.json())).toMatchObject({ status: 'ok' });
+  });
+
+  it('preserves content-type, authentication, CORS, cookie and body-limit middleware', async () => {
+    const address = runtime.legacy.server.address() as AddressInfo;
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+
+    const protectedResponse = await fetch(`${baseUrl}/api/settings`);
+    expect(protectedResponse.status).toBe(401);
+
+    const missingContentType = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      body: JSON.stringify({ apiKey: 'automaker-test-api-key' }),
+    });
+    expect(missingContentType.status).toBe(415);
+
+    const loginResponse = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey: 'automaker-test-api-key' }),
+    });
+    expect(loginResponse.status).toBe(200);
+    expect(loginResponse.headers.get('set-cookie')).toContain('automaker_session=');
+
+    const corsResponse = await fetch(`${baseUrl}/api/health`, {
+      headers: { Origin: 'http://localhost:4173' },
+    });
+    expect(corsResponse.headers.get('access-control-allow-origin')).toBe('http://localhost:4173');
+    expect(corsResponse.headers.get('access-control-allow-credentials')).toBe('true');
+
+    const oversizedResponse = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey: 'x'.repeat(50 * 1024 * 1024) }),
+    });
+    expect(oversizedResponse.status).toBe(413);
+  });
+
+  it('keeps WebSocket upgrades on the shared Nest HTTP server', async () => {
+    const address = runtime.legacy.server.address() as AddressInfo;
+    const socket = new WebSocket(
+      `ws://127.0.0.1:${address.port}/api/events?apiKey=automaker-test-api-key`
+    );
+    await new Promise<void>((resolve, reject) => {
+      socket.once('open', resolve);
+      socket.once('error', reject);
+    });
+
+    expect(socket.readyState).toBe(WebSocket.OPEN);
+    socket.close();
+  });
+
+  it('preserves authentication for every protected endpoint through Nest', async () => {
+    const inventoryPath = path.resolve(
+      import.meta.dirname,
+      '../../../../docs/backend-nestjs-migration/artifacts/http-routes.json'
+    );
+    const inventory = JSON.parse(await readFile(inventoryPath, 'utf8')) as {
+      endpoints: Array<{ access: string; method: string; path: string }>;
+    };
+    const address = runtime.legacy.server.address() as AddressInfo;
+
+    for (const endpoint of inventory.endpoints.filter(({ access }) => access === 'protected')) {
+      const requestPath = endpoint.path
+        .replace(/:[^/]+/g, 'contract-fixture')
+        .replace(/\*/g, 'contract-fixture');
+      const response = await fetch(`http://127.0.0.1:${address.port}${requestPath}`, {
+        method: endpoint.method,
+        headers: { 'Content-Type': 'application/json' },
+        body: ['GET', 'HEAD'].includes(endpoint.method) ? undefined : '{}',
+      });
+
+      expect(response.status, `${endpoint.method} ${endpoint.path}`).toBe(401);
+    }
+  });
+
+  it('cleans up a partially initialized Nest application when a blocking task fails', async () => {
+    const initialize = vi.fn().mockRejectedValue(new Error('startup fixture failed'));
+
+    await expect(
+      createNestApplication({
+        host: '127.0.0.1',
+        port: 0,
+        runStartupTasks: true,
+        enableShutdownHooks: false,
+        services: { agentService: { initialize } as never },
+      })
+    ).rejects.toThrow('startup fixture failed');
+    expect(initialize).toHaveBeenCalledOnce();
+  });
+});

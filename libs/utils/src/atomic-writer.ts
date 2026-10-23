@@ -118,7 +118,11 @@ export async function atomicWriteJson<T>(
       await rotateBackups(resolvedPath, backupCount);
     }
 
-    await secureFs.writeFile(tempPath, content, options.mode === undefined ? 'utf-8' : { encoding: 'utf-8', mode: options.mode, flag: 'wx' });
+    await secureFs.writeFile(
+      tempPath,
+      content,
+      options.mode === undefined ? 'utf-8' : { encoding: 'utf-8', mode: options.mode, flag: 'wx' }
+    );
     await secureFs.rename(tempPath, resolvedPath);
   } catch (error) {
     // Clean up temp file if it exists

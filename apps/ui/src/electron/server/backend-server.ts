@@ -70,7 +70,7 @@ export async function startServer(): Promise<void> {
 
   // __dirname is apps/ui/dist-electron (Vite bundles all into single file)
   if (isDev) {
-    serverPath = path.join(__dirname, '../../server/src/index.ts');
+    serverPath = path.join(__dirname, '../../server/src/main.ts');
 
     const serverNodeModules = path.join(__dirname, '../../server/node_modules/tsx');
     const rootNodeModules = path.join(__dirname, '../../../node_modules/tsx');
@@ -104,7 +104,7 @@ export async function startServer(): Promise<void> {
 
     args = [tsxCliPath, 'watch', serverPath];
   } else {
-    serverPath = path.join(process.resourcesPath, 'server', 'index.js');
+    serverPath = path.join(process.resourcesPath, 'server', 'main.js');
     args = [serverPath];
 
     if (!electronAppExists(serverPath)) {

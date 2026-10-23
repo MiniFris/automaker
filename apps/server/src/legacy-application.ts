@@ -258,7 +258,13 @@ export interface LegacyApplicationOptions {
   host?: string;
   port?: number;
   runStartupTasks?: boolean;
+  httpServer?: ReturnType<typeof createServer>;
   services?: Partial<LegacyServiceOverrides>;
+}
+
+export interface LegacyShutdownOptions {
+  closeHttpServer?: boolean;
+  exitProcess?: boolean;
 }
 
 export interface LegacyApplication {
@@ -266,8 +272,10 @@ export interface LegacyApplication {
   server: ReturnType<typeof createServer>;
   events: EventEmitter;
   services: LegacyServiceOverrides;
+  initialize(): Promise<void>;
   start(): Promise<void>;
-  shutdown(signal?: string): Promise<void>;
+  shutdown(signal?: string, options?: LegacyShutdownOptions): Promise<void>;
+  installExceptionHandlers(): void;
   installProcessHandlers(): void;
 }
 
@@ -506,26 +514,65 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
 
   // Run stale validation cleanup every hour to prevent memory leaks from crashed validations
   const VALIDATION_CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+  const STARTUP_TASK_TIMEOUT_MS = 120_000;
   let validationCleanupInterval: NodeJS.Timeout | undefined;
   let startupTasksPromise: Promise<void> | undefined;
+
+  async function runNamedStartupTask(
+    name: string,
+    task: () => Promise<void>,
+    failurePolicy: 'fail-startup' | 'log-and-continue'
+  ): Promise<void> {
+    let timeout: NodeJS.Timeout | undefined;
+    try {
+      await Promise.race([
+        task(),
+        new Promise<never>((_resolve, reject) => {
+          timeout = setTimeout(
+            () => reject(new Error(`Startup task "${name}" timed out`)),
+            STARTUP_TASK_TIMEOUT_MS
+          );
+          timeout.unref();
+        }),
+      ]);
+    } catch (error) {
+      if (failurePolicy === 'fail-startup') throw error;
+      logger.error(`Startup task "${name}" failed:`, error);
+    } finally {
+      if (timeout) clearTimeout(timeout);
+    }
+  }
 
   function runStartupTasks(): Promise<void> {
     if (startupTasksPromise) return startupTasksPromise;
 
-    startupTasksPromise = Promise.all([
-      checkClaudeAuthentication(),
-      devServerService.initialize(dataDir, events).catch((err) => {
-        logger.error('Failed to initialize DevServerService:', err);
-      }),
-      initializeServices(),
-    ]).then(() => undefined);
+    startupTasksPromise = (async () => {
+      // Required stateful dependencies must be ready before any background task starts.
+      await runNamedStartupTask(
+        'legacy-service-initialization',
+        initializeServices,
+        'fail-startup'
+      );
 
-    eventHookService.initialize(events, settingsService, eventHistoryService, featureLoader);
-    validationCleanupInterval = setInterval(() => {
-      const cleaned = cleanupStaleValidations();
-      if (cleaned > 0) logger.info(`Cleaned up ${cleaned} stale validation entries`);
-    }, VALIDATION_CLEANUP_INTERVAL_MS);
-    validationCleanupInterval.unref();
+      await runNamedStartupTask(
+        'dev-server-state-recovery',
+        () => devServerService.initialize(dataDir, events),
+        'log-and-continue'
+      );
+
+      eventHookService.initialize(events, settingsService, eventHistoryService, featureLoader);
+      validationCleanupInterval = setInterval(() => {
+        const cleaned = cleanupStaleValidations();
+        if (cleaned > 0) logger.info(`Cleaned up ${cleaned} stale validation entries`);
+      }, VALIDATION_CLEANUP_INTERVAL_MS);
+      validationCleanupInterval.unref();
+
+      void runNamedStartupTask(
+        'claude-authentication-detection',
+        checkClaudeAuthentication,
+        'log-and-continue'
+      );
+    })();
 
     return startupTasksPromise;
   }
@@ -589,7 +636,7 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   );
 
   // Create HTTP server
-  const server = createServer(app);
+  const server = options.httpServer ?? createServer(app);
 
   // WebSocket servers using noServer mode for proper multi-path support
   const wss = new WebSocketServer({ noServer: true });
@@ -1041,7 +1088,25 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   const SHUTDOWN_TIMEOUT_MS = 30000;
 
   // Graceful shutdown helper
-  const gracefulShutdown = async (signal: string, exitProcess = true): Promise<void> => {
+  let shutdownPromise: Promise<void> | undefined;
+  const gracefulShutdown = (
+    signal: string,
+    shutdownOptions: LegacyShutdownOptions = {}
+  ): Promise<void> => {
+    if (shutdownPromise) return shutdownPromise;
+
+    const { closeHttpServer = true, exitProcess = false } = shutdownOptions;
+    shutdownPromise = performGracefulShutdown(signal, closeHttpServer, exitProcess).finally(() => {
+      shutdownPromise = undefined;
+    });
+    return shutdownPromise;
+  };
+
+  const performGracefulShutdown = async (
+    signal: string,
+    closeHttpServer: boolean,
+    exitProcess: boolean
+  ): Promise<void> => {
     logger.info(`${signal} received, shutting down...`);
 
     // Set up a force-exit timeout to prevent hanging
@@ -1062,18 +1127,20 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
       clearInterval(validationCleanupInterval);
       validationCleanupInterval = undefined;
     }
-    await new Promise<void>((resolve, reject) => {
-      if (!server.listening) {
-        resolve();
-        return;
-      }
-      server.close((error) => {
-        if (error) reject(error);
-        else resolve();
+    if (closeHttpServer) {
+      await new Promise<void>((resolve, reject) => {
+        if (!server.listening) {
+          resolve();
+          return;
+        }
+        server.close((error) => {
+          if (error) reject(error);
+          else resolve();
+        });
       });
-    });
+    }
     clearTimeout(forceExitTimeout);
-    logger.info('Server closed');
+    logger.info(closeHttpServer ? 'Server closed' : 'Legacy services stopped');
     if (exitProcess) process.exit(0);
   };
 
@@ -1105,18 +1172,25 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
     server,
     events,
     services,
+    async initialize() {
+      if (options.runStartupTasks) await runStartupTasks();
+    },
     async start() {
       if (options.runStartupTasks) await runStartupTasks();
       await startServer(port, host);
     },
-    shutdown(signal = 'application shutdown') {
-      return gracefulShutdown(signal, false);
+    shutdown(signal = 'application shutdown', shutdownOptions) {
+      return gracefulShutdown(signal, shutdownOptions);
+    },
+    installExceptionHandlers() {
+      process.on('unhandledRejection', handleUnhandledRejection);
+      process.on('uncaughtException', handleUncaughtException);
     },
     installProcessHandlers() {
       process.on('unhandledRejection', handleUnhandledRejection);
       process.on('uncaughtException', handleUncaughtException);
-      process.on('SIGTERM', () => void gracefulShutdown('SIGTERM'));
-      process.on('SIGINT', () => void gracefulShutdown('SIGINT'));
+      process.on('SIGTERM', () => void gracefulShutdown('SIGTERM', { exitProcess: true }));
+      process.on('SIGINT', () => void gracefulShutdown('SIGINT', { exitProcess: true }));
     },
   };
 }

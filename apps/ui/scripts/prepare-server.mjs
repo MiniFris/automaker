@@ -21,6 +21,7 @@ const BUNDLE_DIR = join(APP_DIR, 'server-bundle');
 
 // Local workspace packages that need to be bundled
 const LOCAL_PACKAGES = [
+  '@automaker/contracts',
   '@automaker/types',
   '@automaker/utils',
   '@automaker/prompts',
@@ -94,7 +95,7 @@ const bundlePkg = {
   name: '@automaker/server-bundle',
   version: serverPkg.version,
   type: 'module',
-  main: 'dist/index.js',
+  main: 'dist/main.js',
   dependencies,
 };
 

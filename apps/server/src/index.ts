@@ -1,6 +1,2 @@
-import { createLegacyApplication } from './legacy-application.js';
-
-const application = createLegacyApplication({ runStartupTasks: true });
-
-await application.start();
-application.installProcessHandlers();
+// Compatibility entry point for consumers that have not switched to dist/main.js yet.
+await import('./main.js');
