@@ -96,6 +96,14 @@ export const NEST_OWNED_ROUTE_PATHS = new Set<string>([
   'POST /api/fs/delete-board-background',
   'GET /api/fs/image',
   'POST /api/fs/download',
+  'GET /api/features/list',
+  'POST /api/features/list',
+  'POST /api/features/get',
+  'POST /api/features/agent-output',
+  'POST /api/features/raw-output',
+  'POST /api/features/export',
+  'POST /api/features/check-conflicts',
+  'POST /api/features/orphaned',
 ]);
 
 export function getApiRouteGroup(request: Pick<Request, 'originalUrl'>): string | undefined {

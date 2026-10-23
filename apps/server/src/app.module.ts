@@ -23,6 +23,7 @@ import { SettingsModule } from './modules/settings/settings.module.js';
 import { ProjectsModule } from './modules/projects/projects.module.js';
 import { FilesModule } from './modules/files/files.module.js';
 import { ContextModule } from './modules/context/context.module.js';
+import { FeaturesModule } from './modules/features/features.module.js';
 
 @Module({})
 export class AppModule {
@@ -48,6 +49,7 @@ export class AppModule {
         ProjectsModule,
         FilesModule,
         ContextModule,
+        FeaturesModule,
         HealthModule,
         ModelsModule,
         NotificationsModule,

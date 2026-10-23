@@ -323,6 +323,24 @@ describe('Nest shell and legacy bridge contract', () => {
       });
       expect(invalidContextImage.status).toBe(400);
 
+      const featureList = await fetch(
+        `${baseUrl}/api/features/list?projectPath=${encodeURIComponent(projectPath)}`,
+        { headers }
+      );
+      expect(featureList.status).toBe(200);
+      expect(await featureList.json()).toMatchObject({ success: true, features: [] });
+
+      const missingFeature = await fetch(`${baseUrl}/api/features/get`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ projectPath, featureId: 'missing-feature' }),
+      });
+      expect(missingFeature.status).toBe(404);
+      expect(await missingFeature.json()).toMatchObject({
+        success: false,
+        errorCode: 'NOT_FOUND',
+      });
+
       for (const route of ['notifications/list', 'event-history/list']) {
         const response = await fetch(`${baseUrl}/api/${route}`, {
           method: 'POST',
