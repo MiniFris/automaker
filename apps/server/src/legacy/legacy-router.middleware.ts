@@ -17,7 +17,7 @@ export const ROUTE_GROUP_OWNERS: Readonly<Record<string, RouteOwner>> = {
   'auto-mode': 'legacy',
   'enhance-prompt': 'legacy',
   worktree: 'legacy',
-  git: 'legacy',
+  git: 'nest',
   models: 'nest',
   'spec-regeneration': 'nest',
   'running-agents': 'legacy',

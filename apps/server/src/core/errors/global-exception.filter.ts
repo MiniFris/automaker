@@ -32,9 +32,17 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       });
       return;
     }
+    const infrastructureCode =
+      exception &&
+      typeof exception === 'object' &&
+      'code' in exception &&
+      typeof exception.code === 'string'
+        ? { code: exception.code }
+        : {};
     response.status(status).json({
       success: false,
       error,
+      ...infrastructureCode,
       ...(domainError && { errorCode: domainError.errorCode }),
       ...(correlationId && { correlationId }),
     });

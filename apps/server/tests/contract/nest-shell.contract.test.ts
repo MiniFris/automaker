@@ -2,6 +2,8 @@ import type { AddressInfo } from 'node:net';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 
 import {
   API_CONTRACT_VERSION,
@@ -19,6 +21,8 @@ import {
 } from '../../src/legacy/legacy-router.middleware.js';
 import { LEGACY_APPLICATION, LEGACY_SERVICES } from '../../src/legacy/legacy.tokens.js';
 import { SettingsService } from '../../src/services/settings-service.js';
+
+const execFileAsync = promisify(execFile);
 
 const runtime = await createNestApplication({
   host: '127.0.0.1',
@@ -569,6 +573,51 @@ describe('Nest shell and legacy bridge contract', () => {
       });
       expect(deleteIdea.status).toBe(200);
       expect(await deleteIdea.json()).toEqual({ success: true });
+
+      await execFileAsync('git', ['init'], { cwd: projectPath });
+      await execFileAsync('git', ['config', 'user.name', 'Contract Test'], { cwd: projectPath });
+      await execFileAsync('git', ['config', 'user.email', 'contract@example.test'], {
+        cwd: projectPath,
+      });
+      const trackedFile = path.join(projectPath, 'tracked.txt');
+      await writeFile(trackedFile, 'initial\n');
+      await execFileAsync('git', ['add', '--', 'tracked.txt'], { cwd: projectPath });
+      await execFileAsync('git', ['commit', '-m', 'initial'], { cwd: projectPath });
+      await writeFile(trackedFile, 'changed\n');
+
+      const gitDiffs = await fetch(`${baseUrl}/api/git/diffs`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ projectPath }),
+      });
+      expect(gitDiffs.status).toBe(200);
+      expect(await gitDiffs.json()).toMatchObject({
+        success: true,
+        hasChanges: true,
+        executionEnvironment: { type: 'local', projectPath },
+      });
+
+      const gitDetails = await fetch(`${baseUrl}/api/git/details`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ projectPath, filePath: 'tracked.txt' }),
+      });
+      expect(gitDetails.status).toBe(200);
+      expect(await gitDetails.json()).toMatchObject({
+        success: true,
+        details: { isUnstaged: true },
+      });
+
+      const stageFile = await fetch(`${baseUrl}/api/git/stage-files`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ projectPath, files: ['tracked.txt'], operation: 'stage' }),
+      });
+      expect(stageFile.status).toBe(200);
+      expect(await stageFile.json()).toMatchObject({
+        success: true,
+        result: { operation: 'stage', filesCount: 1 },
+      });
 
       for (const route of ['notifications/list', 'event-history/list']) {
         const response = await fetch(`${baseUrl}/api/${route}`, {

@@ -9,6 +9,7 @@ import { ManagedDocker, DockerExecutionEnvironment } from './docker.js';
 import { ManagedSSH, SSHExecutionEnvironment } from './ssh.js';
 import { boundRuntime } from './bound-runtime.js';
 import { ExecutionEnvironmentError, type ExecutionEnvironment } from './runtime.js';
+import { LocalExecutionEnvironment } from './local.js';
 import { nodeCommand } from './ssh-transport.js';
 import { PROJECT_GIT_WORKER } from './project-git-worker.js';
 
@@ -196,6 +197,38 @@ export class ProjectGitService {
       binding,
       identity,
       workspaceBranch: binding ? undefined : featureId,
+    };
+  }
+
+  /** Resolve a managed target or an explicit controller-local target without preparing either. */
+  async resolveOrLocal(requested: string, featureId?: string): Promise<ProjectGitTarget> {
+    const managed = await this.resolve(requested, featureId);
+    if (managed) return managed;
+    const normalized = path.resolve(requested);
+    const separator = path.sep + '.worktrees' + path.sep;
+    const rootHint = normalized.includes(separator)
+      ? normalized.slice(0, normalized.indexOf(separator))
+      : normalized;
+    validatePath(rootHint);
+    const projectPath = await fs.realpath(rootHint);
+    const alias = await fs.realpath(path.resolve(projectPath, path.relative(rootHint, normalized)));
+    validatePath(alias);
+    const runtime = await LocalExecutionEnvironment.create(alias);
+    const targetId = identityHash(['local', projectPath, alias]);
+    return {
+      environment: {
+        type: 'local',
+        projectPath,
+        path: alias,
+        runtimeCwd: runtime.cwd,
+        root: projectPath,
+        pinned: false,
+        targetId,
+      },
+      runtime,
+      root: projectPath,
+      identity: ['local', projectPath, alias],
+      workspaceBranch: featureId,
     };
   }
 

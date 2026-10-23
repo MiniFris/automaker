@@ -29,6 +29,7 @@ import { AppSpecModule } from './modules/app-spec/app-spec.module.js';
 import { BacklogPlanModule } from './modules/backlog-plan/backlog-plan.module.js';
 import { IdeationModule } from './modules/ideation/ideation.module.js';
 import { ExecutionModule } from './modules/execution/execution.module.js';
+import { GitModule } from './modules/git/git.module.js';
 
 @Module({})
 export class AppModule {
@@ -60,6 +61,7 @@ export class AppModule {
         BacklogPlanModule,
         IdeationModule,
         ExecutionModule,
+        GitModule,
         HealthModule,
         ModelsModule,
         NotificationsModule,

@@ -42,7 +42,6 @@ import { createAgentRoutes } from './routes/agent/index.js';
 import { createAutoModeRoutes } from './routes/auto-mode/index.js';
 import { createEnhancePromptRoutes } from './routes/enhance-prompt/index.js';
 import { createWorktreeRoutes } from './routes/worktree/index.js';
-import { createGitRoutes } from './routes/git/index.js';
 import { createSetupRoutes } from './routes/setup/index.js';
 import { createRunningAgentsRoutes } from './routes/running-agents/index.js';
 import {
@@ -586,10 +585,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
     createWorktreeRoutes(events, settingsService, featureLoader, (projectPath) =>
       autoModeService.isProjectRunning(projectPath)
     )
-  );
-  app.use(
-    '/api/git',
-    createGitRoutes(settingsService, (projectPath) => autoModeService.isProjectRunning(projectPath))
   );
   app.use('/api/running-agents', createRunningAgentsRoutes(autoModeService));
   app.use('/api/terminal', createTerminalRoutes());
