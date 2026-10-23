@@ -28,6 +28,7 @@ import { SessionsModule } from './modules/sessions/sessions.module.js';
 import { AppSpecModule } from './modules/app-spec/app-spec.module.js';
 import { BacklogPlanModule } from './modules/backlog-plan/backlog-plan.module.js';
 import { IdeationModule } from './modules/ideation/ideation.module.js';
+import { ExecutionModule } from './modules/execution/execution.module.js';
 
 @Module({})
 export class AppModule {
@@ -58,6 +59,7 @@ export class AppModule {
         AppSpecModule,
         BacklogPlanModule,
         IdeationModule,
+        ExecutionModule,
         HealthModule,
         ModelsModule,
         NotificationsModule,
