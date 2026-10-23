@@ -50,7 +50,6 @@ import { RecoveryService } from '../recovery-service.js';
 import { PipelineOrchestrator } from '../pipeline-orchestrator.js';
 import { AgentExecutor } from '../agent-executor.js';
 import { TestRunnerService } from '../test-runner-service.js';
-import { ProviderFactory } from '../../providers/provider-factory.js';
 import { FeatureLoader } from '../feature-loader.js';
 import type { SettingsService } from '../settings-service.js';
 import type { EventEmitter } from '../../lib/events.js';
@@ -272,10 +271,8 @@ export class AutoModeServiceFacade {
           settingsService &&
           (await hasRemoteEnvironment(settingsService, pPath, `feature:${pPath}:${featureId}`));
         const provider = remoteCLI
-          ? (providerRegistry?.providerForModel(resolvedModel, { throwOnDisconnected: false }) ??
-            ProviderFactory.getProviderForModel(resolvedModel, { throwOnDisconnected: false }))
-          : (providerRegistry?.providerForModel(resolvedModel) ??
-            ProviderFactory.getProviderForModel(resolvedModel));
+          ? providerRegistry.providerForModel(resolvedModel, { throwOnDisconnected: false })
+          : providerRegistry.providerForModel(resolvedModel);
         const effectiveBareModel = stripProviderPrefix(resolvedModel);
 
         // Resolve custom provider (GLM, MiniMax, etc.) for baseUrl and credentials

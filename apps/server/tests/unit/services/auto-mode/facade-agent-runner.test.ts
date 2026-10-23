@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mock dependencies (hoisted)
 vi.mock('../../../../src/services/agent-executor.js');
 vi.mock('../../../../src/lib/settings-helpers.js');
-vi.mock('../../../../src/providers/provider-factory.js');
 vi.mock('../../../../src/lib/sdk-options.js');
 vi.mock('../../../../src/providers/environment-execution.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../../../src/providers/environment-execution.js')>()),
@@ -17,8 +16,10 @@ vi.mock('@automaker/model-resolver', () => ({
 import { AutoModeServiceFacade } from '../../../../src/services/auto-mode/facade.js';
 import { AgentExecutor } from '../../../../src/services/agent-executor.js';
 import * as settingsHelpers from '../../../../src/lib/settings-helpers.js';
-import { ProviderFactory } from '../../../../src/providers/provider-factory.js';
+import type { ProviderRegistry } from '../../../../src/modules/providers/provider-registry.service.js';
 import * as sdkOptions from '../../../../src/lib/sdk-options.js';
+
+const providers = { providerForModel: vi.fn() };
 
 describe('AutoModeServiceFacade Agent Runner', () => {
   let mockAgentExecutor: MockAgentExecutor;
@@ -62,6 +63,7 @@ describe('AutoModeServiceFacade Agent Runner', () => {
 
     // Helper to access the private createRunAgentFn via factory creation
     facade = AutoModeServiceFacade.create('/project', {
+      providerRegistry: providers as unknown as ProviderRegistry,
       events: { on: vi.fn(), emit: vi.fn(), subscribe: vi.fn().mockReturnValue(vi.fn()) } as any,
       settingsService: mockSettingsService,
       sharedServices: {
@@ -78,7 +80,7 @@ describe('AutoModeServiceFacade Agent Runner', () => {
   it('should resolve provider by providerId and pass to AgentExecutor', async () => {
     // 1. Setup mocks
     const mockProvider = { getName: () => 'mock-provider' };
-    (ProviderFactory.getProviderForModel as any).mockReturnValue(mockProvider);
+    providers.providerForModel.mockReturnValue(mockProvider);
 
     const mockClaudeProvider = { id: 'zai-1', name: 'Zai' };
     const mockCredentials = { apiKey: 'test-key' };
@@ -124,7 +126,7 @@ describe('AutoModeServiceFacade Agent Runner', () => {
 
   it('should fallback to model-based lookup if providerId is not provided', async () => {
     const mockProvider = { getName: () => 'mock-provider' };
-    (ProviderFactory.getProviderForModel as any).mockReturnValue(mockProvider);
+    providers.providerForModel.mockReturnValue(mockProvider);
 
     const mockClaudeProvider = { id: 'zai-model', name: 'Zai Model' };
     (settingsHelpers.resolveProviderContext as any).mockResolvedValue({
@@ -165,7 +167,7 @@ describe('AutoModeServiceFacade Agent Runner', () => {
 
   it('should use resolvedModel from provider config for createAutoModeOptions if it maps to a Claude model', async () => {
     const mockProvider = { getName: () => 'mock-provider' };
-    (ProviderFactory.getProviderForModel as any).mockReturnValue(mockProvider);
+    providers.providerForModel.mockReturnValue(mockProvider);
 
     const mockClaudeProvider = {
       id: 'zai-1',

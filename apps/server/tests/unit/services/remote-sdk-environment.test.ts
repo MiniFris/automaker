@@ -1,3 +1,4 @@
+import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -226,7 +227,12 @@ describe.skipIf(process.platform !== 'linux')('target-side SDK setup and executi
   );
   it('uses real chat and preserves the SDK/runtime session across restart and default changes', async () => {
     await install('claude');
-    const service = new AgentService(settings.getDataDirectory(), createEventEmitter(), settings);
+    const service = new AgentService(
+      settings.getDataDirectory(),
+      createEventEmitter(),
+      settings,
+      createTestProviderRegistry(settings)
+    );
     await service.initialize();
     const session = await service.createSession('Remote SDK', project, project, 'sonnet');
     expect(
@@ -239,7 +245,12 @@ describe.skipIf(process.platform !== 'linux')('target-side SDK setup and executi
     await settings.updateGlobalSettings({
       executionEnvironment: { default: { mode: 'local' }, profiles: [] },
     });
-    const restarted = new AgentService(settings.getDataDirectory(), createEventEmitter(), settings);
+    const restarted = new AgentService(
+      settings.getDataDirectory(),
+      createEventEmitter(),
+      settings,
+      createTestProviderRegistry(settings)
+    );
     await restarted.initialize();
     expect(
       (await restarted.sendMessage({ sessionId: session.id, message: 'Continue' })).success
@@ -264,6 +275,7 @@ describe.skipIf(process.platform !== 'linux')('target-side SDK setup and executi
       skipTests: true,
     });
     const facade = AutoModeServiceFacade.create(project, {
+      providerRegistry: createTestProviderRegistry(settings),
       events: createEventEmitter(),
       settingsService: settings,
       featureLoader: loader,

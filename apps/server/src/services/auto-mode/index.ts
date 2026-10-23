@@ -33,6 +33,7 @@ import type { FacadeOptions } from './types.js';
  * const facade = createAutoModeFacade('/path/to/project', {
  *   events: eventEmitter,
  *   settingsService,
+ *   providerRegistry,
  * });
  *
  * // Start auto mode

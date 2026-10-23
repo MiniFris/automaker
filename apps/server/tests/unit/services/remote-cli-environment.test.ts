@@ -1,3 +1,4 @@
+import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -161,7 +162,12 @@ const send=event=>process.stdout.write(JSON.stringify(event)+'\\n');
       15000
     );
     it('uses the real chat service without controller context and keeps the binding on restart/default change', async () => {
-      const service = new AgentService(settings.getDataDirectory(), createEventEmitter(), settings);
+      const service = new AgentService(
+        settings.getDataDirectory(),
+        createEventEmitter(),
+        settings,
+        createTestProviderRegistry(settings)
+      );
       await service.initialize();
       const session = await service.createSession('Remote CLI', project, project, 'cursor-auto');
       expect(
@@ -179,7 +185,8 @@ const send=event=>process.stdout.write(JSON.stringify(event)+'\\n');
       const restarted = new AgentService(
         settings.getDataDirectory(),
         createEventEmitter(),
-        settings
+        settings,
+        createTestProviderRegistry(settings)
       );
       await restarted.initialize();
       expect(
@@ -248,6 +255,7 @@ const send=event=>process.stdout.write(JSON.stringify(event)+'\\n');
       });
       const events = createEventEmitter();
       const facade = AutoModeServiceFacade.create(project, {
+        providerRegistry: createTestProviderRegistry(settings),
         events,
         settingsService: settings,
         featureLoader: loader,

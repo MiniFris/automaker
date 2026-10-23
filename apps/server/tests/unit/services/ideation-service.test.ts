@@ -13,7 +13,7 @@ import type {
   IdeationSession,
   StartSessionOptions,
 } from '@automaker/types';
-import { ProviderFactory } from '@/providers/provider-factory.js';
+import type { ProviderRegistry } from '@/modules/providers/provider-registry.service.js';
 
 // Create shared mock instances for assertions using vi.hoisted
 const mockLogger = vi.hoisted(() => ({
@@ -42,11 +42,12 @@ vi.mock('@automaker/utils', async () => {
     isAbortError: vi.fn(),
   };
 });
-vi.mock('@/providers/provider-factory.js');
 vi.mock('@/lib/sdk-options.js', () => ({
   createChatOptions: mockCreateChatOptions,
   validateWorkingDirectory: vi.fn(),
 }));
+
+const providers = { providerForModel: vi.fn() };
 
 describe('IdeationService', () => {
   let service: IdeationService;
@@ -103,7 +104,12 @@ describe('IdeationService', () => {
     });
     vi.mocked(utils.isAbortError).mockReturnValue(false);
 
-    service = new IdeationService(mockEvents, mockSettingsService, mockFeatureLoader);
+    service = new IdeationService(
+      mockEvents,
+      mockSettingsService,
+      mockFeatureLoader,
+      providers as unknown as ProviderRegistry
+    );
   });
 
   afterEach(() => {
@@ -165,7 +171,7 @@ describe('IdeationService', () => {
             },
           }),
         };
-        vi.mocked(ProviderFactory.getProviderForModel).mockReturnValue(mockProvider as any);
+        vi.mocked(providers.providerForModel).mockReturnValue(mockProvider as any);
 
         const options: StartSessionOptions = {
           initialMessage: 'Hello, AI!',
@@ -764,7 +770,7 @@ describe('IdeationService', () => {
           }),
         };
 
-        vi.mocked(ProviderFactory.getProviderForModel).mockReturnValue(mockProvider as any);
+        vi.mocked(providers.providerForModel).mockReturnValue(mockProvider as any);
 
         const prompts = service.getAllPrompts();
         const firstPrompt = prompts[0];
@@ -827,7 +833,7 @@ describe('IdeationService', () => {
             },
           }),
         };
-        vi.mocked(ProviderFactory.getProviderForModel).mockReturnValue(mockProvider as any);
+        vi.mocked(providers.providerForModel).mockReturnValue(mockProvider as any);
 
         const prompts = service.getAllPrompts();
         await service.generateSuggestions(testProjectPath, prompts[0].id, 'feature', 5, {
@@ -869,7 +875,7 @@ describe('IdeationService', () => {
             },
           }),
         };
-        vi.mocked(ProviderFactory.getProviderForModel).mockReturnValue(mockProvider as any);
+        vi.mocked(providers.providerForModel).mockReturnValue(mockProvider as any);
 
         const prompts = service.getAllPrompts();
         await service.generateSuggestions(testProjectPath, prompts[0].id, 'feature', 5, {
@@ -909,7 +915,7 @@ describe('IdeationService', () => {
             },
           }),
         };
-        vi.mocked(ProviderFactory.getProviderForModel).mockReturnValue(mockProvider as any);
+        vi.mocked(providers.providerForModel).mockReturnValue(mockProvider as any);
 
         const prompts = service.getAllPrompts();
 

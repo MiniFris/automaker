@@ -18,7 +18,6 @@ import {
   atomicWriteJson,
   DEFAULT_BACKUP_COUNT,
 } from '@automaker/utils';
-import { ProviderFactory } from '../providers/provider-factory.js';
 import type { ProviderRegistry } from '../modules/providers/provider-registry.service.js';
 import type { ToolPolicyService } from '../modules/providers/tool-policy.service.js';
 import { createChatOptions, validateWorkingDirectory } from '../lib/sdk-options.js';
@@ -100,22 +99,20 @@ export class AgentService {
   private metadataFile: string;
   private events: EventEmitter;
   private settingsService: SettingsService | null = null;
-  private providerRegistry: ProviderRegistry | null = null;
   private toolPolicy: ToolPolicyService | null = null;
   private logger = createLogger('AgentService');
 
   constructor(
     dataDir: string,
     events: EventEmitter,
-    settingsService?: SettingsService,
-    providerRegistry?: ProviderRegistry,
+    settingsService: SettingsService | undefined,
+    private readonly providerRegistry: ProviderRegistry,
     toolPolicy?: ToolPolicyService
   ) {
     this.stateDir = path.join(dataDir, 'agent-sessions');
     this.metadataFile = path.join(dataDir, 'sessions-metadata.json');
     this.events = events;
     this.settingsService = settingsService ?? null;
-    this.providerRegistry = providerRegistry ?? null;
     this.toolPolicy = toolPolicy ?? null;
   }
 
@@ -340,9 +337,7 @@ export class AgentService {
     // Validate vision support before processing images
     const effectiveModel = model || session.model;
     if (imagePaths && imagePaths.length > 0 && effectiveModel) {
-      const supportsVision = this.providerRegistry
-        ? this.providerRegistry.supportsVision(effectiveModel)
-        : ProviderFactory.modelSupportsVision(effectiveModel);
+      const supportsVision = this.providerRegistry.supportsVision(effectiveModel);
       if (!supportsVision) {
         throw new Error(
           `This model (${effectiveModel}) does not support image input. ` +
@@ -595,7 +590,7 @@ export class AgentService {
         ? (requestedModel ?? effectiveModel)
         : effectiveModel;
 
-      if (this.toolPolicy && this.providerRegistry) {
+      if (this.toolPolicy) {
         const capabilities = this.providerRegistry
           .byName(this.providerRegistry.providerNameForModel(modelForProvider))
           ?.getCapabilities();
@@ -690,13 +685,9 @@ export class AgentService {
       const allowDisconnected =
         prepared.executionEnvironmentBinding?.type === 'ssh' ||
         prepared.executionEnvironmentBinding?.type === 'docker';
-      const provider = this.providerRegistry
-        ? this.providerRegistry.providerForModel(modelForProvider, {
-            throwOnDisconnected: !allowDisconnected,
-          })
-        : allowDisconnected
-          ? ProviderFactory.getProviderForModel(modelForProvider, { throwOnDisconnected: false })
-          : ProviderFactory.getProviderForModel(modelForProvider);
+      const provider = this.providerRegistry.providerForModel(modelForProvider, {
+        throwOnDisconnected: !allowDisconnected,
+      });
       const stream = provider.executeQuery(prepared);
 
       let currentAssistantMessage: Message | null = null;

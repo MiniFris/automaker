@@ -8,7 +8,6 @@ import { isDirectModel } from '@automaker/types';
 import { createLogger, classifyError, loadContextFiles, recordMemoryUsage } from '@automaker/utils';
 import { resolveModelString, DEFAULT_MODELS } from '@automaker/model-resolver';
 import { getFeatureDir } from '@automaker/platform';
-import { ProviderFactory } from '../providers/provider-factory.js';
 import type { ProviderRegistry } from '../modules/providers/provider-registry.service.js';
 import * as secureFs from '../lib/secure-fs.js';
 import {
@@ -90,7 +89,7 @@ export class ExecutionService {
     private recordSuccessFn: RecordSuccessFn,
     private saveExecutionStateFn: SaveExecutionStateFn,
     private loadContextFilesFn: LoadContextFilesFn,
-    private providerRegistry?: ProviderRegistry
+    private readonly providerRegistry: ProviderRegistry
   ) {}
 
   private acquireRunningFeature(options: {
@@ -337,9 +336,7 @@ ${feature.spec}
       );
       const model = resolveModelString(feature.model, DEFAULT_MODELS.claude);
       tempRunningFeature.model = model;
-      tempRunningFeature.provider = this.providerRegistry
-        ? this.providerRegistry.providerNameForModel(model)
-        : ProviderFactory.getProviderNameForModel(model);
+      tempRunningFeature.provider = this.providerRegistry.providerNameForModel(model);
 
       await this.runAgentFn(
         workDir,

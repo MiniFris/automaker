@@ -51,6 +51,25 @@ AgentsModule
 Nest не предоставляет неявный multi-binding, поэтому registry должен получать
 явный массив provider tokens или собираться factory с перечисленными dependencies.
 
+### Промежуточный срез: обязательная зависимость registry
+
+`AgentService`, `IdeationService`, `ExecutionService` и Auto Mode facade больше
+не импортируют `ProviderFactory`: `ProviderRegistry` обязателен в их constructors
+или factory options. Application composition передаёт один registry, содержащий
+явные registrations и connection repository. Remote CLI/SDK execution сохраняет
+явный `throwOnDisconnected: false` для target-side авторизации; Local execution
+проверяет connection state. Vision проверяется по model capabilities registry.
+
+Unit tests передают registry mocks напрямую. Transport acceptance создаёт явный
+registry с реальными adapters через `tests/helpers/provider-registry.ts`, включая
+restart/default-change сценарии. Это ещё не завершение пункта удаления статического
+registry: `simple-query-service` и отдельные legacy workflow handlers пока имеют
+fallback на `ProviderFactory` и должны быть перенесены следующими срезами.
+
+Checkpoint среза: server build и lint, 2900 unit-тестов, 228 HTTP/WS contracts,
+37 remote CLI/SDK/SSH acceptance tests и отдельный настоящий SSH planning/approval
+workflow. Production process smoke по SIGTERM/SIGINT также завершился с кодом 0.
+
 ## 7.3. Перенос providers
 
 Рекомендуемый порядок:

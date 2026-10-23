@@ -1,9 +1,11 @@
+import { createTestProviderRegistry } from '../helpers/provider-registry.js';
 import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { createEventEmitter } from '../../src/lib/events.js';
 import { FeatureLoader } from '../../src/services/feature-loader.js';
+import { SettingsService } from '../../src/services/settings-service.js';
 import { AutoModeServiceFacade } from '../../src/services/auto-mode/facade.js';
 
 describe('persisted plan recovery', () => {
@@ -11,6 +13,7 @@ describe('persisted plan recovery', () => {
     const project = await mkdtemp(path.join(os.tmpdir(), 'automaker-plan-recovery-'));
     const loader = new FeatureLoader();
     const facade = AutoModeServiceFacade.create(project, {
+      providerRegistry: createTestProviderRegistry(new SettingsService(path.join(project, 'data'))),
       events: createEventEmitter(),
       featureLoader: loader,
       settingsService: null,

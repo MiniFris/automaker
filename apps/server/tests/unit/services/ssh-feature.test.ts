@@ -1,3 +1,4 @@
+import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -385,6 +386,7 @@ describe.skipIf(process.platform !== 'linux')(
         const seen: unknown[] = [];
         events.subscribe((_type, event) => seen.push(event));
         const facade = AutoModeServiceFacade.create(project, {
+          providerRegistry: createTestProviderRegistry(settings),
           events,
           settingsService: settings,
           featureLoader: loader,
@@ -459,6 +461,7 @@ describe.skipIf(process.platform !== 'linux')(
           executionEnvironment: { default: { mode: 'local' }, profiles: [] },
         });
         const restarted = AutoModeServiceFacade.create(project, {
+          providerRegistry: createTestProviderRegistry(settings),
           events,
           settingsService: settings,
           featureLoader: loader,
@@ -487,6 +490,7 @@ describe.skipIf(process.platform !== 'linux')(
           if ((event as { type?: string }).type === 'plan_approval_required') waiting = true;
         });
         const facade = AutoModeServiceFacade.create(project, {
+          providerRegistry: createTestProviderRegistry(settings),
           events,
           settingsService: settings,
           featureLoader: loader,
@@ -538,6 +542,7 @@ describe.skipIf(process.platform !== 'linux')(
         await pipelineService.savePipelineConfig(project, { version: 1, steps: [step] });
         const events = createEventEmitter();
         const facade = AutoModeServiceFacade.create(project, {
+          providerRegistry: createTestProviderRegistry(settings),
           events,
           settingsService: settings,
           featureLoader: loader,
@@ -635,6 +640,7 @@ describe.skipIf(process.platform !== 'linux')(
       async () => {
         const events = createEventEmitter();
         const facade = AutoModeServiceFacade.create(project, {
+          providerRegistry: createTestProviderRegistry(settings),
           events,
           settingsService: settings,
           featureLoader: loader,
@@ -666,6 +672,7 @@ describe.skipIf(process.platform !== 'linux')(
       async () => {
         const events = createEventEmitter();
         const facade = AutoModeServiceFacade.create(project, {
+          providerRegistry: createTestProviderRegistry(settings),
           events,
           settingsService: settings,
           featureLoader: loader,

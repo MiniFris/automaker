@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AgentService } from '@/services/agent-service.js';
-import { ProviderFactory } from '@/providers/provider-factory.js';
+import type { ProviderRegistry } from '@/modules/providers/provider-registry.service.js';
 import * as fs from 'fs/promises';
 import * as imageHandler from '@automaker/utils';
 import * as promptBuilder from '@automaker/utils';
@@ -16,7 +16,6 @@ const mockLogger = vi.hoisted(() => ({
 }));
 
 vi.mock('fs/promises');
-vi.mock('@/providers/provider-factory.js');
 vi.mock('@automaker/utils', async () => {
   const actual = await vi.importActual<typeof import('@automaker/utils')>('@automaker/utils');
   return {
@@ -28,6 +27,12 @@ vi.mock('@automaker/utils', async () => {
   };
 });
 
+const providers = {
+  providerForModel: vi.fn(),
+  providerNameForModel: vi.fn(),
+  supportsVision: vi.fn().mockReturnValue(true),
+};
+
 describe('agent-service.ts', () => {
   let service: AgentService;
   const mockEvents = {
@@ -37,7 +42,12 @@ describe('agent-service.ts', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    service = new AgentService('/test/data', mockEvents as any);
+    service = new AgentService(
+      '/test/data',
+      mockEvents as any,
+      undefined,
+      providers as unknown as ProviderRegistry
+    );
 
     // Mock loadContextFiles to return empty context by default
     vi.mocked(contextLoader.loadContextFiles).mockResolvedValue({
@@ -171,7 +181,7 @@ describe('agent-service.ts', () => {
         },
       };
 
-      vi.mocked(ProviderFactory.getProviderForModel).mockReturnValue(mockProvider as any);
+      vi.mocked(providers.providerForModel).mockReturnValue(mockProvider as any);
 
       vi.mocked(promptBuilder.buildPromptWithImages).mockResolvedValue({
         content: 'Hello',
@@ -226,7 +236,7 @@ describe('agent-service.ts', () => {
         },
       };
 
-      vi.mocked(ProviderFactory.getProviderForModel).mockReturnValue(mockProvider as any);
+      vi.mocked(providers.providerForModel).mockReturnValue(mockProvider as any);
 
       vi.mocked(promptBuilder.buildPromptWithImages).mockResolvedValue({
         content: 'Hello',
@@ -279,7 +289,7 @@ describe('agent-service.ts', () => {
         },
       };
 
-      vi.mocked(ProviderFactory.getProviderForModel).mockReturnValue(mockProvider as any);
+      vi.mocked(providers.providerForModel).mockReturnValue(mockProvider as any);
 
       vi.mocked(promptBuilder.buildPromptWithImages).mockResolvedValue({
         content: 'Hello',
@@ -318,7 +328,7 @@ describe('agent-service.ts', () => {
         },
       };
 
-      vi.mocked(ProviderFactory.getProviderForModel).mockReturnValue(mockProvider as any);
+      vi.mocked(providers.providerForModel).mockReturnValue(mockProvider as any);
 
       vi.mocked(imageHandler.readImageAsBase64).mockResolvedValue({
         base64: 'base64data',
@@ -352,7 +362,7 @@ describe('agent-service.ts', () => {
         },
       };
 
-      vi.mocked(ProviderFactory.getProviderForModel).mockReturnValue(mockProvider as any);
+      vi.mocked(providers.providerForModel).mockReturnValue(mockProvider as any);
 
       vi.mocked(imageHandler.readImageAsBase64).mockRejectedValue(new Error('Image not found'));
 
@@ -381,7 +391,7 @@ describe('agent-service.ts', () => {
         },
       };
 
-      vi.mocked(ProviderFactory.getProviderForModel).mockReturnValue(mockProvider as any);
+      vi.mocked(providers.providerForModel).mockReturnValue(mockProvider as any);
 
       vi.mocked(promptBuilder.buildPromptWithImages).mockResolvedValue({
         content: 'Hello',
@@ -394,7 +404,9 @@ describe('agent-service.ts', () => {
         model: 'claude-sonnet-4-6',
       });
 
-      expect(ProviderFactory.getProviderForModel).toHaveBeenCalledWith('claude-sonnet-4-6');
+      expect(providers.providerForModel).toHaveBeenCalledWith('claude-sonnet-4-6', {
+        throwOnDisconnected: true,
+      });
     });
 
     it('should save session messages', async () => {
@@ -408,7 +420,7 @@ describe('agent-service.ts', () => {
         },
       };
 
-      vi.mocked(ProviderFactory.getProviderForModel).mockReturnValue(mockProvider as any);
+      vi.mocked(providers.providerForModel).mockReturnValue(mockProvider as any);
 
       vi.mocked(promptBuilder.buildPromptWithImages).mockResolvedValue({
         content: 'Hello',
@@ -436,8 +448,8 @@ describe('agent-service.ts', () => {
         },
       };
 
-      vi.mocked(ProviderFactory.getProviderForModelName).mockReturnValue('gemini');
-      vi.mocked(ProviderFactory.getProviderForModel).mockReturnValue(mockProvider as any);
+      vi.mocked(providers.providerNameForModel).mockReturnValue('gemini');
+      vi.mocked(providers.providerForModel).mockReturnValue(mockProvider as any);
       vi.mocked(promptBuilder.buildPromptWithImages).mockResolvedValue({
         content: 'Hello',
         hasImages: false,
@@ -676,7 +688,12 @@ describe('agent-service.ts', () => {
       initAllowedPaths();
 
       const { AgentService } = await import('@/services/agent-service.js');
-      const testService = new AgentService('/test/data', mockEvents as any);
+      const testService = new AgentService(
+        '/test/data',
+        mockEvents as any,
+        undefined,
+        providers as unknown as ProviderRegistry
+      );
       vi.mocked(fs.readFile).mockResolvedValue('{}');
       vi.mocked(fs.writeFile).mockResolvedValue(undefined);
 

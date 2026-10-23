@@ -3,7 +3,7 @@
   "sourceRoot": "apps/server/src",
   "summary": {
     "files": 611,
-    "internalEdges": 1997,
+    "internalEdges": 1993,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -47,7 +47,7 @@
     "routes -> types": 3,
     "services -> lib": 70,
     "services -> modules": 9,
-    "services -> providers": 14,
+    "services -> providers": 10,
     "services -> routes": 2,
     "services -> services": 209,
     "services -> types": 2,
@@ -7200,10 +7200,6 @@
     },
     {
       "source": "apps/server/src/services/agent-service.ts",
-      "target": "apps/server/src/providers/provider-factory.ts"
-    },
-    {
-      "source": "apps/server/src/services/agent-service.ts",
       "target": "apps/server/src/services/execution-environment/feature-workspace.ts"
     },
     {
@@ -7285,10 +7281,6 @@
     {
       "source": "apps/server/src/services/auto-mode/facade.ts",
       "target": "apps/server/src/providers/environment-execution.ts"
-    },
-    {
-      "source": "apps/server/src/services/auto-mode/facade.ts",
-      "target": "apps/server/src/providers/provider-factory.ts"
     },
     {
       "source": "apps/server/src/services/auto-mode/facade.ts",
@@ -7944,10 +7936,6 @@
     },
     {
       "source": "apps/server/src/services/execution-service.ts",
-      "target": "apps/server/src/providers/provider-factory.ts"
-    },
-    {
-      "source": "apps/server/src/services/execution-service.ts",
       "target": "apps/server/src/services/concurrency-manager.ts"
     },
     {
@@ -8057,10 +8045,6 @@
     {
       "source": "apps/server/src/services/ideation-service.ts",
       "target": "apps/server/src/providers/openai-compatible/execution.ts"
-    },
-    {
-      "source": "apps/server/src/services/ideation-service.ts",
-      "target": "apps/server/src/providers/provider-factory.ts"
     },
     {
       "source": "apps/server/src/services/ideation-service.ts",

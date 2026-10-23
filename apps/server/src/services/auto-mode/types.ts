@@ -64,7 +64,7 @@ export interface FacadeOptions {
   /** Notification service shared with HTTP and background workflows. */
   notificationService?: NotificationService | null;
   /** Explicit provider registry shared with the application composition root. */
-  providerRegistry?: ProviderRegistry;
+  providerRegistry: ProviderRegistry;
   /** Central policy for provider-independent tool authorization. */
   toolPolicy?: ToolPolicyService;
 }

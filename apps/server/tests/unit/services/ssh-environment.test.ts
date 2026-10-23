@@ -1,3 +1,4 @@
+import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -550,7 +551,8 @@ describe.skipIf(process.platform !== 'linux')(
           const service = new AgentService(
             settings.getDataDirectory(),
             createEventEmitter(),
-            settings
+            settings,
+            createTestProviderRegistry(settings)
           );
           await service.initialize();
           const session = await service.createSession('SSH', project, project, model, 'model');
@@ -590,7 +592,8 @@ describe.skipIf(process.platform !== 'linux')(
           const restarted = new AgentService(
             settings.getDataDirectory(),
             createEventEmitter(),
-            settings
+            settings,
+            createTestProviderRegistry(settings)
           );
           await restarted.initialize();
           expect(

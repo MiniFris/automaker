@@ -33,9 +33,9 @@ export class AutoModeServiceCompat {
     events: EventEmitter,
     settingsService: SettingsService | null,
     featureLoader: FeatureLoader,
-    claudeUsageService?: ClaudeUsageService | null,
-    notificationService?: NotificationService | null,
-    providerRegistry?: ProviderRegistry,
+    claudeUsageService: ClaudeUsageService | null | undefined,
+    notificationService: NotificationService | null | undefined,
+    providerRegistry: ProviderRegistry,
     toolPolicy?: ToolPolicyService
   ) {
     this.globalService = new GlobalAutoModeService(

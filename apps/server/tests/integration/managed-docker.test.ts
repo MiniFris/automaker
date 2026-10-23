@@ -1,3 +1,4 @@
+import { createTestProviderRegistry } from '../helpers/provider-registry.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -554,6 +555,7 @@ process.stdout.write(JSON.stringify({type:'result',subtype:'success'})+'\\n');
     const events = createEventEmitter();
     const service = new FeatureWorkspaceService(settings);
     const facade = AutoModeServiceFacade.create(featureProject, {
+      providerRegistry: createTestProviderRegistry(settings),
       events,
       settingsService: settings,
       featureLoader: loader,
