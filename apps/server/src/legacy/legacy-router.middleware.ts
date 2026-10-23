@@ -29,7 +29,7 @@ export const ROUTE_GROUP_OWNERS: Readonly<Record<string, RouteOwner>> = {
   codex: 'nest',
   zai: 'nest',
   gemini: 'nest',
-  github: 'legacy',
+  github: 'nest',
   context: 'nest',
   'backlog-plan': 'nest',
   mcp: 'nest',

@@ -36,6 +36,7 @@ import { AgentsModule } from './modules/agents/agents.module.js';
 import { PipelineModule } from './modules/pipeline/pipeline.module.js';
 import { MCPModule } from './modules/mcp/mcp.module.js';
 import { PromptEnhancementModule } from './modules/prompt-enhancement/prompt-enhancement.module.js';
+import { GithubModule } from './modules/github/github.module.js';
 
 @Module({})
 export class AppModule {
@@ -63,6 +64,7 @@ export class AppModule {
         PipelineModule,
         MCPModule,
         PromptEnhancementModule,
+        GithubModule,
         ProjectsModule,
         FilesModule,
         ContextModule,

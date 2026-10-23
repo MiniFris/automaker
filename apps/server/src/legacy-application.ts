@@ -60,7 +60,6 @@ import { CodexAppServerService } from './services/codex-app-server-service.js';
 import { CodexModelCacheService } from './services/codex-model-cache-service.js';
 import { ZaiUsageService } from './services/zai-usage-service.js';
 import { GeminiUsageService } from './services/gemini-usage-service.js';
-import { createGitHubRoutes } from './routes/github/index.js';
 import { cleanupStaleValidations } from './routes/github/routes/validation-common.js';
 import { MCPTestService } from './services/mcp-test-service.js';
 import { pipelineService as defaultPipelineService } from './services/pipeline-service.js';
@@ -591,7 +590,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
 
   app.use('/api/auto-mode', createAutoModeRoutes(autoModeService));
   app.use('/api/terminal', createTerminalRoutes());
-  app.use('/api/github', createGitHubRoutes(events, settingsService));
 
   // Create HTTP server
   const server = options.httpServer ?? createServer(app);

@@ -1390,13 +1390,12 @@
       "method": "POST",
       "path": "/api/github/check-remote",
       "group": "github",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/github/index.ts",
-      "line": 30,
+      "source": "apps/server/src/modules/github/github.controller.ts",
+      "line": 16,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createCheckGitHubRemoteHandler()"
+        "GithubController.checkRemote"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -1406,13 +1405,12 @@
       "method": "POST",
       "path": "/api/github/issue-comments",
       "group": "github",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/github/index.ts",
-      "line": 33,
+      "source": "apps/server/src/modules/github/github.controller.ts",
+      "line": 25,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createListCommentsHandler()"
+        "GithubController.issueComments"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -1422,13 +1420,12 @@
       "method": "POST",
       "path": "/api/github/issues",
       "group": "github",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/github/index.ts",
-      "line": 31,
+      "source": "apps/server/src/modules/github/github.controller.ts",
+      "line": 19,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createListIssuesHandler()"
+        "GithubController.issues"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -1438,13 +1435,12 @@
       "method": "POST",
       "path": "/api/github/pr-review-comments",
       "group": "github",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/github/index.ts",
-      "line": 34,
+      "source": "apps/server/src/modules/github/github.controller.ts",
+      "line": 28,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createListPRReviewCommentsHandler()"
+        "GithubController.prReviewComments"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -1454,13 +1450,12 @@
       "method": "POST",
       "path": "/api/github/prs",
       "group": "github",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/github/index.ts",
-      "line": 32,
+      "source": "apps/server/src/modules/github/github.controller.ts",
+      "line": 22,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createListPRsHandler()"
+        "GithubController.prs"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -1470,13 +1465,12 @@
       "method": "POST",
       "path": "/api/github/resolve-pr-comment",
       "group": "github",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/github/index.ts",
-      "line": 39,
+      "source": "apps/server/src/modules/github/github.controller.ts",
+      "line": 31,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createResolvePRCommentHandler()"
+        "GithubController.resolvePrComment"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -1486,13 +1480,12 @@
       "method": "POST",
       "path": "/api/github/validate-issue",
       "group": "github",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/github/index.ts",
-      "line": 44,
+      "source": "apps/server/src/modules/github/github.controller.ts",
+      "line": 34,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createValidateIssueHandler(events, settingsService)"
+        "GithubController.validateIssue"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -1502,13 +1495,12 @@
       "method": "POST",
       "path": "/api/github/validation-delete",
       "group": "github",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/github/index.ts",
-      "line": 58,
+      "source": "apps/server/src/modules/github/github.controller.ts",
+      "line": 46,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createDeleteValidationHandler()"
+        "GithubController.validationDelete"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -1518,13 +1510,12 @@
       "method": "POST",
       "path": "/api/github/validation-mark-viewed",
       "group": "github",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/github/index.ts",
-      "line": 63,
+      "source": "apps/server/src/modules/github/github.controller.ts",
+      "line": 49,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createMarkViewedHandler(events)"
+        "GithubController.validationMarkViewed"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -1534,13 +1525,12 @@
       "method": "POST",
       "path": "/api/github/validation-status",
       "group": "github",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/github/index.ts",
-      "line": 51,
+      "source": "apps/server/src/modules/github/github.controller.ts",
+      "line": 37,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createValidationStatusHandler()"
+        "GithubController.validationStatus"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -1550,13 +1540,12 @@
       "method": "POST",
       "path": "/api/github/validation-stop",
       "group": "github",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/github/index.ts",
-      "line": 56,
+      "source": "apps/server/src/modules/github/github.controller.ts",
+      "line": 40,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createValidationStopHandler()"
+        "GithubController.validationStop"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -1566,13 +1555,12 @@
       "method": "POST",
       "path": "/api/github/validations",
       "group": "github",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/github/index.ts",
-      "line": 57,
+      "source": "apps/server/src/modules/github/github.controller.ts",
+      "line": 43,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createGetValidationsHandler()"
+        "GithubController.validations"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
