@@ -238,6 +238,16 @@ describe('Nest shell and legacy bridge contract', () => {
 
   it('keeps WebSocket upgrades on the shared Nest HTTP server', async () => {
     const address = runtime.legacy.server.address() as AddressInfo;
+    const unauthorizedStatus = await new Promise<number>((resolve, reject) => {
+      const unauthorized = new WebSocket(`ws://127.0.0.1:${address.port}/api/events`);
+      unauthorized.once('unexpected-response', (_request, response) => {
+        resolve(response.statusCode);
+        unauthorized.terminate();
+      });
+      unauthorized.once('error', reject);
+    });
+    expect(unauthorizedStatus).toBe(401);
+
     const socket = new WebSocket(
       `ws://127.0.0.1:${address.port}/api/events?apiKey=automaker-test-api-key`
     );
@@ -247,7 +257,27 @@ describe('Nest shell and legacy bridge contract', () => {
     });
 
     expect(socket.readyState).toBe(WebSocket.OPEN);
+    const event = new Promise<string>((resolve) =>
+      socket.once('message', (message) => resolve(message.toString()))
+    );
+    runtime.legacy.events.emit('feature:progress', { featureId: 'nest-ws-contract' });
+    await expect(event).resolves.toBe(
+      JSON.stringify({
+        type: 'feature:progress',
+        payload: { featureId: 'nest-ws-contract' },
+      })
+    );
     socket.close();
+
+    const terminal = new WebSocket(
+      `ws://127.0.0.1:${address.port}/api/terminal/ws?apiKey=automaker-test-api-key`
+    );
+    await expect(
+      new Promise<[number, string]>((resolve, reject) => {
+        terminal.once('close', (code, reason) => resolve([code, reason.toString()]));
+        terminal.once('error', reject);
+      })
+    ).resolves.toEqual([4002, 'Session ID required']);
   });
 
   it('serves migrated edge modules exclusively through Nest', async () => {

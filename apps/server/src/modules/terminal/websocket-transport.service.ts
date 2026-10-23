@@ -1,0 +1,273 @@
+import {
+  Inject,
+  Injectable,
+  type OnApplicationBootstrap,
+  type OnApplicationShutdown,
+} from '@nestjs/common';
+import { HttpAdapterHost } from '@nestjs/core';
+import type { IncomingMessage, Server } from 'node:http';
+import type { Duplex } from 'node:stream';
+import { WebSocket, WebSocketServer } from 'ws';
+import { createLogger } from '@automaker/utils';
+import { AuthService } from '../../core/auth/auth.service.js';
+import { createCorrelationId } from '../../core/observability/request-context.js';
+import { LEGACY_EVENT_EMITTER, LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
+import type { EventEmitter } from '../../lib/events.js';
+import { isPreviewApiRequest } from '../../services/execution-environment/preview-policy.js';
+import { claimTerminalStartup, TerminalService } from '../../services/terminal-service.js';
+import { TerminalAccessService } from './terminal-access.service.js';
+
+const logger = createLogger('WebSocketTransport');
+const MAX_BUFFERED_BYTES = 1024 * 1024;
+const MAX_HANDSHAKE_URL_BYTES = 4096;
+const RESIZE_MIN_INTERVAL_MS = 100;
+
+@Injectable()
+export class WebSocketTransportService implements OnApplicationBootstrap, OnApplicationShutdown {
+  private readonly eventsServer = new WebSocketServer({ noServer: true });
+  private readonly terminalServer = new WebSocketServer({ noServer: true });
+  private readonly terminalConnections = new Map<string, Set<WebSocket>>();
+  private readonly lastResizeDimensions = new Map<string, { cols: number; rows: number }>();
+  private readonly lastResizeTime = new Map<string, number>();
+  private readonly alive = new WeakMap<WebSocket, boolean>();
+  private readonly heartbeat = setInterval(() => this.checkHeartbeats(), 30_000);
+  private readonly unsubscribeTerminalExit: () => void;
+  private server?: Server;
+  private closing = false;
+
+  constructor(
+    @Inject(HttpAdapterHost) private readonly httpAdapterHost: HttpAdapterHost,
+    @Inject(AuthService) private readonly auth: AuthService,
+    @Inject(TerminalAccessService) private readonly terminalAccess: TerminalAccessService,
+    @Inject(LEGACY_EVENT_EMITTER) private readonly events: EventEmitter,
+    @Inject(LEGACY_SERVICES.terminal) private readonly terminal: TerminalService
+  ) {
+    this.heartbeat.unref();
+    this.unsubscribeTerminalExit = this.terminal.onExit((sessionId) => {
+      this.lastResizeDimensions.delete(sessionId);
+      this.lastResizeTime.delete(sessionId);
+      this.terminalConnections.delete(sessionId);
+    });
+    this.eventsServer.on('connection', (socket, request) => this.connectEvents(socket, request));
+    this.terminalServer.on('connection', (socket, request) =>
+      this.connectTerminal(socket, request)
+    );
+  }
+
+  onApplicationBootstrap(): void {
+    this.server = this.httpAdapterHost.httpAdapter.getHttpServer() as Server;
+    this.server.on('upgrade', this.upgrade);
+  }
+
+  async onApplicationShutdown(): Promise<void> {
+    this.closing = true;
+    clearInterval(this.heartbeat);
+    this.unsubscribeTerminalExit();
+    this.server?.off('upgrade', this.upgrade);
+    for (const socket of [...this.eventsServer.clients, ...this.terminalServer.clients]) {
+      if (socket.readyState === WebSocket.OPEN) socket.close(1012, 'Service restarting');
+      else socket.terminate();
+    }
+    await Promise.all([this.closeServer(this.eventsServer), this.closeServer(this.terminalServer)]);
+  }
+
+  private readonly upgrade = (request: IncomingMessage, socket: Duplex, head: Buffer): void => {
+    if (this.closing) {
+      socket.end('HTTP/1.1 503 Service Unavailable\r\nConnection: close\r\n\r\n');
+      return;
+    }
+    if ((request.url?.length ?? 0) > MAX_HANDSHAKE_URL_BYTES) {
+      socket.end('HTTP/1.1 431 Request Header Fields Too Large\r\nConnection: close\r\n\r\n');
+      return;
+    }
+    if (isPreviewApiRequest(request)) {
+      socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
+      return;
+    }
+    if (!this.auth.authenticateUpgrade(request)) {
+      socket.end('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n');
+      return;
+    }
+
+    const pathname = new URL(request.url || '', `http://${request.headers.host ?? 'localhost'}`)
+      .pathname;
+    const target =
+      pathname === '/api/events'
+        ? this.eventsServer
+        : pathname === '/api/terminal/ws'
+          ? this.terminalServer
+          : undefined;
+    if (!target) {
+      socket.end('HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n');
+      return;
+    }
+    target.handleUpgrade(request, socket, head, (webSocket) => {
+      target.emit('connection', webSocket, request);
+    });
+  };
+
+  private connectEvents(socket: WebSocket, request: IncomingMessage): void {
+    const connectionId = createCorrelationId(
+      typeof request.headers['x-request-id'] === 'string'
+        ? request.headers['x-request-id']
+        : undefined
+    );
+    this.trackHeartbeat(socket);
+    logger.info('Events client connected', { connectionId });
+    const unsubscribe = this.events.subscribe((type, payload) => {
+      if (socket.readyState !== WebSocket.OPEN) return;
+      if (socket.bufferedAmount > MAX_BUFFERED_BYTES) {
+        socket.close(
+          4008,
+          'Event client is too slow. Reconnect and refresh state; commands are not replayed.'
+        );
+        return;
+      }
+      socket.send(JSON.stringify({ type, payload }));
+    });
+    const cleanup = () => unsubscribe();
+    socket.once('close', cleanup);
+    socket.once('error', cleanup);
+  }
+
+  private connectTerminal(socket: WebSocket, request: IncomingMessage): void {
+    this.trackHeartbeat(socket);
+    const url = new URL(request.url || '', `http://${request.headers.host ?? 'localhost'}`);
+    const sessionId = url.searchParams.get('sessionId');
+    const terminalToken = url.searchParams.get('token') ?? undefined;
+    if (!this.terminalAccess.enabled) {
+      socket.close(4003, 'Terminal access is disabled');
+      return;
+    }
+    if (this.terminalAccess.passwordRequired && !this.terminalAccess.validate(terminalToken)) {
+      socket.close(4001, 'Authentication required');
+      return;
+    }
+    if (!sessionId) {
+      socket.close(4002, 'Session ID required');
+      return;
+    }
+    const session = this.terminal.getSession(sessionId);
+    if (!session) {
+      socket.close(
+        4004,
+        'Session not found. The terminal session may have expired or been closed. Please create a new terminal.'
+      );
+      return;
+    }
+
+    const connections = this.terminalConnections.get(sessionId) ?? new Set<WebSocket>();
+    connections.add(socket);
+    this.terminalConnections.set(sessionId, connections);
+    socket.send(
+      JSON.stringify({
+        type: 'connected',
+        sessionId,
+        shell: session.shell,
+        cwd: session.cwd,
+        executionEnvironment: session.executionEnvironment ?? {
+          type: 'local',
+          runtimeCwd: session.cwd,
+          legacy: true,
+        },
+        allowInitialCommand: claimTerminalStartup(session),
+      })
+    );
+    const scrollback = this.terminal.getScrollbackAndClearPending(sessionId);
+    if (scrollback) socket.send(JSON.stringify({ type: 'scrollback', data: scrollback }));
+
+    const unsubscribeData = this.terminal.onData((id, data) => {
+      if (id !== sessionId || socket.readyState !== WebSocket.OPEN) return;
+      if (socket.bufferedAmount > MAX_BUFFERED_BYTES) {
+        socket.close(
+          4008,
+          'Terminal client is too slow. Reconnect to the same session; commands are not replayed.'
+        );
+        return;
+      }
+      socket.send(JSON.stringify({ type: 'data', data }));
+    });
+    const unsubscribeExit = this.terminal.onExit((id, exitCode) => {
+      if (id === sessionId && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'exit', exitCode }));
+        socket.close(1000, 'Session ended');
+      }
+    });
+    const cleanup = () => {
+      unsubscribeData();
+      unsubscribeExit();
+      connections.delete(socket);
+      if (!connections.size) this.terminalConnections.delete(sessionId);
+    };
+    socket.once('close', cleanup);
+    socket.once('error', cleanup);
+    socket.on('message', (message) => this.handleTerminalMessage(socket, sessionId, message));
+  }
+
+  private handleTerminalMessage(
+    socket: WebSocket,
+    sessionId: string,
+    raw: WebSocket.RawData
+  ): void {
+    const size = Array.isArray(raw)
+      ? raw.reduce((total, part) => total + part.byteLength, 0)
+      : raw.byteLength;
+    if (size > MAX_BUFFERED_BYTES) {
+      socket.send(JSON.stringify({ type: 'error', message: 'Input too large' }));
+      return;
+    }
+    try {
+      const message = JSON.parse(raw.toString()) as Record<string, unknown>;
+      if (message.type === 'input') {
+        if (typeof message.data !== 'string') {
+          socket.send(JSON.stringify({ type: 'error', message: 'Invalid input type' }));
+        } else if (message.data.length > MAX_BUFFERED_BYTES) {
+          socket.send(JSON.stringify({ type: 'error', message: 'Input too large' }));
+        } else {
+          this.terminal.write(sessionId, message.data);
+        }
+      } else if (message.type === 'resize') {
+        this.resizeTerminal(sessionId, message.cols, message.rows);
+      } else if (message.type === 'ping') {
+        socket.send(JSON.stringify({ type: 'pong' }));
+      }
+    } catch (error) {
+      logger.warn('Rejected malformed terminal message', error);
+    }
+  }
+
+  private resizeTerminal(sessionId: string, cols: unknown, rows: unknown): void {
+    if (!Number.isInteger(cols) || !Number.isInteger(rows)) return;
+    const width = cols as number;
+    const height = rows as number;
+    if (width < 1 || width > 1000 || height < 1 || height > 500) return;
+    const now = Date.now();
+    const lastTime = this.lastResizeTime.get(sessionId) ?? 0;
+    const previous = this.lastResizeDimensions.get(sessionId);
+    if (now - lastTime < RESIZE_MIN_INTERVAL_MS) return;
+    if (previous?.cols === width && previous.rows === height) return;
+    this.terminal.resize(sessionId, width, height, Boolean(previous));
+    this.lastResizeDimensions.set(sessionId, { cols: width, rows: height });
+    this.lastResizeTime.set(sessionId, now);
+  }
+
+  private trackHeartbeat(socket: WebSocket): void {
+    this.alive.set(socket, true);
+    socket.on('pong', () => this.alive.set(socket, true));
+  }
+
+  private checkHeartbeats(): void {
+    for (const socket of [...this.eventsServer.clients, ...this.terminalServer.clients]) {
+      if (!this.alive.get(socket)) {
+        socket.terminate();
+        continue;
+      }
+      this.alive.set(socket, false);
+      socket.ping();
+    }
+  }
+
+  private closeServer(server: WebSocketServer): Promise<void> {
+    return new Promise((resolve) => server.close(() => resolve()));
+  }
+}

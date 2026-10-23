@@ -208,12 +208,10 @@ export class TerminalController {
         maxSessions < MIN_MAX_SESSIONS ||
         maxSessions > MAX_MAX_SESSIONS)
     ) {
-      response
-        .status(400)
-        .json({
-          success: false,
-          error: `maxSessions must be an integer between ${MIN_MAX_SESSIONS} and ${MAX_MAX_SESSIONS}`,
-        });
+      response.status(400).json({
+        success: false,
+        error: `maxSessions must be an integer between ${MIN_MAX_SESSIONS} and ${MAX_MAX_SESSIONS}`,
+      });
       return;
     }
     if (typeof maxSessions === 'number') this.terminal.setMaxSessions(maxSessions);

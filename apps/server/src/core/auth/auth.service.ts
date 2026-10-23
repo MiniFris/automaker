@@ -1,6 +1,8 @@
 import { Injectable, type OnApplicationShutdown } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import type { Request } from 'express';
+import type { IncomingMessage } from 'node:http';
+import * as cookie from 'cookie';
 import {
   checkAuthentication,
   cleanupExpiredWsConnectionTokens,
@@ -57,5 +59,26 @@ export class AuthService implements OnApplicationShutdown {
   }
   consumeWebSocketToken(token: string): boolean {
     return validateWsConnectionToken(token);
+  }
+
+  authenticateUpgrade(request: IncomingMessage): boolean {
+    if (this.config.auth.disabled) return true;
+    const url = new URL(request.url || '', `http://${request.headers.host ?? 'localhost'}`);
+    const query: Record<string, string | undefined> = {};
+    url.searchParams.forEach((value, key) => {
+      query[key] = value;
+    });
+    const cookies = request.headers.cookie ? cookie.parse(request.headers.cookie) : {};
+    if (
+      checkAuthentication(
+        request.headers as Record<string, string | string[] | undefined>,
+        query,
+        cookies
+      ).authenticated
+    ) {
+      return true;
+    }
+    const token = url.searchParams.get('wsToken');
+    return token ? this.consumeWebSocketToken(token) : false;
   }
 }
