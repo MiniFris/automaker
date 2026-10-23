@@ -23,7 +23,7 @@ export const ROUTE_GROUP_OWNERS: Readonly<Record<string, RouteOwner>> = {
   'running-agents': 'nest',
   workspace: 'nest',
   templates: 'nest',
-  terminal: 'legacy',
+  terminal: 'nest',
   settings: 'nest',
   claude: 'nest',
   codex: 'nest',

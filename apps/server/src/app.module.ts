@@ -38,6 +38,7 @@ import { MCPModule } from './modules/mcp/mcp.module.js';
 import { PromptEnhancementModule } from './modules/prompt-enhancement/prompt-enhancement.module.js';
 import { GithubModule } from './modules/github/github.module.js';
 import { AutoModeModule } from './modules/auto-mode/auto-mode.module.js';
+import { TerminalModule } from './modules/terminal/terminal.module.js';
 
 @Module({})
 export class AppModule {
@@ -67,6 +68,7 @@ export class AppModule {
         PromptEnhancementModule,
         GithubModule,
         AutoModeModule,
+        TerminalModule,
         ProjectsModule,
         FilesModule,
         ContextModule,

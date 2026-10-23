@@ -77,7 +77,7 @@ describe('Nest shell and legacy bridge contract', () => {
 
   it('has one explicit owner for every API route group', () => {
     expect(() => assertSingleRouteOwner(ROUTE_GROUP_OWNERS)).not.toThrow();
-    expect(Object.values(ROUTE_GROUP_OWNERS)).toEqual(expect.arrayContaining(['legacy']));
+    expect(new Set(Object.values(ROUTE_GROUP_OWNERS))).toEqual(new Set(['nest']));
     expect(ROUTE_GROUP_OWNERS.worktree).toBe('nest');
     expect(ROUTE_GROUP_OWNERS.agent).toBe('nest');
     expect(ROUTE_GROUP_OWNERS.setup).toBe('nest');
@@ -86,6 +86,7 @@ describe('Nest shell and legacy bridge contract', () => {
     expect(ROUTE_GROUP_OWNERS['enhance-prompt']).toBe('nest');
     expect(ROUTE_GROUP_OWNERS.github).toBe('nest');
     expect(ROUTE_GROUP_OWNERS['auto-mode']).toBe('nest');
+    expect(ROUTE_GROUP_OWNERS.terminal).toBe('nest');
     expect(ROUTE_GROUP_OWNERS.claude).toBe('nest');
     expect(ROUTE_GROUP_OWNERS.codex).toBe('nest');
     expect(ROUTE_GROUP_OWNERS.gemini).toBe('nest');
@@ -185,6 +186,19 @@ describe('Nest shell and legacy bridge contract', () => {
       body: JSON.stringify({ serverConfig: { command: 'echo', args: ['unsafe'] } }),
     });
     expect(arbitraryConfig.status).toBe(400);
+  });
+
+  it('serves terminal REST state through the injected singleton', async () => {
+    const address = runtime.legacy.server.address() as AddressInfo;
+    const response = await fetch(`http://127.0.0.1:${address.port}/api/terminal/status`, {
+      headers: { 'x-api-key': 'automaker-test-api-key' },
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      success: true,
+      data: { enabled: true, passwordRequired: false },
+    });
   });
 
   it('preserves content-type, authentication, CORS, cookie and body-limit middleware', async () => {

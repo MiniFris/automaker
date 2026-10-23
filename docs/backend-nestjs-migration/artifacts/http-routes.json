@@ -3535,12 +3535,12 @@
       "method": "POST",
       "path": "/api/terminal/auth",
       "group": "terminal",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/terminal/index.ts",
-      "line": 31,
+      "source": "apps/server/src/modules/terminal/terminal.controller.ts",
+      "line": 44,
       "middleware": [
-        "createAuthHandler()"
+        "TerminalController.authenticate"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3550,12 +3550,12 @@
       "method": "POST",
       "path": "/api/terminal/logout",
       "group": "terminal",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/terminal/index.ts",
-      "line": 32,
+      "source": "apps/server/src/modules/terminal/terminal.controller.ts",
+      "line": 50,
       "middleware": [
-        "createLogoutHandler()"
+        "TerminalController.logout"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3565,12 +3565,12 @@
       "method": "POST",
       "path": "/api/terminal/sessions/:id/resize",
       "group": "terminal",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/terminal/index.ts",
-      "line": 59,
+      "source": "apps/server/src/modules/terminal/terminal.controller.ts",
+      "line": 160,
       "middleware": [
-        "createSessionResizeHandler()"
+        "TerminalController.resize"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3580,12 +3580,12 @@
       "method": "DELETE",
       "path": "/api/terminal/sessions/:id",
       "group": "terminal",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/terminal/index.ts",
-      "line": 58,
+      "source": "apps/server/src/modules/terminal/terminal.controller.ts",
+      "line": 150,
       "middleware": [
-        "createSessionDeleteHandler()"
+        "TerminalController.deleteSession"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3595,12 +3595,12 @@
       "method": "GET",
       "path": "/api/terminal/sessions/:id",
       "group": "terminal",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/terminal/index.ts",
-      "line": 38,
+      "source": "apps/server/src/modules/terminal/terminal.controller.ts",
+      "line": 66,
       "middleware": [
-        "(req, res) => { const session = getTerminalService().getSession(req.params.id); if (!session) { res.status(404).json({ success: false, error: 'Terminal session ended; create a n..."
+        "TerminalController.session"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -3610,12 +3610,12 @@
       "method": "GET",
       "path": "/api/terminal/sessions",
       "group": "terminal",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/terminal/index.ts",
-      "line": 37,
+      "source": "apps/server/src/modules/terminal/terminal.controller.ts",
+      "line": 60,
       "middleware": [
-        "createSessionsListHandler()"
+        "TerminalController.sessions"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -3625,27 +3625,27 @@
       "method": "POST",
       "path": "/api/terminal/sessions",
       "group": "terminal",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/terminal/index.ts",
-      "line": 57,
+      "source": "apps/server/src/modules/terminal/terminal.controller.ts",
+      "line": 88,
       "middleware": [
-        "createSessionsCreateHandler()"
+        "TerminalController.createSession"
       ],
       "potentialMutation": true,
-      "validatesProjectPath": false,
+      "validatesProjectPath": true,
       "streamsResponse": false
     },
     {
       "method": "GET",
       "path": "/api/terminal/settings",
       "group": "terminal",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/terminal/index.ts",
-      "line": 60,
+      "source": "apps/server/src/modules/terminal/terminal.controller.ts",
+      "line": 188,
       "middleware": [
-        "createSettingsGetHandler()"
+        "TerminalController.settings"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -3655,12 +3655,12 @@
       "method": "PUT",
       "path": "/api/terminal/settings",
       "group": "terminal",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/terminal/index.ts",
-      "line": 61,
+      "source": "apps/server/src/modules/terminal/terminal.controller.ts",
+      "line": 200,
       "middleware": [
-        "createSettingsUpdateHandler()"
+        "TerminalController.updateSettings"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -3670,12 +3670,12 @@
       "method": "GET",
       "path": "/api/terminal/status",
       "group": "terminal",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/terminal/index.ts",
-      "line": 30,
+      "source": "apps/server/src/modules/terminal/terminal.controller.ts",
+      "line": 32,
       "middleware": [
-        "createStatusHandler()"
+        "TerminalController.status"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,

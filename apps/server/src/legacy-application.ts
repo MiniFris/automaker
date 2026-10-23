@@ -43,7 +43,6 @@ import {
   runWithCorrelationContext,
 } from './core/observability/request-context.js';
 import {
-  createTerminalRoutes,
   validateTerminalToken,
   isTerminalEnabled,
   isTerminalPasswordRequired,
@@ -587,7 +586,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   // Apply authentication to all other routes
   app.use('/api', authMiddleware);
 
-  app.use('/api/terminal', createTerminalRoutes());
 
   // Create HTTP server
   const server = options.httpServer ?? createServer(app);
