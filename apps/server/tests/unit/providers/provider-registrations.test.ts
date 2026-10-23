@@ -56,6 +56,24 @@ describe('explicit provider registrations', () => {
     detectCopilotSpy.mockRestore();
   });
 
+  it('validates production catalog ownership at startup without CLI detection', () => {
+    const detectionSpies = [CursorProvider, GeminiProvider, CopilotProvider].map((adapter) =>
+      vi
+        .spyOn(adapter.prototype as unknown as { detectCli(): unknown }, 'detectCli')
+        .mockImplementation(() => {
+          throw new Error('Startup must not probe a CLI');
+        })
+    );
+    try {
+      expect(() => registry.onModuleInit()).not.toThrow();
+      expect(registry.allModels().length).toBeGreaterThan(0);
+      for (const spy of detectionSpies) expect(spy).not.toHaveBeenCalled();
+    } finally {
+      // Several adapters inherit the same method: restore in reverse order.
+      for (const spy of detectionSpies.reverse()) spy.mockRestore();
+    }
+  });
+
   describe('getProviderForModel', () => {
     it.each(['direct-Qwen/Qwen3-Coder:latest', 'direct-claude-sonnet-custom', 'direct-gpt-5.2'])(
       'routes %s explicitly without falling back to an existing CLI',

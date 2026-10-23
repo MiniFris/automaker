@@ -88,6 +88,53 @@ describe('ProviderRegistry', () => {
     ).toThrow('disconnected');
   });
 
+  it('rejects case-insensitive model ownership collisions during startup', () => {
+    const first = provider('claude');
+    const second = provider('cursor');
+    second.getAvailableModels = () => [{ ...first.getAvailableModels()[0], id: 'CLAUDE-MODEL' }];
+    const registry = new ProviderRegistry(
+      [
+        { name: 'claude', create: () => first },
+        { name: 'cursor', create: () => second },
+      ],
+      connections() as never
+    );
+    expect(() => registry.onModuleInit()).toThrow(
+      'Duplicate model ID claude-model: providers claude and cursor.'
+    );
+    expect(first.detectInstallation).not.toHaveBeenCalled();
+    expect(second.detectInstallation).not.toHaveBeenCalled();
+  });
+
+  it('allows shared SDK model strings but rejects collisions in refreshed catalogs', () => {
+    const first = provider('claude');
+    const second = provider('cursor');
+    const firstModel = first.getAvailableModels()[0];
+    second.getAvailableModels = () => [{ ...firstModel, id: 'cursor-model' }];
+    const registry = new ProviderRegistry(
+      [
+        { name: 'claude', create: () => first },
+        { name: 'cursor', create: () => second },
+      ],
+      connections() as never
+    );
+    expect(() => registry.onModuleInit()).not.toThrow();
+    expect(registry.allModels()).toHaveLength(2);
+    second.getAvailableModels = () => [firstModel];
+    expect(() => registry.allModels()).toThrow('Duplicate model ID');
+  });
+
+  it.each(['', ' model', 'model '])('rejects invalid catalog ID %j', (id) => {
+    const adapter = provider('claude');
+    const model = adapter.getAvailableModels()[0];
+    adapter.getAvailableModels = () => [{ ...model, id }];
+    const registry = new ProviderRegistry(
+      [{ name: 'claude', create: () => adapter }],
+      connections() as never
+    );
+    expect(() => registry.onModuleInit()).toThrow('Invalid model ID');
+  });
+
   it('routes direct models explicitly and reports provider statuses', async () => {
     const registry = new ProviderRegistry(
       [

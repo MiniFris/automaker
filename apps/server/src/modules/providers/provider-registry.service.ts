@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, type OnModuleInit } from '@nestjs/common';
 import type { ModelProvider } from '@automaker/types';
 import { isDirectModel } from '@automaker/types';
 
@@ -17,7 +17,7 @@ export interface ProviderRegistration {
 export const PROVIDER_REGISTRATIONS = Symbol('PROVIDER_REGISTRATIONS');
 
 @Injectable()
-export class ProviderRegistry {
+export class ProviderRegistry implements OnModuleInit {
   private readonly registrations: ReadonlyMap<string, ProviderRegistration>;
   private readonly aliases: ReadonlyMap<string, string>;
 
@@ -44,6 +44,13 @@ export class ProviderRegistry {
     }
     this.registrations = providers;
     this.aliases = aliases;
+  }
+
+  onModuleInit(): void {
+    // Catalog IDs are application-facing, unlike modelString (which may be the
+    // same bare SDK model for several providers). Never probe installation/auth
+    // here: startup validation must remain offline and side-effect free.
+    this.allModels();
   }
 
   names(): readonly string[] {
@@ -90,7 +97,23 @@ export class ProviderRegistry {
   }
 
   allModels(): ModelDefinition[] {
-    return this.all().flatMap((provider) => provider.getAvailableModels());
+    const owners = new Map<string, string>();
+    const models: ModelDefinition[] = [];
+    for (const [name, registration] of this.registrations) {
+      for (const model of registration.create().getAvailableModels()) {
+        const id = model.id.toLowerCase();
+        if (!id || id.trim() !== id) {
+          throw new Error(`Invalid model ID in provider ${name}.`);
+        }
+        const owner = owners.get(id);
+        if (owner !== undefined) {
+          throw new Error(`Duplicate model ID ${id}: providers ${owner} and ${name}.`);
+        }
+        owners.set(id, name);
+        models.push(model);
+      }
+    }
+    return models;
   }
 
   async statuses(): Promise<Record<string, InstallationStatus>> {

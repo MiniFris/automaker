@@ -16,6 +16,7 @@ import WebSocket from 'ws';
 import { createNestApplication } from '../../src/main.js';
 import { LEGACY_APPLICATION, LEGACY_SERVICES } from '../../src/legacy/legacy.tokens.js';
 import { SettingsService } from '../../src/services/settings-service.js';
+import { ProviderRegistry } from '../../src/modules/providers/provider-registry.service.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -31,6 +32,28 @@ afterAll(async () => {
 });
 
 describe('Nest shell and legacy bridge contract', () => {
+  it('rejects conflicting provider model catalogs before the application can listen', async () => {
+    const providerRegistry = new ProviderRegistry(
+      ['claude', 'cursor'].map((name) => ({
+        name,
+        create: () =>
+          ({
+            getAvailableModels: () => [{ id: 'conflicting-model' }],
+          }) as never,
+      })),
+      { isDisconnected: () => false } as never
+    );
+    await expect(
+      createNestApplication({
+        host: '127.0.0.1',
+        port: 0,
+        runStartupTasks: false,
+        enableShutdownHooks: false,
+        services: { providerRegistry },
+      })
+    ).rejects.toThrow('Duplicate model ID conflicting-model: providers claude and cursor.');
+  });
+
   it('creates the application without listening and shares one HTTP server', () => {
     expect(runtime.app.getHttpServer()).toBe(runtime.legacy.server);
     expect(runtime.legacy.server.listening).toBe(false);

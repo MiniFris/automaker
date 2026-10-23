@@ -253,8 +253,6 @@ export class CopilotProvider extends CliProvider {
 
   constructor(config: ProviderConfig = {}) {
     super(config);
-    // Trigger CLI detection on construction
-    this.ensureCliDetected();
   }
 
   // ==========================================================================

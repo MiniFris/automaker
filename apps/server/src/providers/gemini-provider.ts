@@ -183,8 +183,6 @@ function normalizeGeminiToolInput(
 export class GeminiProvider extends CliProvider {
   constructor(config: ProviderConfig = {}) {
     super(config);
-    // Trigger CLI detection on construction
-    this.ensureCliDetected();
   }
 
   // ==========================================================================

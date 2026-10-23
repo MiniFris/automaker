@@ -45,7 +45,7 @@ AgentsModule
 - [x] Зарегистрировать adapters явным factory provider.
 - [x] Сохранить aliases и model matching priorities.
 - [x] Вынести disconnected markers в provider connection repository.
-- [ ] Ввести duplicate alias/model ownership checks при startup.
+- [x] Ввести duplicate alias/model ownership checks при startup.
 - [ ] Поддержать mock provider только через test module override.
 
 Nest не предоставляет неявный multi-binding, поэтому registry должен получать
@@ -78,6 +78,21 @@ chat/restart сценария. SSH suite использует отдельный
 43200–43219, чтобы не конкурировать с production listeners. Все три inventory
 checks актуальны. Production process smoke по SIGTERM/SIGINT завершился с кодом 0.
 Пропущенные opt-in проверки не доказывают завершение этапа 7 целиком.
+
+### Проверка владельцев моделей
+
+`ProviderRegistry.onModuleInit()` проверяет каталоги до открытия HTTP listener.
+Пустые model ID, ID с пробелами по краям и повторяющиеся ID (без учёта регистра)
+отклоняются, в том числе повтор внутри одного provider. Bare `modelString` не
+является глобальным ключом: разные providers могут обращаться к одной SDK-модели
+через разные application-facing ID. `allModels()` повторяет проверку для refreshed
+catalogs; приоритеты predicate matching и aliases не меняются.
+
+Конструкторы Cursor/Gemini/Copilot больше не вызывают CLI detection: он остаётся
+в явных status/execution methods. Unit test с production registrations запрещает
+CLI probes при startup validation. Nest contract проверяет отказ запуска при
+конфликте каталогов. Checkpoint: build, lint, 2906 unit tests (40 skipped),
+231 HTTP/WS contracts, dependency inventory check и production SIGTERM/SIGINT smoke.
 
 ## 7.3. Перенос providers
 

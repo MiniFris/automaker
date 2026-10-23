@@ -271,8 +271,6 @@ export class CursorProvider extends CliProvider {
 
   constructor(config: ProviderConfig = {}) {
     super(config);
-    // Trigger CLI detection on construction (eager for Cursor)
-    this.ensureCliDetected();
   }
 
   // ==========================================================================
