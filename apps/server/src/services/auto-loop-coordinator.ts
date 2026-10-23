@@ -276,6 +276,15 @@ export class AutoLoopCoordinator {
     return await this.getRunningCountForWorktree(projectPath, branchName);
   }
 
+  /** Suspend scheduling while preserving the persisted execution state for restart. */
+  interruptForShutdown(): void {
+    for (const state of this.autoLoopsByProject.values()) {
+      state.isRunning = false;
+      state.abortController.abort();
+    }
+    this.autoLoopsByProject.clear();
+  }
+
   isAutoLoopRunningForProject(projectPath: string, branchName: string | null = null): boolean {
     const worktreeKey = getWorktreeAutoLoopKey(projectPath, branchName);
     const projectState = this.autoLoopsByProject.get(worktreeKey);

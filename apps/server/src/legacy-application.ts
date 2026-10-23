@@ -508,6 +508,7 @@ export function createLegacyApplication(options: LegacyApplicationOptions): Lega
     // This ensures they can be resumed when the server restarts
     // Note: markAllRunningFeaturesInterrupted handles errors internally and never rejects
     await autoModeService.markAllRunningFeaturesInterrupted(`${signal} signal received`);
+    autoModeService.interruptForShutdown();
 
     terminalService.cleanup();
     await getManagedTestRunnerService(settingsService, events).cleanup();

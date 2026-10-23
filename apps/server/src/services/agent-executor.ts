@@ -810,6 +810,7 @@ export class AgentExecutor {
             status: 'generated',
             content: currentPlanContent,
             version: planVersion,
+            reviewedByUser: false,
             tasks: revisedTasks,
             tasksTotal: revisedTasks.length,
             tasksCompleted: 0,

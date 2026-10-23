@@ -1213,6 +1213,19 @@ export class AutoModeServiceFacade {
       runId: approvalRunId,
     });
 
+    if (result.success && result.needsRecovery) {
+      const feature = await this.featureStateManager.loadFeature(this.projectPath, featureId);
+      if (feature) {
+        const prompts = await getPromptCustomization(this.settingsService, '[Facade]');
+        const continuationPrompt = prompts.taskExecution.continuationAfterApprovalTemplate
+          .replace(/\{\{userFeedback\}\}/g, feedback || '')
+          .replace(/\{\{approvedPlan\}\}/g, editedPlan || feature.planSpec?.content || '');
+        void this.executeFeature(featureId, true, false, undefined, { continuationPrompt }).catch(
+          (error) => logger.error(`Recovery execution failed for feature ${featureId}:`, error)
+        );
+      }
+    }
+
     return { success: result.success, error: result.error };
   }
 
@@ -1235,7 +1248,16 @@ export class AutoModeServiceFacade {
   }
 
   getPendingPlanApproval(featureId: string) {
-    return this.planApprovalService.getPendingApproval(featureId, this.projectPath);
+    return this.planApprovalService.getPendingApproval(
+      featureId,
+      this.projectPath,
+      () => !this.concurrencyManager.isRunning(featureId)
+    );
+  }
+
+  interruptForShutdown(): void {
+    this.autoLoopCoordinator.interruptForShutdown();
+    this.planApprovalService.dispose();
   }
 
   /**

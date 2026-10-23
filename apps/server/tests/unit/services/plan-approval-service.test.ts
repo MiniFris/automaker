@@ -234,6 +234,24 @@ describe('PlanApprovalService', () => {
   describe('approval ticket lifecycle', () => {
     const ticket = { token: 'ticket-1', planVersion: 3, runId: 'run-1' };
 
+    it('aborts all waiting projects and clears their timers on shutdown', async () => {
+      const waiting = service.waitForApproval('feature-1', '/project', ticket);
+      const other = service.waitForApproval('feature-1', '/other-project', ticket);
+      const results = Promise.allSettled([waiting, other]);
+      await vi.advanceTimersByTimeAsync(0);
+      service.dispose();
+      service.dispose();
+      for (const result of await results) {
+        expect(result.status).toBe('rejected');
+        if (result.status === 'rejected') expect(result.reason.name).toBe('AbortError');
+      }
+      expect(service.hasPendingApproval('feature-1')).toBe(false);
+      expect(vi.getTimerCount()).toBe(0);
+      await expect(service.waitForApproval('feature-2', '/project', ticket)).rejects.toMatchObject({
+        name: 'AbortError',
+      });
+    });
+
     it('accepts an immediate decision while project settings are still loading', async () => {
       let finishSettings!: (settings: never) => void;
       vi.mocked(mockSettingsService!.getProjectSettings).mockReturnValue(
@@ -323,6 +341,20 @@ describe('PlanApprovalService', () => {
       await expect(approvalPromise).resolves.toMatchObject({ approved: true });
     });
 
+    it('rejects the waiting executor when saving an approval fails', async () => {
+      const waiting = service.waitForApproval('feature-1', '/project', ticket);
+      const failure = expect(waiting).rejects.toThrow('disk unavailable');
+      vi.mocked(mockFeatureStateManager.updateFeaturePlanSpec).mockRejectedValueOnce(
+        new Error('disk unavailable')
+      );
+      await expect(
+        service.resolveApproval('feature-1', true, { projectPath: '/project', ...ticket })
+      ).rejects.toThrow('disk unavailable');
+      await failure;
+      expect(service.hasPendingApproval('feature-1', '/project')).toBe(false);
+      expect(vi.getTimerCount()).toBe(0);
+    });
+
     it('does not approve a persisted generated plan after registry loss', async () => {
       vi.mocked(mockFeatureStateManager.loadFeature).mockResolvedValue({
         id: 'feature-1',
@@ -340,6 +372,50 @@ describe('PlanApprovalService', () => {
         error: 'No pending approval for feature feature-1',
       });
       expect(mockFeatureStateManager.updateFeaturePlanSpec).not.toHaveBeenCalled();
+    });
+
+    it('issues a fresh recovery ticket without starting execution and consumes it only once', async () => {
+      vi.mocked(mockFeatureStateManager.loadFeature).mockResolvedValue({
+        id: 'feature-1',
+        status: 'interrupted',
+        planSpec: { status: 'generated', version: 3, reviewedByUser: false, content: 'Saved plan' },
+      } as Feature);
+      const recovered = await service.getPendingApproval('feature-1', '/project', () => true);
+      expect(recovered).toMatchObject({ planVersion: 3, planContent: 'Saved plan' });
+      expect(recovered!.approvalToken).not.toBe(ticket.token);
+      expect(mockFeatureStateManager.updateFeaturePlanSpec).not.toHaveBeenCalled();
+      await expect(
+        service.resolveApproval('feature-1', true, { projectPath: '/project', ...ticket })
+      ).resolves.toEqual({ success: false, error: 'Approval ticket is stale or invalid' });
+      const decision = {
+        projectPath: '/project',
+        token: recovered!.approvalToken,
+        runId: recovered!.approvalRunId,
+        planVersion: recovered!.planVersion,
+      };
+      await expect(service.resolveApproval('feature-1', true, decision)).resolves.toEqual({
+        success: true,
+        needsRecovery: true,
+      });
+      await expect(service.resolveApproval('feature-1', true, decision)).resolves.toMatchObject({
+        success: false,
+      });
+      expect(mockFeatureStateManager.updateFeaturePlanSpec).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not issue a recovery ticket if a run starts while the saved plan is loading', async () => {
+      let finishRead!: (feature: Feature) => void;
+      vi.mocked(mockFeatureStateManager.loadFeature).mockReturnValue(
+        new Promise((resolve) => {
+          finishRead = resolve;
+        })
+      );
+      let idle = true;
+      const reading = service.getPendingApproval('feature-1', '/project', () => idle);
+      idle = false;
+      finishRead({ planSpec: { status: 'generated', version: 3 } } as Feature);
+      await expect(reading).resolves.toBeNull();
+      expect(service.hasPendingApproval('feature-1')).toBe(false);
     });
   });
 

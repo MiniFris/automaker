@@ -60,17 +60,27 @@ UI contract не будет версионирован отдельно.
 Approval ticket содержит одноразовый token, случайный run id и версию плана.
 Registry регистрирует ожидание синхронно до публикации события и потребляет ticket
 до первой асинхронной mutation. Повторный запрос и устаревшая версия не запускают
-выполнение второй раз. После потери registry сохранённый `generated`-план требует
-явного resume; старый ticket не восстанавливается автоматически.
+выполнение второй раз. После потери registry старый ticket недействителен. При
+повторном открытии диалога для сохранённого `generated`-плана coordinator проверяет
+отсутствие активного run и выдаёт новый recovery ticket. Чтение ticket не запускает
+выполнение; только его явное подтверждение продолжает approved-план.
 
 Для повторного открытия диалога и reconnect UI запрашивает текущий ticket через
 защищённый `POST /api/auto-mode/pending-plan-approval`. Endpoint возвращает ticket
 только для активного ожидания и совпадающей сохранённой версии. Схемы request/response
 находятся в `@automaker/contracts`. Закрытие диалога не отменяет server-side ожидание.
 
-Проверены 27 unit-тестов approval service и 14 Nest HTTP/WS contract-тестов,
-server build и UI typecheck. Полный этап 8 остаётся незавершённым: lifecycle registry,
-restart/resume workflow и остальные integration gates требуют дальнейшей работы.
+При shutdown сохраняется interrupted state, затем останавливаются scheduler,
+active run controllers и approval registry. Ожидания получают `AbortError`, их
+таймеры очищаются; persisted execution state сохраняется для восстановления.
+Явная версия generated-плана сохраняется без дополнительного auto-increment;
+ошибки plan persistence возвращаются вызывающему workflow.
+
+Промежуточный общий checkpoint: 2893 unit-теста и 225 HTTP/WS contracts. Дополнительно
+проверены shutdown/recovery races и настоящий SSH approval workflow: до решения
+Write недоступен, после решения используется тот же remote workspace. Полный этап 8
+остаётся незавершённым: restart/resume acceptance и остальные integration gates
+требуют дальнейшей работы.
 
 ## 8.5. IdeationModule
 

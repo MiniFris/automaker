@@ -502,7 +502,7 @@ export class FeatureStateManager {
       const feature = result.data;
       if (!feature) {
         logger.warn(`Feature ${featureId} not found or could not be recovered`);
-        return;
+        throw new Error(`Feature ${featureId} not found or could not be recovered`);
       }
 
       // Initialize planSpec if it doesn't exist
@@ -521,7 +521,11 @@ export class FeatureStateManager {
       Object.assign(feature.planSpec, updates);
 
       // If content is being updated and it's different from old content, increment version
-      if (updates.content !== undefined && updates.content !== oldContent) {
+      if (
+        updates.version === undefined &&
+        updates.content !== undefined &&
+        updates.content !== oldContent
+      ) {
         feature.planSpec.version = (feature.planSpec.version || 0) + 1;
       }
 
@@ -538,6 +542,7 @@ export class FeatureStateManager {
       });
     } catch (error) {
       logger.error(`Failed to update planSpec for ${featureId}:`, error);
+      throw error;
     }
   }
 

@@ -753,6 +753,41 @@ describe('FeatureStateManager', () => {
   });
 
   describe('updateFeaturePlanSpec', () => {
+    it('propagates persistence failure so approval cannot report a successful decision', async () => {
+      (readJsonWithRecovery as Mock).mockResolvedValue({
+        data: { ...mockFeature },
+        recovered: false,
+        source: 'main',
+      });
+      (atomicWriteJson as Mock).mockRejectedValueOnce(new Error('plan persistence failed'));
+      await expect(
+        manager.updateFeaturePlanSpec('/project', 'feature-123', { status: 'approved' })
+      ).rejects.toThrow('plan persistence failed');
+    });
+    it('preserves an explicit execution plan version when content changes', async () => {
+      (readJsonWithRecovery as Mock).mockResolvedValue({
+        data: {
+          ...mockFeature,
+          planSpec: {
+            status: 'generating',
+            version: 3,
+            content: 'Previous plan',
+            reviewedByUser: false,
+          },
+        },
+        recovered: false,
+        source: 'main',
+      });
+      await manager.updateFeaturePlanSpec('/project', 'feature-123', {
+        status: 'generated',
+        version: 3,
+        content: 'Plan revision 3',
+      });
+      const savedFeature = (atomicWriteJson as Mock).mock.calls[0][1] as Feature;
+      expect(savedFeature.planSpec?.version).toBe(3);
+      expect(savedFeature.planSpec?.content).toBe('Plan revision 3');
+    });
+
     it('should update planSpec with partial updates', async () => {
       (readJsonWithRecovery as Mock).mockResolvedValue({
         data: { ...mockFeature },

@@ -110,6 +110,16 @@ export class AutoModeServiceCompat {
     return this.globalService.markAllRunningFeaturesInterrupted(reason);
   }
 
+  /** Called after interruption has been persisted by the application lifecycle. */
+  interruptForShutdown(): void {
+    const shared = this.globalService.getSharedServices();
+    shared.autoLoopCoordinator.interruptForShutdown();
+    for (const run of shared.concurrencyManager.getAllRunning()) {
+      run.abortController.abort();
+    }
+    for (const facade of this.facadeCache.values()) facade.interruptForShutdown();
+  }
+
   async reconcileFeatureStates(projectPath: string): Promise<number> {
     return this.globalService.reconcileFeatureStates(projectPath);
   }

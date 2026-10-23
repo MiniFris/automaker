@@ -502,7 +502,19 @@ describe.skipIf(process.platform !== 'linux')(
         expect(bodies[0].tools?.map((tool) => tool.function.name)).not.toContain('Write');
         const run = (await service.prepare(project, feature, active(), false))!;
         await expect(fs.stat(path.join(run.environment.cwd, 'approved.txt'))).rejects.toThrow();
-        expect(await facade.resolvePlanApproval(feature.id, true)).toMatchObject({ success: true });
+        const approval = await facade.getPendingPlanApproval(feature.id);
+        expect(approval).not.toBeNull();
+        expect(
+          await facade.resolvePlanApproval(
+            feature.id,
+            true,
+            undefined,
+            undefined,
+            approval!.approvalToken,
+            approval!.planVersion,
+            approval!.approvalRunId
+          )
+        ).toMatchObject({ success: true });
         await execution;
         expect(await fs.readFile(path.join(run.environment.cwd, 'approved.txt'), 'utf8')).toBe(
           'approved'
