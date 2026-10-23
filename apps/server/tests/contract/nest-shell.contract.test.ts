@@ -269,6 +269,64 @@ describe('Nest shell and legacy bridge contract', () => {
     ).resolves.toEqual([4002, 'Session ID required']);
   });
 
+  it('preserves terminal input, resize, ping and multi-viewer reconnect semantics', async () => {
+    const address = runtime.legacy.server.address() as AddressInfo;
+    const terminal = runtime.legacy.services.terminalService;
+    const pty = { write: vi.fn(), resize: vi.fn(), kill: vi.fn() };
+    const session = {
+      id: 'terminal-contract-session',
+      pty,
+      cwd: '/tmp',
+      shell: '/bin/sh',
+      createdAt: new Date(),
+      scrollbackBuffer: '',
+      outputBuffer: '',
+      flushTimeout: null,
+      resizeInProgress: false,
+      resizeDebounceTimeout: null,
+    };
+    const sessions = (terminal as unknown as { sessions: Map<string, typeof session> }).sessions;
+    sessions.set(session.id, session);
+    const connect = async () => {
+      const socket = new WebSocket(
+        `ws://127.0.0.1:${address.port}/api/terminal/ws?apiKey=automaker-test-api-key&sessionId=${session.id}`
+      );
+      const connected = await new Promise<Record<string, unknown>>((resolve, reject) => {
+        socket.once('message', (message) => resolve(JSON.parse(message.toString())));
+        socket.once('error', reject);
+      });
+      return { socket, connected };
+    };
+
+    try {
+      const first = await connect();
+      const second = await connect();
+      expect(first.connected).toMatchObject({ type: 'connected', allowInitialCommand: true });
+      expect(second.connected).toMatchObject({ type: 'connected', allowInitialCommand: false });
+
+      const pong = new Promise<string>((resolve) =>
+        first.socket.once('message', (message) => resolve(message.toString()))
+      );
+      first.socket.send(JSON.stringify({ type: 'ping' }));
+      await expect(pong).resolves.toBe(JSON.stringify({ type: 'pong' }));
+      first.socket.send(JSON.stringify({ type: 'input', data: 'echo test\n' }));
+      first.socket.send(JSON.stringify({ type: 'resize', cols: 120, rows: 40 }));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      expect(pty.write).toHaveBeenCalledWith('echo test\n');
+      expect(pty.resize).toHaveBeenCalledWith(120, 40);
+
+      first.socket.close();
+      second.socket.close();
+      await Promise.all([
+        new Promise((resolve) => first.socket.once('close', resolve)),
+        new Promise((resolve) => second.socket.once('close', resolve)),
+      ]);
+      expect(terminal.getSession(session.id)).toBe(session);
+    } finally {
+      sessions.delete(session.id);
+    }
+  });
+
   it('serves migrated edge modules exclusively through Nest', async () => {
     const projectPath = await mkdtemp(path.join(os.tmpdir(), 'nest-edge-contract-'));
     const address = runtime.legacy.server.address() as AddressInfo;
