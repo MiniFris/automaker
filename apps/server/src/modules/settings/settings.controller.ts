@@ -1,4 +1,16 @@
-import { Body, Controller, Get, HttpCode, Inject, Param, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Inject,
+  Param,
+  Post,
+  Put,
+  Req,
+  Res,
+} from '@nestjs/common';
+import type { Request, Response } from 'express';
 
 import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
 import {
@@ -147,5 +159,46 @@ export class SettingsController {
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) input: Record<string, unknown>
   ): Promise<Record<string, unknown>> {
     return this.directCommands.updateAgent(input);
+  }
+
+  @Post('openai-compatible/models')
+  @HttpCode(200)
+  discoverDirectModels(
+    @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) input: Record<string, unknown>,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response
+  ): Promise<Record<string, unknown>> {
+    return this.abortable(request, response, (signal) =>
+      this.directCommands.discoverModels(input, signal)
+    );
+  }
+
+  @Post('openai-compatible/test')
+  @HttpCode(200)
+  testDirectConnection(
+    @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) input: Record<string, unknown>,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response
+  ): Promise<Record<string, unknown>> {
+    return this.abortable(request, response, (signal) =>
+      this.directCommands.testConnection(input, signal)
+    );
+  }
+
+  private async abortable<T>(
+    _request: Request,
+    response: Response,
+    operation: (signal: AbortSignal) => Promise<T>
+  ): Promise<T> {
+    const controller = new AbortController();
+    const close = () => {
+      if (!response.writableEnded) controller.abort();
+    };
+    response.on('close', close);
+    try {
+      return await operation(controller.signal);
+    } finally {
+      response.off('close', close);
+    }
   }
 }

@@ -56,6 +56,8 @@ export const NEST_OWNED_ROUTE_PATHS = new Set<string>([
   'PUT /api/settings/openai-compatible/endpoint',
   'POST /api/settings/openai-compatible/remove',
   'PUT /api/settings/openai-compatible/agent',
+  'POST /api/settings/openai-compatible/models',
+  'POST /api/settings/openai-compatible/test',
 ]);
 
 export function getApiRouteGroup(request: Pick<Request, 'originalUrl'>): string | undefined {
