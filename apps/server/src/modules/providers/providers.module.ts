@@ -22,9 +22,12 @@ import {
   ProviderRegistry,
   type ProviderRegistration,
 } from './provider-registry.service.js';
+import { ProviderUsageController } from './provider-usage.controller.js';
+import { ProviderUsageService } from './provider-usage.service.js';
 
 @Global()
 @Module({
+  controllers: [ProviderUsageController],
   providers: [
     ProviderConnectionRepository,
     {
@@ -82,6 +85,7 @@ import {
         ]),
     },
     ProviderRegistry,
+    ProviderUsageService,
   ],
   exports: [ProviderRegistry, ProviderConnectionRepository],
 })

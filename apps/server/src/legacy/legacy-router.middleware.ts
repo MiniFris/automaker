@@ -41,6 +41,15 @@ export const ROUTE_GROUP_OWNERS: Readonly<Record<string, RouteOwner>> = {
 };
 
 export const NEST_OWNED_ROUTE_PATHS = new Set<string>([
+  'GET /api/claude/usage',
+  'GET /api/codex/usage',
+  'GET /api/codex/models',
+  'GET /api/gemini/usage',
+  'GET /api/gemini/status',
+  'POST /api/zai/configure',
+  'POST /api/zai/verify',
+  'GET /api/zai/usage',
+  'GET /api/zai/status',
   'GET /api/settings/status',
   'GET /api/settings/global',
   'GET /api/settings/credentials',

@@ -580,12 +580,12 @@
       "method": "GET",
       "path": "/api/claude/usage",
       "group": "claude",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/claude/index.ts",
-      "line": 11,
+      "source": "apps/server/src/modules/providers/provider-usage.controller.ts",
+      "line": 17,
       "middleware": [
-        "async (req: Request, res: Response) => { try { // Check if Claude CLI is available first const isAvailable = await service.isAvailable(); if (!isAvailable) { // IMPORTANT: This ..."
+        "ProviderUsageController.claude"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -595,12 +595,12 @@
       "method": "GET",
       "path": "/api/codex/models",
       "group": "codex",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/codex/index.ts",
-      "line": 60,
+      "source": "apps/server/src/modules/providers/provider-usage.controller.ts",
+      "line": 27,
       "middleware": [
-        "async (req: Request, res: Response) => { try { const forceRefresh = req.query.refresh === 'true'; const { models, cachedAt } = await modelCacheService.getModelsWithMetadata(forc..."
+        "ProviderUsageController.codexModels"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -610,12 +610,12 @@
       "method": "GET",
       "path": "/api/codex/usage",
       "group": "codex",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/codex/index.ts",
-      "line": 15,
+      "source": "apps/server/src/modules/providers/provider-usage.controller.ts",
+      "line": 22,
       "middleware": [
-        "async (_req: Request, res: Response) => { try { // Check if Codex CLI is available first const isAvailable = await usageService.isAvailable(); if (!isAvailable) { // IMPORTANT: ..."
+        "ProviderUsageController.codex"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -1270,12 +1270,12 @@
       "method": "GET",
       "path": "/api/gemini/status",
       "group": "gemini",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/gemini/index.ts",
-      "line": 38,
+      "source": "apps/server/src/modules/providers/provider-usage.controller.ts",
+      "line": 40,
       "middleware": [
-        "async (_req: Request, res: Response) => { try { const provider = new GeminiProvider(); const status = await provider.detectInstallation(); // Derive authMethod from typed Instal..."
+        "ProviderUsageController.geminiStatus"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -1285,12 +1285,12 @@
       "method": "GET",
       "path": "/api/gemini/usage",
       "group": "gemini",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/gemini/index.ts",
-      "line": 16,
+      "source": "apps/server/src/modules/providers/provider-usage.controller.ts",
+      "line": 35,
       "middleware": [
-        "async (_req: Request, res: Response) => { try { const usageData = await usageService.fetchUsageData(); res.json(usageData); } catch (error) { const message = error instanceof Er..."
+        "ProviderUsageController.gemini"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -4633,12 +4633,12 @@
       "method": "POST",
       "path": "/api/zai/configure",
       "group": "zai",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/zai/index.ts",
-      "line": 64,
+      "source": "apps/server/src/modules/providers/provider-usage.controller.ts",
+      "line": 45,
       "middleware": [
-        "async (req: Request, res: Response) => { try { const { apiToken, apiHost } = req.body; // Validate apiToken: must be present and a string if (apiToken === undefined || apiToken ..."
+        "ProviderUsageController.configureZai"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -4648,12 +4648,12 @@
       "method": "GET",
       "path": "/api/zai/status",
       "group": "zai",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/zai/index.ts",
-      "line": 139,
+      "source": "apps/server/src/modules/providers/provider-usage.controller.ts",
+      "line": 68,
       "middleware": [
-        "async (_req: Request, res: Response) => { try { const isAvailable = usageService.isAvailable(); const hasEnvApiKey = Boolean(process.env.Z_AI_API_KEY); const hasApiKey = usageSe..."
+        "ProviderUsageController.zaiStatus"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -4663,12 +4663,12 @@
       "method": "GET",
       "path": "/api/zai/usage",
       "group": "zai",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/zai/index.ts",
-      "line": 28,
+      "source": "apps/server/src/modules/providers/provider-usage.controller.ts",
+      "line": 63,
       "middleware": [
-        "async (_req: Request, res: Response) => { try { // Check if z.ai API is configured const isAvailable = usageService.isAvailable(); if (!isAvailable) { // Use a 200 + error paylo..."
+        "ProviderUsageController.zai"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -4678,12 +4678,12 @@
       "method": "POST",
       "path": "/api/zai/verify",
       "group": "zai",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/zai/index.ts",
-      "line": 122,
+      "source": "apps/server/src/modules/providers/provider-usage.controller.ts",
+      "line": 54,
       "middleware": [
-        "async (req: Request, res: Response) => { try { const { apiKey } = req.body; const result = await usageService.verifyApiKey(apiKey); res.json(result); } catch (error) { const mes..."
+        "ProviderUsageController.verifyZai"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
