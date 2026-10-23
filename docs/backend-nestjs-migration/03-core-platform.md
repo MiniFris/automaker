@@ -137,3 +137,35 @@ Config validation не должна требовать credentials невыбр�
 - Успешны server build/lint, 2790 unit tests (40 skipped), 218 contract tests,
   8 integration tests, 1171 package/UI tests, UI typecheck и production Web/Electron
   build. Lockfile и generated route inventory прошли проверки.
+
+## Дополнительный cutover: изоляция auth state
+
+`AuthStateRepository` принадлежит `AuthModule` и получает key/data directory из
+typed runtime config. Старый `lib/auth.ts` удалён: нет чтения ключей/сессий при
+импорте, module-level maps или auth middleware в production. HTTP и WS используют
+один instance-scoped `AuthService`; Express adapter для старых transport acceptance
+существует только в `tests/helpers/auth-context.ts`.
+
+Совместимость хранения: `.api-key` остаётся текстовым файлом, `.sessions` — JSON
+массивом `[token, {createdAt, expiresAt}]`. Configured key имеет приоритет над файлом.
+Новые файлы получают mode 0600; session mutations сериализованы, запись идёт через
+уникальный временный файл и atomic rename. Неуспешная запись не публикует новую
+сессию в памяти, ошибка возвращается caller. Shutdown дожидается pending writes.
+Expired/malformed session entries не восстанавливаются; WS tokens не сохраняются
+и остаются одноразовыми. Поддерживается один активный writer на `DATA_DIR`;
+координация replicas с общим хранилищем не реализована.
+
+API key больше не печатается в log banner: browser login использует configured key
+или локальный `DATA_DIR/.api-key`. Инструкция обновлена в README и login view на
+английском/русском. Rate-limit identity берётся из Express `request.ip`/socket,
+а не из произвольного `X-Forwarded-For`; contract вращает этот header и всё равно
+получает 429 после пяти неудачных попыток.
+
+Проверки среза: server build/lint, 2916 unit tests (40 skipped), 236 HTTP/WS contracts,
+15 реальных SSH preview/test-runner tests (1 skipped), UI typecheck, Chromium Agent
+Chat Session smoke, три inventory checks и production SIGTERM/SIGINT smoke. Новый
+native HTTP contract запускает два приложения с разными keys/directories, проверяет
+изоляцию cookies и WS tokens, независимый shutdown, restart и persisted logout.
+Repository tests проверяют legacy format, concurrent writes, mode 0600 и восстановление
+после ошибки atomic rename. Два теста удалённых константных legacy helpers заменены
+тестами нового repository; 36 credential/cookie/session scenarios сохранены.

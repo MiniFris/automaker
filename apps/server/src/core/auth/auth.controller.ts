@@ -96,11 +96,8 @@ export class AuthController {
   }
 
   private clientIp(request: Request): string {
-    const forwarded = request.headers['x-forwarded-for'];
-    if (forwarded) {
-      const first = Array.isArray(forwarded) ? forwarded[0] : forwarded.split(',')[0];
-      return first.trim();
-    }
+    // Only Express may interpret forwarding headers using an explicitly trusted
+    // proxy policy. An arbitrary client header must not reset the login window.
     return request.ip || request.socket.remoteAddress || 'unknown';
   }
 }

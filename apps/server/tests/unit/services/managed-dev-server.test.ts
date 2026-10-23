@@ -22,16 +22,13 @@ import {
 } from '@/services/execution-environment/preview-policy.js';
 import { createWorktreeRoutes } from '@/routes/worktree/index.js';
 import { createEventEmitter } from '@/lib/events.js';
-import { authMiddleware } from '@/lib/auth.js';
+import { createTestAuth } from '../../helpers/auth-context.js';
 import { sshPeer, testSSHKey } from '../../helpers/ssh-peer.js';
 
-vi.hoisted(() => {
-  vi.stubEnv('AUTOMAKER_API_KEY', 'preview-fixture-secret');
-  vi.stubEnv('DATA_DIR', `/tmp/automaker-preview-auth-${process.pid}`);
-});
 const exec = promisify(execFile),
   require = createRequire(import.meta.url);
 describe.skipIf(process.platform !== 'linux')('managed dev/preview on real SSH', () => {
+  let auth: Awaited<ReturnType<typeof createTestAuth>>;
   let root: string, project: string, checkout: string, settings: SettingsService;
   let peer: Awaited<ReturnType<typeof sshPeer>>,
     service: ReturnType<typeof getManagedDevServerService>;
@@ -132,7 +129,10 @@ const wss=new WebSocketServer({server});wss.on('connection',ws=>ws.on('message',
     vi.stubEnv('AUTOMAKER_API_KEY', 'preview-fixture-secret');
     const app = express();
     app.use(express.json());
-    app.use('/api', previewApiGuard, authMiddleware);
+    auth = await createTestAuth(path.join(root, 'auth'), {
+      AUTOMAKER_API_KEY: 'preview-fixture-secret',
+    });
+    app.use('/api', previewApiGuard, auth.middleware);
     app.use(
       '/api/worktree',
       createWorktreeRoutes(createTestProviderRegistry(settings), createEventEmitter(), settings)
@@ -143,6 +143,7 @@ const wss=new WebSocketServer({server});wss.on('connection',ws=>ws.on('message',
     api = `http://127.0.0.1:${(server.address() as { port: number }).port}/api`;
   }, 15000);
   afterEach(async () => {
+    await auth?.close();
     await service?.cleanup();
     server?.closeAllConnections();
     if (server) await new Promise<void>((resolve) => server.close(() => resolve()));

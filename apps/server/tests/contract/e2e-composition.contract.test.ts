@@ -66,7 +66,7 @@ describe('explicit Nest E2E composition', () => {
   });
 
   it('overrides providers and auth probes only in the test module and cleans its storage', async () => {
-    const runtime = await createE2eApplication({ HOST: '127.0.0.1', PORT: '0' });
+    const runtime = await createE2eApplication({ ...process.env, HOST: '127.0.0.1', PORT: '0' });
     try {
       expect(runtime.app.getHttpServer().listening).toBe(false);
       await runtime.app.listen(0, '127.0.0.1');
@@ -129,10 +129,14 @@ describe('explicit Nest E2E composition', () => {
     try {
       await runtime.start();
       const { port } = runtime.app.getHttpServer().address() as AddressInfo;
+      let requestNumber = 0;
       const login = (apiKey: string) =>
         fetch(`http://127.0.0.1:${port}/api/auth/login`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'x-forwarded-for': `198.51.100.${++requestNumber}`,
+          },
           body: JSON.stringify({ apiKey }),
         });
       // Successful logins must not consume the failed-attempt allowance.

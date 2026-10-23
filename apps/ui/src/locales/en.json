@@ -1519,7 +1519,7 @@
   "Enter plan content...": "Enter plan content...",
   "Enter project name": "Enter project name",
   "Enter project name...": "Enter project name...",
-  "Enter the API key shown in the server console to continue.": "Enter the API key shown in the server console to continue.",
+  "Enter the configured API key or the key stored in DATA_DIR/.api-key to continue.": "Enter the configured API key or the key stored in DATA_DIR/.api-key to continue.",
   "Enter the GitHub PR number to associate with this worktree. The PR info will be fetched from GitHub if available.": "Enter the GitHub PR number to associate with this worktree. The PR info will be fetched from GitHub if available.",
   "Enter value...": "Enter value...",
   "Enter your markdown content here...": "Enter your markdown content here...",

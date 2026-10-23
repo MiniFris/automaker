@@ -3,11 +3,11 @@
   "sourceRoot": "apps/server/src",
   "summary": {
     "files": 593,
-    "internalEdges": 1856,
+    "internalEdges": 1858,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
-    "core -> core": 48,
+    "core -> core": 51,
     "core -> legacy": 2,
     "core -> lib": 5,
     "core -> middleware": 1,
@@ -18,7 +18,7 @@
     "legacy -> modules": 4,
     "legacy -> root": 2,
     "legacy -> services": 19,
-    "lib -> lib": 4,
+    "lib -> lib": 3,
     "lib -> services": 1,
     "modules -> core": 81,
     "modules -> legacy": 29,
@@ -70,7 +70,6 @@
     "processEnv": [
       "apps/server/src/legacy-application.ts",
       "apps/server/src/lib/auth-utils.ts",
-      "apps/server/src/lib/auth.ts",
       "apps/server/src/lib/cli-detection.ts",
       "apps/server/src/lib/codex-auth.ts",
       "apps/server/src/lib/exec-utils.ts",
@@ -321,7 +320,7 @@
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 145,
+    "@nestjs/common": 146,
     "@nestjs/core": 7,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
@@ -330,23 +329,23 @@
     "cookie": 1,
     "cookie-parser": 1,
     "cors": 1,
-    "crypto": 5,
+    "crypto": 4,
     "dotenv": 1,
     "events": 1,
-    "express": 251,
+    "express": 250,
     "fs": 22,
     "fs/promises": 18,
     "net": 1,
     "node-pty": 2,
     "node:async_hooks": 1,
     "node:child_process": 10,
-    "node:crypto": 25,
+    "node:crypto": 26,
     "node:fs": 6,
     "node:fs/promises": 14,
     "node:http": 7,
     "node:net": 2,
     "node:os": 6,
-    "node:path": 34,
+    "node:path": 35,
     "node:perf_hooks": 2,
     "node:stream": 5,
     "node:stream/web": 1,
@@ -354,7 +353,7 @@
     "node:timers/promises": 3,
     "node:util": 12,
     "os": 16,
-    "path": 93,
+    "path": 92,
     "readline": 1,
     "reflect-metadata": 1,
     "ssh2": 3,
@@ -523,6 +522,14 @@
       "target": "apps/server/src/modules/worktree/worktree.module.ts"
     },
     {
+      "source": "apps/server/src/core/auth/auth-state.repository.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/core/auth/auth-state.repository.ts",
+      "target": "apps/server/src/lib/secure-fs.ts"
+    },
+    {
       "source": "apps/server/src/core/auth/auth.controller.ts",
       "target": "apps/server/src/core/auth/auth.schemas.ts"
     },
@@ -572,6 +579,10 @@
     },
     {
       "source": "apps/server/src/core/auth/auth.module.ts",
+      "target": "apps/server/src/core/auth/auth-state.repository.ts"
+    },
+    {
+      "source": "apps/server/src/core/auth/auth.module.ts",
       "target": "apps/server/src/core/auth/auth.controller.ts"
     },
     {
@@ -592,11 +603,11 @@
     },
     {
       "source": "apps/server/src/core/auth/auth.service.ts",
-      "target": "apps/server/src/core/config/index.ts"
+      "target": "apps/server/src/core/auth/auth-state.repository.ts"
     },
     {
       "source": "apps/server/src/core/auth/auth.service.ts",
-      "target": "apps/server/src/lib/auth.ts"
+      "target": "apps/server/src/core/config/index.ts"
     },
     {
       "source": "apps/server/src/core/config/runtime-config.module.ts",
@@ -988,10 +999,6 @@
     },
     {
       "source": "apps/server/src/lib/atomic-write-text.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/lib/auth.ts",
       "target": "apps/server/src/lib/secure-fs.ts"
     },
     {

@@ -178,6 +178,11 @@ npm run dev:electron:wsl:gpu
 npm run dev:web
 ```
 
+Browser login uses `AUTOMAKER_API_KEY` when configured, otherwise a key loaded from
+`DATA_DIR/.api-key` (generated on first startup). Keys and session tokens are not
+printed in server logs. Read the key file locally or configure your own secret;
+do not share it or commit it to the repository.
+
 ### Interactive TUI Launcher (Recommended for New Users)
 
 For a user-friendly interactive menu, use the built-in TUI launcher script:

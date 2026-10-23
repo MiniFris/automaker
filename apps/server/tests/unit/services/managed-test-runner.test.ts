@@ -14,17 +14,12 @@ import { FeatureWorkspaceService } from '@/services/execution-environment/featur
 import { getManagedTestRunnerService } from '@/services/execution-environment/test-runner.js';
 import { createWorktreeRoutes } from '@/routes/worktree/index.js';
 import { createEventEmitter } from '@/lib/events.js';
-import { authMiddleware } from '@/lib/auth.js';
+import { createTestAuth } from '../../helpers/auth-context.js';
 import { sshPeer, testSSHKey } from '../../helpers/ssh-peer.js';
-
-// Auth initializes at import time. Never read real controller credentials/session files.
-vi.hoisted(() => {
-  vi.stubEnv('AUTOMAKER_API_KEY', 'fixture-secret');
-  vi.stubEnv('DATA_DIR', `/tmp/automaker-manual-tests-auth-${process.pid}`);
-});
 
 const exec = promisify(execFile);
 describe.skipIf(process.platform !== 'linux')('manual test runner on real SSH', () => {
+  let auth: Awaited<ReturnType<typeof createTestAuth>>;
   let root: string, project: string, checkout: string, settings: SettingsService;
   let peer: Awaited<ReturnType<typeof sshPeer>>;
   let tests: ReturnType<typeof getManagedTestRunnerService>;
@@ -130,9 +125,10 @@ describe.skipIf(process.platform !== 'linux')('manual test runner on real SSH', 
     vi.stubEnv('AUTOMAKER_API_KEY', 'fixture-secret');
     const app = express();
     app.use(express.json());
+    auth = await createTestAuth(path.join(root, 'auth'), { AUTOMAKER_API_KEY: 'fixture-secret' });
     app.use(
       '/worktree',
-      authMiddleware,
+      auth.middleware,
       createWorktreeRoutes(createTestProviderRegistry(settings), events, settings)
     );
     server = app.listen(0, '127.0.0.1');
@@ -140,6 +136,7 @@ describe.skipIf(process.platform !== 'linux')('manual test runner on real SSH', 
     url = `http://127.0.0.1:${(server.address() as { port: number }).port}/worktree`;
   }, 15000);
   afterEach(async () => {
+    await auth?.close();
     await tests?.cleanup();
     server?.closeAllConnections();
     if (server) await new Promise<void>((resolve) => server.close(() => resolve()));

@@ -4,24 +4,25 @@ import type { Request } from 'express';
 import type { IncomingMessage } from 'node:http';
 import * as cookie from 'cookie';
 import {
-  checkAuthentication,
-  cleanupExpiredWsConnectionTokens,
-  createSession,
-  createWsConnectionToken,
-  getSessionCookieName,
-  getSessionCookieOptions,
-  invalidateSession,
-  validateApiKey,
-  validateWsConnectionToken,
-  type AuthResult,
-} from '../../lib/auth.js';
+  AuthStateRepository,
+  SESSION_COOKIE_NAME,
+  SESSION_MAX_AGE_MS,
+} from './auth-state.repository.js';
 import { RUNTIME_CONFIG, type RuntimeConfig } from '../config/index.js';
+
+export type AuthResult =
+  | { authenticated: true }
+  | { authenticated: false; errorType: 'invalid_api_key' | 'invalid_session' | 'no_auth' };
 
 @Injectable()
 export class AuthService implements OnApplicationShutdown {
-  private readonly cleanupInterval = setInterval(() => cleanupExpiredWsConnectionTokens(), 60_000);
+  private readonly cleanupInterval: ReturnType<typeof setInterval>;
 
-  constructor(@Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig) {
+  constructor(
+    @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig,
+    @Inject(AuthStateRepository) private readonly state: AuthStateRepository
+  ) {
+    this.cleanupInterval = setInterval(() => state.cleanupExpiredWebSocketTokens(), 60_000);
     this.cleanupInterval.unref();
   }
 
@@ -30,7 +31,7 @@ export class AuthService implements OnApplicationShutdown {
   }
 
   authenticateRequest(request: Request): AuthResult {
-    return checkAuthentication(
+    return this.checkAuthentication(
       request.headers as Record<string, string | string[] | undefined>,
       request.query as Record<string, string | undefined>,
       (request.cookies ?? {}) as Record<string, string | undefined>
@@ -40,25 +41,60 @@ export class AuthService implements OnApplicationShutdown {
     return this.config.auth.disabled || this.authenticateRequest(request).authenticated;
   }
   validateApiKey(apiKey: string): boolean {
-    return validateApiKey(apiKey);
+    return this.state.validateApiKey(apiKey);
   }
   createSession(): Promise<string> {
-    return createSession();
+    return this.state.createSession();
   }
   invalidateSession(token: string): Promise<void> {
-    return invalidateSession(token);
+    return this.state.invalidateSession(token);
   }
   get sessionCookieName(): string {
-    return getSessionCookieName();
+    return SESSION_COOKIE_NAME;
   }
-  get sessionCookieOptions(): ReturnType<typeof getSessionCookieOptions> {
-    return getSessionCookieOptions(this.config.environment === 'production');
+  get sessionCookieOptions() {
+    return {
+      httpOnly: true,
+      secure: this.config.environment === 'production',
+      sameSite: 'lax' as const,
+      maxAge: SESSION_MAX_AGE_MS,
+      path: '/',
+    };
   }
   issueWebSocketToken(): string {
-    return createWsConnectionToken();
+    return this.state.issueWebSocketToken();
   }
   consumeWebSocketToken(token: string): boolean {
-    return validateWsConnectionToken(token);
+    return this.state.consumeWebSocketToken(token);
+  }
+
+  checkAuthentication(
+    headers: Record<string, string | string[] | undefined>,
+    query: Record<string, string | undefined>,
+    cookies: Record<string, string | undefined>
+  ): AuthResult {
+    const key = headers['x-api-key'];
+    if (key)
+      return typeof key === 'string' && this.validateApiKey(key)
+        ? { authenticated: true }
+        : { authenticated: false, errorType: 'invalid_api_key' };
+    const headerToken = headers['x-session-token'];
+    if (headerToken)
+      return typeof headerToken === 'string' && this.state.validateSession(headerToken)
+        ? { authenticated: true }
+        : { authenticated: false, errorType: 'invalid_session' };
+    if (query.apiKey)
+      return this.validateApiKey(query.apiKey)
+        ? { authenticated: true }
+        : { authenticated: false, errorType: 'invalid_api_key' };
+    if (query.token)
+      return this.state.validateSession(query.token)
+        ? { authenticated: true }
+        : { authenticated: false, errorType: 'invalid_session' };
+    const token = cookies[SESSION_COOKIE_NAME];
+    return token && this.state.validateSession(token)
+      ? { authenticated: true }
+      : { authenticated: false, errorType: 'no_auth' };
   }
 
   authenticateUpgrade(request: IncomingMessage): boolean {
@@ -70,7 +106,7 @@ export class AuthService implements OnApplicationShutdown {
     });
     const cookies = request.headers.cookie ? cookie.parse(request.headers.cookie) : {};
     if (
-      checkAuthentication(
+      this.checkAuthentication(
         request.headers as Record<string, string | string[] | undefined>,
         query,
         cookies

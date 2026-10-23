@@ -109,8 +109,8 @@ Claude/Codex auth verification. Успешный login сбрасывает сч
 
 Standalone test entrypoint создаёт собственный временный `DATA_DIR` до импорта
 legacy readers, слушает только loopback, запрещён при `NODE_ENV=production` и
-удаляет хранилище при shutdown. In-process contract fixtures пока разделяют старый
-module-level auth store; его перенос в instance-scoped repository ещё не завершён.
+удаляет хранилище при shutdown. Последующий auth cutover устранил общий module-level
+auth store и для in-process fixtures; детали и проверки — в документе этапа 3.
 Background startup tasks в E2E composition отключены, поэтому этот harness не
 заменяет production lifecycle или live-provider acceptance.
 
