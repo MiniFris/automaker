@@ -13,5 +13,6 @@ import { SimpleContextQueryAdapter } from './simple-context-query.adapter.js';
     SimpleContextQueryAdapter,
     { provide: CONTEXT_QUERY_PORT, useExisting: SimpleContextQueryAdapter },
   ],
+  exports: [CONTEXT_QUERY_PORT],
 })
 export class ContextModule {}

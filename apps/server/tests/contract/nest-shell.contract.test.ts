@@ -341,6 +341,67 @@ describe('Nest shell and legacy bridge contract', () => {
         errorCode: 'NOT_FOUND',
       });
 
+      const createFeature = await fetch(`${baseUrl}/api/features/create`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          projectPath,
+          feature: {
+            id: 'feature-contract',
+            title: 'Contract feature',
+            category: 'Tests',
+            description: 'Initial description',
+            status: 'backlog',
+          },
+        }),
+      });
+      expect(createFeature.status).toBe(200);
+      expect(await createFeature.json()).toMatchObject({
+        success: true,
+        feature: { id: 'feature-contract' },
+      });
+
+      const updateFeature = await fetch(`${baseUrl}/api/features/update`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          projectPath,
+          featureId: 'feature-contract',
+          updates: { description: 'Updated description', status: 'completed' },
+          descriptionHistorySource: 'edit',
+        }),
+      });
+      expect(updateFeature.status).toBe(200);
+      expect(await updateFeature.json()).toMatchObject({
+        success: true,
+        feature: {
+          status: 'completed',
+          descriptionHistory: [
+            { description: 'Initial description', source: 'initial' },
+            { description: 'Updated description', source: 'edit' },
+          ],
+        },
+      });
+
+      const invalidFeatureStatus = await fetch(`${baseUrl}/api/features/update`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          projectPath,
+          featureId: 'feature-contract',
+          updates: { status: 'invented-status' },
+        }),
+      });
+      expect(invalidFeatureStatus.status).toBe(400);
+
+      const deleteFeature = await fetch(`${baseUrl}/api/features/delete`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ projectPath, featureId: 'feature-contract' }),
+      });
+      expect(deleteFeature.status).toBe(200);
+      expect(await deleteFeature.json()).toEqual({ success: true });
+
       for (const route of ['notifications/list', 'event-history/list']) {
         const response = await fetch(`${baseUrl}/api/${route}`, {
           method: 'POST',

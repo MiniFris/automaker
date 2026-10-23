@@ -24,4 +24,37 @@ export class LegacyFeatureRepository implements FeatureRepository {
   getRawOutput(projectPath: string, featureId: string) {
     return this.featureLoader.getRawOutput(projectPath, featureId);
   }
+
+  create(projectPath: string, feature: Parameters<FeatureLoader['create']>[1]) {
+    return this.featureLoader.create(projectPath, feature);
+  }
+
+  update(
+    projectPath: string,
+    featureId: string,
+    updates: Parameters<FeatureLoader['update']>[2],
+    descriptionHistorySource?: Parameters<FeatureLoader['update']>[3],
+    enhancementMode?: Parameters<FeatureLoader['update']>[4],
+    preEnhancementDescription?: string
+  ) {
+    return this.featureLoader.update(
+      projectPath,
+      featureId,
+      updates,
+      descriptionHistorySource,
+      enhancementMode,
+      preEnhancementDescription
+    );
+  }
+
+  delete(projectPath: string, featureId: string) {
+    return this.featureLoader.delete(projectPath, featureId);
+  }
+
+  syncToAppSpec(
+    projectPath: string,
+    feature: Parameters<FeatureLoader['syncFeatureToAppSpec']>[1]
+  ) {
+    return this.featureLoader.syncFeatureToAppSpec(projectPath, feature);
+  }
 }

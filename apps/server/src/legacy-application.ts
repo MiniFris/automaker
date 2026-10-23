@@ -40,7 +40,6 @@ import {
 } from './core/observability/request-context.js';
 import { createAgentRoutes } from './routes/agent/index.js';
 import { createSessionsRoutes } from './routes/sessions/index.js';
-import { createFeaturesRoutes } from './routes/features/index.js';
 import { createAutoModeRoutes } from './routes/auto-mode/index.js';
 import { createEnhancePromptRoutes } from './routes/enhance-prompt/index.js';
 import { createWorktreeRoutes } from './routes/worktree/index.js';
@@ -585,10 +584,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
 
   app.use('/api/agent', createAgentRoutes(agentService, events));
   app.use('/api/sessions', createSessionsRoutes(agentService));
-  app.use(
-    '/api/features',
-    createFeaturesRoutes(featureLoader, settingsService, events, autoModeService)
-  );
   app.use('/api/auto-mode', createAutoModeRoutes(autoModeService));
   app.use('/api/enhance-prompt', createEnhancePromptRoutes(settingsService));
   app.use(

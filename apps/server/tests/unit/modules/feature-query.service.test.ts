@@ -14,6 +14,10 @@ const createRepository = (): FeatureRepository => ({
   get: vi.fn().mockResolvedValue(feature),
   getAgentOutput: vi.fn().mockResolvedValue('agent output'),
   getRawOutput: vi.fn().mockResolvedValue('{"type":"result"}'),
+  create: vi.fn(),
+  update: vi.fn(),
+  delete: vi.fn(),
+  syncToAppSpec: vi.fn(),
 });
 
 describe('FeatureQueryService', () => {

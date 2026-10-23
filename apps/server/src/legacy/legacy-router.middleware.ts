@@ -13,7 +13,7 @@ export const ROUTE_GROUP_OWNERS: Readonly<Record<string, RouteOwner>> = {
   fs: 'nest',
   agent: 'legacy',
   sessions: 'legacy',
-  features: 'legacy',
+  features: 'nest',
   'auto-mode': 'legacy',
   'enhance-prompt': 'legacy',
   worktree: 'legacy',
@@ -104,6 +104,15 @@ export const NEST_OWNED_ROUTE_PATHS = new Set<string>([
   'POST /api/features/export',
   'POST /api/features/check-conflicts',
   'POST /api/features/orphaned',
+  'POST /api/features/create',
+  'POST /api/features/update',
+  'POST /api/features/delete',
+  'POST /api/features/bulk-update',
+  'POST /api/features/bulk-delete',
+  'POST /api/features/import',
+  'POST /api/features/orphaned/resolve',
+  'POST /api/features/orphaned/bulk-resolve',
+  'POST /api/features/generate-title',
 ]);
 
 export function getApiRouteGroup(request: Pick<Request, 'originalUrl'>): string | undefined {

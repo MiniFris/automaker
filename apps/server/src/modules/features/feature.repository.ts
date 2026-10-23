@@ -7,4 +7,15 @@ export interface FeatureRepository {
   get(projectPath: string, featureId: string): Promise<Feature | null>;
   getAgentOutput(projectPath: string, featureId: string): Promise<string | null>;
   getRawOutput(projectPath: string, featureId: string): Promise<string | null>;
+  create(projectPath: string, feature: Partial<Feature>): Promise<Feature>;
+  update(
+    projectPath: string,
+    featureId: string,
+    updates: Partial<Feature>,
+    descriptionHistorySource?: 'enhance' | 'edit',
+    enhancementMode?: 'improve' | 'technical' | 'simplify' | 'acceptance' | 'ux-reviewer',
+    preEnhancementDescription?: string
+  ): Promise<Feature>;
+  delete(projectPath: string, featureId: string): Promise<boolean>;
+  syncToAppSpec(projectPath: string, feature: Feature): Promise<boolean>;
 }
