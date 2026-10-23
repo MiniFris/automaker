@@ -14,6 +14,7 @@ import {
   ROUTE_GROUP_OWNERS,
 } from '../../src/legacy/legacy-router.middleware.js';
 import { LEGACY_APPLICATION, LEGACY_SERVICES } from '../../src/legacy/legacy.tokens.js';
+import { SettingsService } from '../../src/services/settings-service.js';
 
 const runtime = await createNestApplication({
   host: '127.0.0.1',
@@ -61,6 +62,7 @@ describe('Nest shell and legacy bridge contract', () => {
     for (const [name, token] of Object.entries(LEGACY_SERVICES)) {
       expect(runtime.app.get(token), name).toBe(expected[name as keyof typeof expected]);
     }
+    expect(runtime.app.get(SettingsService)).toBe(services.settingsService);
   });
 
   it('has one explicit owner for every API route group', () => {

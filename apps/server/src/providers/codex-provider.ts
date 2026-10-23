@@ -14,7 +14,6 @@ import {
   findCodexCliPath,
   getCodexAuthIndicators,
   secureFs,
-  getDataDirectory,
   getCodexConfigDir,
 } from '@automaker/platform';
 import { checkCodexAuthentication } from '../lib/codex-auth.js';
@@ -100,7 +99,6 @@ const CODEX_INSTRUCTIONS_USER_SOURCE = 'User instructions';
 const CODEX_INSTRUCTIONS_PROJECT_SOURCE = 'Project instructions';
 const CODEX_USER_INSTRUCTIONS_FILE = 'AGENTS.md';
 const CODEX_PROJECT_INSTRUCTIONS_FILES = ['AGENTS.md'] as const;
-const CODEX_SETTINGS_DIR_FALLBACK = './data';
 const DEFAULT_CODEX_AUTO_LOAD_AGENTS = false;
 const DEFAULT_CODEX_SANDBOX_MODE: CodexSandboxMode = 'workspace-write';
 const DEFAULT_CODEX_APPROVAL_POLICY: CodexApprovalPolicy = 'on-request';
@@ -169,14 +167,14 @@ function buildEnv(): Record<string, string> {
   return env;
 }
 
-async function resolveOpenAiApiKey(): Promise<string | null> {
+async function resolveOpenAiApiKey(settingsService?: SettingsService): Promise<string | null> {
   const envKey = process.env[OPENAI_API_KEY_ENV];
   if (envKey) {
     return envKey;
   }
 
   try {
-    const settingsService = new SettingsService(getCodexSettingsDir());
+    if (!settingsService) return null;
     const credentials = await settingsService.getCredentials();
     const storedKey = credentials.apiKeys.openai?.trim();
     return storedKey ? storedKey : null;
@@ -204,10 +202,13 @@ function isSdkEligibleWithApiKey(options: ExecuteOptions): boolean {
   return !hasMcpServersConfigured(options);
 }
 
-async function resolveCodexExecutionPlan(options: ExecuteOptions): Promise<CodexExecutionPlan> {
+async function resolveCodexExecutionPlan(
+  options: ExecuteOptions,
+  settingsService?: SettingsService
+): Promise<CodexExecutionPlan> {
   const cliPath = await findCodexCliPath();
   const authIndicators = await getCodexAuthIndicators();
-  const openAiApiKey = await resolveOpenAiApiKey();
+  const openAiApiKey = await resolveOpenAiApiKey(settingsService);
   const hasApiKey = Boolean(openAiApiKey);
   const cliAvailable = Boolean(cliPath);
   // CLI OAuth login takes priority: if the user has logged in via `codex login`,
@@ -600,13 +601,9 @@ type CodexCliSettings = {
   threadId?: string;
 };
 
-function getCodexSettingsDir(): string {
-  const configured = getDataDirectory() ?? process.env.DATA_DIR;
-  return configured ? path.resolve(configured) : path.resolve(CODEX_SETTINGS_DIR_FALLBACK);
-}
-
 async function loadCodexCliSettings(
-  overrides?: ExecuteOptions['codexSettings']
+  overrides?: ExecuteOptions['codexSettings'],
+  settingsService?: SettingsService
 ): Promise<CodexCliSettings> {
   const defaults: CodexCliSettings = {
     autoLoadAgents: DEFAULT_CODEX_AUTO_LOAD_AGENTS,
@@ -619,7 +616,7 @@ async function loadCodexCliSettings(
   };
 
   try {
-    const settingsService = new SettingsService(getCodexSettingsDir());
+    if (!settingsService) return { ...defaults, ...overrides };
     const settings = await settingsService.getGlobalSettings();
     const resolved: CodexCliSettings = {
       autoLoadAgents: settings.codexAutoLoadAgents ?? defaults.autoLoadAgents,
@@ -725,6 +722,10 @@ async function loadCodexInstructions(cwd: string, enabled: boolean): Promise<str
 const logger = createLogger('CodexProvider');
 
 export class CodexProvider extends BaseProvider {
+  constructor(private readonly settingsService?: SettingsService) {
+    super();
+  }
+
   getName(): string {
     return 'codex';
   }
@@ -741,7 +742,7 @@ export class CodexProvider extends BaseProvider {
     try {
       const mcpServers = options.mcpServers ?? {};
       const hasMcpServers = Object.keys(mcpServers).length > 0;
-      const codexSettings = await loadCodexCliSettings(options.codexSettings);
+      const codexSettings = await loadCodexCliSettings(options.codexSettings, this.settingsService);
       const codexInstructions = await loadCodexInstructions(
         options.cwd,
         codexSettings.autoLoadAgents
@@ -776,7 +777,7 @@ export class CodexProvider extends BaseProvider {
         ? systemPromptParts.join(SYSTEM_PROMPT_SEPARATOR)
         : null;
 
-      const executionPlan = await resolveCodexExecutionPlan(options);
+      const executionPlan = await resolveCodexExecutionPlan(options, this.settingsService);
       if (executionPlan.mode === CODEX_EXECUTION_MODE_SDK) {
         const cleanupEnv = executionPlan.openAiApiKey
           ? createTempEnvOverride({ [OPENAI_API_KEY_ENV]: executionPlan.openAiApiKey })
@@ -1117,7 +1118,7 @@ export class CodexProvider extends BaseProvider {
 
   async detectInstallation(): Promise<InstallationStatus> {
     const cliPath = await findCodexCliPath();
-    const hasApiKey = Boolean(await resolveOpenAiApiKey());
+    const hasApiKey = Boolean(await resolveOpenAiApiKey(this.settingsService));
     const installed = !!cliPath;
 
     let version = '';
@@ -1158,7 +1159,7 @@ export class CodexProvider extends BaseProvider {
    */
   async checkAuth(): Promise<CodexAuthStatus> {
     const cliPath = await findCodexCliPath();
-    const hasApiKey = Boolean(await resolveOpenAiApiKey());
+    const hasApiKey = Boolean(await resolveOpenAiApiKey(this.settingsService));
     const authIndicators = await getCodexAuthIndicators();
 
     // Check for API key in environment

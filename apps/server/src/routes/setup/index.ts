@@ -74,7 +74,7 @@ export function createSetupRoutes(settingsService?: SettingsService): Router {
   router.post('/deauth-cursor', createDeauthCursorHandler());
 
   // Codex CLI routes
-  router.get('/codex-status', createCodexStatusHandler());
+  router.get('/codex-status', createCodexStatusHandler(settingsService));
   router.post('/install-codex', createInstallCodexHandler());
   router.post('/auth-codex', createAuthCodexHandler());
   router.post('/deauth-codex', createDeauthCodexHandler());

@@ -1,15 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { toDirectModelId } from '@automaker/types';
 
-import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import { RUNTIME_CONFIG, type RuntimeConfig } from '../../core/config/index.js';
+import { SettingsService } from '../../services/settings-service.js';
 import { ProviderFactory } from '../../providers/provider-factory.js';
-import type { SettingsService } from '../../services/settings-service.js';
 
 @Injectable()
 export class ModelsCatalogService {
   constructor(
-    @Inject(LEGACY_SERVICES.settings) private readonly settingsService: SettingsService,
+    @Inject(SettingsService) private readonly settingsService: SettingsService,
     @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig
   ) {}
 

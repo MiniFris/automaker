@@ -7,7 +7,7 @@
  * - Per-project settings ({projectPath}/.automaker/settings.json)
  */
 
-import { createLogger, atomicWriteJson, DEFAULT_BACKUP_COUNT } from '@automaker/utils';
+import { createLogger } from '@automaker/utils';
 import * as secureFs from '../lib/secure-fs.js';
 import os from 'os';
 import path from 'path';
@@ -62,51 +62,9 @@ import {
   migrateCursorModelIds,
   migrateOpencodeModelIds,
 } from '@automaker/types';
+import { SettingsFileRepository } from '../modules/settings/settings-file.repository.js';
 
 const logger = createLogger('SettingsService');
-
-/**
- * Wrapper for readJsonFile from utils that uses the local secureFs
- * to maintain compatibility with the server's secure file system
- */
-async function readJsonFile<T>(filePath: string, defaultValue: T): Promise<T> {
-  try {
-    const content = (await secureFs.readFile(filePath, 'utf-8')) as string;
-    return JSON.parse(content) as T;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      return defaultValue;
-    }
-    logger.error(`Error reading ${filePath}:`, error);
-    return defaultValue;
-  }
-}
-
-/**
- * Check if a file exists
- */
-async function fileExists(filePath: string): Promise<boolean> {
-  try {
-    await secureFs.access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Write settings atomically with backup support
- */
-async function writeSettingsJson(
-  filePath: string,
-  data: unknown,
-  privateFile = false
-): Promise<void> {
-  await atomicWriteJson(filePath, data, {
-    backupCount: DEFAULT_BACKUP_COUNT,
-    ...(privateFile && { mode: 0o600 }),
-  });
-}
 
 /**
  * SettingsService - Manages persistent storage of user settings and credentials
@@ -134,7 +92,10 @@ export class SettingsService {
    *
    * @param dataDir - Absolute path to global data directory (e.g., ~/.automaker)
    */
-  constructor(dataDir: string) {
+  constructor(
+    dataDir: string,
+    private readonly files: SettingsFileRepository = new SettingsFileRepository()
+  ) {
     this.dataDir = dataDir;
   }
 
@@ -155,7 +116,7 @@ export class SettingsService {
    */
   async getGlobalSettings(): Promise<GlobalSettings> {
     const settingsPath = getGlobalSettingsPath(this.dataDir);
-    const settings = await readJsonFile<GlobalSettings>(settingsPath, DEFAULT_GLOBAL_SETTINGS);
+    const settings = await this.files.read<GlobalSettings>(settingsPath, DEFAULT_GLOBAL_SETTINGS);
 
     // Migrate legacy enhancementModel/validationModel to phaseModels
     const migratedPhaseModels = this.migratePhaseModels(settings);
@@ -270,7 +231,7 @@ export class SettingsService {
     if (needsSave) {
       try {
         await ensureDataDir(this.dataDir);
-        await writeSettingsJson(settingsPath, result);
+        await this.files.write(settingsPath, result);
         logger.info('Settings migration complete');
       } catch (error) {
         logger.error('Failed to save migrated settings:', error);
@@ -773,7 +734,7 @@ export class SettingsService {
       updated.autoModeByWorktree = mergedAutoModeByWorktree;
     }
 
-    await writeSettingsJson(settingsPath, updated);
+    await this.files.write(settingsPath, updated);
     logger.info('Global settings updated');
 
     return updated;
@@ -788,7 +749,7 @@ export class SettingsService {
    */
   async hasGlobalSettings(): Promise<boolean> {
     const settingsPath = getGlobalSettingsPath(this.dataDir);
-    return fileExists(settingsPath);
+    return this.files.exists(settingsPath);
   }
 
   // ============================================================================
@@ -806,7 +767,7 @@ export class SettingsService {
    */
   async getCredentials(): Promise<Credentials> {
     const credentialsPath = getCredentialsPath(this.dataDir);
-    const credentials = await readJsonFile<Credentials>(credentialsPath, DEFAULT_CREDENTIALS);
+    const credentials = await this.files.read<Credentials>(credentialsPath, DEFAULT_CREDENTIALS);
 
     return {
       ...DEFAULT_CREDENTIALS,
@@ -867,7 +828,7 @@ export class SettingsService {
       };
     }
 
-    await writeSettingsJson(credentialsPath, updated, true);
+    await this.files.write(credentialsPath, updated, true);
     logger.info('Credentials updated');
 
     return updated;
@@ -924,7 +885,7 @@ export class SettingsService {
    */
   async hasCredentials(): Promise<boolean> {
     const credentialsPath = getCredentialsPath(this.dataDir);
-    return fileExists(credentialsPath);
+    return this.files.exists(credentialsPath);
   }
 
   // ============================================================================
@@ -943,7 +904,7 @@ export class SettingsService {
    */
   async getProjectSettings(projectPath: string): Promise<ProjectSettings> {
     const settingsPath = getProjectSettingsPath(projectPath);
-    const settings = await readJsonFile<ProjectSettings>(settingsPath, DEFAULT_PROJECT_SETTINGS);
+    const settings = await this.files.read<ProjectSettings>(settingsPath, DEFAULT_PROJECT_SETTINGS);
 
     return {
       ...DEFAULT_PROJECT_SETTINGS,
@@ -1037,7 +998,7 @@ export class SettingsService {
       delete updated.testCommand;
     }
 
-    await writeSettingsJson(settingsPath, updated);
+    await this.files.write(settingsPath, updated);
     logger.info(`Project settings updated for ${projectPath}`);
 
     return updated;
@@ -1051,7 +1012,7 @@ export class SettingsService {
    */
   async hasProjectSettings(projectPath: string): Promise<boolean> {
     const settingsPath = getProjectSettingsPath(projectPath);
-    return fileExists(settingsPath);
+    return this.files.exists(settingsPath);
   }
 
   // ============================================================================

@@ -7,6 +7,7 @@ import { CodexProvider } from '../../../providers/codex-provider.js';
 import { getErrorMessage, logError } from '../common.js';
 import * as fs from 'fs';
 import * as path from 'path';
+import type { SettingsService } from '../../../services/settings-service.js';
 
 const DISCONNECTED_MARKER_FILE = '.codex-disconnected';
 
@@ -24,7 +25,7 @@ function isCodexDisconnectedFromApp(): boolean {
  * Creates handler for GET /api/setup/codex-status
  * Returns Codex CLI installation and authentication status
  */
-export function createCodexStatusHandler() {
+export function createCodexStatusHandler(settingsService?: SettingsService) {
   const installCommand = 'npm install -g @openai/codex';
   const loginCommand = 'codex login';
 
@@ -48,7 +49,7 @@ export function createCodexStatusHandler() {
         return;
       }
 
-      const provider = new CodexProvider();
+      const provider = new CodexProvider(settingsService);
       const status = await provider.detectInstallation();
 
       // Derive auth method from authenticated status and API key presence

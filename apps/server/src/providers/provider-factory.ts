@@ -18,6 +18,7 @@ import {
 } from '@automaker/types';
 import * as fs from 'fs';
 import * as path from 'path';
+import type { SettingsService } from '../services/settings-service.js';
 
 const DISCONNECTED_MARKERS: Record<string, string> = {
   claude: '.claude-disconnected',
@@ -57,6 +58,7 @@ interface ProviderRegistration {
  * Provider registry - stores registered providers
  */
 const providerRegistry = new Map<string, ProviderRegistration>();
+let settingsService: SettingsService | undefined;
 
 /**
  * Register a provider with the factory
@@ -79,6 +81,11 @@ function getMockProvider(): BaseProvider {
 }
 
 export class ProviderFactory {
+  /** Configure runtime dependencies owned by the application container. */
+  static configure(dependencies: { settingsService: SettingsService }): void {
+    settingsService = dependencies.settingsService;
+  }
+
   /**
    * Determine which provider to use for a given model
    *
@@ -335,7 +342,7 @@ registerProvider('cursor', {
 
 // Register Codex provider
 registerProvider('codex', {
-  factory: () => new CodexProvider(),
+  factory: () => new CodexProvider(settingsService),
   aliases: ['openai'],
   canHandleModel: (model: string) => isCodexModel(model),
   priority: 5, // Medium priority - check after Cursor but before Claude

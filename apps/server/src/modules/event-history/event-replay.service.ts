@@ -8,8 +8,7 @@ import type {
   EventReplayResult,
   StoredEvent,
 } from '@automaker/types';
-import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
-import type { SettingsService } from '../../services/settings-service.js';
+import { SettingsService } from '../../services/settings-service.js';
 import type { EventReplayRequest } from './event-history.schemas.js';
 import { EventHistoryApplicationService } from './event-history.service.js';
 
@@ -40,7 +39,7 @@ export class EventReplayService {
   constructor(
     @Inject(EventHistoryApplicationService)
     private readonly history: EventHistoryApplicationService,
-    @Inject(LEGACY_SERVICES.settings) private readonly settings: SettingsService
+    @Inject(SettingsService) private readonly settings: SettingsService
   ) {}
 
   async replay(input: EventReplayRequest): Promise<Record<string, unknown>> {

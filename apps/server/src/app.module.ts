@@ -19,6 +19,7 @@ import { EventHistoryModule } from './modules/event-history/event-history.module
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { TemplatesModule } from './modules/templates/templates.module.js';
 import { WorkspaceModule } from './modules/workspace/workspace.module.js';
+import { SettingsModule } from './modules/settings/settings.module.js';
 
 @Module({})
 export class AppModule {
@@ -40,6 +41,7 @@ export class AppModule {
         AuthModule.register(legacy.services.loginAttemptStore),
         SecurityModule,
         ValidationModule,
+        SettingsModule,
         HealthModule,
         ModelsModule,
         NotificationsModule,
