@@ -39,6 +39,7 @@ import { PromptEnhancementModule } from './modules/prompt-enhancement/prompt-enh
 import { GithubModule } from './modules/github/github.module.js';
 import { AutoModeModule } from './modules/auto-mode/auto-mode.module.js';
 import { TerminalModule } from './modules/terminal/terminal.module.js';
+import { OrchestrationModule } from './modules/orchestration/orchestration.module.js';
 
 @Module({})
 export class AppModule {
@@ -69,6 +70,7 @@ export class AppModule {
         GithubModule,
         AutoModeModule,
         TerminalModule,
+        OrchestrationModule,
         ProjectsModule,
         FilesModule,
         ContextModule,

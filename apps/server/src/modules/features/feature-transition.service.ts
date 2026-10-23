@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ValidationDomainError } from '../../core/errors/index.js';
+import { mapLegacyFeatureStatus } from '../orchestration/feature-run-state-machine.js';
 
 const MANAGED_STATUSES = new Set([
   'backlog',
@@ -14,7 +15,6 @@ const MANAGED_STATUSES = new Set([
   'verified',
   'completed',
 ]);
-const COMPLETION_STATUSES = new Set(['verified', 'completed']);
 
 @Injectable()
 export class FeatureTransitionService {
@@ -22,13 +22,16 @@ export class FeatureTransitionService {
     if (target === undefined) return;
     if (
       typeof target !== 'string' ||
-      (!MANAGED_STATUSES.has(target) && !/^pipeline_[A-Za-z0-9._-]+$/.test(target))
+      (!MANAGED_STATUSES.has(target) && !mapLegacyFeatureStatus(target))
     ) {
       throw new ValidationDomainError(`Unsupported feature status: ${String(target)}`);
     }
   }
 
   isNewCompletion(previous: unknown, target: unknown): target is 'verified' | 'completed' {
-    return typeof target === 'string' && COMPLETION_STATUSES.has(target) && previous !== target;
+    return (
+      (target === 'verified' || target === 'completed') &&
+      mapLegacyFeatureStatus(previous) !== 'completed'
+    );
   }
 }
