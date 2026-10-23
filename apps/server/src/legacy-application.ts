@@ -38,7 +38,6 @@ import {
   createCorrelationId,
   runWithCorrelationContext,
 } from './core/observability/request-context.js';
-import { createAgentRoutes } from './routes/agent/index.js';
 import { createAutoModeRoutes } from './routes/auto-mode/index.js';
 import { createEnhancePromptRoutes } from './routes/enhance-prompt/index.js';
 import { createSetupRoutes } from './routes/setup/index.js';
@@ -576,7 +575,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   // Apply authentication to all other routes
   app.use('/api', authMiddleware);
 
-  app.use('/api/agent', createAgentRoutes(agentService, events));
   app.use('/api/auto-mode', createAutoModeRoutes(autoModeService));
   app.use('/api/enhance-prompt', createEnhancePromptRoutes(settingsService));
   app.use('/api/running-agents', createRunningAgentsRoutes(autoModeService));
