@@ -269,6 +269,15 @@ describe('Nest shell and legacy bridge contract', () => {
         expect(await response.json()).toMatchObject({ success: true });
       }
 
+      const writtenFile = path.join(projectPath, 'nested', 'written.txt');
+      const writeResponse = await fetch(`${baseUrl}/api/fs/write`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ filePath: writtenFile, content: 'written through Nest' }),
+      });
+      expect(writeResponse.status).toBe(200);
+      await expect(readFile(writtenFile, 'utf8')).resolves.toBe('written through Nest');
+
       for (const route of ['notifications/list', 'event-history/list']) {
         const response = await fetch(`${baseUrl}/api/${route}`, {
           method: 'POST',

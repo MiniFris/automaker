@@ -82,6 +82,11 @@ export const NEST_OWNED_ROUTE_PATHS = new Set<string>([
   'POST /api/fs/readdir',
   'POST /api/fs/stat',
   'POST /api/fs/exists',
+  'POST /api/fs/write',
+  'POST /api/fs/mkdir',
+  'POST /api/fs/delete',
+  'POST /api/fs/copy',
+  'POST /api/fs/move',
 ]);
 
 export function getApiRouteGroup(request: Pick<Request, 'originalUrl'>): string | undefined {

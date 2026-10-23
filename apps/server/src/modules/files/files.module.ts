@@ -3,6 +3,7 @@ import { FilesController } from './files.controller.js';
 import { FilesQueryService } from './files-query.service.js';
 import { LocalProjectFileAdapter } from './local-project-file.adapter.js';
 import { PROJECT_FILE_PORT } from './project-file.port.js';
+import { FilesCommandService } from './files-command.service.js';
 
 @Module({
   controllers: [FilesController],
@@ -10,6 +11,7 @@ import { PROJECT_FILE_PORT } from './project-file.port.js';
     LocalProjectFileAdapter,
     { provide: PROJECT_FILE_PORT, useExisting: LocalProjectFileAdapter },
     FilesQueryService,
+    FilesCommandService,
   ],
   exports: [PROJECT_FILE_PORT],
 })

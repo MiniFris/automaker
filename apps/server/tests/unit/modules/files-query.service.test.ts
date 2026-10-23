@@ -14,6 +14,11 @@ describe('FilesQueryService', () => {
         mtime: new Date('2026-01-01T00:00:00Z'),
       }),
       exists: vi.fn().mockResolvedValue(true),
+      write: vi.fn(),
+      mkdir: vi.fn(),
+      remove: vi.fn(),
+      copy: vi.fn(),
+      move: vi.fn(),
     };
     const service = new FilesQueryService(port);
 
@@ -39,6 +44,11 @@ describe('FilesQueryService', () => {
       list: vi.fn(),
       stat: vi.fn().mockRejectedValue(missing),
       exists: vi.fn(),
+      write: vi.fn(),
+      mkdir: vi.fn(),
+      remove: vi.fn(),
+      copy: vi.fn(),
+      move: vi.fn(),
     });
 
     await expect(service.read('/project/missing')).rejects.toMatchObject({

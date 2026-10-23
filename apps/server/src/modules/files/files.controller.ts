@@ -6,13 +6,21 @@ import {
   FilePathRequestSchema,
   type DirectoryPathRequest,
   type FilePathRequest,
+  TransferFileRequestSchema,
+  WriteFileRequestSchema,
+  type TransferFileRequest,
+  type WriteFileRequest,
 } from './files.schemas.js';
 import { FilesQueryService } from './files-query.service.js';
+import { FilesCommandService } from './files-command.service.js';
 
 @Controller('fs')
 @UseGuards(AllowedPathGuard)
 export class FilesController {
-  constructor(@Inject(FilesQueryService) private readonly files: FilesQueryService) {}
+  constructor(
+    @Inject(FilesQueryService) private readonly files: FilesQueryService,
+    @Inject(FilesCommandService) private readonly commands: FilesCommandService
+  ) {}
 
   @Post('read')
   @HttpCode(200)
@@ -40,5 +48,40 @@ export class FilesController {
   @AllowedPathFields('filePath')
   exists(@Body(new ZodValidationPipe(FilePathRequestSchema)) input: FilePathRequest) {
     return this.files.exists(input.filePath);
+  }
+
+  @Post('write')
+  @HttpCode(200)
+  @AllowedPathFields('filePath')
+  write(@Body(new ZodValidationPipe(WriteFileRequestSchema)) input: WriteFileRequest) {
+    return this.commands.write(input.filePath, input.content);
+  }
+
+  @Post('mkdir')
+  @HttpCode(200)
+  @AllowedPathFields('dirPath')
+  mkdir(@Body(new ZodValidationPipe(DirectoryPathRequestSchema)) input: DirectoryPathRequest) {
+    return this.commands.mkdir(input.dirPath);
+  }
+
+  @Post('delete')
+  @HttpCode(200)
+  @AllowedPathFields('filePath')
+  remove(@Body(new ZodValidationPipe(FilePathRequestSchema)) input: FilePathRequest) {
+    return this.commands.remove(input.filePath);
+  }
+
+  @Post('copy')
+  @HttpCode(200)
+  @AllowedPathFields('sourcePath', 'destinationPath')
+  copy(@Body(new ZodValidationPipe(TransferFileRequestSchema)) input: TransferFileRequest) {
+    return this.commands.copy(input.sourcePath, input.destinationPath, input.overwrite);
+  }
+
+  @Post('move')
+  @HttpCode(200)
+  @AllowedPathFields('sourcePath', 'destinationPath')
+  move(@Body(new ZodValidationPipe(TransferFileRequestSchema)) input: TransferFileRequest) {
+    return this.commands.move(input.sourcePath, input.destinationPath, input.overwrite);
   }
 }
