@@ -378,6 +378,17 @@ describe('settings-service.ts', () => {
 
       await fs.rm(newDataDir, { recursive: true, force: true });
     });
+
+    it('serializes concurrent updates without losing fields', async () => {
+      await Promise.all([
+        settingsService.updateGlobalSettings({ theme: 'light' }),
+        settingsService.updateGlobalSettings({ sidebarOpen: false }),
+      ]);
+
+      const settings = await settingsService.getGlobalSettings();
+      expect(settings.theme).toBe('light');
+      expect(settings.sidebarOpen).toBe(false);
+    });
   });
 
   describe('hasGlobalSettings', () => {
@@ -507,6 +518,19 @@ describe('settings-service.ts', () => {
       const updated = await settingsService.updateCredentials(updates);
 
       expect(updated.apiKeys.anthropic).toBe('sk-updated-anthropic');
+    });
+
+    it('does not persist a masked credential sent back by the UI', async () => {
+      await settingsService.updateCredentials({
+        apiKeys: { anthropic: 'sk-ant-api03-1234567890abcdef' },
+      });
+      await settingsService.updateCredentials({
+        apiKeys: { anthropic: 'sk-a...cdef' },
+      });
+
+      expect((await settingsService.getCredentials()).apiKeys.anthropic).toBe(
+        'sk-ant-api03-1234567890abcdef'
+      );
     });
   });
 

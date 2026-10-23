@@ -6,6 +6,10 @@ import { SettingsService } from '../../services/settings-service.js';
 import { SettingsFileRepository } from './settings-file.repository.js';
 import { SettingsController } from './settings.controller.js';
 import { SettingsQueryService } from './settings-query.service.js';
+import { SettingsCommandService } from './settings-command.service.js';
+import { SettingsDomainEvents } from './settings-domain-events.js';
+import { SettingsRuntimeEffectsService } from './settings-runtime-effects.service.js';
+import { DirectSettingsCommandService } from './direct-settings-command.service.js';
 
 /**
  * Connects providers that are still created by the legacy registry to the one
@@ -27,6 +31,10 @@ class SettingsProviderBridge implements OnModuleInit {
     { provide: SettingsService, useExisting: LEGACY_SERVICES.settings },
     SettingsFileRepository,
     SettingsQueryService,
+    SettingsCommandService,
+    SettingsDomainEvents,
+    SettingsRuntimeEffectsService,
+    DirectSettingsCommandService,
     SettingsProviderBridge,
   ],
   exports: [SettingsService, SettingsFileRepository],

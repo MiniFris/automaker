@@ -210,6 +210,17 @@ describe('Nest shell and legacy bridge contract', () => {
       expect(projectSettings.status).toBe(200);
       expect(await projectSettings.json()).toMatchObject({ success: true });
 
+      const updatedProjectSettings = await fetch(`${baseUrl}/api/settings/project`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ projectPath, updates: { theme: 'light' } }),
+      });
+      expect(updatedProjectSettings.status).toBe(200);
+      expect(await updatedProjectSettings.json()).toMatchObject({
+        success: true,
+        settings: { theme: 'light' },
+      });
+
       const invalidSettings = await fetch(`${baseUrl}/api/settings/project`, {
         method: 'POST',
         headers,

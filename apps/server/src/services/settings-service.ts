@@ -81,6 +81,9 @@ const logger = createLogger('SettingsService');
  */
 export class SettingsService {
   private providerTimeoutWrites: Promise<unknown> = Promise.resolve();
+  private globalWrites: Promise<unknown> = Promise.resolve();
+  private credentialWrites: Promise<unknown> = Promise.resolve();
+  private readonly projectWrites = new Map<string, Promise<unknown>>();
   private dataDir: string;
 
   getDataDirectory(): string {
@@ -537,6 +540,12 @@ export class SettingsService {
   }
 
   async updateGlobalSettings(updates: Partial<GlobalSettings>): Promise<GlobalSettings> {
+    const write = this.globalWrites.then(() => this.updateGlobalSettingsNow(updates));
+    this.globalWrites = write.catch(() => {});
+    return write;
+  }
+
+  private async updateGlobalSettingsNow(updates: Partial<GlobalSettings>): Promise<GlobalSettings> {
     if (
       ['openaiCompatibleApiKeys', 'openaiCompatibleConnection', 'apiKey', 'credentials'].some(
         (key) => Object.hasOwn(updates, key)
@@ -790,6 +799,12 @@ export class SettingsService {
    * @returns Promise resolving to complete updated Credentials object
    */
   async updateCredentials(updates: Partial<Credentials>): Promise<Credentials> {
+    const write = this.credentialWrites.then(() => this.updateCredentialsNow(updates));
+    this.credentialWrites = write.catch(() => {});
+    return write;
+  }
+
+  private async updateCredentialsNow(updates: Partial<Credentials>): Promise<Credentials> {
     if (updates.openaiCompatibleApiKeys !== undefined) {
       const keys = updates.openaiCompatibleApiKeys;
       if (
@@ -806,6 +821,34 @@ export class SettingsService {
     const credentialsPath = getCredentialsPath(this.dataDir);
 
     const current = await this.getCredentials();
+    const isExistingMask = (incoming: string, stored: string): boolean =>
+      stored.length >= 8 && incoming === `${stored.slice(0, 4)}...${stored.slice(-4)}`;
+    if (updates.apiKeys) {
+      updates = {
+        ...updates,
+        apiKeys: Object.fromEntries(
+          Object.entries(updates.apiKeys).filter(
+            ([provider, incoming]) =>
+              typeof incoming !== 'string' ||
+              !isExistingMask(
+                incoming,
+                current.apiKeys[provider as keyof Credentials['apiKeys']] ?? ''
+              )
+          )
+        ) as Credentials['apiKeys'],
+      };
+    }
+    if (updates.openaiCompatibleApiKeys) {
+      updates = {
+        ...updates,
+        openaiCompatibleApiKeys: Object.fromEntries(
+          Object.entries(updates.openaiCompatibleApiKeys).filter(
+            ([credentialId, incoming]) =>
+              !isExistingMask(incoming, current.openaiCompatibleApiKeys?.[credentialId] ?? '')
+          )
+        ),
+      };
+    }
     const updated: Credentials = {
       ...current,
       ...updates,
@@ -923,6 +966,20 @@ export class SettingsService {
    * @returns Promise resolving to complete updated ProjectSettings
    */
   async updateProjectSettings(
+    projectPath: string,
+    updates: Partial<ProjectSettings>
+  ): Promise<ProjectSettings> {
+    const previous = this.projectWrites.get(projectPath) ?? Promise.resolve();
+    const write = previous.then(() => this.updateProjectSettingsNow(projectPath, updates));
+    const settled = write.catch(() => {});
+    this.projectWrites.set(projectPath, settled);
+    void settled.finally(() => {
+      if (this.projectWrites.get(projectPath) === settled) this.projectWrites.delete(projectPath);
+    });
+    return write;
+  }
+
+  private async updateProjectSettingsNow(
     projectPath: string,
     updates: Partial<ProjectSettings>
   ): Promise<ProjectSettings> {
