@@ -143,7 +143,8 @@ Your entire response should be valid JSON starting with { and ending with }. No 
 
   // Use streamingQuery with event callbacks
   const result = await streamingQuery({
-    settingsService, providerId: phaseModelEntry.providerId,
+    settingsService,
+    providerId: phaseModelEntry.providerId,
     prompt: finalPrompt,
     model,
     cwd: projectPath,

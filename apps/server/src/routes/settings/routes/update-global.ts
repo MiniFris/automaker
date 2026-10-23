@@ -13,7 +13,7 @@ import type { SettingsService } from '../../../services/settings-service.js';
 import type { GlobalSettings } from '../../../types/settings.js';
 import { getErrorMessage, logError, logger } from '../common.js';
 import { setLogLevel, LogLevel } from '@automaker/utils';
-import { setRequestLoggingEnabled } from '../../../index.js';
+import { setRequestLoggingEnabled } from '../../../lib/request-logging-state.js';
 import { getTerminalService } from '../../../services/terminal-service.js';
 
 /**

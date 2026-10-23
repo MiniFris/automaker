@@ -350,7 +350,8 @@ export function createDescribeImageHandler(
 
       // Use simpleQuery - provider abstraction handles routing
       const result = await simpleQuery({
-        settingsService, providerId: phaseModelEntry.providerId,
+        settingsService,
+        providerId: phaseModelEntry.providerId,
         prompt,
         model,
         cwd,

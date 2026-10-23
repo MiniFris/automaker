@@ -1,0 +1,17 @@
+import { defineConfig } from 'vitest/config';
+
+import { serverResolveConfig, serverTestDefaults } from './vitest.config.js';
+
+export default defineConfig({
+  test: {
+    ...serverTestDefaults,
+    name: 'server-docker',
+    reporters: ['default', 'hanging-process'],
+    include: ['tests/integration/managed-docker.test.ts'],
+    testTimeout: 120_000,
+    hookTimeout: 120_000,
+    teardownTimeout: 30_000,
+    fileParallelism: false,
+  },
+  resolve: serverResolveConfig,
+});

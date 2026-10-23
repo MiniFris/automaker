@@ -1,0 +1,24 @@
+{
+  "name": "@automaker/contracts",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Runtime transport schemas shared by Automaker clients and servers",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=22.0.0 <23.0.0"
+  },
+  "dependencies": {
+    "zod": "4.3.5"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.3",
+    "typescript": "5.9.3",
+    "vitest": "4.0.16"
+  },
+  "private": true
+}

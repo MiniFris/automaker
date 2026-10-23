@@ -22,7 +22,13 @@ export function createCreateHandler(agentService: AgentService) {
         return;
       }
 
-      const session = await agentService.createSession(name, projectPath, workingDirectory, model, providerId);
+      const session = await agentService.createSession(
+        name,
+        projectPath,
+        workingDirectory,
+        model,
+        providerId
+      );
       res.json({ success: true, session });
     } catch (error) {
       logError(error, 'Create session failed');

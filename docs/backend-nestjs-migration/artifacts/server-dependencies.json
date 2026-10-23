@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 452,
-    "internalEdges": 1370,
-    "stronglyConnectedComponents": 2
+    "files": 454,
+    "internalEdges": 1372,
+    "stronglyConnectedComponents": 1
   },
   "layerEdges": {
     "lib -> lib": 3,
@@ -12,14 +12,14 @@
     "providers -> lib": 5,
     "providers -> providers": 98,
     "providers -> services": 21,
-    "root -> lib": 2,
+    "root -> lib": 3,
     "root -> middleware": 1,
+    "root -> root": 1,
     "root -> routes": 32,
     "root -> services": 22,
-    "routes -> lib": 127,
+    "routes -> lib": 128,
     "routes -> middleware": 13,
     "routes -> providers": 30,
-    "routes -> root": 1,
     "routes -> routes": 490,
     "routes -> services": 228,
     "routes -> types": 3,
@@ -31,11 +31,6 @@
     "tests -> lib": 2
   },
   "cycles": [
-    [
-      "apps/server/src/index.ts",
-      "apps/server/src/routes/settings/index.ts",
-      "apps/server/src/routes/settings/routes/update-global.ts"
-    ],
     [
       "apps/server/src/providers/environment-execution.ts",
       "apps/server/src/providers/openai-compatible/execution.ts",
@@ -50,13 +45,14 @@
   ],
   "signals": {
     "processEnv": [
-      "apps/server/src/index.ts",
+      "apps/server/src/legacy-application.ts",
       "apps/server/src/lib/auth-utils.ts",
       "apps/server/src/lib/auth.ts",
       "apps/server/src/lib/cli-detection.ts",
       "apps/server/src/lib/codex-auth.ts",
       "apps/server/src/lib/exec-utils.ts",
       "apps/server/src/lib/git.ts",
+      "apps/server/src/lib/request-logging-state.ts",
       "apps/server/src/lib/sdk-options.ts",
       "apps/server/src/providers/claude-provider.ts",
       "apps/server/src/providers/cli-provider.ts",
@@ -117,7 +113,7 @@
       "apps/server/src/services/zai-usage-service.ts"
     ],
     "processCwd": [
-      "apps/server/src/index.ts",
+      "apps/server/src/legacy-application.ts",
       "apps/server/src/lib/auth-utils.ts",
       "apps/server/src/lib/codex-auth.ts",
       "apps/server/src/providers/cli-provider.ts",
@@ -160,7 +156,7 @@
       "apps/server/src/services/execution-environment/ssh.ts"
     ],
     "processOn": [
-      "apps/server/src/index.ts",
+      "apps/server/src/legacy-application.ts",
       "apps/server/src/providers/remote-sdk-worker.ts",
       "apps/server/src/services/dev-server-service.ts",
       "apps/server/src/services/execution-environment/docker-worker.ts",
@@ -227,7 +223,7 @@
       "apps/server/src/services/worktree-resolver.ts"
     ],
     "timers": [
-      "apps/server/src/index.ts",
+      "apps/server/src/legacy-application.ts",
       "apps/server/src/lib/auth-utils.ts",
       "apps/server/src/lib/auth.ts",
       "apps/server/src/lib/error-handler.ts",
@@ -350,230 +346,238 @@
   "edges": [
     {
       "source": "apps/server/src/index.ts",
+      "target": "apps/server/src/legacy-application.ts"
+    },
+    {
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/lib/auth.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/lib/events.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
+      "target": "apps/server/src/lib/request-logging-state.ts"
+    },
+    {
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/middleware/require-json-content-type.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/agent/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/app-spec/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/auth/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/auto-mode/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/backlog-plan/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/claude/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/codex/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/context/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/enhance-prompt/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/event-history/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/features/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/fs/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/gemini/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/git/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/github/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/github/routes/validation-common.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/health/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/ideation/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/mcp/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/models/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/notifications/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/pipeline/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/projects/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/running-agents/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/sessions/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/settings/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/setup/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/templates/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/terminal/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/workspace/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/worktree/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/routes/zai/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/agent-service.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/auto-mode/index.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/claude-usage-service.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/codex-app-server-service.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/codex-model-cache-service.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/codex-usage-service.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/dev-server-service.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/event-history-service.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/event-hook-service.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/execution-environment/dev-server.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/execution-environment/preview-policy.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/execution-environment/test-runner.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/feature-loader.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/gemini-usage-service.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/ideation-service.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/mcp-test-service.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/notification-service.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/pipeline-service.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/terminal-service.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/test-runner-service.ts"
     },
     {
-      "source": "apps/server/src/index.ts",
+      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/zai-usage-service.ts"
     },
     {
@@ -3434,7 +3438,7 @@
     },
     {
       "source": "apps/server/src/routes/settings/routes/update-global.ts",
-      "target": "apps/server/src/index.ts"
+      "target": "apps/server/src/lib/request-logging-state.ts"
     },
     {
       "source": "apps/server/src/routes/settings/routes/update-global.ts",

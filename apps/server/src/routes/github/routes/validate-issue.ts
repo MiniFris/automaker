@@ -206,7 +206,8 @@ ${basePrompt}`;
 
     // Use streamingQuery with event callbacks
     const result = await streamingQuery({
-      settingsService, providerId,
+      settingsService,
+      providerId,
       prompt: finalPrompt,
       model: effectiveModel,
       cwd: projectPath,

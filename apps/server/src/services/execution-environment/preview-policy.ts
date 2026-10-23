@@ -2,8 +2,14 @@ import type { IncomingMessage } from 'node:http';
 import type { Request, Response, NextFunction } from 'express';
 
 // Reserved independently of active sessions, so an expired preview origin never becomes API-trusted.
-export const PREVIEW_PORT_FIRST = 3100;
-export const PREVIEW_PORT_LAST = 3119;
+export const PREVIEW_PORT_FIRST = Number.parseInt(
+  process.env.AUTOMAKER_PREVIEW_PORT_FIRST ?? '3100',
+  10
+);
+export const PREVIEW_PORT_LAST = Number.parseInt(
+  process.env.AUTOMAKER_PREVIEW_PORT_LAST ?? '3119',
+  10
+);
 export const PREVIEW_BOOTSTRAP = '/__automaker_preview';
 
 export function previewOrigin(port: number) {

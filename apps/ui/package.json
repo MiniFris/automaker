@@ -40,6 +40,7 @@
     "dev:electron:wsl:gpu": "cross-env MESA_D3D12_DEFAULT_ADAPTER_NAME=NVIDIA vite"
   },
   "dependencies": {
+    "@automaker/contracts": "1.0.0",
     "@automaker/dependency-resolver": "1.0.0",
     "@automaker/spec-parser": "1.0.0",
     "@automaker/types": "1.0.0",

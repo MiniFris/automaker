@@ -44,7 +44,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/agent/index.ts",
       "line": 31,
-      "middleware": ["createClearHandler(agentService)"],
+      "middleware": [
+        "createClearHandler(agentService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -57,7 +59,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/agent/index.ts",
       "line": 29,
-      "middleware": ["createHistoryHandler(agentService)"],
+      "middleware": [
+        "createHistoryHandler(agentService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -70,7 +74,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/agent/index.ts",
       "line": 32,
-      "middleware": ["createModelHandler(agentService)"],
+      "middleware": [
+        "createModelHandler(agentService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -83,7 +89,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/agent/index.ts",
       "line": 35,
-      "middleware": ["validatePathParams('imagePaths[]')", "createQueueAddHandler(agentService)"],
+      "middleware": [
+        "validatePathParams('imagePaths[]')",
+        "createQueueAddHandler(agentService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -96,7 +105,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/agent/index.ts",
       "line": 42,
-      "middleware": ["createQueueClearHandler(agentService)"],
+      "middleware": [
+        "createQueueClearHandler(agentService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -109,7 +120,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/agent/index.ts",
       "line": 40,
-      "middleware": ["createQueueListHandler(agentService)"],
+      "middleware": [
+        "createQueueListHandler(agentService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -122,7 +135,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/agent/index.ts",
       "line": 41,
-      "middleware": ["createQueueRemoveHandler(agentService)"],
+      "middleware": [
+        "createQueueRemoveHandler(agentService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -151,7 +166,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/agent/index.ts",
       "line": 23,
-      "middleware": ["validatePathParams('workingDirectory?')", "createStartHandler(agentService)"],
+      "middleware": [
+        "validatePathParams('workingDirectory?')",
+        "createStartHandler(agentService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -164,7 +182,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/agent/index.ts",
       "line": 30,
-      "middleware": ["createStopHandler(agentService)"],
+      "middleware": [
+        "createStopHandler(agentService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -413,7 +433,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/auto-mode/index.ts",
       "line": 46,
-      "middleware": ["validatePathParams('projectPath')", "createStartHandler(autoModeService)"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createStartHandler(autoModeService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -426,7 +449,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/auto-mode/index.ts",
       "line": 50,
-      "middleware": ["validatePathParams('projectPath?')", "createStatusHandler(autoModeService)"],
+      "middleware": [
+        "validatePathParams('projectPath?')",
+        "createStatusHandler(autoModeService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -439,7 +465,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/auto-mode/index.ts",
       "line": 49,
-      "middleware": ["createStopFeatureHandler(autoModeService)"],
+      "middleware": [
+        "createStopFeatureHandler(autoModeService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -452,7 +480,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/auto-mode/index.ts",
       "line": 47,
-      "middleware": ["validatePathParams('projectPath')", "createStopHandler(autoModeService)"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createStopHandler(autoModeService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -481,7 +512,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/backlog-plan/index.ts",
       "line": 28,
-      "middleware": ["validatePathParams('projectPath')", "createApplyHandler(settingsService)"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createApplyHandler(settingsService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -494,7 +528,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/backlog-plan/index.ts",
       "line": 29,
-      "middleware": ["validatePathParams('projectPath')", "createClearHandler()"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createClearHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -523,7 +560,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/backlog-plan/index.ts",
       "line": 27,
-      "middleware": ["validatePathParams('projectPath')", "createStatusHandler()"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createStatusHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -536,7 +576,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/backlog-plan/index.ts",
       "line": 26,
-      "middleware": ["createStopHandler()"],
+      "middleware": [
+        "createStopHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -594,7 +636,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/context/index.ts",
       "line": 23,
-      "middleware": ["createDescribeFileHandler(settingsService)"],
+      "middleware": [
+        "createDescribeFileHandler(settingsService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -607,7 +651,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/context/index.ts",
       "line": 22,
-      "middleware": ["createDescribeImageHandler(settingsService)"],
+      "middleware": [
+        "createDescribeImageHandler(settingsService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -620,7 +666,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/enhance-prompt/index.ts",
       "line": 21,
-      "middleware": ["createEnhanceHandler(settingsService)"],
+      "middleware": [
+        "createEnhanceHandler(settingsService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -665,7 +713,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/event-history/index.ts",
       "line": 48,
-      "middleware": ["validatePathParams('projectPath')", "createGetHandler(eventHistoryService)"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createGetHandler(eventHistoryService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -678,7 +729,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/event-history/index.ts",
       "line": 45,
-      "middleware": ["validatePathParams('projectPath')", "createListHandler(eventHistoryService)"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createListHandler(eventHistoryService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -707,7 +761,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/features/index.ts",
       "line": 68,
-      "middleware": ["createAgentOutputHandler(featureLoader)"],
+      "middleware": [
+        "createAgentOutputHandler(featureLoader)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -720,7 +776,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/features/index.ts",
       "line": 62,
-      "middleware": ["validatePathParams('projectPath')", "createBulkDeleteHandler(featureLoader)"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createBulkDeleteHandler(featureLoader)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -733,7 +792,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/features/index.ts",
       "line": 57,
-      "middleware": ["validatePathParams('projectPath')", "createBulkUpdateHandler(featureLoader)"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createBulkUpdateHandler(featureLoader)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -778,7 +840,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/features/index.ts",
       "line": 67,
-      "middleware": ["validatePathParams('projectPath')", "createDeleteHandler(featureLoader)"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createDeleteHandler(featureLoader)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -791,7 +856,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/features/index.ts",
       "line": 71,
-      "middleware": ["validatePathParams('projectPath')", "createExportHandler(featureLoader)"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createExportHandler(featureLoader)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -804,7 +872,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/features/index.ts",
       "line": 70,
-      "middleware": ["createGenerateTitleHandler(settingsService)"],
+      "middleware": [
+        "createGenerateTitleHandler(settingsService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -817,7 +887,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/features/index.ts",
       "line": 46,
-      "middleware": ["validatePathParams('projectPath')", "createGetHandler(featureLoader)"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createGetHandler(featureLoader)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -830,7 +903,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/features/index.ts",
       "line": 72,
-      "middleware": ["validatePathParams('projectPath')", "createImportHandler(featureLoader)"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createImportHandler(featureLoader)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -923,7 +999,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/features/index.ts",
       "line": 69,
-      "middleware": ["createRawOutputHandler(featureLoader)"],
+      "middleware": [
+        "createRawOutputHandler(featureLoader)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": true
@@ -952,7 +1030,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/fs/index.ts",
       "line": 44,
-      "middleware": ["createBrowseProjectFilesHandler()"],
+      "middleware": [
+        "createBrowseProjectFilesHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -965,7 +1045,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/fs/index.ts",
       "line": 40,
-      "middleware": ["createBrowseHandler()"],
+      "middleware": [
+        "createBrowseHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -978,7 +1060,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/fs/index.ts",
       "line": 45,
-      "middleware": ["createCopyHandler()"],
+      "middleware": [
+        "createCopyHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -991,7 +1075,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/fs/index.ts",
       "line": 43,
-      "middleware": ["createDeleteBoardBackgroundHandler()"],
+      "middleware": [
+        "createDeleteBoardBackgroundHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1004,7 +1090,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/fs/index.ts",
       "line": 36,
-      "middleware": ["createDeleteHandler()"],
+      "middleware": [
+        "createDeleteHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1017,7 +1105,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/fs/index.ts",
       "line": 47,
-      "middleware": ["createDownloadHandler()"],
+      "middleware": [
+        "createDownloadHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": true
@@ -1030,7 +1120,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/fs/index.ts",
       "line": 34,
-      "middleware": ["createExistsHandler()"],
+      "middleware": [
+        "createExistsHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1043,7 +1135,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/fs/index.ts",
       "line": 41,
-      "middleware": ["createImageHandler()"],
+      "middleware": [
+        "createImageHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1056,7 +1150,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/fs/index.ts",
       "line": 32,
-      "middleware": ["createMkdirHandler()"],
+      "middleware": [
+        "createMkdirHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1069,7 +1165,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/fs/index.ts",
       "line": 46,
-      "middleware": ["createMoveHandler()"],
+      "middleware": [
+        "createMoveHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1082,7 +1180,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/fs/index.ts",
       "line": 33,
-      "middleware": ["createReaddirHandler()"],
+      "middleware": [
+        "createReaddirHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1095,7 +1195,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/fs/index.ts",
       "line": 30,
-      "middleware": ["createReadHandler()"],
+      "middleware": [
+        "createReadHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1108,7 +1210,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/fs/index.ts",
       "line": 38,
-      "middleware": ["createResolveDirectoryHandler()"],
+      "middleware": [
+        "createResolveDirectoryHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1121,7 +1225,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/fs/index.ts",
       "line": 42,
-      "middleware": ["createSaveBoardBackgroundHandler()"],
+      "middleware": [
+        "createSaveBoardBackgroundHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1134,7 +1240,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/fs/index.ts",
       "line": 39,
-      "middleware": ["createSaveImageHandler()"],
+      "middleware": [
+        "createSaveImageHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1147,7 +1255,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/fs/index.ts",
       "line": 35,
-      "middleware": ["createStatHandler()"],
+      "middleware": [
+        "createStatHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1160,7 +1270,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/fs/index.ts",
       "line": 37,
-      "middleware": ["createValidatePathHandler()"],
+      "middleware": [
+        "createValidatePathHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1173,7 +1285,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/fs/index.ts",
       "line": 31,
-      "middleware": ["createWriteHandler()"],
+      "middleware": [
+        "createWriteHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1216,7 +1330,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/git/index.ts",
       "line": 29,
-      "middleware": ["validatePathParams('projectPath', 'filePath?')", "createDetailsHandler()"],
+      "middleware": [
+        "validatePathParams('projectPath', 'filePath?')",
+        "createDetailsHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -1229,7 +1346,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/git/index.ts",
       "line": 22,
-      "middleware": ["validatePathParams('projectPath')", "createDiffsHandler()"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createDiffsHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -1242,7 +1362,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/git/index.ts",
       "line": 30,
-      "middleware": ["validatePathParams('projectPath')", "createEnhancedStatusHandler()"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createEnhancedStatusHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -1255,7 +1378,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/environment-git.ts",
       "line": 39,
-      "middleware": ["environmentGitDispatcher(settings, 'git', isProjectBusy)"],
+      "middleware": [
+        "environmentGitDispatcher(settings, 'git', isProjectBusy)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1268,7 +1393,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/git/index.ts",
       "line": 23,
-      "middleware": ["validatePathParams('projectPath', 'filePath')", "createFileDiffHandler()"],
+      "middleware": [
+        "validatePathParams('projectPath', 'filePath')",
+        "createFileDiffHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -1281,7 +1409,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/git/index.ts",
       "line": 24,
-      "middleware": ["validatePathParams('projectPath', 'files[]')", "createStageFilesHandler()"],
+      "middleware": [
+        "validatePathParams('projectPath', 'files[]')",
+        "createStageFilesHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -1294,7 +1425,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/github/index.ts",
       "line": 30,
-      "middleware": ["validatePathParams('projectPath')", "createCheckGitHubRemoteHandler()"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createCheckGitHubRemoteHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -1307,7 +1441,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/github/index.ts",
       "line": 33,
-      "middleware": ["validatePathParams('projectPath')", "createListCommentsHandler()"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createListCommentsHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -1320,7 +1457,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/github/index.ts",
       "line": 31,
-      "middleware": ["validatePathParams('projectPath')", "createListIssuesHandler()"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createListIssuesHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -1333,7 +1473,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/github/index.ts",
       "line": 34,
-      "middleware": ["validatePathParams('projectPath')", "createListPRReviewCommentsHandler()"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createListPRReviewCommentsHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -1346,7 +1489,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/github/index.ts",
       "line": 32,
-      "middleware": ["validatePathParams('projectPath')", "createListPRsHandler()"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createListPRsHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -1359,7 +1505,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/github/index.ts",
       "line": 39,
-      "middleware": ["validatePathParams('projectPath')", "createResolvePRCommentHandler()"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createResolvePRCommentHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -1388,7 +1537,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/github/index.ts",
       "line": 58,
-      "middleware": ["validatePathParams('projectPath')", "createDeleteValidationHandler()"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createDeleteValidationHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -1401,7 +1553,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/github/index.ts",
       "line": 63,
-      "middleware": ["validatePathParams('projectPath')", "createMarkViewedHandler(events)"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createMarkViewedHandler(events)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -1414,7 +1569,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/github/index.ts",
       "line": 51,
-      "middleware": ["validatePathParams('projectPath')", "createValidationStatusHandler()"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createValidationStatusHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -1427,7 +1585,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/github/index.ts",
       "line": 56,
-      "middleware": ["validatePathParams('projectPath')", "createValidationStopHandler()"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createValidationStopHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -1440,7 +1601,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/github/index.ts",
       "line": 57,
-      "middleware": ["validatePathParams('projectPath')", "createGetValidationsHandler()"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createGetValidationsHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -1451,9 +1615,11 @@
       "group": "health",
       "owner": "legacy-express",
       "access": "protected",
-      "source": "apps/server/src/index.ts",
-      "line": 495,
-      "middleware": ["createDetailedHandler()"],
+      "source": "apps/server/src/legacy-application.ts",
+      "line": 546,
+      "middleware": [
+        "createDetailedHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1466,7 +1632,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/health/index.ts",
       "line": 24,
-      "middleware": ["createEnvironmentHandler()"],
+      "middleware": [
+        "createEnvironmentHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1479,7 +1647,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/health/index.ts",
       "line": 20,
-      "middleware": ["createIndexHandler()"],
+      "middleware": [
+        "createIndexHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1524,7 +1694,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/ideation/index.ts",
       "line": 76,
-      "middleware": ["validatePathParams('projectPath')", "createAnalyzeHandler(ideationService)"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createAnalyzeHandler(ideationService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -1585,7 +1758,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/ideation/index.ts",
       "line": 59,
-      "middleware": ["validatePathParams('projectPath')", "createIdeasGetHandler(ideationService)"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createIdeasGetHandler(ideationService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -1630,7 +1806,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/ideation/index.ts",
       "line": 99,
-      "middleware": ["createPromptsByCategoryHandler(ideationService)"],
+      "middleware": [
+        "createPromptsByCategoryHandler(ideationService)"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1643,7 +1821,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/ideation/index.ts",
       "line": 98,
-      "middleware": ["createPromptsHandler(ideationService)"],
+      "middleware": [
+        "createPromptsHandler(ideationService)"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1672,7 +1852,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/ideation/index.ts",
       "line": 40,
-      "middleware": ["createSessionMessageHandler(ideationService)"],
+      "middleware": [
+        "createSessionMessageHandler(ideationService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1701,7 +1883,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/ideation/index.ts",
       "line": 41,
-      "middleware": ["createSessionStopHandler(events, ideationService)"],
+      "middleware": [
+        "createSessionStopHandler(events, ideationService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1730,7 +1914,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/mcp/index.ts",
       "line": 30,
-      "middleware": ["createTestServerHandler(mcpTestService)"],
+      "middleware": [
+        "createTestServerHandler(mcpTestService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1743,7 +1929,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/mcp/index.ts",
       "line": 33,
-      "middleware": ["createListToolsHandler(mcpTestService)"],
+      "middleware": [
+        "createListToolsHandler(mcpTestService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1756,7 +1944,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/models/index.ts",
       "line": 13,
-      "middleware": ["createAvailableHandler(settingsService)"],
+      "middleware": [
+        "createAvailableHandler(settingsService)"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1769,7 +1959,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/models/index.ts",
       "line": 14,
-      "middleware": ["createProvidersHandler(settingsService)"],
+      "middleware": [
+        "createProvidersHandler(settingsService)"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1798,7 +1990,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/notifications/index.ts",
       "line": 38,
-      "middleware": ["validatePathParams('projectPath')", "createListHandler(notificationService)"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createListHandler(notificationService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -1875,7 +2070,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/pipeline/index.ts",
       "line": 55,
-      "middleware": ["validatePathParams('projectPath')", "createAddStepHandler(pipelineService)"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createAddStepHandler(pipelineService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -1951,7 +2149,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/running-agents/index.ts",
       "line": 12,
-      "middleware": ["createIndexHandler(autoModeService)"],
+      "middleware": [
+        "createIndexHandler(autoModeService)"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1964,7 +2164,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/sessions/index.ts",
       "line": 20,
-      "middleware": ["createArchiveHandler(agentService)"],
+      "middleware": [
+        "createArchiveHandler(agentService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1977,7 +2179,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/sessions/index.ts",
       "line": 21,
-      "middleware": ["createUnarchiveHandler(agentService)"],
+      "middleware": [
+        "createUnarchiveHandler(agentService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -1990,7 +2194,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/sessions/index.ts",
       "line": 22,
-      "middleware": ["createDeleteHandler(agentService)"],
+      "middleware": [
+        "createDeleteHandler(agentService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2003,7 +2209,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/sessions/index.ts",
       "line": 19,
-      "middleware": ["createUpdateHandler(agentService)"],
+      "middleware": [
+        "createUpdateHandler(agentService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2016,7 +2224,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/sessions/index.ts",
       "line": 17,
-      "middleware": ["createIndexHandler(agentService)"],
+      "middleware": [
+        "createIndexHandler(agentService)"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2029,7 +2239,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/sessions/index.ts",
       "line": 18,
-      "middleware": ["createCreateHandler(agentService)"],
+      "middleware": [
+        "createCreateHandler(agentService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2042,7 +2254,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/settings/index.ts",
       "line": 84,
-      "middleware": ["createDiscoverAgentsHandler()"],
+      "middleware": [
+        "createDiscoverAgentsHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2055,7 +2269,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/settings/index.ts",
       "line": 65,
-      "middleware": ["createGetCredentialsHandler(settingsService)"],
+      "middleware": [
+        "createGetCredentialsHandler(settingsService)"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2068,7 +2284,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/settings/index.ts",
       "line": 66,
-      "middleware": ["createUpdateCredentialsHandler(settingsService)"],
+      "middleware": [
+        "createUpdateCredentialsHandler(settingsService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2395,7 +2613,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/settings/index.ts",
       "line": 61,
-      "middleware": ["createGetGlobalHandler(settingsService)"],
+      "middleware": [
+        "createGetGlobalHandler(settingsService)"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2408,7 +2628,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/settings/index.ts",
       "line": 62,
-      "middleware": ["createUpdateGlobalHandler(settingsService)"],
+      "middleware": [
+        "createUpdateGlobalHandler(settingsService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2421,7 +2643,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/settings/index.ts",
       "line": 81,
-      "middleware": ["createMigrateHandler(settingsService)"],
+      "middleware": [
+        "createMigrateHandler(settingsService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2569,7 +2793,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/settings/openai-compatible.ts",
       "line": 175,
-      "middleware": ["handle(async () => directSettingsDto(settings))"],
+      "middleware": [
+        "handle(async () => directSettingsDto(settings))"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2614,7 +2840,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/settings/index.ts",
       "line": 58,
-      "middleware": ["createStatusHandler(settingsService)"],
+      "middleware": [
+        "createStatusHandler(settingsService)"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2627,7 +2855,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 65,
-      "middleware": ["createApiKeysHandler()"],
+      "middleware": [
+        "createApiKeysHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2640,7 +2870,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 61,
-      "middleware": ["createAuthClaudeHandler()"],
+      "middleware": [
+        "createAuthClaudeHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2653,7 +2885,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 79,
-      "middleware": ["createAuthCodexHandler()"],
+      "middleware": [
+        "createAuthCodexHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2666,7 +2900,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 94,
-      "middleware": ["createAuthCopilotHandler()"],
+      "middleware": [
+        "createAuthCopilotHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2679,7 +2915,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 73,
-      "middleware": ["createAuthCursorHandler()"],
+      "middleware": [
+        "createAuthCursorHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2692,7 +2930,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 89,
-      "middleware": ["createAuthGeminiHandler()"],
+      "middleware": [
+        "createAuthGeminiHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2705,7 +2945,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 84,
-      "middleware": ["createAuthOpencodeHandler()"],
+      "middleware": [
+        "createAuthOpencodeHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2718,7 +2960,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 59,
-      "middleware": ["createClaudeStatusHandler()"],
+      "middleware": [
+        "createClaudeStatusHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2731,7 +2975,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 77,
-      "middleware": ["createCodexStatusHandler()"],
+      "middleware": [
+        "createCodexStatusHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2744,7 +2990,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 93,
-      "middleware": ["createCopilotStatusHandler()"],
+      "middleware": [
+        "createCopilotStatusHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2757,7 +3005,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 100,
-      "middleware": ["createClearCopilotCacheHandler()"],
+      "middleware": [
+        "createClearCopilotCacheHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2770,7 +3020,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 99,
-      "middleware": ["createRefreshCopilotModelsHandler()"],
+      "middleware": [
+        "createRefreshCopilotModelsHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2783,7 +3035,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 98,
-      "middleware": ["createGetCopilotModelsHandler()"],
+      "middleware": [
+        "createGetCopilotModelsHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2796,7 +3050,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 108,
-      "middleware": ["createSetCursorDefaultModelHandler()"],
+      "middleware": [
+        "createSetCursorDefaultModelHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2809,7 +3065,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 109,
-      "middleware": ["createSetCursorModelsHandler()"],
+      "middleware": [
+        "createSetCursorModelsHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2822,7 +3080,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 107,
-      "middleware": ["createGetCursorConfigHandler()"],
+      "middleware": [
+        "createGetCursorConfigHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2835,7 +3095,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 114,
-      "middleware": ["createSetCustomPermissionsHandler()"],
+      "middleware": [
+        "createSetCustomPermissionsHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2848,7 +3110,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 116,
-      "middleware": ["createGetExampleConfigHandler()"],
+      "middleware": [
+        "createGetExampleConfigHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2861,7 +3125,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 113,
-      "middleware": ["createApplyPermissionProfileHandler()"],
+      "middleware": [
+        "createApplyPermissionProfileHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2874,7 +3140,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 115,
-      "middleware": ["createDeleteProjectPermissionsHandler()"],
+      "middleware": [
+        "createDeleteProjectPermissionsHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2887,7 +3155,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 112,
-      "middleware": ["createGetCursorPermissionsHandler()"],
+      "middleware": [
+        "createGetCursorPermissionsHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2900,7 +3170,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 72,
-      "middleware": ["createCursorStatusHandler()"],
+      "middleware": [
+        "createCursorStatusHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2913,7 +3185,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 62,
-      "middleware": ["createDeauthClaudeHandler()"],
+      "middleware": [
+        "createDeauthClaudeHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2926,7 +3200,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 80,
-      "middleware": ["createDeauthCodexHandler()"],
+      "middleware": [
+        "createDeauthCodexHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2939,7 +3215,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 95,
-      "middleware": ["createDeauthCopilotHandler()"],
+      "middleware": [
+        "createDeauthCopilotHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2952,7 +3230,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 74,
-      "middleware": ["createDeauthCursorHandler()"],
+      "middleware": [
+        "createDeauthCursorHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2965,7 +3245,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 90,
-      "middleware": ["createDeauthGeminiHandler()"],
+      "middleware": [
+        "createDeauthGeminiHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2978,7 +3260,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 85,
-      "middleware": ["createDeauthOpencodeHandler()"],
+      "middleware": [
+        "createDeauthOpencodeHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -2991,7 +3275,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 64,
-      "middleware": ["createDeleteApiKeyHandler()"],
+      "middleware": [
+        "createDeleteApiKeyHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3004,7 +3290,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 88,
-      "middleware": ["createGeminiStatusHandler()"],
+      "middleware": [
+        "createGeminiStatusHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3017,7 +3305,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 69,
-      "middleware": ["createGhStatusHandler()"],
+      "middleware": [
+        "createGhStatusHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3030,7 +3320,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 60,
-      "middleware": ["createInstallClaudeHandler()"],
+      "middleware": [
+        "createInstallClaudeHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3043,7 +3335,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 78,
-      "middleware": ["createInstallCodexHandler()"],
+      "middleware": [
+        "createInstallCodexHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3056,7 +3350,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 83,
-      "middleware": ["createOpencodeStatusHandler()"],
+      "middleware": [
+        "createOpencodeStatusHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3069,7 +3365,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 106,
-      "middleware": ["createClearOpencodeCacheHandler()"],
+      "middleware": [
+        "createClearOpencodeCacheHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3082,7 +3380,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 104,
-      "middleware": ["createRefreshOpencodeModelsHandler()"],
+      "middleware": [
+        "createRefreshOpencodeModelsHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3095,7 +3395,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 103,
-      "middleware": ["createGetOpencodeModelsHandler()"],
+      "middleware": [
+        "createGetOpencodeModelsHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3108,7 +3410,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 105,
-      "middleware": ["createGetOpencodeProvidersHandler()"],
+      "middleware": [
+        "createGetOpencodeProvidersHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3121,7 +3425,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 66,
-      "middleware": ["createPlatformHandler()"],
+      "middleware": [
+        "createPlatformHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3134,7 +3440,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 63,
-      "middleware": ["createStoreApiKeyHandler()"],
+      "middleware": [
+        "createStoreApiKeyHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3147,7 +3455,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 67,
-      "middleware": ["createVerifyClaudeAuthHandler(settingsService)"],
+      "middleware": [
+        "createVerifyClaudeAuthHandler(settingsService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3160,7 +3470,9 @@
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/setup/index.ts",
       "line": 68,
-      "middleware": ["createVerifyCodexAuthHandler(settingsService)"],
+      "middleware": [
+        "createVerifyCodexAuthHandler(settingsService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3173,7 +3485,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/app-spec/index.ts",
       "line": 21,
-      "middleware": ["createCreateHandler(events)"],
+      "middleware": [
+        "createCreateHandler(events)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3186,7 +3500,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/app-spec/index.ts",
       "line": 23,
-      "middleware": ["createGenerateFeaturesHandler(events, settingsService)"],
+      "middleware": [
+        "createGenerateFeaturesHandler(events, settingsService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3199,7 +3515,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/app-spec/index.ts",
       "line": 22,
-      "middleware": ["createGenerateHandler(events, settingsService)"],
+      "middleware": [
+        "createGenerateHandler(events, settingsService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3212,7 +3530,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/app-spec/index.ts",
       "line": 26,
-      "middleware": ["createStatusHandler()"],
+      "middleware": [
+        "createStatusHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3225,7 +3545,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/app-spec/index.ts",
       "line": 25,
-      "middleware": ["createStopHandler()"],
+      "middleware": [
+        "createStopHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3238,7 +3560,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/app-spec/index.ts",
       "line": 24,
-      "middleware": ["createSyncHandler(events, settingsService)"],
+      "middleware": [
+        "createSyncHandler(events, settingsService)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3251,7 +3575,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/templates/index.ts",
       "line": 12,
-      "middleware": ["createCloneHandler()"],
+      "middleware": [
+        "createCloneHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3264,7 +3590,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/terminal/index.ts",
       "line": 31,
-      "middleware": ["createAuthHandler()"],
+      "middleware": [
+        "createAuthHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3277,7 +3605,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/terminal/index.ts",
       "line": 32,
-      "middleware": ["createLogoutHandler()"],
+      "middleware": [
+        "createLogoutHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3290,7 +3620,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/terminal/index.ts",
       "line": 59,
-      "middleware": ["createSessionResizeHandler()"],
+      "middleware": [
+        "createSessionResizeHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3303,7 +3635,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/terminal/index.ts",
       "line": 58,
-      "middleware": ["createSessionDeleteHandler()"],
+      "middleware": [
+        "createSessionDeleteHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3331,7 +3665,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/terminal/index.ts",
       "line": 37,
-      "middleware": ["createSessionsListHandler()"],
+      "middleware": [
+        "createSessionsListHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3344,7 +3680,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/terminal/index.ts",
       "line": 57,
-      "middleware": ["createSessionsCreateHandler()"],
+      "middleware": [
+        "createSessionsCreateHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3357,7 +3695,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/terminal/index.ts",
       "line": 60,
-      "middleware": ["createSettingsGetHandler()"],
+      "middleware": [
+        "createSettingsGetHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3370,7 +3710,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/terminal/index.ts",
       "line": 61,
-      "middleware": ["createSettingsUpdateHandler()"],
+      "middleware": [
+        "createSettingsUpdateHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3383,7 +3725,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/terminal/index.ts",
       "line": 30,
-      "middleware": ["createStatusHandler()"],
+      "middleware": [
+        "createStatusHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3396,7 +3740,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/workspace/index.ts",
       "line": 13,
-      "middleware": ["createConfigHandler()"],
+      "middleware": [
+        "createConfigHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3409,7 +3755,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/workspace/index.ts",
       "line": 14,
-      "middleware": ["createDirectoriesHandler()"],
+      "middleware": [
+        "createDirectoriesHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3456,7 +3804,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 188,
-      "middleware": ["createGetAvailableEditorsHandler()"],
+      "middleware": [
+        "createGetAvailableEditorsHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3469,7 +3819,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 192,
-      "middleware": ["createGetAvailableTerminalsHandler()"],
+      "middleware": [
+        "createGetAvailableTerminalsHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3601,7 +3953,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 113,
-      "middleware": ["createCreatePRHandler()"],
+      "middleware": [
+        "createCreatePRHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3630,7 +3984,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 187,
-      "middleware": ["createGetDefaultEditorHandler()"],
+      "middleware": [
+        "createGetDefaultEditorHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3643,7 +3999,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 193,
-      "middleware": ["createGetDefaultTerminalHandler()"],
+      "middleware": [
+        "createGetDefaultTerminalHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3672,7 +4030,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 210,
-      "middleware": ["validatePathParams('worktreePath')", "createGetDevServerLogsHandler()"],
+      "middleware": [
+        "validatePathParams('worktreePath')",
+        "createGetDevServerLogsHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -3685,7 +4046,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 95,
-      "middleware": ["validatePathParams('projectPath')", "createDiffsHandler()"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createDiffsHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -3715,7 +4079,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/environment-git.ts",
       "line": 39,
-      "middleware": ["environmentGitDispatcher(settings, 'worktree', isProjectBusy)"],
+      "middleware": [
+        "environmentGitDispatcher(settings, 'worktree', isProjectBusy)"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3728,7 +4094,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 96,
-      "middleware": ["validatePathParams('projectPath', 'filePath')", "createFileDiffHandler()"],
+      "middleware": [
+        "validatePathParams('projectPath', 'filePath')",
+        "createFileDiffHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -3775,7 +4144,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 92,
-      "middleware": ["validatePathParams('projectPath')", "createInfoHandler()"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createInfoHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -3788,7 +4160,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 201,
-      "middleware": ["validatePathParams('projectPath')", "createInitGitHandler()"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createInitGitHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -3801,7 +4176,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 228,
-      "middleware": ["validatePathParams('projectPath')", "createDeleteInitScriptHandler()"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createDeleteInitScriptHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -3814,7 +4192,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 226,
-      "middleware": ["createGetInitScriptHandler()"],
+      "middleware": [
+        "createGetInitScriptHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3827,7 +4207,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 227,
-      "middleware": ["validatePathParams('projectPath')", "createPutInitScriptHandler()"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createPutInitScriptHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -3857,7 +4240,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 209,
-      "middleware": ["createListDevServersHandler()"],
+      "middleware": [
+        "createListDevServersHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3887,7 +4272,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 94,
-      "middleware": ["createListHandler()"],
+      "middleware": [
+        "createListHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3917,7 +4304,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 202,
-      "middleware": ["createMigrateHandler()"],
+      "middleware": [
+        "createMigrateHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -3930,7 +4319,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 181,
-      "middleware": ["validatePathParams('worktreePath')", "createOpenInEditorHandler()"],
+      "middleware": [
+        "validatePathParams('worktreePath')",
+        "createOpenInEditorHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -3943,7 +4335,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 195,
-      "middleware": ["validatePathParams('worktreePath')", "createOpenInExternalTerminalHandler()"],
+      "middleware": [
+        "validatePathParams('worktreePath')",
+        "createOpenInExternalTerminalHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -3956,7 +4351,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 182,
-      "middleware": ["validatePathParams('worktreePath')", "createOpenInTerminalHandler()"],
+      "middleware": [
+        "validatePathParams('worktreePath')",
+        "createOpenInTerminalHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -3969,7 +4367,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 114,
-      "middleware": ["createPRInfoHandler()"],
+      "middleware": [
+        "createPRInfoHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -4033,7 +4433,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 189,
-      "middleware": ["createRefreshEditorsHandler()"],
+      "middleware": [
+        "createRefreshEditorsHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -4046,7 +4448,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 194,
-      "middleware": ["createRefreshTerminalsHandler()"],
+      "middleware": [
+        "createRefreshTerminalsHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -4209,7 +4613,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 93,
-      "middleware": ["validatePathParams('projectPath')", "createStatusHandler()"],
+      "middleware": [
+        "validatePathParams('projectPath')",
+        "createStatusHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": true,
       "streamsResponse": false
@@ -4222,7 +4629,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 208,
-      "middleware": ["createStopDevHandler()"],
+      "middleware": [
+        "createStopDevHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -4235,7 +4644,9 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 222,
-      "middleware": ["createStopTestsHandler()"],
+      "middleware": [
+        "createStopTestsHandler()"
+      ],
       "potentialMutation": true,
       "validatesProjectPath": false,
       "streamsResponse": false
@@ -4282,7 +4693,10 @@
       "access": "protected",
       "source": "apps/server/src/routes/worktree/index.ts",
       "line": 223,
-      "middleware": ["validatePathParams('worktreePath?')", "createGetTestLogsHandler()"],
+      "middleware": [
+        "validatePathParams('worktreePath?')",
+        "createGetTestLogsHandler()"
+      ],
       "potentialMutation": false,
       "validatesProjectPath": true,
       "streamsResponse": false

@@ -233,7 +233,8 @@ CRITICAL INSTRUCTIONS:
 
   try {
     const techResult = await streamingQuery({
-      settingsService, providerId: phaseModelEntry.providerId,
+      settingsService,
+      providerId: phaseModelEntry.providerId,
       prompt: techAnalysisPrompt,
       model,
       cwd: projectPath,

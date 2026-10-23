@@ -27,7 +27,12 @@ export function createProvidersHandler(settingsService?: SettingsService) {
         },
       };
       const global = await settingsService?.getGlobalSettings();
-      providers['openai-compatible'] = { available: !!global?.openaiCompatibleEndpoints?.some((endpoint) => endpoint.enabled && endpoint.protocol === 'chat-completions'), configuredEndpoints: global?.openaiCompatibleEndpoints?.length ?? 0 };
+      providers['openai-compatible'] = {
+        available: !!global?.openaiCompatibleEndpoints?.some(
+          (endpoint) => endpoint.enabled && endpoint.protocol === 'chat-completions'
+        ),
+        configuredEndpoints: global?.openaiCompatibleEndpoints?.length ?? 0,
+      };
 
       res.json({ success: true, providers });
     } catch (error) {

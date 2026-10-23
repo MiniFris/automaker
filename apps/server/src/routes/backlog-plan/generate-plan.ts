@@ -344,19 +344,24 @@ ${userPrompt}`;
     }
 
     // Execute the query with retry logic for transient CLI failures
-    const queryOptions = await prepareDirectExecution({
-      prompt: finalPrompt,
-      model: bareModel,
-      cwd: projectPath,
-      systemPrompt: finalSystemPrompt,
-      maxTurns: 1,
-      tools: [] as string[], // Disable all built-in tools - plan generation only needs text output
-      abortController,
-      settingSources: finalSettingSources,
-      thinkingLevel, // Pass thinking level for extended thinking
-      claudeCompatibleProvider, // Pass provider for alternative endpoint configuration
-      credentials, // Pass credentials for resolving 'credentials' apiKeySource
-    }, settingsService, { model: effectiveModel, providerId }, 'text');
+    const queryOptions = await prepareDirectExecution(
+      {
+        prompt: finalPrompt,
+        model: bareModel,
+        cwd: projectPath,
+        systemPrompt: finalSystemPrompt,
+        maxTurns: 1,
+        tools: [] as string[], // Disable all built-in tools - plan generation only needs text output
+        abortController,
+        settingSources: finalSettingSources,
+        thinkingLevel, // Pass thinking level for extended thinking
+        claudeCompatibleProvider, // Pass provider for alternative endpoint configuration
+        credentials, // Pass credentials for resolving 'credentials' apiKeySource
+      },
+      settingsService,
+      { model: effectiveModel, providerId },
+      'text'
+    );
 
     let responseText = '';
     let bestResponseText = ''; // Preserve best response across all retry attempts
@@ -391,7 +396,10 @@ ${userPrompt}`;
             throw new Error('Generation aborted');
           }
 
-          if (isDirectModel(effectiveModel) && (msg.type === 'error' || (msg.type === 'result' && msg.subtype !== 'success')))
+          if (
+            isDirectModel(effectiveModel) &&
+            (msg.type === 'error' || (msg.type === 'result' && msg.subtype !== 'success'))
+          )
             throw new Error(msg.error || 'Direct plan generation did not complete successfully.');
 
           if (msg.type === 'assistant') {

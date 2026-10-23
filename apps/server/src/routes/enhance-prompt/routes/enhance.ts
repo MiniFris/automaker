@@ -233,7 +233,8 @@ export function createEnhanceHandler(
       // The system prompt is combined with user prompt since some providers
       // don't have a separate system prompt concept
       const result = await simpleQuery({
-        settingsService, providerId,
+        settingsService,
+        providerId,
         prompt: [systemPrompt, projectContext, userPrompt].filter(Boolean).join('\n\n'),
         model: modelForApi,
         cwd: process.cwd(), // Enhancement doesn't need a specific working directory

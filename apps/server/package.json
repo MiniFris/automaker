@@ -21,9 +21,15 @@
     "test:run": "vitest run",
     "test:cov": "vitest run --coverage",
     "test:watch": "vitest watch",
-    "test:unit": "vitest run tests/unit"
+    "test:unit": "vitest run --config vitest.unit.config.ts",
+    "test:contract": "vitest run --config vitest.contract.config.ts",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:ssh": "vitest run --config vitest.ssh.config.ts",
+    "test:docker": "vitest run --config vitest.docker.config.ts",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts"
   },
   "dependencies": {
+    "@automaker/contracts": "1.0.0",
     "@anthropic-ai/claude-agent-sdk": "0.2.32",
     "@automaker/dependency-resolver": "1.0.0",
     "@automaker/git-utils": "1.0.0",

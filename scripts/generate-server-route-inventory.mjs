@@ -7,7 +7,7 @@ import ts from 'typescript';
 
 const repositoryRoot = resolve(import.meta.dirname, '..');
 const routeRoot = join(repositoryRoot, 'apps/server/src/routes');
-const serverEntry = join(repositoryRoot, 'apps/server/src/index.ts');
+const serverEntry = join(repositoryRoot, 'apps/server/src/legacy-application.ts');
 const outputPath = join(repositoryRoot, 'docs/backend-nestjs-migration/artifacts/http-routes.json');
 const methods = new Set(['get', 'post', 'put', 'patch', 'delete']);
 

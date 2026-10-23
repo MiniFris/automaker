@@ -324,7 +324,11 @@ export class FeatureStateManager {
           const hasApprovedPlan = feature.planSpec?.status === 'approved';
           // A crashed direct tool may have committed without returning a result.
           // Keep it out of the automatic ready/backlog queue until explicit review/resume.
-          feature.status = isDirectModel(feature.model) ? 'interrupted' : hasApprovedPlan ? 'ready' : 'backlog';
+          feature.status = isDirectModel(feature.model)
+            ? 'interrupted'
+            : hasApprovedPlan
+              ? 'ready'
+              : 'backlog';
           needsUpdate = true;
           logger.info(
             `[${callerLabel}] Reset feature ${feature.id} from ${originalStatus} to ${feature.status}`

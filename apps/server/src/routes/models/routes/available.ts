@@ -16,7 +16,19 @@ export function createAvailableHandler(settingsService?: SettingsService) {
       const global = await settingsService?.getGlobalSettings();
       for (const endpoint of global?.openaiCompatibleEndpoints ?? []) {
         if (!endpoint.enabled || endpoint.protocol !== 'chat-completions') continue;
-        for (const model of endpoint.models) models.push({ id: toDirectModelId(model.id), modelString: toDirectModelId(model.id), providerId: endpoint.id, name: model.displayName, provider: 'openai-compatible', description: endpoint.name, supportsTools: model.capabilities.tools, supportsVision: false, contextWindow: model.contextWindow, maxOutputTokens: model.maxOutputTokens });
+        for (const model of endpoint.models)
+          models.push({
+            id: toDirectModelId(model.id),
+            modelString: toDirectModelId(model.id),
+            providerId: endpoint.id,
+            name: model.displayName,
+            provider: 'openai-compatible',
+            description: endpoint.name,
+            supportsTools: model.capabilities.tools,
+            supportsVision: false,
+            contextWindow: model.contextWindow,
+            maxOutputTokens: model.maxOutputTokens,
+          });
       }
 
       res.json({ success: true, models });

@@ -148,7 +148,12 @@ export async function simpleQuery(options: SimpleQueryOptions): Promise<SimpleQu
     credentials: options.credentials, // Pass credentials for resolving 'credentials' apiKeySource
   };
 
-  const executeOptions = await prepareDirectExecution(providerOptions, options.settingsService, { model, providerId: options.providerId }, 'text');
+  const executeOptions = await prepareDirectExecution(
+    providerOptions,
+    options.settingsService,
+    { model, providerId: options.providerId },
+    'text'
+  );
   for await (const msg of provider.executeQuery(executeOptions)) {
     // Handle error messages
     if (msg.type === 'error') {
@@ -234,7 +239,14 @@ export async function streamingQuery(options: StreamingQueryOptions): Promise<Si
     credentials: options.credentials, // Pass credentials for resolving 'credentials' apiKeySource
   };
 
-  const executeOptions = await prepareDirectExecution({ ...providerOptions, ...(isDirectModel(model) && { tools: options.allowedTools ?? ['Read', 'Glob', 'Grep'] }) }, options.settingsService, { model, providerId: options.providerId });
+  const executeOptions = await prepareDirectExecution(
+    {
+      ...providerOptions,
+      ...(isDirectModel(model) && { tools: options.allowedTools ?? ['Read', 'Glob', 'Grep'] }),
+    },
+    options.settingsService,
+    { model, providerId: options.providerId }
+  );
   for await (const msg of provider.executeQuery(executeOptions)) {
     // Handle error messages
     if (msg.type === 'error') {

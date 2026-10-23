@@ -263,7 +263,14 @@ export class IdeationService {
         credentials, // Pass credentials for resolving 'credentials' apiKeySource
       };
 
-      const stream = provider.executeQuery(await prepareDirectExecution(executeOptions, this.settingsService, { model: modelId, providerId: options?.providerId }, 'text'));
+      const stream = provider.executeQuery(
+        await prepareDirectExecution(
+          executeOptions,
+          this.settingsService,
+          { model: modelId, providerId: options?.providerId },
+          'text'
+        )
+      );
 
       let responseText = '';
       const assistantMessage: IdeationMessage = {
@@ -757,7 +764,14 @@ export class IdeationService {
         credentials, // Pass credentials for resolving 'credentials' apiKeySource
       };
 
-      const stream = provider.executeQuery(await prepareDirectExecution(executeOptions, this.settingsService, { model: modelId, providerId: phaseResult.phaseModel.providerId }, 'text'));
+      const stream = provider.executeQuery(
+        await prepareDirectExecution(
+          executeOptions,
+          this.settingsService,
+          { model: modelId, providerId: phaseResult.phaseModel.providerId },
+          'text'
+        )
+      );
 
       let responseText = '';
       for await (const msg of stream) {

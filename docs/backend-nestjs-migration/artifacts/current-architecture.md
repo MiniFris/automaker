@@ -7,8 +7,8 @@
 
 - [`http-routes.json`](http-routes.json) — 305 фактических HTTP endpoints,
   включая routes, созданные циклами, и protected `/api/health/detailed`.
-- [`server-dependencies.json`](server-dependencies.json) — 452 server source files,
-  1 370 внутренних import edges, process/runtime signals и dependency cycles.
+- [`server-dependencies.json`](server-dependencies.json) — 454 server source files,
+  1 372 внутренних import edges, process/runtime signals и dependency cycles.
 - [`api-consumers.json`](api-consumers.json) — 290 статически обнаруженных UI
   references; все references сопоставлены с server inventory, 274 endpoints имеют
   обнаруженного UI consumer.
@@ -28,7 +28,8 @@ npm run inventory:api-consumers:check
 
 ## Composition root
 
-`apps/server/src/index.ts` одновременно владеет:
+После этапа 1 `apps/server/src/index.ts` — тонкий executable wrapper, а
+`apps/server/src/legacy-application.ts` пока владеет:
 
 - загрузкой environment variables;
 - CORS, cookies, request logging и JSON body parser;
@@ -41,8 +42,9 @@ npm run inventory:api-consumers:check
 - process error handlers;
 - graceful shutdown.
 
-Это главная точка разреза этапов 2–3. Она не удаляется до тех пор, пока contract
-tests не подтверждают эквивалентность Nest bootstrap.
+Фабрика legacy application уже отделяет import от `listen()` и production startup
+tasks. Это главная точка bridge этапов 2–3; она не удаляется до тех пор, пока
+contract tests не подтвердят эквивалентность Nest bootstrap.
 
 ## Route ownership
 

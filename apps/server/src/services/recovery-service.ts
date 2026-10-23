@@ -274,7 +274,9 @@ export class RecoveryService {
           // No automatic replay of an ambiguous direct run. Single-feature manual
           // resume remains available; crash-safe run/tool journaling is stage 6.
           if (isDirectModel(feature.model)) {
-            logger.info(`Direct feature ${feature.id} requires explicit resume after reviewing its workspace.`);
+            logger.info(
+              `Direct feature ${feature.id} requires explicit resume after reviewing its workspace.`
+            );
             continue;
           }
 
