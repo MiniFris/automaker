@@ -34,6 +34,8 @@ export const gitReadActions = new Set([
   'branch-commit-log',
   'stash-list',
   'init-script-get',
+  'commit-message-context',
+  'pr-description-context',
 ]);
 export const gitWriteActions = new Set([
   'stage-files',

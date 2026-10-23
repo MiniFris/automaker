@@ -93,6 +93,8 @@ export const NEST_OWNED_ROUTE_PATHS = new Set<string>([
   'POST /api/worktree/refresh-terminals',
   'POST /api/worktree/open-in-terminal',
   'POST /api/worktree/open-in-external-terminal',
+  'POST /api/worktree/generate-commit-message',
+  'POST /api/worktree/generate-pr-description',
   'POST /api/worktree/commit-log',
   'POST /api/worktree/branch-commit-log',
   'GET /api/settings/status',

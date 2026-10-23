@@ -17,6 +17,7 @@ import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js'
 import { WorktreeApplicationService } from './worktree-application.service.js';
 import { WorktreeProcessService } from './worktree-process.service.js';
 import { WorktreeHostService } from './worktree-host.service.js';
+import { WorktreeTextService } from './worktree-text.service.js';
 import {
   DevSessionSchema,
   StartDevSchema,
@@ -35,6 +36,8 @@ import {
   WorktreeRunInitScriptSchema,
   WorktreeOpenEditorSchema,
   WorktreeOpenTerminalSchema,
+  WorktreeGenerateCommitMessageSchema,
+  WorktreeGeneratePrDescriptionSchema,
   WorktreeDiscardSchema,
   WorktreeMutationSchema,
   WorktreeRemoteAddSchema,
@@ -72,6 +75,8 @@ import {
   type WorktreeRunInitScriptRequest,
   type WorktreeOpenEditorRequest,
   type WorktreeOpenTerminalRequest,
+  type WorktreeGenerateCommitMessageRequest,
+  type WorktreeGeneratePrDescriptionRequest,
   type WorktreeDiscardRequest,
   type WorktreeFeatureRequest,
   type WorktreeFileRequest,
@@ -102,7 +107,8 @@ export class WorktreeController {
   constructor(
     @Inject(WorktreeApplicationService) private readonly worktrees: WorktreeApplicationService,
     @Inject(WorktreeProcessService) private readonly processes: WorktreeProcessService,
-    @Inject(WorktreeHostService) private readonly host: WorktreeHostService
+    @Inject(WorktreeHostService) private readonly host: WorktreeHostService,
+    @Inject(WorktreeTextService) private readonly text: WorktreeTextService
   ) {}
 
   @Post('environment')
@@ -517,6 +523,32 @@ export class WorktreeController {
     return this.host.openTerminal(body, true);
   }
 
+  @Post('generate-commit-message')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath')
+  generateCommitMessage(
+    @Body(new ZodValidationPipe(WorktreeGenerateCommitMessageSchema))
+    body: WorktreeGenerateCommitMessageRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancelController(response, (controller) =>
+      this.text.generateCommitMessage(body, controller)
+    );
+  }
+
+  @Post('generate-pr-description')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath')
+  generatePrDescription(
+    @Body(new ZodValidationPipe(WorktreeGeneratePrDescriptionSchema))
+    body: WorktreeGeneratePrDescriptionRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancelController(response, (controller) =>
+      this.text.generatePrDescription(body, controller)
+    );
+  }
+
   @Post('commit-log')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
@@ -584,13 +616,20 @@ export class WorktreeController {
   }
 
   private async cancel<T>(response: Response, operation: (signal: AbortSignal) => Promise<T>) {
+    return this.cancelController(response, (controller) => operation(controller.signal));
+  }
+
+  private async cancelController<T>(
+    response: Response,
+    operation: (controller: AbortController) => Promise<T>
+  ) {
     const controller = new AbortController();
     const close = () => {
       if (!response.writableEnded) controller.abort();
     };
     response.on('close', close);
     try {
-      return await operation(controller.signal);
+      return await operation(controller);
     } finally {
       response.off('close', close);
     }

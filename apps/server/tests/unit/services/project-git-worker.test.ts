@@ -188,6 +188,34 @@ describe.skipIf(process.platform !== 'linux')('fixed target-side Git worker with
     expect((await local.exec('git branch --show-current', active())).output.trim()).toBe('main');
     expect((await local.exec('git rev-list --count HEAD', active())).output.trim()).toBe('1');
   });
+  it('collects bounded AI context on the selected target without provider access', async () => {
+    await fs.writeFile(path.join(root, 'source.txt'), 'working tree change\n');
+    expect((await run('commit-message-context')).diff).toContain('working tree change');
+
+    const created = await run('create', { branchName: 'feature/context', baseBranch: 'main' });
+    await fs.writeFile(path.join(created.worktree.path, 'context.txt'), 'context\n');
+    expect(
+      (
+        await run(
+          'commit',
+          { message: 'context commit', files: ['context.txt'] },
+          created.worktree.path
+        )
+      ).success
+    ).toBe(true);
+    const context = await run(
+      'pr-description-context',
+      { baseBranch: 'main' },
+      created.worktree.path
+    );
+    expect(context).toMatchObject({
+      success: true,
+      branch: 'feature/context',
+      baseBranch: 'main',
+    });
+    expect(context.diff).toContain('context.txt');
+    expect(context.commitLog).toContain('context commit');
+  });
   it('lists cached remote refs without running fetch or credential helpers', async () => {
     await environment.exec(
       "git remote add origin https://example.invalid/repo && git config credential.helper '!touch credential-leak'",
