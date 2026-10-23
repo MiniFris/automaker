@@ -19,8 +19,10 @@ describe('FilesQueryService', () => {
       remove: vi.fn(),
       copy: vi.fn(),
       move: vi.fn(),
+      readBuffer: vi.fn(),
+      writeBuffer: vi.fn(),
     };
-    const service = new FilesQueryService(port);
+    const service = new FilesQueryService(port, {} as never);
 
     await expect(service.read('/project/a.txt')).resolves.toEqual({
       success: true,
@@ -39,17 +41,22 @@ describe('FilesQueryService', () => {
 
   it('maps missing files to a stable not-found domain error', async () => {
     const missing = Object.assign(new Error('missing'), { code: 'ENOENT' });
-    const service = new FilesQueryService({
-      read: vi.fn().mockRejectedValue(missing),
-      list: vi.fn(),
-      stat: vi.fn().mockRejectedValue(missing),
-      exists: vi.fn(),
-      write: vi.fn(),
-      mkdir: vi.fn(),
-      remove: vi.fn(),
-      copy: vi.fn(),
-      move: vi.fn(),
-    });
+    const service = new FilesQueryService(
+      {
+        read: vi.fn().mockRejectedValue(missing),
+        list: vi.fn(),
+        stat: vi.fn().mockRejectedValue(missing),
+        exists: vi.fn(),
+        write: vi.fn(),
+        mkdir: vi.fn(),
+        remove: vi.fn(),
+        copy: vi.fn(),
+        move: vi.fn(),
+        readBuffer: vi.fn(),
+        writeBuffer: vi.fn(),
+      },
+      {} as never
+    );
 
     await expect(service.read('/project/missing')).rejects.toMatchObject({
       statusCode: 404,

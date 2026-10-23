@@ -38,7 +38,6 @@ import {
   createCorrelationId,
   runWithCorrelationContext,
 } from './core/observability/request-context.js';
-import { createFsRoutes } from './routes/fs/index.js';
 import { createAgentRoutes } from './routes/agent/index.js';
 import { createSessionsRoutes } from './routes/sessions/index.js';
 import { createFeaturesRoutes } from './routes/features/index.js';
@@ -585,7 +584,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   // Apply authentication to all other routes
   app.use('/api', authMiddleware);
 
-  app.use('/api/fs', createFsRoutes(events));
   app.use('/api/agent', createAgentRoutes(agentService, events));
   app.use('/api/sessions', createSessionsRoutes(agentService));
   app.use(

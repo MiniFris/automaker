@@ -23,4 +23,6 @@ export interface ProjectFilePort {
   remove(filePath: string): Promise<void>;
   copy(sourcePath: string, destinationPath: string, overwrite: boolean): Promise<void>;
   move(sourcePath: string, destinationPath: string, overwrite: boolean): Promise<void>;
+  readBuffer(filePath: string): Promise<Buffer>;
+  writeBuffer(filePath: string, content: Buffer): Promise<void>;
 }

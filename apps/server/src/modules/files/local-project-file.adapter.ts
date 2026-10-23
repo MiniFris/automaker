@@ -41,11 +41,24 @@ export class LocalProjectFileAdapter implements ProjectFilePort {
   }
 
   async write(filePath: string, content: string): Promise<void> {
+    await this.atomicWrite(filePath, content);
+  }
+
+  async writeBuffer(filePath: string, content: Buffer): Promise<void> {
+    await this.atomicWrite(filePath, content);
+  }
+
+  async readBuffer(filePath: string): Promise<Buffer> {
+    return (await secureFs.readFile(filePath)) as Buffer;
+  }
+
+  private async atomicWrite(filePath: string, content: string | Buffer): Promise<void> {
     const target = path.resolve(filePath);
     const temporary = `${target}.tmp.${Date.now()}.${crypto.randomBytes(4).toString('hex')}`;
     await mkdirSafe(path.dirname(target));
     try {
-      await secureFs.writeFile(temporary, content, 'utf-8');
+      if (typeof content === 'string') await secureFs.writeFile(temporary, content, 'utf-8');
+      else await secureFs.writeFile(temporary, content);
       await secureFs.rename(temporary, target);
     } catch (error) {
       await secureFs.rm(temporary).catch(() => {});

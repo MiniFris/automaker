@@ -10,7 +10,7 @@ export const ROUTE_GROUP_OWNERS: Readonly<Record<string, RouteOwner>> = {
   health: 'nest',
   auth: 'nest',
   setup: 'legacy',
-  fs: 'legacy',
+  fs: 'nest',
   agent: 'legacy',
   sessions: 'legacy',
   features: 'legacy',
@@ -87,6 +87,15 @@ export const NEST_OWNED_ROUTE_PATHS = new Set<string>([
   'POST /api/fs/delete',
   'POST /api/fs/copy',
   'POST /api/fs/move',
+  'POST /api/fs/validate-path',
+  'POST /api/fs/browse',
+  'POST /api/fs/browse-project-files',
+  'POST /api/fs/resolve-directory',
+  'POST /api/fs/save-image',
+  'POST /api/fs/save-board-background',
+  'POST /api/fs/delete-board-background',
+  'GET /api/fs/image',
+  'POST /api/fs/download',
 ]);
 
 export function getApiRouteGroup(request: Pick<Request, 'originalUrl'>): string | undefined {

@@ -278,6 +278,33 @@ describe('Nest shell and legacy bridge contract', () => {
       expect(writeResponse.status).toBe(200);
       await expect(readFile(writtenFile, 'utf8')).resolves.toBe('written through Nest');
 
+      const downloadResponse = await fetch(`${baseUrl}/api/fs/download`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ filePath: writtenFile }),
+      });
+      expect(downloadResponse.status).toBe(200);
+      expect(await downloadResponse.text()).toBe('written through Nest');
+
+      const saveImageResponse = await fetch(`${baseUrl}/api/fs/save-image`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          projectPath,
+          filename: 'fixture.png',
+          data: Buffer.from('image-fixture').toString('base64'),
+        }),
+      });
+      expect(saveImageResponse.status).toBe(200);
+      const savedImage = (await saveImageResponse.json()) as { path: string };
+      const imageResponse = await fetch(
+        `${baseUrl}/api/fs/image?path=${encodeURIComponent(savedImage.path)}`,
+        { headers }
+      );
+      expect(imageResponse.status).toBe(200);
+      expect(imageResponse.headers.get('content-type')).toBe('image/png');
+      expect(Buffer.from(await imageResponse.arrayBuffer()).toString()).toBe('image-fixture');
+
       for (const route of ['notifications/list', 'event-history/list']) {
         const response = await fetch(`${baseUrl}/api/${route}`, {
           method: 'POST',
