@@ -20,6 +20,7 @@ import type { ProviderRegistry } from '../modules/providers/provider-registry.se
 import type { ToolPolicyService } from '../modules/providers/tool-policy.service.js';
 import { AgentSessionRepository } from './agent/agent-session.repository.js';
 import { AgentSessionRegistry } from './agent/agent-session-registry.js';
+import { AgentSessionStorageError } from './agent/agent-session-storage.error.js';
 import type {
   ActiveSession as Session,
   Message,
@@ -159,13 +160,13 @@ export class AgentService {
       [metadata, messages] = await Promise.all([this.loadMetadata(), this.loadSession(sessionId)]);
     } catch (error) {
       // Disk read failure should not be treated as "session not found" —
-      // it's a transient I/O problem. Log and return null so callers can
-      // surface an appropriate error message.
+      // it's an I/O problem. Propagate it; a fresh empty session would risk
+      // overwriting the existing persisted conversation.
       this.logger.error(
         `Failed to load session ${sessionId} from disk (I/O error — NOT a missing session):`,
         error
       );
-      return null;
+      throw error;
     }
 
     const sessionMetadata = metadata[sessionId];
@@ -339,9 +340,12 @@ export class AgentService {
       message: userMessage,
     });
 
-    await this.saveSession(sessionId, session.messages);
-
+    let completion: Record<string, unknown> | undefined;
+    let userMessageStored = false;
     try {
+      await this.repository.saveMessages(sessionId, session.messages);
+      userMessageStored = true;
+      await this.updateSessionTimestamp(sessionId);
       // Determine the effective working directory for context loading
       const effectiveWorkDir = workingDirectory || session.workingDirectory;
 
@@ -747,12 +751,12 @@ export class AgentService {
             }
           }
 
-          this.emitAgentEvent(sessionId, {
+          completion = {
             type: 'complete',
             messageId: currentAssistantMessage?.id,
             content: responseText,
             toolUses,
-          });
+          };
         } else if (msg.type === 'error') {
           // Some providers (like Codex CLI/SaaS or Cursor CLI) surface failures as
           // streamed error messages instead of throwing. Handle these here so the
@@ -848,6 +852,7 @@ export class AgentService {
 
       session.isRunning = false;
       session.abortController = null;
+      if (completion) this.emitAgentEvent(sessionId, completion);
 
       // Process next item in queue after completion
       setImmediate(() => this.processNextInQueue(sessionId));
@@ -857,6 +862,20 @@ export class AgentService {
         message: currentAssistantMessage,
       };
     } catch (error) {
+      if (error instanceof AgentSessionStorageError) {
+        if (!userMessageStored)
+          session.messages = session.messages.filter((message) => message.id !== userMessage.id);
+        session.isRunning = false;
+        session.abortController?.abort();
+        session.abortController = null;
+        this.emitAgentEvent(sessionId, {
+          type: 'error',
+          error: error.message,
+          errorType: 'persistence',
+        });
+        this.reportedErrors.add(error);
+        throw error;
+      }
       if (isAbortError(error)) {
         session.isRunning = false;
         session.abortController = null;
@@ -972,19 +991,20 @@ export class AgentService {
    * Clear conversation history
    */
   async clearSession(sessionId: string) {
-    const session = this.sessions.get(sessionId);
+    const session = await this.ensureSession(sessionId);
     if (session) {
+      await this.saveSession(sessionId, []);
+      await this.clearSdkSessionId(sessionId);
       session.messages = [];
       session.isRunning = false;
       session.sdkSessionId = undefined; // Clear stale provider session ID to prevent "Session not found" errors
-      await this.saveSession(sessionId, []);
     }
 
     // Clear the sdkSessionId from persisted metadata so it doesn't get
     // reloaded by ensureSession() after a server restart.
     // This prevents "Session not found" errors when the provider-side session
     // no longer exists (e.g., OpenCode CLI sessions expire on disk).
-    await this.clearSdkSessionId(sessionId);
+    if (!session) await this.clearSdkSessionId(sessionId);
 
     return { success: true };
   }
@@ -996,12 +1016,8 @@ export class AgentService {
   }
 
   async saveSession(sessionId: string, messages: Message[]): Promise<void> {
-    try {
-      await this.repository.saveMessages(sessionId, messages);
-      await this.updateSessionTimestamp(sessionId);
-    } catch (error) {
-      this.logger.error('Failed to save session:', error);
-    }
+    await this.repository.saveMessages(sessionId, messages);
+    await this.updateSessionTimestamp(sessionId);
   }
 
   async loadMetadata(): Promise<Record<string, SessionMetadata>> {
@@ -1068,12 +1084,12 @@ export class AgentService {
   async setSessionModel(sessionId: string, model: string, providerId?: string): Promise<boolean> {
     const session = await this.ensureSession(sessionId);
     if (session) {
+      await this.updateSession(sessionId, { model, providerId, sdkSessionId: undefined });
       session.model = model;
       session.providerId = providerId;
       session.sdkSessionId = undefined;
       session.thinkingLevel = undefined;
       session.reasoningEffort = undefined;
-      await this.updateSession(sessionId, { model, providerId, sdkSessionId: undefined });
       return true;
     }
     return false;
@@ -1133,35 +1149,38 @@ export class AgentService {
       thinkingLevel?: ThinkingLevel;
     }
   ): Promise<{ success: boolean; queuedPrompt?: QueuedPrompt; error?: string }> {
-    const session = await this.ensureSession(sessionId);
-    if (!session) {
-      return { success: false, error: 'Session not found' };
-    }
+    return this.sessions.serializeQueue(sessionId, async () => {
+      const session = await this.ensureSession(sessionId);
+      if (!session) {
+        return { success: false, error: 'Session not found' };
+      }
 
-    const queuedPrompt: QueuedPrompt = {
-      id: this.generateId(),
-      message: prompt.message,
-      imagePaths: prompt.imagePaths,
-      model: prompt.model ?? session.model,
-      providerId:
-        prompt.providerId ??
-        (prompt.model === undefined || prompt.model === session.model
-          ? session.providerId
-          : undefined),
-      thinkingLevel: prompt.thinkingLevel,
-      addedAt: new Date().toISOString(),
-    };
+      const queuedPrompt: QueuedPrompt = {
+        id: this.generateId(),
+        message: prompt.message,
+        imagePaths: prompt.imagePaths,
+        model: prompt.model ?? session.model,
+        providerId:
+          prompt.providerId ??
+          (prompt.model === undefined || prompt.model === session.model
+            ? session.providerId
+            : undefined),
+        thinkingLevel: prompt.thinkingLevel,
+        addedAt: new Date().toISOString(),
+      };
 
-    session.promptQueue.push(queuedPrompt);
-    await this.saveQueueState(sessionId, session.promptQueue);
+      const queue = [...session.promptQueue, queuedPrompt];
+      await this.saveQueueState(sessionId, queue);
+      session.promptQueue = queue;
 
-    // Emit queue update event
-    this.emitAgentEvent(sessionId, {
-      type: 'queue_updated',
-      queue: session.promptQueue,
+      // Emit queue update event
+      this.emitAgentEvent(sessionId, {
+        type: 'queue_updated',
+        queue: session.promptQueue,
+      });
+
+      return { success: true, queuedPrompt };
     });
-
-    return { success: true, queuedPrompt };
   }
 
   /**
@@ -1184,56 +1203,57 @@ export class AgentService {
     sessionId: string,
     promptId: string
   ): Promise<{ success: boolean; error?: string }> {
-    const session = await this.ensureSession(sessionId);
-    if (!session) {
-      return { success: false, error: 'Session not found' };
-    }
+    return this.sessions.serializeQueue(sessionId, async () => {
+      const session = await this.ensureSession(sessionId);
+      if (!session) {
+        return { success: false, error: 'Session not found' };
+      }
 
-    const index = session.promptQueue.findIndex((p) => p.id === promptId);
-    if (index === -1) {
-      return { success: false, error: 'Prompt not found in queue' };
-    }
+      const index = session.promptQueue.findIndex((p) => p.id === promptId);
+      if (index === -1) {
+        return { success: false, error: 'Prompt not found in queue' };
+      }
 
-    session.promptQueue.splice(index, 1);
-    await this.saveQueueState(sessionId, session.promptQueue);
+      const queue = session.promptQueue.filter((_, position) => position !== index);
+      await this.saveQueueState(sessionId, queue);
+      session.promptQueue = queue;
 
-    this.emitAgentEvent(sessionId, {
-      type: 'queue_updated',
-      queue: session.promptQueue,
+      this.emitAgentEvent(sessionId, {
+        type: 'queue_updated',
+        queue: session.promptQueue,
+      });
+
+      return { success: true };
     });
-
-    return { success: true };
   }
 
   /**
    * Clear all prompts from the queue
    */
   async clearQueue(sessionId: string): Promise<{ success: boolean; error?: string }> {
-    const session = await this.ensureSession(sessionId);
-    if (!session) {
-      return { success: false, error: 'Session not found' };
-    }
+    return this.sessions.serializeQueue(sessionId, async () => {
+      const session = await this.ensureSession(sessionId);
+      if (!session) {
+        return { success: false, error: 'Session not found' };
+      }
 
-    session.promptQueue = [];
-    await this.saveQueueState(sessionId, []);
+      await this.saveQueueState(sessionId, []);
+      session.promptQueue = [];
 
-    this.emitAgentEvent(sessionId, {
-      type: 'queue_updated',
-      queue: [],
+      this.emitAgentEvent(sessionId, {
+        type: 'queue_updated',
+        queue: [],
+      });
+
+      return { success: true };
     });
-
-    return { success: true };
   }
 
   /**
    * Save queue state to disk for persistence
    */
   private async saveQueueState(sessionId: string, queue: QueuedPrompt[]): Promise<void> {
-    try {
-      await this.repository.saveQueue(sessionId, queue);
-    } catch (error) {
-      this.logger.error('Failed to save queue state:', error);
-    }
+    await this.repository.saveQueue(sessionId, queue);
   }
 
   /**
@@ -1247,27 +1267,18 @@ export class AgentService {
    * Process the next item in the queue (called after task completion)
    */
   private async processNextInQueue(sessionId: string): Promise<void> {
-    const session = this.sessions.get(sessionId);
-    if (!session || session.promptQueue.length === 0) {
-      return;
-    }
-
-    // Don't process if already running
-    if (session.isRunning) {
-      return;
-    }
-
-    const nextPrompt = session.promptQueue.shift();
-    if (!nextPrompt) return;
-
-    await this.saveQueueState(sessionId, session.promptQueue);
-
-    this.emitAgentEvent(sessionId, {
-      type: 'queue_updated',
-      queue: session.promptQueue,
-    });
-
+    let nextPrompt: QueuedPrompt | undefined;
     try {
+      nextPrompt = await this.sessions.serializeQueue(sessionId, async () => {
+        const session = this.sessions.get(sessionId);
+        if (!session || session.isRunning || !session.promptQueue.length) return undefined;
+        const [next, ...remaining] = session.promptQueue;
+        await this.saveQueueState(sessionId, remaining);
+        session.promptQueue = remaining;
+        this.emitAgentEvent(sessionId, { type: 'queue_updated', queue: remaining });
+        return next;
+      });
+      if (!nextPrompt) return;
       await this.sendMessage({
         sessionId,
         message: nextPrompt.message,
@@ -1281,7 +1292,7 @@ export class AgentService {
       this.emitAgentEvent(sessionId, {
         type: 'queue_error',
         error: (error as Error).message,
-        promptId: nextPrompt.id,
+        promptId: nextPrompt?.id,
       });
     }
   }

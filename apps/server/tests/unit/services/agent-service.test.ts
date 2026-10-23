@@ -34,6 +34,16 @@ const providers = {
   supportsVision: vi.fn().mockReturnValue(true),
 };
 
+function mockStoredFiles(metadata: Record<string, unknown> = {}, messages: unknown[] = []) {
+  vi.mocked(fs.readFile).mockImplementation(async (file) => {
+    const name = String(file);
+    if (name.endsWith('sessions-metadata.json')) return JSON.stringify(metadata);
+    if (name.endsWith('-queue.json')) return '[]';
+    if (name.endsWith('.json')) return JSON.stringify(messages);
+    throw Object.assign(new Error('Missing fixture file'), { code: 'ENOENT' });
+  });
+}
+
 describe('agent-service.ts', () => {
   let service: AgentService;
   const mockEvents = {
@@ -43,6 +53,9 @@ describe('agent-service.ts', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(fs.readFile).mockRejectedValue(
+      Object.assign(new Error('Missing fixture file'), { code: 'ENOENT' })
+    );
     service = new AgentService(
       ...createTestAgentState('/test/data'),
       mockEvents as any,
@@ -95,7 +108,7 @@ describe('agent-service.ts', () => {
         },
       ];
 
-      vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify(existingMessages));
+      mockStoredFiles({}, existingMessages);
 
       const result = await service.startConversation({
         sessionId: 'session-1',
@@ -570,7 +583,7 @@ describe('agent-service.ts', () => {
         },
       };
 
-      vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify(metadata));
+      mockStoredFiles(metadata);
       vi.mocked(fs.writeFile).mockResolvedValue(undefined);
       vi.mocked(fs.mkdir).mockResolvedValue(undefined);
 
@@ -612,7 +625,7 @@ describe('agent-service.ts', () => {
         },
       };
 
-      vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify(metadata));
+      mockStoredFiles(metadata);
       vi.mocked(fs.writeFile).mockResolvedValue(undefined);
 
       await service.clearSdkSessionId('session-1');
@@ -636,7 +649,7 @@ describe('agent-service.ts', () => {
         },
       };
 
-      vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify(metadata));
+      mockStoredFiles(metadata);
       vi.mocked(fs.writeFile).mockResolvedValue(undefined);
 
       await service.clearSdkSessionId('session-1');
@@ -728,7 +741,7 @@ describe('agent-service.ts', () => {
     });
 
     it('should set model for existing session', async () => {
-      vi.mocked(fs.readFile).mockResolvedValue('{"session-1": {}}');
+      vi.mocked(fs.readFile).mockResolvedValue('{"session-1": {"id": "session-1"}}');
       const result = await service.setSessionModel('session-1', 'claude-sonnet-4-6');
 
       expect(result).toBe(true);

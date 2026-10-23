@@ -1,9 +1,12 @@
-import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, readdir, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgentSessionRepository } from '../../../src/services/agent/agent-session.repository.js';
 import { AgentSessionRegistry } from '../../../src/services/agent/agent-session-registry.js';
+import { AgentSessionStorageError } from '../../../src/services/agent/agent-session-storage.error.js';
+import * as secureFs from '../../../src/lib/secure-fs.js';
+import { secureFs as platformFs } from '@automaker/platform';
 import type {
   ActiveSession,
   SessionMetadata,
@@ -66,7 +69,7 @@ describe('AgentSessionRegistry', () => {
       );
       await Promise.resolve();
       if (action === 'delete') registry.delete('one');
-      else registry.onApplicationShutdown();
+      else await registry.onApplicationShutdown();
       release(active());
       expect(await pending).toBeNull();
       expect(registry.size).toBe(0);
@@ -83,7 +86,72 @@ describe('AgentSessionRepository', () => {
   });
   afterEach(async () => {
     await repository.drain();
+    vi.restoreAllMocks();
     await rm(directory, { recursive: true, force: true });
+  });
+
+  it('propagates read I/O errors without consulting a backup or returning empty state', async () => {
+    const read = vi
+      .spyOn(secureFs, 'readFile')
+      .mockRejectedValueOnce(Object.assign(new Error('private path'), { code: 'EACCES' }));
+    await expect(repository.loadMetadata()).rejects.toBeInstanceOf(AgentSessionStorageError);
+    expect(read).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['{"private prompt":', '[]', '{"session":null}'])(
+    'does not overwrite corrupt metadata %s',
+    async (content) => {
+      const file = path.join(directory, 'sessions-metadata.json');
+      await writeFile(file, content);
+      await expect(repository.addMetadata(metadata('new-session'))).rejects.toMatchObject({
+        errorCode: 'UNAVAILABLE',
+        statusCode: 503,
+      });
+      expect(await readFile(file, 'utf8')).toBe(content);
+      const error = await repository.loadMetadata().catch((error: Error) => error);
+      expect(String(error)).not.toContain(content);
+    }
+  );
+
+  it('recovers corrupt metadata from a validated committed backup without auto-restoring on read', async () => {
+    const file = path.join(directory, 'sessions-metadata.json');
+    await writeFile(file, '{broken');
+    await writeFile(`${file}.bak1`, '[]');
+    await writeFile(`${file}.bak2`, JSON.stringify({ old: metadata('old') }));
+    expect(Object.keys(await repository.loadMetadata())).toEqual(['old']);
+    expect(await readFile(file, 'utf8')).toBe('{broken');
+    await repository.addMetadata(metadata('new-session'));
+    expect(Object.keys(await repository.loadMetadata()).sort()).toEqual(['new-session', 'old']);
+  });
+
+  it('does not recover absent main files or uncommitted temp data', async () => {
+    const file = path.join(directory, 'agent-sessions', 'one.json');
+    const messages = [{ id: 'message', role: 'user', content: 'old', timestamp: 'now' }];
+    await writeFile(`${file}.bak1`, JSON.stringify(messages));
+    expect(await repository.loadMessages('one')).toEqual([]);
+    await rm(`${file}.bak1`);
+    await writeFile(file, '{}');
+    await writeFile(`${file}.tmp.uncommitted`, JSON.stringify(messages));
+    await expect(repository.loadMessages('one')).rejects.toBeInstanceOf(AgentSessionStorageError);
+    await writeFile(file, JSON.stringify([{ ...messages[0], role: ['user'] }]));
+    await expect(repository.loadMessages('one')).rejects.toBeInstanceOf(AgentSessionStorageError);
+  });
+
+  it('returns safe write failures and allows a later write after recovery', async () => {
+    await repository.saveMessages('one', []);
+    const realRename = platformFs.rename;
+    const rename = vi.spyOn(platformFs, 'rename').mockImplementation(async (source, target) => {
+      if (String(target) === path.join(directory, 'agent-sessions', 'one.json'))
+        throw new Error('private filesystem detail');
+      return realRename(source, target);
+    });
+    await expect(repository.saveMessages('one', [])).rejects.toMatchObject({
+      operation: 'write',
+      statusCode: 503,
+    });
+    rename.mockRestore();
+    expect(await repository.loadMessages('one')).toEqual([]);
+    await expect(repository.saveMessages('one', [])).resolves.toBeUndefined();
   });
 
   it('retains every session across concurrent metadata creations and updates', async () => {

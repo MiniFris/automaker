@@ -1,8 +1,36 @@
 import path from 'node:path';
-import { atomicWriteJson, DEFAULT_BACKUP_COUNT } from '@automaker/utils';
+import { atomicWriteJson, DEFAULT_BACKUP_COUNT, createLogger } from '@automaker/utils';
 import { SessionIdSchema } from '@automaker/contracts';
 import * as secureFs from '../../lib/secure-fs.js';
 import type { Message, QueuedPrompt, SessionMetadata } from './agent-session.types.js';
+import { AgentSessionStorageError } from './agent-session-storage.error.js';
+
+type StoreKind = 'messages' | 'queue' | 'metadata';
+const logger = createLogger('AgentSessionRepository');
+const object = (value: unknown): value is Record<string, unknown> =>
+  !!value && typeof value === 'object' && !Array.isArray(value);
+function valid(value: unknown, kind: StoreKind): boolean {
+  if (kind === 'metadata')
+    return (
+      object(value) &&
+      Object.entries(value).every(
+        ([id, entry]) => SessionIdSchema.safeParse(id).success && object(entry) && entry.id === id
+      )
+    );
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (entry) =>
+        object(entry) &&
+        typeof entry.id === 'string' &&
+        (kind === 'messages'
+          ? (entry.role === 'user' || entry.role === 'assistant') &&
+            typeof entry.content === 'string' &&
+            typeof entry.timestamp === 'string'
+          : typeof entry.message === 'string' && typeof entry.addedAt === 'string')
+    )
+  );
+}
 
 /** Legacy-compatible file formats; each mutation has one application-local writer. */
 export class AgentSessionRepository {
@@ -20,19 +48,19 @@ export class AgentSessionRepository {
   }
 
   loadMessages(id: string): Promise<Message[]> {
-    return this.read(this.sessionFile(id), []);
+    return this.read(this.sessionFile(id), [], 'messages');
   }
   saveMessages(id: string, messages: Message[]): Promise<void> {
     return this.write(this.sessionFile(id), messages);
   }
   loadQueue(id: string): Promise<QueuedPrompt[]> {
-    return this.read(this.queueFile(id), []);
+    return this.read(this.queueFile(id), [], 'queue');
   }
   saveQueue(id: string, queue: QueuedPrompt[]): Promise<void> {
     return this.write(this.queueFile(id), queue);
   }
   loadMetadata(): Promise<Record<string, SessionMetadata>> {
-    return this.read(this.metadataFile, {});
+    return this.read(this.metadataFile, {}, 'metadata');
   }
   saveMetadata(metadata: Record<string, SessionMetadata>): Promise<void> {
     return this.write(this.metadataFile, metadata);
@@ -100,12 +128,40 @@ export class AgentSessionRepository {
     return this.drain();
   }
 
-  private async read<T>(file: string, fallback: T): Promise<T> {
+  private async read<T>(file: string, fallback: T, kind: StoreKind): Promise<T> {
+    let content: string;
     try {
-      return JSON.parse(String(await secureFs.readFile(file, 'utf8'))) as T;
-    } catch {
-      return fallback;
+      content = String(await secureFs.readFile(file, 'utf8'));
+    } catch (error) {
+      // Absence is authoritative (including after deletion). Never resurrect a
+      // missing main file from an older backup or an uncommitted temp file.
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return fallback;
+      throw new AgentSessionStorageError('read');
     }
+    try {
+      const data: unknown = JSON.parse(content);
+      if (valid(data, kind)) return data as T;
+    } catch {
+      /* A corrupt main file may have a committed backup. */
+    }
+    for (let index = 1; index <= DEFAULT_BACKUP_COUNT; index++) {
+      let backup: string;
+      try {
+        backup = String(await secureFs.readFile(`${file}.bak${index}`, 'utf8'));
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') continue;
+        throw new AgentSessionStorageError('read');
+      }
+      try {
+        const data: unknown = JSON.parse(backup);
+        if (!valid(data, kind)) continue;
+        logger.warn('Agent session store read from committed backup.', { kind, backup: index });
+        return data as T;
+      } catch {
+        /* Try the next committed backup, without logging its contents. */
+      }
+    }
+    throw new AgentSessionStorageError('read');
   }
 
   private write(file: string, value: unknown): Promise<void> {
@@ -113,8 +169,12 @@ export class AgentSessionRepository {
     const snapshot = globalThis.structuredClone(value);
     return this.enqueue(file, () => this.writeNow(file, snapshot));
   }
-  private writeNow(file: string, value: unknown): Promise<void> {
-    return atomicWriteJson(file, value, { backupCount: DEFAULT_BACKUP_COUNT });
+  private async writeNow(file: string, value: unknown): Promise<void> {
+    try {
+      await atomicWriteJson(file, value, { backupCount: DEFAULT_BACKUP_COUNT });
+    } catch {
+      throw new AgentSessionStorageError('write');
+    }
   }
   private mutateMetadata<T>(
     mutate: (metadata: Record<string, SessionMetadata>) => { changed: boolean; result: T }

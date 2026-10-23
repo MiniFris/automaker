@@ -188,11 +188,51 @@ Checkpoint: contracts package build и 14 tests, server build/lint, 2928 unit te
 сценария, UI typecheck, Chromium Agent Chat Session smoke, три inventory checks и
 production SIGTERM/SIGINT smoke.
 
-Этап 7 целиком не завершён. Repository пока сохраняет legacy fallback для ошибок
-чтения; часть save errors ещё перехватывается AgentService. Fail-closed recovery,
-execution leases для send/cancel, удаление queue/backups с session и shutdown активных
+Этап 7 целиком не завершён. Последующий срез ниже устранил legacy read/save fallback.
+Execution leases для send/cancel, удаление queue/backups с session и shutdown активных
 provider jobs требуют следующих срезов. Prompt/context, execution и stream processing
 пока остаются в AgentService; legacy SessionAdapter также ещё не удалён.
+
+### Срез: ошибки хранения и подтверждённый completion
+
+Repository возвращает пустое состояние только при `ENOENT` основного файла. Ошибки
+I/O не маскируются и не переключаются на backup. Повреждённый JSON или неверная
+структура проверяются по committed `.bak1`–`.bak3`; metadata требует согласованных
+record IDs, messages/queues — соответствующих массивов и основных полей. Невалидный
+backup пропускается, I/O failure при чтении backup останавливает восстановление.
+Если валидной копии нет, возвращается безопасный `AgentSessionStorageError` / HTTP 503
+`UNAVAILABLE`, без JSON snippets, содержимого prompts и сырых filesystem errors.
+
+Чтение backup не переписывает основной файл. Отсутствующий main file не воскрешается
+из старых backups (это может быть результат удаления); uncommitted temp files также
+не используются. Corrupt metadata без recovery блокирует read-modify-write, поэтому
+новая сессия не затирает файл пустым metadata. Hydration error больше не создаёт
+пустую active session. Общие best-effort recovery helpers не используются, поскольку
+они могут читать temp files и возвращать пустое состояние после I/O errors.
+
+Первое сообщение сохраняется до provider call. Если эта запись не удалась, сообщение
+убирается из RAM и model не запускается. `complete` отправляется только после финальной
+записи messages и metadata timestamp. При сбое этой записи после model execution приходит
+`errorType: persistence`, running flag сбрасывается, следующий queued prompt не
+запускается и model не повторяется автоматически. RAM может содержать ответ, который
+не удалось сохранить; ошибка просит проверить history/storage перед ручным retry.
+HTTP send по-прежнему возвращает acceptance ACK, а не подтверждение завершения job.
+
+Queue add/remove/clear/dequeue сериализованы отдельно на session ID; новая RAM queue
+и `queue_updated` публикуются только после успешной записи. Неудачная mutation не
+исполняет неподтверждённый prompt и не теряет прежнюю очередь. Active model также
+меняется после persistence metadata. Clear history теперь загружает persisted session
+и работает после restart без предварительной активации.
+
+Checkpoint: 2942 unit tests (40 skipped), 238 HTTP/WS contracts, server build/lint,
+UI typecheck, три inventory checks и production SIGTERM/SIGINT smoke. Три выбранных
+реальных remote CLI/SDK/Direct SSH chat/restart сценария пройдены. Chromium scenario
+теперь проверяет не только создание сессии, но и отправку через UI, streamed reply,
+снятие processing state и восстановление тех же сообщений после page reload.
+
+Это не завершает execution recovery: пер-session queue lock не заменяет lease для
+concurrent send/cancel/clear и provider-process drain. Полный UI suite, остальные
+environment acceptance suites и финальный stage checkpoint ещё обязательны.
 
 ## 7.5. Tool policy
 

@@ -3,6 +3,7 @@ import type { ActiveSession } from './agent-session.types.js';
 /** Application-owned active state, distinct from persisted conversations. */
 export class AgentSessionRegistry {
   private readonly sessions = new Map<string, ActiveSession>();
+  private readonly queueMutations = new Map<string, Promise<unknown>>();
   private readonly loading = new Map<
     string,
     {
@@ -57,9 +58,23 @@ export class AgentSessionRegistry {
     return slot.promise;
   }
 
-  onApplicationShutdown(): void {
+  serializeQueue<T>(id: string, operation: () => Promise<T>): Promise<T> {
+    const job = (this.queueMutations.get(id) ?? Promise.resolve()).then(operation);
+    const tail = job.then(
+      () => undefined,
+      () => undefined
+    );
+    this.queueMutations.set(id, tail);
+    void tail.then(() => {
+      if (this.queueMutations.get(id) === tail) this.queueMutations.delete(id);
+    });
+    return job;
+  }
+
+  async onApplicationShutdown(): Promise<void> {
     for (const pending of this.loading.values()) pending.invalidated = true;
     this.loading.clear();
+    while (this.queueMutations.size) await Promise.all(this.queueMutations.values());
     this.sessions.clear();
   }
 }

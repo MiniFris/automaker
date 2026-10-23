@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 597,
-    "internalEdges": 1870,
+    "files": 598,
+    "internalEdges": 1873,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -45,11 +45,12 @@
     "routes -> routes": 378,
     "routes -> services": 196,
     "routes -> types": 3,
+    "services -> core": 1,
     "services -> lib": 71,
     "services -> modules": 9,
     "services -> providers": 10,
     "services -> routes": 2,
-    "services -> services": 214,
+    "services -> services": 216,
     "services -> types": 2,
     "tests -> lib": 2
   },
@@ -6683,6 +6684,10 @@
     },
     {
       "source": "apps/server/src/services/agent-service.ts",
+      "target": "apps/server/src/services/agent/agent-session-storage.error.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent-service.ts",
       "target": "apps/server/src/services/agent/agent-session.repository.ts"
     },
     {
@@ -6706,8 +6711,16 @@
       "target": "apps/server/src/services/agent/agent-session.types.ts"
     },
     {
+      "source": "apps/server/src/services/agent/agent-session-storage.error.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
       "source": "apps/server/src/services/agent/agent-session.repository.ts",
       "target": "apps/server/src/lib/secure-fs.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-session.repository.ts",
+      "target": "apps/server/src/services/agent/agent-session-storage.error.ts"
     },
     {
       "source": "apps/server/src/services/agent/agent-session.repository.ts",
