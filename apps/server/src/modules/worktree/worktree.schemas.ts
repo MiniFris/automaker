@@ -171,6 +171,19 @@ export const WorktreeRebaseSchema = WorktreeMutationSchema.extend({
   remote: RemoteNameSchema.optional(),
 }).strict();
 
+export const WorktreeCherryPickSchema = WorktreeMutationSchema.extend({
+  commitHashes: z
+    .array(z.string().regex(/^[a-fA-F0-9]{4,64}$/))
+    .min(1)
+    .max(100),
+  options: z
+    .object({
+      noCommit: z.boolean().optional(),
+    })
+    .strict()
+    .optional(),
+}).strict();
+
 export type WorktreeProjectRequest = z.infer<typeof WorktreeProjectSchema>;
 export type WorktreeFeatureRequest = z.infer<typeof WorktreeFeatureSchema>;
 export type WorktreeFileRequest = z.infer<typeof WorktreeFileSchema>;
@@ -198,3 +211,4 @@ export type WorktreePullRequest = z.infer<typeof WorktreePullSchema>;
 export type WorktreePushRequest = z.infer<typeof WorktreePushSchema>;
 export type WorktreeSyncRequest = z.infer<typeof WorktreeSyncSchema>;
 export type WorktreeRebaseRequest = z.infer<typeof WorktreeRebaseSchema>;
+export type WorktreeCherryPickRequest = z.infer<typeof WorktreeCherryPickSchema>;

@@ -45,6 +45,7 @@ const files=()=>{if(!Array.isArray(b.files)||!b.files.length||b.files.length>100
 const branch=value=>{if(typeof value!=='string'||!value||value.startsWith('-'))bad('GIT_BRANCH_INVALID','An existing local branch is required.');git(root,'check-ref-format','refs/heads/'+value);return value;};
 const remote=value=>{if(typeof value!=='string'||!/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,249}$/.test(value))bad('GIT_REMOTE_INVALID','Remote name is invalid.');return value;};
 const stashIndex=value=>{const number=Number(value);if(!Number.isInteger(number)||number<0||number>100000)bad('GIT_STASH_INVALID','stashIndex must be a non-negative integer.');return number;};
+const commit=value=>{if(typeof value!=='string'||!/^[a-fA-F0-9]{4,64}$/.test(value))bad('GIT_COMMIT_INVALID','Commit id must be a hexadecimal object id.');const oid=optional(cwd,'rev-parse','--verify',value+'^{commit}');if(!oid)bad('GIT_COMMIT_MISSING','Commit does not exist on the selected target.');return oid;};
 const operation=()=>{const dir=path.resolve(cwd,git(cwd,'rev-parse','--git-dir').trim());return fs.existsSync(path.join(dir,'rebase-merge'))||fs.existsSync(path.join(dir,'rebase-apply'))?'rebase':fs.existsSync(path.join(dir,'MERGE_HEAD'))?'merge':fs.existsSync(path.join(dir,'CHERRY_PICK_HEAD'))?'cherry-pick':undefined;};
 const currentBranch=()=>optional(cwd,'symbolic-ref','--quiet','--short','HEAD')||bad('GIT_DETACHED_HEAD','This network operation requires a checked-out branch.');
 const conflictFiles=()=>entries(cwd).filter(x=>x.isConflicted).map(x=>x.path);
@@ -157,6 +158,9 @@ try{
  }
  else if(p.action==='rebase'){
   const onto=branch(b.ontoBranch),name=b.remote?remote(b.remote):undefined,current=currentBranch();if(name)git(cwd,'fetch',name,'--quiet');try{git(cwd,'rebase',onto);result={result:{branch:current,ontoBranch:onto,message:'Rebased successfully'}};}catch(error){const conflicts=conflictFiles();if(!conflicts.length)throw error;result={result:{branch:current,ontoBranch:onto,hasConflicts:true,conflictFiles:conflicts,aborted:false,message:'Rebase has conflicts; resolve and continue or abort.'}};}
+ }
+ else if(p.action==='cherry-pick'){
+  if(!Array.isArray(b.commitHashes)||!b.commitHashes.length||b.commitHashes.length>100)bad('GIT_COMMIT_INVALID','Select between 1 and 100 commits.');if(operation())bad('GIT_OPERATION_IN_PROGRESS','Resolve the in-progress Git operation before cherry-picking.');const hashes=b.commitHashes.map(commit),current=currentBranch(),args=['cherry-pick',...(b.options?.noCommit?['--no-commit']:[]),...hashes];try{git(cwd,...args);result={result:{cherryPicked:!b.options?.noCommit,commitHashes:b.commitHashes,branch:current,hasConflicts:false,message:b.options?.noCommit?'Staged changes from '+hashes.length+' commit(s); no commit created due to --no-commit':'Successfully cherry-picked '+hashes.length+' commit(s)'}};}catch(error){const conflicts=conflictFiles();if(!conflicts.length)throw error;let aborted=false;try{git(cwd,'cherry-pick','--abort');aborted=true;}catch{}result={result:{cherryPicked:false,commitHashes:b.commitHashes,branch:current,hasConflicts:true,conflictFiles:conflicts,aborted,message:aborted?'Cherry-pick aborted due to conflicts; no changes were applied.':'Cherry-pick conflicted and abort failed; inspect the target before retrying.'}};}
  }
  else if(p.action==='create'){
   if(cwd!==root||p.pinned)bad('GIT_PINNED_WORKSPACE','Create worktrees only from the project root.');

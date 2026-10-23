@@ -52,6 +52,7 @@ export const gitWriteActions = new Set([
   'push',
   'sync',
   'rebase',
+  'cherry-pick',
 ]);
 export function workspaceAlias(binding: ExecutionEnvironmentBinding) {
   const root = binding.ssh?.remotePath ?? binding.projectPath;

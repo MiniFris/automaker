@@ -21,6 +21,7 @@ import {
   StopTestsSchema,
   TestLogsSchema,
   WorktreeCheckoutBranchSchema,
+  WorktreeCherryPickSchema,
   WorktreeDiscardSchema,
   WorktreeMutationSchema,
   WorktreeRemoteAddSchema,
@@ -47,6 +48,7 @@ import {
   type WorktreeCommitLogRequest,
   type WorktreeCommitRequest,
   type WorktreeCheckoutBranchRequest,
+  type WorktreeCherryPickRequest,
   type WorktreeDiscardRequest,
   type WorktreeFeatureRequest,
   type WorktreeFileRequest,
@@ -335,6 +337,16 @@ export class WorktreeController {
     @Res({ passthrough: true }) response: Response
   ) {
     return this.cancel(response, (signal) => this.worktrees.rebase(body, signal));
+  }
+
+  @Post('cherry-pick')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath')
+  cherryPick(
+    @Body(new ZodValidationPipe(WorktreeCherryPickSchema)) body: WorktreeCherryPickRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.cherryPick(body, signal));
   }
 
   @Post('commit-log')

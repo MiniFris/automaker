@@ -15,6 +15,7 @@ import type {
   WorktreeCommitLogRequest,
   WorktreeCommitRequest,
   WorktreeCheckoutBranchRequest,
+  WorktreeCherryPickRequest,
   WorktreeDiscardRequest,
   WorktreeFeatureRequest,
   WorktreeFileRequest,
@@ -148,6 +149,33 @@ export class WorktreeApplicationService {
 
   rebase(input: WorktreeRebaseRequest, signal: AbortSignal) {
     return this.runPath('rebase', input.worktreePath, input, signal);
+  }
+
+  async cherryPick(input: WorktreeCherryPickRequest, signal: AbortSignal) {
+    this.events.emit('cherry-pick:started', {
+      worktreePath: input.worktreePath,
+      commitHashes: input.commitHashes,
+    });
+    try {
+      const response = await this.runPath('cherry-pick', input.worktreePath, input, signal);
+      const result = response.result as {
+        cherryPicked?: boolean;
+        commitHashes?: string[];
+        branch?: string;
+        hasConflicts?: boolean;
+        aborted?: boolean;
+      };
+      this.events.emit(result.hasConflicts ? 'cherry-pick:conflict' : 'cherry-pick:success', {
+        worktreePath: input.worktreePath,
+        commitHashes: input.commitHashes,
+        branch: result.branch,
+        aborted: result.aborted,
+      });
+      return response;
+    } catch (error) {
+      this.events.emit('cherry-pick:failure', { error: this.message(error) });
+      throw error;
+    }
   }
 
   async commitLog(input: WorktreeCommitLogRequest, signal: AbortSignal) {

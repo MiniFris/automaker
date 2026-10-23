@@ -206,6 +206,23 @@ describe.skipIf(process.platform !== 'linux')('fixed target-side Git worker with
       ontoBranch: 'main',
     });
   });
+  it('cherry-picks verified target commits and aborts conflicts atomically', async () => {
+    expect((await run('checkout-branch', { branchName: 'source' })).success).toBe(true);
+    await fs.writeFile(path.join(root, 'picked.txt'), 'picked\n');
+    expect((await run('commit', { message: 'pick me', files: ['picked.txt'] })).success).toBe(true);
+    const oid = (await environment.exec('git rev-parse HEAD', active())).output.trim();
+    expect((await run('switch-branch', { branchName: 'main' })).success).toBe(true);
+    expect((await run('cherry-pick', { commitHashes: [oid] })).result).toMatchObject({
+      cherryPicked: true,
+      branch: 'main',
+      hasConflicts: false,
+    });
+    expect(await fs.readFile(path.join(root, 'picked.txt'), 'utf8')).toBe('picked\n');
+    expect(await run('cherry-pick', { commitHashes: ['deadbeef'] })).toMatchObject({
+      success: false,
+      code: 'GIT_COMMIT_MISSING',
+    });
+  });
   it('does not invoke external diff commands or fsmonitor hooks', async () => {
     await environment.exec(
       "git config diff.external 'touch diff-leak' && git config core.fsmonitor 'touch monitor-leak'",

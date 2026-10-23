@@ -91,4 +91,30 @@ describe('WorktreeApplicationService', () => {
     ).rejects.toMatchObject({ code: 'GIT_PROJECT_BUSY' });
     expect(git.run).not.toHaveBeenCalled();
   });
+
+  it('emits cherry-pick lifecycle events around target execution', async () => {
+    const git = {
+      resolveOrLocal: vi.fn().mockResolvedValue(target),
+      run: vi.fn().mockResolvedValue({
+        success: true,
+        result: { cherryPicked: true, branch: 'main', hasConflicts: false },
+      }),
+    };
+    const events = { emit: vi.fn() };
+    const service = new WorktreeApplicationService(
+      git as never,
+      events as never,
+      { isProjectRunning: vi.fn().mockResolvedValue(false) } as never
+    );
+
+    await service.cherryPick(
+      { worktreePath: '/project', commitHashes: ['abcd'] },
+      new AbortController().signal
+    );
+
+    expect(events.emit.mock.calls.map(([name]) => name)).toEqual([
+      'cherry-pick:started',
+      'cherry-pick:success',
+    ]);
+  });
 });
