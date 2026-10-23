@@ -3,7 +3,7 @@
   "sourceRoot": "apps/ui/src",
   "summary": {
     "references": 290,
-    "serverEndpoints": 305,
+    "serverEndpoints": 307,
     "endpointsWithDetectedConsumers": 274
   },
   "references": [
@@ -2944,6 +2944,16 @@
           "line": 582
         }
       ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/health/live",
+      "consumers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/health/ready",
+      "consumers": []
     },
     {
       "method": "GET",

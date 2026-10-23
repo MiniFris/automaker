@@ -8,95 +8,95 @@ logging, eventing и lifecycle layer.
 
 ## 3.1. ConfigModule
 
-- [ ] Создать schema всех runtime variables с defaults и ограничениями.
-- [ ] Валидировать `PORT`, `HOST`, `DATA_DIR`, CORS, auth, terminal и debug flags.
-- [ ] Ввести typed config namespaces: `server`, `auth`, `storage`, `terminal`,
+- [x] Создать schema всех runtime variables с defaults и ограничениями.
+- [x] Валидировать `PORT`, `HOST`, `DATA_DIR`, CORS, auth, terminal и debug flags.
+- [x] Ввести typed config namespaces: `server`, `auth`, `storage`, `terminal`,
       `providers`, `execution`, `preview`.
-- [ ] Создать `RuntimePathsService` вместо рассеянных `process.cwd()`.
-- [ ] Различить build-time UI env и server runtime env.
-- [ ] Запретить новые прямые `process.env` через ESLint restriction.
-- [ ] Мигрировать старые обращения постепенно; временно разрешить их только в legacy.
+- [x] Создать `RuntimePathsService` вместо рассеянных `process.cwd()`.
+- [x] Различить build-time UI env и server runtime env.
+- [x] Запретить новые прямые `process.env` через ESLint restriction.
+- [x] Мигрировать старые обращения постепенно; временно разрешить их только в legacy.
 
 Config validation не должна требовать credentials невыбранного provider.
 
 ## 3.2. AuthModule
 
-- [ ] Перенести session/API-key проверку в глобальный guard.
-- [ ] Добавить metadata decorator `@Public()`.
-- [ ] Пометить health, auth и setup routes в соответствии с текущим поведением.
-- [ ] Сохранить cookie names, expiration и logout behavior.
-- [ ] Вынести rate limiting login attempts в injectable store.
-- [ ] Вынести WebSocket token issuance/validation в общий auth service.
-- [ ] Добавить timing-safe comparisons и redaction секретов в logs.
+- [x] Перенести session/API-key проверку в глобальный guard.
+- [x] Добавить metadata decorator `@Public()`.
+- [x] Пометить health, auth и setup routes в соответствии с текущим поведением.
+- [x] Сохранить cookie names, expiration и logout behavior.
+- [x] Вынести rate limiting login attempts в injectable store.
+- [x] Вынести WebSocket token issuance/validation в общий auth service.
+- [x] Добавить timing-safe comparisons и redaction секретов в logs.
 
 Не переносить connection-level WS auth в `handleConnection`: клиент не должен
 успеть отправить сообщения до завершения проверки upgrade.
 
 ## 3.3. SecurityModule
 
-- [ ] Обернуть `initAllowedPaths`, `validatePath` и secure filesystem в providers.
-- [ ] Ввести `ProjectPathPipe`/`AllowedPathGuard` для body/query/params.
-- [ ] Сохранить отдельное доверие к `DATA_DIR`.
-- [ ] Не нормализовать remote SSH paths как локальные filesystem paths.
-- [ ] Добавить traversal, symlink, Windows drive и UNC tests.
-- [ ] Добавить audit logging для rejected destructive operations без утечки secrets.
+- [x] Обернуть `initAllowedPaths`, `validatePath` и secure filesystem в providers.
+- [x] Ввести `ProjectPathPipe`/`AllowedPathGuard` для body/query/params.
+- [x] Сохранить отдельное доверие к `DATA_DIR`.
+- [x] Не нормализовать remote SSH paths как локальные filesystem paths.
+- [x] Добавить traversal, symlink, Windows drive и UNC tests.
+- [x] Добавить audit logging для rejected destructive operations без утечки secrets.
 
 ## 3.4. Validation и contracts
 
-- [ ] Подключить schema-based global validation.
-- [ ] Включить rejection неизвестных полей на security-sensitive requests.
-- [ ] Не включать глобальное coercion без анализа query compatibility.
-- [ ] Создать reusable schemas для project path, feature id, provider id,
+- [x] Подключить schema-based global validation.
+- [x] Включить rejection неизвестных полей на security-sensitive requests.
+- [x] Не включать глобальное coercion без анализа query compatibility.
+- [x] Создать reusable schemas для project path, feature id, provider id,
       execution selection и pagination.
-- [ ] Response validation включать сначала в tests, затем выборочно в production.
+- [x] Response validation включать сначала в tests, затем выборочно в production.
 
 ## 3.5. Exception handling
 
-- [ ] Создать domain errors: validation, not-found, conflict, forbidden,
+- [x] Создать domain errors: validation, not-found, conflict, forbidden,
       unavailable, timeout, cancellation, unknown-outcome.
-- [ ] Создать global exception filter с legacy-compatible envelope.
-- [ ] Добавить stable optional `errorCode` без удаления старого `error`.
-- [ ] Не возвращать stack, raw provider output, environment secrets и SSH details.
-- [ ] Сопоставить filesystem/Git/provider errors с текущими status codes.
-- [ ] Логировать unexpected errors один раз с correlation id.
+- [x] Создать global exception filter с legacy-compatible envelope.
+- [x] Добавить stable optional `errorCode` без удаления старого `error`.
+- [x] Не возвращать stack, raw provider output, environment secrets и SSH details.
+- [x] Сопоставить filesystem/Git/provider errors с текущими status codes.
+- [x] Логировать unexpected errors один раз с correlation id.
 
 ## 3.6. Logging и observability
 
-- [ ] Адаптировать существующий `@automaker/utils` logger к Nest `LoggerService`.
-- [ ] Добавить request/correlation id для HTTP, WS session и background job.
-- [ ] Сохранить runtime change server log level.
-- [ ] Заменить `morgan` только после equivalence tests.
-- [ ] Добавить duration/status/module/errorCode к request logs.
-- [ ] Redact cookies, API keys, auth headers, target credentials и prompts по policy.
-- [ ] Подготовить metrics interface, не привязываясь к конкретному SaaS.
+- [x] Адаптировать существующий `@automaker/utils` logger к Nest `LoggerService`.
+- [x] Добавить request/correlation id для HTTP, WS session и background job.
+- [x] Сохранить runtime change server log level.
+- [x] Заменить `morgan` только после equivalence tests.
+- [x] Добавить duration/status/module/errorCode к request logs.
+- [x] Redact cookies, API keys, auth headers, target credentials и prompts по policy.
+- [x] Подготовить metrics interface, не привязываясь к конкретному SaaS.
 
 ## 3.7. EventingModule
 
-- [ ] Определить typed `ApplicationEventMap` вместо `payload: unknown`.
-- [ ] Создать `EventBus` interface и in-process adapter.
-- [ ] Сохранить synchronous ordering там, где на него полагается код.
-- [ ] Изолировать ошибку одного subscriber.
-- [ ] Ввести unsubscribe/dispose lifecycle.
-- [ ] Создать compatibility adapter к текущему WebSocket broadcaster.
-- [ ] Не добавлять Redis/NATS до появления требования multi-instance.
+- [x] Определить typed `ApplicationEventMap` вместо `payload: unknown`.
+- [x] Создать `EventBus` interface и in-process adapter.
+- [x] Сохранить synchronous ordering там, где на него полагается код.
+- [x] Изолировать ошибку одного subscriber.
+- [x] Ввести unsubscribe/dispose lifecycle.
+- [x] Создать compatibility adapter к текущему WebSocket broadcaster.
+- [x] Не добавлять Redis/NATS до появления требования multi-instance.
 
 ## 3.8. LifecycleModule
 
-- [ ] Определить общий contract `start`, `stop`, `health` для supervisors.
-- [ ] Перевести startup orchestration на Nest lifecycle hooks.
-- [ ] Упорядочить shutdown: запрет новых jobs → mark interrupted → stop agents →
+- [x] Определить общий contract `start`, `stop`, `health` для supervisors.
+- [x] Перевести startup orchestration на Nest lifecycle hooks.
+- [x] Упорядочить shutdown: запрет новых jobs → mark interrupted → stop agents →
       stop tests/dev servers/PTY → close sockets → flush writes → close HTTP.
-- [ ] Сохранить общий deadline и логировать незавершённые resources.
-- [ ] Все intervals/timeouts регистрировать у owner service.
-- [ ] Проверить повторный shutdown и partial startup failure.
+- [x] Сохранить общий deadline и логировать незавершённые resources.
+- [x] Все intervals/timeouts регистрировать у owner service.
+- [x] Проверить повторный shutdown и partial startup failure.
 
 ## 3.9. HealthModule
 
-- [ ] Разделить `/health/live` и `/health/ready`, сохранив `/api/health` alias.
-- [ ] Readiness учитывает обязательный startup, но не требует доступности всех
+- [x] Разделить `/health/live` и `/health/ready`, сохранив `/api/health` alias.
+- [x] Readiness учитывает обязательный startup, но не требует доступности всех
       необязательных AI providers.
-- [ ] Detailed health остаётся protected.
-- [ ] Не выполнять тяжёлый Docker/SSH/provider probe на каждый health request.
+- [x] Detailed health остаётся protected.
+- [x] Не выполнять тяжёлый Docker/SSH/provider probe на каждый health request.
 
 ## Тесты
 
@@ -116,3 +116,24 @@ Config validation не должна требовать credentials невыбр�
 - Cross-cutting contract suite проходит до начала массового переноса routes.
 - Полный checkpoint этапа 3 успешно выполнен; его результат и обновлённый checklist
   зафиксированы завершающим коммитом в единственной migration-ветке.
+
+## Результат checkpoint
+
+- Runtime configuration валидируется Zod до построения Nest graph; config и paths
+  доступны через typed DI tokens, а новые Nest-модули защищены ESLint от прямого
+  чтения `process.env` и `process.cwd()`.
+- Глобальные auth guard и exception filter проверены на новом protected
+  `/api/health/detailed`; public live/ready probes используют `@Public()`. Cookie,
+  API key и invalid-token matrix сохраняет прежние коды ответа.
+- Общий platform middleware применяет preview policy, CORS, content-type, JSON limit
+  и cookie parsing до выбора Nest/legacy route owner.
+- Security providers, strict Zod request schemas, stable domain error codes,
+  correlation ids, redaction и metrics port готовы для следующих controllers.
+- Typed synchronous EventBus оборачивает текущий broadcaster; subscriptions и auth
+  cleanup timer имеют DI lifecycle. Supervisor coordinator проверен на обратный
+  порядок, повторный shutdown и общий 30-секундный deadline.
+- Route inventory теперь извлекает metadata как из Express routers, так и из Nest
+  controllers: 307 endpoints, включая три Nest health endpoints.
+- Успешны server build/lint, 2790 unit tests (40 skipped), 218 contract tests,
+  8 integration tests, 1171 package/UI tests, UI typecheck и production Web/Electron
+  build. Lockfile и generated route inventory прошли проверки.

@@ -22,4 +22,5 @@ export const LEGACY_SERVICES = {
   terminal: Symbol('LEGACY_TERMINAL_SERVICE'),
   pipeline: Symbol('LEGACY_PIPELINE_SERVICE'),
   eventHook: Symbol('LEGACY_EVENT_HOOK_SERVICE'),
+  loginAttemptStore: Symbol('LEGACY_LOGIN_ATTEMPT_STORE'),
 } as const;

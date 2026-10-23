@@ -34,8 +34,13 @@ import { authMiddleware, validateWsConnectionToken, checkRawAuthentication } fro
 import { requireJsonContentType } from './middleware/require-json-content-type.js';
 import { isRequestLoggingEnabled, setRequestLoggingEnabled } from './lib/request-logging-state.js';
 import { createAuthRoutes } from './routes/auth/index.js';
+import { LoginAttemptStore } from './core/auth/login-attempt.store.js';
+import {
+  createCorrelationId,
+  runWithCorrelationContext,
+} from './core/observability/request-context.js';
 import { createFsRoutes } from './routes/fs/index.js';
-import { createHealthRoutes, createDetailedHandler } from './routes/health/index.js';
+import { createHealthRoutes } from './routes/health/index.js';
 import { createAgentRoutes } from './routes/agent/index.js';
 import { createSessionsRoutes } from './routes/sessions/index.js';
 import { createFeaturesRoutes } from './routes/features/index.js';
@@ -251,6 +256,7 @@ export interface LegacyServiceOverrides {
   terminalService: ReturnType<typeof getTerminalService>;
   pipelineService: typeof defaultPipelineService;
   eventHookService: typeof defaultEventHookService;
+  loginAttemptStore: LoginAttemptStore;
 }
 
 export interface LegacyApplicationOptions {
@@ -418,6 +424,7 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
 
   const pipelineService = serviceOverrides.pipelineService ?? defaultPipelineService;
   const eventHookService = serviceOverrides.eventHookService ?? defaultEventHookService;
+  const loginAttemptStore = serviceOverrides.loginAttemptStore ?? new LoginAttemptStore();
 
   // Initialize services
   async function initializeServices(): Promise<void> {
@@ -525,8 +532,9 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   ): Promise<void> {
     let timeout: NodeJS.Timeout | undefined;
     try {
+      const correlationId = createCorrelationId(`startup:${name}:${Date.now()}`);
       await Promise.race([
-        task(),
+        runWithCorrelationContext(correlationId, task),
         new Promise<never>((_resolve, reject) => {
           timeout = setTimeout(
             () => reject(new Error(`Startup task "${name}" timed out`)),
@@ -583,14 +591,11 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
 
   // Mount API routes - health, auth, and setup are unauthenticated
   app.use('/api/health', createHealthRoutes());
-  app.use('/api/auth', createAuthRoutes());
+  app.use('/api/auth', createAuthRoutes(loginAttemptStore));
   app.use('/api/setup', createSetupRoutes(settingsService));
 
   // Apply authentication to all other routes
   app.use('/api', authMiddleware);
-
-  // Protected health endpoint with detailed info
-  app.get('/api/health/detailed', createDetailedHandler());
 
   app.use('/api/fs', createFsRoutes(events));
   app.use('/api/agent', createAgentRoutes(agentService, events));
@@ -710,8 +715,13 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   });
 
   // Events WebSocket connection handler
-  wss.on('connection', (ws: WebSocket) => {
-    logger.info('Client connected, ready state:', ws.readyState);
+  wss.on('connection', (ws: WebSocket, request: import('http').IncomingMessage) => {
+    const correlationId = createCorrelationId(
+      typeof request.headers['x-request-id'] === 'string'
+        ? request.headers['x-request-id']
+        : undefined
+    );
+    logger.info('Client connected', { correlationId, readyState: ws.readyState });
 
     // Subscribe to all events and forward to this client
     const unsubscribe = events.subscribe((type, payload) => {
@@ -724,6 +734,7 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
       const log = isHighFrequency ? logger.debug.bind(logger) : logger.info.bind(logger);
 
       log('Event received:', {
+        correlationId,
         type,
         hasPayload: !!payload,
         wsReadyState: ws.readyState,
@@ -772,6 +783,9 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
 
   // Terminal WebSocket connection handler
   terminalWss.on('connection', (ws: WebSocket, req: import('http').IncomingMessage) => {
+    const correlationId = createCorrelationId(
+      typeof req.headers['x-request-id'] === 'string' ? req.headers['x-request-id'] : undefined
+    );
     // Parse URL to get session ID and token
     const url = new URL(req.url || '', `http://${req.headers.host}`);
     const sessionId = url.searchParams.get('sessionId');
@@ -814,7 +828,7 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
       return;
     }
 
-    logger.info(`Client connected to session ${sessionId}`);
+    logger.info(`Client connected to session ${sessionId}`, { correlationId });
     const allowInitialCommand = claimTerminalStartup(session);
 
     // Track this connection
@@ -1165,6 +1179,7 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
     terminalService,
     pipelineService,
     eventHookService,
+    loginAttemptStore,
   };
 
   return {

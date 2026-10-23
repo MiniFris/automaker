@@ -2,11 +2,16 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 460,
-    "internalEdges": 1382,
+    "files": 496,
+    "internalEdges": 1443,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
+    "core -> core": 38,
+    "core -> lib": 5,
+    "core -> middleware": 1,
+    "core -> services": 1,
+    "legacy -> core": 1,
     "legacy -> legacy": 3,
     "legacy -> root": 2,
     "lib -> lib": 3,
@@ -14,12 +19,14 @@
     "providers -> lib": 5,
     "providers -> providers": 98,
     "providers -> services": 21,
+    "root -> core": 14,
     "root -> legacy": 2,
     "root -> lib": 3,
     "root -> middleware": 1,
     "root -> root": 4,
     "root -> routes": 32,
     "root -> services": 22,
+    "routes -> core": 1,
     "routes -> lib": 128,
     "routes -> middleware": 13,
     "routes -> providers": 30,
@@ -117,9 +124,11 @@
       "apps/server/src/services/zai-usage-service.ts"
     ],
     "processCwd": [
+      "apps/server/src/core/config/runtime-config.ts",
       "apps/server/src/legacy-application.ts",
       "apps/server/src/lib/auth-utils.ts",
       "apps/server/src/lib/codex-auth.ts",
+      "apps/server/src/main.ts",
       "apps/server/src/providers/cli-provider.ts",
       "apps/server/src/providers/codex-provider.ts",
       "apps/server/src/providers/copilot-provider.ts",
@@ -227,16 +236,16 @@
       "apps/server/src/services/worktree-resolver.ts"
     ],
     "timers": [
+      "apps/server/src/core/auth/auth.service.ts",
+      "apps/server/src/core/lifecycle/supervisor-coordinator.service.ts",
       "apps/server/src/legacy-application.ts",
       "apps/server/src/lib/auth-utils.ts",
-      "apps/server/src/lib/auth.ts",
       "apps/server/src/lib/error-handler.ts",
       "apps/server/src/lib/git.ts",
       "apps/server/src/providers/openai-compatible/agent-loop.ts",
       "apps/server/src/providers/openai-compatible/shell-tool.ts",
       "apps/server/src/providers/openai-compatible/transport.ts",
       "apps/server/src/providers/remote-sdk-worker.ts",
-      "apps/server/src/routes/auth/index.ts",
       "apps/server/src/routes/backlog-plan/generate-plan.ts",
       "apps/server/src/routes/event-history/routes/replay.ts",
       "apps/server/src/routes/github/routes/list-comments.ts",
@@ -298,43 +307,44 @@
     "@automaker/dependency-resolver": 1,
     "@automaker/git-utils": 12,
     "@automaker/model-resolver": 19,
-    "@automaker/platform": 79,
+    "@automaker/platform": 80,
     "@automaker/prompts": 2,
-    "@automaker/types": 150,
-    "@automaker/utils": 163,
+    "@automaker/types": 152,
+    "@automaker/utils": 167,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 5,
-    "@nestjs/core": 1,
+    "@nestjs/common": 28,
+    "@nestjs/core": 6,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
     "ajv": 4,
     "child_process": 45,
     "cookie": 1,
-    "cookie-parser": 1,
-    "cors": 1,
+    "cookie-parser": 2,
+    "cors": 2,
     "crypto": 5,
     "dotenv": 1,
     "events": 1,
-    "express": 270,
+    "express": 276,
     "fs": 23,
     "fs/promises": 18,
     "http": 1,
     "morgan": 1,
     "net": 1,
     "node-pty": 2,
+    "node:async_hooks": 1,
     "node:child_process": 7,
-    "node:crypto": 18,
-    "node:fs": 3,
+    "node:crypto": 19,
+    "node:fs": 4,
     "node:fs/promises": 13,
     "node:http": 3,
     "node:net": 2,
     "node:os": 4,
-    "node:path": 18,
-    "node:perf_hooks": 1,
+    "node:path": 21,
+    "node:perf_hooks": 2,
     "node:stream": 4,
     "node:stream/web": 1,
     "node:string_decoder": 3,
@@ -349,9 +359,54 @@
     "util": 29,
     "vitest": 1,
     "ws": 1,
-    "yaml": 1
+    "yaml": 1,
+    "zod": 3
   },
   "edges": [
+    {
+      "source": "apps/server/src/app.module.ts",
+      "target": "apps/server/src/core/auth/index.ts"
+    },
+    {
+      "source": "apps/server/src/app.module.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/app.module.ts",
+      "target": "apps/server/src/core/errors/index.ts"
+    },
+    {
+      "source": "apps/server/src/app.module.ts",
+      "target": "apps/server/src/core/eventing/index.ts"
+    },
+    {
+      "source": "apps/server/src/app.module.ts",
+      "target": "apps/server/src/core/health/health.module.ts"
+    },
+    {
+      "source": "apps/server/src/app.module.ts",
+      "target": "apps/server/src/core/http/platform-middleware.ts"
+    },
+    {
+      "source": "apps/server/src/app.module.ts",
+      "target": "apps/server/src/core/lifecycle/lifecycle.module.ts"
+    },
+    {
+      "source": "apps/server/src/app.module.ts",
+      "target": "apps/server/src/core/observability/observability.module.ts"
+    },
+    {
+      "source": "apps/server/src/app.module.ts",
+      "target": "apps/server/src/core/observability/request-context.ts"
+    },
+    {
+      "source": "apps/server/src/app.module.ts",
+      "target": "apps/server/src/core/security/index.ts"
+    },
+    {
+      "source": "apps/server/src/app.module.ts",
+      "target": "apps/server/src/core/validation/validation.module.ts"
+    },
     {
       "source": "apps/server/src/app.module.ts",
       "target": "apps/server/src/legacy-application.ts"
@@ -363,6 +418,194 @@
     {
       "source": "apps/server/src/app.module.ts",
       "target": "apps/server/src/legacy/legacy.module.ts"
+    },
+    {
+      "source": "apps/server/src/core/auth/auth.guard.ts",
+      "target": "apps/server/src/core/auth/auth.service.ts"
+    },
+    {
+      "source": "apps/server/src/core/auth/auth.guard.ts",
+      "target": "apps/server/src/core/auth/public.decorator.ts"
+    },
+    {
+      "source": "apps/server/src/core/auth/auth.guard.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/core/auth/auth.guard.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/core/auth/auth.guard.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/core/auth/auth.module.ts",
+      "target": "apps/server/src/core/auth/auth.guard.ts"
+    },
+    {
+      "source": "apps/server/src/core/auth/auth.module.ts",
+      "target": "apps/server/src/core/auth/auth.service.ts"
+    },
+    {
+      "source": "apps/server/src/core/auth/auth.module.ts",
+      "target": "apps/server/src/core/auth/login-attempt.store.ts"
+    },
+    {
+      "source": "apps/server/src/core/auth/auth.service.ts",
+      "target": "apps/server/src/lib/auth.ts"
+    },
+    {
+      "source": "apps/server/src/core/config/runtime-config.module.ts",
+      "target": "apps/server/src/core/config/runtime-config.tokens.ts"
+    },
+    {
+      "source": "apps/server/src/core/config/runtime-config.module.ts",
+      "target": "apps/server/src/core/config/runtime-config.ts"
+    },
+    {
+      "source": "apps/server/src/core/config/runtime-config.module.ts",
+      "target": "apps/server/src/core/config/runtime-paths.service.ts"
+    },
+    {
+      "source": "apps/server/src/core/config/runtime-paths.service.ts",
+      "target": "apps/server/src/core/config/runtime-config.tokens.ts"
+    },
+    {
+      "source": "apps/server/src/core/config/runtime-paths.service.ts",
+      "target": "apps/server/src/core/config/runtime-config.ts"
+    },
+    {
+      "source": "apps/server/src/core/errors/errors.module.ts",
+      "target": "apps/server/src/core/errors/global-exception.filter.ts"
+    },
+    {
+      "source": "apps/server/src/core/errors/global-exception.filter.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/core/errors/global-exception.filter.ts",
+      "target": "apps/server/src/core/observability/request-context.ts"
+    },
+    {
+      "source": "apps/server/src/core/eventing/eventing.module.ts",
+      "target": "apps/server/src/core/eventing/event-bus.ts"
+    },
+    {
+      "source": "apps/server/src/core/eventing/eventing.module.ts",
+      "target": "apps/server/src/core/eventing/legacy-event-bus.adapter.ts"
+    },
+    {
+      "source": "apps/server/src/core/eventing/eventing.module.ts",
+      "target": "apps/server/src/lib/events.ts"
+    },
+    {
+      "source": "apps/server/src/core/eventing/legacy-event-bus.adapter.ts",
+      "target": "apps/server/src/core/eventing/event-bus.ts"
+    },
+    {
+      "source": "apps/server/src/core/eventing/legacy-event-bus.adapter.ts",
+      "target": "apps/server/src/lib/events.ts"
+    },
+    {
+      "source": "apps/server/src/core/health/health.controller.ts",
+      "target": "apps/server/src/core/auth/index.ts"
+    },
+    {
+      "source": "apps/server/src/core/health/health.controller.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/core/health/health.controller.ts",
+      "target": "apps/server/src/core/lifecycle/readiness-state.service.ts"
+    },
+    {
+      "source": "apps/server/src/core/health/health.controller.ts",
+      "target": "apps/server/src/lib/version.ts"
+    },
+    {
+      "source": "apps/server/src/core/health/health.module.ts",
+      "target": "apps/server/src/core/health/health.controller.ts"
+    },
+    {
+      "source": "apps/server/src/core/http/platform-middleware.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/core/http/platform-middleware.ts",
+      "target": "apps/server/src/middleware/require-json-content-type.ts"
+    },
+    {
+      "source": "apps/server/src/core/http/platform-middleware.ts",
+      "target": "apps/server/src/services/execution-environment/preview-policy.ts"
+    },
+    {
+      "source": "apps/server/src/core/lifecycle/lifecycle.module.ts",
+      "target": "apps/server/src/core/lifecycle/readiness-state.service.ts"
+    },
+    {
+      "source": "apps/server/src/core/lifecycle/lifecycle.module.ts",
+      "target": "apps/server/src/core/lifecycle/supervisor-coordinator.service.ts"
+    },
+    {
+      "source": "apps/server/src/core/lifecycle/supervisor-coordinator.service.ts",
+      "target": "apps/server/src/core/lifecycle/supervisor.ts"
+    },
+    {
+      "source": "apps/server/src/core/observability/observability.module.ts",
+      "target": "apps/server/src/core/observability/metrics.ts"
+    },
+    {
+      "source": "apps/server/src/core/security/allowed-path.guard.ts",
+      "target": "apps/server/src/core/errors/index.ts"
+    },
+    {
+      "source": "apps/server/src/core/security/allowed-path.guard.ts",
+      "target": "apps/server/src/core/security/security.service.ts"
+    },
+    {
+      "source": "apps/server/src/core/security/project-path.pipe.ts",
+      "target": "apps/server/src/core/errors/index.ts"
+    },
+    {
+      "source": "apps/server/src/core/security/project-path.pipe.ts",
+      "target": "apps/server/src/core/security/security.service.ts"
+    },
+    {
+      "source": "apps/server/src/core/security/security.module.ts",
+      "target": "apps/server/src/core/security/allowed-path.guard.ts"
+    },
+    {
+      "source": "apps/server/src/core/security/security.module.ts",
+      "target": "apps/server/src/core/security/project-path.pipe.ts"
+    },
+    {
+      "source": "apps/server/src/core/security/security.module.ts",
+      "target": "apps/server/src/core/security/security.service.ts"
+    },
+    {
+      "source": "apps/server/src/core/security/security.module.ts",
+      "target": "apps/server/src/lib/secure-fs.ts"
+    },
+    {
+      "source": "apps/server/src/core/security/security.service.ts",
+      "target": "apps/server/src/core/observability/request-context.ts"
+    },
+    {
+      "source": "apps/server/src/core/validation/validation.module.ts",
+      "target": "apps/server/src/core/validation/zod-validation.pipe.ts"
+    },
+    {
+      "source": "apps/server/src/core/validation/zod-validation.pipe.ts",
+      "target": "apps/server/src/core/errors/index.ts"
+    },
+    {
+      "source": "apps/server/src/legacy-application.ts",
+      "target": "apps/server/src/core/auth/login-attempt.store.ts"
+    },
+    {
+      "source": "apps/server/src/legacy-application.ts",
+      "target": "apps/server/src/core/observability/request-context.ts"
     },
     {
       "source": "apps/server/src/legacy-application.ts",
@@ -606,6 +849,10 @@
     },
     {
       "source": "apps/server/src/legacy/legacy.module.ts",
+      "target": "apps/server/src/core/lifecycle/readiness-state.service.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/legacy.module.ts",
       "target": "apps/server/src/legacy-application.ts"
     },
     {
@@ -635,6 +882,10 @@
     {
       "source": "apps/server/src/main.ts",
       "target": "apps/server/src/app.module.ts"
+    },
+    {
+      "source": "apps/server/src/main.ts",
+      "target": "apps/server/src/core/config/index.ts"
     },
     {
       "source": "apps/server/src/main.ts",
@@ -1499,6 +1750,10 @@
     {
       "source": "apps/server/src/routes/app-spec/sync-spec.ts",
       "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/routes/auth/index.ts",
+      "target": "apps/server/src/core/auth/login-attempt.store.ts"
     },
     {
       "source": "apps/server/src/routes/auth/index.ts",

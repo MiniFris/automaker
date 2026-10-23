@@ -40,6 +40,12 @@ export const ROUTE_GROUP_OWNERS: Readonly<Record<string, RouteOwner>> = {
   projects: 'legacy',
 };
 
+export const NEST_OWNED_ROUTE_PATHS = new Set([
+  '/api/health/live',
+  '/api/health/ready',
+  '/api/health/detailed',
+]);
+
 export function getApiRouteGroup(request: Pick<Request, 'originalUrl'>): string | undefined {
   const pathname = request.originalUrl.split(/[?#]/, 1)[0];
   const match = /^\/api(?:\/([^/]+))?(?:\/|$)/.exec(pathname);
@@ -62,7 +68,8 @@ export class LegacyRouterMiddleware implements NestMiddleware {
 
   use(request: Request, response: Response, next: NextFunction): void {
     const group = getApiRouteGroup(request);
-    if (group && ROUTE_GROUP_OWNERS[group] === 'nest') {
+    const pathname = request.originalUrl.split(/[?#]/, 1)[0];
+    if (NEST_OWNED_ROUTE_PATHS.has(pathname) || (group && ROUTE_GROUP_OWNERS[group] === 'nest')) {
       next();
       return;
     }

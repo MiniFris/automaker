@@ -1,0 +1,2 @@
+export const RUNTIME_CONFIG = Symbol('RUNTIME_CONFIG');
+export const WORKING_DIRECTORY = Symbol('WORKING_DIRECTORY');

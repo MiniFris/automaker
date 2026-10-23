@@ -22,6 +22,7 @@ export default defineConfig({
     name: 'server-unit',
     reporters: ['default', 'hanging-process'],
     include: [
+      'tests/unit/core/**/*.test.ts',
       'tests/unit/lib/**/*.test.ts',
       'tests/unit/providers/**/*.test.ts',
       'tests/unit/services/**/*.test.ts',

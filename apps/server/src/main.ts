@@ -9,6 +9,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import { createLogger } from '@automaker/utils';
 
 import { AppModule } from './app.module.js';
+import { parseRuntimeConfig } from './core/config/index.js';
 import {
   createLegacyApplication,
   type LegacyApplication,
@@ -40,6 +41,8 @@ export interface NestApplicationFactoryOptions extends Pick<
   host?: string;
   port?: number;
   enableShutdownHooks?: boolean;
+  environment?: NodeJS.ProcessEnv;
+  workingDirectory?: string;
 }
 
 export interface AutomakerNestApplication {
@@ -53,9 +56,14 @@ export interface AutomakerNestApplication {
 export async function createNestApplication(
   options: NestApplicationFactoryOptions = {}
 ): Promise<AutomakerNestApplication> {
-  const host = options.host ?? process.env.HOST ?? DEFAULT_HOST;
-  const port = options.port ?? Number.parseInt(process.env.PORT ?? String(DEFAULT_PORT), 10);
-  const dataDirectory = options.dataDir ?? process.env.DATA_DIR ?? './data';
+  const environment = { ...(options.environment ?? process.env) };
+  if (options.host !== undefined) environment.HOST = options.host;
+  if (options.port !== undefined) environment.PORT = String(options.port);
+  if (options.dataDir !== undefined) environment.DATA_DIR = options.dataDir;
+  const workingDirectory = options.workingDirectory ?? process.cwd();
+  const config = parseRuntimeConfig(environment, workingDirectory);
+  const { host, port } = config.server;
+  const dataDirectory = config.storage.dataDirectory;
 
   const expressApplication = express();
   const httpServer = createServer(expressApplication);
@@ -69,7 +77,7 @@ export async function createNestApplication(
   });
   const adapter = new SharedHttpServerExpressAdapter(expressApplication, httpServer);
   const app = await NestFactory.create<NestExpressApplication>(
-    AppModule.register(legacy, dataDirectory),
+    AppModule.register(legacy, config, workingDirectory),
     adapter,
     {
       bodyParser: false,
@@ -87,7 +95,6 @@ export async function createNestApplication(
 
   try {
     await app.init();
-    await legacy.initialize();
   } catch (error) {
     await app.close().catch((closeError) => {
       logger.error('Failed to clean up a partially initialized Nest application', closeError);

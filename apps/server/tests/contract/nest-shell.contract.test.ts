@@ -54,6 +54,7 @@ describe('Nest shell and legacy bridge contract', () => {
       terminal: services.terminalService,
       pipeline: services.pipelineService,
       eventHook: services.eventHookService,
+      loginAttemptStore: services.loginAttemptStore,
     };
 
     for (const [name, token] of Object.entries(LEGACY_SERVICES)) {
@@ -75,6 +76,49 @@ describe('Nest shell and legacy bridge contract', () => {
 
     expect(response.status).toBe(200);
     expect(HealthResponseSchema.parse(await response.json())).toMatchObject({ status: 'ok' });
+
+    const live = await fetch(`http://127.0.0.1:${address.port}/api/health/live`, {
+      headers: { 'x-request-id': 'stage-3-live-check' },
+    });
+    expect(live.status).toBe(200);
+    expect(live.headers.get('x-request-id')).toBe('stage-3-live-check');
+    expect(await live.json()).toMatchObject({ status: 'ok' });
+
+    const corsLive = await fetch(`http://127.0.0.1:${address.port}/api/health/live`, {
+      headers: { Origin: 'http://localhost:4173' },
+    });
+    expect(corsLive.headers.get('access-control-allow-origin')).toBe('http://localhost:4173');
+    expect(corsLive.headers.get('access-control-allow-credentials')).toBe('true');
+
+    const ready = await fetch(`http://127.0.0.1:${address.port}/api/health/ready`);
+    expect(ready.status).toBe(200);
+    expect(await ready.json()).toMatchObject({ status: 'ready' });
+
+    const detailedUrl = `http://127.0.0.1:${address.port}/api/health/detailed`;
+    const unauthenticated = await fetch(detailedUrl);
+    expect(unauthenticated.status).toBe(401);
+    expect(await unauthenticated.json()).toMatchObject({
+      success: false,
+      error: 'Authentication required.',
+      errorCode: 'UNAUTHORIZED',
+    });
+
+    const invalid = await fetch(detailedUrl, { headers: { 'x-api-key': 'invalid' } });
+    expect(invalid.status).toBe(403);
+    const apiKeyResponse = await fetch(detailedUrl, {
+      headers: { 'x-api-key': 'automaker-test-api-key' },
+    });
+    expect(apiKeyResponse.status).toBe(200);
+
+    const login = await fetch(`http://127.0.0.1:${address.port}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey: 'automaker-test-api-key' }),
+    });
+    const cookie = login.headers.get('set-cookie')?.split(';', 1)[0];
+    expect(cookie).toBeTruthy();
+    const cookieResponse = await fetch(detailedUrl, { headers: { Cookie: cookie! } });
+    expect(cookieResponse.status).toBe(200);
   });
 
   it('preserves content-type, authentication, CORS, cookie and body-limit middleware', async () => {

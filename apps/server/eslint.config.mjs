@@ -68,6 +68,23 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  {
+    files: ['src/core/**/*.ts', 'src/modules/**/*.ts'],
+    ignores: ['src/core/config/runtime-config.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "MemberExpression[object.object.name='process'][object.property.name='env']",
+          message: 'Inject RuntimeConfig instead of reading process.env in Nest modules.',
+        },
+        {
+          selector: "CallExpression[callee.object.name='process'][callee.property.name='cwd']",
+          message: 'Inject RuntimePathsService instead of reading process.cwd() in Nest modules.',
+        },
+      ],
+    },
+  },
   globalIgnores(['dist/**', 'node_modules/**']),
 ]);
 

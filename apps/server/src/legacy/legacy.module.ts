@@ -1,6 +1,13 @@
-import { DynamicModule, Inject, Injectable, type BeforeApplicationShutdown } from '@nestjs/common';
+import {
+  DynamicModule,
+  Inject,
+  Injectable,
+  type BeforeApplicationShutdown,
+  type OnApplicationBootstrap,
+} from '@nestjs/common';
 
 import type { LegacyApplication } from '../legacy-application.js';
+import { ReadinessStateService } from '../core/lifecycle/readiness-state.service.js';
 import { LegacyRouterMiddleware } from './legacy-router.middleware.js';
 import {
   DATA_DIRECTORY,
@@ -10,10 +17,24 @@ import {
 } from './legacy.tokens.js';
 
 @Injectable()
-class LegacyLifecycle implements BeforeApplicationShutdown {
-  constructor(@Inject(LEGACY_APPLICATION) private readonly legacy: LegacyApplication) {}
+class LegacyLifecycle implements OnApplicationBootstrap, BeforeApplicationShutdown {
+  constructor(
+    @Inject(LEGACY_APPLICATION) private readonly legacy: LegacyApplication,
+    @Inject(ReadinessStateService) private readonly readiness: ReadinessStateService
+  ) {}
+
+  async onApplicationBootstrap(): Promise<void> {
+    try {
+      await this.legacy.initialize();
+      this.readiness.markReady();
+    } catch (error) {
+      this.readiness.markFailed(error);
+      throw error;
+    }
+  }
 
   async beforeApplicationShutdown(signal?: string): Promise<void> {
+    this.readiness.markStopping();
     await this.legacy.shutdown(signal ?? 'Nest application shutdown', { closeHttpServer: false });
   }
 }
@@ -57,6 +78,7 @@ export class LegacyModule {
         { provide: LEGACY_SERVICES.terminal, useValue: legacy.services.terminalService },
         { provide: LEGACY_SERVICES.pipeline, useValue: legacy.services.pipelineService },
         { provide: LEGACY_SERVICES.eventHook, useValue: legacy.services.eventHookService },
+        { provide: LEGACY_SERVICES.loginAttemptStore, useValue: legacy.services.loginAttemptStore },
         LegacyRouterMiddleware,
         LegacyLifecycle,
       ],

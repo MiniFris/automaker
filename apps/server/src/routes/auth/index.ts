@@ -23,29 +23,10 @@ import {
   isRequestAuthenticated,
   createWsConnectionToken,
 } from '../../lib/auth.js';
-
-// Rate limiting configuration
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
-const RATE_LIMIT_MAX_ATTEMPTS = 5; // Max 5 attempts per window
+import { LoginAttemptStore } from '../../core/auth/login-attempt.store.js';
 
 // Check if we're in test mode - disable rate limiting for E2E tests
 const isTestMode = process.env.AUTOMAKER_MOCK_AGENT === 'true';
-
-// In-memory rate limit tracking (resets on server restart)
-const loginAttempts = new Map<string, { count: number; windowStart: number }>();
-
-// Clean up old rate limit entries periodically (every 5 minutes)
-setInterval(
-  () => {
-    const now = Date.now();
-    loginAttempts.forEach((data, ip) => {
-      if (now - data.windowStart > RATE_LIMIT_WINDOW_MS * 2) {
-        loginAttempts.delete(ip);
-      }
-    });
-  },
-  5 * 60 * 1000
-);
 
 /**
  * Get client IP address from request
@@ -62,54 +43,11 @@ function getClientIp(req: Request): string {
 }
 
 /**
- * Check if an IP is rate limited
- * Returns { limited: boolean, retryAfter?: number }
- */
-function checkRateLimit(ip: string): { limited: boolean; retryAfter?: number } {
-  const now = Date.now();
-  const attempt = loginAttempts.get(ip);
-
-  if (!attempt) {
-    return { limited: false };
-  }
-
-  // Check if window has expired
-  if (now - attempt.windowStart > RATE_LIMIT_WINDOW_MS) {
-    loginAttempts.delete(ip);
-    return { limited: false };
-  }
-
-  // Check if over limit
-  if (attempt.count >= RATE_LIMIT_MAX_ATTEMPTS) {
-    const retryAfter = Math.ceil((RATE_LIMIT_WINDOW_MS - (now - attempt.windowStart)) / 1000);
-    return { limited: true, retryAfter };
-  }
-
-  return { limited: false };
-}
-
-/**
- * Record a login attempt for rate limiting
- */
-function recordLoginAttempt(ip: string): void {
-  const now = Date.now();
-  const attempt = loginAttempts.get(ip);
-
-  if (!attempt || now - attempt.windowStart > RATE_LIMIT_WINDOW_MS) {
-    // Start new window
-    loginAttempts.set(ip, { count: 1, windowStart: now });
-  } else {
-    // Increment existing window
-    attempt.count++;
-  }
-}
-
-/**
  * Create auth routes
  *
  * @returns Express Router with auth endpoints
  */
-export function createAuthRoutes(): Router {
+export function createAuthRoutes(loginAttempts = new LoginAttemptStore()): Router {
   const router = Router();
 
   /**
@@ -159,12 +97,12 @@ export function createAuthRoutes(): Router {
     // Skip rate limiting in test mode to allow parallel E2E tests
     if (!isTestMode) {
       // Check rate limit before processing
-      const rateLimit = checkRateLimit(clientIp);
-      if (rateLimit.limited) {
+      const rateLimit = loginAttempts.check(clientIp);
+      if (!rateLimit.allowed) {
         res.status(429).json({
           success: false,
           error: 'Too many login attempts. Please try again later.',
-          retryAfter: rateLimit.retryAfter,
+          retryAfter: rateLimit.retryAfterSeconds,
         });
         return;
       }
@@ -182,7 +120,7 @@ export function createAuthRoutes(): Router {
 
     // Record this attempt (only for actual API key validation attempts, skip in test mode)
     if (!isTestMode) {
-      recordLoginAttempt(clientIp);
+      loginAttempts.recordFailure(clientIp);
     }
 
     if (!validateApiKey(apiKey)) {

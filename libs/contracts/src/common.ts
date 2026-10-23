@@ -6,11 +6,21 @@ export const EntityIdSchema = NonEmptyStringSchema.max(512);
 // Paths remain platform-neutral at the transport boundary. The server's path
 // sandbox is still authoritative for resolving and authorizing them.
 export const ProjectPathSchema = NonEmptyStringSchema.max(32_768);
+export const FeatureIdSchema = EntityIdSchema.regex(/^[^/\\\0]+$/);
+export const ProviderIdSchema = EntityIdSchema.regex(/^[A-Za-z0-9][A-Za-z0-9._:-]*$/);
+export const ExecutionSelectionSchema = z
+  .object({
+    type: z.enum(['local', 'docker', 'ssh', 'memory']),
+    targetId: EntityIdSchema.optional(),
+  })
+  .strict();
 
 export const ErrorEnvelopeSchema = z.object({
   success: z.literal(false),
   error: NonEmptyStringSchema,
   code: NonEmptyStringSchema.optional(),
+  errorCode: NonEmptyStringSchema.optional(),
+  correlationId: NonEmptyStringSchema.optional(),
   details: z.unknown().optional(),
 });
 

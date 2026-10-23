@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
-  "total": 305,
+  "total": 307,
   "groups": {
     "agent": 10,
     "app-spec": 6,
@@ -18,7 +18,7 @@
     "gemini": 2,
     "git": 6,
     "github": 12,
-    "health": 3,
+    "health": 5,
     "ideation": 16,
     "mcp": 2,
     "models": 2,
@@ -196,7 +196,7 @@
       "owner": "legacy-express",
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/auth/index.ts",
-      "line": 156,
+      "line": 94,
       "middleware": [
         "async (req, res) => { const clientIp = getClientIp(req); // Skip rate limiting in test mode to allow parallel E2E tests if (!isTestMode) { // Check rate limit before processing ..."
       ],
@@ -211,7 +211,7 @@
       "owner": "legacy-express",
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/auth/index.ts",
-      "line": 242,
+      "line": 180,
       "middleware": [
         "async (req, res) => { const cookieName = getSessionCookieName(); const sessionToken = req.cookies?.[cookieName] as string | undefined; if (sessionToken) { await invalidateSessio..."
       ],
@@ -226,7 +226,7 @@
       "owner": "legacy-express",
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/auth/index.ts",
-      "line": 124,
+      "line": 62,
       "middleware": [
         "async (req, res) => { let authenticated = isRequestAuthenticated(req); // Auto-login for development: create session automatically if enabled // Only works in non-production env..."
       ],
@@ -241,7 +241,7 @@
       "owner": "legacy-express",
       "access": "public-before-global-auth",
       "source": "apps/server/src/routes/auth/index.ts",
-      "line": 217,
+      "line": 155,
       "middleware": [
         "(req, res) => { // Validate the session is still valid (via cookie, API key, or session token header) if (!isRequestAuthenticated(req)) { res.status(401).json({ success: false, ..."
       ],
@@ -1613,12 +1613,12 @@
       "method": "GET",
       "path": "/api/health/detailed",
       "group": "health",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/legacy-application.ts",
-      "line": 593,
+      "source": "apps/server/src/core/health/health.controller.ts",
+      "line": 26,
       "middleware": [
-        "createDetailedHandler()"
+        "HealthController.detailed"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
@@ -1634,6 +1634,36 @@
       "line": 24,
       "middleware": [
         "createEnvironmentHandler()"
+      ],
+      "potentialMutation": false,
+      "validatesProjectPath": false,
+      "streamsResponse": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/health/live",
+      "group": "health",
+      "owner": "nestjs",
+      "access": "public-before-global-auth",
+      "source": "apps/server/src/core/health/health.controller.ts",
+      "line": 14,
+      "middleware": [
+        "HealthController.live"
+      ],
+      "potentialMutation": false,
+      "validatesProjectPath": false,
+      "streamsResponse": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/health/ready",
+      "group": "health",
+      "owner": "nestjs",
+      "access": "public-before-global-auth",
+      "source": "apps/server/src/core/health/health.controller.ts",
+      "line": 19,
+      "middleware": [
+        "HealthController.ready"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,

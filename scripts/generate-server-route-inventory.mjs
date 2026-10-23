@@ -7,9 +7,19 @@ import ts from 'typescript';
 
 const repositoryRoot = resolve(import.meta.dirname, '..');
 const routeRoot = join(repositoryRoot, 'apps/server/src/routes');
+const nestSourceRoot = join(repositoryRoot, 'apps/server/src');
 const serverEntry = join(repositoryRoot, 'apps/server/src/legacy-application.ts');
 const outputPath = join(repositoryRoot, 'docs/backend-nestjs-migration/artifacts/http-routes.json');
 const methods = new Set(['get', 'post', 'put', 'patch', 'delete']);
+const nestMethods = new Map([
+  ['Get', 'GET'],
+  ['Post', 'POST'],
+  ['Put', 'PUT'],
+  ['Patch', 'PATCH'],
+  ['Delete', 'DELETE'],
+  ['Options', 'OPTIONS'],
+  ['Head', 'HEAD'],
+]);
 
 const groupMounts = {
   'app-spec': ['/api/spec-regeneration'],
@@ -232,6 +242,83 @@ function parseDirectAppEndpoints(sourceText) {
   return endpoints;
 }
 
+function decoratorsOf(node) {
+  return ts.canHaveDecorators(node) ? (ts.getDecorators(node) ?? []) : [];
+}
+
+function decoratorCall(node, name) {
+  for (const decorator of decoratorsOf(node)) {
+    if (ts.isCallExpression(decorator.expression)) {
+      const expression = decorator.expression.expression;
+      if (ts.isIdentifier(expression) && expression.text === name) return decorator.expression;
+    } else if (ts.isIdentifier(decorator.expression) && decorator.expression.text === name) {
+      return decorator.expression;
+    }
+  }
+  return undefined;
+}
+
+function staticDecoratorPath(call) {
+  if (!call || !ts.isCallExpression(call) || call.arguments.length === 0) return '';
+  const [argument] = call.arguments;
+  if (ts.isStringLiteral(argument) || ts.isNoSubstitutionTemplateLiteral(argument)) {
+    return argument.text;
+  }
+  return undefined;
+}
+
+function parseNestControllerEndpoints(sourcePath, sourceText) {
+  const sourceFile = ts.createSourceFile(
+    sourcePath,
+    sourceText,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS
+  );
+  const endpoints = [];
+  const source = slash(relative(repositoryRoot, sourcePath));
+
+  for (const statement of sourceFile.statements) {
+    if (!ts.isClassDeclaration(statement)) continue;
+    const controllerCall = decoratorCall(statement, 'Controller');
+    if (!controllerCall) continue;
+    const controllerPath = staticDecoratorPath(controllerCall);
+    if (controllerPath === undefined) continue;
+    const classIsPublic = Boolean(decoratorCall(statement, 'Public'));
+
+    for (const member of statement.members) {
+      if (!ts.isMethodDeclaration(member)) continue;
+      for (const [decoratorName, method] of nestMethods) {
+        const methodCall = decoratorCall(member, decoratorName);
+        if (!methodCall) continue;
+        const methodPath = staticDecoratorPath(methodCall);
+        if (methodPath === undefined) continue;
+        const path = joinUrl('/api', joinUrl(controllerPath, methodPath));
+        const line =
+          sourceFile.getLineAndCharacterOfPosition(methodCall.getStart(sourceFile)).line + 1;
+        const handler = member.name?.getText(sourceFile) ?? '<anonymous>';
+        endpoints.push({
+          method,
+          path,
+          group: path.split('/')[2] || 'root',
+          owner: 'nestjs',
+          access:
+            classIsPublic || Boolean(decoratorCall(member, 'Public'))
+              ? 'public-before-global-auth'
+              : 'protected',
+          source,
+          line,
+          middleware: [`${statement.name?.text ?? '<anonymous>'}.${handler}`],
+          potentialMutation: method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS',
+          validatesProjectPath: Boolean(decoratorCall(member, 'AllowedPath')),
+          streamsResponse: false,
+        });
+      }
+    }
+  }
+  return endpoints;
+}
+
 function sortEndpoints(endpoints) {
   return endpoints.sort((left, right) =>
     [left.path, left.method, left.source, left.line]
@@ -252,11 +339,17 @@ function buildSummary(endpoints) {
 
 async function generate() {
   const files = await walk(routeRoot);
+  const nestControllerFiles = (await walk(nestSourceRoot)).filter((file) =>
+    file.endsWith('.controller.ts')
+  );
   const endpoints = [];
   for (const file of files) {
     endpoints.push(...parseRouterEndpoints(file, await readFile(file, 'utf8')));
   }
   endpoints.push(...parseDirectAppEndpoints(await readFile(serverEntry, 'utf8')));
+  for (const file of nestControllerFiles) {
+    endpoints.push(...parseNestControllerEndpoints(file, await readFile(file, 'utf8')));
+  }
   endpoints.push(...middlewareOnlyEndpoints);
   sortEndpoints(endpoints);
   return {

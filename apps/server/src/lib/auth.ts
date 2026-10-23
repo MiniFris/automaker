@@ -36,15 +36,14 @@ const validSessions = new Map<string, { createdAt: number; expiresAt: number }>(
 // Short-lived WebSocket connection tokens (in-memory only, not persisted)
 const wsConnectionTokens = new Map<string, { createdAt: number; expiresAt: number }>();
 
-// Clean up expired WebSocket tokens periodically
-setInterval(() => {
-  const now = Date.now();
+/** Remove expired WebSocket tokens. Scheduling belongs to the auth lifecycle owner. */
+export function cleanupExpiredWsConnectionTokens(now = Date.now()): void {
   wsConnectionTokens.forEach((data, token) => {
     if (data.expiresAt <= now) {
       wsConnectionTokens.delete(token);
     }
   });
-}, 60 * 1000); // Clean up every minute
+}
 
 /**
  * Load sessions from file on startup
@@ -313,7 +312,7 @@ export function getSessionCookieName(): string {
 /**
  * Authentication result type
  */
-type AuthResult =
+export type AuthResult =
   | { authenticated: true }
   | { authenticated: false; errorType: 'invalid_api_key' | 'invalid_session' | 'no_auth' };
 
@@ -321,7 +320,7 @@ type AuthResult =
  * Core authentication check - shared between middleware and status check
  * Extracts auth credentials from various sources and validates them
  */
-function checkAuthentication(
+export function checkAuthentication(
   headers: Record<string, string | string[] | undefined>,
   query: Record<string, string | undefined>,
   cookies: Record<string, string | undefined>
