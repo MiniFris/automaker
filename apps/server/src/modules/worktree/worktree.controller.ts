@@ -16,6 +16,7 @@ import { AllowedPathFields, AllowedPathGuard } from '../../core/security/index.j
 import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
 import { WorktreeApplicationService } from './worktree-application.service.js';
 import { WorktreeProcessService } from './worktree-process.service.js';
+import { WorktreeHostService } from './worktree-host.service.js';
 import {
   DevSessionSchema,
   StartDevSchema,
@@ -32,6 +33,8 @@ import {
   WorktreeInitScriptQuerySchema,
   WorktreeInitScriptWriteSchema,
   WorktreeRunInitScriptSchema,
+  WorktreeOpenEditorSchema,
+  WorktreeOpenTerminalSchema,
   WorktreeDiscardSchema,
   WorktreeMutationSchema,
   WorktreeRemoteAddSchema,
@@ -67,6 +70,8 @@ import {
   type WorktreeInitScriptQuery,
   type WorktreeInitScriptWriteRequest,
   type WorktreeRunInitScriptRequest,
+  type WorktreeOpenEditorRequest,
+  type WorktreeOpenTerminalRequest,
   type WorktreeDiscardRequest,
   type WorktreeFeatureRequest,
   type WorktreeFileRequest,
@@ -96,7 +101,8 @@ import {
 export class WorktreeController {
   constructor(
     @Inject(WorktreeApplicationService) private readonly worktrees: WorktreeApplicationService,
-    @Inject(WorktreeProcessService) private readonly processes: WorktreeProcessService
+    @Inject(WorktreeProcessService) private readonly processes: WorktreeProcessService,
+    @Inject(WorktreeHostService) private readonly host: WorktreeHostService
   ) {}
 
   @Post('environment')
@@ -450,6 +456,65 @@ export class WorktreeController {
   @AllowedPathFields('projectPath')
   migrate(@Body(new ZodValidationPipe(WorktreeInitGitSchema)) body: WorktreeInitGitRequest) {
     return this.worktrees.migrate(body);
+  }
+
+  @Get('available-editors')
+  availableEditors() {
+    return this.host.availableEditors();
+  }
+
+  @Get('default-editor')
+  defaultEditor() {
+    return this.host.defaultEditor();
+  }
+
+  @Post('refresh-editors')
+  @HttpCode(200)
+  refreshEditors() {
+    return this.host.refreshEditors();
+  }
+
+  @Post('open-in-editor')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath')
+  openInEditor(
+    @Body(new ZodValidationPipe(WorktreeOpenEditorSchema)) body: WorktreeOpenEditorRequest
+  ) {
+    return this.host.openEditor(body);
+  }
+
+  @Get('available-terminals')
+  availableTerminals() {
+    return this.host.availableTerminals();
+  }
+
+  @Get('default-terminal')
+  defaultTerminal() {
+    return this.host.defaultTerminal();
+  }
+
+  @Post('refresh-terminals')
+  @HttpCode(200)
+  refreshTerminals() {
+    return this.host.refreshTerminals();
+  }
+
+  @Post('open-in-terminal')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath')
+  openInTerminal(
+    @Body(new ZodValidationPipe(WorktreeOpenTerminalSchema)) body: WorktreeOpenTerminalRequest
+  ) {
+    return this.host.openTerminal(body, false);
+  }
+
+  @Post('open-in-external-terminal')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath')
+  openInExternalTerminal(
+    @Body(new ZodValidationPipe(WorktreeOpenTerminalSchema)) body: WorktreeOpenTerminalRequest
+  ) {
+    return this.host.openTerminal(body, true);
   }
 
   @Post('commit-log')

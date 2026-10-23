@@ -251,6 +251,14 @@ export const WorktreeRunInitScriptSchema = z
   })
   .strict();
 
+export const WorktreeOpenEditorSchema = WorktreePathSchema.extend({
+  editorCommand: z.string().trim().min(1).max(2_048).optional(),
+}).strict();
+
+export const WorktreeOpenTerminalSchema = WorktreePathSchema.extend({
+  terminalId: z.string().trim().min(1).max(512).optional(),
+}).strict();
+
 export type WorktreeProjectRequest = z.infer<typeof WorktreeProjectSchema>;
 export type WorktreeFeatureRequest = z.infer<typeof WorktreeFeatureSchema>;
 export type WorktreeFileRequest = z.infer<typeof WorktreeFileSchema>;
@@ -287,3 +295,5 @@ export type WorktreeInitScriptQuery = z.infer<typeof WorktreeInitScriptQuerySche
 export type WorktreeInitScriptWriteRequest = z.infer<typeof WorktreeInitScriptWriteSchema>;
 export type WorktreeInitScriptDeleteRequest = z.infer<typeof WorktreeInitScriptDeleteSchema>;
 export type WorktreeRunInitScriptRequest = z.infer<typeof WorktreeRunInitScriptSchema>;
+export type WorktreeOpenEditorRequest = z.infer<typeof WorktreeOpenEditorSchema>;
+export type WorktreeOpenTerminalRequest = z.infer<typeof WorktreeOpenTerminalSchema>;
