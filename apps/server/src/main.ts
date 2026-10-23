@@ -69,8 +69,6 @@ export async function createNestApplication(
   const httpServer = createServer(expressApplication);
   const legacy = createLegacyApplication({
     dataDir: dataDirectory,
-    host,
-    port,
     runStartupTasks: options.runStartupTasks ?? true,
     services: options.services,
     httpServer,

@@ -1,16 +1,10 @@
 /**
- * Legacy Automaker Express application
+ * Transitional Automaker service graph
  *
- * Provides the transitional service graph and Express lifecycle used by Nest.
- * In Electron mode, this server runs locally.
- * In web mode, this server runs on a remote host.
+ * Constructs stateful services that are being moved into native Nest providers.
  */
 
-import express from 'express';
-import cors from 'cors';
-import morgan from 'morgan';
-import cookieParser from 'cookie-parser';
-import { createServer } from 'http';
+import type { Server } from 'node:http';
 import dotenv from 'dotenv';
 
 import { createEventEmitter, type EventEmitter } from './lib/events.js';
@@ -28,9 +22,7 @@ const LOG_LEVEL_MAP: Record<string, LogLevel> = {
   info: LogLevel.INFO,
   debug: LogLevel.DEBUG,
 };
-import { authMiddleware } from './lib/auth.js';
-import { requireJsonContentType } from './middleware/require-json-content-type.js';
-import { isRequestLoggingEnabled, setRequestLoggingEnabled } from './lib/request-logging-state.js';
+import { setRequestLoggingEnabled } from './lib/request-logging-state.js';
 import { LoginAttemptStore } from './core/auth/login-attempt.store.js';
 import { ProviderConnectionRepository } from './modules/providers/provider-connection.repository.js';
 import { createProviderRegistrations } from './modules/providers/provider-registrations.js';
@@ -40,7 +32,6 @@ import {
   createCorrelationId,
   runWithCorrelationContext,
 } from './core/observability/request-context.js';
-import { isTerminalEnabled, isTerminalPasswordRequired } from './routes/terminal/index.js';
 import { AgentService } from './services/agent-service.js';
 import { FeatureLoader } from './services/feature-loader.js';
 import { AutoModeServiceCompat } from './services/auto-mode/index.js';
@@ -62,21 +53,15 @@ import { EventHistoryService } from './services/event-history-service.js';
 import { getTestRunnerService } from './services/test-runner-service.js';
 import { getManagedTestRunnerService } from './services/execution-environment/test-runner.js';
 import { getManagedDevServerService } from './services/execution-environment/dev-server.js';
-import { previewApiGuard } from './services/execution-environment/preview-policy.js';
 
 // Load environment variables
 dotenv.config();
 
-const PORT = parseInt(process.env.PORT || '3008', 10);
-const HOST = process.env.HOST || '0.0.0.0';
-const HOSTNAME = process.env.HOSTNAME || 'localhost';
 const DATA_DIR = process.env.DATA_DIR || './data';
+const BOX_CONTENT_WIDTH = 67;
 logger.info('[SERVER_STARTUP] process.env.DATA_DIR:', process.env.DATA_DIR);
 logger.info('[SERVER_STARTUP] Resolved DATA_DIR:', DATA_DIR);
 logger.info('[SERVER_STARTUP] process.cwd():', process.cwd());
-// Width for log box content (excluding borders)
-const BOX_CONTENT_WIDTH = 67;
-
 // Check for Claude authentication (async - runs in background)
 // The Claude Agent SDK can use either ANTHROPIC_API_KEY or Claude Code CLI authentication
 async function checkClaudeAuthentication(): Promise<void> {
@@ -226,10 +211,8 @@ export interface LegacyServiceOverrides {
 
 export interface LegacyApplicationOptions {
   dataDir?: string;
-  host?: string;
-  port?: number;
   runStartupTasks?: boolean;
-  httpServer?: ReturnType<typeof createServer>;
+  httpServer: Server;
   workingDirectory?: string;
   services?: Partial<LegacyServiceOverrides>;
 }
@@ -240,112 +223,22 @@ export interface LegacyShutdownOptions {
 }
 
 export interface LegacyApplication {
-  app: ReturnType<typeof express>;
-  server: ReturnType<typeof createServer>;
+  server: Server;
   events: EventEmitter;
   services: LegacyServiceOverrides;
   initialize(): Promise<void>;
-  start(): Promise<void>;
   shutdown(signal?: string, options?: LegacyShutdownOptions): Promise<void>;
   installExceptionHandlers(): void;
-  installProcessHandlers(): void;
 }
 
-export function createLegacyApplication(options: LegacyApplicationOptions = {}): LegacyApplication {
-  const port = options.port ?? PORT;
-  const host = options.host ?? HOST;
+export function createLegacyApplication(options: LegacyApplicationOptions): LegacyApplication {
   const dataDir = options.dataDir ?? DATA_DIR;
   const workingDirectory = options.workingDirectory ?? process.cwd();
   const serviceOverrides = options.services ?? {};
+  const server = options.httpServer;
 
-  // Initialize security
+  // Initialize shared filesystem security before constructing services.
   initAllowedPaths();
-
-  // Create Express app
-  const app = express();
-
-  // Middleware
-  // Custom colored logger showing only endpoint and status code (dynamically configurable)
-  morgan.token('status-colored', (_req, res) => {
-    const status = res.statusCode;
-    if (status >= 500) return `\x1b[31m${status}\x1b[0m`; // Red for server errors
-    if (status >= 400) return `\x1b[33m${status}\x1b[0m`; // Yellow for client errors
-    if (status >= 300) return `\x1b[36m${status}\x1b[0m`; // Cyan for redirects
-    return `\x1b[32m${status}\x1b[0m`; // Green for success
-  });
-
-  app.use(
-    morgan(':method :url :status-colored', {
-      // Skip when request logging is disabled or for health check endpoints
-      skip: (req) =>
-        !isRequestLoggingEnabled() ||
-        req.url === '/api/health' ||
-        req.url === '/api/auto-mode/context-exists',
-    })
-  );
-  // CORS configuration
-  // When using credentials (cookies), origin cannot be '*'
-  // We dynamically allow the requesting origin for local development
-
-  // Check if origin is a local/private network address
-  function isLocalOrigin(origin: string): boolean {
-    try {
-      const url = new URL(origin);
-      const hostname = url.hostname;
-      return (
-        hostname === 'localhost' ||
-        hostname === '127.0.0.1' ||
-        hostname === '[::1]' ||
-        hostname === '0.0.0.0' ||
-        hostname.startsWith('192.168.') ||
-        hostname.startsWith('10.') ||
-        /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname)
-      );
-    } catch {
-      return false;
-    }
-  }
-
-  app.use('/api', previewApiGuard);
-  app.use(
-    cors({
-      origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps, curl, Electron)
-        if (!origin) {
-          callback(null, true);
-          return;
-        }
-
-        // If CORS_ORIGIN is set, use it (can be comma-separated list)
-        const allowedOrigins = process.env.CORS_ORIGIN?.split(',')
-          .map((o) => o.trim())
-          .filter(Boolean);
-        if (allowedOrigins && allowedOrigins.length > 0) {
-          if (allowedOrigins.includes('*')) {
-            callback(null, true);
-            return;
-          }
-          if (allowedOrigins.includes(origin)) {
-            callback(null, origin);
-            return;
-          }
-          // Fall through to local network check below
-        }
-
-        // Allow all localhost/loopback/private network origins (any port)
-        if (isLocalOrigin(origin)) {
-          callback(null, origin);
-          return;
-        }
-
-        // Reject other origins by default for security
-        callback(new Error('Not allowed by CORS'));
-      },
-      credentials: true,
-    })
-  );
-  app.use(express.json({ limit: '50mb' }));
-  app.use(cookieParser());
 
   // Create shared event emitter for streaming
   const events: EventEmitter = serviceOverrides.events ?? createEventEmitter();
@@ -558,99 +451,7 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
     return startupTasksPromise;
   }
 
-  // Require Content-Type: application/json for all API POST/PUT/PATCH requests
-  // This helps prevent CSRF and content-type confusion attacks
-  app.use('/api', requireJsonContentType);
-
-  // Mount API routes - health, auth, and setup are unauthenticated
-  // Apply authentication to all other routes
-  app.use('/api', authMiddleware);
-
-  // Create HTTP server
-  const server = options.httpServer ?? createServer(app);
-
   const terminalService = serviceOverrides.terminalService ?? new TerminalService(settingsService);
-
-  // Start server with error handling for port conflicts
-  const startServer = (port: number, host: string): Promise<void> =>
-    new Promise((resolve, reject) => {
-      server.listen(port, host, () => {
-        const terminalStatus = isTerminalEnabled()
-          ? isTerminalPasswordRequired()
-            ? 'enabled (password protected)'
-            : 'enabled'
-          : 'disabled';
-
-        // Build URLs for display
-        const listenAddr = `${host}:${port}`;
-        const httpUrl = `http://${HOSTNAME}:${port}`;
-        const healthUrl = `http://${HOSTNAME}:${port}/api/health`;
-
-        const sHeader = '🚀 Automaker Backend Server'.padEnd(BOX_CONTENT_WIDTH);
-        const s1 = `Listening:    ${listenAddr}`.padEnd(BOX_CONTENT_WIDTH);
-        const s2 = `HTTP API:     ${httpUrl}`.padEnd(BOX_CONTENT_WIDTH);
-        const s3 = `Health:       ${healthUrl}`.padEnd(BOX_CONTENT_WIDTH);
-        const s4 = `Terminal:     ${terminalStatus}`.padEnd(BOX_CONTENT_WIDTH);
-
-        logger.info(`
-╔═════════════════════════════════════════════════════════════════════╗
-║  ${sHeader}║
-╠═════════════════════════════════════════════════════════════════════╣
-║                                                                     ║
-║  ${s1}║
-║  ${s2}║
-║  ${s3}║
-║  ${s4}║
-║                                                                     ║
-╚═════════════════════════════════════════════════════════════════════╝
-`);
-        resolve();
-      });
-
-      server.once('error', (error: NodeJS.ErrnoException) => {
-        if (error.code === 'EADDRINUSE') {
-          const portStr = port.toString();
-          const nextPortStr = (port + 1).toString();
-          const killCmd = `lsof -ti:${portStr} | xargs kill -9`;
-          const altCmd = `PORT=${nextPortStr} npm run dev:server`;
-
-          const eHeader = `❌ ERROR: Port ${portStr} is already in use`.padEnd(BOX_CONTENT_WIDTH);
-          const e1 = 'Another process is using this port.'.padEnd(BOX_CONTENT_WIDTH);
-          const e2 = 'To fix this, try one of:'.padEnd(BOX_CONTENT_WIDTH);
-          const e3 = '1. Kill the process using the port:'.padEnd(BOX_CONTENT_WIDTH);
-          const e4 = `   ${killCmd}`.padEnd(BOX_CONTENT_WIDTH);
-          const e5 = '2. Use a different port:'.padEnd(BOX_CONTENT_WIDTH);
-          const e6 = `   ${altCmd}`.padEnd(BOX_CONTENT_WIDTH);
-          const e7 = '3. Use the init.sh script which handles this:'.padEnd(BOX_CONTENT_WIDTH);
-          const e8 = '   ./init.sh'.padEnd(BOX_CONTENT_WIDTH);
-
-          logger.error(`
-╔═════════════════════════════════════════════════════════════════════╗
-║  ${eHeader}║
-╠═════════════════════════════════════════════════════════════════════╣
-║                                                                     ║
-║  ${e1}║
-║                                                                     ║
-║  ${e2}║
-║                                                                     ║
-║  ${e3}║
-║  ${e4}║
-║                                                                     ║
-║  ${e5}║
-║  ${e6}║
-║                                                                     ║
-║  ${e7}║
-║  ${e8}║
-║                                                                     ║
-╚═════════════════════════════════════════════════════════════════════╝
-`);
-          reject(error);
-        } else {
-          logger.error('Error starting server:', error);
-          reject(error);
-        }
-      });
-    });
 
   // Global error handlers are installed only by the production entry point.
   const handleUnhandledRejection = (reason: unknown, _promise: Promise<unknown>) => {
@@ -760,16 +561,11 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   };
 
   return {
-    app,
     server,
     events,
     services,
     async initialize() {
       if (options.runStartupTasks) await runStartupTasks();
-    },
-    async start() {
-      if (options.runStartupTasks) await runStartupTasks();
-      await startServer(port, host);
     },
     shutdown(signal = 'application shutdown', shutdownOptions) {
       return gracefulShutdown(signal, shutdownOptions);
@@ -777,12 +573,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
     installExceptionHandlers() {
       process.on('unhandledRejection', handleUnhandledRejection);
       process.on('uncaughtException', handleUncaughtException);
-    },
-    installProcessHandlers() {
-      process.on('unhandledRejection', handleUnhandledRejection);
-      process.on('uncaughtException', handleUncaughtException);
-      process.on('SIGTERM', () => void gracefulShutdown('SIGTERM', { exitProcess: true }));
-      process.on('SIGINT', () => void gracefulShutdown('SIGINT', { exitProcess: true }));
     },
   };
 }
