@@ -32,8 +32,20 @@ export const gitReadActions = new Set([
   'list-remotes',
   'commit-log',
   'branch-commit-log',
+  'stash-list',
 ]);
-export const gitWriteActions = new Set(['stage-files', 'commit', 'create']);
+export const gitWriteActions = new Set([
+  'stage-files',
+  'commit',
+  'create',
+  'abort-operation',
+  'continue-operation',
+  'add-remote',
+  'set-tracking',
+  'stash-push',
+  'stash-apply',
+  'stash-drop',
+]);
 export function workspaceAlias(binding: ExecutionEnvironmentBinding) {
   const root = binding.ssh?.remotePath ?? binding.projectPath;
   const cwd = binding.runtimeCwd ?? binding.cwd;

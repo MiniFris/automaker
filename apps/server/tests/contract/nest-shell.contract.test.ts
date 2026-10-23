@@ -715,6 +715,44 @@ describe('Nest shell and legacy bridge contract', () => {
         executionEnvironment: { type: 'local', projectPath },
       });
 
+      await writeFile(trackedFile, 'stashed through Nest\n');
+      const stashWorktree = await fetch(`${baseUrl}/api/worktree/stash-push`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          worktreePath: projectPath,
+          files: ['tracked.txt'],
+          message: 'Nest contract stash',
+        }),
+      });
+      expect(stashWorktree.status).toBe(200);
+      expect(await stashWorktree.json()).toMatchObject({
+        success: true,
+        result: { stashed: true, message: 'Nest contract stash' },
+      });
+
+      const stashes = await fetch(`${baseUrl}/api/worktree/stash-list`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ worktreePath: projectPath }),
+      });
+      expect(stashes.status).toBe(200);
+      expect(await stashes.json()).toMatchObject({
+        success: true,
+        result: { total: 1 },
+      });
+
+      const dropStash = await fetch(`${baseUrl}/api/worktree/stash-drop`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ worktreePath: projectPath, stashIndex: 0 }),
+      });
+      expect(dropStash.status).toBe(200);
+      expect(await dropStash.json()).toMatchObject({
+        success: true,
+        result: { dropped: true, stashIndex: 0 },
+      });
+
       const devServers = await fetch(`${baseUrl}/api/worktree/list-dev-servers`, {
         method: 'POST',
         headers,

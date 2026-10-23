@@ -42,6 +42,9 @@ const file=value=>{
 };
 const files=()=>{if(!Array.isArray(b.files)||!b.files.length||b.files.length>1000)bad('GIT_FILE_INVALID','Select between 1 and 1000 relative files.');return b.files.map(file);};
 const branch=value=>{if(typeof value!=='string'||!value||value.startsWith('-'))bad('GIT_BRANCH_INVALID','An existing local branch is required.');git(root,'check-ref-format','refs/heads/'+value);return value;};
+const remote=value=>{if(typeof value!=='string'||!/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,249}$/.test(value))bad('GIT_REMOTE_INVALID','Remote name is invalid.');return value;};
+const stashIndex=value=>{const number=Number(value);if(!Number.isInteger(number)||number<0||number>100000)bad('GIT_STASH_INVALID','stashIndex must be a non-negative integer.');return number;};
+const operation=()=>{const dir=path.resolve(cwd,git(cwd,'rev-parse','--git-dir').trim());return fs.existsSync(path.join(dir,'rebase-merge'))||fs.existsSync(path.join(dir,'rebase-apply'))?'rebase':fs.existsSync(path.join(dir,'MERGE_HEAD'))?'merge':fs.existsSync(path.join(dir,'CHERRY_PICK_HEAD'))?'cherry-pick':undefined;};
 const head=dir=>optional(dir,'rev-parse','--verify','HEAD');
 const fileDiff=(dir,name)=>{
  file(name);const untracked=git(dir,'ls-files','--others','--exclude-standard','-z','--',name).split('\0').includes(name);
@@ -90,6 +93,11 @@ try{
   const commits=head(cwd)?git(cwd,'log','--no-color','--max-count='+limit,'--format=%H%x00%h%x00%an%x00%ae%x00%aI%x00%s%x00%b%x00',ref,'--').split('\0\n').filter(Boolean).map(record=>{const [hash,shortHash,author,authorEmail,date,subject,body]=record.split('\0');if(!/^[a-f0-9]{40,64}$/.test(hash))bad('GIT_OUTPUT_INVALID','Invalid Git log object identity.');return {hash,shortHash,author,authorEmail,date,subject,body,files:git(cwd,'diff-tree','--root','--no-commit-id','--name-only','-r','-z',hash,'--').split('\0').filter(Boolean)};}):[];
   result={result:{branch:b.branchName||optional(cwd,'symbolic-ref','--quiet','--short','HEAD')||'HEAD',commits,total:commits.length}};
  }
+ else if(p.action==='stash-list'){
+  const lines=git(cwd,'stash','list','--format=%gd%x00%s%x00%aI').trim().split('\n').filter(Boolean),stashes=[];
+  for(const line of lines){const [ref,message,date]=line.split('\0'),match=/^stash@\{(\d+)\}$/.exec(ref);if(!match)continue;const branchMatch=/^(?:WIP on|On) ([^:]+):/.exec(message);stashes.push({index:Number(match[1]),message,branch:branchMatch?.[1]||'',date,files:git(cwd,'stash','show',ref,'--name-only','-z').split('\0').filter(Boolean)});}
+  result={result:{stashes,total:stashes.length}};
+ }
  else if(p.action==='stage-files'){
   if(b.operation!=='stage'&&b.operation!=='unstage')bad('GIT_OPERATION_INVALID','operation must be stage or unstage');const names=files();
   git(cwd,...(b.operation==='stage'?['add','--',...names]:head(cwd)?['reset','HEAD','--',...names]:['rm','--cached','--',...names]));result={result:{operation:b.operation,filesCount:names.length}};
@@ -104,6 +112,27 @@ try{
    git(cwd,'-c','user.name=Automaker','-c','user.email=automaker@localhost','commit','-m',b.message);
    result={result:{committed:true,commitHash:git(cwd,'rev-parse','HEAD').trim().slice(0,8),branch:git(cwd,'symbolic-ref','--quiet','--short','HEAD').trim(),message:b.message}};
   }
+ }
+ else if(p.action==='abort-operation'){
+  const kind=operation();if(!kind)bad('GIT_OPERATION_MISSING','No merge, rebase, or cherry-pick is in progress.');git(cwd,kind,'--abort');result={result:{operation:kind,message:kind[0].toUpperCase()+kind.slice(1)+' aborted successfully'}};
+ }
+ else if(p.action==='continue-operation'){
+  const kind=operation();if(!kind)bad('GIT_OPERATION_MISSING','No merge, rebase, or cherry-pick is in progress.');if(entries(cwd).some(x=>x.isConflicted))bad('GIT_CONFLICT_UNRESOLVED','Resolve every conflict before continuing.');git(cwd,'add','-A');if(kind==='merge')git(cwd,'-c','core.editor=true','commit','--no-edit');else git(cwd,'-c','core.editor=true',kind,'--continue');result={result:{operation:kind,message:kind[0].toUpperCase()+kind.slice(1)+' continued successfully'}};
+ }
+ else if(p.action==='add-remote'){
+  const name=remote(b.remoteName),url=b.remoteUrl;if(typeof url!=='string'||url.length>2048||url.includes('\0')||!(/^(https?|git|ssh):\/\//.test(url)||/^[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+:.+/.test(url)))bad('GIT_REMOTE_URL_INVALID','Remote URL must use HTTPS, SSH, or git protocol.');if(git(cwd,'remote').trim().split('\n').includes(name))bad('REMOTE_EXISTS','Remote already exists.');git(cwd,'remote','add',name,url);let fetched=true;try{git(cwd,'fetch',name,'--quiet');}catch{fetched=false;}result={result:{remoteName:name,remoteUrl:url,fetched,message:fetched?'Successfully added remote and fetched its branches':'Successfully added remote (fetch failed)'}};
+ }
+ else if(p.action==='set-tracking'){
+  const name=remote(b.remote),requested=b.branchName??b.branch,local=requested?branch(requested):(optional(cwd,'symbolic-ref','--quiet','--short','HEAD')||bad('GIT_DETACHED_HEAD','Cannot set tracking in detached HEAD state.'));git(cwd,'branch','--set-upstream-to',name+'/'+local,local);result={result:{branch:local,remote:name,upstream:name+'/'+local,message:'Set tracking branch to '+name+'/'+local}};
+ }
+ else if(p.action==='stash-push'){
+  const list=entries(cwd);if(!list.length)result={result:{stashed:false,message:'No changes to stash'}};else{const args=['stash','push','--include-untracked'];if(b.message!==undefined){if(typeof b.message!=='string'||b.message.length>10000||b.message.includes('\0'))bad('GIT_MESSAGE_INVALID','Stash message is invalid.');if(b.message.trim())args.push('-m',b.message.trim());}if(b.files!==undefined)args.push('--',...files());git(cwd,...args);const current=optional(cwd,'symbolic-ref','--quiet','--short','HEAD')||'HEAD';result={result:{stashed:true,branch:current,message:b.message?.trim()||'WIP on '+current}};}
+ }
+ else if(p.action==='stash-apply'){
+  const index=stashIndex(b.stashIndex),kind=b.pop?'pop':'apply',ref='stash@{'+index+'}';let failed;try{git(cwd,'stash',kind,ref);}catch(error){failed=error;}const conflicts=entries(cwd).filter(x=>x.isConflicted).map(x=>x.path);if(failed&&!conflicts.length)throw failed;result={result:{applied:true,hasConflicts:conflicts.length>0,conflictFiles:conflicts,operation:kind,stashIndex:index,message:'Stash '+(kind==='pop'?'popped':'applied')+(conflicts.length?' with conflicts':' successfully')}};
+ }
+ else if(p.action==='stash-drop'){
+  const index=stashIndex(b.stashIndex),ref='stash@{'+index+'}';git(cwd,'stash','drop',ref);result={result:{dropped:true,stashIndex:index,message:'Stash '+ref+' dropped successfully'}};
  }
  else if(p.action==='create'){
   if(cwd!==root||p.pinned)bad('GIT_PINNED_WORKSPACE','Create worktrees only from the project root.');

@@ -20,6 +20,12 @@ import {
   StartTestsSchema,
   StopTestsSchema,
   TestLogsSchema,
+  WorktreeMutationSchema,
+  WorktreeRemoteAddSchema,
+  WorktreeStashApplySchema,
+  WorktreeStashDropSchema,
+  WorktreeStashPushSchema,
+  WorktreeTrackingSchema,
   WorktreeBranchesSchema,
   WorktreeBranchCommitLogSchema,
   WorktreeCommitLogSchema,
@@ -43,6 +49,12 @@ import {
   type StartTestsRequest,
   type StopTestsRequest,
   type TestLogsRequest,
+  type WorktreeMutationRequest,
+  type WorktreeRemoteAddRequest,
+  type WorktreeStashApplyRequest,
+  type WorktreeStashDropRequest,
+  type WorktreeStashPushRequest,
+  type WorktreeTrackingRequest,
 } from './worktree.schemas.js';
 
 @Controller('worktree')
@@ -158,6 +170,86 @@ export class WorktreeController {
     @Res({ passthrough: true }) response: Response
   ) {
     return this.cancel(response, (signal) => this.worktrees.commit(body, signal));
+  }
+
+  @Post('abort-operation')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath')
+  abortOperation(
+    @Body(new ZodValidationPipe(WorktreeMutationSchema)) body: WorktreeMutationRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.abortOperation(body, signal));
+  }
+
+  @Post('continue-operation')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath')
+  continueOperation(
+    @Body(new ZodValidationPipe(WorktreeMutationSchema)) body: WorktreeMutationRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.continueOperation(body, signal));
+  }
+
+  @Post('add-remote')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath')
+  addRemote(
+    @Body(new ZodValidationPipe(WorktreeRemoteAddSchema)) body: WorktreeRemoteAddRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.addRemote(body, signal));
+  }
+
+  @Post('set-tracking')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath')
+  setTracking(
+    @Body(new ZodValidationPipe(WorktreeTrackingSchema)) body: WorktreeTrackingRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.setTracking(body, signal));
+  }
+
+  @Post('stash-list')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath')
+  stashList(
+    @Body(new ZodValidationPipe(WorktreePathSchema)) body: WorktreePathRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.stashList(body, signal));
+  }
+
+  @Post('stash-push')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath')
+  stashPush(
+    @Body(new ZodValidationPipe(WorktreeStashPushSchema)) body: WorktreeStashPushRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.stashPush(body, signal));
+  }
+
+  @Post('stash-apply')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath')
+  stashApply(
+    @Body(new ZodValidationPipe(WorktreeStashApplySchema)) body: WorktreeStashApplyRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.stashApply(body, signal));
+  }
+
+  @Post('stash-drop')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath')
+  stashDrop(
+    @Body(new ZodValidationPipe(WorktreeStashDropSchema)) body: WorktreeStashDropRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.stashDrop(body, signal));
   }
 
   @Post('commit-log')

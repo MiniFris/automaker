@@ -119,6 +119,37 @@ describe.skipIf(process.platform !== 'linux')('fixed target-side Git worker with
     expect((await run('list-remotes')).result.remotes[0].name).toBe('origin');
     await expect(fs.stat(path.join(root, 'credential-leak'))).rejects.toThrow();
   });
+  it('round-trips selected changes through the fixed stash API', async () => {
+    await fs.writeFile(path.join(root, 'source.txt'), 'stashed\n');
+    expect(
+      (await run('stash-push', { message: 'target stash', files: ['source.txt'] })).result
+    ).toMatchObject({ stashed: true, branch: 'main', message: 'target stash' });
+    expect(await fs.readFile(path.join(root, 'source.txt'), 'utf8')).toBe('base\n');
+    expect((await run('stash-list')).result).toMatchObject({
+      total: 1,
+      stashes: [expect.objectContaining({ index: 0, message: 'On main: target stash' })],
+    });
+    expect((await run('stash-apply', { stashIndex: 0 })).result).toMatchObject({
+      applied: true,
+      hasConflicts: false,
+    });
+    expect(await fs.readFile(path.join(root, 'source.txt'), 'utf8')).toBe('stashed\n');
+    expect((await run('stash-drop', { stashIndex: 0 })).result.dropped).toBe(true);
+    expect((await run('stash-list')).result.total).toBe(0);
+  });
+  it('validates remote configuration inside the target worker', async () => {
+    expect(
+      await run('add-remote', { remoteName: '--upload-pack', remoteUrl: 'https://example.invalid' })
+    ).toMatchObject({ success: false, code: 'GIT_REMOTE_INVALID' });
+    const added = await run('add-remote', {
+      remoteName: 'upstream',
+      remoteUrl: 'https://127.0.0.1:1/repository.git',
+    });
+    expect(added).toMatchObject({
+      success: true,
+      result: { remoteName: 'upstream', fetched: false },
+    });
+  });
   it('does not invoke external diff commands or fsmonitor hooks', async () => {
     await environment.exec(
       "git config diff.external 'touch diff-leak' && git config core.fsmonitor 'touch monitor-leak'",

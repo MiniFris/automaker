@@ -18,7 +18,13 @@ import type {
   WorktreeFileRequest,
   WorktreePathRequest,
   WorktreeProjectRequest,
+  WorktreeMutationRequest,
+  WorktreeRemoteAddRequest,
+  WorktreeStashApplyRequest,
+  WorktreeStashDropRequest,
+  WorktreeStashPushRequest,
   WorktreeStageFilesRequest,
+  WorktreeTrackingRequest,
 } from './worktree.schemas.js';
 
 @Injectable()
@@ -75,6 +81,38 @@ export class WorktreeApplicationService {
 
   commit(input: WorktreeCommitRequest, signal: AbortSignal) {
     return this.runPath('commit', input.worktreePath, input, signal);
+  }
+
+  abortOperation(input: WorktreeMutationRequest, signal: AbortSignal) {
+    return this.runPath('abort-operation', input.worktreePath, input, signal);
+  }
+
+  continueOperation(input: WorktreeMutationRequest, signal: AbortSignal) {
+    return this.runPath('continue-operation', input.worktreePath, input, signal);
+  }
+
+  addRemote(input: WorktreeRemoteAddRequest, signal: AbortSignal) {
+    return this.runPath('add-remote', input.worktreePath, input, signal);
+  }
+
+  setTracking(input: WorktreeTrackingRequest, signal: AbortSignal) {
+    return this.runPath('set-tracking', input.worktreePath, input, signal);
+  }
+
+  stashList(input: WorktreePathRequest, signal: AbortSignal) {
+    return this.runPath('stash-list', input.worktreePath, input, signal);
+  }
+
+  stashPush(input: WorktreeStashPushRequest, signal: AbortSignal) {
+    return this.runPath('stash-push', input.worktreePath, input, signal);
+  }
+
+  stashApply(input: WorktreeStashApplyRequest, signal: AbortSignal) {
+    return this.runPath('stash-apply', input.worktreePath, input, signal);
+  }
+
+  stashDrop(input: WorktreeStashDropRequest, signal: AbortSignal) {
+    return this.runPath('stash-drop', input.worktreePath, input, signal);
   }
 
   async commitLog(input: WorktreeCommitLogRequest, signal: AbortSignal) {

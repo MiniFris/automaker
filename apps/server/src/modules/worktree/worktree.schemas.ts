@@ -86,6 +86,46 @@ export const TestLogsSchema = z
   .strict()
   .refine((value) => value.worktreePath || value.sessionId, 'worktreePath or sessionId required');
 
+export const WorktreeMutationSchema = z
+  .object({
+    worktreePath: ProjectPathSchema,
+    environmentTargetId: z.string().optional(),
+  })
+  .strict();
+
+export const WorktreeRemoteAddSchema = WorktreeMutationSchema.extend({
+  remoteName: z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,249}$/),
+  remoteUrl: z
+    .string()
+    .trim()
+    .min(1)
+    .max(2_048)
+    .refine(
+      (value) =>
+        /^(https?|git|ssh):\/\//.test(value) || /^[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+:.+/.test(value),
+      'Remote URL must use HTTPS, SSH, or git protocol'
+    ),
+}).strict();
+
+export const WorktreeTrackingSchema = WorktreeMutationSchema.extend({
+  remote: z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,249}$/),
+  branch: z.string().trim().min(1).max(1_024).optional(),
+}).strict();
+
+export const WorktreeStashPushSchema = WorktreeMutationSchema.extend({
+  message: z.string().trim().max(10_000).optional(),
+  files: z.array(RelativeFileSchema).min(1).max(1_000).optional(),
+}).strict();
+
+export const WorktreeStashApplySchema = WorktreeMutationSchema.extend({
+  stashIndex: z.coerce.number().int().min(0).max(100_000),
+  pop: z.boolean().optional(),
+}).strict();
+
+export const WorktreeStashDropSchema = WorktreeMutationSchema.extend({
+  stashIndex: z.coerce.number().int().min(0).max(100_000),
+}).strict();
+
 export type WorktreeProjectRequest = z.infer<typeof WorktreeProjectSchema>;
 export type WorktreeFeatureRequest = z.infer<typeof WorktreeFeatureSchema>;
 export type WorktreeFileRequest = z.infer<typeof WorktreeFileSchema>;
@@ -100,3 +140,9 @@ export type DevSessionRequest = z.infer<typeof DevSessionSchema>;
 export type StartTestsRequest = z.infer<typeof StartTestsSchema>;
 export type StopTestsRequest = z.infer<typeof StopTestsSchema>;
 export type TestLogsRequest = z.infer<typeof TestLogsSchema>;
+export type WorktreeRemoteAddRequest = z.infer<typeof WorktreeRemoteAddSchema>;
+export type WorktreeMutationRequest = z.infer<typeof WorktreeMutationSchema>;
+export type WorktreeTrackingRequest = z.infer<typeof WorktreeTrackingSchema>;
+export type WorktreeStashPushRequest = z.infer<typeof WorktreeStashPushSchema>;
+export type WorktreeStashApplyRequest = z.infer<typeof WorktreeStashApplySchema>;
+export type WorktreeStashDropRequest = z.infer<typeof WorktreeStashDropSchema>;
