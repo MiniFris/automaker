@@ -1,7 +1,7 @@
 /**
  * Legacy Automaker Express application
  *
- * Provides HTTP/WebSocket API for both web and Electron modes.
+ * Provides the transitional service graph and Express lifecycle used by Nest.
  * In Electron mode, this server runs locally.
  * In web mode, this server runs on a remote host.
  */
@@ -10,8 +10,6 @@ import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
-import cookie from 'cookie';
-import { WebSocketServer, WebSocket } from 'ws';
 import { createServer } from 'http';
 import dotenv from 'dotenv';
 
@@ -30,7 +28,7 @@ const LOG_LEVEL_MAP: Record<string, LogLevel> = {
   info: LogLevel.INFO,
   debug: LogLevel.DEBUG,
 };
-import { authMiddleware, validateWsConnectionToken, checkRawAuthentication } from './lib/auth.js';
+import { authMiddleware } from './lib/auth.js';
 import { requireJsonContentType } from './middleware/require-json-content-type.js';
 import { isRequestLoggingEnabled, setRequestLoggingEnabled } from './lib/request-logging-state.js';
 import { LoginAttemptStore } from './core/auth/login-attempt.store.js';
@@ -42,15 +40,11 @@ import {
   createCorrelationId,
   runWithCorrelationContext,
 } from './core/observability/request-context.js';
-import {
-  validateTerminalToken,
-  isTerminalEnabled,
-  isTerminalPasswordRequired,
-} from './routes/terminal/index.js';
+import { isTerminalEnabled, isTerminalPasswordRequired } from './routes/terminal/index.js';
 import { AgentService } from './services/agent-service.js';
 import { FeatureLoader } from './services/feature-loader.js';
 import { AutoModeServiceCompat } from './services/auto-mode/index.js';
-import { TerminalService, claimTerminalStartup } from './services/terminal-service.js';
+import { TerminalService } from './services/terminal-service.js';
 import { SettingsService } from './services/settings-service.js';
 import { ClaudeUsageService } from './services/claude-usage-service.js';
 import { CodexUsageService } from './services/codex-usage-service.js';
@@ -68,10 +62,7 @@ import { EventHistoryService } from './services/event-history-service.js';
 import { getTestRunnerService } from './services/test-runner-service.js';
 import { getManagedTestRunnerService } from './services/execution-environment/test-runner.js';
 import { getManagedDevServerService } from './services/execution-environment/dev-server.js';
-import {
-  previewApiGuard,
-  isPreviewApiRequest,
-} from './services/execution-environment/preview-policy.js';
+import { previewApiGuard } from './services/execution-environment/preview-policy.js';
 
 // Load environment variables
 dotenv.config();
@@ -240,7 +231,6 @@ export interface LegacyApplicationOptions {
   runStartupTasks?: boolean;
   httpServer?: ReturnType<typeof createServer>;
   workingDirectory?: string;
-  attachWebSockets?: boolean;
   services?: Partial<LegacyServiceOverrides>;
 }
 
@@ -581,355 +571,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
 
   const terminalService = serviceOverrides.terminalService ?? new TerminalService(settingsService);
 
-  if (options.attachWebSockets ?? true) {
-    // WebSocket servers using noServer mode for proper multi-path support
-    const wss = new WebSocketServer({ noServer: true });
-    const terminalWss = new WebSocketServer({ noServer: true });
-
-    /**
-     * Authenticate WebSocket upgrade requests
-     * Checks for API key in header/query, session token in header/query, OR valid session cookie
-     */
-    function authenticateWebSocket(request: import('http').IncomingMessage): boolean {
-      const url = new URL(request.url || '', `http://${request.headers.host}`);
-
-      // Convert URL search params to query object
-      const query: Record<string, string | undefined> = {};
-      url.searchParams.forEach((value, key) => {
-        query[key] = value;
-      });
-
-      // Parse cookies from header
-      const cookieHeader = request.headers.cookie;
-      const cookies = cookieHeader ? cookie.parse(cookieHeader) : {};
-
-      // Use shared authentication logic for standard auth methods
-      if (
-        checkRawAuthentication(
-          request.headers as Record<string, string | string[] | undefined>,
-          query,
-          cookies
-        )
-      ) {
-        return true;
-      }
-
-      // Additionally check for short-lived WebSocket connection token (WebSocket-specific)
-      const wsToken = url.searchParams.get('wsToken');
-      if (wsToken && validateWsConnectionToken(wsToken)) {
-        return true;
-      }
-
-      return false;
-    }
-
-    // Handle HTTP upgrade requests manually to route to correct WebSocket server
-    server.on('upgrade', (request, socket, head) => {
-      if (isPreviewApiRequest(request)) {
-        socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
-        return;
-      }
-      const { pathname } = new URL(request.url || '', `http://${request.headers.host}`);
-
-      // Authenticate all WebSocket connections
-      if (!authenticateWebSocket(request)) {
-        logger.info('Authentication failed, rejecting connection');
-        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-        socket.destroy();
-        return;
-      }
-
-      if (pathname === '/api/events') {
-        wss.handleUpgrade(request, socket, head, (ws) => {
-          wss.emit('connection', ws, request);
-        });
-      } else if (pathname === '/api/terminal/ws') {
-        terminalWss.handleUpgrade(request, socket, head, (ws) => {
-          terminalWss.emit('connection', ws, request);
-        });
-      } else {
-        socket.destroy();
-      }
-    });
-
-    // Events WebSocket connection handler
-    wss.on('connection', (ws: WebSocket, request: import('http').IncomingMessage) => {
-      const correlationId = createCorrelationId(
-        typeof request.headers['x-request-id'] === 'string'
-          ? request.headers['x-request-id']
-          : undefined
-      );
-      logger.info('Client connected', { correlationId, readyState: ws.readyState });
-
-      // Subscribe to all events and forward to this client
-      const unsubscribe = events.subscribe((type, payload) => {
-        // Use debug level for high-frequency events to avoid log spam
-        // that causes progressive memory growth and server slowdown
-        const isHighFrequency =
-          type === 'dev-server:output' ||
-          type === 'test-runner:output' ||
-          type === 'feature:progress';
-        const log = isHighFrequency ? logger.debug.bind(logger) : logger.info.bind(logger);
-
-        log('Event received:', {
-          correlationId,
-          type,
-          hasPayload: !!payload,
-          wsReadyState: ws.readyState,
-        });
-
-        if (ws.readyState === WebSocket.OPEN) {
-          if (ws.bufferedAmount > 1024 * 1024) {
-            ws.close(
-              4008,
-              'Event client is too slow. Reconnect and refresh state; commands are not replayed.'
-            );
-            return;
-          }
-          const message = JSON.stringify({ type, payload });
-          ws.send(message);
-        } else {
-          logger.warn('Cannot send event, WebSocket not open. ReadyState:', ws.readyState);
-        }
-      });
-
-      ws.on('close', () => {
-        logger.info('Client disconnected');
-        unsubscribe();
-      });
-
-      ws.on('error', (error) => {
-        logger.error('ERROR:', error);
-        unsubscribe();
-      });
-    });
-
-    // Track WebSocket connections per session
-    const terminalConnections: Map<string, Set<WebSocket>> = new Map();
-    // Track last resize dimensions per session to deduplicate resize messages
-    const lastResizeDimensions: Map<string, { cols: number; rows: number }> = new Map();
-    // Track last resize timestamp to rate-limit resize operations (prevents resize storm)
-    const lastResizeTime: Map<string, number> = new Map();
-    const RESIZE_MIN_INTERVAL_MS = 100; // Minimum 100ms between resize operations
-
-    // Clean up resize tracking when sessions actually exit (not just when connections close)
-    terminalService.onExit((sessionId) => {
-      lastResizeDimensions.delete(sessionId);
-      lastResizeTime.delete(sessionId);
-      terminalConnections.delete(sessionId);
-    });
-
-    // Terminal WebSocket connection handler
-    terminalWss.on('connection', (ws: WebSocket, req: import('http').IncomingMessage) => {
-      const correlationId = createCorrelationId(
-        typeof req.headers['x-request-id'] === 'string' ? req.headers['x-request-id'] : undefined
-      );
-      // Parse URL to get session ID and token
-      const url = new URL(req.url || '', `http://${req.headers.host}`);
-      const sessionId = url.searchParams.get('sessionId');
-      const token = url.searchParams.get('token');
-
-      logger.info(`Connection attempt for session: ${sessionId}`);
-
-      // Check if terminal is enabled
-      if (!isTerminalEnabled()) {
-        logger.info('Terminal is disabled');
-        ws.close(4003, 'Terminal access is disabled');
-        return;
-      }
-
-      // Validate token if password is required
-      if (isTerminalPasswordRequired() && !validateTerminalToken(token || undefined)) {
-        logger.info('Invalid or missing token');
-        ws.close(4001, 'Authentication required');
-        return;
-      }
-
-      if (!sessionId) {
-        logger.info('No session ID provided');
-        ws.close(4002, 'Session ID required');
-        return;
-      }
-
-      // Check if session exists
-      const session = terminalService.getSession(sessionId);
-      if (!session) {
-        logger.warn(
-          `Terminal session ${sessionId} not found. ` +
-            `The session may have exited, been deleted, or was never created. ` +
-            `Active terminal sessions: ${terminalService.getSessionCount()}`
-        );
-        ws.close(
-          4004,
-          'Session not found. The terminal session may have expired or been closed. Please create a new terminal.'
-        );
-        return;
-      }
-
-      logger.info(`Client connected to session ${sessionId}`, { correlationId });
-      const allowInitialCommand = claimTerminalStartup(session);
-
-      // Track this connection
-      if (!terminalConnections.has(sessionId)) {
-        terminalConnections.set(sessionId, new Set());
-      }
-      terminalConnections.get(sessionId)!.add(ws);
-
-      // Send initial connection success FIRST
-      ws.send(
-        JSON.stringify({
-          type: 'connected',
-          sessionId,
-          shell: session.shell,
-          cwd: session.cwd,
-          executionEnvironment: session.executionEnvironment ?? {
-            type: 'local',
-            runtimeCwd: session.cwd,
-            legacy: true,
-          },
-          allowInitialCommand,
-        })
-      );
-
-      // Send scrollback buffer BEFORE subscribing to prevent race condition
-      // Also clear pending output buffer to prevent duplicates from throttled flush
-      const scrollback = terminalService.getScrollbackAndClearPending(sessionId);
-      if (scrollback && scrollback.length > 0) {
-        ws.send(
-          JSON.stringify({
-            type: 'scrollback',
-            data: scrollback,
-          })
-        );
-      }
-
-      // NOW subscribe to terminal data (after scrollback is sent)
-      const unsubscribeData = terminalService.onData((sid, data) => {
-        if (sid === sessionId && ws.readyState === WebSocket.OPEN) {
-          if (ws.bufferedAmount > 1024 * 1024) {
-            ws.close(
-              4008,
-              'Terminal client is too slow. Reconnect to the same session; commands are not replayed.'
-            );
-            return;
-          }
-          ws.send(JSON.stringify({ type: 'data', data }));
-        }
-      });
-
-      // Subscribe to terminal exit
-      const unsubscribeExit = terminalService.onExit((sid, exitCode) => {
-        if (sid === sessionId && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: 'exit', exitCode }));
-          ws.close(1000, 'Session ended');
-        }
-      });
-
-      // Handle incoming messages
-      ws.on('message', (message) => {
-        try {
-          const msg = JSON.parse(message.toString());
-
-          switch (msg.type) {
-            case 'input':
-              // Validate input data type and length
-              if (typeof msg.data !== 'string') {
-                ws.send(JSON.stringify({ type: 'error', message: 'Invalid input type' }));
-                break;
-              }
-              // Limit input size to 1MB to prevent memory issues
-              if (msg.data.length > 1024 * 1024) {
-                ws.send(JSON.stringify({ type: 'error', message: 'Input too large' }));
-                break;
-              }
-              // Write user input to terminal
-              terminalService.write(sessionId, msg.data);
-              break;
-
-            case 'resize':
-              // Validate resize dimensions are positive integers within reasonable bounds
-              if (
-                typeof msg.cols !== 'number' ||
-                typeof msg.rows !== 'number' ||
-                !Number.isInteger(msg.cols) ||
-                !Number.isInteger(msg.rows) ||
-                msg.cols < 1 ||
-                msg.cols > 1000 ||
-                msg.rows < 1 ||
-                msg.rows > 500
-              ) {
-                break; // Silently ignore invalid resize requests
-              }
-              // Resize terminal with deduplication and rate limiting
-              if (msg.cols && msg.rows) {
-                const now = Date.now();
-                const lastTime = lastResizeTime.get(sessionId) || 0;
-                const lastDimensions = lastResizeDimensions.get(sessionId);
-
-                // Skip if resized too recently (prevents resize storm during splits)
-                if (now - lastTime < RESIZE_MIN_INTERVAL_MS) {
-                  break;
-                }
-
-                // Check if dimensions are different from last resize
-                if (
-                  !lastDimensions ||
-                  lastDimensions.cols !== msg.cols ||
-                  lastDimensions.rows !== msg.rows
-                ) {
-                  // Only suppress output on subsequent resizes, not the first one
-                  // The first resize happens on terminal open and we don't want to drop the initial prompt
-                  const isFirstResize = !lastDimensions;
-                  terminalService.resize(sessionId, msg.cols, msg.rows, !isFirstResize);
-                  lastResizeDimensions.set(sessionId, {
-                    cols: msg.cols,
-                    rows: msg.rows,
-                  });
-                  lastResizeTime.set(sessionId, now);
-                }
-              }
-              break;
-
-            case 'ping':
-              // Respond to ping
-              ws.send(JSON.stringify({ type: 'pong' }));
-              break;
-
-            default:
-              logger.warn(`Unknown message type: ${msg.type}`);
-          }
-        } catch (error) {
-          logger.error('Error processing message:', error);
-        }
-      });
-
-      ws.on('close', () => {
-        logger.info(`Client disconnected from session ${sessionId}`);
-        unsubscribeData();
-        unsubscribeExit();
-
-        // Remove from connections tracking
-        const connections = terminalConnections.get(sessionId);
-        if (connections) {
-          connections.delete(ws);
-          if (connections.size === 0) {
-            terminalConnections.delete(sessionId);
-            // DON'T delete lastResizeDimensions/lastResizeTime here!
-            // The session still exists, and reconnecting clients need to know
-            // this isn't the "first resize" to prevent duplicate prompts.
-            // These get cleaned up when the session actually exits.
-          }
-        }
-      });
-
-      ws.on('error', (error) => {
-        logger.error(`Error on session ${sessionId}:`, error);
-        unsubscribeData();
-        unsubscribeExit();
-      });
-    });
-  }
-
   // Start server with error handling for port conflicts
   const startServer = (port: number, host: string): Promise<void> =>
     new Promise((resolve, reject) => {
@@ -943,17 +584,13 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
         // Build URLs for display
         const listenAddr = `${host}:${port}`;
         const httpUrl = `http://${HOSTNAME}:${port}`;
-        const wsEventsUrl = `ws://${HOSTNAME}:${port}/api/events`;
-        const wsTerminalUrl = `ws://${HOSTNAME}:${port}/api/terminal/ws`;
         const healthUrl = `http://${HOSTNAME}:${port}/api/health`;
 
         const sHeader = '🚀 Automaker Backend Server'.padEnd(BOX_CONTENT_WIDTH);
         const s1 = `Listening:    ${listenAddr}`.padEnd(BOX_CONTENT_WIDTH);
         const s2 = `HTTP API:     ${httpUrl}`.padEnd(BOX_CONTENT_WIDTH);
-        const s3 = `WebSocket:    ${wsEventsUrl}`.padEnd(BOX_CONTENT_WIDTH);
-        const s4 = `Terminal WS:  ${wsTerminalUrl}`.padEnd(BOX_CONTENT_WIDTH);
-        const s5 = `Health:       ${healthUrl}`.padEnd(BOX_CONTENT_WIDTH);
-        const s6 = `Terminal:     ${terminalStatus}`.padEnd(BOX_CONTENT_WIDTH);
+        const s3 = `Health:       ${healthUrl}`.padEnd(BOX_CONTENT_WIDTH);
+        const s4 = `Terminal:     ${terminalStatus}`.padEnd(BOX_CONTENT_WIDTH);
 
         logger.info(`
 ╔═════════════════════════════════════════════════════════════════════╗
@@ -964,8 +601,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
 ║  ${s2}║
 ║  ${s3}║
 ║  ${s4}║
-║  ${s5}║
-║  ${s6}║
 ║                                                                     ║
 ╚═════════════════════════════════════════════════════════════════════╝
 `);
