@@ -15,6 +15,8 @@ import {
   loadContextFiles,
   createLogger,
   classifyError,
+  atomicWriteJson,
+  DEFAULT_BACKUP_COUNT,
 } from '@automaker/utils';
 import { ProviderFactory } from '../providers/provider-factory.js';
 import { createChatOptions, validateWorkingDirectory } from '../lib/sdk-options.js';
@@ -1004,7 +1006,7 @@ export class AgentService {
     const sessionFile = path.join(this.stateDir, `${sessionId}.json`);
 
     try {
-      await secureFs.writeFile(sessionFile, JSON.stringify(messages, null, 2), 'utf-8');
+      await atomicWriteJson(sessionFile, messages, { backupCount: DEFAULT_BACKUP_COUNT });
       await this.updateSessionTimestamp(sessionId);
     } catch (error) {
       this.logger.error('Failed to save session:', error);
@@ -1021,7 +1023,7 @@ export class AgentService {
   }
 
   async saveMetadata(metadata: Record<string, SessionMetadata>): Promise<void> {
-    await secureFs.writeFile(this.metadataFile, JSON.stringify(metadata, null, 2), 'utf-8');
+    await atomicWriteJson(this.metadataFile, metadata, { backupCount: DEFAULT_BACKUP_COUNT });
   }
 
   async updateSessionTimestamp(sessionId: string): Promise<void> {
@@ -1276,7 +1278,7 @@ export class AgentService {
   private async saveQueueState(sessionId: string, queue: QueuedPrompt[]): Promise<void> {
     const queueFile = path.join(this.stateDir, `${sessionId}-queue.json`);
     try {
-      await secureFs.writeFile(queueFile, JSON.stringify(queue, null, 2), 'utf-8');
+      await atomicWriteJson(queueFile, queue, { backupCount: DEFAULT_BACKUP_COUNT });
     } catch (error) {
       this.logger.error('Failed to save queue state:', error);
     }

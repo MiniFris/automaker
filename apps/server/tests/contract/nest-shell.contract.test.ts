@@ -419,6 +419,17 @@ describe('Nest shell and legacy bridge contract', () => {
       };
       expect(createdSession.success).toBe(true);
 
+      const getSession = await fetch(
+        `${baseUrl}/api/sessions/${encodeURIComponent(createdSession.session.id)}`,
+        { headers }
+      );
+      expect(getSession.status).toBe(200);
+      expect(await getSession.json()).toMatchObject({
+        success: true,
+        session: { id: createdSession.session.id },
+        messages: [],
+      });
+
       const updateSession = await fetch(
         `${baseUrl}/api/sessions/${encodeURIComponent(createdSession.session.id)}`,
         {

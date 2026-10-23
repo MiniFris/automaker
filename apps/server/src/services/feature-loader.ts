@@ -13,6 +13,7 @@ import {
   DEFAULT_BACKUP_COUNT,
 } from '@automaker/utils';
 import * as secureFs from '../lib/secure-fs.js';
+import { atomicWriteText } from '../lib/atomic-write-text.js';
 import {
   getFeaturesDir,
   getFeatureDir,
@@ -544,7 +545,7 @@ export class FeatureLoader {
     await secureFs.mkdir(featureDir, { recursive: true });
 
     const agentOutputPath = this.getAgentOutputPath(projectPath, featureId);
-    await secureFs.writeFile(agentOutputPath, content, 'utf-8');
+    await atomicWriteText(agentOutputPath, content);
   }
 
   /**
@@ -611,7 +612,7 @@ export class FeatureLoader {
       }
 
       // Write the updated spec back to the file
-      await secureFs.writeFile(appSpecPath, updatedSpecContent, 'utf-8');
+      await atomicWriteText(appSpecPath, updatedSpecContent);
 
       logger.info(`Synced feature "${featureName}" to app_spec.txt`);
       return true;

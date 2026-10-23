@@ -40,6 +40,11 @@ export class SessionsController {
     return this.sessions.create(input);
   }
 
+  @Get(':sessionId')
+  get(@Param(new ZodValidationPipe(SessionParamsSchema)) params: SessionParams) {
+    return this.sessions.get(params.sessionId);
+  }
+
   @Put(':sessionId')
   update(
     @Param(new ZodValidationPipe(SessionParamsSchema)) params: SessionParams,

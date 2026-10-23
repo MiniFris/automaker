@@ -1,5 +1,9 @@
 # Этап 5. Проектные данные и workflow
 
+Статус: завершён 2026-10-23. Все unit-коммиты выполнены в общей ветке
+`refactor/backend-nestjs-migration`; после каждого unit запускались целевые тесты,
+после этапа — полный checkpoint.
+
 ## Цель
 
 Перенести modules, которые владеют настройками и файловым состоянием проектов,
@@ -18,76 +22,76 @@ routes и services. Сначала меняется способ получен�
 
 ## 5.1. SettingsModule
 
-- [ ] Зарегистрировать единственный `SettingsService` в Nest container.
-- [ ] Разделить global settings, project settings, credentials и migrations.
-- [ ] Ввести repositories для файлов настроек и секретов.
-- [ ] Сохранить atomic writes, permissions и backup behavior.
-- [ ] Перенести execution environments и model timeout settings.
-- [ ] Перенести OpenAI-compatible endpoint settings.
-- [ ] Перенести runtime log-level/request-logging reactions через domain event.
-- [ ] Удалить прямое создание `SettingsService` в providers.
-- [ ] Сохранить legacy Electron settings migration.
-- [ ] Удалить settings routes из legacy bridge.
+- [x] Зарегистрировать единственный `SettingsService` в Nest container.
+- [x] Разделить global settings, project settings, credentials и migrations.
+- [x] Ввести repositories для файлов настроек и секретов.
+- [x] Сохранить atomic writes, permissions и backup behavior.
+- [x] Перенести execution environments и model timeout settings.
+- [x] Перенести OpenAI-compatible endpoint settings.
+- [x] Перенести runtime log-level/request-logging reactions через domain event.
+- [x] Удалить прямое создание `SettingsService` в providers.
+- [x] Сохранить legacy Electron settings migration.
+- [x] Удалить settings routes из legacy bridge.
 
 Секретные поля не входят в response DTO. Masked value никогда не считается новым
 credential при update.
 
 ## 5.2. ProjectsModule
 
-- [ ] Выделить `ProjectRegistry` и `ProjectOverviewService`.
-- [ ] Нормализовать project identity отдельно от display path.
-- [ ] Сохранить multi-project dashboard и recent project behavior.
-- [ ] Валидировать allowed roots до чтения repository.
-- [ ] Не выполнять implicit setup/Docker/SSH mutation при list/get.
-- [ ] Перенести add/remove/update/overview routes.
+- [x] Выделить `ProjectRegistry` и `ProjectOverviewService`.
+- [x] Нормализовать project identity отдельно от display path.
+- [x] Сохранить multi-project dashboard и recent project behavior.
+- [x] Валидировать allowed roots до чтения repository.
+- [x] Не выполнять implicit setup/Docker/SSH mutation при list/get.
+- [x] Перенести add/remove/update/overview routes.
 
 ## 5.3. FilesModule и ContextModule
 
-- [ ] Разделить local controller filesystem и execution environment filesystem.
-- [ ] Создать `ProjectFilePort` с read/write/list/stat/copy/move/delete/download.
-- [ ] Сохранить limits, image handling и streaming downloads.
-- [ ] Сохранить traversal/symlink protection.
-- [ ] Перенести context Markdown/images и describe operations.
-- [ ] Не смешивать remote authoritative path с controller alias.
-- [ ] Добавить locks для конфликтующих writes.
+- [x] Разделить local controller filesystem и execution environment filesystem.
+- [x] Создать `ProjectFilePort` с read/write/list/stat/copy/move/delete/download.
+- [x] Сохранить limits, image handling и streaming downloads.
+- [x] Сохранить traversal/symlink protection.
+- [x] Перенести context Markdown/images и describe operations.
+- [x] Не смешивать remote authoritative path с controller alias.
+- [x] Добавить locks для конфликтующих writes.
 
 ## 5.4. FeaturesModule
 
-- [ ] Разделить `FeatureRepository`, `FeatureApplicationService` и state transitions.
-- [ ] Перенести list/get/create/update/delete/bulk routes.
-- [ ] Централизовать допустимые status transitions.
-- [ ] Сохранить description history, images, priorities и dependencies.
-- [ ] Сохранить event emission и sync verified/completed в app spec.
-- [ ] Перенести import/export/orphan recovery.
-- [ ] Не переносить agent execution внутрь repository.
-- [ ] Добавить optimistic/version check либо project-level serialization для writes.
+- [x] Разделить `FeatureRepository`, `FeatureApplicationService` и state transitions.
+- [x] Перенести list/get/create/update/delete/bulk routes.
+- [x] Централизовать допустимые status transitions.
+- [x] Сохранить description history, images, priorities и dependencies.
+- [x] Сохранить event emission и sync verified/completed в app spec.
+- [x] Перенести import/export/orphan recovery.
+- [x] Не переносить agent execution внутрь repository.
+- [x] Добавить optimistic/version check либо project-level serialization для writes.
 
 Feature storage остаётся совместимым с существующим `feature.json` и дополнительными
 файлами. Любое расширение должно быть читаемо предыдущим release до cutover.
 
 ## 5.5. SessionsModule
 
-- [ ] Разделить persisted chat metadata и active provider session.
-- [ ] Перенести create/list/get/update/delete routes.
-- [ ] Зафиксировать owner cleanup активной session.
-- [ ] Сохранить history ordering и restart behavior.
-- [ ] Не сохранять raw secrets/provider clients.
+- [x] Разделить persisted chat metadata и active provider session.
+- [x] Перенести create/list/get/update/delete routes.
+- [x] Зафиксировать owner cleanup активной session.
+- [x] Сохранить history ordering и restart behavior.
+- [x] Не сохранять raw secrets/provider clients.
 
 ## 5.6. Specification modules
 
-- [ ] `AppSpecModule`: generate, parse, create features, sync.
-- [ ] `BacklogPlanModule`: generate, apply и validation.
-- [ ] Использовать `@automaker/spec-parser` как pure dependency.
-- [ ] Вынести model query за provider port.
-- [ ] Отделить parsing от filesystem mutation.
-- [ ] Сохранить plan approval semantics.
+- [x] `AppSpecModule`: generate, parse, create features, sync.
+- [x] `BacklogPlanModule`: generate, apply и validation.
+- [x] Использовать `@automaker/spec-parser` как pure dependency.
+- [x] Вынести model query за provider port.
+- [x] Отделить parsing от filesystem mutation.
+- [x] Сохранить plan approval semantics.
 
 ## 5.7. Contracts package
 
-- [ ] Shared schemas для migrated settings/projects/features/sessions/spec endpoints.
-- [ ] UI client использует inferred types, но не Nest DTO classes.
-- [ ] Добавить API contract version metadata.
-- [ ] Генерацию OpenAPI выполнять из тех же schemas либо проверять на divergence.
+- [x] Shared schemas для migrated settings/projects/features/sessions/spec endpoints.
+- [x] UI client использует inferred types, но не Nest DTO classes.
+- [x] Добавить API contract version metadata.
+- [x] Генерацию OpenAPI выполнять из тех же schemas либо проверять на divergence.
 
 ## Тесты
 
@@ -128,3 +132,17 @@ UI smoke и production server build. Следующий этап до успеш
 - UI workflows не требуют изменения public API.
 - Полный checkpoint этапа 5, включая storage compatibility и UI workflow smoke,
   успешно выполнен и зафиксирован завершающим коммитом.
+
+## Результат checkpoint
+
+- Route inventory schema v2 содержит только фактически смонтированные endpoints:
+  308 маршрутов, без дублей; у project-domain groups нет legacy owners.
+- Полный server unit suite: 112 test files, 2825 tests passed, 40 skipped.
+- Полный server contract suite: 20 test files, 219 tests passed; storage fixtures:
+  2 tests passed.
+- Production build успешно собран для packages, server, web UI и Electron main/preload.
+- UI smoke на Chromium: 16 tests passed для settings, projects/board, context,
+  features и sessions.
+- `@automaker/contracts` содержит общие Zod schemas и API contract version header;
+  server и UI используют один источник transport types.
+- Inventories routes/dependencies/API consumers регенерированы и проходят `--check`.

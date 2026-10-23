@@ -4,6 +4,7 @@ import {
   AppSpecCreateSchema,
   BacklogApplySchema,
   FeatureUpdateSchema,
+  createProjectDomainOpenApiDocument,
   SessionCreateSchema,
 } from '../src/index.js';
 
@@ -39,5 +40,12 @@ describe('project domain transport contracts', () => {
         plan: { changes: [], summary: 'Approved', dependencyUpdates: [] },
       }).plan
     ).toEqual({ changes: [], summary: 'Approved', dependencyUpdates: [] });
+  });
+
+  it('generates OpenAPI components from the shared runtime schemas', () => {
+    const document = createProjectDomainOpenApiDocument();
+    expect(document.openapi).toBe('3.1.0');
+    expect(document.components.schemas).toHaveProperty('FeatureUpdate');
+    expect(document.components.schemas).toHaveProperty('BacklogApply');
   });
 });

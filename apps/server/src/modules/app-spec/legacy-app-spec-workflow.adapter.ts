@@ -12,7 +12,7 @@ import type { AppSpecGenerationOptions, AppSpecWorkflowPort } from './app-spec-w
 export class LegacyAppSpecWorkflowAdapter implements AppSpecWorkflowPort {
   constructor(
     @Inject(LEGACY_EVENT_EMITTER) private readonly events: EventEmitter,
-    @Inject(LEGACY_SERVICES.settings) private readonly settings: SettingsService,
+    @Inject(SettingsService) private readonly settings: SettingsService,
     @Inject(LEGACY_SERVICES.notification) private readonly notifications: NotificationService
   ) {}
 

@@ -9,6 +9,7 @@ const repositoryRoot = resolve(import.meta.dirname, '..');
 const routeRoot = join(repositoryRoot, 'apps/server/src/routes');
 const nestSourceRoot = join(repositoryRoot, 'apps/server/src');
 const serverEntry = join(repositoryRoot, 'apps/server/src/legacy-application.ts');
+const ownershipSource = join(repositoryRoot, 'apps/server/src/legacy/legacy-router.middleware.ts');
 const outputPath = join(repositoryRoot, 'docs/backend-nestjs-migration/artifacts/http-routes.json');
 const methods = new Set(['get', 'post', 'put', 'patch', 'delete']);
 const nestMethods = new Map([
@@ -341,7 +342,21 @@ function buildSummary(endpoints) {
   );
 }
 
+function parseRouteGroupOwners(sourceText) {
+  const owners = new Map();
+  for (const match of sourceText.matchAll(
+    /^\s*(?:'([^']+)'|([A-Za-z0-9-]+)):\s*'(nest|legacy)'/gm
+  )) {
+    owners.set(match[1] ?? match[2], match[3]);
+  }
+  if (owners.size === 0) {
+    throw new Error('Could not parse ROUTE_GROUP_OWNERS');
+  }
+  return owners;
+}
+
 async function generate() {
+  const routeGroupOwners = parseRouteGroupOwners(await readFile(ownershipSource, 'utf8'));
   const files = await walk(routeRoot);
   const nestControllerFiles = (await walk(nestSourceRoot)).filter((file) =>
     file.endsWith('.controller.ts')
@@ -355,13 +370,18 @@ async function generate() {
     endpoints.push(...parseNestControllerEndpoints(file, await readFile(file, 'utf8')));
   }
   endpoints.push(...middlewareOnlyEndpoints);
-  sortEndpoints(endpoints);
+  const activeEndpoints = endpoints.filter((endpoint) => {
+    if (endpoint.owner !== 'legacy-express') return true;
+    const apiGroup = endpoint.path.split('/')[2];
+    return routeGroupOwners.get(apiGroup) !== 'nest';
+  });
+  sortEndpoints(activeEndpoints);
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     sourceRoot: 'apps/server/src',
-    total: endpoints.length,
-    groups: buildSummary(endpoints),
-    endpoints,
+    total: activeEndpoints.length,
+    groups: buildSummary(activeEndpoints),
+    endpoints: activeEndpoints,
   };
 }
 

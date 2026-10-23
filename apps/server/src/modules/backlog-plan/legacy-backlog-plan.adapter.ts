@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { LEGACY_EVENT_EMITTER, LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
+import { LEGACY_EVENT_EMITTER } from '../../legacy/legacy.tokens.js';
 import type { EventEmitter } from '../../lib/events.js';
 import { clearBacklogPlan, loadBacklogPlan } from '../../routes/backlog-plan/common.js';
 import { generateBacklogPlan } from '../../routes/backlog-plan/generate-plan.js';
@@ -11,7 +11,7 @@ import type { BacklogGenerateRequest } from './backlog-plan.schemas.js';
 export class LegacyBacklogPlanAdapter implements BacklogPlanWorkflow, BacklogPlanStore {
   constructor(
     @Inject(LEGACY_EVENT_EMITTER) private readonly events: EventEmitter,
-    @Inject(LEGACY_SERVICES.settings) private readonly settings: SettingsService
+    @Inject(SettingsService) private readonly settings: SettingsService
   ) {}
 
   generate(input: BacklogGenerateRequest, abortController: AbortController) {

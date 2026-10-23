@@ -4,7 +4,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { RUNTIME_CONFIG, type RuntimeConfig } from '../../../src/core/config/index.js';
 import { NotFoundDomainError } from '../../../src/core/errors/index.js';
 import { SECURE_FILESYSTEM, SecurityService } from '../../../src/core/security/index.js';
-import { LEGACY_SERVICES } from '../../../src/legacy/legacy.tokens.js';
 import { ModelsCatalogService } from '../../../src/modules/models/models-catalog.service.js';
 import { NotificationsApplicationService } from '../../../src/modules/notifications/notifications.service.js';
 import { NotificationService } from '../../../src/services/notification-service.js';
@@ -14,6 +13,7 @@ import {
 } from '../../../src/modules/templates/template-command.runner.js';
 import { TemplatesService } from '../../../src/modules/templates/templates.service.js';
 import { ProviderFactory } from '../../../src/providers/provider-factory.js';
+import { SettingsService } from '../../../src/services/settings-service.js';
 
 describe('migrated edge Nest modules', () => {
   afterEach(() => vi.restoreAllMocks());
@@ -25,7 +25,7 @@ describe('migrated edge Nest modules', () => {
       providers: [
         ModelsCatalogService,
         {
-          provide: LEGACY_SERVICES.settings,
+          provide: SettingsService,
           useValue: { getGlobalSettings: vi.fn().mockResolvedValue({}) },
         },
         {

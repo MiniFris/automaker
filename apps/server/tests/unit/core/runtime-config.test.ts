@@ -4,6 +4,21 @@ import { describe, expect, it } from 'vitest';
 import { parseRuntimeConfig, RuntimeConfigError } from '../../../src/core/config/index.js';
 
 describe('runtime config', () => {
+  it('treats empty optional environment variables as unset', () => {
+    const config = parseRuntimeConfig(
+      {
+        ALLOWED_ROOT_DIRECTORY: '',
+        CORS_ORIGIN: '   ',
+        AUTOMAKER_API_KEY: '',
+      },
+      '/workspace'
+    );
+
+    expect(config.storage.allowedRootDirectory).toBeUndefined();
+    expect(config.server.corsOrigins).toEqual([]);
+    expect(config.auth.apiKey).toBeUndefined();
+  });
+
   it('applies safe server, auth, terminal and preview defaults', () => {
     const config = parseRuntimeConfig({}, '/workspace');
 

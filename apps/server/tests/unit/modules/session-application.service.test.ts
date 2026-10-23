@@ -44,6 +44,13 @@ describe('SessionApplicationService', () => {
       ],
     });
     expect(repository.list).toHaveBeenCalledWith(false);
+
+    await expect(service.get('session-1')).resolves.toEqual({
+      success: true,
+      session: metadata,
+      messages: [{ content: 'first' }, { content: 'last message' }],
+    });
+    expect(repository.list).toHaveBeenLastCalledWith(true);
   });
 
   it('validates both project and working directory before persistence', async () => {

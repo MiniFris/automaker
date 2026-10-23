@@ -7,7 +7,10 @@ const booleanValue = (defaultValue: boolean) =>
     .optional()
     .transform((value) => (value === undefined ? defaultValue : value === 'true' || value === '1'));
 
-const optionalString = z.string().trim().min(1).optional();
+const optionalString = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  z.string().trim().min(1).optional()
+);
 
 const RuntimeEnvironmentSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),

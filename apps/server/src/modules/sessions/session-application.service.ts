@@ -47,6 +47,16 @@ export class SessionApplicationService {
     return { success: true as const, sessions };
   }
 
+  async get(sessionId: string) {
+    const metadata = (await this.sessions.list(true)).find((session) => session.id === sessionId);
+    if (!metadata) throw new NotFoundDomainError('Session not found');
+    return {
+      success: true as const,
+      session: metadata,
+      messages: await this.sessions.loadMessages(sessionId),
+    };
+  }
+
   create(input: SessionCreateRequest) {
     return this.serialize(async () => {
       const projectPath = input.projectPath
