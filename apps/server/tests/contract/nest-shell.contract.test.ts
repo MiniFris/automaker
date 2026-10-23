@@ -1,5 +1,5 @@
 import type { AddressInfo } from 'node:net';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -251,6 +251,23 @@ describe('Nest shell and legacy bridge contract', () => {
         success: true,
         resolved: { type: 'local' },
       });
+
+      const fixtureFile = path.join(projectPath, 'read-fixture.txt');
+      await writeFile(fixtureFile, 'fixture');
+      for (const [route, body] of [
+        ['read', { filePath: fixtureFile }],
+        ['readdir', { dirPath: projectPath }],
+        ['stat', { filePath: fixtureFile }],
+        ['exists', { filePath: fixtureFile }],
+      ] as const) {
+        const response = await fetch(`${baseUrl}/api/fs/${route}`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body),
+        });
+        expect(response.status, `fs/${route}`).toBe(200);
+        expect(await response.json()).toMatchObject({ success: true });
+      }
 
       for (const route of ['notifications/list', 'event-history/list']) {
         const response = await fetch(`${baseUrl}/api/${route}`, {

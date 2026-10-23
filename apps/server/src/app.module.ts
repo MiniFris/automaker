@@ -21,6 +21,7 @@ import { TemplatesModule } from './modules/templates/templates.module.js';
 import { WorkspaceModule } from './modules/workspace/workspace.module.js';
 import { SettingsModule } from './modules/settings/settings.module.js';
 import { ProjectsModule } from './modules/projects/projects.module.js';
+import { FilesModule } from './modules/files/files.module.js';
 
 @Module({})
 export class AppModule {
@@ -44,6 +45,7 @@ export class AppModule {
         ValidationModule,
         SettingsModule,
         ProjectsModule,
+        FilesModule,
         HealthModule,
         ModelsModule,
         NotificationsModule,

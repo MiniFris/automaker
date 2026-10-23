@@ -78,6 +78,10 @@ export const NEST_OWNED_ROUTE_PATHS = new Set<string>([
   'POST /api/settings/execution-environments/ssh/prepare',
   'POST /api/settings/execution-environments/ssh/project',
   'POST /api/settings/execution-environments/ssh/recover',
+  'POST /api/fs/read',
+  'POST /api/fs/readdir',
+  'POST /api/fs/stat',
+  'POST /api/fs/exists',
 ]);
 
 export function getApiRouteGroup(request: Pick<Request, 'originalUrl'>): string | undefined {

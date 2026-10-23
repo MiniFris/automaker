@@ -4,6 +4,7 @@ import { Injectable } from '@nestjs/common';
 import { createLogger } from '@automaker/utils';
 import { validatePath, initAllowedPaths } from '@automaker/platform';
 import { redactSecrets } from '../observability/request-context.js';
+import { ForbiddenDomainError } from '../errors/index.js';
 
 const logger = createLogger('SecurityAudit');
 
@@ -24,7 +25,7 @@ export class SecurityService {
           reason: error instanceof Error ? error.message : error,
         })
       );
-      throw error;
+      throw new ForbiddenDomainError(error instanceof Error ? error.message : 'Path not allowed.');
     }
   }
   private resolveSymlinks(candidate: string): string {
