@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { getAutomakerDir } from '@automaker/platform';
 import type { EventEmitter } from '../../lib/events.js';
 import { LEGACY_EVENT_EMITTER } from '../../legacy/legacy.tokens.js';
 import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
@@ -21,6 +22,11 @@ import type {
   WorktreeMergeRequest,
   WorktreeCreateRequest,
   WorktreeDeleteRequest,
+  WorktreeInitGitRequest,
+  WorktreeInitScriptDeleteRequest,
+  WorktreeInitScriptQuery,
+  WorktreeInitScriptWriteRequest,
+  WorktreeRunInitScriptRequest,
   WorktreeDiscardRequest,
   WorktreeFeatureRequest,
   WorktreeFileRequest,
@@ -243,6 +249,13 @@ export class WorktreeApplicationService {
         reason: entry.reason,
         error: entry.error,
       });
+    const worktree = response.worktree as { path: string; branch: string; isNew: boolean };
+    if (worktree.isNew)
+      this.startInitScript({
+        projectPath: input.projectPath,
+        worktreePath: worktree.path,
+        branch: worktree.branch,
+      });
     return response;
   }
 
@@ -278,6 +291,79 @@ export class WorktreeApplicationService {
       branchDeleted: result.branchDeleted,
     });
     return response;
+  }
+
+  initGit(input: WorktreeInitGitRequest, signal: AbortSignal) {
+    return this.runPath('init-git', input.projectPath, input, signal);
+  }
+
+  getInitScript(input: WorktreeInitScriptQuery, signal: AbortSignal) {
+    return this.runPath('init-script-get', input.projectPath, input, signal);
+  }
+
+  putInitScript(input: WorktreeInitScriptWriteRequest, signal: AbortSignal) {
+    return this.runPath('init-script-put', input.projectPath, input, signal);
+  }
+
+  deleteInitScript(input: WorktreeInitScriptDeleteRequest, signal: AbortSignal) {
+    return this.runPath('init-script-delete', input.projectPath, input, signal);
+  }
+
+  runInitScript(input: WorktreeRunInitScriptRequest) {
+    this.startInitScript(input);
+    return { success: true as const, message: 'Init script started' };
+  }
+
+  migrate(input: WorktreeInitGitRequest) {
+    return {
+      success: true as const,
+      migrated: false,
+      message: 'No migration needed - .automaker is stored in project directory',
+      path: getAutomakerDir(input.projectPath),
+    };
+  }
+
+  private startInitScript(input: WorktreeRunInitScriptRequest) {
+    const controller = new AbortController();
+    this.events.emit('worktree:init-started', input);
+    void this.runPath('run-init-script', input.worktreePath, input, controller.signal)
+      .then((response) => {
+        const run = response.initScript as {
+          success: boolean;
+          stdout?: string;
+          stderr?: string;
+          exitCode?: number;
+          skipped?: boolean;
+        };
+        if (run.stdout)
+          this.events.emit('worktree:init-output', {
+            projectPath: input.projectPath,
+            branch: input.branch,
+            type: 'stdout',
+            content: run.stdout,
+          });
+        if (run.stderr)
+          this.events.emit('worktree:init-output', {
+            projectPath: input.projectPath,
+            branch: input.branch,
+            type: 'stderr',
+            content: run.stderr,
+          });
+        this.events.emit('worktree:init-completed', {
+          ...input,
+          success: run.success,
+          exitCode: run.exitCode,
+          skipped: run.skipped,
+        });
+      })
+      .catch((error) =>
+        this.events.emit('worktree:init-completed', {
+          ...input,
+          success: false,
+          error: this.message(error),
+          outcome: 'unknown',
+        })
+      );
   }
 
   async commitLog(input: WorktreeCommitLogRequest, signal: AbortSignal) {

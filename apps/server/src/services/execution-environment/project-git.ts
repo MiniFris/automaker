@@ -33,6 +33,7 @@ export const gitReadActions = new Set([
   'commit-log',
   'branch-commit-log',
   'stash-list',
+  'init-script-get',
 ]);
 export const gitWriteActions = new Set([
   'stage-files',
@@ -55,6 +56,10 @@ export const gitWriteActions = new Set([
   'cherry-pick',
   'merge',
   'delete',
+  'init-git',
+  'init-script-put',
+  'init-script-delete',
+  'run-init-script',
 ]);
 export function workspaceAlias(binding: ExecutionEnvironmentBinding) {
   const root = binding.ssh?.remotePath ?? binding.projectPath;

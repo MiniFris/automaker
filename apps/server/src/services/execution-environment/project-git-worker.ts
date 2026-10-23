@@ -9,6 +9,10 @@ const succeeds=(cwd,...args)=>{try{git(cwd,...args);return true;}catch{return fa
 const inside=(root,file)=>file===root||file.startsWith(root+'/');
 let cwd=p.cwd;
 const root=fs.realpathSync(p.root);
+const automaker=()=>{const dir=path.join(root,'.automaker');if(fs.existsSync(dir)){const actual=fs.realpathSync(dir);if(!inside(root,actual))bad('GIT_WORKSPACE_CHANGED','.automaker must stay inside the selected target project.');}return dir;};
+const initScript=()=>path.join(automaker(),'worktree-init.sh');
+const metadataFile=name=>{const safe=name.replace(/[/\\:*?"<>|]/g,'-').replace(/\s+/g,'_').replace(/\.+$/g,'').replace(/-+/g,'-').replace(/^-|-$/g,'').slice(0,200)||'_branch';return path.join(automaker(),'worktrees',safe,'worktree.json');};
+const writeMetadata=(name,updates)=>{const file=metadataFile(name);let current={};try{current=JSON.parse(fs.readFileSync(file,'utf8'));}catch{}const value={branch:name,createdAt:current.createdAt??new Date().toISOString(),...current,...updates};fs.mkdirSync(path.dirname(file),{recursive:true});const temporary=file+'.'+process.pid+'.tmp';fs.writeFileSync(temporary,JSON.stringify(value,null,2),{mode:384});fs.renameSync(temporary,file);};
 const verify=dir=>{
  if(fs.realpathSync(dir)!==dir||!inside(root,dir)||fs.realpathSync(git(dir,'rev-parse','--show-toplevel').trim())!==dir||fs.realpathSync(path.resolve(dir,git(dir,'rev-parse','--git-common-dir').trim()))!==path.join(root,'.git'))bad('GIT_WORKSPACE_CHANGED','Target working copy identity changed. No host fallback was performed.');
 };
@@ -67,10 +71,25 @@ const mergeState=()=>{
  return kind?{isMerging:true,mergeOperationType:kind,isCleanMerge:conflictFiles.length===0,mergeAffectedFiles:entries(cwd).map(x=>x.path),conflictFiles}:undefined;
 };
 try{
- verify(cwd);
+ if(p.action!=='init-git')verify(cwd);
  if(b.workspaceBranch){const list=worktrees().filter(item=>item.branch===b.workspaceBranch);if(list.length!==1)bad('GIT_WORKSPACE_REQUIRED','No unambiguous worktree exists for this branch. No project-root fallback was used.');cwd=list[0].runtimePath;verify(cwd);}
  let result;
- if(p.action==='environment')result={};
+ if(p.action==='init-git'){
+  if(cwd!==root)bad('GIT_PROJECT_ROOT_REQUIRED','Git initialization must run at the selected target project root.');const directory=path.join(root,'.git');if(fs.existsSync(directory))result={result:{initialized:false,message:'Git repository already exists'}};else{let created=false;try{git(root,'init','--initial-branch=main');created=true;if(!optional(root,'config','user.name'))git(root,'config','user.name','Automaker');if(!optional(root,'config','user.email'))git(root,'config','user.email','automaker@localhost');git(root,'commit','--allow-empty','-m','Initial commit');result={result:{initialized:true,message:'Git repository initialized with initial commit'}};}catch(error){if(created)fs.rmSync(directory,{recursive:true,force:true});throw error;}}
+ }
+ else if(p.action==='environment')result={};
+ else if(p.action==='init-script-get'){
+  const script=initScript(),exists=fs.existsSync(script);if(exists){const stat=fs.lstatSync(script);if(!stat.isFile()||stat.size>1048576||!inside(root,fs.realpathSync(script)))bad('INIT_SCRIPT_INVALID','Init script must be a regular project file no larger than 1MB.');}result={exists,content:exists?fs.readFileSync(script,'utf8'):'',path:path.posix.join(p.controllerRoot,'.automaker','worktree-init.sh')};
+ }
+ else if(p.action==='init-script-put'){
+  if(typeof b.content!=='string'||Buffer.byteLength(b.content)>1048576)bad('INIT_SCRIPT_INVALID','Init script must be text no larger than 1MB.');const script=initScript();fs.mkdirSync(path.dirname(script),{recursive:true});if(!inside(root,fs.realpathSync(path.dirname(script))))bad('GIT_WORKSPACE_CHANGED','.automaker escaped the selected target project.');fs.writeFileSync(script,b.content,{encoding:'utf8',mode:384});result={path:path.posix.join(p.controllerRoot,'.automaker','worktree-init.sh')};
+ }
+ else if(p.action==='init-script-delete'){
+  fs.rmSync(initScript(),{force:true});result={};
+ }
+ else if(p.action==='run-init-script'){
+  const name=branch(b.branch),current=optional(cwd,'symbolic-ref','--quiet','--short','HEAD');if(current!==name)bad('GIT_WORKSPACE_CHANGED','Requested branch is not checked out in the selected target worktree.');const script=initScript();if(!fs.existsSync(script))result={initScript:{success:true,skipped:true,stdout:'',stderr:''}};else{const stat=fs.lstatSync(script);if(!stat.isFile()||stat.size>1048576||!inside(root,fs.realpathSync(script)))bad('INIT_SCRIPT_INVALID','Init script must be a regular project file no larger than 1MB.');writeMetadata(name,{initScriptRan:false,initScriptStatus:'running'});const shell=fs.existsSync('/bin/sh')?'/bin/sh':'bash',env={PATH:process.env.PATH??'',HOME:process.env.HOME??'',USER:process.env.USER??'',TMPDIR:process.env.TMPDIR??'/tmp',SHELL:process.env.SHELL??'',LANG:process.env.LANG??'en_US.UTF-8',LC_ALL:process.env.LC_ALL??'',FORCE_COLOR:'1',npm_config_color:'always',CLICOLOR_FORCE:'1',GIT_TERMINAL_PROMPT:'0',AUTOMAKER_PROJECT_PATH:root,AUTOMAKER_WORKTREE_PATH:cwd,AUTOMAKER_BRANCH:name};let stdout='',stderr='',exitCode=0;try{stdout=execFileSync(shell,[script],{cwd,env,encoding:'utf8',stdio:['ignore','pipe','pipe'],timeout:110000,maxBuffer:1024*1024});}catch(error){stdout=String(error.stdout??'');stderr=String(error.stderr??'');exitCode=Number.isInteger(error.status)?error.status:1;}const success=exitCode===0;writeMetadata(name,{initScriptRan:true,initScriptStatus:success?'success':'failed',initScriptError:success?undefined:'Exit code: '+exitCode});result={initScript:{success,stdout,stderr,exitCode}};}
+ }
  else if(p.action==='list')result={worktrees:worktrees()};
  else if(p.action==='info')result={worktreePath:alias(cwd),branchName:git(cwd,'rev-parse','--abbrev-ref','HEAD').trim()};
  else if(p.action==='status'){const list=entries(cwd);result={modifiedFiles:list.length,files:list.map(x=>x.path),diffStat:git(cwd,'diff','--no-ext-diff','--no-textconv','--stat').trim(),recentCommits:head(cwd)?git(cwd,'log','--oneline','-5').trim().split('\n'):[]};}

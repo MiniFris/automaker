@@ -1,10 +1,12 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Inject,
   Post,
+  Put,
   Query,
   Res,
   UseGuards,
@@ -25,6 +27,11 @@ import {
   WorktreeMergeSchema,
   WorktreeCreateSchema,
   WorktreeDeleteSchema,
+  WorktreeInitGitSchema,
+  WorktreeInitScriptDeleteSchema,
+  WorktreeInitScriptQuerySchema,
+  WorktreeInitScriptWriteSchema,
+  WorktreeRunInitScriptSchema,
   WorktreeDiscardSchema,
   WorktreeMutationSchema,
   WorktreeRemoteAddSchema,
@@ -55,6 +62,11 @@ import {
   type WorktreeMergeRequest,
   type WorktreeCreateRequest,
   type WorktreeDeleteRequest,
+  type WorktreeInitGitRequest,
+  type WorktreeInitScriptDeleteRequest,
+  type WorktreeInitScriptQuery,
+  type WorktreeInitScriptWriteRequest,
+  type WorktreeRunInitScriptRequest,
   type WorktreeDiscardRequest,
   type WorktreeFeatureRequest,
   type WorktreeFileRequest,
@@ -383,6 +395,61 @@ export class WorktreeController {
     @Res({ passthrough: true }) response: Response
   ) {
     return this.cancel(response, (signal) => this.worktrees.delete(body, signal));
+  }
+
+  @Post('init-git')
+  @HttpCode(200)
+  @AllowedPathFields('projectPath')
+  initGit(
+    @Body(new ZodValidationPipe(WorktreeInitGitSchema)) body: WorktreeInitGitRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.initGit(body, signal));
+  }
+
+  @Get('init-script')
+  @AllowedPathFields('projectPath')
+  getInitScript(
+    @Query(new ZodValidationPipe(WorktreeInitScriptQuerySchema)) query: WorktreeInitScriptQuery,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.getInitScript(query, signal));
+  }
+
+  @Put('init-script')
+  @AllowedPathFields('projectPath')
+  putInitScript(
+    @Body(new ZodValidationPipe(WorktreeInitScriptWriteSchema))
+    body: WorktreeInitScriptWriteRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.putInitScript(body, signal));
+  }
+
+  @Delete('init-script')
+  @AllowedPathFields('projectPath')
+  deleteInitScript(
+    @Body(new ZodValidationPipe(WorktreeInitScriptDeleteSchema))
+    body: WorktreeInitScriptDeleteRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.deleteInitScript(body, signal));
+  }
+
+  @Post('run-init-script')
+  @HttpCode(200)
+  @AllowedPathFields('projectPath', 'worktreePath')
+  runInitScript(
+    @Body(new ZodValidationPipe(WorktreeRunInitScriptSchema)) body: WorktreeRunInitScriptRequest
+  ) {
+    return this.worktrees.runInitScript(body);
+  }
+
+  @Post('migrate')
+  @HttpCode(200)
+  @AllowedPathFields('projectPath')
+  migrate(@Body(new ZodValidationPipe(WorktreeInitGitSchema)) body: WorktreeInitGitRequest) {
+    return this.worktrees.migrate(body);
   }
 
   @Post('commit-log')

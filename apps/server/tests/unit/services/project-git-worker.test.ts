@@ -140,6 +140,54 @@ describe.skipIf(process.platform !== 'linux')('fixed target-side Git worker with
       code: 'GIT_MAIN_WORKTREE',
     });
   });
+  it('stores and executes init scripts inside the selected target only', async () => {
+    const created = await run('create', { branchName: 'feature/init', baseBranch: 'main' });
+    const script = 'printf "hello-$AUTOMAKER_BRANCH\\n"; printf "ready\\n" > initialized.txt\n';
+    expect((await run('init-script-put', { content: script })).path).toBe(
+      path.join(root, '.automaker', 'worktree-init.sh')
+    );
+    expect((await run('init-script-get')).content).toBe(script);
+
+    const executed = await run(
+      'run-init-script',
+      { branch: 'feature/init' },
+      created.worktree.path
+    );
+    expect(executed.initScript).toMatchObject({
+      success: true,
+      stdout: 'hello-feature/init\n',
+      exitCode: 0,
+    });
+    expect(await fs.readFile(path.join(created.worktree.path, 'initialized.txt'), 'utf8')).toBe(
+      'ready\n'
+    );
+    expect((await run('init-script-delete')).success).toBe(true);
+    expect(await run('init-script-get')).toMatchObject({ exists: false, content: '' });
+  });
+  it('initializes a non-git target directory with a deterministic initial commit', async () => {
+    const empty = path.join(root, 'empty-target');
+    await fs.mkdir(empty);
+    const local = await LocalExecutionEnvironment.create(empty);
+    const response = await local.exec(
+      nodeCommand(PROJECT_GIT_WORKER, [
+        JSON.stringify({
+          root: empty,
+          cwd: empty,
+          controllerRoot: empty,
+          action: 'init-git',
+          body: {},
+        }),
+      ]),
+      active()
+    );
+
+    expect(JSON.parse(response.output)).toMatchObject({
+      success: true,
+      result: { initialized: true },
+    });
+    expect((await local.exec('git branch --show-current', active())).output.trim()).toBe('main');
+    expect((await local.exec('git rev-list --count HEAD', active())).output.trim()).toBe('1');
+  });
   it('lists cached remote refs without running fetch or credential helpers', async () => {
     await environment.exec(
       "git remote add origin https://example.invalid/repo && git config credential.helper '!touch credential-leak'",

@@ -221,6 +221,36 @@ export const WorktreeDeleteSchema = z
   })
   .strict();
 
+export const WorktreeInitGitSchema = z.object({ projectPath: ProjectPathSchema }).strict();
+
+export const WorktreeInitScriptQuerySchema = z.object({ projectPath: ProjectPathSchema }).strict();
+
+export const WorktreeInitScriptWriteSchema = z
+  .object({
+    projectPath: ProjectPathSchema,
+    content: z
+      .string()
+      .refine((value) => Buffer.byteLength(value, 'utf8') <= 1024 * 1024, 'Script exceeds 1MB'),
+    environmentTargetId: z.string().optional(),
+  })
+  .strict();
+
+export const WorktreeInitScriptDeleteSchema = z
+  .object({
+    projectPath: ProjectPathSchema,
+    environmentTargetId: z.string().optional(),
+  })
+  .strict();
+
+export const WorktreeRunInitScriptSchema = z
+  .object({
+    projectPath: ProjectPathSchema,
+    worktreePath: ProjectPathSchema,
+    branch: BranchNameSchema,
+    environmentTargetId: z.string().optional(),
+  })
+  .strict();
+
 export type WorktreeProjectRequest = z.infer<typeof WorktreeProjectSchema>;
 export type WorktreeFeatureRequest = z.infer<typeof WorktreeFeatureSchema>;
 export type WorktreeFileRequest = z.infer<typeof WorktreeFileSchema>;
@@ -252,3 +282,8 @@ export type WorktreeCherryPickRequest = z.infer<typeof WorktreeCherryPickSchema>
 export type WorktreeMergeRequest = z.infer<typeof WorktreeMergeSchema>;
 export type WorktreeCreateRequest = z.infer<typeof WorktreeCreateSchema>;
 export type WorktreeDeleteRequest = z.infer<typeof WorktreeDeleteSchema>;
+export type WorktreeInitGitRequest = z.infer<typeof WorktreeInitGitSchema>;
+export type WorktreeInitScriptQuery = z.infer<typeof WorktreeInitScriptQuerySchema>;
+export type WorktreeInitScriptWriteRequest = z.infer<typeof WorktreeInitScriptWriteSchema>;
+export type WorktreeInitScriptDeleteRequest = z.infer<typeof WorktreeInitScriptDeleteSchema>;
+export type WorktreeRunInitScriptRequest = z.infer<typeof WorktreeRunInitScriptSchema>;
