@@ -6,7 +6,7 @@
 import path from 'path';
 import * as secureFs from '../lib/secure-fs.js';
 import type { EventEmitter } from '../lib/events.js';
-import type { ExecuteOptions, ThinkingLevel, ReasoningEffort } from '@automaker/types';
+import type { ExecuteOptions, ThinkingLevel } from '@automaker/types';
 import { stripProviderPrefix, isDirectModel } from '@automaker/types';
 import {
   readImageAsBase64,
@@ -21,11 +21,14 @@ import type { ToolPolicyService } from '../modules/providers/tool-policy.service
 import { AgentSessionRepository } from './agent/agent-session.repository.js';
 import { AgentSessionRegistry } from './agent/agent-session-registry.js';
 import { AgentSessionStorageError } from './agent/agent-session-storage.error.js';
+import { AgentExecutionCoordinator } from './agent/agent-execution-coordinator.js';
+import { ConflictDomainError, UnavailableDomainError } from '../core/errors/domain-errors.js';
 import type {
   ActiveSession as Session,
   Message,
   QueuedPrompt,
   SessionMetadata,
+  AgentMessageInput,
 } from './agent/agent-session.types.js';
 import { createChatOptions, validateWorkingDirectory } from '../lib/sdk-options.js';
 import { prepareDirectExecution } from '../providers/openai-compatible/execution.js';
@@ -57,6 +60,7 @@ export class AgentService {
   constructor(
     private readonly repository: AgentSessionRepository,
     private readonly sessions: AgentSessionRegistry,
+    private readonly executions: AgentExecutionCoordinator,
     events: EventEmitter,
     settingsService: SettingsService | undefined,
     private readonly providerRegistry: ProviderRegistry,
@@ -95,6 +99,7 @@ export class AgentService {
     sessionId: string;
     workingDirectory?: string;
   }) {
+    this.executions.assertSessionOpen(sessionId);
     // ensureSession handles loading from disk if not in memory.
     // For startConversation, we always want to create a session even if
     // metadata doesn't exist yet (new session), so we fall back to creating one.
@@ -223,26 +228,49 @@ export class AgentService {
   /**
    * Send a message to the agent and stream responses
    */
-  async sendMessage({
-    sessionId,
-    message,
-    workingDirectory,
-    imagePaths,
-    model,
-    providerId,
-    thinkingLevel,
-    reasoningEffort,
-  }: {
-    sessionId: string;
-    message: string;
-    workingDirectory?: string;
-    imagePaths?: string[];
-    model?: string;
-    providerId?: string;
-    thinkingLevel?: ThinkingLevel;
-    reasoningEffort?: ReasoningEffort;
-  }) {
+  sendMessage(input: AgentMessageInput) {
+    return this.runSelectedMessage(input.sessionId, async () => input);
+  }
+
+  private runSelectedMessage(
+    sessionId: string,
+    selectInput: (controller: AbortController) => Promise<AgentMessageInput | undefined>
+  ) {
+    return this.executions.run(sessionId, async (controller) => {
+      try {
+        const input = await selectInput(controller);
+        if (!input) return { success: false as const };
+        controller.signal.throwIfAborted();
+        return await this.executeMessage(input, controller);
+      } catch (error) {
+        if (controller.signal.aborted && !(error instanceof AgentSessionStorageError))
+          return { success: false as const, aborted: true as const };
+        throw error;
+      } finally {
+        const session = this.sessions.get(sessionId);
+        if (session?.abortController === controller) {
+          session.isRunning = false;
+          session.abortController = null;
+        }
+      }
+    });
+  }
+
+  private async executeMessage(
+    {
+      sessionId,
+      message,
+      workingDirectory,
+      imagePaths,
+      model,
+      providerId,
+      thinkingLevel,
+      reasoningEffort,
+    }: AgentMessageInput,
+    controller: AbortController
+  ) {
     const session = await this.ensureSession(sessionId, workingDirectory);
+    controller.signal.throwIfAborted();
     if (!session) {
       this.logger.error(
         `Session not found: ${sessionId}. ` +
@@ -260,25 +288,30 @@ export class AgentService {
       this.logger.error('ERROR: Agent already running for session:', sessionId);
       throw new Error('Agent is already processing a message');
     }
+    session.isRunning = true;
+    session.abortController = controller;
 
     // Update session model, thinking level, and reasoning effort if provided
     if (model) {
-      if (model !== session.model) {
-        session.providerId = undefined;
+      const changed = model !== session.model;
+      const nextProviderId =
+        providerId !== undefined ? providerId : changed ? undefined : session.providerId;
+      const nextSdkSessionId = changed ? undefined : session.sdkSessionId;
+      await this.updateSession(sessionId, {
+        model,
+        providerId: nextProviderId,
+        sdkSessionId: nextSdkSessionId,
+      });
+      if (changed) {
         session.thinkingLevel = undefined;
         session.reasoningEffort = undefined;
         session.sdkSessionId = undefined;
       }
       session.model = model;
-      if (providerId !== undefined) session.providerId = providerId;
-      await this.updateSession(sessionId, {
-        model,
-        providerId: session.providerId,
-        sdkSessionId: session.sdkSessionId,
-      });
+      session.providerId = nextProviderId;
     } else if (providerId !== undefined) {
-      session.providerId = providerId;
       await this.updateSession(sessionId, { providerId });
+      session.providerId = providerId;
     }
     if (thinkingLevel !== undefined) {
       session.thinkingLevel = thinkingLevel;
@@ -317,6 +350,7 @@ export class AgentService {
     }
 
     // Add user message
+    controller.signal.throwIfAborted();
     const userMessage: Message = {
       id: this.generateId(),
       role: 'user',
@@ -326,8 +360,6 @@ export class AgentService {
     };
 
     session.messages.push(userMessage);
-    session.isRunning = true;
-    session.abortController = new AbortController();
 
     // Emit started event so UI can show thinking indicator
     this.emitAgentEvent(sessionId, {
@@ -644,6 +676,7 @@ export class AgentService {
       const provider = this.providerRegistry.providerForModel(modelForProvider, {
         throwOnDisconnected: !allowDisconnected,
       });
+      controller.signal.throwIfAborted();
       const stream = provider.executeQuery(prepared);
 
       let currentAssistantMessage: Message | null = null;
@@ -653,6 +686,7 @@ export class AgentService {
       const toolNamesById = new Map<string, string>();
 
       for await (const msg of stream) {
+        controller.signal.throwIfAborted();
         // Capture SDK session ID from any message and persist it.
         // Update when:
         //  - No session ID set yet (first message in a new session)
@@ -848,7 +882,9 @@ export class AgentService {
           );
         }
       }
+      controller.signal.throwIfAborted();
       await this.saveSession(sessionId, session.messages);
+      controller.signal.throwIfAborted();
 
       session.isRunning = false;
       session.abortController = null;
@@ -876,7 +912,8 @@ export class AgentService {
         this.reportedErrors.add(error);
         throw error;
       }
-      if (isAbortError(error)) {
+      if (controller.signal.aborted || isAbortError(error)) {
+        await this.saveSession(sessionId, session.messages);
         session.isRunning = false;
         session.abortController = null;
         return { success: false, aborted: true };
@@ -946,24 +983,35 @@ export class AgentService {
    * Stop current agent execution
    */
   async stopExecution(sessionId: string) {
-    const session = await this.ensureSession(sessionId);
-    if (!session) {
-      return { success: false, error: 'Session not found' };
-    }
+    return this.executions.mutate(sessionId, async () => {
+      const session = await this.ensureSession(sessionId);
+      if (!session) {
+        return { success: false, error: 'Session not found' };
+      }
 
-    if (session.abortController) {
-      session.abortController.abort();
-      session.isRunning = false;
-      session.abortController = null;
-    }
+      if (session.abortController) {
+        session.abortController.abort();
+        session.isRunning = false;
+        session.abortController = null;
+      }
 
-    return { success: true };
+      return { success: true };
+    });
   }
 
   async interruptActiveSessions(reason: string): Promise<number> {
-    const active = [...this.sessions.entries()].filter(([, session]) => session.isRunning);
-    await Promise.all(
-      active.map(async ([sessionId, session]) => {
+    this.executions.stopAccepting();
+    const ids = new Set([
+      ...this.executions.ids(),
+      ...[...this.sessions.entries()].filter(([, session]) => session.isRunning).map(([id]) => id),
+    ]);
+    let interrupted = 0;
+    const results = await Promise.allSettled(
+      [...ids].map(async (sessionId) => {
+        const session = await this.ensureSession(sessionId);
+        if (!session) return;
+        const managed = this.executions.has(sessionId);
+        if (!managed && !session.isRunning) return;
         const message: Message = {
           id: this.generateId(),
           role: 'assistant',
@@ -972,10 +1020,14 @@ export class AgentService {
           isError: true,
         };
         session.messages.push(message);
-        session.isRunning = false;
-        session.abortController?.abort();
-        session.abortController = null;
         await this.saveSession(sessionId, session.messages);
+        // A run may have completed while its interruption snapshot was writing.
+        if (managed && !this.executions.has(sessionId)) {
+          session.messages = session.messages.filter((item) => item.id !== message.id);
+          await this.saveSession(sessionId, session.messages);
+          return;
+        }
+        interrupted++;
         this.emitAgentEvent(sessionId, {
           type: 'error',
           error: reason,
@@ -984,13 +1036,32 @@ export class AgentService {
         });
       })
     );
-    return active.length;
+    // Always request abort, even when persistence failed; never skip cleanup.
+    this.executions.abortAll();
+    for (const id of ids) this.sessions.get(id)?.abortController?.abort();
+    await this.executions.drain();
+    for (const id of ids) {
+      const session = this.sessions.get(id);
+      if (session) {
+        session.isRunning = false;
+        session.abortController = null;
+      }
+    }
+    const failed = results.find((result) => result.status === 'rejected');
+    if (failed?.status === 'rejected') throw failed.reason;
+    return interrupted;
   }
 
   /**
    * Clear conversation history
    */
   async clearSession(sessionId: string) {
+    return this.executions.mutate(sessionId, () =>
+      this.sessions.serializeQueue(sessionId, () => this.clearSessionState(sessionId))
+    );
+  }
+
+  private async clearSessionState(sessionId: string) {
     const session = await this.ensureSession(sessionId);
     if (session) {
       await this.saveSession(sessionId, []);
@@ -1052,6 +1123,7 @@ export class AgentService {
     model?: string,
     providerId?: string
   ): Promise<SessionMetadata> {
+    this.executions.assertAccepting();
     const sessionId = this.generateId();
     // Determine the effective working directory
     const effectiveWorkingDirectory = workingDirectory || projectPath || process.cwd();
@@ -1082,17 +1154,23 @@ export class AgentService {
   }
 
   async setSessionModel(sessionId: string, model: string, providerId?: string): Promise<boolean> {
-    const session = await this.ensureSession(sessionId);
-    if (session) {
-      await this.updateSession(sessionId, { model, providerId, sdkSessionId: undefined });
-      session.model = model;
-      session.providerId = providerId;
-      session.sdkSessionId = undefined;
-      session.thinkingLevel = undefined;
-      session.reasoningEffort = undefined;
-      return true;
-    }
-    return false;
+    return this.executions.mutate(
+      sessionId,
+      async () => {
+        const session = await this.ensureSession(sessionId);
+        if (session) {
+          await this.updateSession(sessionId, { model, providerId, sdkSessionId: undefined });
+          session.model = model;
+          session.providerId = providerId;
+          session.sdkSessionId = undefined;
+          session.thinkingLevel = undefined;
+          session.reasoningEffort = undefined;
+          return true;
+        }
+        return false;
+      },
+      false
+    );
   }
 
   async updateSession(
@@ -1102,17 +1180,55 @@ export class AgentService {
     return this.repository.updateMetadata(sessionId, updates);
   }
 
+  async updateSessionDetails(
+    sessionId: string,
+    updates: Partial<SessionMetadata>
+  ): Promise<SessionMetadata | null> {
+    this.executions.assertSessionOpen(sessionId);
+    if (updates.model === undefined) return this.updateSession(sessionId, updates);
+    return this.executions.mutate(
+      sessionId,
+      async () => {
+        const current = (await this.loadMetadata())[sessionId];
+        if (!current) return null;
+        const result = await this.updateSession(sessionId, {
+          ...updates,
+          sdkSessionId: undefined,
+          providerId: updates.model === current.model ? current.providerId : undefined,
+        });
+        const active = this.sessions.get(sessionId);
+        if (active && result) {
+          active.model = result.model;
+          active.providerId = result.providerId;
+          active.sdkSessionId = undefined;
+          active.thinkingLevel = undefined;
+          active.reasoningEffort = undefined;
+        }
+        return result;
+      },
+      false
+    );
+  }
+
   async archiveSession(sessionId: string): Promise<boolean> {
+    this.executions.assertSessionOpen(sessionId);
     const result = await this.updateSession(sessionId, { archived: true });
     return result !== null;
   }
 
   async unarchiveSession(sessionId: string): Promise<boolean> {
+    this.executions.assertSessionOpen(sessionId);
     const result = await this.updateSession(sessionId, { archived: false });
     return result !== null;
   }
 
   async deleteSession(sessionId: string): Promise<boolean> {
+    return this.executions.mutate(sessionId, () =>
+      this.sessions.serializeQueue(sessionId, () => this.deleteSessionState(sessionId))
+    );
+  }
+
+  private async deleteSessionState(sessionId: string): Promise<boolean> {
     if (!(await this.repository.deleteMetadata(sessionId))) return false;
     await this.repository.deleteMessages(sessionId);
 
@@ -1149,7 +1265,9 @@ export class AgentService {
       thinkingLevel?: ThinkingLevel;
     }
   ): Promise<{ success: boolean; queuedPrompt?: QueuedPrompt; error?: string }> {
+    this.executions.assertSessionOpen(sessionId);
     return this.sessions.serializeQueue(sessionId, async () => {
+      this.executions.assertSessionOpen(sessionId);
       const session = await this.ensureSession(sessionId);
       if (!session) {
         return { success: false, error: 'Session not found' };
@@ -1203,7 +1321,9 @@ export class AgentService {
     sessionId: string,
     promptId: string
   ): Promise<{ success: boolean; error?: string }> {
+    this.executions.assertSessionOpen(sessionId);
     return this.sessions.serializeQueue(sessionId, async () => {
+      this.executions.assertSessionOpen(sessionId);
       const session = await this.ensureSession(sessionId);
       if (!session) {
         return { success: false, error: 'Session not found' };
@@ -1231,7 +1351,9 @@ export class AgentService {
    * Clear all prompts from the queue
    */
   async clearQueue(sessionId: string): Promise<{ success: boolean; error?: string }> {
+    this.executions.assertSessionOpen(sessionId);
     return this.sessions.serializeQueue(sessionId, async () => {
+      this.executions.assertSessionOpen(sessionId);
       const session = await this.ensureSession(sessionId);
       if (!session) {
         return { success: false, error: 'Session not found' };
@@ -1268,26 +1390,39 @@ export class AgentService {
    */
   private async processNextInQueue(sessionId: string): Promise<void> {
     let nextPrompt: QueuedPrompt | undefined;
+    let admitted = false;
     try {
-      nextPrompt = await this.sessions.serializeQueue(sessionId, async () => {
-        const session = this.sessions.get(sessionId);
-        if (!session || session.isRunning || !session.promptQueue.length) return undefined;
-        const [next, ...remaining] = session.promptQueue;
-        await this.saveQueueState(sessionId, remaining);
-        session.promptQueue = remaining;
-        this.emitAgentEvent(sessionId, { type: 'queue_updated', queue: remaining });
-        return next;
+      // Claim execution before dequeueing; a manual send must not steal the run
+      // after its queued prompt has already been removed from durable storage.
+      const execution = this.runSelectedMessage(sessionId, async (controller) => {
+        nextPrompt = await this.sessions.serializeQueue(sessionId, async () => {
+          const session = this.sessions.get(sessionId);
+          if (!session || session.isRunning || !session.promptQueue.length) return undefined;
+          controller.signal.throwIfAborted();
+          const [next, ...remaining] = session.promptQueue;
+          await this.saveQueueState(sessionId, remaining);
+          session.promptQueue = remaining;
+          this.emitAgentEvent(sessionId, { type: 'queue_updated', queue: remaining });
+          return next;
+        });
+        if (!nextPrompt) return undefined;
+        return {
+          sessionId,
+          message: nextPrompt.message,
+          imagePaths: nextPrompt.imagePaths,
+          model: nextPrompt.model,
+          providerId: nextPrompt.providerId,
+          thinkingLevel: nextPrompt.thinkingLevel,
+        };
       });
-      if (!nextPrompt) return;
-      await this.sendMessage({
-        sessionId,
-        message: nextPrompt.message,
-        imagePaths: nextPrompt.imagePaths,
-        model: nextPrompt.model,
-        providerId: nextPrompt.providerId,
-        thinkingLevel: nextPrompt.thinkingLevel,
-      });
+      admitted = true;
+      await execution;
     } catch (error) {
+      if (
+        !admitted &&
+        (error instanceof ConflictDomainError || error instanceof UnavailableDomainError)
+      )
+        return;
       this.logger.error('Failed to process queued prompt:', error);
       this.emitAgentEvent(sessionId, {
         type: 'queue_error',

@@ -428,9 +428,7 @@ export function createLegacyApplication(
     if (shutdownPromise) return shutdownPromise;
 
     const { exitProcess = false } = shutdownOptions;
-    shutdownPromise = performGracefulShutdown(signal, exitProcess).finally(() => {
-      shutdownPromise = undefined;
-    });
+    shutdownPromise = performGracefulShutdown(signal, exitProcess);
     return shutdownPromise;
   };
 
@@ -443,23 +441,38 @@ export function createLegacyApplication(
       if (exitProcess) process.exit(1);
     }, SHUTDOWN_TIMEOUT_MS);
 
-    // Persist interrupted state before aborting provider processes so jobs can recover on restart.
-    if (typeof agentService.interruptActiveSessions === 'function') {
-      await agentService.interruptActiveSessions(`${signal} signal received`);
+    const failures: unknown[] = [];
+    const attempt = async (name: string, task: () => unknown | Promise<unknown>) => {
+      try {
+        await task();
+      } catch (error) {
+        failures.push(error);
+        logger.error(`Shutdown task "${name}" failed; continuing resource cleanup:`, error);
+      }
+    };
+    try {
+      // Persistence failure must not prevent abort/drain or cleanup of other resources.
+      if (typeof agentService.interruptActiveSessions === 'function')
+        await attempt('agent-interruption', () =>
+          agentService.interruptActiveSessions(`${signal} signal received`)
+        );
+      await attempt('feature-interruption', () =>
+        autoModeService.markAllRunningFeaturesInterrupted(`${signal} signal received`)
+      );
+      await attempt('auto-mode-stop', () => autoModeService.interruptForShutdown());
+      await attempt('terminal', () => terminalService.cleanup());
+      await attempt('test-runner', () => testRunnerService.cleanup());
+      await attempt('dev-server', () => devServerService.stopAll());
+      await attempt('managed-test-runner', () =>
+        getManagedTestRunnerService(settingsService, events).cleanup()
+      );
+      await attempt('managed-dev-server', () =>
+        getManagedDevServerService(settingsService, events).cleanup()
+      );
+    } finally {
+      clearTimeout(forceExitTimeout);
     }
-
-    // Mark all running features as interrupted before shutdown
-    // This ensures they can be resumed when the server restarts
-    // Note: markAllRunningFeaturesInterrupted handles errors internally and never rejects
-    await autoModeService.markAllRunningFeaturesInterrupted(`${signal} signal received`);
-    autoModeService.interruptForShutdown();
-
-    terminalService.cleanup();
-    await testRunnerService.cleanup();
-    await devServerService.stopAll();
-    await getManagedTestRunnerService(settingsService, events).cleanup();
-    await getManagedDevServerService(settingsService, events).cleanup();
-    clearTimeout(forceExitTimeout);
+    if (failures.length) throw new AggregateError(failures, 'Application shutdown cleanup failed.');
     logger.info('Application services stopped');
     if (exitProcess) process.exit(0);
   };

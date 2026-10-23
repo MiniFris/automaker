@@ -206,7 +206,7 @@ describe('AgentSessionRepository', () => {
     expect(await repository.deleteMetadata('one')).toBe(false);
   });
 
-  it.each(['../outside', '/absolute', '..\\outside', '__proto__', 'constructor'])(
+  it.each(['../outside', '/absolute', '..\\outside', '__proto__', 'constructor', ' one', 'one '])(
     'rejects unsafe file/session ID %s before writing',
     async (id) => {
       expect(() => repository.saveMessages(id, [])).toThrow();

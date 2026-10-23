@@ -4,6 +4,7 @@ import { SessionIdSchema } from '@automaker/contracts';
 import * as secureFs from '../../lib/secure-fs.js';
 import type { Message, QueuedPrompt, SessionMetadata } from './agent-session.types.js';
 import { AgentSessionStorageError } from './agent-session-storage.error.js';
+import { assertCanonicalAgentSessionId } from './agent-session-id.js';
 
 type StoreKind = 'messages' | 'queue' | 'metadata';
 const logger = createLogger('AgentSessionRepository');
@@ -13,9 +14,10 @@ function valid(value: unknown, kind: StoreKind): boolean {
   if (kind === 'metadata')
     return (
       object(value) &&
-      Object.entries(value).every(
-        ([id, entry]) => SessionIdSchema.safeParse(id).success && object(entry) && entry.id === id
-      )
+      Object.entries(value).every(([id, entry]) => {
+        const parsed = SessionIdSchema.safeParse(id);
+        return parsed.success && parsed.data === id && object(entry) && entry.id === id;
+      })
     );
   return (
     Array.isArray(value) &&
@@ -67,7 +69,7 @@ export class AgentSessionRepository {
   }
 
   addMetadata(session: SessionMetadata): Promise<void> {
-    SessionIdSchema.parse(session.id);
+    assertCanonicalAgentSessionId(session.id);
     const snapshot = globalThis.structuredClone(session);
     return this.mutateMetadata((metadata) => {
       metadata[snapshot.id] = snapshot;
@@ -76,7 +78,7 @@ export class AgentSessionRepository {
   }
 
   updateMetadata(id: string, updates: Partial<SessionMetadata>): Promise<SessionMetadata | null> {
-    SessionIdSchema.parse(id);
+    assertCanonicalAgentSessionId(id);
     const snapshot = globalThis.structuredClone(updates);
     return this.mutateMetadata((metadata) => {
       if (!Object.hasOwn(metadata, id)) return { changed: false, result: null };
@@ -91,7 +93,7 @@ export class AgentSessionRepository {
   }
 
   clearSdkSessionId(id: string): Promise<void> {
-    SessionIdSchema.parse(id);
+    assertCanonicalAgentSessionId(id);
     return this.mutateMetadata((metadata) => {
       const session = Object.hasOwn(metadata, id) ? metadata[id] : undefined;
       if (!session?.sdkSessionId) return { changed: false, result: undefined };
@@ -102,7 +104,7 @@ export class AgentSessionRepository {
   }
 
   deleteMetadata(id: string): Promise<boolean> {
-    SessionIdSchema.parse(id);
+    assertCanonicalAgentSessionId(id);
     return this.mutateMetadata((metadata) => {
       if (!Object.hasOwn(metadata, id)) return { changed: false, result: false };
       delete metadata[id];
@@ -199,9 +201,11 @@ export class AgentSessionRepository {
     return job;
   }
   private sessionFile(id: string): string {
-    return path.join(this.stateDirectory, `${SessionIdSchema.parse(id)}.json`);
+    assertCanonicalAgentSessionId(id);
+    return path.join(this.stateDirectory, `${id}.json`);
   }
   private queueFile(id: string): string {
-    return path.join(this.stateDirectory, `${SessionIdSchema.parse(id)}-queue.json`);
+    assertCanonicalAgentSessionId(id);
+    return path.join(this.stateDirectory, `${id}-queue.json`);
   }
 }

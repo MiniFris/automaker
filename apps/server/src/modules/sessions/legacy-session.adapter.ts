@@ -36,7 +36,7 @@ export class LegacySessionAdapter implements SessionMetadataRepository, ActiveSe
     sessionId: string,
     updates: SessionUpdateRequest
   ): Promise<PersistedSessionMetadata | null> {
-    return (await this.agent.updateSession(sessionId, updates)) as PersistedSessionMetadata | null;
+    return (await this.agent.updateSessionDetails(sessionId, updates)) as PersistedSessionMetadata | null;
   }
 
   archive(sessionId: string, archived: boolean): Promise<boolean> {

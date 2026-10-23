@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgentService } from '../../../src/services/agent-service.js';
 import { AgentSessionRepository } from '../../../src/services/agent/agent-session.repository.js';
 import { AgentSessionRegistry } from '../../../src/services/agent/agent-session-registry.js';
+import { AgentExecutionCoordinator } from '../../../src/services/agent/agent-execution-coordinator.js';
 import { AgentSessionStorageError } from '../../../src/services/agent/agent-session-storage.error.js';
 import { ProviderRegistry } from '../../../src/modules/providers/provider-registry.service.js';
 import { createEventEmitter } from '../../../src/lib/events.js';
@@ -30,6 +31,7 @@ describe('agent storage failure boundaries', () => {
     service = new AgentService(
       repository,
       registry,
+      new AgentExecutionCoordinator(),
       emitter,
       undefined,
       new ProviderRegistry([{ name: 'claude', create: () => new MockProvider('claude') }], {
@@ -162,5 +164,13 @@ describe('agent storage failure boundaries', () => {
     );
     expect(registry.get(sessionId)?.model).toBe('sonnet');
     expect((await repository.loadMetadata())[sessionId].model).toBe('sonnet');
+    vi.mocked(repository.updateMetadata).mockRejectedValueOnce(
+      new AgentSessionStorageError('write')
+    );
+    await expect(
+      service.sendMessage({ sessionId, message: 'Failed preparation', model: 'claude-opus' })
+    ).rejects.toBeInstanceOf(AgentSessionStorageError);
+    expect(registry.get(sessionId)?.model).toBe('sonnet');
+    expect(execute).not.toHaveBeenCalled();
   });
 });

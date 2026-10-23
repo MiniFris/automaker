@@ -19,6 +19,7 @@ import { SettingsService } from '../../src/services/settings-service.js';
 import { ProviderRegistry } from '../../src/modules/providers/provider-registry.service.js';
 import { AgentSessionRegistry } from '../../src/services/agent/agent-session-registry.js';
 import { AgentSessionRepository } from '../../src/services/agent/agent-session.repository.js';
+import { AgentExecutionCoordinator } from '../../src/services/agent/agent-execution-coordinator.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -109,6 +110,9 @@ describe('Nest shell and legacy bridge contract', () => {
       expect(second.app.get(AgentSessionRegistry)).not.toBe(runtime.app.get(AgentSessionRegistry));
       expect(second.app.get(AgentSessionRepository)).not.toBe(
         runtime.app.get(AgentSessionRepository)
+      );
+      expect(second.app.get(AgentExecutionCoordinator)).not.toBe(
+        runtime.app.get(AgentExecutionCoordinator)
       );
       const firstCleanup = vi.spyOn(runtime.legacy.services.devServerService, 'stopAll');
       try {

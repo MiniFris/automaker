@@ -1,5 +1,16 @@
 import type { ExecutionEnvironmentBinding, ThinkingLevel, ReasoningEffort } from '@automaker/types';
 
+export interface AgentMessageInput {
+  sessionId: string;
+  message: string;
+  workingDirectory?: string;
+  imagePaths?: string[];
+  model?: string;
+  providerId?: string;
+  thinkingLevel?: ThinkingLevel;
+  reasoningEffort?: ReasoningEffort;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';

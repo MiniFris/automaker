@@ -23,6 +23,8 @@ ProvidersModule
 AgentsModule
 ├── AgentApplicationService
 ├── AgentSessionRegistry
+├── AgentSessionRepository
+├── AgentExecutionCoordinator
 ├── AgentExecutor
 ├── ToolPolicyService
 └── AgentRecoveryService
@@ -189,8 +191,9 @@ Checkpoint: contracts package build и 14 tests, server build/lint, 2928 unit te
 production SIGTERM/SIGINT smoke.
 
 Этап 7 целиком не завершён. Последующий срез ниже устранил legacy read/save fallback.
-Execution leases для send/cancel, удаление queue/backups с session и shutdown активных
-provider jobs требуют следующих срезов. Prompt/context, execution и stream processing
+Следующий срез добавил execution leases для send/cancel и проверку active shutdown.
+Удаление queue/backups с session и общий cleanup contract всех adapters ещё требуют работы.
+Prompt/context, execution и stream processing
 пока остаются в AgentService; legacy SessionAdapter также ещё не удалён.
 
 ### Срез: ошибки хранения и подтверждённый completion
@@ -230,9 +233,56 @@ UI typecheck, три inventory checks и production SIGTERM/SIGINT smoke. Три
 теперь проверяет не только создание сессии, но и отправку через UI, streamed reply,
 снятие processing state и восстановление тех же сообщений после page reload.
 
-Это не завершает execution recovery: пер-session queue lock не заменяет lease для
-concurrent send/cancel/clear и provider-process drain. Полный UI suite, остальные
+Этот checkpoint ещё не завершал execution recovery: следующий срез добавляет lease
+для concurrent send/cancel/clear и ожидание provider task. Полный UI suite, остальные
 environment acceptance suites и финальный stage checkpoint ещё обязательны.
+
+### Срез: execution leases, admission и active shutdown
+
+`AgentExecutionCoordinator` — отдельный application-scoped Nest provider. Он
+резервирует session ID синхронно до hydration, смены модели, image/context loading
+и других `await`. Duplicate send отклоняется HTTP 409 до acceptance ACK и не
+публикует error в stream уже выполняющегося job. Разные session IDs и разные Nest
+applications имеют независимое владение. Canonical ID проверяется и в coordinator,
+и в repository: пробельные/path aliases не могут получить разные leases одного файла.
+
+Stop/clear/delete резервируют mutation barrier, запрашивают abort и ждут settlement
+старого task. При истечении drain timeout (5 секунд) mutation не выполняется,
+возвращается `UNAVAILABLE`, а lease остаётся занятой до реального settlement. Abort
+проверяется до provider call, при чтении stream и перед final persistence/completion;
+поздние chunks после отмены не попадают в history. Частичный ответ сохраняется при
+отмене. Clear/delete также сериализованы с queue mutations, чтобы старый handler
+не записал history обратно после успешного ответа на mutation.
+
+Model change через `/agent/model` и `/sessions/:id` не отменяет активный запрос:
+он получает 409 до изменения metadata/RAM. Новая модель при send preparation также
+публикуется в RAM только после metadata persistence. Automatic queue processing
+сначала резервирует run и лишь затем dequeue-ит prompt — конкурирующий manual send
+не может забрать execution после удаления queued prompt с диска. Stop/delete barriers
+блокируют новый start и queue mutation; shutdown закрывает admission новых jobs,
+сессий, queue и metadata mutations.
+
+Shutdown сначала записывает interruption marker, затем abort-ит и дожидается active
+task; ошибка записи не пропускает abort/drain. Legacy lifecycle теперь пытается
+очистить остальные owned resources даже после ошибки agent/test cleanup, сообщает
+aggregate failure и не повторяет terminal shutdown автоматически. Timeout не
+объявляется успешным cleanup. Новые process contracts отправляют SIGTERM и SIGINT
+реальному Nest child process с активным fake provider: его async finalizer проверяет,
+что marker уже на диске, и завершается до exit 0. Это дополняет обычный production
+idle lifecycle smoke, но не заменяет cleanup contracts реальных SDK/CLI adapters.
+
+Checkpoint: 2961 unit tests (40 skipped), 241 HTTP/WS contracts, три выбранных реальных
+remote CLI/SDK/Direct SSH chat/restart сценария, server build/lint, UI typecheck,
+Chromium send/stream/reload scenario, три inventory checks и production lifecycle smoke.
+Unit/native HTTP tests покрывают concurrent preparation, delayed cleanup, поздний
+chunk, cancel→новый run, clear/delete, обе model mutation paths, timeout без замены
+старого run, interruption write failure и idempotent resource cleanup attempts.
+
+Остаются durable execution/queue recovery journal, полный provider dispose/terminal
+contract, удаление queue/backups вместе с session и decomposition prompt/execution/
+stream logic. Общий deadline всей shutdown-последовательности, включая зависший
+filesystem I/O и ошибки Nest hooks, также требует hardening этапа 10. Этап 7 не
+отмечается завершённым по одному успешному lease checkpoint.
 
 ## 7.5. Tool policy
 
@@ -253,11 +303,11 @@ environment acceptance suites и финальный stage checkpoint ещё об
 
 ## 7.7. Agent routes
 
-- [ ] Start/query/follow-up/cancel.
-- [ ] Session list/history интеграция.
+- [x] Start/query/follow-up/cancel.
+- [x] Session list/history интеграция.
 - [ ] Running agents read model.
 - [ ] Streaming через EventBus compatibility layer.
-- [ ] Request завершение не отменяет долгоживущий agent job.
+- [x] Request завершение не отменяет долгоживущий agent job.
 - [ ] Shutdown отмечает jobs interrupted до закрытия provider processes.
 
 ## Тесты
