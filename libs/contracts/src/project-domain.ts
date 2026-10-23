@@ -158,7 +158,16 @@ export type OrphanResolveRequest = z.infer<typeof OrphanResolveSchema>;
 export type OrphanBulkResolveRequest = z.infer<typeof OrphanBulkResolveSchema>;
 
 // Sessions
-export const SessionIdSchema = z.string().trim().min(1).max(255);
+export const SessionIdSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(255)
+  .regex(/^[A-Za-z0-9_-]+$/, 'Invalid session identifier.')
+  .refine(
+    (id) => !['__proto__', 'prototype', 'constructor'].includes(id) && !id.endsWith('-queue'),
+    'Invalid session identifier.'
+  );
 export const SessionParamsSchema = z.object({ sessionId: SessionIdSchema }).strict();
 export const SessionListQuerySchema = z
   .object({ includeArchived: z.enum(['true', 'false']).optional().default('false') })

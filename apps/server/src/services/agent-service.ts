@@ -15,11 +15,17 @@ import {
   loadContextFiles,
   createLogger,
   classifyError,
-  atomicWriteJson,
-  DEFAULT_BACKUP_COUNT,
 } from '@automaker/utils';
 import type { ProviderRegistry } from '../modules/providers/provider-registry.service.js';
 import type { ToolPolicyService } from '../modules/providers/tool-policy.service.js';
+import { AgentSessionRepository } from './agent/agent-session.repository.js';
+import { AgentSessionRegistry } from './agent/agent-session-registry.js';
+import type {
+  ActiveSession as Session,
+  Message,
+  QueuedPrompt,
+  SessionMetadata,
+} from './agent/agent-session.types.js';
 import { createChatOptions, validateWorkingDirectory } from '../lib/sdk-options.js';
 import { prepareDirectExecution } from '../providers/openai-compatible/execution.js';
 import { hasRemoteEnvironment } from '../providers/environment-execution.js';
@@ -40,84 +46,28 @@ import {
   getDefaultMaxTurnsSetting,
 } from '../lib/settings-helpers.js';
 
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  images?: Array<{
-    data: string;
-    mimeType: string;
-    filename: string;
-  }>;
-  timestamp: string;
-  isError?: boolean;
-}
-
-interface QueuedPrompt {
-  id: string;
-  message: string;
-  imagePaths?: string[];
-  model?: string;
-  providerId?: string;
-  thinkingLevel?: ThinkingLevel;
-  addedAt: string;
-}
-
-interface Session {
-  projectPath?: string;
-  messages: Message[];
-  isRunning: boolean;
-  abortController: AbortController | null;
-  workingDirectory: string;
-  model?: string;
-  providerId?: string;
-  thinkingLevel?: ThinkingLevel; // Thinking level for Claude models
-  reasoningEffort?: ReasoningEffort; // Reasoning effort for Codex models
-  sdkSessionId?: string; // Claude SDK session ID for conversation continuity
-  promptQueue: QueuedPrompt[]; // Queue of prompts to auto-run after current task
-}
-
-interface SessionMetadata {
-  executionEnvironment?: import('@automaker/types').ExecutionEnvironmentBinding;
-  id: string;
-  name: string;
-  projectPath?: string;
-  workingDirectory: string;
-  createdAt: string;
-  updatedAt: string;
-  archived?: boolean;
-  tags?: string[];
-  model?: string;
-  providerId?: string;
-  sdkSessionId?: string; // Claude SDK session ID for conversation continuity
-}
-
 export class AgentService {
   private reportedErrors = new WeakSet<object>();
-  private sessions = new Map<string, Session>();
-  private stateDir: string;
-  private metadataFile: string;
   private events: EventEmitter;
   private settingsService: SettingsService | null = null;
   private toolPolicy: ToolPolicyService | null = null;
   private logger = createLogger('AgentService');
 
   constructor(
-    dataDir: string,
+    private readonly repository: AgentSessionRepository,
+    private readonly sessions: AgentSessionRegistry,
     events: EventEmitter,
     settingsService: SettingsService | undefined,
     private readonly providerRegistry: ProviderRegistry,
     toolPolicy?: ToolPolicyService
   ) {
-    this.stateDir = path.join(dataDir, 'agent-sessions');
-    this.metadataFile = path.join(dataDir, 'sessions-metadata.json');
     this.events = events;
     this.settingsService = settingsService ?? null;
     this.toolPolicy = toolPolicy ?? null;
   }
 
   async initialize(): Promise<void> {
-    await secureFs.mkdir(this.stateDir, { recursive: true });
+    await this.repository.initialize();
   }
 
   /**
@@ -154,15 +104,14 @@ export class AgentService {
       const resolvedWorkingDirectory = path.resolve(effectiveWorkingDirectory);
       validateWorkingDirectory(resolvedWorkingDirectory);
 
-      session = {
+      session = this.sessions.getOrCreate(sessionId, () => ({
         messages: [],
         isRunning: false,
         abortController: null,
         workingDirectory: resolvedWorkingDirectory,
         projectPath: resolvedWorkingDirectory,
         promptQueue: [],
-      };
-      this.sessions.set(sessionId, session);
+      }));
     }
 
     return {
@@ -193,11 +142,15 @@ export class AgentService {
     sessionId: string,
     workingDirectory?: string
   ): Promise<Session | null> {
-    const existing = this.sessions.get(sessionId);
-    if (existing) {
-      return existing;
-    }
+    return this.sessions.getOrLoad(sessionId, () =>
+      this.hydrateSession(sessionId, workingDirectory)
+    );
+  }
 
+  private async hydrateSession(
+    sessionId: string,
+    workingDirectory?: string
+  ): Promise<Session | null> {
     // Try to load from disk — the session may have been created earlier
     // (e.g. via createSession) but never initialized in memory.
     let metadata: Record<string, SessionMetadata>;
@@ -259,7 +212,6 @@ export class AgentService {
       promptQueue,
     };
 
-    this.sessions.set(sessionId, session);
     this.logger.info(
       `Auto-initialized session ${sessionId} from disk ` +
         `(${messages.length} messages, sdkSessionId: ${sessionMetadata?.sdkSessionId ? 'present' : 'none'})`
@@ -1040,21 +992,12 @@ export class AgentService {
   // Session management
 
   async loadSession(sessionId: string): Promise<Message[]> {
-    const sessionFile = path.join(this.stateDir, `${sessionId}.json`);
-
-    try {
-      const data = (await secureFs.readFile(sessionFile, 'utf-8')) as string;
-      return JSON.parse(data);
-    } catch {
-      return [];
-    }
+    return this.repository.loadMessages(sessionId);
   }
 
   async saveSession(sessionId: string, messages: Message[]): Promise<void> {
-    const sessionFile = path.join(this.stateDir, `${sessionId}.json`);
-
     try {
-      await atomicWriteJson(sessionFile, messages, { backupCount: DEFAULT_BACKUP_COUNT });
+      await this.repository.saveMessages(sessionId, messages);
       await this.updateSessionTimestamp(sessionId);
     } catch (error) {
       this.logger.error('Failed to save session:', error);
@@ -1062,24 +1005,15 @@ export class AgentService {
   }
 
   async loadMetadata(): Promise<Record<string, SessionMetadata>> {
-    try {
-      const data = (await secureFs.readFile(this.metadataFile, 'utf-8')) as string;
-      return JSON.parse(data);
-    } catch {
-      return {};
-    }
+    return this.repository.loadMetadata();
   }
 
   async saveMetadata(metadata: Record<string, SessionMetadata>): Promise<void> {
-    await atomicWriteJson(this.metadataFile, metadata, { backupCount: DEFAULT_BACKUP_COUNT });
+    await this.repository.saveMetadata(metadata);
   }
 
   async updateSessionTimestamp(sessionId: string): Promise<void> {
-    const metadata = await this.loadMetadata();
-    if (metadata[sessionId]) {
-      metadata[sessionId].updatedAt = new Date().toISOString();
-      await this.saveMetadata(metadata);
-    }
+    await this.repository.touchMetadata(sessionId);
   }
 
   async listSessions(includeArchived = false): Promise<SessionMetadata[]> {
@@ -1103,8 +1037,6 @@ export class AgentService {
     providerId?: string
   ): Promise<SessionMetadata> {
     const sessionId = this.generateId();
-    const metadata = await this.loadMetadata();
-
     // Determine the effective working directory
     const effectiveWorkingDirectory = workingDirectory || projectPath || process.cwd();
     const resolvedWorkingDirectory = path.resolve(effectiveWorkingDirectory);
@@ -1128,8 +1060,7 @@ export class AgentService {
       providerId,
     };
 
-    metadata[sessionId] = session;
-    await this.saveMetadata(metadata);
+    await this.repository.addMetadata(session);
 
     return session;
   }
@@ -1152,17 +1083,7 @@ export class AgentService {
     sessionId: string,
     updates: Partial<SessionMetadata>
   ): Promise<SessionMetadata | null> {
-    const metadata = await this.loadMetadata();
-    if (!metadata[sessionId]) return null;
-
-    metadata[sessionId] = {
-      ...metadata[sessionId],
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    };
-
-    await this.saveMetadata(metadata);
-    return metadata[sessionId];
+    return this.repository.updateMetadata(sessionId, updates);
   }
 
   async archiveSession(sessionId: string): Promise<boolean> {
@@ -1176,19 +1097,8 @@ export class AgentService {
   }
 
   async deleteSession(sessionId: string): Promise<boolean> {
-    const metadata = await this.loadMetadata();
-    if (!metadata[sessionId]) return false;
-
-    delete metadata[sessionId];
-    await this.saveMetadata(metadata);
-
-    // Delete session file
-    try {
-      const sessionFile = path.join(this.stateDir, `${sessionId}.json`);
-      await secureFs.unlink(sessionFile);
-    } catch {
-      // File may not exist
-    }
+    if (!(await this.repository.deleteMetadata(sessionId))) return false;
+    await this.repository.deleteMessages(sessionId);
 
     // Clear from memory
     this.sessions.delete(sessionId);
@@ -1205,12 +1115,7 @@ export class AgentService {
    * when the provider-side session has been deleted or expired.
    */
   async clearSdkSessionId(sessionId: string): Promise<void> {
-    const metadata = await this.loadMetadata();
-    if (metadata[sessionId] && metadata[sessionId].sdkSessionId) {
-      delete metadata[sessionId].sdkSessionId;
-      metadata[sessionId].updatedAt = new Date().toISOString();
-      await this.saveMetadata(metadata);
-    }
+    await this.repository.clearSdkSessionId(sessionId);
   }
 
   // Queue management methods
@@ -1324,9 +1229,8 @@ export class AgentService {
    * Save queue state to disk for persistence
    */
   private async saveQueueState(sessionId: string, queue: QueuedPrompt[]): Promise<void> {
-    const queueFile = path.join(this.stateDir, `${sessionId}-queue.json`);
     try {
-      await atomicWriteJson(queueFile, queue, { backupCount: DEFAULT_BACKUP_COUNT });
+      await this.repository.saveQueue(sessionId, queue);
     } catch (error) {
       this.logger.error('Failed to save queue state:', error);
     }
@@ -1336,13 +1240,7 @@ export class AgentService {
    * Load queue state from disk
    */
   private async loadQueueState(sessionId: string): Promise<QueuedPrompt[]> {
-    const queueFile = path.join(this.stateDir, `${sessionId}-queue.json`);
-    try {
-      const data = (await secureFs.readFile(queueFile, 'utf-8')) as string;
-      return JSON.parse(data);
-    } catch {
-      return [];
-    }
+    return this.repository.loadQueue(sessionId);
   }
 
   /**

@@ -146,7 +146,7 @@ UI typecheck, все три inventory checks и production SIGTERM/SIGINT smoke.
 
 ## 7.4. AgentService decomposition
 
-- [ ] Отделить persisted session repository от active session registry.
+- [x] Отделить persisted session repository от active session registry.
 - [ ] Отделить prompt/context construction.
 - [ ] Отделить provider selection.
 - [ ] Отделить execution environment preparation.
@@ -157,6 +157,42 @@ UI typecheck, все три inventory checks и production SIGTERM/SIGINT smoke.
 
 На первом migration commit этого блока существующий `AgentService` допустимо зарегистрировать целиком как
 Nest provider. Его деление выполняется после переноса routes и contract coverage.
+
+### Срез: persisted state и active registry
+
+`AgentStateModule` регистрирует отдельные `AgentSessionRepository` и
+`AgentSessionRegistry`; `AgentService` получает оба как обязательные зависимости.
+Production factory и все unit/remote acceptance callers переведены на явную
+композицию. Storage paths, JSON messages/queues, metadata fields и три backups
+сохранены. В AgentService остаются compatibility methods, делегирующие repository.
+
+Repository владеет file I/O и сериализует metadata read-modify-write, включая
+создание, обновление, timestamp и очистку SDK session ID. Одновременные изменения
+разных сессий больше не теряют друг друга. Messages/queues сохраняются snapshot-ами
+через отдельные per-file очереди. DI shutdown дожидается pending writes. Поддержан
+один активный repository writer на data directory, не distributed coordination.
+
+Registry объединяет concurrent hydration одного ID и возвращает один active object.
+Удаление/shutdown инвалидирует незавершённую hydration, чтобы она не восстановила
+сессию обратно в память. Contracts двух Nest applications проверяют разные экземпляры
+обоих state providers. Shared `SessionIdSchema` запрещает path traversal, prototype
+keys и suffix `-queue`, конфликтующий с legacy queue filename.
+
+Native HTTP contract проверяет start/send без optional workingDirectory/images,
+queue add/list/clear, event order `started → message → stream → complete`, стабильные
+message/session IDs, history и follow-up после restart. Он выявил и закрыл regression
+в `AllowedPathFields`: optional fields больше не обязательны для start/send/queue-add.
+
+Checkpoint: contracts package build и 14 tests, server build/lint, 2928 unit tests
+(40 skipped), 237 HTTP/WS contracts, три реальных remote CLI/SDK/Direct SSH chat/restart
+сценария, UI typecheck, Chromium Agent Chat Session smoke, три inventory checks и
+production SIGTERM/SIGINT smoke.
+
+Этап 7 целиком не завершён. Repository пока сохраняет legacy fallback для ошибок
+чтения; часть save errors ещё перехватывается AgentService. Fail-closed recovery,
+execution leases для send/cancel, удаление queue/backups с session и shutdown активных
+provider jobs требуют следующих срезов. Prompt/context, execution и stream processing
+пока остаются в AgentService; legacy SessionAdapter также ещё не удалён.
 
 ## 7.5. Tool policy
 

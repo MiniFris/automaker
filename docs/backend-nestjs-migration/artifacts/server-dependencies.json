@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 593,
-    "internalEdges": 1858,
+    "files": 597,
+    "internalEdges": 1870,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -17,16 +17,16 @@
     "legacy -> lib": 1,
     "legacy -> modules": 4,
     "legacy -> root": 2,
-    "legacy -> services": 19,
+    "legacy -> services": 21,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 81,
+    "modules -> core": 82,
     "modules -> legacy": 29,
     "modules -> lib": 24,
-    "modules -> modules": 243,
+    "modules -> modules": 244,
     "modules -> providers": 19,
     "modules -> routes": 62,
-    "modules -> services": 93,
+    "modules -> services": 95,
     "modules -> types": 2,
     "providers -> lib": 5,
     "providers -> modules": 1,
@@ -45,11 +45,11 @@
     "routes -> routes": 378,
     "routes -> services": 196,
     "routes -> types": 3,
-    "services -> lib": 70,
+    "services -> lib": 71,
     "services -> modules": 9,
     "services -> providers": 10,
     "services -> routes": 2,
-    "services -> services": 209,
+    "services -> services": 214,
     "services -> types": 2,
     "tests -> lib": 2
   },
@@ -307,20 +307,20 @@
   },
   "externalImports": {
     "@anthropic-ai/claude-agent-sdk": 3,
-    "@automaker/contracts": 9,
+    "@automaker/contracts": 11,
     "@automaker/dependency-resolver": 1,
     "@automaker/git-utils": 12,
     "@automaker/model-resolver": 20,
     "@automaker/platform": 80,
     "@automaker/prompts": 3,
-    "@automaker/types": 172,
-    "@automaker/utils": 166,
+    "@automaker/types": 173,
+    "@automaker/utils": 167,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 146,
+    "@nestjs/common": 147,
     "@nestjs/core": 7,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
@@ -345,7 +345,7 @@
     "node:http": 7,
     "node:net": 2,
     "node:os": 6,
-    "node:path": 35,
+    "node:path": 36,
     "node:perf_hooks": 2,
     "node:stream": 5,
     "node:stream/web": 1,
@@ -911,6 +911,14 @@
     },
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/agent/agent-session-registry.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/agent/agent-session.repository.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
       "target": "apps/server/src/services/auto-mode/index.ts"
     },
     {
@@ -1050,6 +1058,18 @@
       "target": "apps/server/src/services/agent-service.ts"
     },
     {
+      "source": "apps/server/src/modules/agents/agent-state.module.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-state.module.ts",
+      "target": "apps/server/src/services/agent/agent-session-registry.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-state.module.ts",
+      "target": "apps/server/src/services/agent/agent-session.repository.ts"
+    },
+    {
       "source": "apps/server/src/modules/agents/agents.controller.ts",
       "target": "apps/server/src/core/security/index.ts"
     },
@@ -1072,6 +1092,10 @@
     {
       "source": "apps/server/src/modules/agents/agents.module.ts",
       "target": "apps/server/src/modules/agents/agent-application.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agents.module.ts",
+      "target": "apps/server/src/modules/agents/agent-state.module.ts"
     },
     {
       "source": "apps/server/src/modules/agents/agents.module.ts",
@@ -6655,6 +6679,18 @@
     },
     {
       "source": "apps/server/src/services/agent-service.ts",
+      "target": "apps/server/src/services/agent/agent-session-registry.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent-service.ts",
+      "target": "apps/server/src/services/agent/agent-session.repository.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent-service.ts",
+      "target": "apps/server/src/services/agent/agent-session.types.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent-service.ts",
       "target": "apps/server/src/services/execution-environment/feature-workspace.ts"
     },
     {
@@ -6664,6 +6700,18 @@
     {
       "source": "apps/server/src/services/agent-service.ts",
       "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-session-registry.ts",
+      "target": "apps/server/src/services/agent/agent-session.types.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-session.repository.ts",
+      "target": "apps/server/src/lib/secure-fs.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-session.repository.ts",
+      "target": "apps/server/src/services/agent/agent-session.types.ts"
     },
     {
       "source": "apps/server/src/services/auto-loop-coordinator.ts",

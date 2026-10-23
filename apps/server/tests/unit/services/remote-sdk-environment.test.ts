@@ -1,4 +1,5 @@
 import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
+import { createTestAgentState } from '../../helpers/agent-state.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -231,7 +232,7 @@ describe.skipIf(process.platform !== 'linux')('target-side SDK setup and executi
   it('uses real chat and preserves the SDK/runtime session across restart and default changes', async () => {
     await install('claude');
     const service = new AgentService(
-      settings.getDataDirectory(),
+      ...createTestAgentState(settings.getDataDirectory()),
       createEventEmitter(),
       settings,
       createTestProviderRegistry(settings)
@@ -249,7 +250,7 @@ describe.skipIf(process.platform !== 'linux')('target-side SDK setup and executi
       executionEnvironment: { default: { mode: 'local' }, profiles: [] },
     });
     const restarted = new AgentService(
-      settings.getDataDirectory(),
+      ...createTestAgentState(settings.getDataDirectory()),
       createEventEmitter(),
       settings,
       createTestProviderRegistry(settings)

@@ -3,6 +3,8 @@ import { createEventEmitter, type EventEmitter } from '../lib/events.js';
 import type { LegacyApplicationOptions, LegacyServiceOverrides } from '../legacy-application.js';
 import { SettingsService } from '../services/settings-service.js';
 import { AgentService } from '../services/agent-service.js';
+import { AgentSessionRepository } from '../services/agent/agent-session.repository.js';
+import { AgentSessionRegistry } from '../services/agent/agent-session-registry.js';
 import { FeatureLoader } from '../services/feature-loader.js';
 import { AutoModeServiceCompat } from '../services/auto-mode/index.js';
 import { TerminalService } from '../services/terminal-service.js';
@@ -90,19 +92,21 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
     service(
       'agentService',
       [
-        DATA_DIRECTORY,
+        AgentSessionRepository,
+        AgentSessionRegistry,
         LEGACY_EVENT_EMITTER,
         tokens.settings,
         tokens.providerRegistry,
         ToolPolicyService,
       ],
       (
-        dataDir: string,
+        repository: AgentSessionRepository,
+        sessions: AgentSessionRegistry,
         events: EventEmitter,
         settings: SettingsService,
         providers: ProviderRegistry,
         policy: ToolPolicyService
-      ) => new AgentService(dataDir, events, settings, providers, policy)
+      ) => new AgentService(repository, sessions, events, settings, providers, policy)
     ),
     service('featureLoader', [], () => new FeatureLoader()),
     service('notificationService', [LEGACY_EVENT_EMITTER], (events: EventEmitter) => {

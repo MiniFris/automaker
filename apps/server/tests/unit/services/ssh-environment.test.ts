@@ -1,4 +1,5 @@
 import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
+import { createTestAgentState } from '../../helpers/agent-state.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -548,7 +549,7 @@ describe.skipIf(process.platform !== 'linux')(
         });
         try {
           const service = new AgentService(
-            settings.getDataDirectory(),
+            ...createTestAgentState(settings.getDataDirectory()),
             createEventEmitter(),
             settings,
             createTestProviderRegistry(settings)
@@ -589,7 +590,7 @@ describe.skipIf(process.platform !== 'linux')(
             executionEnvironment: { default: { mode: 'local' }, profiles: [] },
           });
           const restarted = new AgentService(
-            settings.getDataDirectory(),
+            ...createTestAgentState(settings.getDataDirectory()),
             createEventEmitter(),
             settings,
             createTestProviderRegistry(settings)

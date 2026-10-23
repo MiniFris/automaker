@@ -1,4 +1,5 @@
 import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
+import { createTestAgentState } from '../../helpers/agent-state.js';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -355,7 +356,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     const emitted: unknown[] = [];
     events.subscribe((_type, data) => emitted.push(data));
     const first = new AgentService(
-      settings.getDataDirectory(),
+      ...createTestAgentState(settings.getDataDirectory()),
       events,
       settings,
       createTestProviderRegistry(settings)
@@ -366,7 +367,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       (await first.sendMessage({ sessionId: session.id, message: 'First question' })).success
     ).toBe(true);
     const restarted = new AgentService(
-      settings.getDataDirectory(),
+      ...createTestAgentState(settings.getDataDirectory()),
       events,
       settings,
       createTestProviderRegistry(settings)
@@ -407,7 +408,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
   it('binds queued prompts to the selected endpoint/model and reloads the queue after restart', async () => {
     const events = createEventEmitter();
     const service = new AgentService(
-      settings.getDataDirectory(),
+      ...createTestAgentState(settings.getDataDirectory()),
       events,
       settings,
       createTestProviderRegistry(settings)
@@ -418,7 +419,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     expect(queued.queuedPrompt).toMatchObject({ model, providerId: 'first' });
     await service.setSessionModel(session.id, model, 'second');
     const restarted = new AgentService(
-      settings.getDataDirectory(),
+      ...createTestAgentState(settings.getDataDirectory()),
       events,
       settings,
       createTestProviderRegistry(settings)
@@ -445,7 +446,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     };
     const events = createEventEmitter();
     const service = new AgentService(
-      settings.getDataDirectory(),
+      ...createTestAgentState(settings.getDataDirectory()),
       events,
       settings,
       createTestProviderRegistry(settings)
@@ -537,7 +538,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     const emitted: unknown[] = [];
     events.subscribe((_type, event) => emitted.push(event));
     const service = new AgentService(
-      settings.getDataDirectory(),
+      ...createTestAgentState(settings.getDataDirectory()),
       events,
       settings,
       createTestProviderRegistry(settings)
@@ -799,7 +800,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
   it('restores a pinned Local chat after restart without switching to a new global Docker selection', async () => {
     await new EnvironmentBindingStore(settings).confirm(root);
     const first = new AgentService(
-      settings.getDataDirectory(),
+      ...createTestAgentState(settings.getDataDirectory()),
       createEventEmitter(),
       settings,
       createTestProviderRegistry(settings)
@@ -819,7 +820,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     expect(original?.type).toBe('local');
     await settings.updateProjectSettings(root, { executionEnvironment: { mode: 'auto' } });
     const restarted = new AgentService(
-      settings.getDataDirectory(),
+      ...createTestAgentState(settings.getDataDirectory()),
       createEventEmitter(),
       settings,
       createTestProviderRegistry(settings)

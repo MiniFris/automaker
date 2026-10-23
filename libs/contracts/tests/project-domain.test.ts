@@ -6,9 +6,17 @@ import {
   FeatureUpdateSchema,
   createProjectDomainOpenApiDocument,
   SessionCreateSchema,
+  SessionIdSchema,
 } from '../src/index.js';
 
 describe('project domain transport contracts', () => {
+  it.each(['../session', '/absolute', '..\\session', '__proto__', 'constructor'])(
+    'rejects unsafe session ID %s',
+    (id) => {
+      expect(SessionIdSchema.safeParse(id).success).toBe(false);
+    }
+  );
+
   it('publishes an explicit API contract version', () => {
     expect(API_CONTRACT_VERSION).toBe('1');
   });

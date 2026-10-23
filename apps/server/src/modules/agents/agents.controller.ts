@@ -26,14 +26,14 @@ export class AgentsController {
 
   @Post('start')
   @HttpCode(200)
-  @AllowedPathFields('workingDirectory')
+  @AllowedPathFields('workingDirectory?')
   start(@Body(new ZodValidationPipe(AgentStartSchema)) body: AgentStartRequest) {
     return this.agents.start(body);
   }
 
   @Post('send')
   @HttpCode(200)
-  @AllowedPathFields('workingDirectory', 'imagePaths[]')
+  @AllowedPathFields('workingDirectory?', 'imagePaths?[]')
   send(@Body(new ZodValidationPipe(AgentSendSchema)) body: AgentSendRequest) {
     return this.agents.send(body);
   }
@@ -64,7 +64,7 @@ export class AgentsController {
 
   @Post('queue/add')
   @HttpCode(200)
-  @AllowedPathFields('imagePaths[]')
+  @AllowedPathFields('imagePaths?[]')
   queueAdd(@Body(new ZodValidationPipe(AgentQueueAddSchema)) body: AgentQueueAddRequest) {
     return this.agents.queueAdd(body);
   }

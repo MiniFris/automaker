@@ -1,6 +1,6 @@
 import { z } from 'zod';
+import { SessionIdSchema } from '@automaker/contracts';
 
-const SessionIdSchema = z.string().trim().min(1);
 const OptionalTextSchema = z.string().optional();
 
 export const AgentSessionSchema = z.object({ sessionId: SessionIdSchema }).strict();

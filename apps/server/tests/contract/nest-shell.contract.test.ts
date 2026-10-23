@@ -17,6 +17,8 @@ import { createNestApplication } from '../../src/main.js';
 import { LEGACY_APPLICATION, LEGACY_SERVICES } from '../../src/legacy/legacy.tokens.js';
 import { SettingsService } from '../../src/services/settings-service.js';
 import { ProviderRegistry } from '../../src/modules/providers/provider-registry.service.js';
+import { AgentSessionRegistry } from '../../src/services/agent/agent-session-registry.js';
+import { AgentSessionRepository } from '../../src/services/agent/agent-session.repository.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -104,6 +106,10 @@ describe('Nest shell and legacy bridge contract', () => {
       for (const [name, token] of Object.entries(LEGACY_SERVICES)) {
         expect(second.app.get(token), name).not.toBe(runtime.app.get(token));
       }
+      expect(second.app.get(AgentSessionRegistry)).not.toBe(runtime.app.get(AgentSessionRegistry));
+      expect(second.app.get(AgentSessionRepository)).not.toBe(
+        runtime.app.get(AgentSessionRepository)
+      );
       const firstCleanup = vi.spyOn(runtime.legacy.services.devServerService, 'stopAll');
       try {
         await second.app.close();
