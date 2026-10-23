@@ -55,6 +55,23 @@ UI contract не будет версионирован отдельно.
 - [ ] Backlog plan/spec generation использует provider port.
 - [ ] Approval token привязан к feature/run/version плана.
 
+### Промежуточная проверка approval workflow
+
+Approval ticket содержит одноразовый token, случайный run id и версию плана.
+Registry регистрирует ожидание синхронно до публикации события и потребляет ticket
+до первой асинхронной mutation. Повторный запрос и устаревшая версия не запускают
+выполнение второй раз. После потери registry сохранённый `generated`-план требует
+явного resume; старый ticket не восстанавливается автоматически.
+
+Для повторного открытия диалога и reconnect UI запрашивает текущий ticket через
+защищённый `POST /api/auto-mode/pending-plan-approval`. Endpoint возвращает ticket
+только для активного ожидания и совпадающей сохранённой версии. Схемы request/response
+находятся в `@automaker/contracts`. Закрытие диалога не отменяет server-side ожидание.
+
+Проверены 27 unit-тестов approval service и 14 Nest HTTP/WS contract-тестов,
+server build и UI typecheck. Полный этап 8 остаётся незавершённым: lifecycle registry,
+restart/resume workflow и остальные integration gates требуют дальнейшей работы.
+
 ## 8.5. IdeationModule
 
 - [ ] Разделить ideation session, analysis и idea repository.

@@ -684,9 +684,9 @@ export class AgentExecutor {
 
     if (requiresApproval) {
       let planApproved = false;
+      const approvalRunId = randomUUID();
       while (!planApproved) {
         const approvalToken = randomUUID();
-        const approvalRunId = options.sdkSessionId ?? featureId;
         const approvalPromise = callbacks.waitForApproval(featureId, projectPath, {
           token: approvalToken,
           planVersion,

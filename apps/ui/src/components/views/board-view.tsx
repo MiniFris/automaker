@@ -1848,12 +1848,8 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
 
   // Handle opening approval dialog from feature card button
   const handleOpenApprovalDialog = useCallback(
-    (feature: Feature) => {
+    async (feature: Feature) => {
       if (!feature.planSpec?.content || !currentProject) return;
-      if (!pendingPlanApproval || pendingPlanApproval.featureId !== feature.id) {
-        logger.warn('Plan approval ticket is no longer active; wait for the run to be resumed');
-        return;
-      }
 
       // Determine the planning mode for approval (skip should never have a plan requiring approval)
       const mode = feature.planningMode;
@@ -1861,17 +1857,28 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         mode === 'lite' || mode === 'spec' || mode === 'full' ? mode : 'spec';
 
       // Re-open the approval dialog with the feature's plan data
-      setPendingPlanApproval({
-        featureId: feature.id,
-        projectPath: currentProject.path,
-        planContent: feature.planSpec.content,
-        planningMode: approvalMode,
-        approvalToken: pendingPlanApproval.approvalToken,
-        planVersion: pendingPlanApproval.planVersion,
-        approvalRunId: pendingPlanApproval.approvalRunId,
-      });
+      try {
+        const api = getElectronAPI();
+        if (!api?.autoMode) throw new Error('Plan approval API not available');
+        const result = await api.autoMode.pendingPlanApproval(currentProject.path, feature.id);
+        if (!result.approval) {
+          toast.error(
+            translate('Plan approval is no longer active. Resume the feature to review its plan.')
+          );
+          return;
+        }
+        setPendingPlanApproval({
+          featureId: feature.id,
+          projectPath: currentProject.path,
+          planningMode: approvalMode,
+          ...result.approval,
+        });
+      } catch (error) {
+        logger.error('Failed to load plan approval:', error);
+        toast.error(translate('Failed to load plan approval'));
+      }
     },
-    [currentProject, pendingPlanApproval, setPendingPlanApproval]
+    [currentProject, setPendingPlanApproval]
   );
 
   if (!currentProject) {

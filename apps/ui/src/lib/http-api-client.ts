@@ -11,6 +11,7 @@ import type {
   BacklogGenerateInput,
   SessionCreateInput,
   SessionUpdateInput,
+  PendingPlanApprovalResponse,
 } from '@automaker/contracts';
 import type {
   ExecutionEnvironmentSettings,
@@ -2280,6 +2281,11 @@ export class HttpApiClient implements ElectronAPI {
         featureId,
         worktreePath,
       }),
+    pendingPlanApproval: (projectPath: string, featureId: string) =>
+      this.post('/api/auto-mode/pending-plan-approval', {
+        projectPath,
+        featureId,
+      }) as Promise<PendingPlanApprovalResponse>,
     approvePlan: (
       projectPath: string,
       featureId: string,

@@ -234,6 +234,60 @@ describe('PlanApprovalService', () => {
   describe('approval ticket lifecycle', () => {
     const ticket = { token: 'ticket-1', planVersion: 3, runId: 'run-1' };
 
+    it('accepts an immediate decision while project settings are still loading', async () => {
+      let finishSettings!: (settings: never) => void;
+      vi.mocked(mockSettingsService!.getProjectSettings).mockReturnValue(
+        new Promise((resolve) => {
+          finishSettings = resolve;
+        })
+      );
+      const waiting = service.waitForApproval('feature-1', '/project', ticket);
+      expect(service.hasPendingApproval('feature-1', '/project')).toBe(true);
+      await expect(
+        service.resolveApproval('feature-1', true, {
+          projectPath: '/project',
+          ...ticket,
+        })
+      ).resolves.toEqual({ success: true });
+      await expect(waiting).resolves.toMatchObject({ approved: true });
+      finishSettings({} as never);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('returns the active ticket and current plan after a client reconnect', async () => {
+      vi.mocked(mockFeatureStateManager.loadFeature).mockResolvedValue({
+        id: 'feature-1',
+        planSpec: { status: 'generated', version: 3, content: 'Plan v3' },
+      } as Feature);
+      const waiting = service.waitForApproval('feature-1', '/project', ticket);
+      await expect(service.getPendingApproval('feature-1', '/project')).resolves.toEqual({
+        approvalToken: ticket.token,
+        approvalRunId: ticket.runId,
+        planVersion: ticket.planVersion,
+        planContent: 'Plan v3',
+      });
+      await expect(service.getPendingApproval('feature-1', '/other-project')).resolves.toBeNull();
+      await service.resolveApproval('feature-1', true, { projectPath: '/project', ...ticket });
+      await waiting;
+      await expect(service.getPendingApproval('feature-1', '/project')).resolves.toBeNull();
+    });
+
+    it('does not return a consumed ticket when the persisted plan read finishes late', async () => {
+      let finishRead!: (feature: Feature) => void;
+      vi.mocked(mockFeatureStateManager.loadFeature).mockReturnValue(
+        new Promise((resolve) => {
+          finishRead = resolve;
+        })
+      );
+      const waiting = service.waitForApproval('feature-1', '/project', ticket);
+      const reading = service.getPendingApproval('feature-1', '/project');
+      await service.resolveApproval('feature-1', true, { projectPath: '/project', ...ticket });
+      await waiting;
+      finishRead({ planSpec: { status: 'generated', version: 3 } } as Feature);
+      await expect(reading).resolves.toBeNull();
+    });
+
     it('rejects a stale plan version without consuming the active ticket', async () => {
       const approvalPromise = service.waitForApproval('feature-1', '/project', ticket);
       await vi.advanceTimersByTimeAsync(0);

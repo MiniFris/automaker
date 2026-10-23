@@ -1,4 +1,5 @@
 import { translate } from '@/lib/i18n';
+import type { PendingPlanApprovalResponse } from '@automaker/contracts';
 // Type definitions for Electron IPC API
 import type { SessionListItem, Message } from '@/types/electron';
 import type {
@@ -622,6 +623,10 @@ export interface AutoModeAPI {
     featureId: string,
     worktreePath?: string
   ) => Promise<{ success: boolean; error?: string }>;
+  pendingPlanApproval: (
+    projectPath: string,
+    featureId: string
+  ) => Promise<PendingPlanApprovalResponse>;
   approvePlan: (
     projectPath: string,
     featureId: string,
@@ -3409,6 +3414,7 @@ function createMockAutoModeAPI(): AutoModeAPI {
       return { success: true };
     },
 
+    pendingPlanApproval: async () => ({ success: true, approval: null }),
     approvePlan: async (
       projectPath: string,
       featureId: string,

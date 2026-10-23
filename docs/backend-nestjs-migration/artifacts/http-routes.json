@@ -1,11 +1,11 @@
 {
   "schemaVersion": 2,
   "sourceRoot": "apps/server/src",
-  "total": 308,
+  "total": 309,
   "groups": {
     "agent": 10,
     "auth": 4,
-    "auto-mode": 16,
+    "auto-mode": 17,
     "backlog-plan": 5,
     "claude": 1,
     "codex": 2,
@@ -253,7 +253,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 65,
+      "line": 73,
       "middleware": [
         "AutoModeController.analyzeProject"
       ],
@@ -268,7 +268,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 83,
+      "line": 91,
       "middleware": [
         "AutoModeController.approvePlan"
       ],
@@ -283,7 +283,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 77,
+      "line": 85,
       "middleware": [
         "AutoModeController.commitFeature"
       ],
@@ -298,7 +298,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 59,
+      "line": 67,
       "middleware": [
         "AutoModeController.contextExists"
       ],
@@ -313,7 +313,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 71,
+      "line": 79,
       "middleware": [
         "AutoModeController.followUpFeature"
       ],
@@ -328,7 +328,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 17,
+      "line": 25,
       "middleware": [
         "AutoModeController.mergeEnvironmentFeature"
       ],
@@ -343,9 +343,24 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 23,
+      "line": 31,
       "middleware": [
         "AutoModeController.mergeSshFeature"
+      ],
+      "potentialMutation": true,
+      "validatesProjectPath": true,
+      "streamsResponse": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/pending-plan-approval",
+      "group": "auto-mode",
+      "owner": "nestjs",
+      "access": "protected",
+      "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
+      "line": 98,
+      "middleware": [
+        "AutoModeController.pendingPlanApproval"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -358,7 +373,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 95,
+      "line": 116,
       "middleware": [
         "AutoModeController.reconcile"
       ],
@@ -373,7 +388,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 53,
+      "line": 61,
       "middleware": [
         "AutoModeController.resumeFeature"
       ],
@@ -388,7 +403,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 89,
+      "line": 110,
       "middleware": [
         "AutoModeController.resumeInterrupted"
       ],
@@ -403,7 +418,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 41,
+      "line": 49,
       "middleware": [
         "AutoModeController.runFeature"
       ],
@@ -418,7 +433,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 29,
+      "line": 37,
       "middleware": [
         "AutoModeController.start"
       ],
@@ -433,7 +448,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 38,
+      "line": 46,
       "middleware": [
         "AutoModeController.status"
       ],
@@ -448,7 +463,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 35,
+      "line": 43,
       "middleware": [
         "AutoModeController.stopFeature"
       ],
@@ -463,7 +478,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 32,
+      "line": 40,
       "middleware": [
         "AutoModeController.stop"
       ],
@@ -478,7 +493,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 47,
+      "line": 55,
       "middleware": [
         "AutoModeController.verifyFeature"
       ],

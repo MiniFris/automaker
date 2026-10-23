@@ -1,6 +1,7 @@
 /**
  * Electron API type definitions
  */
+import type { PendingPlanApprovalResponse } from '@automaker/contracts';
 
 import type {
   ClaudeUsageResponse,
@@ -601,6 +602,10 @@ export interface AutoModeAPI {
     error?: string;
   }>;
 
+  pendingPlanApproval: (
+    projectPath: string,
+    featureId: string
+  ) => Promise<PendingPlanApprovalResponse>;
   approvePlan: (
     projectPath: string,
     featureId: string,

@@ -1,13 +1,21 @@
-import { Controller, Inject, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpCode, Inject, Post, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  PendingPlanApprovalRequestSchema,
+  type PendingPlanApprovalRequest,
+} from '@automaker/contracts';
 import type { Request, Response } from 'express';
 import { AllowedPathFields, AllowedPathGuard } from '../../core/security/index.js';
 import { AutoModeHandlersService, type AutoModeHandlerName } from './auto-mode-handlers.service.js';
+import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
+import type { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
+import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
 
 @Controller('auto-mode')
 @UseGuards(AllowedPathGuard)
 export class AutoModeController {
   constructor(
-    @Inject(AutoModeHandlersService) private readonly handlers: AutoModeHandlersService
+    @Inject(AutoModeHandlersService) private readonly handlers: AutoModeHandlersService,
+    @Inject(LEGACY_SERVICES.autoMode) private readonly autoMode: AutoModeServiceCompat
   ) {}
 
   private run(name: AutoModeHandlerName, request: Request, response: Response) {
@@ -85,6 +93,19 @@ export class AutoModeController {
     @Res() s: Response
   ) {
     return this.run('approvePlan', q, s);
+  }
+
+  @Post('pending-plan-approval')
+  @HttpCode(200)
+  @AllowedPathFields('projectPath')
+  async pendingPlanApproval(
+    @Body(new ZodValidationPipe(PendingPlanApprovalRequestSchema))
+    body: PendingPlanApprovalRequest
+  ) {
+    return {
+      success: true,
+      approval: await this.autoMode.getPendingPlanApproval(body.projectPath, body.featureId),
+    };
   }
   @Post('resume-interrupted') @AllowedPathFields('projectPath') resumeInterrupted(
     @Req() q: Request,

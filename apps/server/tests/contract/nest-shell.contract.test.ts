@@ -190,6 +190,61 @@ describe('Nest shell and legacy bridge contract', () => {
     });
   });
 
+  it('allows authenticated clients to recover only the active plan approval ticket', async () => {
+    const address = runtime.legacy.server.address() as AddressInfo;
+    const endpoint = `http://127.0.0.1:${address.port}/api/auto-mode/pending-plan-approval`;
+    const ticket = {
+      approvalToken: 'current-ticket',
+      approvalRunId: 'current-run',
+      planVersion: 2,
+      planContent: 'Current plan',
+    };
+    const lookup = vi
+      .spyOn(runtime.legacy.services.autoModeService, 'getPendingPlanApproval')
+      .mockResolvedValue(ticket);
+    const body = { projectPath: '/tmp', featureId: 'approval-contract-feature' };
+    try {
+      const unauthorized = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      expect(unauthorized.status).toBe(401);
+      expect(lookup).not.toHaveBeenCalled();
+
+      const headers = {
+        'Content-Type': 'application/json',
+        'x-api-key': 'automaker-test-api-key',
+      };
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+      });
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ success: true, approval: ticket });
+      expect(lookup).toHaveBeenCalledExactlyOnceWith(body.projectPath, body.featureId);
+
+      const malformed = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ projectPath: '/tmp', featureId: 123 }),
+      });
+      expect(malformed.status).toBe(400);
+      expect(lookup).toHaveBeenCalledTimes(1);
+
+      lookup.mockResolvedValue(null);
+      const consumed = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+      });
+      expect(await consumed.json()).toEqual({ success: true, approval: null });
+    } finally {
+      lookup.mockRestore();
+    }
+  });
+
   it('preserves content-type, authentication, CORS, cookie and body-limit middleware', async () => {
     const address = runtime.legacy.server.address() as AddressInfo;
     const baseUrl = `http://127.0.0.1:${address.port}`;

@@ -1234,6 +1234,10 @@ export class AutoModeServiceFacade {
     return this.planApprovalService.hasPendingApproval(featureId, this.projectPath);
   }
 
+  getPendingPlanApproval(featureId: string) {
+    return this.planApprovalService.getPendingApproval(featureId, this.projectPath);
+  }
+
   /**
    * Cancel a pending plan approval
    * @param featureId - The feature ID

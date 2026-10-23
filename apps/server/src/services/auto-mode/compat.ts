@@ -254,6 +254,10 @@ export class AutoModeServiceCompat {
     );
   }
 
+  getPendingPlanApproval(projectPath: string, featureId: string) {
+    return this.createFacade(projectPath).getPendingPlanApproval(featureId);
+  }
+
   async resumeInterruptedFeatures(projectPath: string): Promise<void> {
     const facade = this.createFacade(projectPath);
     return facade.resumeInterruptedFeatures();
