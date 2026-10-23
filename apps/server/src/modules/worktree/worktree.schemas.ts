@@ -51,6 +51,41 @@ export const WorktreeCommitSchema = WorktreePathSchema.extend({
   environmentTargetId: z.string().optional(),
 }).strict();
 
+export const StartDevSchema = z
+  .object({
+    projectPath: ProjectPathSchema,
+    worktreePath: ProjectPathSchema,
+    environmentTargetId: z.string().optional(),
+  })
+  .strict();
+
+export const DevSessionSchema = z
+  .object({
+    worktreePath: ProjectPathSchema.optional(),
+    sessionId: z.string().trim().min(1).max(512).optional(),
+  })
+  .strict()
+  .refine((value) => value.worktreePath || value.sessionId, 'worktreePath or sessionId required');
+
+export const StartTestsSchema = z
+  .object({
+    worktreePath: ProjectPathSchema,
+    projectPath: ProjectPathSchema.optional(),
+    testFile: RelativeFileSchema.optional(),
+    environmentTargetId: z.string().optional(),
+  })
+  .strict();
+
+export const StopTestsSchema = z.object({ sessionId: z.string().trim().min(1).max(512) }).strict();
+
+export const TestLogsSchema = z
+  .object({
+    worktreePath: ProjectPathSchema.optional(),
+    sessionId: z.string().trim().min(1).max(512).optional(),
+  })
+  .strict()
+  .refine((value) => value.worktreePath || value.sessionId, 'worktreePath or sessionId required');
+
 export type WorktreeProjectRequest = z.infer<typeof WorktreeProjectSchema>;
 export type WorktreeFeatureRequest = z.infer<typeof WorktreeFeatureSchema>;
 export type WorktreeFileRequest = z.infer<typeof WorktreeFileSchema>;
@@ -60,3 +95,8 @@ export type WorktreeCommitLogRequest = z.infer<typeof WorktreeCommitLogSchema>;
 export type WorktreeBranchCommitLogRequest = z.infer<typeof WorktreeBranchCommitLogSchema>;
 export type WorktreeStageFilesRequest = z.infer<typeof WorktreeStageFilesSchema>;
 export type WorktreeCommitRequest = z.infer<typeof WorktreeCommitSchema>;
+export type StartDevRequest = z.infer<typeof StartDevSchema>;
+export type DevSessionRequest = z.infer<typeof DevSessionSchema>;
+export type StartTestsRequest = z.infer<typeof StartTestsSchema>;
+export type StopTestsRequest = z.infer<typeof StopTestsSchema>;
+export type TestLogsRequest = z.infer<typeof TestLogsSchema>;

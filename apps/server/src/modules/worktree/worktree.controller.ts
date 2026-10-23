@@ -1,9 +1,25 @@
-import { Body, Controller, HttpCode, Inject, Post, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Inject,
+  Post,
+  Query,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import type { Response } from 'express';
 import { AllowedPathFields, AllowedPathGuard } from '../../core/security/index.js';
 import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
 import { WorktreeApplicationService } from './worktree-application.service.js';
+import { WorktreeProcessService } from './worktree-process.service.js';
 import {
+  DevSessionSchema,
+  StartDevSchema,
+  StartTestsSchema,
+  StopTestsSchema,
+  TestLogsSchema,
   WorktreeBranchesSchema,
   WorktreeBranchCommitLogSchema,
   WorktreeCommitLogSchema,
@@ -22,13 +38,19 @@ import {
   type WorktreePathRequest,
   type WorktreeProjectRequest,
   type WorktreeStageFilesRequest,
+  type DevSessionRequest,
+  type StartDevRequest,
+  type StartTestsRequest,
+  type StopTestsRequest,
+  type TestLogsRequest,
 } from './worktree.schemas.js';
 
 @Controller('worktree')
 @UseGuards(AllowedPathGuard)
 export class WorktreeController {
   constructor(
-    @Inject(WorktreeApplicationService) private readonly worktrees: WorktreeApplicationService
+    @Inject(WorktreeApplicationService) private readonly worktrees: WorktreeApplicationService,
+    @Inject(WorktreeProcessService) private readonly processes: WorktreeProcessService
   ) {}
 
   @Post('environment')
@@ -157,6 +179,51 @@ export class WorktreeController {
     @Res({ passthrough: true }) response: Response
   ) {
     return this.cancel(response, (signal) => this.worktrees.branchCommitLog(body, signal));
+  }
+
+  @Post('start-dev')
+  @HttpCode(200)
+  @AllowedPathFields('projectPath', 'worktreePath')
+  startDev(@Body(new ZodValidationPipe(StartDevSchema)) body: StartDevRequest) {
+    return this.processes.startDev(body);
+  }
+
+  @Post('stop-dev')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath')
+  stopDev(@Body(new ZodValidationPipe(DevSessionSchema)) body: DevSessionRequest) {
+    return this.processes.stopDev(body);
+  }
+
+  @Post('list-dev-servers')
+  @HttpCode(200)
+  listDevServers() {
+    return this.processes.listDev();
+  }
+
+  @Get('dev-server-logs')
+  @AllowedPathFields('worktreePath')
+  devServerLogs(@Query(new ZodValidationPipe(DevSessionSchema)) query: DevSessionRequest) {
+    return this.processes.devLogs(query);
+  }
+
+  @Post('start-tests')
+  @HttpCode(200)
+  @AllowedPathFields('worktreePath', 'projectPath')
+  startTests(@Body(new ZodValidationPipe(StartTestsSchema)) body: StartTestsRequest) {
+    return this.processes.startTests(body);
+  }
+
+  @Post('stop-tests')
+  @HttpCode(200)
+  stopTests(@Body(new ZodValidationPipe(StopTestsSchema)) body: StopTestsRequest) {
+    return this.processes.stopTests(body);
+  }
+
+  @Get('test-logs')
+  @AllowedPathFields('worktreePath')
+  testLogs(@Query(new ZodValidationPipe(TestLogsSchema)) query: TestLogsRequest) {
+    return this.processes.testLogs(query);
   }
 
   private async cancel<T>(response: Response, operation: (signal: AbortSignal) => Promise<T>) {

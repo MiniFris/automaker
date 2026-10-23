@@ -715,6 +715,20 @@ describe('Nest shell and legacy bridge contract', () => {
         executionEnvironment: { type: 'local', projectPath },
       });
 
+      const devServers = await fetch(`${baseUrl}/api/worktree/list-dev-servers`, {
+        method: 'POST',
+        headers,
+        body: '{}',
+      });
+      expect(devServers.status).toBe(200);
+      expect(await devServers.json()).toMatchObject({
+        success: true,
+        result: { servers: expect.any(Array) },
+      });
+
+      const missingTestLogs = await fetch(`${baseUrl}/api/worktree/test-logs`, { headers });
+      expect(missingTestLogs.status).toBe(400);
+
       for (const route of ['notifications/list', 'event-history/list']) {
         const response = await fetch(`${baseUrl}/api/${route}`, {
           method: 'POST',
