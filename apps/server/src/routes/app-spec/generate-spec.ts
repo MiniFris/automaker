@@ -23,6 +23,7 @@ import {
   getPhaseModelWithOverrides,
 } from '../../lib/settings-helpers.js';
 import { atomicWriteText } from '../../lib/atomic-write-text.js';
+import type { ProviderRegistry } from '../../modules/providers/provider-registry.service.js';
 
 const logger = createLogger('SpecRegeneration');
 
@@ -35,7 +36,8 @@ export async function generateSpec(
   analyzeProject?: boolean,
   maxFeatures?: number,
   settingsService?: SettingsService,
-  notificationService?: NotificationService
+  notificationService?: NotificationService,
+  providerRegistry?: ProviderRegistry
 ): Promise<void> {
   logger.info('========== generateSpec() started ==========');
   logger.info('projectPath:', projectPath);
@@ -145,46 +147,49 @@ Your entire response should be valid JSON starting with { and ending with }. No 
   }
 
   // Use streamingQuery with event callbacks
-  const result = await streamingQuery({
-    settingsService,
-    providerId: phaseModelEntry.providerId,
-    prompt: finalPrompt,
-    model,
-    cwd: projectPath,
-    maxTurns: 250,
-    allowedTools: ['Read', 'Glob', 'Grep'],
-    abortController,
-    thinkingLevel,
-    readOnly: true, // Spec generation only reads code, we write the spec ourselves
-    settingSources: autoLoadClaudeMd ? ['user', 'project', 'local'] : undefined,
-    claudeCompatibleProvider: provider, // Pass provider for alternative endpoint configuration
-    credentials, // Pass credentials for resolving 'credentials' apiKeySource
-    outputFormat: useStructuredOutput
-      ? {
-          type: 'json_schema',
-          schema: specOutputSchema,
-        }
-      : undefined,
-    onText: (text) => {
-      responseText += text;
-      logger.info(
-        `Text block received (${text.length} chars), total now: ${responseText.length} chars`
-      );
-      events.emit('spec-regeneration:event', {
-        type: 'spec_regeneration_progress',
-        content: text,
-        projectPath: projectPath,
-      });
+  const result = await streamingQuery(
+    {
+      settingsService,
+      providerId: phaseModelEntry.providerId,
+      prompt: finalPrompt,
+      model,
+      cwd: projectPath,
+      maxTurns: 250,
+      allowedTools: ['Read', 'Glob', 'Grep'],
+      abortController,
+      thinkingLevel,
+      readOnly: true, // Spec generation only reads code, we write the spec ourselves
+      settingSources: autoLoadClaudeMd ? ['user', 'project', 'local'] : undefined,
+      claudeCompatibleProvider: provider, // Pass provider for alternative endpoint configuration
+      credentials, // Pass credentials for resolving 'credentials' apiKeySource
+      outputFormat: useStructuredOutput
+        ? {
+            type: 'json_schema',
+            schema: specOutputSchema,
+          }
+        : undefined,
+      onText: (text) => {
+        responseText += text;
+        logger.info(
+          `Text block received (${text.length} chars), total now: ${responseText.length} chars`
+        );
+        events.emit('spec-regeneration:event', {
+          type: 'spec_regeneration_progress',
+          content: text,
+          projectPath: projectPath,
+        });
+      },
+      onToolUse: (tool, input) => {
+        logger.info('Tool use:', tool);
+        events.emit('spec-regeneration:event', {
+          type: 'spec_tool',
+          tool,
+          input,
+        });
+      },
     },
-    onToolUse: (tool, input) => {
-      logger.info('Tool use:', tool);
-      events.emit('spec-regeneration:event', {
-        type: 'spec_tool',
-        tool,
-        input,
-      });
-    },
-  });
+    providerRegistry
+  );
 
   // Get structured output if available
   if (result.structured_output) {

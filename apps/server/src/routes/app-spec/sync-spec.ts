@@ -13,6 +13,7 @@ import { createLogger } from '@automaker/utils';
 import { DEFAULT_PHASE_MODELS, supportsStructuredOutput } from '@automaker/types';
 import { resolvePhaseModel } from '@automaker/model-resolver';
 import { streamingQuery } from '../../providers/simple-query-service.js';
+import type { ProviderRegistry } from '../../modules/providers/provider-registry.service.js';
 import { extractJson } from '../../lib/json-extractor.js';
 import { getAppSpecPath } from '@automaker/platform';
 import type { SettingsService } from '../../services/settings-service.js';
@@ -81,7 +82,8 @@ export async function syncSpec(
   events: EventEmitter,
   abortController: AbortController,
   settingsService?: SettingsService,
-  notificationService?: NotificationService
+  notificationService?: NotificationService,
+  providerRegistry?: ProviderRegistry
 ): Promise<SyncResult> {
   logger.info('========== syncSpec() started ==========');
   logger.info('projectPath:', projectPath);
@@ -234,30 +236,33 @@ CRITICAL INSTRUCTIONS:
   }
 
   try {
-    const techResult = await streamingQuery({
-      settingsService,
-      providerId: phaseModelEntry.providerId,
-      prompt: techAnalysisPrompt,
-      model,
-      cwd: projectPath,
-      maxTurns: 10,
-      allowedTools: ['Read', 'Glob', 'Grep'],
-      abortController,
-      thinkingLevel,
-      readOnly: true,
-      settingSources: autoLoadClaudeMd ? ['user', 'project', 'local'] : undefined,
-      claudeCompatibleProvider: provider, // Pass provider for alternative endpoint configuration
-      credentials, // Pass credentials for resolving 'credentials' apiKeySource
-      outputFormat: useStructuredOutput
-        ? {
-            type: 'json_schema',
-            schema: techStackOutputSchema,
-          }
-        : undefined,
-      onText: (text) => {
-        logger.debug(`Tech analysis text: ${text.substring(0, 100)}`);
+    const techResult = await streamingQuery(
+      {
+        settingsService,
+        providerId: phaseModelEntry.providerId,
+        prompt: techAnalysisPrompt,
+        model,
+        cwd: projectPath,
+        maxTurns: 10,
+        allowedTools: ['Read', 'Glob', 'Grep'],
+        abortController,
+        thinkingLevel,
+        readOnly: true,
+        settingSources: autoLoadClaudeMd ? ['user', 'project', 'local'] : undefined,
+        claudeCompatibleProvider: provider, // Pass provider for alternative endpoint configuration
+        credentials, // Pass credentials for resolving 'credentials' apiKeySource
+        outputFormat: useStructuredOutput
+          ? {
+              type: 'json_schema',
+              schema: techStackOutputSchema,
+            }
+          : undefined,
+        onText: (text) => {
+          logger.debug(`Tech analysis text: ${text.substring(0, 100)}`);
+        },
       },
-    });
+      providerRegistry
+    );
 
     // Parse tech stack from response - prefer structured output if available
     let parsedTechnologies: string[] | null = null;

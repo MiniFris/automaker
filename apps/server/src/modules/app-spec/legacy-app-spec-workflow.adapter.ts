@@ -7,13 +7,15 @@ import { syncSpec } from '../../routes/app-spec/sync-spec.js';
 import { NotificationService } from '../../services/notification-service.js';
 import { SettingsService } from '../../services/settings-service.js';
 import type { AppSpecGenerationOptions, AppSpecWorkflowPort } from './app-spec-workflow.port.js';
+import { ProviderRegistry } from '../providers/provider-registry.service.js';
 
 @Injectable()
 export class LegacyAppSpecWorkflowAdapter implements AppSpecWorkflowPort {
   constructor(
     @Inject(LEGACY_EVENT_EMITTER) private readonly events: EventEmitter,
     @Inject(SettingsService) private readonly settings: SettingsService,
-    @Inject(LEGACY_SERVICES.notification) private readonly notifications: NotificationService
+    @Inject(LEGACY_SERVICES.notification) private readonly notifications: NotificationService,
+    @Inject(ProviderRegistry) private readonly providers: ProviderRegistry
   ) {}
 
   generate(options: AppSpecGenerationOptions): Promise<void> {
@@ -26,7 +28,8 @@ export class LegacyAppSpecWorkflowAdapter implements AppSpecWorkflowPort {
       options.analyzeProject,
       options.maxFeatures,
       this.settings,
-      this.notifications
+      this.notifications,
+      this.providers
     );
   }
 
@@ -41,11 +44,19 @@ export class LegacyAppSpecWorkflowAdapter implements AppSpecWorkflowPort {
       abortController,
       maxFeatures,
       this.settings,
-      this.notifications
+      this.notifications,
+      this.providers
     );
   }
 
   async sync(projectPath: string, abortController: AbortController): Promise<void> {
-    await syncSpec(projectPath, this.events, abortController, this.settings, this.notifications);
+    await syncSpec(
+      projectPath,
+      this.events,
+      abortController,
+      this.settings,
+      this.notifications,
+      this.providers
+    );
   }
 }

@@ -11,6 +11,7 @@ import { createLogger } from '@automaker/utils';
 import { DEFAULT_PHASE_MODELS, supportsStructuredOutput, isCodexModel } from '@automaker/types';
 import { resolvePhaseModel } from '@automaker/model-resolver';
 import { streamingQuery } from '../../providers/simple-query-service.js';
+import type { ProviderRegistry } from '../../modules/providers/provider-registry.service.js';
 import { parseAndCreateFeatures } from './parse-and-create-features.js';
 import { extractJsonWithArray } from '../../lib/json-extractor.js';
 import { getAppSpecPath } from '@automaker/platform';
@@ -91,7 +92,8 @@ export async function generateFeaturesFromSpec(
   abortController: AbortController,
   maxFeatures?: number,
   settingsService?: SettingsService,
-  notificationService?: NotificationService
+  notificationService?: NotificationService,
+  providerRegistry?: ProviderRegistry
 ): Promise<void> {
   const featureCount = maxFeatures ?? DEFAULT_MAX_FEATURES;
   logger.debug('========== generateFeaturesFromSpec() started ==========');
@@ -252,36 +254,39 @@ Your entire response should be valid JSON starting with { and ending with }. No 
   }
 
   // Use streamingQuery with event callbacks
-  const result = await streamingQuery({
-    settingsService,
-    providerId: phaseModelEntry.providerId,
-    prompt: finalPrompt,
-    model,
-    cwd: projectPath,
-    maxTurns: 250,
-    allowedTools: ['Read', 'Glob', 'Grep'],
-    abortController,
-    thinkingLevel,
-    reasoningEffort: effectiveReasoningEffort, // Extended timeout for Codex models
-    readOnly: true, // Feature generation only reads code, doesn't write
-    settingSources: autoLoadClaudeMd ? ['user', 'project', 'local'] : undefined,
-    claudeCompatibleProvider: provider, // Pass provider for alternative endpoint configuration
-    credentials, // Pass credentials for resolving 'credentials' apiKeySource
-    outputFormat: useStructuredOutput
-      ? {
-          type: 'json_schema',
-          schema: featuresOutputSchema,
-        }
-      : undefined,
-    onText: (text) => {
-      logger.debug(`Feature text block received (${text.length} chars)`);
-      events.emit('spec-regeneration:event', {
-        type: 'spec_regeneration_progress',
-        content: text,
-        projectPath: projectPath,
-      });
+  const result = await streamingQuery(
+    {
+      settingsService,
+      providerId: phaseModelEntry.providerId,
+      prompt: finalPrompt,
+      model,
+      cwd: projectPath,
+      maxTurns: 250,
+      allowedTools: ['Read', 'Glob', 'Grep'],
+      abortController,
+      thinkingLevel,
+      reasoningEffort: effectiveReasoningEffort, // Extended timeout for Codex models
+      readOnly: true, // Feature generation only reads code, doesn't write
+      settingSources: autoLoadClaudeMd ? ['user', 'project', 'local'] : undefined,
+      claudeCompatibleProvider: provider, // Pass provider for alternative endpoint configuration
+      credentials, // Pass credentials for resolving 'credentials' apiKeySource
+      outputFormat: useStructuredOutput
+        ? {
+            type: 'json_schema',
+            schema: featuresOutputSchema,
+          }
+        : undefined,
+      onText: (text) => {
+        logger.debug(`Feature text block received (${text.length} chars)`);
+        events.emit('spec-regeneration:event', {
+          type: 'spec_regeneration_progress',
+          content: text,
+          projectPath: projectPath,
+        });
+      },
     },
-  });
+    providerRegistry
+  );
 
   // Get response content - prefer structured output if available
   let contentForParsing: string;
