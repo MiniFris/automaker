@@ -5,9 +5,15 @@ import {
   Injectable,
   type BeforeApplicationShutdown,
   type OnApplicationBootstrap,
+  type Provider,
 } from '@nestjs/common';
 
-import type { LegacyApplication } from '../legacy-application.js';
+import {
+  createLegacyApplication,
+  type LegacyApplication,
+  type LegacyApplicationOptions,
+  type LegacyServiceOverrides,
+} from '../legacy-application.js';
 import { ReadinessStateService } from '../core/lifecycle/readiness-state.service.js';
 import {
   DATA_DIRECTORY,
@@ -15,6 +21,17 @@ import {
   LEGACY_EVENT_EMITTER,
   LEGACY_SERVICES,
 } from './legacy.tokens.js';
+
+function exposeService(
+  provide: symbol,
+  select: (services: LegacyServiceOverrides) => unknown
+): Provider {
+  return {
+    provide,
+    inject: [LEGACY_APPLICATION],
+    useFactory: (application: LegacyApplication) => select(application.services),
+  };
+}
 
 @Injectable()
 class LegacyLifecycle implements OnApplicationBootstrap, BeforeApplicationShutdown {
@@ -35,56 +52,54 @@ class LegacyLifecycle implements OnApplicationBootstrap, BeforeApplicationShutdo
 
   async beforeApplicationShutdown(signal?: string): Promise<void> {
     this.readiness.markStopping();
-    await this.legacy.shutdown(signal ?? 'Nest application shutdown', { closeHttpServer: false });
+    await this.legacy.shutdown(signal ?? 'Nest application shutdown');
   }
 }
 
 @Global()
 export class LegacyModule {
-  static register(legacy: LegacyApplication, dataDirectory: string): DynamicModule {
+  static register(options: LegacyApplicationOptions, dataDirectory: string): DynamicModule {
     return {
       module: LegacyModule,
       providers: [
         { provide: DATA_DIRECTORY, useValue: dataDirectory },
-        { provide: LEGACY_APPLICATION, useValue: legacy },
-        { provide: LEGACY_EVENT_EMITTER, useValue: legacy.events },
-        { provide: LEGACY_SERVICES.settings, useValue: legacy.services.settingsService },
-        { provide: LEGACY_SERVICES.agent, useValue: legacy.services.agentService },
-        { provide: LEGACY_SERVICES.featureLoader, useValue: legacy.services.featureLoader },
-        { provide: LEGACY_SERVICES.autoMode, useValue: legacy.services.autoModeService },
-        { provide: LEGACY_SERVICES.claudeUsage, useValue: legacy.services.claudeUsageService },
         {
-          provide: LEGACY_SERVICES.codexAppServer,
-          useValue: legacy.services.codexAppServerService,
+          provide: LEGACY_APPLICATION,
+          useFactory: () => createLegacyApplication(options),
         },
         {
-          provide: LEGACY_SERVICES.codexModelCache,
-          useValue: legacy.services.codexModelCacheService,
+          provide: LEGACY_EVENT_EMITTER,
+          inject: [LEGACY_APPLICATION],
+          useFactory: (legacy: LegacyApplication) => legacy.events,
         },
-        { provide: LEGACY_SERVICES.codexUsage, useValue: legacy.services.codexUsageService },
-        { provide: LEGACY_SERVICES.zaiUsage, useValue: legacy.services.zaiUsageService },
-        { provide: LEGACY_SERVICES.geminiUsage, useValue: legacy.services.geminiUsageService },
-        { provide: LEGACY_SERVICES.mcpTest, useValue: legacy.services.mcpTestService },
-        { provide: LEGACY_SERVICES.ideation, useValue: legacy.services.ideationService },
-        { provide: LEGACY_SERVICES.devServer, useValue: legacy.services.devServerService },
-        {
-          provide: LEGACY_SERVICES.notification,
-          useValue: legacy.services.notificationService,
-        },
-        {
-          provide: LEGACY_SERVICES.eventHistory,
-          useValue: legacy.services.eventHistoryService,
-        },
-        { provide: LEGACY_SERVICES.testRunner, useValue: legacy.services.testRunnerService },
-        { provide: LEGACY_SERVICES.terminal, useValue: legacy.services.terminalService },
-        { provide: LEGACY_SERVICES.pipeline, useValue: legacy.services.pipelineService },
-        { provide: LEGACY_SERVICES.eventHook, useValue: legacy.services.eventHookService },
-        { provide: LEGACY_SERVICES.loginAttemptStore, useValue: legacy.services.loginAttemptStore },
-        {
-          provide: LEGACY_SERVICES.providerConnections,
-          useValue: legacy.services.providerConnections,
-        },
-        { provide: LEGACY_SERVICES.providerRegistry, useValue: legacy.services.providerRegistry },
+        exposeService(LEGACY_SERVICES.settings, (services) => services.settingsService),
+        exposeService(LEGACY_SERVICES.agent, (services) => services.agentService),
+        exposeService(LEGACY_SERVICES.featureLoader, (services) => services.featureLoader),
+        exposeService(LEGACY_SERVICES.autoMode, (services) => services.autoModeService),
+        exposeService(LEGACY_SERVICES.claudeUsage, (services) => services.claudeUsageService),
+        exposeService(LEGACY_SERVICES.codexAppServer, (services) => services.codexAppServerService),
+        exposeService(
+          LEGACY_SERVICES.codexModelCache,
+          (services) => services.codexModelCacheService
+        ),
+        exposeService(LEGACY_SERVICES.codexUsage, (services) => services.codexUsageService),
+        exposeService(LEGACY_SERVICES.zaiUsage, (services) => services.zaiUsageService),
+        exposeService(LEGACY_SERVICES.geminiUsage, (services) => services.geminiUsageService),
+        exposeService(LEGACY_SERVICES.mcpTest, (services) => services.mcpTestService),
+        exposeService(LEGACY_SERVICES.ideation, (services) => services.ideationService),
+        exposeService(LEGACY_SERVICES.devServer, (services) => services.devServerService),
+        exposeService(LEGACY_SERVICES.notification, (services) => services.notificationService),
+        exposeService(LEGACY_SERVICES.eventHistory, (services) => services.eventHistoryService),
+        exposeService(LEGACY_SERVICES.testRunner, (services) => services.testRunnerService),
+        exposeService(LEGACY_SERVICES.terminal, (services) => services.terminalService),
+        exposeService(LEGACY_SERVICES.pipeline, (services) => services.pipelineService),
+        exposeService(LEGACY_SERVICES.eventHook, (services) => services.eventHookService),
+        exposeService(LEGACY_SERVICES.loginAttemptStore, (services) => services.loginAttemptStore),
+        exposeService(
+          LEGACY_SERVICES.providerConnections,
+          (services) => services.providerConnections
+        ),
+        exposeService(LEGACY_SERVICES.providerRegistry, (services) => services.providerRegistry),
         LegacyLifecycle,
       ],
       exports: [

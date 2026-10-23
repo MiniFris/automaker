@@ -218,7 +218,6 @@ export interface LegacyApplicationOptions {
 }
 
 export interface LegacyShutdownOptions {
-  closeHttpServer?: boolean;
   exitProcess?: boolean;
 }
 
@@ -484,18 +483,14 @@ export function createLegacyApplication(options: LegacyApplicationOptions): Lega
   ): Promise<void> => {
     if (shutdownPromise) return shutdownPromise;
 
-    const { closeHttpServer = true, exitProcess = false } = shutdownOptions;
-    shutdownPromise = performGracefulShutdown(signal, closeHttpServer, exitProcess).finally(() => {
+    const { exitProcess = false } = shutdownOptions;
+    shutdownPromise = performGracefulShutdown(signal, exitProcess).finally(() => {
       shutdownPromise = undefined;
     });
     return shutdownPromise;
   };
 
-  const performGracefulShutdown = async (
-    signal: string,
-    closeHttpServer: boolean,
-    exitProcess: boolean
-  ): Promise<void> => {
+  const performGracefulShutdown = async (signal: string, exitProcess: boolean): Promise<void> => {
     logger.info(`${signal} received, shutting down...`);
 
     // Set up a force-exit timeout to prevent hanging
@@ -517,20 +512,8 @@ export function createLegacyApplication(options: LegacyApplicationOptions): Lega
     terminalService.cleanup();
     await getManagedTestRunnerService(settingsService, events).cleanup();
     await getManagedDevServerService(settingsService, events).cleanup();
-    if (closeHttpServer) {
-      await new Promise<void>((resolve, reject) => {
-        if (!server.listening) {
-          resolve();
-          return;
-        }
-        server.close((error) => {
-          if (error) reject(error);
-          else resolve();
-        });
-      });
-    }
     clearTimeout(forceExitTimeout);
-    logger.info(closeHttpServer ? 'Server closed' : 'Legacy services stopped');
+    logger.info('Application services stopped');
     if (exitProcess) process.exit(0);
   };
 

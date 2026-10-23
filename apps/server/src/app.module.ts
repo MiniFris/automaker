@@ -1,6 +1,6 @@
 import { DynamicModule, Inject, MiddlewareConsumer, Module, RequestMethod } from '@nestjs/common';
 
-import type { LegacyApplication } from './legacy-application.js';
+import type { LegacyApplicationOptions } from './legacy-application.js';
 import { AuthModule } from './core/auth/index.js';
 import { RUNTIME_CONFIG, RuntimeConfigModule, type RuntimeConfig } from './core/config/index.js';
 import { ErrorsModule } from './core/errors/index.js';
@@ -45,19 +45,27 @@ export class AppModule {
   constructor(@Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig) {}
 
   static register(
-    legacy: LegacyApplication,
     config: RuntimeConfig,
-    workingDirectory: string
+    workingDirectory: string,
+    serviceOptions: Pick<LegacyApplicationOptions, 'runStartupTasks' | 'services' | 'httpServer'>
   ): DynamicModule {
     return {
       module: AppModule,
       imports: [
         RuntimeConfigModule.register(config, workingDirectory),
+        LegacyModule.register(
+          {
+            ...serviceOptions,
+            dataDir: config.storage.dataDirectory,
+            workingDirectory,
+          },
+          config.storage.dataDirectory
+        ),
         LifecycleModule,
         ErrorsModule,
-        EventingModule.register(legacy.events),
+        EventingModule,
         ObservabilityModule,
-        AuthModule.register(legacy.services.loginAttemptStore),
+        AuthModule,
         SecurityModule,
         ValidationModule,
         SettingsModule,
@@ -87,7 +95,6 @@ export class AppModule {
         EventHistoryModule,
         TemplatesModule,
         WorkspaceModule,
-        LegacyModule.register(legacy, config.storage.dataDirectory),
       ],
     };
   }

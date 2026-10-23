@@ -10,11 +10,8 @@ import { createLogger } from '@automaker/utils';
 
 import { AppModule } from './app.module.js';
 import { parseRuntimeConfig } from './core/config/index.js';
-import {
-  createLegacyApplication,
-  type LegacyApplication,
-  type LegacyApplicationOptions,
-} from './legacy-application.js';
+import type { LegacyApplication, LegacyApplicationOptions } from './legacy-application.js';
+import { LEGACY_APPLICATION } from './legacy/legacy.tokens.js';
 import { NestLogger } from './nest-logger.js';
 
 const logger = createLogger('ServerBootstrap');
@@ -67,16 +64,13 @@ export async function createNestApplication(
 
   const expressApplication = express();
   const httpServer = createServer(expressApplication);
-  const legacy = createLegacyApplication({
-    dataDir: dataDirectory,
-    runStartupTasks: options.runStartupTasks ?? true,
-    services: options.services,
-    httpServer,
-    workingDirectory,
-  });
   const adapter = new SharedHttpServerExpressAdapter(expressApplication, httpServer);
   const app = await NestFactory.create<NestExpressApplication>(
-    AppModule.register(legacy, config, workingDirectory),
+    AppModule.register(config, workingDirectory, {
+      runStartupTasks: options.runStartupTasks ?? true,
+      services: options.services,
+      httpServer,
+    }),
     adapter,
     {
       bodyParser: false,
@@ -100,6 +94,7 @@ export async function createNestApplication(
     });
     throw error;
   }
+  const legacy = app.get<LegacyApplication>(LEGACY_APPLICATION);
 
   return {
     app,
