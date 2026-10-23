@@ -7,6 +7,12 @@
 
 import { createLogger } from '@automaker/utils/logger';
 import type {
+  BacklogApplyInput,
+  BacklogGenerateInput,
+  SessionCreateInput,
+  SessionUpdateInput,
+} from '@automaker/contracts';
+import type {
   ExecutionEnvironmentSettings,
   ExecutionEnvironmentSettingsResponse,
   ExecutionEnvironmentSelection,
@@ -3260,9 +3266,9 @@ export class HttpApiClient implements ElectronAPI {
     }> => this.get(`/api/sessions?includeArchived=${includeArchived || false}`),
 
     create: (
-      name: string,
-      projectPath: string,
-      workingDirectory?: string
+      name: SessionCreateInput['name'],
+      projectPath: NonNullable<SessionCreateInput['projectPath']>,
+      workingDirectory?: SessionCreateInput['workingDirectory']
     ): Promise<{
       success: boolean;
       session?: {
@@ -3278,8 +3284,8 @@ export class HttpApiClient implements ElectronAPI {
 
     update: (
       sessionId: string,
-      name?: string,
-      tags?: string[]
+      name?: SessionUpdateInput['name'],
+      tags?: SessionUpdateInput['tags']
     ): Promise<{ success: boolean; error?: string }> =>
       this.put(`/api/sessions/${sessionId}`, { name, tags }),
 
@@ -3349,11 +3355,11 @@ export class HttpApiClient implements ElectronAPI {
   // Backlog Plan API
   backlogPlan = {
     generate: (
-      projectPath: string,
-      prompt: string,
-      model?: string,
-      branchName?: string,
-      providerId?: string
+      projectPath: BacklogGenerateInput['projectPath'],
+      prompt: BacklogGenerateInput['prompt'],
+      model?: BacklogGenerateInput['model'],
+      branchName?: BacklogGenerateInput['branchName'],
+      providerId?: BacklogGenerateInput['providerId']
     ): Promise<{ success: boolean; error?: string }> =>
       this.post('/api/backlog-plan/generate', {
         projectPath,
@@ -3394,22 +3400,9 @@ export class HttpApiClient implements ElectronAPI {
     }> => this.get(`/api/backlog-plan/status?projectPath=${encodeURIComponent(projectPath)}`),
 
     apply: (
-      projectPath: string,
-      plan: {
-        changes: Array<{
-          type: 'add' | 'update' | 'delete';
-          featureId?: string;
-          feature?: Record<string, unknown>;
-          reason: string;
-        }>;
-        summary: string;
-        dependencyUpdates: Array<{
-          featureId: string;
-          removedDependencies: string[];
-          addedDependencies: string[];
-        }>;
-      },
-      branchName?: string
+      projectPath: BacklogApplyInput['projectPath'],
+      plan: BacklogApplyInput['plan'],
+      branchName?: BacklogApplyInput['branchName']
     ): Promise<{ success: boolean; appliedChanges?: string[]; error?: string }> =>
       this.post('/api/backlog-plan/apply', { projectPath, plan, branchName }),
 

@@ -3,7 +3,11 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { HealthResponseSchema } from '@automaker/contracts';
+import {
+  API_CONTRACT_VERSION,
+  API_CONTRACT_VERSION_HEADER,
+  HealthResponseSchema,
+} from '@automaker/contracts';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import WebSocket from 'ws';
 
@@ -78,6 +82,7 @@ describe('Nest shell and legacy bridge contract', () => {
     const response = await fetch(`http://127.0.0.1:${address.port}/api/health`);
 
     expect(response.status).toBe(200);
+    expect(response.headers.get(API_CONTRACT_VERSION_HEADER)).toBe(API_CONTRACT_VERSION);
     expect(HealthResponseSchema.parse(await response.json())).toMatchObject({ status: 'ok' });
 
     const live = await fetch(`http://127.0.0.1:${address.port}/api/health/live`, {

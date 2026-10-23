@@ -1,6 +1,7 @@
 import cors from 'cors';
 import express, { type RequestHandler } from 'express';
 import cookieParser from 'cookie-parser';
+import { API_CONTRACT_VERSION, API_CONTRACT_VERSION_HEADER } from '@automaker/contracts';
 
 import type { RuntimeConfig } from '../config/index.js';
 import { requireJsonContentType } from '../../middleware/require-json-content-type.js';
@@ -26,6 +27,10 @@ function isLocalOrigin(origin: string): boolean {
 export function createPlatformMiddleware(config: RuntimeConfig): RequestHandler[] {
   const allowedOrigins = config.server.corsOrigins;
   return [
+    (_request, response, next) => {
+      response.setHeader(API_CONTRACT_VERSION_HEADER, API_CONTRACT_VERSION);
+      next();
+    },
     previewApiGuard,
     cors({
       credentials: true,
