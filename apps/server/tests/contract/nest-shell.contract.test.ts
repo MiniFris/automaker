@@ -82,6 +82,7 @@ describe('Nest shell and legacy bridge contract', () => {
     expect(ROUTE_GROUP_OWNERS.codex).toBe('nest');
     expect(ROUTE_GROUP_OWNERS.gemini).toBe('nest');
     expect(ROUTE_GROUP_OWNERS.zai).toBe('nest');
+    expect(ROUTE_GROUP_OWNERS['running-agents']).toBe('nest');
     expect(getApiRouteGroup({ originalUrl: '/api/features/feature-1?tab=plan' })).toBe('features');
     expect(getApiRouteGroup({ originalUrl: '/not-api/features' })).toBeUndefined();
   });

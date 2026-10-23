@@ -41,7 +41,6 @@ import {
 import { createAutoModeRoutes } from './routes/auto-mode/index.js';
 import { createEnhancePromptRoutes } from './routes/enhance-prompt/index.js';
 import { createSetupRoutes } from './routes/setup/index.js';
-import { createRunningAgentsRoutes } from './routes/running-agents/index.js';
 import {
   createTerminalRoutes,
   validateTerminalToken,
@@ -573,7 +572,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
 
   app.use('/api/auto-mode', createAutoModeRoutes(autoModeService));
   app.use('/api/enhance-prompt', createEnhancePromptRoutes(settingsService));
-  app.use('/api/running-agents', createRunningAgentsRoutes(autoModeService));
   app.use('/api/terminal', createTerminalRoutes());
   app.use('/api/github', createGitHubRoutes(events, settingsService));
   app.use('/api/mcp', createMCPRoutes(mcpTestService));

@@ -20,7 +20,7 @@ export const ROUTE_GROUP_OWNERS: Readonly<Record<string, RouteOwner>> = {
   git: 'nest',
   models: 'nest',
   'spec-regeneration': 'nest',
-  'running-agents': 'legacy',
+  'running-agents': 'nest',
   workspace: 'nest',
   templates: 'nest',
   terminal: 'legacy',

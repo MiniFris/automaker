@@ -1,8 +1,9 @@
-import { Body, Controller, HttpCode, Inject, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Inject, Post, UseGuards } from '@nestjs/common';
 
 import { AllowedPathFields, AllowedPathGuard } from '../../core/security/index.js';
 import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
 import { AgentApplicationService } from './agent-application.service.js';
+import { RunningAgentsService } from './running-agents.service.js';
 import {
   AgentModelSchema,
   AgentQueueAddSchema,
@@ -84,5 +85,15 @@ export class AgentsController {
   @HttpCode(200)
   queueClear(@Body(new ZodValidationPipe(AgentSessionSchema)) body: AgentSessionRequest) {
     return this.agents.queueClear(body);
+  }
+}
+
+@Controller('running-agents')
+export class RunningAgentsController {
+  constructor(@Inject(RunningAgentsService) private readonly running: RunningAgentsService) {}
+
+  @Get()
+  list() {
+    return this.running.list();
   }
 }

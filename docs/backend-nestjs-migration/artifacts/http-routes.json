@@ -43,7 +43,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/agents/agents.controller.ts",
-      "line": 52,
+      "line": 53,
       "middleware": [
         "AgentsController.clear"
       ],
@@ -58,7 +58,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/agents/agents.controller.ts",
-      "line": 40,
+      "line": 41,
       "middleware": [
         "AgentsController.history"
       ],
@@ -73,7 +73,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/agents/agents.controller.ts",
-      "line": 58,
+      "line": 59,
       "middleware": [
         "AgentsController.model"
       ],
@@ -88,7 +88,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/agents/agents.controller.ts",
-      "line": 64,
+      "line": 65,
       "middleware": [
         "AgentsController.queueAdd"
       ],
@@ -103,7 +103,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/agents/agents.controller.ts",
-      "line": 83,
+      "line": 84,
       "middleware": [
         "AgentsController.queueClear"
       ],
@@ -118,7 +118,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/agents/agents.controller.ts",
-      "line": 71,
+      "line": 72,
       "middleware": [
         "AgentsController.queueList"
       ],
@@ -133,7 +133,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/agents/agents.controller.ts",
-      "line": 77,
+      "line": 78,
       "middleware": [
         "AgentsController.queueRemove"
       ],
@@ -148,7 +148,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/agents/agents.controller.ts",
-      "line": 33,
+      "line": 34,
       "middleware": [
         "AgentsController.send"
       ],
@@ -163,7 +163,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/agents/agents.controller.ts",
-      "line": 26,
+      "line": 27,
       "middleware": [
         "AgentsController.start"
       ],
@@ -178,7 +178,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/agents/agents.controller.ts",
-      "line": 46,
+      "line": 47,
       "middleware": [
         "AgentsController.stop"
       ],
@@ -2128,12 +2128,12 @@
       "method": "GET",
       "path": "/api/running-agents",
       "group": "running-agents",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/running-agents/index.ts",
-      "line": 12,
+      "source": "apps/server/src/modules/agents/agents.controller.ts",
+      "line": 95,
       "middleware": [
-        "createIndexHandler(autoModeService)"
+        "RunningAgentsController.list"
       ],
       "potentialMutation": false,
       "validatesProjectPath": false,
