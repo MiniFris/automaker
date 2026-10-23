@@ -64,6 +64,7 @@ export interface RuntimeConfig {
     debugRawOutput: boolean;
     anthropicApiKeyConfigured: boolean;
     mockAgent: boolean;
+    isEnvironmentVariableConfigured(name: string): boolean;
   };
   execution: {
     containerized: boolean;
@@ -140,6 +141,10 @@ export function parseRuntimeConfig(
       debugRawOutput: value.AUTOMAKER_DEBUG_RAW_OUTPUT,
       anthropicApiKeyConfigured: Boolean(value.ANTHROPIC_API_KEY),
       mockAgent: value.AUTOMAKER_MOCK_AGENT,
+      isEnvironmentVariableConfigured: (name) => {
+        const candidate = environment[name];
+        return typeof candidate === 'string' && candidate.trim().length > 0;
+      },
     },
     execution: {
       containerized: value.IS_CONTAINERIZED,

@@ -30,7 +30,7 @@ export const ROUTE_GROUP_OWNERS: Readonly<Record<string, RouteOwner>> = {
   zai: 'legacy',
   gemini: 'legacy',
   github: 'legacy',
-  context: 'legacy',
+  context: 'nest',
   'backlog-plan': 'legacy',
   mcp: 'legacy',
   pipeline: 'legacy',

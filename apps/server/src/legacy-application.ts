@@ -70,7 +70,6 @@ import { ZaiUsageService } from './services/zai-usage-service.js';
 import { createGeminiRoutes } from './routes/gemini/index.js';
 import { GeminiUsageService } from './services/gemini-usage-service.js';
 import { createGitHubRoutes } from './routes/github/index.js';
-import { createContextRoutes } from './routes/context/index.js';
 import { createBacklogPlanRoutes } from './routes/backlog-plan/index.js';
 import { cleanupStaleValidations } from './routes/github/routes/validation-common.js';
 import { createMCPRoutes } from './routes/mcp/index.js';
@@ -613,7 +612,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   app.use('/api/zai', createZaiRoutes(zaiUsageService, settingsService));
   app.use('/api/gemini', createGeminiRoutes(geminiUsageService, events));
   app.use('/api/github', createGitHubRoutes(events, settingsService));
-  app.use('/api/context', createContextRoutes(settingsService));
   app.use('/api/backlog-plan', createBacklogPlanRoutes(events, settingsService));
   app.use('/api/mcp', createMCPRoutes(mcpTestService));
   app.use('/api/pipeline', createPipelineRoutes(pipelineService));

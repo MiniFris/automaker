@@ -11,10 +11,14 @@ import {
 } from '@automaker/types';
 import type { DirectAgentSettings } from '@automaker/types';
 import type { DiscoverAgentsRequest, ProjectSettingsRead } from './settings.schemas.js';
+import { RUNTIME_CONFIG, type RuntimeConfig } from '../../core/config/index.js';
 
 @Injectable()
 export class SettingsQueryService {
-  constructor(@Inject(SettingsService) private readonly settings: SettingsService) {}
+  constructor(
+    @Inject(SettingsService) private readonly settings: SettingsService,
+    @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig
+  ) {}
 
   async status(): Promise<Record<string, unknown>> {
     const [hasGlobalSettings, hasCredentials] = await Promise.all([
@@ -84,7 +88,9 @@ export class SettingsQueryService {
           endpoint.auth.type === 'credentials'
             ? credentials.openaiCompatibleApiKeys?.[endpoint.auth.credentialId]
             : endpoint.auth.type === 'env'
-              ? process.env[endpoint.auth.variableName]
+              ? this.config.providers.isEnvironmentVariableConfigured(endpoint.auth.variableName)
+                ? 'configured'
+                : undefined
               : undefined;
         return {
           endpoint,

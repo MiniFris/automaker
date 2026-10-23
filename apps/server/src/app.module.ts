@@ -22,6 +22,7 @@ import { WorkspaceModule } from './modules/workspace/workspace.module.js';
 import { SettingsModule } from './modules/settings/settings.module.js';
 import { ProjectsModule } from './modules/projects/projects.module.js';
 import { FilesModule } from './modules/files/files.module.js';
+import { ContextModule } from './modules/context/context.module.js';
 
 @Module({})
 export class AppModule {
@@ -46,6 +47,7 @@ export class AppModule {
         SettingsModule,
         ProjectsModule,
         FilesModule,
+        ContextModule,
         HealthModule,
         ModelsModule,
         NotificationsModule,

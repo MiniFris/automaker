@@ -10,6 +10,7 @@ import { getAllowedRootDirectory } from '@automaker/platform';
 import os from 'node:os';
 import path from 'node:path';
 import type { BrowseProjectRequest, ResolveDirectoryRequest } from './files.schemas.js';
+import { RuntimePathsService } from '../../core/config/index.js';
 
 const HIDDEN_DIRECTORIES = new Set([
   '.git',
@@ -36,7 +37,8 @@ const HIDDEN_DIRECTORIES = new Set([
 export class FilesQueryService {
   constructor(
     @Inject(PROJECT_FILE_PORT) private readonly files: ProjectFilePort,
-    @Inject(SecurityService) private readonly security: SecurityService
+    @Inject(SecurityService) private readonly security: SecurityService,
+    @Inject(RuntimePathsService) private readonly paths: RuntimePathsService
   ) {}
 
   async read(filePath: string): Promise<Record<string, unknown>> {
@@ -159,12 +161,12 @@ export class FilesQueryService {
     }
     const home = os.homedir();
     for (const root of [
-      process.cwd(),
+      this.paths.workingDirectory,
       home,
       path.join(home, 'Documents'),
       path.join(home, 'Desktop'),
       path.join(home, 'Projects'),
-      path.dirname(process.cwd()),
+      path.dirname(this.paths.workingDirectory),
     ]) {
       candidates.add(path.join(root, input.directoryName));
     }

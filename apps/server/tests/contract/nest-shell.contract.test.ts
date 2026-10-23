@@ -305,6 +305,24 @@ describe('Nest shell and legacy bridge contract', () => {
       expect(imageResponse.headers.get('content-type')).toBe('image/png');
       expect(Buffer.from(await imageResponse.arrayBuffer()).toString()).toBe('image-fixture');
 
+      const missingContextFile = await fetch(`${baseUrl}/api/context/describe-file`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ filePath: path.join(projectPath, 'missing-context.md') }),
+      });
+      expect(missingContextFile.status).toBe(404);
+      expect(await missingContextFile.json()).toMatchObject({
+        success: false,
+        errorCode: 'NOT_FOUND',
+      });
+
+      const invalidContextImage = await fetch(`${baseUrl}/api/context/describe-image`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ imagePath: fixtureFile, unexpected: true }),
+      });
+      expect(invalidContextImage.status).toBe(400);
+
       for (const route of ['notifications/list', 'event-history/list']) {
         const response = await fetch(`${baseUrl}/api/${route}`, {
           method: 'POST',

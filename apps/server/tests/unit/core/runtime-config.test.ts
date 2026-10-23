@@ -41,6 +41,14 @@ describe('runtime config', () => {
     expect(config.execution.containerized).toBe(true);
   });
 
+  it('reports configured dynamic provider variables without exposing their values', () => {
+    const config = parseRuntimeConfig({ CUSTOM_PROVIDER_KEY: ' secret ' }, '/workspace');
+
+    expect(config.providers.isEnvironmentVariableConfigured('CUSTOM_PROVIDER_KEY')).toBe(true);
+    expect(config.providers.isEnvironmentVariableConfigured('MISSING_PROVIDER_KEY')).toBe(false);
+    expect(JSON.stringify(config)).not.toContain('secret');
+  });
+
   it.each([
     [{ PORT: '-1' }, 'PORT'],
     [{ PORT: '70000' }, 'PORT'],

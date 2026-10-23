@@ -22,7 +22,13 @@ describe('FilesQueryService', () => {
       readBuffer: vi.fn(),
       writeBuffer: vi.fn(),
     };
-    const service = new FilesQueryService(port, {} as never);
+    const service = new FilesQueryService(
+      port,
+      {} as never,
+      {
+        workingDirectory: '/workspace',
+      } as never
+    );
 
     await expect(service.read('/project/a.txt')).resolves.toEqual({
       success: true,
@@ -55,7 +61,8 @@ describe('FilesQueryService', () => {
         readBuffer: vi.fn(),
         writeBuffer: vi.fn(),
       },
-      {} as never
+      {} as never,
+      { workingDirectory: '/workspace' } as never
     );
 
     await expect(service.read('/project/missing')).rejects.toMatchObject({
