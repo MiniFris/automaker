@@ -998,6 +998,33 @@ export class AgentService {
     return { success: true };
   }
 
+  async interruptActiveSessions(reason: string): Promise<number> {
+    const active = [...this.sessions.entries()].filter(([, session]) => session.isRunning);
+    await Promise.all(
+      active.map(async ([sessionId, session]) => {
+        const message: Message = {
+          id: this.generateId(),
+          role: 'assistant',
+          content: `Interrupted: ${reason}`,
+          timestamp: new Date().toISOString(),
+          isError: true,
+        };
+        session.messages.push(message);
+        session.isRunning = false;
+        session.abortController?.abort();
+        session.abortController = null;
+        await this.saveSession(sessionId, session.messages);
+        this.emitAgentEvent(sessionId, {
+          type: 'error',
+          error: reason,
+          errorType: 'interruption',
+          message,
+        });
+      })
+    );
+    return active.length;
+  }
+
   /**
    * Clear conversation history
    */

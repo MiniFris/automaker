@@ -1088,6 +1088,9 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
       if (exitProcess) process.exit(1);
     }, SHUTDOWN_TIMEOUT_MS);
 
+    // Persist interrupted state before aborting provider processes so jobs can recover on restart.
+    await agentService.interruptActiveSessions(`${signal} signal received`);
+
     // Mark all running features as interrupted before shutdown
     // This ensures they can be resumed when the server restarts
     // Note: markAllRunningFeaturesInterrupted handles errors internally and never rejects

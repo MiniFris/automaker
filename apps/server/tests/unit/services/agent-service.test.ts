@@ -468,6 +468,35 @@ describe('agent-service.ts', () => {
       const result = await service.stopExecution('session-1');
       expect(result.success).toBeDefined();
     });
+
+    it('persists and publishes interrupted state before shutdown', async () => {
+      const error: any = new Error('ENOENT');
+      error.code = 'ENOENT';
+      vi.mocked(fs.readFile).mockRejectedValue(error);
+      vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+      const controller = new AbortController();
+      await service.startConversation({ sessionId: 'session-1' });
+      const session = (service as any).sessions.get('session-1');
+      session.isRunning = true;
+      session.abortController = controller;
+
+      await expect(service.interruptActiveSessions('shutdown')).resolves.toBe(1);
+
+      expect(controller.signal.aborted).toBe(true);
+      expect(session.isRunning).toBe(false);
+      expect(session.messages.at(-1)).toMatchObject({
+        content: 'Interrupted: shutdown',
+        isError: true,
+      });
+      expect(mockEvents.emit).toHaveBeenCalledWith(
+        'agent:stream',
+        expect.objectContaining({
+          sessionId: 'session-1',
+          type: 'error',
+          errorType: 'interruption',
+        })
+      );
+    });
   });
 
   describe('getHistory', () => {
