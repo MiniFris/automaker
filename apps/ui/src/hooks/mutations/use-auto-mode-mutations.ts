@@ -212,11 +212,17 @@ export function useApprovePlan(projectPath: string) {
       approved,
       editedPlan,
       feedback,
+      approvalToken,
+      planVersion,
+      approvalRunId,
     }: {
       featureId: string;
       approved: boolean;
       editedPlan?: string;
       feedback?: string;
+      approvalToken: string;
+      planVersion: number;
+      approvalRunId: string;
     }) => {
       const api = getElectronAPI();
       if (!api.autoMode) throw new Error('AutoMode API not available');
@@ -225,7 +231,10 @@ export function useApprovePlan(projectPath: string) {
         featureId,
         approved,
         editedPlan,
-        feedback
+        feedback,
+        approvalToken,
+        planVersion,
+        approvalRunId
       );
       if (!result.success) {
         throw new Error(result.error || 'Failed to submit plan decision');

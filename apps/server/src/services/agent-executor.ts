@@ -3,6 +3,7 @@
  */
 
 import path from 'path';
+import { randomUUID } from 'node:crypto';
 import type { ExecuteOptions, ParsedTask, ProviderMessage } from '@automaker/types';
 import {
   isPipelineStatus,
@@ -684,6 +685,13 @@ export class AgentExecutor {
     if (requiresApproval) {
       let planApproved = false;
       while (!planApproved) {
+        const approvalToken = randomUUID();
+        const approvalRunId = options.sdkSessionId ?? featureId;
+        const approvalPromise = callbacks.waitForApproval(featureId, projectPath, {
+          token: approvalToken,
+          planVersion,
+          runId: approvalRunId,
+        });
         logger.info(
           `Spec v${planVersion} generated for feature ${featureId}, waiting for approval`
         );
@@ -694,8 +702,10 @@ export class AgentExecutor {
           planContent: currentPlanContent,
           planningMode,
           planVersion,
+          approvalToken,
+          approvalRunId,
         });
-        const approvalResult = await callbacks.waitForApproval(featureId, projectPath);
+        const approvalResult = await approvalPromise;
         if (approvalResult.approved) {
           planApproved = true;
           userFeedback = approvalResult.feedback;

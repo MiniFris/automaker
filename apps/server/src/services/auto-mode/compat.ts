@@ -237,10 +237,21 @@ export class AutoModeServiceCompat {
     featureId: string,
     approved: boolean,
     editedPlan?: string,
-    feedback?: string
+    feedback?: string,
+    approvalToken?: string,
+    planVersion?: number,
+    approvalRunId?: string
   ): Promise<{ success: boolean; error?: string }> {
     const facade = this.createFacade(projectPath);
-    return facade.resolvePlanApproval(featureId, approved, editedPlan, feedback);
+    return facade.resolvePlanApproval(
+      featureId,
+      approved,
+      editedPlan,
+      feedback,
+      approvalToken,
+      planVersion,
+      approvalRunId
+    );
   }
 
   async resumeInterruptedFeatures(projectPath: string): Promise<void> {

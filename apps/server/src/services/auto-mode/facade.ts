@@ -391,7 +391,8 @@ export class AutoModeServiceFacade {
             },
           },
           {
-            waitForApproval: (fId, projPath) => planApprovalService.waitForApproval(fId, projPath),
+            waitForApproval: (fId, projPath, ticket) =>
+              planApprovalService.waitForApproval(fId, projPath, ticket),
             saveFeatureSummary: (projPath, fId, summary) =>
               featureStateManager.saveFeatureSummary(projPath, fId, summary),
             updateFeatureSummary: (projPath, fId, summary) =>
@@ -1198,32 +1199,19 @@ export class AutoModeServiceFacade {
     featureId: string,
     approved: boolean,
     editedPlan?: string,
-    feedback?: string
+    feedback?: string,
+    approvalToken?: string,
+    planVersion?: number,
+    approvalRunId?: string
   ): Promise<{ success: boolean; error?: string }> {
     const result = await this.planApprovalService.resolveApproval(featureId, approved, {
       editedPlan,
       feedback,
       projectPath: this.projectPath,
+      token: approvalToken,
+      planVersion,
+      runId: approvalRunId,
     });
-
-    // Handle recovery case
-    if (result.success && result.needsRecovery) {
-      const feature = await this.featureStateManager.loadFeature(this.projectPath, featureId);
-      if (feature) {
-        const prompts = await getPromptCustomization(this.settingsService, '[Facade]');
-        const planContent = editedPlan || feature.planSpec?.content || '';
-        let continuationPrompt = prompts.taskExecution.continuationAfterApprovalTemplate;
-        continuationPrompt = continuationPrompt.replace(/\{\{userFeedback\}\}/g, feedback || '');
-        continuationPrompt = continuationPrompt.replace(/\{\{approvedPlan\}\}/g, planContent);
-
-        // Start execution async
-        this.executeFeature(featureId, true, false, undefined, { continuationPrompt }).catch(
-          (error) => {
-            logger.error(`Recovery execution failed for feature ${featureId}:`, error);
-          }
-        );
-      }
-    }
 
     return { success: result.success, error: result.error };
   }

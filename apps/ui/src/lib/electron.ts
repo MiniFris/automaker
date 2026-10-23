@@ -627,7 +627,10 @@ export interface AutoModeAPI {
     featureId: string,
     approved: boolean,
     editedPlan?: string,
-    feedback?: string
+    feedback?: string,
+    approvalToken?: string,
+    planVersion?: number,
+    approvalRunId?: string
   ) => Promise<{ success: boolean; error?: string }>;
   resumeInterrupted: (
     projectPath: string
@@ -3411,7 +3414,10 @@ function createMockAutoModeAPI(): AutoModeAPI {
       featureId: string,
       approved: boolean,
       editedPlan?: string,
-      feedback?: string
+      feedback?: string,
+      approvalToken?: string,
+      planVersion?: number,
+      approvalRunId?: string
     ) => {
       console.log('[Mock] Plan approval:', {
         projectPath,
@@ -3419,6 +3425,9 @@ function createMockAutoModeAPI(): AutoModeAPI {
         approved,
         editedPlan: editedPlan ? '[edited]' : undefined,
         feedback,
+        approvalToken,
+        planVersion,
+        approvalRunId,
       });
       return { success: true };
     },

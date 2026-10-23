@@ -301,7 +301,9 @@ export type AutoModeEvent =
       branchName?: string | null;
       planContent: string;
       planningMode: 'lite' | 'spec' | 'full';
-      planVersion?: number;
+      planVersion: number;
+      approvalToken: string;
+      approvalRunId: string;
     }
   | {
       type: 'plan_auto_approved';
@@ -604,7 +606,10 @@ export interface AutoModeAPI {
     featureId: string,
     approved: boolean,
     editedPlan?: string,
-    feedback?: string
+    feedback?: string,
+    approvalToken?: string,
+    planVersion?: number,
+    approvalRunId?: string
   ) => Promise<{
     success: boolean;
     error?: string;

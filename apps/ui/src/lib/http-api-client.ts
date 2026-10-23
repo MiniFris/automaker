@@ -2285,7 +2285,10 @@ export class HttpApiClient implements ElectronAPI {
       featureId: string,
       approved: boolean,
       editedPlan?: string,
-      feedback?: string
+      feedback?: string,
+      approvalToken?: string,
+      planVersion?: number,
+      approvalRunId?: string
     ) =>
       this.post('/api/auto-mode/approve-plan', {
         projectPath,
@@ -2293,6 +2296,9 @@ export class HttpApiClient implements ElectronAPI {
         approved,
         editedPlan,
         feedback,
+        approvalToken,
+        planVersion,
+        approvalRunId,
       }),
     resumeInterrupted: (projectPath: string) =>
       this.post('/api/auto-mode/resume-interrupted', { projectPath }),

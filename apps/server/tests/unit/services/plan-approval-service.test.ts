@@ -231,121 +231,61 @@ describe('PlanApprovalService', () => {
     });
   });
 
-  describe('recovery path', () => {
-    it('should return needsRecovery=true when planSpec.status is generated and approved', async () => {
-      const mockFeature: Feature = {
-        id: 'feature-1',
-        name: 'Test Feature',
-        title: 'Test Feature',
-        description: 'Test',
-        status: 'in_progress',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
-        planSpec: {
-          status: 'generated',
-          version: 1,
-          reviewedByUser: false,
-          content: 'Original plan',
-        },
-      };
+  describe('approval ticket lifecycle', () => {
+    const ticket = { token: 'ticket-1', planVersion: 3, runId: 'run-1' };
 
-      vi.mocked(mockFeatureStateManager.loadFeature).mockResolvedValue(mockFeature);
+    it('rejects a stale plan version without consuming the active ticket', async () => {
+      const approvalPromise = service.waitForApproval('feature-1', '/project', ticket);
+      await vi.advanceTimersByTimeAsync(0);
 
-      // No pending approval in Map, but feature has generated planSpec
-      const result = await service.resolveApproval('feature-1', true, {
+      const stale = await service.resolveApproval('feature-1', true, {
         projectPath: '/project',
-        editedPlan: 'Edited plan',
+        ...ticket,
+        planVersion: 2,
       });
 
-      expect(result).toEqual({ success: true, needsRecovery: true });
+      expect(stale).toEqual({ success: false, error: 'Approval ticket is stale or invalid' });
+      expect(service.hasPendingApproval('feature-1', '/project')).toBe(true);
 
-      // Should update planSpec
-      expect(mockFeatureStateManager.updateFeaturePlanSpec).toHaveBeenCalledWith(
-        '/project',
-        'feature-1',
-        expect.objectContaining({
-          status: 'approved',
-          content: 'Edited plan',
-        })
-      );
+      await service.resolveApproval('feature-1', true, { projectPath: '/project', ...ticket });
+      await expect(approvalPromise).resolves.toMatchObject({ approved: true });
     });
 
-    it('should handle recovery rejection correctly', async () => {
-      const mockFeature: Feature = {
-        id: 'feature-1',
-        name: 'Test Feature',
-        title: 'Test Feature',
-        description: 'Test',
-        status: 'in_progress',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
-        planSpec: {
-          status: 'generated',
-          version: 1,
-          reviewedByUser: false,
-        },
-      };
+    it('consumes a ticket exactly once when duplicate requests race', async () => {
+      const approvalPromise = service.waitForApproval('feature-1', '/project', ticket);
+      await vi.advanceTimersByTimeAsync(0);
 
-      vi.mocked(mockFeatureStateManager.loadFeature).mockResolvedValue(mockFeature);
+      const decisions = await Promise.all([
+        service.resolveApproval('feature-1', true, { projectPath: '/project', ...ticket }),
+        service.resolveApproval('feature-1', true, { projectPath: '/project', ...ticket }),
+      ]);
 
-      const result = await service.resolveApproval('feature-1', false, {
-        projectPath: '/project',
-        feedback: 'Rejected via recovery',
-      });
-
-      expect(result).toEqual({ success: true }); // No needsRecovery for rejections
-
-      // Should update planSpec to rejected
-      expect(mockFeatureStateManager.updateFeaturePlanSpec).toHaveBeenCalledWith(
-        '/project',
-        'feature-1',
-        expect.objectContaining({
-          status: 'rejected',
-          reviewedByUser: true,
-        })
-      );
-
-      // Should update feature status to backlog
-      expect(mockFeatureStateManager.updateFeatureStatus).toHaveBeenCalledWith(
-        '/project',
-        'feature-1',
-        'backlog'
-      );
-
-      // Should emit plan_rejected event
-      expect(mockEventBus.emitAutoModeEvent).toHaveBeenCalledWith('plan_rejected', {
-        featureId: 'feature-1',
-        projectPath: '/project',
-        feedback: 'Rejected via recovery',
-      });
-    });
-
-    it('should not trigger recovery when planSpec.status is not generated', async () => {
-      const mockFeature: Feature = {
-        id: 'feature-1',
-        name: 'Test Feature',
-        title: 'Test Feature',
-        description: 'Test',
-        status: 'pending',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
-        planSpec: {
-          status: 'pending', // Not 'generated'
-          version: 1,
-          reviewedByUser: false,
-        },
-      };
-
-      vi.mocked(mockFeatureStateManager.loadFeature).mockResolvedValue(mockFeature);
-
-      const result = await service.resolveApproval('feature-1', true, {
-        projectPath: '/project',
-      });
-
-      expect(result).toEqual({
+      expect(decisions).toContainEqual({ success: true });
+      expect(decisions).toContainEqual({
         success: false,
         error: 'No pending approval for feature feature-1',
       });
+      expect(mockFeatureStateManager.updateFeaturePlanSpec).toHaveBeenCalledTimes(1);
+      await expect(approvalPromise).resolves.toMatchObject({ approved: true });
+    });
+
+    it('does not approve a persisted generated plan after registry loss', async () => {
+      vi.mocked(mockFeatureStateManager.loadFeature).mockResolvedValue({
+        id: 'feature-1',
+        status: 'in_progress',
+        planSpec: { status: 'generated', version: 3, reviewedByUser: false },
+      } as Feature);
+
+      await expect(
+        service.resolveApproval('feature-1', true, {
+          projectPath: '/project',
+          ...ticket,
+        })
+      ).resolves.toEqual({
+        success: false,
+        error: 'No pending approval for feature feature-1',
+      });
+      expect(mockFeatureStateManager.updateFeaturePlanSpec).not.toHaveBeenCalled();
     });
   });
 

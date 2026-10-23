@@ -12,12 +12,24 @@ const logger = createLogger('AutoMode');
 export function createApprovePlanHandler(autoModeService: AutoModeServiceCompat) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
-      const { featureId, approved, editedPlan, feedback, projectPath } = req.body as {
+      const {
+        featureId,
+        approved,
+        editedPlan,
+        feedback,
+        projectPath,
+        approvalToken,
+        planVersion,
+        approvalRunId,
+      } = req.body as {
         featureId: string;
         approved: boolean;
         editedPlan?: string;
         feedback?: string;
         projectPath: string;
+        approvalToken: string;
+        planVersion: number;
+        approvalRunId: string;
       };
 
       if (!featureId) {
@@ -44,6 +56,14 @@ export function createApprovePlanHandler(autoModeService: AutoModeServiceCompat)
         return;
       }
 
+      if (!approvalToken || !Number.isInteger(planVersion) || !approvalRunId) {
+        res.status(400).json({
+          success: false,
+          error: 'approvalToken, planVersion and approvalRunId are required',
+        });
+        return;
+      }
+
       // Note: We no longer check hasPendingApproval here because resolvePlanApproval
       // can handle recovery when pending approval is not in Map but feature has planSpec.status='generated'
       // This supports cases where the server restarted while waiting for approval
@@ -60,11 +80,14 @@ export function createApprovePlanHandler(autoModeService: AutoModeServiceCompat)
         featureId,
         approved,
         editedPlan,
-        feedback
+        feedback,
+        approvalToken,
+        planVersion,
+        approvalRunId
       );
 
       if (!result.success) {
-        res.status(500).json({
+        res.status(409).json({
           success: false,
           error: result.error,
         });

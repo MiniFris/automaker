@@ -60,7 +60,8 @@ export interface AgentExecutionResult {
 
 export type WaitForApprovalFn = (
   featureId: string,
-  projectPath: string
+  projectPath: string,
+  ticket?: { token: string; planVersion: number; runId: string }
 ) => Promise<{ approved: boolean; feedback?: string; editedPlan?: string }>;
 
 export type SaveFeatureSummaryFn = (

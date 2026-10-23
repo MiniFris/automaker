@@ -1745,7 +1745,11 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           pendingPlanApproval.projectPath,
           pendingPlanApproval.featureId,
           true,
-          editedPlan
+          editedPlan,
+          undefined,
+          pendingPlanApproval.approvalToken,
+          pendingPlanApproval.planVersion,
+          pendingPlanApproval.approvalRunId
         );
 
         if (result.success) {
@@ -1801,7 +1805,10 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           pendingPlanApproval.featureId,
           false,
           undefined,
-          feedback
+          feedback,
+          pendingPlanApproval.approvalToken,
+          pendingPlanApproval.planVersion,
+          pendingPlanApproval.approvalRunId
         );
 
         if (result.success) {
@@ -1843,6 +1850,10 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
   const handleOpenApprovalDialog = useCallback(
     (feature: Feature) => {
       if (!feature.planSpec?.content || !currentProject) return;
+      if (!pendingPlanApproval || pendingPlanApproval.featureId !== feature.id) {
+        logger.warn('Plan approval ticket is no longer active; wait for the run to be resumed');
+        return;
+      }
 
       // Determine the planning mode for approval (skip should never have a plan requiring approval)
       const mode = feature.planningMode;
@@ -1855,9 +1866,12 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         projectPath: currentProject.path,
         planContent: feature.planSpec.content,
         planningMode: approvalMode,
+        approvalToken: pendingPlanApproval.approvalToken,
+        planVersion: pendingPlanApproval.planVersion,
+        approvalRunId: pendingPlanApproval.approvalRunId,
       });
     },
-    [currentProject, setPendingPlanApproval]
+    [currentProject, pendingPlanApproval, setPendingPlanApproval]
   );
 
   if (!currentProject) {
