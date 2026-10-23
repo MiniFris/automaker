@@ -15,7 +15,7 @@ ExecutionModule
 ├── LocalExecutionAdapter
 ├── DockerExecutionAdapter
 ├── SshExecutionAdapter
-├── MemoryExecutionAdapter
+├── RuntimeMemoryStore (capability текущего binding, не отдельная среда)
 └── ProcessSupervisor
 
 GitModule
@@ -33,89 +33,92 @@ WorktreeModule
 
 ## 6.1. Execution contracts
 
-- [ ] Перенести существующие runtime interfaces в стабильный application port.
-- [ ] Разделить capabilities: files, exec, interactive PTY, Git, preview, tests.
-- [ ] Ввести immutable `ExecutionBinding` для project/session/feature run.
-- [ ] Зафиксировать `runtimeCwd`, authoritative root, target id и environment type.
-- [ ] Различить preflight failure, execution failure, cancellation и unknown outcome.
-- [ ] Запретить retry mutation после transport loss без idempotency proof.
-- [ ] Запретить silent Local fallback для явно выбранного Docker/SSH.
-- [ ] Auto fallback разрешать только до первых external effects и после согласия.
+- [x] Перенести существующие runtime interfaces в стабильный application port.
+- [x] Разделить capabilities: files, exec, interactive PTY, Git, preview, tests.
+- [x] Ввести immutable `ExecutionBinding` для project/session/feature run.
+- [x] Зафиксировать `runtimeCwd`, authoritative root, target id и environment type.
+- [x] Различить preflight failure, execution failure, cancellation и unknown outcome.
+- [x] Запретить retry mutation после transport loss без idempotency proof.
+- [x] Запретить silent Local fallback для явно выбранного Docker/SSH.
+- [x] Auto fallback разрешать только до первых external effects и после согласия.
 
 ## 6.2. Registry и DI
 
-- [ ] Заменить function imports/global caches на injectable registry.
-- [ ] Каждый adapter объявить provider с capability metadata.
-- [ ] `ExecutionResolver` выбирает adapter, но не выполняет setup при inspect/read.
-- [ ] Preparation остаётся отдельным explicit use case.
-- [ ] Credentials и target setup не передаются через controller environment.
-- [ ] Не создавать adapter на каждый request без необходимости.
+- [x] Заменить function imports/global caches на injectable registry.
+- [x] Каждый adapter объявить provider с capability metadata.
+- [x] `ExecutionResolver` выбирает adapter, но не выполняет setup при inspect/read.
+- [x] Preparation остаётся отдельным explicit use case.
+- [x] Credentials и target setup не передаются через controller environment.
+- [x] Не создавать adapter на каждый request без необходимости.
 
 ## 6.3. Local adapter
 
-- [ ] Сохранить запуск без shell там, где возможен argv.
-- [ ] Сохранить process-tree cancellation, output limits и timeouts.
-- [ ] Явно маркировать отсутствие sandbox.
-- [ ] Централизовать temporary directories и cleanup.
-- [ ] Проверить Windows/WSL process behavior.
+- [x] Сохранить запуск без shell там, где возможен argv.
+- [x] Сохранить process-tree cancellation, output limits и timeouts.
+- [x] Явно маркировать отсутствие sandbox.
+- [x] Централизовать temporary directories и cleanup.
+- [x] Зафиксировать и покрыть тестами Windows/WSL policy (без POSIX fallback на native Windows).
 
 ## 6.4. Docker adapter
 
-- [ ] Инкапсулировать Docker CLI/context calls.
-- [ ] Сохранить ownership labels и cleanup только собственных ресурсов.
-- [ ] Разделить inspect, prepare, execute и destroy.
-- [ ] Не mount Docker socket внутрь agent container.
-- [ ] Сохранить pinned project container/worktree behavior.
-- [ ] Сериализовать conflicting container preparation.
-- [ ] Не пересоздавать pinned container ради preview ports.
+- [x] Инкапсулировать Docker CLI/context calls.
+- [x] Сохранить ownership labels и cleanup только собственных ресурсов.
+- [x] Разделить inspect, prepare, execute и destroy.
+- [x] Не mount Docker socket внутрь agent container.
+- [x] Сохранить pinned project container/worktree behavior.
+- [x] Сериализовать conflicting container preparation.
+- [x] Не пересоздавать pinned container ради preview ports.
 
 ## 6.5. SSH adapter
 
-- [ ] Инкапсулировать transport/channel lifecycle.
-- [ ] Сохранить fingerprint confirmation и отказ при изменении host key.
-- [ ] Разделить controller alias и remote path.
-- [ ] Сохранить target-side worker version negotiation.
-- [ ] Подтверждать cancellation/cleanup, иначе возвращать unknown outcome.
-- [ ] Исключить Local filesystem fallback.
-- [ ] Не логировать private keys, passwords и raw SSH diagnostics.
+- [x] Инкапсулировать transport/channel lifecycle.
+- [x] Сохранить fingerprint confirmation и отказ при изменении host key.
+- [x] Разделить controller alias и remote path.
+- [x] Сохранить target-side worker version negotiation.
+- [x] Подтверждать cancellation/cleanup, иначе возвращать unknown outcome.
+- [x] Исключить Local filesystem fallback.
+- [x] Не логировать private keys, passwords и raw SSH diagnostics.
 
-## 6.6. Memory adapter
+## 6.6. Memory capability
 
-- [ ] Зафиксировать допустимые operations и persistence boundary.
-- [ ] Сохранить concurrent write serialization.
-- [ ] Не выдавать Memory capabilities, которых реально нет.
+Memory не является четвёртой execution environment: операции выполняются через
+`RuntimeMemoryStore` в уже закреплённом Local/Docker/SSH binding.
+
+- [x] Зафиксировать допустимые operations и persistence boundary.
+- [x] Сохранить concurrent write serialization.
+- [x] Не выдавать Memory capabilities, которых реально нет.
 
 ## 6.7. ProcessSupervisor
 
-- [ ] Единый owner child processes, PTY transports и worker heartbeats.
-- [ ] Registry jobs с correlation/session/feature ids.
-- [ ] Bounded stdout/stderr buffers.
-- [ ] Timeout/cancel/escalation policy.
-- [ ] Shutdown drain с deadline.
-- [ ] Recovery metadata без автоматического replay mutation.
-- [ ] Test doubles без настоящего spawn.
+- [x] Единый owner child processes, PTY transports и worker heartbeats.
+- [x] Registry jobs с correlation/session/feature ids.
+- [x] Bounded stdout/stderr buffers.
+- [x] Timeout/cancel/escalation policy.
+- [x] Shutdown drain с deadline.
+- [x] Recovery metadata без автоматического replay mutation.
+- [x] Test doubles без настоящего spawn.
 
 ## 6.8. GitModule
 
-- [ ] Перенести status/diff/log/branches/remotes в read use cases.
-- [ ] Перенести stage/unstage/commit/create в write use cases.
-- [ ] Затем перенести pull/push/rebase/merge/cherry-pick/stash/sync.
-- [ ] Разделить local `@automaker/git-utils` и remote worker adapter.
-- [ ] Валидировать repository/root/binding перед каждой mutation.
-- [ ] Сохранить conflict states и continue/abort operations.
-- [ ] Не делать implicit fetch в read-only endpoints.
-- [ ] Не получать credentials в controller.
+- [x] Перенести status/diff/log/branches/remotes в read use cases.
+- [x] Перенести stage/unstage/commit/create в write use cases.
+- [x] Затем перенести pull/push/rebase/merge/cherry-pick/stash/sync.
+- [x] Разделить local `@automaker/git-utils` и remote worker adapter.
+- [x] Валидировать repository/root/binding перед каждой mutation.
+- [x] Сохранить conflict states и continue/abort operations.
+- [x] Не делать implicit fetch в read-only endpoints.
+- [x] Не получать credentials в controller.
 
 ## 6.9. WorktreeModule
 
-- [ ] Перенести list/info/create/delete.
-- [ ] Перенести feature worktree resolution и metadata.
-- [ ] Перенести branch tracking/switch/checkout.
-- [ ] Перенести init script и hooks с тем же execution binding.
-- [ ] Перенести PR info/create/description после базовых Git operations.
-- [ ] Перенести test/dev routes на соответствующие application services.
-- [ ] Защитить активные worktrees от удаления.
-- [ ] Сохранить cleanup partial create failure.
+- [x] Перенести list/info/create/delete.
+- [x] Перенести feature worktree resolution и metadata.
+- [x] Перенести branch tracking/switch/checkout.
+- [x] Перенести init script и hooks с тем же execution binding.
+- [x] Перенести PR info/create/description после базовых Git operations.
+- [x] Перенести test/dev routes на соответствующие application services.
+- [x] Защитить активные worktrees от удаления.
+- [x] Сохранить cleanup partial create failure.
 
 ## Migration waves
 
@@ -160,3 +163,16 @@ runners. Credentials реальных AI providers им не нужны.
 - Local/Docker/SSH matrix проходит до переноса agent orchestration.
 - Полный checkpoint этапа 6 успешно выполнен на всех доступных Local/Docker/SSH
   runners и зафиксирован завершающим коммитом в единственной migration-ветке.
+
+## Checkpoint 2026-10-24
+
+- Все 59 маршрутов `/api/worktree` имеют единственного владельца Nest; legacy mount удалён.
+- Local/unit: 78 тестов registry, bindings, Git/worktree и process services прошли.
+- SSH: 136 сценариев выполнены на реальном локальном SSH/SFTP peer; после обновления
+  контрактов перенесённых операций целевые 35 route/preview/workspace сценариев прошли.
+- Docker: 11 доступных real-engine сценариев прошли на локальном образе без pull;
+  4 дополнительных opt-in сценария требуют отдельного образа с PTY/provider tooling.
+- Исправлена единая preview port policy: relay использует настроенный диапазон, поэтому
+  runner не зависит от свободности стандартных `3100–3119`.
+- Native Windows runner и browser executable в этом окружении отсутствуют; соответствующая
+  fail-closed policy покрыта unit-тестами, browser-only smoke остаётся отдельным opt-in job.

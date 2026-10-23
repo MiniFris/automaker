@@ -923,7 +923,7 @@ process.stdout.write(JSON.stringify({type:'result',subtype:'success'})+'\\n');
       service.run(target, 'commit', { message: 'No target approval' }, active())
     ).rejects.toMatchObject({ code: 'GIT_TARGET_CHANGED' });
     await expect(service.run(target, 'push', {}, active())).rejects.toMatchObject({
-      code: 'GIT_OPERATION_UNSUPPORTED',
+      code: 'GIT_TARGET_CHANGED',
     });
     const token = { environmentTargetId: target.environment.targetId };
     expect(

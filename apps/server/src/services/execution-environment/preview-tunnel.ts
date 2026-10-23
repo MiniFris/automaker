@@ -7,6 +7,7 @@ import { SSHExecutionEnvironment } from './ssh.js';
 import { SSHState } from './ssh-state.js';
 import { connectSSH, shellQuote } from './ssh-transport.js';
 import { dockerArguments } from './docker-command.js';
+import { PREVIEW_PORT_FIRST, PREVIEW_PORT_LAST } from './preview-policy.js';
 
 /** Fixed TCP destination and verified owning Linux session. No client host/port, URL or shell. */
 export const PREVIEW_RELAY = String.raw`
@@ -31,7 +32,7 @@ function owned(){
   }
   return false;
 }
-if(!Number.isInteger(p.port)||p.port<4100||p.port>4119||!Number.isSafeInteger(p.pid)||p.pid<1||!owned())process.exit(73);
+if(!Number.isInteger(p.port)||p.port<${PREVIEW_PORT_FIRST + 1000}||p.port>${PREVIEW_PORT_LAST + 1000}||!Number.isSafeInteger(p.pid)||p.pid<1||!owned())process.exit(73);
 const socket=net.connect({host:'127.0.0.1',port:p.port});
 socket.setTimeout(120000,()=>socket.destroy());
 const timer=setTimeout(()=>socket.destroy(),5000);

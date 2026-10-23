@@ -41,7 +41,6 @@ import {
 import { createAgentRoutes } from './routes/agent/index.js';
 import { createAutoModeRoutes } from './routes/auto-mode/index.js';
 import { createEnhancePromptRoutes } from './routes/enhance-prompt/index.js';
-import { createWorktreeRoutes } from './routes/worktree/index.js';
 import { createSetupRoutes } from './routes/setup/index.js';
 import { createRunningAgentsRoutes } from './routes/running-agents/index.js';
 import {
@@ -580,12 +579,6 @@ export function createLegacyApplication(options: LegacyApplicationOptions = {}):
   app.use('/api/agent', createAgentRoutes(agentService, events));
   app.use('/api/auto-mode', createAutoModeRoutes(autoModeService));
   app.use('/api/enhance-prompt', createEnhancePromptRoutes(settingsService));
-  app.use(
-    '/api/worktree',
-    createWorktreeRoutes(events, settingsService, featureLoader, (projectPath) =>
-      autoModeService.isProjectRunning(projectPath)
-    )
-  );
   app.use('/api/running-agents', createRunningAgentsRoutes(autoModeService));
   app.use('/api/terminal', createTerminalRoutes());
   app.use('/api/claude', createClaudeRoutes(claudeUsageService));

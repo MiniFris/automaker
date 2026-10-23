@@ -194,20 +194,20 @@ describe.skipIf(process.platform !== 'linux')(
       }
     });
     it.each([
-      'push',
-      'pull',
-      'delete',
-      'merge',
-      'rebase',
-      'cherry-pick',
-      'create-pr',
-      'generate-commit-message',
-      'start-dev',
-      'run-init-script',
-      'open-in-editor',
+      ['push', 'GIT_TARGET_CHANGED'],
+      ['pull', 'GIT_TARGET_CHANGED'],
+      ['delete', 'GIT_TARGET_CHANGED'],
+      ['merge', 'GIT_TARGET_CHANGED'],
+      ['rebase', 'GIT_TARGET_CHANGED'],
+      ['cherry-pick', 'GIT_TARGET_CHANGED'],
+      ['create-pr', 'GIT_TARGET_CHANGED'],
+      ['generate-commit-message', 'GIT_OPERATION_UNSUPPORTED'],
+      ['start-dev', 'DEV_TARGET_CHANGED'],
+      ['run-init-script', 'GIT_TARGET_CHANGED'],
+      ['open-in-editor', 'GIT_OPERATION_UNSUPPORTED'],
     ])(
-      'refuses unsupported/uninspected remote %s without entering controller handlers',
-      async (action) => {
+      'refuses uninspected remote %s without entering controller handlers',
+      async (action, expectedCode) => {
         const before = peer.commands.length;
         expect(
           await post('worktree', action, {
@@ -219,7 +219,7 @@ describe.skipIf(process.platform !== 'linux')(
           })
         ).toMatchObject({
           success: false,
-          code: action === 'start-dev' ? 'DEV_TARGET_CHANGED' : 'GIT_OPERATION_UNSUPPORTED',
+          code: expectedCode,
         });
         expect(peer.commands.length).toBe(before);
       }

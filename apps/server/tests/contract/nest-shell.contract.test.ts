@@ -76,6 +76,7 @@ describe('Nest shell and legacy bridge contract', () => {
   it('has one explicit owner for every API route group', () => {
     expect(() => assertSingleRouteOwner(ROUTE_GROUP_OWNERS)).not.toThrow();
     expect(Object.values(ROUTE_GROUP_OWNERS)).toEqual(expect.arrayContaining(['legacy']));
+    expect(ROUTE_GROUP_OWNERS.worktree).toBe('nest');
     expect(getApiRouteGroup({ originalUrl: '/api/features/feature-1?tab=plan' })).toBe('features');
     expect(getApiRouteGroup({ originalUrl: '/not-api/features' })).toBeUndefined();
   });
