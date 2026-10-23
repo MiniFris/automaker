@@ -23,6 +23,8 @@ import {
   WorktreeCheckoutBranchSchema,
   WorktreeCherryPickSchema,
   WorktreeMergeSchema,
+  WorktreeCreateSchema,
+  WorktreeDeleteSchema,
   WorktreeDiscardSchema,
   WorktreeMutationSchema,
   WorktreeRemoteAddSchema,
@@ -51,6 +53,8 @@ import {
   type WorktreeCheckoutBranchRequest,
   type WorktreeCherryPickRequest,
   type WorktreeMergeRequest,
+  type WorktreeCreateRequest,
+  type WorktreeDeleteRequest,
   type WorktreeDiscardRequest,
   type WorktreeFeatureRequest,
   type WorktreeFileRequest,
@@ -359,6 +363,26 @@ export class WorktreeController {
     @Res({ passthrough: true }) response: Response
   ) {
     return this.cancel(response, (signal) => this.worktrees.merge(body, signal));
+  }
+
+  @Post('create')
+  @HttpCode(200)
+  @AllowedPathFields('projectPath')
+  create(
+    @Body(new ZodValidationPipe(WorktreeCreateSchema)) body: WorktreeCreateRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.create(body, signal));
+  }
+
+  @Post('delete')
+  @HttpCode(200)
+  @AllowedPathFields('projectPath', 'worktreePath')
+  delete(
+    @Body(new ZodValidationPipe(WorktreeDeleteSchema)) body: WorktreeDeleteRequest,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return this.cancel(response, (signal) => this.worktrees.delete(body, signal));
   }
 
   @Post('commit-log')

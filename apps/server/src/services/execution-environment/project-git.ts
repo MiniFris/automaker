@@ -54,6 +54,7 @@ export const gitWriteActions = new Set([
   'rebase',
   'cherry-pick',
   'merge',
+  'delete',
 ]);
 export function workspaceAlias(binding: ExecutionEnvironmentBinding) {
   const root = binding.ssh?.remotePath ?? binding.projectPath;
@@ -291,7 +292,7 @@ export class ProjectGitService {
       ...body,
       workspaceBranch: target.workspaceBranch,
     };
-    if (action === 'merge' && typeof body.worktreePath === 'string') {
+    if (['merge', 'delete'].includes(action) && typeof body.worktreePath === 'string') {
       const source = (
         await new EnvironmentBindingStore(this.settings).workspaceBindings(
           target.environment.projectPath
@@ -357,16 +358,23 @@ export class ProjectGitService {
       ...response!,
       executionEnvironment: described(resolvedCwd, target.binding),
     };
-    if (action === 'merge') {
-      const merge = value.result as
-        | { deleted?: { worktreeDeleted?: boolean }; deletedBindingId?: string }
+    if (action === 'merge' || action === 'delete') {
+      const lifecycle = (action === 'merge' ? value.result : value.deleted) as
+        | {
+            worktreeDeleted?: boolean;
+            deleted?: { worktreeDeleted?: boolean };
+            deletedBindingId?: string;
+          }
         | undefined;
-      if (merge?.deleted?.worktreeDeleted && merge.deletedBindingId) {
+      if (
+        (lifecycle?.worktreeDeleted || lifecycle?.deleted?.worktreeDeleted) &&
+        lifecycle.deletedBindingId
+      ) {
         await new EnvironmentBindingStore(this.settings).removeWorkspaceBinding(
           target.environment.projectPath,
-          merge.deletedBindingId
+          lifecycle.deletedBindingId
         );
-        delete merge.deletedBindingId;
+        delete lifecycle.deletedBindingId;
       }
     }
     if (Array.isArray(value.worktrees)) {

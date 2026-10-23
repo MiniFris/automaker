@@ -3,6 +3,8 @@ import type { EventEmitter } from '../../lib/events.js';
 import { LEGACY_EVENT_EMITTER } from '../../legacy/legacy.tokens.js';
 import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import type { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
+import type { FeatureLoader } from '../../services/feature-loader.js';
+import { SettingsService } from '../../services/settings-service.js';
 import {
   ProjectGitService,
   gitWriteActions,
@@ -17,6 +19,8 @@ import type {
   WorktreeCheckoutBranchRequest,
   WorktreeCherryPickRequest,
   WorktreeMergeRequest,
+  WorktreeCreateRequest,
+  WorktreeDeleteRequest,
   WorktreeDiscardRequest,
   WorktreeFeatureRequest,
   WorktreeFileRequest,
@@ -41,7 +45,9 @@ export class WorktreeApplicationService {
   constructor(
     @Inject(ProjectGitService) private readonly git: ProjectGitService,
     @Inject(LEGACY_EVENT_EMITTER) private readonly events: EventEmitter,
-    @Inject(LEGACY_SERVICES.autoMode) private readonly autoMode: AutoModeServiceCompat
+    @Inject(LEGACY_SERVICES.autoMode) private readonly autoMode: AutoModeServiceCompat,
+    @Inject(SettingsService) private readonly settings: SettingsService,
+    @Inject(LEGACY_SERVICES.featureLoader) private readonly features: FeatureLoader
   ) {}
 
   async environment(input: WorktreeProjectRequest) {
@@ -210,6 +216,68 @@ export class WorktreeApplicationService {
       });
       throw error;
     }
+  }
+
+  async create(input: WorktreeCreateRequest, signal: AbortSignal) {
+    const projectSettings = await this.settings.getProjectSettings(input.projectPath);
+    const copyFiles = Array.isArray(projectSettings.worktreeCopyFiles)
+      ? projectSettings.worktreeCopyFiles
+      : [];
+    const response = await this.runPath(
+      'create',
+      input.projectPath,
+      { ...input, copyFiles },
+      signal
+    );
+    const copied = (response.copyResults ?? []) as Array<{
+      path: string;
+      type?: string;
+      status: 'copied' | 'skipped' | 'failed';
+      reason?: string;
+      error?: string;
+    }>;
+    for (const entry of copied)
+      this.events.emit(`worktree:copy-files:${entry.status}`, {
+        path: entry.path,
+        type: entry.type,
+        reason: entry.reason,
+        error: entry.error,
+      });
+    return response;
+  }
+
+  async delete(input: WorktreeDeleteRequest, signal: AbortSignal) {
+    const response = await this.runPath('delete', input.projectPath, input, signal);
+    const result = response.deleted as {
+      worktreePath: string;
+      branchName?: string;
+      branchDeleted: boolean;
+      featuresMovedToMain?: number;
+    };
+    let featuresMovedToMain = 0;
+    if (result.branchName) {
+      for (const feature of (await this.features.getAll(input.projectPath)).filter(
+        (item) => item.branchName === result.branchName
+      )) {
+        await this.features.update(input.projectPath, feature.id, { branchName: null });
+        featuresMovedToMain++;
+        this.events.emit('feature:migrated', {
+          featureId: feature.id,
+          status: 'migrated',
+          fromBranch: result.branchName,
+          toWorktreeId: null,
+          projectPath: input.projectPath,
+        });
+      }
+    }
+    result.featuresMovedToMain = featuresMovedToMain;
+    this.events.emit('worktree:deleted', {
+      worktreePath: input.worktreePath,
+      projectPath: input.projectPath,
+      branchName: result.branchName ?? null,
+      branchDeleted: result.branchDeleted,
+    });
+    return response;
   }
 
   async commitLog(input: WorktreeCommitLogRequest, signal: AbortSignal) {

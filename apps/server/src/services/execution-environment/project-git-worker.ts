@@ -41,6 +41,7 @@ const file=value=>{
  if(!inside(cwd,fs.realpathSync(probe)))bad('GIT_FILE_INVALID','File path follows a symlink outside the worktree.');
  return value;
 };
+const copyFile=value=>{if(typeof value!=='string'||!value||value==='.'||value.includes('\0')||value.includes('\\')||path.isAbsolute(value)||value.split('/').some(part=>part==='..'||part==='.git'))bad('GIT_FILE_INVALID','Configured copy paths must be relative project paths.');return value;};
 const files=()=>{if(!Array.isArray(b.files)||!b.files.length||b.files.length>1000)bad('GIT_FILE_INVALID','Select between 1 and 1000 relative files.');return b.files.map(file);};
 const branch=value=>{if(typeof value!=='string'||!value||value.startsWith('-'))bad('GIT_BRANCH_INVALID','An existing local branch is required.');git(root,'check-ref-format','refs/heads/'+value);return value;};
 const remote=value=>{if(typeof value!=='string'||!/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,249}$/.test(value))bad('GIT_REMOTE_INVALID','Remote name is invalid.');return value;};
@@ -167,14 +168,18 @@ try{
  }
  else if(p.action==='create'){
   if(cwd!==root||p.pinned)bad('GIT_PINNED_WORKSPACE','Create worktrees only from the project root.');
-  const name=branch(b.branchName),base=b.baseBranch?branch(b.baseBranch):git(root,'symbolic-ref','--quiet','--short','HEAD').trim();
-  const oid=git(root,'rev-parse','--verify','refs/heads/'+base+'^{commit}').trim(),dir=path.join(root,'.worktrees','ui-'+createHash('sha256').update(name).digest('hex').slice(0,24));
+  const name=branch(b.branchName),requestedBase=b.baseBranch??'HEAD',base=requestedBase==='HEAD'?'HEAD':requestedBase,localBase=base==='HEAD'?undefined:optional(root,'show-ref','--verify','--hash','refs/heads/'+branch(base)),remoteBase=base==='HEAD'?undefined:optional(root,'show-ref','--verify','--hash','refs/remotes/'+base),baseRef=base==='HEAD'?'HEAD':localBase?'refs/heads/'+base:remoteBase?'refs/remotes/'+base:bad('GIT_BASE_MISSING','Base branch does not exist in cached target refs.');
+  try{git(root,'fetch','--all','--quiet');}catch{}
+  const oid=git(root,'rev-parse','--verify',baseRef+'^{commit}').trim(),dir=path.join(root,'.worktrees','ui-'+createHash('sha256').update(name).digest('hex').slice(0,24));
   const registered=worktrees().find(x=>x.branch===name);if(registered)result={worktree:{path:registered.path,branch:name,isNew:false,baseCommitHash:git(registered.runtimePath,'rev-parse','HEAD').trim()}};
   else{
-   if(optional(root,'show-ref','--verify','--hash','refs/heads/'+name)||fs.existsSync(dir))bad('GIT_BRANCH_EXISTS','Branch/path already exists; no branch reset, deletion or overwrite was performed.');
+   if(fs.existsSync(dir))bad('GIT_BRANCH_EXISTS','Worktree path already exists; no deletion or overwrite was performed.');
    fs.mkdirSync(path.dirname(dir),{recursive:true});if(fs.realpathSync(path.dirname(dir))!==path.dirname(dir))bad('GIT_WORKSPACE_CHANGED','Worktree parent must not be a symlink.');
-   git(root,'worktree','add','-b',name,'--',dir,oid);result={worktree:{path:alias(dir),branch:name,isNew:true,baseCommitHash:oid},initScriptSkipped:true};
+   const branchExists=!!optional(root,'show-ref','--verify','--hash','refs/heads/'+name);git(root,'worktree','add',...(branchExists?[]:['-b',name]),'--',dir,branchExists?name:oid);const copyResults=[];for(const raw of Array.isArray(b.copyFiles)?b.copyFiles.slice(0,1000):[]){let name;try{name=copyFile(raw);const source=path.join(root,name),destination=path.join(dir,name);if(!fs.existsSync(source)){copyResults.push({path:name,status:'skipped',reason:'File not found in project root'});continue;}const stat=fs.statSync(source);fs.mkdirSync(path.dirname(destination),{recursive:true});fs.cpSync(source,destination,{recursive:stat.isDirectory(),force:true});copyResults.push({path:name,status:'copied',type:stat.isDirectory()?'directory':'file'});}catch(error){copyResults.push({path:String(raw),status:'failed',error:error.message});}}result={worktree:{path:alias(dir),branch:name,isNew:!branchExists,baseCommitHash:oid},copyResults};
   }
+ }
+ else if(p.action==='delete'){
+  if(cwd!==root||p.pinned)bad('GIT_PROJECT_ROOT_REQUIRED','Delete must run from the selected target project root.');const requested=path.posix.normalize(b.worktreePath),entry=worktrees().find(item=>item.path===requested);if(!entry)bad('GIT_WORKSPACE_MISSING','Requested worktree is not registered on the selected target.');if(entry.isMain||entry.runtimePath===root)bad('GIT_MAIN_WORKTREE','The main project worktree cannot be deleted.');git(root,'worktree','remove','--force','--',entry.runtimePath);let branchDeleted=false;if(b.deleteBranch&&entry.branch!=='main'&&entry.branch!=='master'){try{git(root,'branch','-D','--',branch(entry.branch));branchDeleted=true;}catch{}}result={deleted:{worktreePath:entry.path,branch:branchDeleted?entry.branch:null,branchName:entry.branch,branchDeleted,worktreeDeleted:true,deletedBindingId:b.sourceBindingId}};
  }
  else bad('GIT_OPERATION_UNSUPPORTED','Operation not migrated.');
  const response={success:true,...result,resolvedCwd:cwd};const output=JSON.stringify(response);

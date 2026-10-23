@@ -3754,7 +3754,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 193,
+      "line": 197,
       "middleware": [
         "WorktreeController.abortOperation"
       ],
@@ -3769,7 +3769,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 213,
+      "line": 217,
       "middleware": [
         "WorktreeController.addRemote"
       ],
@@ -3814,7 +3814,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 374,
+      "line": 398,
       "middleware": [
         "WorktreeController.branchCommitLog"
       ],
@@ -3829,7 +3829,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 143,
+      "line": 147,
       "middleware": [
         "WorktreeController.checkChanges"
       ],
@@ -3844,7 +3844,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 273,
+      "line": 277,
       "middleware": [
         "WorktreeController.checkoutBranch"
       ],
@@ -3859,7 +3859,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 344,
+      "line": 348,
       "middleware": [
         "WorktreeController.cherryPick"
       ],
@@ -3874,7 +3874,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 364,
+      "line": 388,
       "middleware": [
         "WorktreeController.commitLog"
       ],
@@ -3889,7 +3889,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 183,
+      "line": 187,
       "middleware": [
         "WorktreeController.commit"
       ],
@@ -3904,7 +3904,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 203,
+      "line": 207,
       "middleware": [
         "WorktreeController.continueOperation"
       ],
@@ -3931,13 +3931,12 @@
       "method": "POST",
       "path": "/api/worktree/create",
       "group": "worktree",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "line": 103,
+      "source": "apps/server/src/modules/worktree/worktree.controller.ts",
+      "line": 368,
       "middleware": [
-        "validatePathParams('projectPath')",
-        "createCreateHandler(events, settingsService)"
+        "WorktreeController.create"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -3977,13 +3976,12 @@
       "method": "POST",
       "path": "/api/worktree/delete",
       "group": "worktree",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "line": 108,
+      "source": "apps/server/src/modules/worktree/worktree.controller.ts",
+      "line": 378,
       "middleware": [
-        "validatePathParams('projectPath', 'worktreePath')",
-        "createDeleteHandler(events, featureLoader)"
+        "WorktreeController.delete"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -3996,7 +3994,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 405,
+      "line": 429,
       "middleware": [
         "WorktreeController.devServerLogs"
       ],
@@ -4011,7 +4009,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 123,
+      "line": 127,
       "middleware": [
         "WorktreeController.diffs"
       ],
@@ -4026,7 +4024,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 294,
+      "line": 298,
       "middleware": [
         "WorktreeController.discardChanges"
       ],
@@ -4041,7 +4039,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 86,
+      "line": 90,
       "middleware": [
         "WorktreeController.environment"
       ],
@@ -4056,7 +4054,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 133,
+      "line": 137,
       "middleware": [
         "WorktreeController.fileDiff"
       ],
@@ -4105,7 +4103,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 103,
+      "line": 107,
       "middleware": [
         "WorktreeController.info"
       ],
@@ -4183,7 +4181,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 153,
+      "line": 157,
       "middleware": [
         "WorktreeController.listBranches"
       ],
@@ -4198,7 +4196,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 399,
+      "line": 423,
       "middleware": [
         "WorktreeController.listDevServers"
       ],
@@ -4213,7 +4211,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 163,
+      "line": 167,
       "middleware": [
         "WorktreeController.listRemotes"
       ],
@@ -4228,7 +4226,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 93,
+      "line": 97,
       "middleware": [
         "WorktreeController.list"
       ],
@@ -4243,7 +4241,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 354,
+      "line": 358,
       "middleware": [
         "WorktreeController.merge"
       ],
@@ -4336,7 +4334,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 304,
+      "line": 308,
       "middleware": [
         "WorktreeController.pull"
       ],
@@ -4351,7 +4349,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 314,
+      "line": 318,
       "middleware": [
         "WorktreeController.push"
       ],
@@ -4366,7 +4364,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 334,
+      "line": 338,
       "middleware": [
         "WorktreeController.rebase"
       ],
@@ -4427,7 +4425,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 223,
+      "line": 227,
       "middleware": [
         "WorktreeController.setTracking"
       ],
@@ -4442,7 +4440,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 173,
+      "line": 177,
       "middleware": [
         "WorktreeController.stageFiles"
       ],
@@ -4457,7 +4455,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 385,
+      "line": 409,
       "middleware": [
         "WorktreeController.startDev"
       ],
@@ -4472,7 +4470,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 411,
+      "line": 435,
       "middleware": [
         "WorktreeController.startTests"
       ],
@@ -4487,7 +4485,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 253,
+      "line": 257,
       "middleware": [
         "WorktreeController.stashApply"
       ],
@@ -4502,7 +4500,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 263,
+      "line": 267,
       "middleware": [
         "WorktreeController.stashDrop"
       ],
@@ -4517,7 +4515,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 233,
+      "line": 237,
       "middleware": [
         "WorktreeController.stashList"
       ],
@@ -4532,7 +4530,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 243,
+      "line": 247,
       "middleware": [
         "WorktreeController.stashPush"
       ],
@@ -4547,7 +4545,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 113,
+      "line": 117,
       "middleware": [
         "WorktreeController.status"
       ],
@@ -4562,7 +4560,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 392,
+      "line": 416,
       "middleware": [
         "WorktreeController.stopDev"
       ],
@@ -4577,7 +4575,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 418,
+      "line": 442,
       "middleware": [
         "WorktreeController.stopTests"
       ],
@@ -4592,7 +4590,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 284,
+      "line": 288,
       "middleware": [
         "WorktreeController.switchBranch"
       ],
@@ -4607,7 +4605,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 324,
+      "line": 328,
       "middleware": [
         "WorktreeController.sync"
       ],
@@ -4622,7 +4620,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 424,
+      "line": 448,
       "middleware": [
         "WorktreeController.testLogs"
       ],

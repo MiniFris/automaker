@@ -203,6 +203,24 @@ export const WorktreeMergeSchema = z
   })
   .strict();
 
+export const WorktreeCreateSchema = z
+  .object({
+    projectPath: ProjectPathSchema,
+    branchName: BranchNameSchema,
+    baseBranch: BranchNameSchema.or(z.literal('HEAD')).optional(),
+    environmentTargetId: z.string().optional(),
+  })
+  .strict();
+
+export const WorktreeDeleteSchema = z
+  .object({
+    projectPath: ProjectPathSchema,
+    worktreePath: ProjectPathSchema,
+    deleteBranch: z.boolean().optional(),
+    environmentTargetId: z.string().optional(),
+  })
+  .strict();
+
 export type WorktreeProjectRequest = z.infer<typeof WorktreeProjectSchema>;
 export type WorktreeFeatureRequest = z.infer<typeof WorktreeFeatureSchema>;
 export type WorktreeFileRequest = z.infer<typeof WorktreeFileSchema>;
@@ -232,3 +250,5 @@ export type WorktreeSyncRequest = z.infer<typeof WorktreeSyncSchema>;
 export type WorktreeRebaseRequest = z.infer<typeof WorktreeRebaseSchema>;
 export type WorktreeCherryPickRequest = z.infer<typeof WorktreeCherryPickSchema>;
 export type WorktreeMergeRequest = z.infer<typeof WorktreeMergeSchema>;
+export type WorktreeCreateRequest = z.infer<typeof WorktreeCreateSchema>;
+export type WorktreeDeleteRequest = z.infer<typeof WorktreeDeleteSchema>;

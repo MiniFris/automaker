@@ -14,7 +14,9 @@ describe('WorktreeApplicationService', () => {
     const service = new WorktreeApplicationService(
       git as never,
       { emit: vi.fn() } as never,
-      { isProjectRunning: vi.fn().mockResolvedValue(false) } as never
+      { isProjectRunning: vi.fn().mockResolvedValue(false) } as never,
+      { getProjectSettings: vi.fn().mockResolvedValue({}) } as never,
+      { getAll: vi.fn().mockResolvedValue([]), update: vi.fn() } as never
     );
     const signal = new AbortController().signal;
 
@@ -40,7 +42,9 @@ describe('WorktreeApplicationService', () => {
     const service = new WorktreeApplicationService(
       git as never,
       { emit: vi.fn() } as never,
-      { isProjectRunning: vi.fn().mockResolvedValue(false) } as never
+      { isProjectRunning: vi.fn().mockResolvedValue(false) } as never,
+      { getProjectSettings: vi.fn().mockResolvedValue({}) } as never,
+      { getAll: vi.fn().mockResolvedValue([]), update: vi.fn() } as never
     );
 
     await service.diffs(
@@ -63,7 +67,9 @@ describe('WorktreeApplicationService', () => {
     const service = new WorktreeApplicationService(
       git as never,
       events as never,
-      { isProjectRunning: vi.fn().mockResolvedValue(false) } as never
+      { isProjectRunning: vi.fn().mockResolvedValue(false) } as never,
+      { getProjectSettings: vi.fn().mockResolvedValue({}) } as never,
+      { getAll: vi.fn().mockResolvedValue([]), update: vi.fn() } as never
     );
 
     await service.commitLog({ worktreePath: '/project', limit: 20 }, new AbortController().signal);
@@ -83,7 +89,9 @@ describe('WorktreeApplicationService', () => {
     const service = new WorktreeApplicationService(
       git as never,
       { emit: vi.fn() } as never,
-      { isProjectRunning: vi.fn().mockResolvedValue(true) } as never
+      { isProjectRunning: vi.fn().mockResolvedValue(true) } as never,
+      { getProjectSettings: vi.fn().mockResolvedValue({}) } as never,
+      { getAll: vi.fn().mockResolvedValue([]), update: vi.fn() } as never
     );
 
     await expect(
@@ -104,7 +112,9 @@ describe('WorktreeApplicationService', () => {
     const service = new WorktreeApplicationService(
       git as never,
       events as never,
-      { isProjectRunning: vi.fn().mockResolvedValue(false) } as never
+      { isProjectRunning: vi.fn().mockResolvedValue(false) } as never,
+      { getProjectSettings: vi.fn().mockResolvedValue({}) } as never,
+      { getAll: vi.fn().mockResolvedValue([]), update: vi.fn() } as never
     );
 
     await service.cherryPick(
@@ -130,7 +140,9 @@ describe('WorktreeApplicationService', () => {
     const service = new WorktreeApplicationService(
       git as never,
       events as never,
-      { isProjectRunning: vi.fn().mockResolvedValue(false) } as never
+      { isProjectRunning: vi.fn().mockResolvedValue(false) } as never,
+      { getProjectSettings: vi.fn().mockResolvedValue({}) } as never,
+      { getAll: vi.fn().mockResolvedValue([]), update: vi.fn() } as never
     );
 
     const response = await service.merge(

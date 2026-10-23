@@ -94,10 +94,21 @@ describe.skipIf(process.platform !== 'linux')('fixed target-side Git worker with
       code: 'GIT_FILE_INVALID',
     });
   });
-  it('creates a separate worktree from a fixed local base without fetch or init script, and can query it by branch', async () => {
-    const created = await run('create', { branchName: 'feature/ui', baseBranch: 'main' });
+  it('creates a separate worktree, copies configured target files, and can query it by branch', async () => {
+    await fs.mkdir(path.join(root, 'config'));
+    await fs.writeFile(path.join(root, 'config', 'local.env'), 'TARGET=1\n');
+    const created = await run('create', {
+      branchName: 'feature/ui',
+      baseBranch: 'main',
+      copyFiles: ['config/local.env'],
+    });
     expect(created.success).toBe(true);
-    expect(created.initScriptSkipped).toBe(true);
+    expect(created.copyResults).toEqual([
+      { path: 'config/local.env', status: 'copied', type: 'file' },
+    ]);
+    expect(await fs.readFile(path.join(created.worktree.path, 'config', 'local.env'), 'utf8')).toBe(
+      'TARGET=1\n'
+    );
     const list = await run('list');
     expect(list.worktrees).toHaveLength(2);
     expect((await run('info', { workspaceBranch: 'feature/ui' })).worktreePath).toBe(
@@ -107,6 +118,27 @@ describe.skipIf(process.platform !== 'linux')('fixed target-side Git worker with
     expect((await run('status', { workspaceBranch: 'missing' })).code).toBe(
       'GIT_WORKSPACE_REQUIRED'
     );
+  });
+  it('deletes only an exactly registered non-main worktree and optionally its branch', async () => {
+    const created = await run('create', { branchName: 'feature/delete', baseBranch: 'main' });
+    expect(
+      (
+        await run('delete', {
+          worktreePath: created.worktree.path,
+          deleteBranch: true,
+        })
+      ).deleted
+    ).toMatchObject({
+      worktreePath: created.worktree.path,
+      branchName: 'feature/delete',
+      branchDeleted: true,
+      worktreeDeleted: true,
+    });
+    await expect(fs.stat(created.worktree.path)).rejects.toThrow();
+    expect(await run('delete', { worktreePath: root })).toMatchObject({
+      success: false,
+      code: 'GIT_MAIN_WORKTREE',
+    });
   });
   it('lists cached remote refs without running fetch or credential helpers', async () => {
     await environment.exec(
