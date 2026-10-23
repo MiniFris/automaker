@@ -2,7 +2,6 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { Request, RequestHandler, Response } from 'express';
 import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import { createAnalyzeProjectHandler } from '../../routes/auto-mode/routes/analyze-project.js';
-import { createApprovePlanHandler } from '../../routes/auto-mode/routes/approve-plan.js';
 import { createCommitFeatureHandler } from '../../routes/auto-mode/routes/commit-feature.js';
 import { createContextExistsHandler } from '../../routes/auto-mode/routes/context-exists.js';
 import { createFollowUpFeatureHandler } from '../../routes/auto-mode/routes/follow-up-feature.js';
@@ -52,7 +51,6 @@ export class AutoModeHandlersService {
       analyzeProject: createAnalyzeProjectHandler(autoMode),
       followUpFeature: createFollowUpFeatureHandler(autoMode),
       commitFeature: createCommitFeatureHandler(autoMode),
-      approvePlan: createApprovePlanHandler(autoMode),
       resumeInterrupted: createResumeInterruptedHandler(autoMode),
       reconcile: createReconcileHandler(autoMode),
     } satisfies Record<string, RequestHandler>;

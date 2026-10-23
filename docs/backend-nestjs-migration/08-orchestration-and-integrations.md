@@ -69,6 +69,9 @@ Registry регистрирует ожидание синхронно до пу�
 защищённый `POST /api/auto-mode/pending-plan-approval`. Endpoint возвращает ticket
 только для активного ожидания и совпадающей сохранённой версии. Схемы request/response
 находятся в `@automaker/contracts`. Закрытие диалога не отменяет server-side ожидание.
+Подтверждение `POST /api/auto-mode/approve-plan` также обрабатывается напрямую Nest
+controller с общей decision schema. Невалидное тело возвращает 400, устаревший ticket
+— 409 в общем error envelope. Старый Express approval handler удалён.
 
 При shutdown сохраняется interrupted state, затем останавливаются scheduler,
 active run controllers и approval registry. Ожидания получают `AbortError`, их
@@ -76,7 +79,7 @@ active run controllers и approval registry. Ожидания получают `
 Явная версия generated-плана сохраняется без дополнительного auto-increment;
 ошибки plan persistence возвращаются вызывающему workflow.
 
-Промежуточный общий checkpoint: 2893 unit-теста и 225 HTTP/WS contracts. Дополнительно
+Промежуточный общий checkpoint: 2900 unit-тестов и 227 HTTP/WS contracts. Дополнительно
 проверены shutdown/recovery races и настоящий SSH approval workflow: до решения
 Write недоступен, после решения используется тот же remote workspace. Полный этап 8
 остаётся незавершённым: restart/resume acceptance и остальные integration gates

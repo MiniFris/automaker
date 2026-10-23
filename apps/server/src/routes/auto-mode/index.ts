@@ -19,7 +19,6 @@ import { createContextExistsHandler } from './routes/context-exists.js';
 import { createAnalyzeProjectHandler } from './routes/analyze-project.js';
 import { createFollowUpFeatureHandler } from './routes/follow-up-feature.js';
 import { createCommitFeatureHandler } from './routes/commit-feature.js';
-import { createApprovePlanHandler } from './routes/approve-plan.js';
 import { createResumeInterruptedHandler } from './routes/resume-interrupted.js';
 import { createReconcileHandler } from './routes/reconcile.js';
 import { createMergeSSHFeatureHandler } from './routes/merge-ssh-feature.js';
@@ -82,11 +81,6 @@ export function createAutoModeRoutes(autoModeService: AutoModeServiceCompat): Ro
     '/commit-feature',
     validatePathParams('projectPath', 'worktreePath?'),
     createCommitFeatureHandler(autoModeService)
-  );
-  router.post(
-    '/approve-plan',
-    validatePathParams('projectPath'),
-    createApprovePlanHandler(autoModeService)
   );
   router.post(
     '/resume-interrupted',

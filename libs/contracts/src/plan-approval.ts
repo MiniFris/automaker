@@ -19,5 +19,15 @@ export const PendingPlanApprovalResponseSchema = z.object({
   approval: PlanApprovalTicketSchema.nullable(),
 });
 
+export const PlanApprovalDecisionRequestSchema = PendingPlanApprovalRequestSchema.extend({
+  approved: z.boolean(),
+  editedPlan: z.string().optional(),
+  feedback: z.string().optional(),
+  approvalToken: z.string().min(1),
+  approvalRunId: z.string().min(1),
+  planVersion: z.number().int().positive(),
+});
+
 export type PendingPlanApprovalRequest = z.infer<typeof PendingPlanApprovalRequestSchema>;
 export type PendingPlanApprovalResponse = z.infer<typeof PendingPlanApprovalResponseSchema>;
+export type PlanApprovalDecisionRequest = z.infer<typeof PlanApprovalDecisionRequestSchema>;

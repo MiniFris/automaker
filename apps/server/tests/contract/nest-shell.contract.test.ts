@@ -245,6 +245,62 @@ describe('Nest shell and legacy bridge contract', () => {
     }
   });
 
+  it('validates plan decisions in Nest and returns conflict for a stale ticket', async () => {
+    const address = runtime.legacy.server.address() as AddressInfo;
+    const endpoint = `http://127.0.0.1:${address.port}/api/auto-mode/approve-plan`;
+    const headers = { 'Content-Type': 'application/json', 'x-api-key': 'automaker-test-api-key' };
+    const decision = {
+      projectPath: '/tmp',
+      featureId: 'approval-contract-feature',
+      approved: true,
+      approvalToken: 'current-ticket',
+      approvalRunId: 'current-run',
+      planVersion: 2,
+    };
+    const resolve = vi
+      .spyOn(runtime.legacy.services.autoModeService, 'resolvePlanApproval')
+      .mockResolvedValue({ success: true });
+    try {
+      const malformed = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ ...decision, approvalToken: 123 }),
+      });
+      expect(malformed.status).toBe(400);
+      expect(resolve).not.toHaveBeenCalled();
+      const accepted = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(decision),
+      });
+      expect(accepted.status).toBe(200);
+      expect(await accepted.json()).toMatchObject({ success: true, approved: true });
+      expect(resolve).toHaveBeenCalledExactlyOnceWith(
+        '/tmp',
+        decision.featureId,
+        true,
+        undefined,
+        undefined,
+        decision.approvalToken,
+        decision.planVersion,
+        decision.approvalRunId
+      );
+      resolve.mockResolvedValue({ success: false, error: 'Approval ticket is stale or invalid' });
+      const stale = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(decision),
+      });
+      expect(stale.status).toBe(409);
+      expect(await stale.json()).toMatchObject({
+        success: false,
+        error: 'Approval ticket is stale or invalid',
+      });
+    } finally {
+      resolve.mockRestore();
+    }
+  });
+
   it('preserves content-type, authentication, CORS, cookie and body-limit middleware', async () => {
     const address = runtime.legacy.server.address() as AddressInfo;
     const baseUrl = `http://127.0.0.1:${address.port}`;

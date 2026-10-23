@@ -2,6 +2,8 @@ import { Body, Controller, HttpCode, Inject, Post, Req, Res, UseGuards } from '@
 import {
   PendingPlanApprovalRequestSchema,
   type PendingPlanApprovalRequest,
+  PlanApprovalDecisionRequestSchema,
+  type PlanApprovalDecisionRequest,
 } from '@automaker/contracts';
 import type { Request, Response } from 'express';
 import { AllowedPathFields, AllowedPathGuard } from '../../core/security/index.js';
@@ -9,6 +11,7 @@ import { AutoModeHandlersService, type AutoModeHandlerName } from './auto-mode-h
 import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import type { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
 import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
+import { ConflictDomainError } from '../../core/errors/index.js';
 
 @Controller('auto-mode')
 @UseGuards(AllowedPathGuard)
@@ -88,11 +91,31 @@ export class AutoModeController {
   ) {
     return this.run('commitFeature', q, s);
   }
-  @Post('approve-plan') @AllowedPathFields('projectPath') approvePlan(
-    @Req() q: Request,
-    @Res() s: Response
+  @Post('approve-plan')
+  @HttpCode(200)
+  @AllowedPathFields('projectPath')
+  async approvePlan(
+    @Body(new ZodValidationPipe(PlanApprovalDecisionRequestSchema))
+    body: PlanApprovalDecisionRequest
   ) {
-    return this.run('approvePlan', q, s);
+    const result = await this.autoMode.resolvePlanApproval(
+      body.projectPath,
+      body.featureId,
+      body.approved,
+      body.editedPlan,
+      body.feedback,
+      body.approvalToken,
+      body.planVersion,
+      body.approvalRunId
+    );
+    if (!result.success) throw new ConflictDomainError(result.error ?? 'Plan approval conflict');
+    return {
+      success: true,
+      approved: body.approved,
+      message: body.approved
+        ? 'Plan approved - implementation will continue'
+        : 'Plan rejected - feature execution stopped',
+    };
   }
 
   @Post('pending-plan-approval')
