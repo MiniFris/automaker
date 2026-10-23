@@ -233,6 +233,17 @@ describe('Nest shell and legacy bridge contract', () => {
       });
       expect(invalidProvider.status).toBe(400);
 
+      const environment = await fetch(`${baseUrl}/api/settings/execution-environments/inspect`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ projectPath }),
+      });
+      expect(environment.status).toBe(200);
+      expect(await environment.json()).toMatchObject({
+        success: true,
+        resolved: { type: 'local' },
+      });
+
       for (const route of ['notifications/list', 'event-history/list']) {
         const response = await fetch(`${baseUrl}/api/${route}`, {
           method: 'POST',

@@ -1,4 +1,6 @@
 export class ExecutionEnvironmentError extends Error {
+  readonly status = 400;
+
   constructor(
     readonly code: string,
     message: string
