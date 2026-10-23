@@ -94,8 +94,16 @@ restart/resume workflow и остальные integration gates требуют �
 - [ ] Перенести server config lookup в SettingsModule.
 - [ ] Разделить list tools и test connection.
 - [ ] Ограничить timeout/output и redaction.
-- [ ] Не сохранять live clients между несвязанными requests без owner lifecycle.
-- [ ] Добавить fake MCP server integration tests.
+- [x] Не сохранять live clients между несвязанными requests без owner lifecycle.
+- [x] Добавить fake MCP server integration tests.
+
+Локальный fixture server в `tests/fixtures/mcp-test-server.mjs` проходит настоящий
+SDK handshake по stdio. `mcp-transport.contract.test.ts` проверяет tools discovery,
+timeout подключения/list-tools, oversized catalog, redaction и shutdown активного
+соединения. Все шесть сценариев подтверждают завершение дочернего процесса. Таймеры
+operation deadline очищаются в `finally`, active clients закрываются через Nest
+`beforeApplicationShutdown`, повторный cleanup безопасен. SSE/HTTP acceptance и
+ограничение сырых transport frames остаются отдельной незакрытой частью этапа.
 
 ## 8.8. Hooks и notifications
 

@@ -17,6 +17,7 @@ import type { SettingsService } from './settings-service.js';
 const execAsync = promisify(exec);
 const DEFAULT_TIMEOUT = 10000; // 10 seconds
 const IS_WINDOWS = process.platform === 'win32';
+type MCPTransport = StdioClientTransport | SSEClientTransport | StreamableHTTPClientTransport;
 
 export interface MCPTestResult {
   success: boolean;
@@ -34,8 +35,14 @@ export interface MCPTestResult {
  */
 export class MCPTestService {
   private settingsService: SettingsService;
+  private stopping = false;
+  private readonly activeConnections = new Map<Client, MCPTransport>();
+  private readonly closingConnections = new WeakMap<Client, Promise<void>>();
 
-  constructor(settingsService: SettingsService) {
+  constructor(
+    settingsService: SettingsService,
+    private readonly requestTimeoutMs = DEFAULT_TIMEOUT
+  ) {
     this.settingsService = settingsService;
   }
 
@@ -52,6 +59,7 @@ export class MCPTestService {
       | null = null;
 
     try {
+      if (this.stopping) throw new Error('MCP discovery is shutting down');
       client = new Client({
         name: 'automaker-mcp-test',
         version: '1.0.0',
@@ -59,24 +67,20 @@ export class MCPTestService {
 
       // Create transport based on server type
       transport = await this.createTransport(serverConfig);
+      if (this.stopping) throw new Error('MCP discovery is shutting down');
+      this.activeConnections.set(client, transport);
 
       // Connect with timeout
-      await Promise.race([
-        client.connect(transport),
-        this.timeout(DEFAULT_TIMEOUT, 'Connection timeout'),
-      ]);
+      await this.withTimeout(client.connect(transport), 'Connection timeout');
 
       // List tools with timeout
-      const toolsResult = await Promise.race([
-        client.listTools(),
-        this.timeout<{
-          tools: Array<{
-            name: string;
-            description?: string;
-            inputSchema?: Record<string, unknown>;
-          }>;
-        }>(DEFAULT_TIMEOUT, 'List tools timeout'),
-      ]);
+      const toolsResult = await this.withTimeout(client.listTools(), 'List tools timeout');
+      if (
+        toolsResult.tools.length > 1000 ||
+        Buffer.byteLength(JSON.stringify(toolsResult)) > 1024 * 1024
+      ) {
+        throw new Error('MCP tool catalog exceeds the allowed size');
+      }
 
       const connectionTime = Date.now() - startTime;
 
@@ -95,15 +99,15 @@ export class MCPTestService {
         tools,
         connectionTime,
         serverInfo: {
-          name: serverConfig.name,
-          version: undefined, // Could be extracted from server info if available
+          name: client.getServerVersion()?.name ?? serverConfig.name,
+          version: client.getServerVersion()?.version,
         },
       };
     } catch (error) {
       const connectionTime = Date.now() - startTime;
       return {
         success: false,
-        error: this.getErrorMessage(error),
+        error: this.getErrorMessage(error, serverConfig),
         connectionTime,
       };
     } finally {
@@ -126,8 +130,28 @@ export class MCPTestService {
    */
   private async cleanupConnection(
     client: Client | null,
-    transport: StdioClientTransport | SSEClientTransport | StreamableHTTPClientTransport | null
+    transport: MCPTransport | null
   ): Promise<void> {
+    if (!client) return;
+    const existing = this.closingConnections.get(client);
+    if (existing) return existing;
+    const closing = this.closeConnection(client, transport).finally(() => {
+      this.activeConnections.delete(client);
+    });
+    this.closingConnections.set(client, closing);
+    return closing;
+  }
+
+  async beforeApplicationShutdown(): Promise<void> {
+    this.stopping = true;
+    await Promise.all(
+      [...this.activeConnections].map(([client, transport]) =>
+        this.cleanupConnection(client, transport)
+      )
+    );
+  }
+
+  private async closeConnection(client: Client, transport: MCPTransport | null): Promise<void> {
     // Get the PID before any cleanup (only available for stdio transports)
     const pid = transport instanceof StdioClientTransport ? transport.pid : null;
 
@@ -227,25 +251,47 @@ export class MCPTestService {
       command: config.command,
       args: config.args,
       env: config.env,
+      // Discovery returns structured diagnostics; never inherit arbitrary server stderr.
+      stderr: 'ignore',
     });
   }
 
   /**
    * Create a timeout promise
    */
-  private timeout<T>(ms: number, message: string): Promise<T> {
-    return new Promise((_, reject) => {
-      setTimeout(() => reject(new Error(message)), ms);
-    });
+  private async withTimeout<T>(operation: Promise<T>, message: string): Promise<T> {
+    let timer: NodeJS.Timeout | undefined;
+    try {
+      return await Promise.race([
+        operation,
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new Error(message)), this.requestTimeoutMs);
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
   }
 
   /**
    * Extract error message from unknown error
    */
-  private getErrorMessage(error: unknown): string {
-    if (error instanceof Error) {
-      return error.message;
+  private getErrorMessage(error: unknown, config?: MCPServerConfig): string {
+    let message = error instanceof Error ? error.message : String(error);
+    const secrets = [...Object.values(config?.env ?? {}), ...Object.values(config?.headers ?? {})];
+    if (config?.url) {
+      try {
+        const url = new URL(config.url);
+        secrets.push(url.username, url.password);
+        url.searchParams.forEach((value) => secrets.push(value));
+      } catch {
+        /* Invalid URLs are reported without echoing configuration. */
+      }
+      secrets.push(config.url);
     }
-    return String(error);
+    for (const secret of secrets.filter(Boolean).sort((a, b) => b.length - a.length)) {
+      message = message.split(secret).join('[REDACTED]');
+    }
+    return message.slice(0, 2048);
   }
 }
