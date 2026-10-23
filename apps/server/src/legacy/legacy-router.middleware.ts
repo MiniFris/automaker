@@ -41,6 +41,16 @@ export const ROUTE_GROUP_OWNERS: Readonly<Record<string, RouteOwner>> = {
 };
 
 export const NEST_OWNED_ROUTE_PATHS = new Set<string>([
+  'POST /api/agent/start',
+  'POST /api/agent/send',
+  'POST /api/agent/history',
+  'POST /api/agent/stop',
+  'POST /api/agent/clear',
+  'POST /api/agent/model',
+  'POST /api/agent/queue/add',
+  'POST /api/agent/queue/list',
+  'POST /api/agent/queue/remove',
+  'POST /api/agent/queue/clear',
   'GET /api/settings/status',
   'GET /api/settings/global',
   'GET /api/settings/credentials',

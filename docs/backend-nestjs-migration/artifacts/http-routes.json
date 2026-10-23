@@ -40,12 +40,12 @@
       "method": "POST",
       "path": "/api/agent/clear",
       "group": "agent",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/agent/index.ts",
-      "line": 31,
+      "source": "apps/server/src/modules/agents/agents.controller.ts",
+      "line": 52,
       "middleware": [
-        "createClearHandler(agentService)"
+        "AgentsController.clear"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -55,12 +55,12 @@
       "method": "POST",
       "path": "/api/agent/history",
       "group": "agent",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/agent/index.ts",
-      "line": 29,
+      "source": "apps/server/src/modules/agents/agents.controller.ts",
+      "line": 40,
       "middleware": [
-        "createHistoryHandler(agentService)"
+        "AgentsController.history"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -70,12 +70,12 @@
       "method": "POST",
       "path": "/api/agent/model",
       "group": "agent",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/agent/index.ts",
-      "line": 32,
+      "source": "apps/server/src/modules/agents/agents.controller.ts",
+      "line": 58,
       "middleware": [
-        "createModelHandler(agentService)"
+        "AgentsController.model"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -85,13 +85,12 @@
       "method": "POST",
       "path": "/api/agent/queue/add",
       "group": "agent",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/agent/index.ts",
-      "line": 35,
+      "source": "apps/server/src/modules/agents/agents.controller.ts",
+      "line": 64,
       "middleware": [
-        "validatePathParams('imagePaths[]')",
-        "createQueueAddHandler(agentService)"
+        "AgentsController.queueAdd"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -101,12 +100,12 @@
       "method": "POST",
       "path": "/api/agent/queue/clear",
       "group": "agent",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/agent/index.ts",
-      "line": 42,
+      "source": "apps/server/src/modules/agents/agents.controller.ts",
+      "line": 83,
       "middleware": [
-        "createQueueClearHandler(agentService)"
+        "AgentsController.queueClear"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -116,12 +115,12 @@
       "method": "POST",
       "path": "/api/agent/queue/list",
       "group": "agent",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/agent/index.ts",
-      "line": 40,
+      "source": "apps/server/src/modules/agents/agents.controller.ts",
+      "line": 71,
       "middleware": [
-        "createQueueListHandler(agentService)"
+        "AgentsController.queueList"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -131,12 +130,12 @@
       "method": "POST",
       "path": "/api/agent/queue/remove",
       "group": "agent",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/agent/index.ts",
-      "line": 41,
+      "source": "apps/server/src/modules/agents/agents.controller.ts",
+      "line": 77,
       "middleware": [
-        "createQueueRemoveHandler(agentService)"
+        "AgentsController.queueRemove"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -146,13 +145,12 @@
       "method": "POST",
       "path": "/api/agent/send",
       "group": "agent",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/agent/index.ts",
-      "line": 24,
+      "source": "apps/server/src/modules/agents/agents.controller.ts",
+      "line": 33,
       "middleware": [
-        "validatePathParams('workingDirectory?', 'imagePaths[]')",
-        "createSendHandler(agentService)"
+        "AgentsController.send"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -162,13 +160,12 @@
       "method": "POST",
       "path": "/api/agent/start",
       "group": "agent",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/agent/index.ts",
-      "line": 23,
+      "source": "apps/server/src/modules/agents/agents.controller.ts",
+      "line": 26,
       "middleware": [
-        "validatePathParams('workingDirectory?')",
-        "createStartHandler(agentService)"
+        "AgentsController.start"
       ],
       "potentialMutation": true,
       "validatesProjectPath": true,
@@ -178,12 +175,12 @@
       "method": "POST",
       "path": "/api/agent/stop",
       "group": "agent",
-      "owner": "legacy-express",
+      "owner": "nestjs",
       "access": "protected",
-      "source": "apps/server/src/routes/agent/index.ts",
-      "line": 30,
+      "source": "apps/server/src/modules/agents/agents.controller.ts",
+      "line": 46,
       "middleware": [
-        "createStopHandler(agentService)"
+        "AgentsController.stop"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
