@@ -8,7 +8,13 @@ import {
   GithubCommandError,
   githubCommandEnvironment,
 } from '../../../src/modules/github/github-command.runtime.js';
-const remote = { hasGitHubRemote: true, remoteUrl: null, owner: 'owned', repo: 'repo.v2' };
+const remote = {
+  hasGitHubRemote: true,
+  remoteUrl: null,
+  owner: 'owned',
+  repo: 'repo.v2',
+  hostname: 'github.com',
+};
 afterEach(() => vi.useRealTimers());
 
 it('preserves case-insensitive Windows PATH/auth while removing every GH_REPO case variant', () => {
@@ -48,7 +54,7 @@ it('redacts credentials/query fragments and preserves dotted repository names wi
       'pr',
       'list',
       '-R',
-      'owned/repo.v2',
+      'github.com/owned/repo.v2',
       '--state',
       'open',
       '--json',
@@ -98,6 +104,49 @@ it('uses GraphQL variables for repository and issue identifiers and deduplicates
   expect(result.openIssues[0].linkedPRs).toEqual([
     { number: 24, title: '', state: 'open', url: '' },
   ]);
+});
+
+it.each(['', 'upstream\n'])(
+  'does not infer absence of all remotes from a missing origin (%#)',
+  async (remotes) => {
+    const run = vi
+      .fn()
+      .mockRejectedValueOnce(new GithubCommandError('exit', false, true))
+      .mockResolvedValueOnce({ stdout: remotes })
+      .mockRejectedValueOnce(new GithubCommandError('spawn'));
+    const request = new GithubCliReadAdapter({ run }).remote(
+      '/owned',
+      new AbortController().signal
+    );
+    if (remotes) await expect(request).rejects.toThrow('invalid response');
+    else expect(await request).toMatchObject({ hasGitHubRemote: false });
+    expect(run.mock.calls[1][0].args).toEqual(['remote']);
+  }
+);
+
+it('does not let malformed/non-web CLI metadata escape as a raw URL error or redirect the verified origin', async () => {
+  const run = vi
+    .fn()
+    .mockResolvedValueOnce({ stdout: 'https://github.com/owned/repo.v2.git' })
+    .mockResolvedValueOnce({
+      stdout: JSON.stringify({
+        owner: { login: 'owned' },
+        name: 'repo.v2',
+        url: 'git@private-host:private-value',
+      }),
+    });
+  const remote = await new GithubCliReadAdapter({ run }).remote(
+    '/owned',
+    new AbortController().signal
+  );
+  expect(remote).toMatchObject({
+    hasGitHubRemote: true,
+    owner: 'owned',
+    repo: 'repo.v2',
+    remoteUrl: 'https://github.com/owned/repo.v2.git',
+  });
+  expect(remote.hostname).toBe('github.com');
+  expect(JSON.stringify(remote)).not.toContain('private-value');
 });
 
 it.each(['cancel', 'cleanup', 'deadline', 'limit'] as const)(

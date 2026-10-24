@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { UnavailableDomainError } from '../../core/errors/domain-errors.js';
+import { ConflictDomainError, UnavailableDomainError } from '../../core/errors/domain-errors.js';
+import { githubHost, githubUrlHost } from './github-target.js';
 import { GithubCommandRuntime, GithubCommandError } from './github-command.runtime.js';
 import { GithubReadPort, type GithubRemote } from './github-read.port.js';
 
@@ -17,7 +18,7 @@ const optionalFailure = (error: unknown) =>
     !error.rateLimited &&
     ['spawn', 'exit'].includes(error.kind));
 
-function repository(owner: unknown, repo: unknown): { owner: string; repo: string } {
+export function githubRepository(owner: unknown, repo: unknown): { owner: string; repo: string } {
   if (
     typeof owner !== 'string' ||
     !/^[A-Za-z0-9][A-Za-z0-9-]{0,99}$/.test(owner) ||
@@ -54,7 +55,7 @@ function remoteRepository(value: string): { owner: string; repo: string } | null
       parts = url.pathname.replace(/^\//, '').split('/');
     }
     if (parts.length !== 2) return null;
-    return repository(parts[0], parts[1].replace(/\.git$/, ''));
+    return githubRepository(parts[0], parts[1].replace(/\.git$/, ''));
   } catch {
     return null;
   }
@@ -101,35 +102,84 @@ export class GithubCliReadAdapter extends GithubReadPort {
     } catch (error) {
       if (!optionalFailure(error)) throw error;
       absent = error instanceof GithubCommandError && error.absent;
+      if (absent) {
+        try {
+          absent = !(
+            await this.runtime.run({ program: 'git', args: ['remote'], cwd: projectPath, signal })
+          ).stdout.trim();
+        } catch (observation) {
+          if (
+            !(
+              observation instanceof GithubCommandError &&
+              observation.kind === 'exit' &&
+              observation.absent
+            )
+          )
+            throw observation;
+        }
+      }
     }
     let resolved: { owner: string; repo: string } | null = null;
+    let hostname: string | undefined;
     try {
       const value = parse(
         (
           await this.runtime.run({
             program: 'gh',
-            args: ['repo', 'view', '--json', 'name,owner'],
+            args: ['repo', 'view', '--json', 'name,owner,url'],
             cwd: projectPath,
             signal,
           })
         ).stdout
-      ) as { owner?: { login?: unknown }; name?: unknown } | null;
-      resolved = repository(value?.owner?.login, value?.name);
+      ) as { owner?: { login?: unknown }; name?: unknown; url?: unknown } | null;
+      resolved = githubRepository(value?.owner?.login, value?.name);
+      if (
+        typeof value?.url !== 'string' ||
+        !value.url.startsWith('https://') ||
+        !githubUrlHost(value.url)
+      ) {
+        resolved = null;
+        throw new GithubResponseError();
+      }
+      hostname = githubUrlHost(value.url);
+      const metadataUrl = new URL(value.url);
+      if (
+        metadataUrl.protocol !== 'https:' ||
+        metadataUrl.pathname.replace(/^\//, '').replace(/\/$/, '').toLowerCase() !==
+          `${resolved.owner}/${resolved.repo}`.toLowerCase()
+      ) {
+        resolved = null;
+        throw new GithubResponseError();
+      }
+      const originHost = githubUrlHost(origin);
+      if (originHost && originHost !== hostname)
+        throw new ConflictDomainError(
+          'GitHub repository host changed. Inspect the project target.'
+        );
     } catch (error) {
       if (!optionalFailure(error)) throw error;
+      if (error instanceof GithubResponseError && !origin) throw error;
       if (!origin && !absent) throw new GithubResponseError();
     }
     resolved ??= remoteRepository(origin);
-    return {
+    if (!resolved) hostname = undefined;
+    else hostname ??= githubUrlHost(origin);
+    const status: GithubRemote = {
       hasGitHubRemote: !!resolved,
       remoteUrl: origin
         ? publicRemoteUrl(origin)
         : resolved
-          ? `https://github.com/${resolved.owner}/${resolved.repo}`
+          ? `https://${hostname}/${resolved.owner}/${resolved.repo}`
           : null,
       owner: resolved?.owner ?? null,
       repo: resolved?.repo ?? null,
     };
+    if (hostname)
+      Object.defineProperty(status, 'hostname', {
+        value: githubHost({ ...status, hostname }),
+        enumerable: false,
+      });
+    return status;
   }
 
   private async list(
@@ -138,7 +188,7 @@ export class GithubCliReadAdapter extends GithubReadPort {
     kind: 'issue' | 'pr',
     signal: AbortSignal
   ) {
-    const binding = repository(remote.owner, remote.repo);
+    const binding = githubRepository(remote.owner, remote.repo);
     const controller = new AbortController();
     const combined = AbortSignal.any([signal, controller.signal]);
     let failure: unknown;
@@ -150,7 +200,7 @@ export class GithubCliReadAdapter extends GithubReadPort {
             kind,
             'list',
             '-R',
-            `${binding.owner}/${binding.repo}`,
+            `${githubHost(remote)}/${binding.owner}/${binding.repo}`,
             '--state',
             state,
             '--json',
@@ -209,7 +259,7 @@ export class GithubCliReadAdapter extends GithubReadPort {
           (
             await this.runtime.run({
               program: 'gh',
-              args: ['api', 'graphql', '--input', '-'],
+              args: ['api', 'graphql', '--hostname', githubHost(remote), '--input', '-'],
               cwd: projectPath,
               signal,
               input: JSON.stringify({ query, variables }),

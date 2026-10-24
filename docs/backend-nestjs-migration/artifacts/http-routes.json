@@ -1393,7 +1393,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/github/github.controller.ts",
-      "line": 32,
+      "line": 35,
       "middleware": [
         "GithubController.checkRemote"
       ],
@@ -1408,7 +1408,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/github/github.controller.ts",
-      "line": 47,
+      "line": 50,
       "middleware": [
         "GithubController.issueComments"
       ],
@@ -1423,7 +1423,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/github/github.controller.ts",
-      "line": 37,
+      "line": 40,
       "middleware": [
         "GithubController.issues"
       ],
@@ -1438,7 +1438,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/github/github.controller.ts",
-      "line": 50,
+      "line": 57,
       "middleware": [
         "GithubController.prReviewComments"
       ],
@@ -1453,7 +1453,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/github/github.controller.ts",
-      "line": 42,
+      "line": 45,
       "middleware": [
         "GithubController.prs"
       ],
@@ -1468,7 +1468,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/github/github.controller.ts",
-      "line": 53,
+      "line": 64,
       "middleware": [
         "GithubController.resolvePrComment"
       ],
@@ -1483,7 +1483,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/github/github.controller.ts",
-      "line": 56,
+      "line": 71,
       "middleware": [
         "GithubController.validateIssue"
       ],
@@ -1498,7 +1498,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/github/github.controller.ts",
-      "line": 84,
+      "line": 99,
       "middleware": [
         "GithubController.validationDelete"
       ],
@@ -1513,7 +1513,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/github/github.controller.ts",
-      "line": 91,
+      "line": 106,
       "middleware": [
         "GithubController.validationMarkViewed"
       ],
@@ -1528,7 +1528,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/github/github.controller.ts",
-      "line": 63,
+      "line": 78,
       "middleware": [
         "GithubController.validationStatus"
       ],
@@ -1543,7 +1543,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/github/github.controller.ts",
-      "line": 70,
+      "line": 85,
       "middleware": [
         "GithubController.validationStop"
       ],
@@ -1558,7 +1558,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/github/github.controller.ts",
-      "line": 77,
+      "line": 92,
       "middleware": [
         "GithubController.validations"
       ],

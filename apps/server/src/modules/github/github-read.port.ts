@@ -1,4 +1,6 @@
 export interface GithubRemote {
+  /** Internal non-enumerable binding; not part of the HTTP payload. */
+  readonly hostname?: string;
   hasGitHubRemote: boolean;
   remoteUrl: string | null;
   owner: string | null;

@@ -1312,20 +1312,26 @@ export class HttpApiClient implements ElectronAPI {
       signal,
     });
 
-    if (response.status === 401 || response.status === 403) {
+    if (response.status === 401) {
       handleUnauthorized();
       throw new Error('Unauthorized');
     }
 
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      let forbiddenDomain = false;
       try {
         const errorData = await response.json();
+        forbiddenDomain = errorData.errorCode === 'FORBIDDEN';
         if (errorData.error) {
           errorMessage = errorData.error;
         }
       } catch {
         // If parsing JSON fails, use status text
+      }
+      if (response.status === 403 && !forbiddenDomain) {
+        handleUnauthorized();
+        throw new Error('Unauthorized');
       }
       throw new Error(errorMessage);
     }
@@ -2980,8 +2986,15 @@ export class HttpApiClient implements ElectronAPI {
       this.post('/api/github/issue-comments', { projectPath, issueNumber, cursor }),
     getPRReviewComments: (projectPath: string, prNumber: number) =>
       this.post('/api/github/pr-review-comments', { projectPath, prNumber }),
-    resolveReviewThread: (projectPath: string, threadId: string, resolve: boolean) =>
-      this.post('/api/github/resolve-pr-comment', { projectPath, threadId, resolve }),
+    resolveReviewThread: async (projectPath: string, threadId: string, resolve: boolean) => {
+      const result = await this.post<{ success: boolean; isResolved?: boolean; error?: string }>(
+        '/api/github/resolve-pr-comment',
+        { projectPath, threadId, resolve }
+      );
+      if (result.success && result.isResolved !== resolve)
+        throw new Error('GitHub thread mutation was not confirmed. No automatic retry was made.');
+      return result;
+    },
   };
 
   // Workspace API

@@ -1,7 +1,14 @@
-import { Body, Controller, HttpCode, Inject, Post, Req, Res, UseGuards } from '@nestjs/common';
-import type { Request, Response } from 'express';
+import { Body, Controller, HttpCode, Inject, Post, UseGuards } from '@nestjs/common';
 import { AllowedPathFields, AllowedPathGuard } from '../../core/security/index.js';
-import { GithubHandlersService, type GithubHandlerName } from './github-handlers.service.js';
+import { GithubReviewService } from './github-review.service.js';
+import {
+  GithubIssueCommentsSchema,
+  GithubReviewCommentsSchema,
+  GithubResolveThreadSchema,
+  type GithubIssueCommentsRequest,
+  type GithubReviewCommentsRequest,
+  type GithubResolveThreadRequest,
+} from './github-review.schemas.js';
 import { IssueValidationService } from './issue-validation.service.js';
 import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
 import { GithubDiscoveryService } from './github-discovery.service.js';
@@ -20,14 +27,10 @@ import {
 @AllowedPathFields('projectPath')
 export class GithubController {
   constructor(
-    @Inject(GithubHandlersService) private readonly handlers: GithubHandlersService,
+    @Inject(GithubReviewService) private readonly reviews: GithubReviewService,
     @Inject(IssueValidationService) private readonly issueValidations: IssueValidationService,
     @Inject(GithubDiscoveryService) private readonly discovery: GithubDiscoveryService
   ) {}
-
-  private run(name: GithubHandlerName, request: Request, response: Response) {
-    return this.handlers.run(name, request, response);
-  }
 
   @Post('check-remote')
   @HttpCode(200)
@@ -44,14 +47,26 @@ export class GithubController {
   prs(@Body(new ZodValidationPipe(GithubProjectSchema)) input: GithubProjectRequest) {
     return this.discovery.prs(input.projectPath);
   }
-  @Post('issue-comments') issueComments(@Req() q: Request, @Res() s: Response) {
-    return this.run('issueComments', q, s);
+  @Post('issue-comments')
+  @HttpCode(200)
+  issueComments(
+    @Body(new ZodValidationPipe(GithubIssueCommentsSchema)) input: GithubIssueCommentsRequest
+  ) {
+    return this.reviews.issueComments(input);
   }
-  @Post('pr-review-comments') prReviewComments(@Req() q: Request, @Res() s: Response) {
-    return this.run('prReviewComments', q, s);
+  @Post('pr-review-comments')
+  @HttpCode(200)
+  prReviewComments(
+    @Body(new ZodValidationPipe(GithubReviewCommentsSchema)) input: GithubReviewCommentsRequest
+  ) {
+    return this.reviews.reviewComments(input);
   }
-  @Post('resolve-pr-comment') resolvePrComment(@Req() q: Request, @Res() s: Response) {
-    return this.run('resolvePrComment', q, s);
+  @Post('resolve-pr-comment')
+  @HttpCode(200)
+  resolvePrComment(
+    @Body(new ZodValidationPipe(GithubResolveThreadSchema)) input: GithubResolveThreadRequest
+  ) {
+    return this.reviews.resolve(input);
   }
   @Post('validate-issue')
   @HttpCode(200)

@@ -798,3 +798,41 @@ fixtures additionally control observation deadlines and construct Windows env.
 This does not prove real Windows/macOS process trees, deliberate group escape,
 complete linked pagination/unknown UI, remaining review/mutation ports, GitHub live
 acceptance, all worktree helpers or completion of stage 7–11 requirements.
+
+## ADR-038: native comments, host-bound thread mutations and unknown outcomes
+
+GithubController's remaining three review endpoints use typed native service/port
+calls; the final Express handler bag and old review spawn helpers are removed.
+Read and write adapters are distinct objects/interfaces sharing the application-owned
+command runtime. Bounded REST pages replace concatenated --paginate output parsing.
+Mandatory catalogs fail explicitly if incomplete; optional thread metadata never
+fabricates unresolved status. Aggregate bytes, pages/cursors and operation drain
+are bounded, without swallowing resource errors as optional metadata failures.
+
+Repository discovery binds an internal non-enumerable hostname, validated against
+origin/metadata and never added to HTTP response shapes. Every API request names
+the host explicitly and list requests qualify the repository by host. Metadata
+URLs must be HTTPS and consistent with owner/repo. Missing origin does not prove
+missing upstream remotes. The public protocol remains API v13 with original paths,
+success fields and explicit HTTP 200.
+
+The write port checks thread identity, immutable repository ID/name and viewer
+permissions before a single mutation dispatch. A confirmed already-requested state
+is a no-op. A response must confirm the same thread and requested boolean; any
+unconfirmed dispatched outcome is UNKNOWN_OUTCOME, without automatic replay.
+An explicit spawn failure/admission refusal is distinguishable from a lost result.
+Per-owner thread reservations serialize writes across project aliases and retain
+uncertain outcomes, including opposite requests. Module destruction drains owned
+work, reports uncertainty through checked Nest close and preserves later disposal.
+
+The UI preserves sessions on typed POST authorization denial, keeps legacy auth
+rejection behavior, disables mutation retries explicitly and never substitutes a
+requested state for missing confirmation. Native CLI fixtures prove both known
+mutations and an applied mutation whose response is lost; unit/browser fixtures
+cover boundary, lifecycle and session behavior without real GitHub/vendor writes.
+
+This does not implement durable mutation intents, explicit operator recovery,
+cross-process leases, all pagination/unknown UX, every HTTP method's auth policy,
+all legacy worktree helpers, real Windows/macOS packaging or the remaining stages.
+API details were checked against the official gh api/manual and GitHub GraphQL
+review-thread schema linked in stage 8; live vendor acceptance remains separate.

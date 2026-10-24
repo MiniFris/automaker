@@ -158,7 +158,7 @@ describe.skipIf(process.platform !== 'linux')(
         expect(
           (await runtime.fixture.calls())
             .filter((call) => call.args.includes('-R'))
-            .every((call) => call.args.includes('owned/repo.v2'))
+            .every((call) => call.args.includes('github.com/owned/repo.v2'))
         ).toBe(true);
         await expect(readFile(path.join(runtime.project, 'ESCAPED'))).rejects.toMatchObject({
           code: 'ENOENT',

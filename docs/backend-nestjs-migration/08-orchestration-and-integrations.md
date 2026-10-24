@@ -158,8 +158,8 @@ Write недоступен, после решения используется �
 ## 8.6. GitHubIntegrationModule
 
 - [ ] Обернуть `gh`/GitHub operations за port.
-- [ ] Перенести issues, PRs, comments, review threads и validation.
-- [ ] Разделить read-only discovery и mutation.
+- [x] Перенести issues, PRs, comments, review threads и validation.
+- [x] Разделить read-only discovery и mutation.
 - [ ] Ввести rate/error mapping без утечки command output.
 - [x] Cleanup stale validations сделать lifecycle task.
 - [ ] PR creation использует Git/Worktree modules, а не shell из controller.
@@ -344,6 +344,110 @@ regression и наблюдал старый module snapshot с новым expect
 как финальный checkpoint; targeted повтор и новый полный запуск после завершения
 всех source edits прошли. Test timeout/retries не увеличивались. Windows проверен
 на уровне environment construction, не реальным процессом на Windows.
+
+### Срез 2026-10-24: native review/comments ports и подтверждённые mutations
+
+Все 12 GitHubModule endpoints теперь используют native controller/service returns,
+typed request pipes и ports; GithubController больше не принимает Express Req/Res.
+Общие критерии gh ports/error mapping остаются открытыми до аудита и переноса
+остальных worktree/caller paths, а не ограничиваются этим API cutover.
+Удалены GithubHandlersService, три последних review/comment handler factories и
+два старых spawn/exec service helpers. Старый remote helper для legacy worktree
+paths ещё остаётся отдельной задачей этапа 11, не новым owner native API.
+
+GithubCommentsReadPort и GithubReviewMutationPort имеют разные concrete adapters:
+read object не содержит resolveThread. Они используют один native command runtime,
+не новый process-global cache или unscoped child-process helper. Issue comments
+сохраняют cursor pagination, totalCount и ghost fallback; review comments сохраняют
+regular/inline/review-body виды, bot/app authors, file/line/diff context и сортировку.
+
+REST catalog pages явно ограничены 100 rows/page и 20 pages, без парсинга
+конкатенированных `--paginate` JSON arrays. Repeated pages/cursors не образуют
+бесконечный цикл. Общий response budget для review operation — 10 MiB, включая
+resolved metadata. Неполный mandatory catalog теперь ошибка, а не empty/partial
+success; optional metadata может отсутствовать, но не превращается в `isResolved:
+false` у неизвестного inline thread. Cancel/cleanup/deadline/limit/rate failures
+не маскируются optional fallback. Shared schema/OpenAPI coverage и presentation
+такого unknown в UI ещё не объявляются завершёнными.
+
+Host binding берётся из согласованных remote/CLI metadata. Metadata URL должен
+быть HTTPS и соответствовать owner/repo; несовпадение origin/CLI hosts блокируется.
+Internal hostname non-enumerable и не добавляется в HTTP payload. Все API commands
+имеют явный --hostname, list commands — host-qualified repo, чтобы GH_HOST не
+перенаправил API call после repo discovery. Отсутствие origin отдельно проверяется
+через git remote: наличие upstream и недоступный gh не считаются доказанным
+отсутствием GitHub repository. Непарсируемый metadata URL не уходит наружу как raw
+URL/credential diagnostic.
+
+Write adapter сначала читает thread Node и целевой repository в одном GraphQL
+preflight, сверяет immutable repository IDs, точный thread ID, repository name и
+viewer permissions. Чужой/запрещённый thread получает FORBIDDEN до mutation.
+Уже достигнутое requested state возвращается как подтверждённый no-op. Иначе
+посылается ровно одна mutation через variables/stdin; ответ должен подтвердить
+тот же thread ID и requested boolean. Неподтверждённый результат после dispatch
+возвращает 502 UNKNOWN_OUTCOME, не success и не автоматический replay. Только
+явный spawn failure доказывает отсутствие исполнения и остаётся unavailable.
+Синхронный отказ admission происходит до dispatch.
+
+GithubReviewService владеет operation controllers/timers, закрывает admission до
+abort, ждёт bounded 5 s drain и резервирует thread ID также между path aliases.
+Unknown outcome удерживает reservation и запрещает replacement/opposite mutation
+в этом owner; checked app.close сообщает failed outcome и всё равно вызывает
+последующий provider disposal. Resource limits/deadlines command runtime сохранены.
+Reservations пока volatile/per-app: durable intent journal, operator recovery и
+cross-process coordination остаются обязательными дальнейшими задачами. Restart
+не replay-ит mutations, но не считается доказательством восстановления unknown.
+Single-dispatch guarantee относится к приложению: внутренние HTTP retries
+установленного gh не сертифицированы fake executable contracts. Реальный CLI/TLS
+transport acceptance и отдельный audit inherited Git repository context против
+allowed-root policy остаются открытыми до финального completion audit.
+
+HTTP client не уничтожает application session для typed POST FORBIDDEN; 401 и
+legacy untyped 403 сохраняют прежний auth handling. Native/thread responses должны
+явно подтвердить requested state: UI больше не подставляет его вместо отсутствующего
+isResolved. Resolve mutation явно имеет retry:false. Это не полная переработка всех
+HTTP methods/auth errors или shared client из этапа 11.
+
+Доказательства:
+
+- github-review-adapters/lifecycle units: variables/host, mandatory catalogs,
+  bounded pagination, unknown flags, resource precedence, repository/thread checks,
+  both mutation directions, authoritative no-op, malformed confirmation, неизвестный
+  результат, serialize/replacement protection и lifecycle outcome;
+- 7 native github-review contracts с настоящими owned CLI processes: enterprise
+  host, cursor/REST catalogs, fields/identity, forbidden preflight без writes,
+  уже применённая mutation с потерянным/невалидным ответом, отсутствие replay,
+  cleanup root/child при in-flight write и попытка последующего provider disposal;
+- HTTP client unit suite и Chromium permission-denial regression проверяют
+  сохранённую session, отсутствие replay и отсутствие invented success.
+
+Протокол сверён с [gh api](https://cli.github.com/manual/gh_api),
+[host-qualified repo flags](https://cli.github.com/manual/gh_pr_list) и
+[GitHub review-thread schema](https://docs.github.com/en/graphql/reference/pulls).
+Это проверка схемы/CLI semantics, не live/vendor mutation acceptance. PR creation
+через Worktree/Git ports, durable unknown recovery, остальные orchestration gates
+и реальные Windows/macOS packaged acceptance остаются открытыми.
+
+Проверки среза:
+
+- 24 новых targeted backend units и 7 native review contracts прошли;
+- финальный `test:server:unit`: 3664 passed, 40 skipped;
+- финальный `test:server:contract`: 334 passed;
+- `test:packages`: 1481 passed (включая новые UI client regressions);
+- отдельный UI HTTP client suite: 143 passed, из них 8 новых review cases;
+- Docker acceptance с owned base image `automaker-nest-stage2-smoke:latest`:
+  11 passed, 4 opt-in skipped; real SSH feature workflow: 14 passed. Vendor/model
+  exchanges остаются offline fixtures, не live mutation acceptance;
+- server production build/lint, UI typecheck/lint/build, lockfile check прошли;
+- SIGTERM/SIGINT lifecycle smoke: exit 0;
+- Chromium после Docker/SSH: 18 passed без test retries, включая новый session/
+  authorization-denial test; все три inventories обновлены и проверены.
+
+Первый полный format check обнаружил formatting нового adapter unit file; после
+форматирования проверка повторена. Дополнительные regressions закрывают missing
+origin при наличии upstream и non-web CLI metadata URL: они не превращаются в
+ложный negative remote lookup или raw URL error. Финальные suites выполнены после
+последних source edits; test timeout/retries не увеличивались.
 
 ## 8.7. MCPModule
 

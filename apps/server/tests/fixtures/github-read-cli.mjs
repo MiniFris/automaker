@@ -19,7 +19,10 @@ appendFileSync(
     profileToken: process.env.GH_TOKEN === 'fixture-profile-token',
   }) + '\n'
 );
-if (['hold', 'orphan'].includes(scenario.mode)) {
+if (
+  ['hold', 'orphan'].includes(scenario.mode) ||
+  (scenario.mode === 'review-hold' && input.includes('mutation ResolveThread'))
+) {
   process.on('SIGTERM', () => {});
   const child = spawn(
     process.execPath,
@@ -32,7 +35,13 @@ if (['hold', 'orphan'].includes(scenario.mode)) {
       JSON.stringify({ root: process.pid, child: child.pid })
     );
     if (scenario.mode === 'orphan') {
-      process.stdout.write(JSON.stringify({ name: 'repo.v2', owner: { login: 'owned' } }));
+      process.stdout.write(
+        JSON.stringify({
+          name: 'repo.v2',
+          owner: { login: 'owned' },
+          url: 'https://github.com/owned/repo.v2',
+        })
+      );
       process.exit(0);
     }
   });
@@ -48,7 +57,11 @@ else if (scenario.mode === 'exit') {
   process.exitCode = 1;
 } else if (args[0] === 'repo')
   process.stdout.write(
-    JSON.stringify({ name: scenario.repo || 'repo.v2', owner: { login: 'owned' } })
+    JSON.stringify({
+      name: scenario.repo || 'repo.v2',
+      owner: { login: 'owned' },
+      url: `https://${scenario.host || 'github.com'}/owned/${scenario.repo || 'repo.v2'}`,
+    })
   );
 else if (args[0] === 'issue')
   process.stdout.write(
@@ -87,7 +100,150 @@ else if (args[0] === 'pr')
     )
   );
 else if (args[0] === 'api') {
-  if (scenario.mode === 'links-failed') {
+  const request = input ? JSON.parse(input) : undefined;
+  const query = request?.query || '';
+  const variables = request?.variables || {};
+  let resolved = false;
+  try {
+    resolved = JSON.parse(readFileSync(path.join(root, 'thread-state.json'), 'utf8')).isResolved;
+  } catch {
+    /* initial state */
+  }
+  if (args[1] !== 'graphql') {
+    if (scenario.mode === 'review-rest-failed') {
+      process.stderr.write('private-provider-credential');
+      process.exitCode = 1;
+    } else {
+      const endpoint = new URL('https://fixture/' + args[1]);
+      const row = {
+        id: 10,
+        user: null,
+        performed_via_github_app: { slug: 'owned-bot' },
+        body: 'Bot comment',
+        created_at: '2026-10-01T00:00:00Z',
+      };
+      let rows = [row];
+      if (endpoint.pathname.includes('/pulls/') && endpoint.pathname.endsWith('/comments'))
+        rows = [
+          {
+            ...row,
+            id: 500,
+            body: 'Inline',
+            path: 'src/owned.ts',
+            line: 7,
+            position: 1,
+            diff_hunk: '@@ owned',
+            side: 'RIGHT',
+            commit_id: 'owned-commit',
+          },
+        ];
+      if (endpoint.pathname.endsWith('/reviews'))
+        rows = [
+          {
+            ...row,
+            id: 30,
+            body: 'Review body',
+            submitted_at: '2026-10-02T00:00:00Z',
+            state: 'COMMENTED',
+          },
+        ];
+      if (scenario.mode === 'review-pages' && endpoint.pathname.includes('/issues/'))
+        rows =
+          endpoint.searchParams.get('page') === '1'
+            ? Array.from({ length: 100 }, (_, index) => ({ ...row, id: 1000 + index }))
+            : [{ ...row, id: 2000 }];
+      process.stdout.write(JSON.stringify(rows));
+    }
+  } else if (query.startsWith('query GetIssueComments')) {
+    process.stdout.write(
+      JSON.stringify({
+        data: {
+          repository: {
+            issueOrPullRequest: {
+              comments: {
+                totalCount: 2,
+                pageInfo: {
+                  hasNextPage: !variables.cursor,
+                  endCursor: variables.cursor ? null : 'cursor_2',
+                },
+                nodes: [
+                  {
+                    id: variables.cursor ? 'second' : 'first',
+                    author: null,
+                    body: 'Issue comment',
+                    createdAt: '2026-10-01T00:00:00Z',
+                    updatedAt: '2026-10-01T00:00:00Z',
+                  },
+                ],
+              },
+            },
+          },
+        },
+      })
+    );
+  } else if (query.startsWith('query GetPRReviewThreads')) {
+    if (scenario.mode === 'review-metadata-failed') {
+      process.stderr.write('private-provider-credential');
+      process.exitCode = 1;
+    } else
+      process.stdout.write(
+        JSON.stringify({
+          data: {
+            repository: {
+              pullRequest: {
+                reviewThreads: {
+                  pageInfo: { hasNextPage: false, endCursor: null },
+                  nodes: [
+                    {
+                      id: 'PRRT_owned',
+                      isResolved: resolved,
+                      isOutdated: false,
+                      comments: { nodes: [{ databaseId: 500 }] },
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        })
+      );
+  } else if (query.startsWith('query ReviewThreadTarget')) {
+    process.stdout.write(
+      JSON.stringify({
+        data: {
+          repository: { id: 'R_owned', nameWithOwner: 'owned/repo.v2' },
+          node: {
+            __typename: 'PullRequestReviewThread',
+            id: variables.threadId,
+            repository: {
+              id: scenario.mode === 'review-foreign' ? 'R_other' : 'R_owned',
+              nameWithOwner: scenario.mode === 'review-foreign' ? 'other/repo' : 'owned/repo.v2',
+            },
+            isResolved: resolved,
+            viewerCanResolve: scenario.mode !== 'review-denied',
+            viewerCanUnresolve: scenario.mode !== 'review-denied',
+          },
+        },
+      })
+    );
+  } else if (query.startsWith('mutation ')) {
+    const isResolved = !query.includes('unresolveReviewThread');
+    writeFileSync(path.join(root, 'thread-state.json'), JSON.stringify({ isResolved }));
+    if (scenario.mode === 'review-lost') {
+      process.stderr.write('private-provider-credential');
+      process.exitCode = 1;
+    } else if (scenario.mode === 'review-malformed') process.stdout.write('{');
+    else
+      process.stdout.write(
+        JSON.stringify({
+          data: {
+            [isResolved ? 'resolveReviewThread' : 'unresolveReviewThread']: {
+              thread: { id: variables.threadId, isResolved },
+            },
+          },
+        })
+      );
+  } else if (scenario.mode === 'links-failed') {
     process.stderr.write('private-provider-credential');
     process.exitCode = 1;
   } else {
