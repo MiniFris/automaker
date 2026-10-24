@@ -7103,7 +7103,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:52",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:53",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -7130,7 +7130,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:62",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:63",
         "x-access": "protected",
         "x-request-contract": "incomplete",
         "x-unresolved-inputs": [
@@ -7156,7 +7156,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:180",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:188",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -7193,7 +7193,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:167",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:168",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -7218,7 +7218,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:79",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:80",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -7245,7 +7245,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:73",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:74",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -7263,7 +7263,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:112",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:113",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -7290,7 +7290,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:202",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:210",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -7308,7 +7308,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:214",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:222",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -7335,7 +7335,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:40",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:41",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",

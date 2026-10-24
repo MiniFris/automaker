@@ -24,6 +24,7 @@ import { ProjectGitService } from './execution-environment/project-git.js';
 import { ManagedTerminalPty, type TerminalPty } from './execution-environment/terminal.js';
 import { ExecutionEnvironmentError } from './execution-environment/runtime.js';
 import { TerminalSessionLifecycle, terminalCleanupError } from './terminal-session-lifecycle.js';
+import { ForbiddenDomainError } from '../core/errors/domain-errors.js';
 import { getTerminalThemeColors, getAllTerminalThemes } from '../lib/terminal-themes-data.js';
 import {
   getRcFilePath,
@@ -220,6 +221,13 @@ export function claimTerminalStartup(
   return allowed;
 }
 
+export interface TerminalPreflight {
+  filesystem: Pick<typeof secureFs, 'stat'>;
+  homeDirectory?: string;
+  fallbackDirectory: string;
+  resolvePath: (candidate: string) => string;
+}
+
 export class TerminalService extends EventEmitter {
   private maxSessions: number;
   private pendingCreations = 0;
@@ -239,7 +247,11 @@ export class TerminalService extends EventEmitter {
   private useConptyFallback = false; // Track if we need to use winpty fallback on Windows
   private settingsService: SettingsService | null = null;
 
-  constructor(settingsService?: SettingsService, initialMaxSessions?: number) {
+  constructor(
+    settingsService?: SettingsService,
+    initialMaxSessions?: number,
+    private readonly preflight?: TerminalPreflight
+  ) {
     super();
     this.settingsService = settingsService || null;
     this.maxSessions =
@@ -370,6 +382,7 @@ export class TerminalService extends EventEmitter {
    * Uses secureFs to enforce ALLOWED_ROOT_DIRECTORY for user-provided paths
    */
   private async resolveWorkingDirectory(requestedCwd?: string): Promise<string> {
+    if (this.preflight) return this.resolveNativeWorkingDirectory(requestedCwd);
     const homeDir = os.homedir();
 
     // If no cwd requested, use home
@@ -411,6 +424,47 @@ export class TerminalService extends EventEmitter {
       logger.warn(`Working directory does not exist or not allowed: ${cwd}, falling back to home`);
       return homeDir;
     }
+  }
+
+  private async resolveNativeWorkingDirectory(requestedCwd?: string): Promise<string> {
+    const preflight = this.preflight!;
+    const fallback = async (): Promise<string> => {
+      const candidates = [
+        ...new Set(
+          [preflight.homeDirectory, preflight.fallbackDirectory].filter((value): value is string =>
+            Boolean(value)
+          )
+        ),
+      ];
+      for (const candidate of candidates) {
+        try {
+          const canonical = preflight.resolvePath(candidate);
+          if ((await preflight.filesystem.stat(canonical)).isDirectory()) return canonical;
+        } catch (error) {
+          // A missing/unauthorized configured HOME may select the explicit app
+          // fallback. Indeterminate IO never grants authority to spawn elsewhere.
+          if (
+            candidate === preflight.homeDirectory &&
+            (error instanceof ForbiddenDomainError ||
+              (error as NodeJS.ErrnoException).code === 'ENOENT')
+          )
+            continue;
+          throw error;
+        }
+      }
+      throw new ExecutionEnvironmentError(
+        'TERMINAL_TARGET_CHANGED',
+        'No authorized terminal directory is available. No shell was started.'
+      );
+    };
+    if (!requestedCwd) return fallback();
+    const canonical = preflight.resolvePath(requestedCwd.trim());
+    try {
+      if ((await preflight.filesystem.stat(canonical)).isDirectory()) return canonical;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    }
+    return fallback();
   }
 
   /**
@@ -918,6 +972,20 @@ export class TerminalService extends EventEmitter {
         logger.error('Terminal cleanup could not be confirmed; retaining session identity.')
       );
     return accepted;
+  }
+
+  /** Success means the original owned PTY/group has actually finished cleanup. */
+  async stopSession(sessionId: string): Promise<boolean> {
+    const lifecycle = this.lifecycles.get(sessionId);
+    if (!this.sessions.has(sessionId)) return false;
+    if (!lifecycle) throw terminalCleanupError();
+    this.killSession(sessionId);
+    await lifecycle.close();
+    // An onExit subscriber normally removes these first. Do not publish success
+    // with a stale identity even if its callback is still awaiting this promise.
+    this.sessions.delete(sessionId);
+    this.lifecycles.delete(sessionId);
+    return true;
   }
 
   /**

@@ -474,6 +474,83 @@ describe('terminal-service.ts', () => {
     });
   });
 
+  it('awaits explicit stop proof while preserving the boolean compatibility API', async () => {
+    const session = await service.createSession();
+    mockPtyProcess.kill.mockImplementation(() => {});
+    const stopping = service.stopSession(session!.id);
+    let settled = false;
+    void stopping.then(() => {
+      settled = true;
+    });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    expect(service.getSession(session!.id)).toBe(session);
+    expect(service.isSessionClosing(session!.id)).toBe(true);
+    expect(service.write(session!.id, 'must not execute')).toBe(false);
+    for (const [exit] of mockPtyProcess.onExit.mock.calls) exit({ exitCode: 0 });
+    expect(await stopping).toBe(true);
+    expect(service.getSession(session!.id)).toBeUndefined();
+    expect(await service.stopSession(session!.id)).toBe(false);
+  });
+
+  it('uses only the injected preflight filesystem, path resolver and snapshot home', async () => {
+    const stat = vi.fn().mockResolvedValue({ isDirectory: () => true });
+    const resolvePath = vi.fn((candidate: string) => path.resolve('/native', candidate));
+    const native = new TerminalService(undefined, 2, {
+      filesystem: { stat } as never,
+      resolvePath,
+      homeDirectory: '/snapshot-home',
+      fallbackDirectory: '/application',
+    });
+    const resolve = (
+      native as unknown as { resolveWorkingDirectory: (value?: string) => Promise<string> }
+    ).resolveWorkingDirectory.bind(native);
+    expect(await resolve()).toBe('/snapshot-home');
+    expect(await resolve('project')).toBe('/native/project');
+    expect(resolvePath).toHaveBeenCalledWith('project');
+    expect(stat).toHaveBeenCalledWith('/native/project');
+    stat.mockRejectedValueOnce(Object.assign(new Error('missing'), { code: 'ENOENT' }));
+    expect(await resolve('missing')).toBe('/snapshot-home');
+    expect(stat).toHaveBeenLastCalledWith('/snapshot-home');
+    await native.cleanup();
+  });
+
+  it('does not use ambient home when the native host snapshot is missing HOME', async () => {
+    const stat = vi.fn().mockResolvedValue({ isDirectory: () => true });
+    const native = new TerminalService(undefined, 2, {
+      filesystem: { stat } as never,
+      resolvePath: (candidate) => candidate,
+      fallbackDirectory: '/application',
+    });
+    const home = vi.mocked(os.homedir);
+    home.mockClear();
+    const resolve = (
+      native as unknown as { resolveWorkingDirectory: (value?: string) => Promise<string> }
+    ).resolveWorkingDirectory.bind(native);
+    expect(await resolve()).toBe('/application');
+    expect(stat).toHaveBeenCalledWith('/application');
+    expect(home).not.toHaveBeenCalled();
+    await native.cleanup();
+  });
+
+  it('does not launch a PTY or fall back after native requested-directory DENIED/EIO', async () => {
+    for (const code of ['EACCES', 'EIO']) {
+      const error = Object.assign(new Error('native preflight failed'), { code });
+      const stat = vi.fn().mockRejectedValue(error);
+      const native = new TerminalService(undefined, 2, {
+        filesystem: { stat } as never,
+        resolvePath: (candidate) => candidate,
+        homeDirectory: '/home',
+        fallbackDirectory: '/application',
+      });
+      vi.mocked(pty.spawn).mockClear();
+      await expect(native.createSession({ cwd: '/requested' })).rejects.toBe(error);
+      expect(stat).toHaveBeenCalledExactlyOnceWith('/requested');
+      expect(pty.spawn).not.toHaveBeenCalled();
+      await native.cleanup();
+    }
+  });
+
   describe('killSession', () => {
     it('should kill existing session', async () => {
       vi.useFakeTimers();

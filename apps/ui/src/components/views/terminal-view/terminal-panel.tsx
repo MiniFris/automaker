@@ -1294,6 +1294,15 @@ export function TerminalPanel({
           return;
         }
 
+        if (event.code === 4005) {
+          setConnectionStatus('disconnected');
+          toast.error(translate('Terminal cleanup could not be confirmed'), {
+            description: translate('The terminal was kept for retry. No new shell was started.'),
+            duration: 5000,
+          });
+          return;
+        }
+
         if (event.code === 4004) {
           setConnectionStatus('disconnected');
           // Notify parent that this session is no longer valid on the server

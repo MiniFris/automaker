@@ -1,3 +1,4 @@
+import { stopTerminalSession, stopTerminalTab, inspectTerminalSession } from '@/lib/terminal-stop';
 import { formatCount } from '@/lib/i18n';
 import { translate, useUiLocale } from '@/lib/i18n';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -74,7 +75,7 @@ import {
   defaultDropAnimationSideEffects,
 } from '@dnd-kit/core';
 import { cn } from '@/lib/utils';
-import { apiGet, apiPost, apiDeleteRaw } from '@/lib/api-fetch';
+import { apiFetch, apiGet, apiPost, apiDeleteRaw } from '@/lib/api-fetch';
 import { getApiKey } from '@/lib/http-api-client';
 import { createEnvironmentTerminal } from '@/lib/terminal-session';
 
@@ -772,16 +773,10 @@ export function TerminalView({
         }
 
         // Helper to check if a session still exists on server
-        const checkSessionExists = async (sessionId: string): Promise<boolean> => {
-          try {
-            const data = await apiGet<{ success: boolean }>(`/api/terminal/sessions/${sessionId}`, {
-              headers,
-            });
-            return data.success === true;
-          } catch {
-            return false;
-          }
-        };
+        const checkSessionExists = (sessionId: string) =>
+          inspectTerminalSession(() =>
+            apiFetch(`/api/terminal/sessions/${encodeURIComponent(sessionId)}`, 'GET', { headers })
+          );
 
         // Helper to create a new terminal session
         const createSession = async (): Promise<string | null> => {
@@ -805,10 +800,10 @@ export function TerminalView({
 
             // If we have a saved sessionId, try to reconnect to it
             if (persisted.sessionId) {
-              const exists = await checkSessionExists(persisted.sessionId);
-              if (exists) {
+              const state = await checkSessionExists(persisted.sessionId);
+              if (state !== 'missing') {
                 sessionId = persisted.sessionId;
-                reconnectedSessions++;
+                if (state === 'active') reconnectedSessions++;
               }
             }
 
@@ -1162,54 +1157,33 @@ export function TerminalView({
   };
 
   // Kill a terminal session
-  const killTerminal = async (sessionId: string) => {
-    try {
-      const headers: Record<string, string> = {};
-      if (terminalState.authToken) {
-        headers['X-Terminal-Token'] = terminalState.authToken;
-      }
-
-      const response = await apiDeleteRaw(`/api/terminal/sessions/${sessionId}`, { headers });
-
-      // Always remove from UI - even if server says 404 (session may have already exited)
-      removeTerminalFromLayout(sessionId);
-
-      // Clean up stale entries for killed sessions
-      setSessionCommandOverrides((prev) => {
-        const next = new Map(prev);
-        next.delete(sessionId);
-        return next;
-      });
-      setNewSessionIds((prev) => {
-        const next = new Set(prev);
-        next.delete(sessionId);
-        return next;
-      });
-
-      if (!response.ok && response.status !== 404) {
-        // Log non-404 errors but still proceed with UI cleanup
-        const data = await response.json().catch(() => ({}));
-        logger.error('Server failed to kill session:', data.error || response.statusText);
-      }
-
-      // Refresh session count
-      fetchServerSettings();
-    } catch (err) {
-      logger.error('Kill session error:', err);
-      // Still remove from UI on network error - better UX than leaving broken terminal
-      removeTerminalFromLayout(sessionId);
-      // Clean up stale entries for killed sessions (same cleanup as try block)
-      setSessionCommandOverrides((prev) => {
-        const next = new Map(prev);
-        next.delete(sessionId);
-        return next;
-      });
-      setNewSessionIds((prev) => {
-        const next = new Set(prev);
-        next.delete(sessionId);
-        return next;
-      });
-    }
+  const killTerminal = async (sessionId: string): Promise<boolean> => {
+    const headers: Record<string, string> = {};
+    if (terminalState.authToken) headers['X-Terminal-Token'] = terminalState.authToken;
+    const stopped = await stopTerminalSession(sessionId, {
+      request: (id) =>
+        apiDeleteRaw(`/api/terminal/sessions/${encodeURIComponent(id)}`, { headers }),
+      remove: (id) => {
+        removeTerminalFromLayout(id);
+        setSessionCommandOverrides((prev) => {
+          const next = new Map(prev);
+          next.delete(id);
+          return next;
+        });
+        setNewSessionIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      },
+      failed: () => {
+        toast.error(translate('Terminal cleanup could not be confirmed'), {
+          description: translate('The terminal was kept for retry. No new shell was started.'),
+        });
+      },
+    });
+    if (stopped) void fetchServerSettings();
+    return stopped;
   };
 
   // Kill all terminals in a tab and then remove the tab
@@ -1227,42 +1201,7 @@ export function TerminalView({
 
     const sessionIds = collectSessionIds(tab.layout);
 
-    // Kill all sessions on the server
-    const headers: Record<string, string> = {};
-    if (terminalState.authToken) {
-      headers['X-Terminal-Token'] = terminalState.authToken;
-    }
-
-    await Promise.all(
-      sessionIds.map(async (sessionId) => {
-        try {
-          await apiDeleteRaw(`/api/terminal/sessions/${sessionId}`, { headers });
-        } catch (err) {
-          logger.error(`Failed to kill session ${sessionId}:`, err);
-        }
-      })
-    );
-
-    // Clean up stale entries for all killed sessions in this tab
-    setSessionCommandOverrides((prev) => {
-      const next = new Map(prev);
-      for (const sessionId of sessionIds) {
-        next.delete(sessionId);
-      }
-      return next;
-    });
-    setNewSessionIds((prev) => {
-      const next = new Set(prev);
-      for (const sessionId of sessionIds) {
-        next.delete(sessionId);
-      }
-      return next;
-    });
-
-    // Now remove the tab from state
-    removeTerminalTab(tabId);
-    // Refresh session count
-    fetchServerSettings();
+    await stopTerminalTab(sessionIds, killTerminal, () => removeTerminalTab(tabId));
   };
 
   // NOTE: Terminal keyboard shortcuts (Alt+D, Alt+S, Alt+W) are handled in

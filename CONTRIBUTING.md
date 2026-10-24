@@ -138,20 +138,20 @@ Before contributing to Automaker, ensure you have the following installed on you
 
 **Common development commands:**
 
-| Command                  | Description                      |
-| ------------------------ | -------------------------------- |
-| `npm run dev`            | Interactive development launcher |
-| `npm run dev:web`        | Start in browser mode            |
-| `npm run dev:electron`   | Start desktop app                |
-| `npm run build`          | Build all packages and apps      |
-| `npm run build:packages` | Build shared packages only       |
-| `npm run lint`           | Run ESLint checks                |
-| `npm run format`         | Format code with Prettier        |
-| `npm run format:check`   | Check formatting without changes |
-| `npm run test`           | Run E2E tests (Playwright)       |
-| `npm run test:server`    | Run server unit tests            |
-| `npm run test:packages`  | Run package tests                |
-| `npm run test:all`       | Run all tests                    |
+| Command                  | Description                        |
+| ------------------------ | ---------------------------------- |
+| `npm run dev`            | Interactive development launcher   |
+| `npm run dev:web`        | Start in browser mode              |
+| `npm run dev:electron`   | Start desktop app                  |
+| `npm run build`          | Build all packages and apps        |
+| `npm run build:packages` | Build shared packages only         |
+| `npm run lint`           | Run ESLint checks                  |
+| `npm run format`         | Format code with Prettier          |
+| `npm run format:check`   | Check formatting without changes   |
+| `npm run test`           | Run E2E tests (Playwright)         |
+| `npm run test:server`    | Run server unit and contract tests |
+| `npm run test:packages`  | Run package tests                  |
+| `npm run test:all`       | Run all tests                      |
 
 ### Project Structure
 
@@ -161,7 +161,7 @@ Automaker is organized as an npm workspace monorepo:
 automaker/
 ├── apps/
 │   ├── ui/              # React + Vite + Electron frontend
-│   └── server/          # Express + WebSocket backend
+│   └── server/          # NestJS HTTP + raw WebSocket backend
 ├── libs/
 │   ├── @automaker/types/            # Shared TypeScript types
 │   ├── @automaker/utils/            # Utility functions
@@ -180,6 +180,10 @@ automaker/
 - Frontend code lives in `apps/ui/`
 - Backend code lives in `apps/server/`
 - Shared logic should be in the appropriate `libs/` package
+
+Backend changes follow the [backend architecture guide](docs/backend-architecture.md).
+It describes native module ownership, filesystem and execution ports, shutdown
+ordering, API compatibility and the checks required before committing a change.
 
 ---
 

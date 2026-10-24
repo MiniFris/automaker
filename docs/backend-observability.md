@@ -42,6 +42,12 @@ records with `correlationId`, a generated `operationId`, outcome and duration.
 Provider prompts, output and raw exceptions are not included in these records.
 Consumers that start work outside an HTTP context have no invented HTTP id.
 
+The global HTTP exception filter logs only status, a fixed error category and
+correlation id for unexpected/server failures. It does not log exception messages,
+stacks or arbitrary thrown objects: credentials and prompts can occur inside plain
+strings where key-based redaction cannot remove them reliably. Existing safe error
+envelopes and intentional domain/HTTP error responses keep their wire behavior.
+
 This supplies local structured correlation. It does not implement distributed
 tracing, external trace export, execution transport spans or a persistent job/run
 index. Existing provider/application logs are not all normalized by this slice.

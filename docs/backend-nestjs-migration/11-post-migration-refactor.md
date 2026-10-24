@@ -120,8 +120,12 @@ API v13, wire contracts, persisted formats и execution bindings не меняю
       Download/prompt и legacy Electron import затем получили scoped ports;
       agent stores/recovery — ordered drain и atomic state transactions.
       См. [agent/recovery checkpoint](artifacts/agent-storage-recovery-session-checkpoint.md).
-      Остальные unscoped consumers (notification/history, auth storage, provider
-      cache, validation storage) и coordination ещё требуют переноса;
+      Notification/history, auth storage и Codex model cache затем получили
+      scoped FS и drain до filesystem barrier; см.
+      [native stores checkpoint](artifacts/native-stores-terminal-cleanup-checkpoint.md).
+      Остальные unscoped consumers (validation storage, dev/test preflight,
+      settings agent discovery, worktree metadata и terminal platform helpers)
+      и coordination ещё требуют переноса;
       общий checkbox пока не закрывается.
 - [ ] Filesystem repositories.
 - [ ] Git local/remote adapters.

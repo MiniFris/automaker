@@ -1,4 +1,6 @@
 {
+  "Terminal cleanup could not be confirmed": "Terminal cleanup could not be confirmed",
+  "The terminal was kept for retry. No new shell was started.": "The terminal was kept for retry. No new shell was started.",
   "\n{value1} Task completed: {value2}\n": "\n{value1} Task completed: {value2}\n",
   "\n⏸️ Plan generated - waiting for your approval...\n": "\n⏸️ Plan generated - waiting for your approval...\n",
   "\n▶ Starting {value1}: {value2}\n": "\n▶ Starting {value1}: {value2}\n",

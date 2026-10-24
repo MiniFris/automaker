@@ -5,9 +5,11 @@ import { AuthService } from './auth.service.js';
 import { AuthStateRepository } from './auth-state.repository.js';
 import { LoginAttemptStore } from './login-attempt.store.js';
 import { AuthController } from './auth.controller.js';
+import { SecurityModule } from '../security/security.module.js';
 
 @Global()
 @Module({
+  imports: [SecurityModule],
   controllers: [AuthController],
   providers: [
     AuthStateRepository,

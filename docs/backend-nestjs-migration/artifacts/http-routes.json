@@ -3689,7 +3689,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 52,
+      "line": 53,
       "middleware": [
         "TerminalController.authenticate"
       ],
@@ -3704,7 +3704,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 62,
+      "line": 63,
       "middleware": [
         "TerminalController.logout"
       ],
@@ -3719,7 +3719,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 180,
+      "line": 188,
       "middleware": [
         "TerminalController.resize"
       ],
@@ -3734,7 +3734,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 167,
+      "line": 168,
       "middleware": [
         "TerminalController.deleteSession"
       ],
@@ -3749,7 +3749,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 79,
+      "line": 80,
       "middleware": [
         "TerminalController.session"
       ],
@@ -3764,7 +3764,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 73,
+      "line": 74,
       "middleware": [
         "TerminalController.sessions"
       ],
@@ -3779,7 +3779,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 112,
+      "line": 113,
       "middleware": [
         "TerminalController.createSession"
       ],
@@ -3794,7 +3794,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 202,
+      "line": 210,
       "middleware": [
         "TerminalController.settings"
       ],
@@ -3809,7 +3809,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 214,
+      "line": 222,
       "middleware": [
         "TerminalController.updateSettings"
       ],
@@ -3824,7 +3824,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 40,
+      "line": 41,
       "middleware": [
         "TerminalController.status"
       ],

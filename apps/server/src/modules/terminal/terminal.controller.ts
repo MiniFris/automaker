@@ -23,6 +23,7 @@ import type { Request, Response } from 'express';
 import { AllowedPathFields, AllowedPathGuard } from '../../core/security/index.js';
 import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
 import { ExecutionEnvironmentError } from '../../services/execution-environment/runtime.js';
+import { terminalCleanupError } from '../../services/terminal-session-lifecycle.js';
 import {
   MAX_MAX_SESSIONS,
   MIN_MAX_SESSIONS,
@@ -166,15 +167,22 @@ export class TerminalController {
 
   @Delete('sessions/:id')
   @UseGuards(TerminalAccessGuard)
-  deleteSession(
+  async deleteSession(
     @Param('id', new ZodValidationPipe(TerminalSessionIdSchema)) id: string,
     @Res() response: Response
   ) {
-    if (!this.terminal.killSession(id)) {
-      response.status(404).json({ success: false, error: 'Session not found' });
-      return;
+    try {
+      if (!(await this.terminal.stopSession(id))) {
+        response.status(404).json({ success: false, error: 'Session not found' });
+        return;
+      }
+      response.json({ success: true });
+    } catch {
+      const error = terminalCleanupError();
+      response
+        .status(503)
+        .json({ success: false, errorCode: 'UNAVAILABLE', code: error.code, error: error.message });
     }
-    response.json({ success: true });
   }
 
   @Post('sessions/:id/resize')

@@ -1,4 +1,5 @@
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, rm, writeFile, readFile, unlink } from 'node:fs/promises';
+import * as filesystem from '../../../src/lib/secure-fs.js';
 import os from 'node:os';
 import path from 'node:path';
 import { expect, it } from 'vitest';
@@ -12,14 +13,25 @@ it.each([false, true])(
   async (malformed) => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'automaker-notification-default-'));
     try {
-      const first = new NotificationService(),
-        second = new NotificationService();
+      const first = new NotificationService(filesystem, path.resolve),
+        second = new NotificationService(filesystem, path.resolve);
       const one = path.join(directory, 'one'),
         two = path.join(directory, 'two');
       if (malformed) {
         const file = getNotificationsPath(two);
         await mkdir(path.dirname(file), { recursive: true });
         await writeFile(file, '{');
+        await expect(second.getNotifications(two)).rejects.toBeInstanceOf(SyntaxError);
+        await expect(
+          second.createNotification({
+            projectPath: two,
+            type: 'agent_complete',
+            title: 'Blocked',
+            message: 'No overwrite',
+          })
+        ).rejects.toBeInstanceOf(SyntaxError);
+        expect(await readFile(file, 'utf8')).toBe('{');
+        await unlink(file);
       }
       const notification = await first.createNotification({
         projectPath: one,
@@ -50,14 +62,20 @@ it.each([false, true])(
   async (malformed) => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'automaker-event-default-'));
     try {
-      const first = new EventHistoryService(),
-        second = new EventHistoryService();
+      const first = new EventHistoryService(filesystem, path.resolve),
+        second = new EventHistoryService(filesystem, path.resolve);
       const one = path.join(directory, 'one'),
         two = path.join(directory, 'two');
       if (malformed) {
         const file = getEventHistoryIndexPath(two);
         await mkdir(path.dirname(file), { recursive: true });
         await writeFile(file, '{');
+        await expect(second.getEvents(two)).rejects.toBeInstanceOf(SyntaxError);
+        await expect(
+          second.storeEvent({ projectPath: two, trigger: 'feature_success' })
+        ).rejects.toBeInstanceOf(SyntaxError);
+        expect(await readFile(file, 'utf8')).toBe('{');
+        await unlink(file);
       }
       const event = await first.storeEvent({ projectPath: one, trigger: 'feature_created' });
       expect(await second.getEvents(two)).toEqual([]);

@@ -1,9 +1,22 @@
 import { Inject, Injectable, type OnApplicationShutdown, type OnModuleInit } from '@nestjs/common';
 import crypto from 'node:crypto';
 import path from 'node:path';
+import { performance } from 'node:perf_hooks';
 import { createLogger } from '@automaker/utils';
 import * as secureFs from '../../lib/secure-fs.js';
 import { RUNTIME_CONFIG, type RuntimeConfig } from '../config/index.js';
+import { SECURE_FILESYSTEM } from '../security/security.module.js';
+
+export type AuthFilesystem = Pick<
+  typeof secureFs,
+  'readFile' | 'mkdir' | 'writeFile' | 'rename' | 'unlink'
+>;
+export class AuthStateCleanupError extends Error {
+  readonly code = 'AUTH_STATE_CLEANUP_FAILED';
+  constructor() {
+    super('Authentication storage cleanup could not be confirmed.');
+  }
+}
 
 export const SESSION_COOKIE_NAME = 'automaker_session';
 export const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -19,20 +32,43 @@ export class AuthStateRepository implements OnModuleInit, OnApplicationShutdown 
   private readonly wsTokens = new Map<string, Session>();
   private pendingWrite: Promise<unknown> = Promise.resolve();
   private closed = false;
+  private shutdown?: Promise<void>;
 
-  constructor(@Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig) {}
+  constructor(
+    @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig,
+    @Inject(SECURE_FILESYSTEM) private readonly filesystem: AuthFilesystem = secureFs
+  ) {}
 
   async onModuleInit(): Promise<void> {
     this.apiKey = await this.loadApiKey();
     await this.loadSessions();
   }
 
-  async onApplicationShutdown(): Promise<void> {
+  beforeApplicationShutdown(): Promise<void> {
+    return this.close();
+  }
+
+  onApplicationShutdown(): Promise<void> {
+    return this.close();
+  }
+
+  private close(): Promise<void> {
+    if (this.shutdown) return this.shutdown;
     this.closed = true;
-    await this.pendingWrite;
-    this.sessions.clear();
-    this.wsTokens.clear();
-    this.apiKey = undefined;
+    const deadline = performance.now() + 5000;
+    let timer: NodeJS.Timeout | undefined;
+    this.shutdown = Promise.race([
+      this.pendingWrite.then(() => {
+        if (performance.now() >= deadline) throw new AuthStateCleanupError();
+        this.sessions.clear();
+        this.wsTokens.clear();
+        this.apiKey = undefined;
+      }),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new AuthStateCleanupError()), 5000);
+      }),
+    ]).finally(() => clearTimeout(timer));
+    return this.shutdown;
   }
 
   validateApiKey(candidate: string): boolean {
@@ -118,21 +154,21 @@ export class AuthStateRepository implements OnModuleInit, OnApplicationShutdown 
     if (this.config.auth.apiKey) return this.config.auth.apiKey;
     const file = path.join(this.config.storage.dataDirectory, '.api-key');
     try {
-      const key = String(await secureFs.readFile(file, 'utf8')).trim();
+      const key = String(await this.filesystem.readFile(file, 'utf8')).trim();
       if (!key) throw new Error('The saved authentication API key is empty.');
       return key;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
     }
-    await secureFs.mkdir(this.config.storage.dataDirectory, { recursive: true });
+    await this.filesystem.mkdir(this.config.storage.dataDirectory, { recursive: true });
     const key = crypto.randomUUID();
     try {
-      await secureFs.writeFile(file, key, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
+      await this.filesystem.writeFile(file, key, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
       logger.info('Generated authentication API key in DATA_DIR/.api-key.');
       return key;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
-      const existing = String(await secureFs.readFile(file, 'utf8')).trim();
+      const existing = String(await this.filesystem.readFile(file, 'utf8')).trim();
       if (!existing) throw new Error('The saved authentication API key is empty.');
       return existing;
     }
@@ -141,7 +177,7 @@ export class AuthStateRepository implements OnModuleInit, OnApplicationShutdown 
   private async loadSessions(): Promise<void> {
     let entries: unknown;
     try {
-      entries = JSON.parse(String(await secureFs.readFile(this.sessionsFile, 'utf8')));
+      entries = JSON.parse(String(await this.filesystem.readFile(this.sessionsFile, 'utf8')));
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
       if (error instanceof SyntaxError) {
@@ -170,17 +206,17 @@ export class AuthStateRepository implements OnModuleInit, OnApplicationShutdown 
   }
 
   private async writeSessions(sessions: ReadonlyMap<string, Session>): Promise<void> {
-    await secureFs.mkdir(this.config.storage.dataDirectory, { recursive: true });
+    await this.filesystem.mkdir(this.config.storage.dataDirectory, { recursive: true });
     const temporary = `${this.sessionsFile}.${crypto.randomUUID()}.tmp`;
     try {
-      await secureFs.writeFile(temporary, JSON.stringify([...sessions]), {
+      await this.filesystem.writeFile(temporary, JSON.stringify([...sessions]), {
         encoding: 'utf8',
         mode: 0o600,
         flag: 'wx',
       });
-      await secureFs.rename(temporary, this.sessionsFile);
+      await this.filesystem.rename(temporary, this.sessionsFile);
     } finally {
-      await secureFs.unlink(temporary).catch((error: NodeJS.ErrnoException) => {
+      await this.filesystem.unlink(temporary).catch((error: NodeJS.ErrnoException) => {
         if (error.code !== 'ENOENT')
           logger.warn('Failed to remove authentication store temp file.');
       });

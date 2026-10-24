@@ -1,4 +1,6 @@
 import path from 'path';
+import { randomUUID } from 'node:crypto';
+import { performance } from 'node:perf_hooks';
 import { secureFs } from '@automaker/platform';
 import { createLogger } from '@automaker/utils';
 import type { AppServerModel } from '@automaker/types';
@@ -7,8 +9,24 @@ import {
   type CodexAppServerService,
 } from './codex-app-server-service.js';
 import type { OnApplicationShutdown } from '@nestjs/common';
+import { UnavailableDomainError } from '../core/errors/index.js';
 
 const logger = createLogger('CodexModelCache');
+export type CodexModelCacheFilesystem = Pick<
+  typeof secureFs,
+  'readFile' | 'writeFile' | 'rename' | 'unlink' | 'mkdir'
+>;
+export class CodexModelCacheStorageError extends UnavailableDomainError {
+  constructor(readonly operation: 'read' | 'write') {
+    super('Codex model cache storage unavailable.');
+  }
+}
+export class CodexModelCacheCleanupError extends Error {
+  readonly code = 'CODEX_MODEL_CACHE_CLEANUP_FAILED';
+  constructor() {
+    super('Codex model cache cleanup could not be confirmed.');
+  }
+}
 
 /**
  * Codex model with UI-compatible format
@@ -42,7 +60,8 @@ interface CodexModelCache {
  * - Atomic file writes (temp file + rename)
  * - Thread-safe (deduplicates concurrent refresh requests)
  * - Optional background warmup owned by the Nest provider lifecycle
- * - Graceful fallback (returns empty array on errors)
+ * - Missing/malformed cache fallback and empty results when the provider is unavailable
+ * - Storage failures propagate without reporting a successful refresh
  */
 export class CodexModelCacheService implements OnApplicationShutdown {
   private cacheFilePath: string;
@@ -55,7 +74,8 @@ export class CodexModelCacheService implements OnApplicationShutdown {
   constructor(
     dataDir: string,
     appServerService: CodexAppServerService,
-    ttl: number = 3600000 // 1 hour default
+    ttl: number = 3600000, // 1 hour default
+    private readonly filesystem: CodexModelCacheFilesystem = secureFs
   ) {
     this.cacheFilePath = path.join(dataDir, 'codex-models-cache.json');
     this.ttl = ttl;
@@ -151,18 +171,38 @@ export class CodexModelCacheService implements OnApplicationShutdown {
     logger.info('[clearCache] Clearing cache...');
 
     try {
-      await secureFs.unlink(this.cacheFilePath);
+      await this.filesystem.unlink(this.cacheFilePath);
       logger.info('[clearCache] Cache cleared');
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        logger.error('[clearCache] Failed to clear cache:', error);
+        logger.error('[clearCache] Failed to clear cache.');
+        throw new CodexModelCacheStorageError('write');
       }
     }
   }
 
   onApplicationShutdown(): Promise<void> {
-    this.closing ??= Promise.allSettled([...this.active]).then(() => undefined);
+    return this.close();
+  }
+
+  private close(): Promise<void> {
+    if (this.closing) return this.closing;
+    const deadline = performance.now() + 5000;
+    let timer: NodeJS.Timeout | undefined;
+    this.closing = Promise.race([
+      Promise.allSettled([...this.active]).then((results) => {
+        if (performance.now() >= deadline) throw new CodexModelCacheCleanupError();
+        const failure = results.find((result) => result.status === 'rejected');
+        if (failure?.status === 'rejected') throw failure.reason;
+      }),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new CodexModelCacheCleanupError()), 5000);
+      }),
+    ]).finally(() => clearTimeout(timer));
     return this.closing;
+  }
+  beforeApplicationShutdown(): Promise<void> {
+    return this.close();
   }
 
   private track<T>(operation: () => Promise<T>): Promise<T> {
@@ -203,7 +243,11 @@ export class CodexModelCacheService implements OnApplicationShutdown {
 
       return models;
     } catch (error) {
-      if (error instanceof CodexAppServerCleanupError) throw error;
+      if (
+        error instanceof CodexAppServerCleanupError ||
+        error instanceof CodexModelCacheStorageError
+      )
+        throw error;
       logger.error('[doRefresh] Refresh failed:', error);
       return [];
     }
@@ -246,21 +290,20 @@ export class CodexModelCacheService implements OnApplicationShutdown {
    */
   private async loadFromCache(): Promise<CodexModelCache | null> {
     try {
-      const content = await secureFs.readFile(this.cacheFilePath, 'utf-8');
+      const content = await this.filesystem.readFile(this.cacheFilePath, 'utf-8');
       const cache = JSON.parse(content.toString()) as CodexModelCache;
 
       // Validate cache structure
-      if (!Array.isArray(cache.models) || typeof cache.cachedAt !== 'number') {
+      if (!cache || !Array.isArray(cache.models) || typeof cache.cachedAt !== 'number') {
         logger.warn('[loadFromCache] Invalid cache structure, ignoring');
         return null;
       }
 
       return cache;
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        logger.warn('[loadFromCache] Failed to read cache:', error);
-      }
-      return null;
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT' || error instanceof SyntaxError)
+        return null;
+      throw new CodexModelCacheStorageError('read');
     }
   }
 
@@ -274,24 +317,30 @@ export class CodexModelCacheService implements OnApplicationShutdown {
       ttl: this.ttl,
     };
 
-    const tempPath = `${this.cacheFilePath}.tmp.${Date.now()}`;
+    const tempPath = `${this.cacheFilePath}.tmp.${randomUUID()}`;
 
     try {
       // Write to temp file
+      await this.filesystem.mkdir(path.dirname(this.cacheFilePath), { recursive: true });
       const content = JSON.stringify(cache, null, 2);
-      await secureFs.writeFile(tempPath, content, 'utf-8');
+      await this.filesystem.writeFile(tempPath, content, {
+        encoding: 'utf8',
+        mode: 0o600,
+        flag: 'wx',
+      });
 
       // Atomic rename
-      await secureFs.rename(tempPath, this.cacheFilePath);
-    } catch (error) {
-      logger.error('[saveToCache] Failed to save cache:', error);
+      await this.filesystem.rename(tempPath, this.cacheFilePath);
+    } catch {
+      logger.error('[saveToCache] Failed to save cache.');
 
       // Clean up temp file
       try {
-        await secureFs.unlink(tempPath);
+        await this.filesystem.unlink(tempPath);
       } catch {
         // Ignore cleanup errors
       }
+      throw new CodexModelCacheStorageError('write');
     }
   }
 }

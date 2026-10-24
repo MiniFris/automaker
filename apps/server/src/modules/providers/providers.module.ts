@@ -4,7 +4,11 @@ import { EVENT_BUS, type EventBus } from '../../core/eventing/index.js';
 import { ClaudeUsageService } from '../../services/claude-usage-service.js';
 import { CodexUsageService } from '../../services/codex-usage-service.js';
 import { CodexAppServerService } from '../../services/codex-app-server-service.js';
-import { CodexModelCacheService } from '../../services/codex-model-cache-service.js';
+import {
+  CodexModelCacheService,
+  type CodexModelCacheFilesystem,
+} from '../../services/codex-model-cache-service.js';
+import { SECURE_FILESYSTEM } from '../../core/security/security.module.js';
 import { GeminiUsageService } from '../../services/gemini-usage-service.js';
 import { ZaiUsageService } from '../../services/zai-usage-service.js';
 import { CodexModelWarmup, PROVIDER_STARTUP_TASKS } from './codex-model-warmup.service.js';
@@ -92,9 +96,12 @@ import {
     },
     {
       provide: CodexModelCacheService,
-      inject: [RuntimePathsService, CodexAppServerService],
-      useFactory: (paths: RuntimePathsService, appServer: CodexAppServerService) =>
-        new CodexModelCacheService(paths.dataDirectory, appServer),
+      inject: [RuntimePathsService, CodexAppServerService, SECURE_FILESYSTEM],
+      useFactory: (
+        paths: RuntimePathsService,
+        appServer: CodexAppServerService,
+        filesystem: CodexModelCacheFilesystem
+      ) => new CodexModelCacheService(paths.dataDirectory, appServer, undefined, filesystem),
     },
     {
       provide: GeminiUsageService,

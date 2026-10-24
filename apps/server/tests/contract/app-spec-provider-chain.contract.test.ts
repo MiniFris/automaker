@@ -13,6 +13,7 @@ import { secureFs } from '@automaker/platform';
 import type * as Filesystem from '../../src/lib/secure-fs.js';
 import { SettingsService } from '../../src/services/settings-service.js';
 import { NotificationService } from '../../src/services/notification-service.js';
+import * as notificationFilesystem from '../../src/lib/secure-fs.js';
 import { FeatureLoader } from '../../src/services/feature-loader.js';
 
 describe('spec to features provider workflow', () => {
@@ -63,7 +64,7 @@ describe('spec to features provider workflow', () => {
       const workflow = new NativeAppSpecWorkflow(
         events,
         settings,
-        new NotificationService(),
+        new NotificationService(notificationFilesystem, path.resolve),
         providers,
         new PlanningWorkflowContext(
           filesystem as unknown as typeof Filesystem,

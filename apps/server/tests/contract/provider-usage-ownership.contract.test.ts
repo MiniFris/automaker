@@ -191,18 +191,20 @@ it('waits for a real cache warmup and its disk write before completing Nest shut
     await module.init();
     await entered;
     const cacheShutdown = vi.spyOn(module.get(CodexModelCacheService), 'onApplicationShutdown');
+    const cacheDrain = vi.spyOn(module.get(CodexModelCacheService), 'beforeApplicationShutdown');
     const warmupShutdown = vi.spyOn(module.get(CodexModelWarmup), 'onApplicationShutdown');
     let stopped = false;
     const closing = module.close().then(() => {
       stopped = true;
     });
     await vi.waitFor(() => {
-      expect(warmupShutdown).toHaveBeenCalledOnce();
+      expect(cacheDrain).toHaveBeenCalledOnce();
     });
     expect(stopped).toBe(false);
     finish({ data: [], nextCursor: null });
     await closing;
     expect(stopped).toBe(true);
+    expect(warmupShutdown).toHaveBeenCalledOnce();
     expect(cacheShutdown).toHaveBeenCalledOnce();
     expect(
       JSON.parse(await readFile(path.join(directory, 'codex-models-cache.json'), 'utf8'))

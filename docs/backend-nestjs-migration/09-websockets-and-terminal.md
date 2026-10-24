@@ -25,8 +25,10 @@ Nest `WsAdapter`, но `/api/terminal/ws` имеет собственные со
 2026-10-24 в конце документа сохраняет результаты того запуска. Результаты wave 8 фиксируются основным агентом отдельно и не подменяют
 эти результаты artifact acceptance.
 
-Этап целиком не закрыт: подтверждение explicit stop/unknown и native filesystem
-boundary terminal остаются открытыми. Старые замечания audit о сохранённом
+Следующий срез реализовал подтверждение explicit stop/unknown и scoped native
+preflight рабочего каталога; см. [stop/preflight audit](artifacts/terminal-confirmed-stop-audit.md).
+Полный transport stress/backpressure и оставшиеся terminal environment/theme IO
+этим срезом не закрываются. Старые замечания audit о сохранённом
 `getTerminalService` больше не описывают текущий source: getter удалён; боевой
 lifecycle bridge также удалён, см.
 [native cutover](artifacts/native-cutover-checkpoint.md).
@@ -70,27 +72,25 @@ lifecycle bridge также удалён, см.
 - [x] Heartbeat loss не считается подтверждённым завершением remote process.
 - [x] Backend restart не replay startup command.
 - [x] Close browser tab не обязательно завершает shared terminal session.
-- [ ] Explicit delete/stop подтверждает cleanup либо возвращает unknown state.
-      Сейчас DELETE подтверждает только приём запроса; см. открытый пункт ниже.
+- [x] Explicit delete/stop подтверждает cleanup либо возвращает unknown state.
+      DELETE ждёт исходную PTY/group; при неподтверждённом cleanup — 503 с
+      сохранением identity. UI не удаляет failed panels и не пересоздаёт unknown.
 
-### Открытые terminal runtime boundaries
+### Terminal runtime boundaries
 
-- [ ] Довести explicit stop до подтверждённого cleanup либо явного unknown результата
-      в HTTP и UI. `apps/server/src/modules/terminal/terminal.controller.ts`
-      (`deleteSession`) возвращает 200 после boolean `killSession`, а
-      `apps/server/src/services/terminal-service.ts` (`killSession`) запускает
-      `lifecycle.close()` без ожидания и удерживает identity при ошибке.
-      `getAllSessions` не сообщает closing/unknown; UI
-      `apps/ui/src/components/views/terminal-view.tsx` удаляет layout даже при
-      HTTP/network failure. Существующие GET 503 и WS 4005 защищают от recreate,
-      но не подтверждают успешную остановку. Изменение должно сохранить различие
-      между принятым stop и реально завершённой PTY.
-- [ ] Передать native TerminalService явные application-owned filesystem/path/home
-      ports. `terminal-runtime.module.ts` пока передаёт только SettingsService и
-      maxSessions, а `terminal-service.ts:resolveWorkingDirectory` использует
-      `os.homedir()` и default `../lib/secure-fs.js.stat`. Это не тот экземпляр
-      `SECURE_FILESYSTEM`/SecurityService, который принадлежит конкретной Nest app.
-      PTY ownership и bounded cleanup уже реализованы; они не доказывают scoped IO.
+- [x] Довести explicit stop до подтверждённого cleanup либо явного unknown результата
+      в HTTP и UI. Native controller вызывает awaited `stopSession`; совместимый
+      boolean `killSession` остаётся для прежних внутренних callers. Actual PTY,
+      held cleanup, failed cleanup/retained identity и UI single/tab/restore
+      scenarios проверены в новом срезе.
+- [x] Передать native TerminalService явные application-owned filesystem/path/home
+      ports для preflight рабочего каталога. Native factory передаёт scoped FS,
+      SecurityService, RuntimePaths и snapshot home. Даже fallback проверяется
+      policy и stat; denied/EIO не запускают PTY. При отсутствующем/недоступном
+      HOME выбирается разрешённый root/working directory, без ambient home.
+- [ ] Завершить остальные terminal environment/theme/profile IO boundaries и
+      transport stress/backpressure acceptance. Preflight port не означает,
+      что все platform helpers TerminalService уже application-owned.
 
 ## 9.5. Shutdown
 

@@ -1,6 +1,11 @@
+import path from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const filesystem = vi.hoisted(() => ({
+  lstat: vi.fn().mockRejectedValue(Object.assign(new Error('Missing'), { code: 'ENOENT' })),
+  mkdir: vi.fn().mockResolvedValue(undefined),
+  access: vi.fn(),
+  copyFile: vi.fn(),
   readFile: vi.fn(),
   writeFile: vi.fn().mockResolvedValue(undefined),
   rename: vi.fn().mockResolvedValue(undefined),
@@ -31,7 +36,9 @@ describe('EventHistoryService retention', () => {
       })
     );
 
-    await expect(new EventHistoryService().getEvents('/project', { limit: 2 })).resolves.toEqual([
+    await expect(
+      new EventHistoryService(filesystem, path.resolve).getEvents('/project', { limit: 2 })
+    ).resolves.toEqual([
       expect.objectContaining({ id: 'new' }),
       expect.objectContaining({ id: 'middle' }),
     ]);
@@ -45,14 +52,14 @@ describe('EventHistoryService retention', () => {
     }));
     filesystem.readFile.mockResolvedValue(JSON.stringify({ version: 1, events }));
 
-    await new EventHistoryService().storeEvent({
+    await new EventHistoryService(filesystem, path.resolve).storeEvent({
       projectPath: '/project',
       trigger: 'feature_success',
     });
 
     expect(filesystem.unlink).toHaveBeenCalledWith('/project/events/event-999.json');
     const indexWrite = filesystem.writeFile.mock.calls.find(([filePath]) =>
-      String(filePath).startsWith('/project/events/index.json.tmp.')
+      String(filePath).startsWith('/project/events/index.json.write.')
     );
     expect(indexWrite).toBeDefined();
     const persisted = JSON.parse(String(indexWrite?.[1])) as { events: unknown[] };
@@ -70,7 +77,9 @@ describe('EventHistoryService retention', () => {
       })
     );
 
-    await expect(new EventHistoryService().clearEvents('/project')).resolves.toBe(2);
+    await expect(
+      new EventHistoryService(filesystem, path.resolve).clearEvents('/project')
+    ).resolves.toBe(2);
     expect(filesystem.unlink).toHaveBeenCalledWith('/project/events/one.json');
     expect(filesystem.unlink).toHaveBeenCalledWith('/project/events/two.json');
   });

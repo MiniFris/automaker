@@ -10,8 +10,8 @@
  */
 
 import { createLogger } from '@automaker/utils';
-import * as secureFs from '../lib/secure-fs.js';
-import { getNotificationsPath, ensureAutomakerDir } from '@automaker/platform';
+import { ProjectEventStorage, type ProjectEventFilesystem } from './project-event-storage.js';
+import { getNotificationsPath } from '@automaker/platform';
 import type { Notification, NotificationsFile, NotificationType } from '@automaker/types';
 import { DEFAULT_NOTIFICATIONS_FILE } from '@automaker/types';
 import type { EventEmitter } from '../lib/events.js';
@@ -20,42 +20,22 @@ import { Injectable } from '@nestjs/common';
 
 const logger = createLogger('NotificationService');
 
-/**
- * Atomic file write - write to temp file then rename
- */
-async function atomicWriteJson(filePath: string, data: unknown): Promise<void> {
-  const tempPath = `${filePath}.tmp.${Date.now()}`;
-  const content = JSON.stringify(data, null, 2);
-
-  try {
-    await secureFs.writeFile(tempPath, content, 'utf-8');
-    await secureFs.rename(tempPath, filePath);
-  } catch (error) {
-    // Clean up temp file if it exists
-    try {
-      await secureFs.unlink(tempPath);
-    } catch {
-      // Ignore cleanup errors
-    }
-    throw error;
-  }
-}
-
-/**
- * Safely read JSON file with fallback to default
- */
-async function readJsonFile<T>(filePath: string, defaultValue: T): Promise<T> {
-  try {
-    const content = (await secureFs.readFile(filePath, 'utf-8')) as string;
-    return JSON.parse(content) as T;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      return globalThis.structuredClone(defaultValue);
-    }
-    logger.error(`Error reading ${filePath}:`, error);
-    return globalThis.structuredClone(defaultValue);
-  }
-}
+const validNotifications = (value: unknown): value is NotificationsFile => {
+  const file = value as Partial<NotificationsFile> | null;
+  return (
+    !!file &&
+    file.version === 1 &&
+    Array.isArray(file.notifications) &&
+    file.notifications.every(
+      (item) =>
+        !!item &&
+        typeof item.id === 'string' &&
+        typeof item.createdAt === 'string' &&
+        typeof item.read === 'boolean' &&
+        typeof item.dismissed === 'boolean'
+    )
+  );
+};
 
 /**
  * Input for creating a new notification
@@ -77,6 +57,15 @@ export interface CreateNotificationInput {
 @Injectable()
 export class NotificationService {
   private events: EventEmitter | null = null;
+  private readonly storage: ProjectEventStorage;
+
+  constructor(filesystem: ProjectEventFilesystem, canonicalProject: (project: string) => string) {
+    this.storage = new ProjectEventStorage(filesystem, 'Notification', canonicalProject);
+  }
+
+  beforeApplicationShutdown(): Promise<void> {
+    return this.storage.close();
+  }
 
   /**
    * Set the event emitter for broadcasting notification events
@@ -92,15 +81,18 @@ export class NotificationService {
    * @returns Promise resolving to array of notifications
    */
   async getNotifications(projectPath: string): Promise<Notification[]> {
-    const notificationsPath = getNotificationsPath(projectPath);
-    const file = await readJsonFile<NotificationsFile>(
-      notificationsPath,
-      DEFAULT_NOTIFICATIONS_FILE
-    );
-    // Filter out dismissed notifications and sort by date (newest first)
-    return file.notifications
-      .filter((n) => !n.dismissed)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return this.storage.run(projectPath, async () => {
+      const notificationsPath = getNotificationsPath(projectPath);
+      const file = await this.storage.read<NotificationsFile>(
+        notificationsPath,
+        DEFAULT_NOTIFICATIONS_FILE,
+        validNotifications
+      );
+      // Filter out dismissed notifications and sort by date (newest first)
+      return file.notifications
+        .filter((n) => !n.dismissed)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    });
   }
 
   /**
@@ -121,40 +113,40 @@ export class NotificationService {
    * @returns Promise resolving to the created notification
    */
   async createNotification(input: CreateNotificationInput): Promise<Notification> {
-    const { projectPath, type, title, message, featureId } = input;
+    return this.storage.run(input.projectPath, async () => {
+      const { projectPath, type, title, message, featureId } = input;
 
-    // Ensure automaker directory exists
-    await ensureAutomakerDir(projectPath);
+      const notificationsPath = getNotificationsPath(projectPath);
+      const file = await this.storage.read<NotificationsFile>(
+        notificationsPath,
+        DEFAULT_NOTIFICATIONS_FILE,
+        validNotifications
+      );
 
-    const notificationsPath = getNotificationsPath(projectPath);
-    const file = await readJsonFile<NotificationsFile>(
-      notificationsPath,
-      DEFAULT_NOTIFICATIONS_FILE
-    );
+      const notification: Notification = {
+        id: randomUUID(),
+        type,
+        title,
+        message,
+        createdAt: new Date().toISOString(),
+        read: false,
+        dismissed: false,
+        featureId,
+        projectPath,
+      };
 
-    const notification: Notification = {
-      id: randomUUID(),
-      type,
-      title,
-      message,
-      createdAt: new Date().toISOString(),
-      read: false,
-      dismissed: false,
-      featureId,
-      projectPath,
-    };
+      file.notifications.push(notification);
+      await this.storage.write(notificationsPath, file);
 
-    file.notifications.push(notification);
-    await atomicWriteJson(notificationsPath, file);
+      logger.info(`Created notification: ${title} for project ${projectPath}`);
 
-    logger.info(`Created notification: ${title} for project ${projectPath}`);
+      // Emit event for real-time updates
+      if (this.events) {
+        this.events.emit('notification:created', notification);
+      }
 
-    // Emit event for real-time updates
-    if (this.events) {
-      this.events.emit('notification:created', notification);
-    }
-
-    return notification;
+      return notification;
+    });
   }
 
   /**
@@ -165,22 +157,25 @@ export class NotificationService {
    * @returns Promise resolving to the updated notification or null if not found
    */
   async markAsRead(projectPath: string, notificationId: string): Promise<Notification | null> {
-    const notificationsPath = getNotificationsPath(projectPath);
-    const file = await readJsonFile<NotificationsFile>(
-      notificationsPath,
-      DEFAULT_NOTIFICATIONS_FILE
-    );
+    return this.storage.run(projectPath, async () => {
+      const notificationsPath = getNotificationsPath(projectPath);
+      const file = await this.storage.read<NotificationsFile>(
+        notificationsPath,
+        DEFAULT_NOTIFICATIONS_FILE,
+        validNotifications
+      );
 
-    const notification = file.notifications.find((n) => n.id === notificationId);
-    if (!notification) {
-      return null;
-    }
+      const notification = file.notifications.find((n) => n.id === notificationId);
+      if (!notification) {
+        return null;
+      }
 
-    notification.read = true;
-    await atomicWriteJson(notificationsPath, file);
+      notification.read = true;
+      await this.storage.write(notificationsPath, file);
 
-    logger.info(`Marked notification ${notificationId} as read`);
-    return notification;
+      logger.info(`Marked notification ${notificationId} as read`);
+      return notification;
+    });
   }
 
   /**
@@ -190,26 +185,29 @@ export class NotificationService {
    * @returns Promise resolving to number of notifications marked as read
    */
   async markAllAsRead(projectPath: string): Promise<number> {
-    const notificationsPath = getNotificationsPath(projectPath);
-    const file = await readJsonFile<NotificationsFile>(
-      notificationsPath,
-      DEFAULT_NOTIFICATIONS_FILE
-    );
+    return this.storage.run(projectPath, async () => {
+      const notificationsPath = getNotificationsPath(projectPath);
+      const file = await this.storage.read<NotificationsFile>(
+        notificationsPath,
+        DEFAULT_NOTIFICATIONS_FILE,
+        validNotifications
+      );
 
-    let count = 0;
-    for (const notification of file.notifications) {
-      if (!notification.read && !notification.dismissed) {
-        notification.read = true;
-        count++;
+      let count = 0;
+      for (const notification of file.notifications) {
+        if (!notification.read && !notification.dismissed) {
+          notification.read = true;
+          count++;
+        }
       }
-    }
 
-    if (count > 0) {
-      await atomicWriteJson(notificationsPath, file);
-      logger.info(`Marked ${count} notifications as read`);
-    }
+      if (count > 0) {
+        await this.storage.write(notificationsPath, file);
+        logger.info(`Marked ${count} notifications as read`);
+      }
 
-    return count;
+      return count;
+    });
   }
 
   /**
@@ -220,22 +218,25 @@ export class NotificationService {
    * @returns Promise resolving to true if notification was dismissed
    */
   async dismissNotification(projectPath: string, notificationId: string): Promise<boolean> {
-    const notificationsPath = getNotificationsPath(projectPath);
-    const file = await readJsonFile<NotificationsFile>(
-      notificationsPath,
-      DEFAULT_NOTIFICATIONS_FILE
-    );
+    return this.storage.run(projectPath, async () => {
+      const notificationsPath = getNotificationsPath(projectPath);
+      const file = await this.storage.read<NotificationsFile>(
+        notificationsPath,
+        DEFAULT_NOTIFICATIONS_FILE,
+        validNotifications
+      );
 
-    const notification = file.notifications.find((n) => n.id === notificationId);
-    if (!notification) {
-      return false;
-    }
+      const notification = file.notifications.find((n) => n.id === notificationId);
+      if (!notification) {
+        return false;
+      }
 
-    notification.dismissed = true;
-    await atomicWriteJson(notificationsPath, file);
+      notification.dismissed = true;
+      await this.storage.write(notificationsPath, file);
 
-    logger.info(`Dismissed notification ${notificationId}`);
-    return true;
+      logger.info(`Dismissed notification ${notificationId}`);
+      return true;
+    });
   }
 
   /**
@@ -245,25 +246,28 @@ export class NotificationService {
    * @returns Promise resolving to number of notifications dismissed
    */
   async dismissAll(projectPath: string): Promise<number> {
-    const notificationsPath = getNotificationsPath(projectPath);
-    const file = await readJsonFile<NotificationsFile>(
-      notificationsPath,
-      DEFAULT_NOTIFICATIONS_FILE
-    );
+    return this.storage.run(projectPath, async () => {
+      const notificationsPath = getNotificationsPath(projectPath);
+      const file = await this.storage.read<NotificationsFile>(
+        notificationsPath,
+        DEFAULT_NOTIFICATIONS_FILE,
+        validNotifications
+      );
 
-    let count = 0;
-    for (const notification of file.notifications) {
-      if (!notification.dismissed) {
-        notification.dismissed = true;
-        count++;
+      let count = 0;
+      for (const notification of file.notifications) {
+        if (!notification.dismissed) {
+          notification.dismissed = true;
+          count++;
+        }
       }
-    }
 
-    if (count > 0) {
-      await atomicWriteJson(notificationsPath, file);
-      logger.info(`Dismissed ${count} notifications`);
-    }
+      if (count > 0) {
+        await this.storage.write(notificationsPath, file);
+        logger.info(`Dismissed ${count} notifications`);
+      }
 
-    return count;
+      return count;
+    });
   }
 }

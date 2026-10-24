@@ -22,13 +22,17 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       (exception instanceof HttpException ? exception.getStatus() : this.readStatus(exception));
     const error = domainError?.message ?? this.readSafeMessage(exception, status);
     if (status >= 500)
-      logger.error(
-        'unexpected request error',
-        redactSecrets({
-          correlationId,
-          error: exception instanceof Error ? exception.message : exception,
-        })
-      );
+      // Arbitrary exception text can embed credentials, command arguments or prompts.
+      // Key-based object redaction cannot sanitize those values reliably.
+      logger.error('unexpected request error', {
+        correlationId,
+        status,
+        errorType: domainError
+          ? 'domain'
+          : exception instanceof HttpException
+            ? 'http'
+            : 'unexpected',
+      });
     const httpResponse = exception instanceof HttpException ? exception.getResponse() : undefined;
     if (httpResponse && typeof httpResponse === 'object' && !domainError) {
       response.status(status).json({
