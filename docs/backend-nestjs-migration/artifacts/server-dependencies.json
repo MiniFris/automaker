@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 601,
-    "internalEdges": 2001,
+    "files": 602,
+    "internalEdges": 2002,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -46,7 +46,7 @@
     "routes -> routes": 345,
     "routes -> services": 190,
     "routes -> types": 3,
-    "services -> core": 8,
+    "services -> core": 9,
     "services -> lib": 77,
     "services -> modules": 9,
     "services -> providers": 16,
@@ -316,16 +316,16 @@
     "node:child_process": 12,
     "node:crypto": 30,
     "node:fs": 7,
-    "node:fs/promises": 16,
+    "node:fs/promises": 17,
     "node:http": 7,
     "node:net": 2,
     "node:os": 9,
     "node:path": 47,
-    "node:perf_hooks": 2,
+    "node:perf_hooks": 3,
     "node:stream": 5,
     "node:stream/web": 2,
     "node:string_decoder": 3,
-    "node:timers/promises": 3,
+    "node:timers/promises": 4,
     "node:url": 3,
     "node:util": 13,
     "os": 14,
@@ -7672,6 +7672,10 @@
     {
       "source": "apps/server/src/services/execution-environment/feature-workspace.ts",
       "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/services/execution-environment/local.ts",
+      "target": "apps/server/src/core/platform/linux-process-group.ts"
     },
     {
       "source": "apps/server/src/services/execution-environment/local.ts",

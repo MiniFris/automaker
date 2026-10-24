@@ -3,6 +3,8 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import { constants, createReadStream } from 'node:fs';
+import { performance } from 'node:perf_hooks';
+import { waitForLinuxProcessGroupExit } from '../../core/platform/linux-process-group.js';
 import {
   ExecutionEnvironmentError,
   type ExecutionEnvironment,
@@ -214,9 +216,13 @@ export class LocalExecutionEnvironment implements ExecutionEnvironment {
       let exited = false;
       let cleanup: Promise<void> | undefined;
       let cleanupTimer: ReturnType<typeof setTimeout> | undefined;
+      let cleanupDeadline: number | undefined;
+      const cleanupController = new AbortController();
       const stop = () => {
         if (cleanup) return;
+        cleanupDeadline = performance.now() + 2000;
         cleanupTimer = setTimeout(() => {
+          cleanupController.abort();
           combined.removeEventListener('abort', stop);
           child.stdout.destroy();
           child.stderr.destroy();
@@ -245,13 +251,15 @@ export class LocalExecutionEnvironment implements ExecutionEnvironment {
               });
               killer.once('close', () => done());
             })
-          : Promise.resolve().then(() => {
+          : Promise.resolve().then(async () => {
               if (!child.pid) return;
               try {
                 process.kill(-child.pid, 'SIGKILL');
               } catch (error) {
                 if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error;
               }
+              if (process.platform === 'linux')
+                await waitForLinuxProcessGroupExit(child.pid, cleanupController.signal);
             });
         // Cleanup failures are awaited and reported by the close handler, never unhandled rejections.
         void cleanup.catch(() => {});
@@ -276,15 +284,20 @@ export class LocalExecutionEnvironment implements ExecutionEnvironment {
       if (combined.aborted) stop();
       child.once('close', (code) => {
         void (async () => {
-          clearTimeout(cleanupTimer);
-          combined.removeEventListener('abort', stop);
           try {
             await cleanup;
+            // An overdue timer may not have run yet after event-loop contention.
+            if (cleanupDeadline !== undefined && performance.now() >= cleanupDeadline)
+              throw new Error('Local cleanup deadline exceeded.');
           } catch {
             throw new ExecutionEnvironmentError(
               'PROCESS_CLEANUP_FAILED',
               'Local process cleanup failed; inspect running processes before retrying.'
             );
+          } finally {
+            clearTimeout(cleanupTimer);
+            combined.removeEventListener('abort', stop);
+            cleanupController.abort();
           }
           if (combined.aborted)
             throw new ExecutionEnvironmentError(

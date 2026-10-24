@@ -2202,7 +2202,7 @@ composition использует real Gemini passive hints/application credentia
   Copilot status, native setup keys, GitHub auth, Codex/Claude verification,
   Cursor permissions/disconnect, install guidance и два Agent chat workflows.
 
-## Открытая lifecycle regression, обнаруженная в этом срезе
+## Local exec lifecycle regression: обнаружение и исправление (2026-10-24)
 
 Первый полный server unit run упал в неизменённом
 `local-execution-environment.test.ts`:
@@ -2210,10 +2210,68 @@ composition использует real Gemini passive hints/application credentia
 После возврата `PROCESS_INTERRUPTED` `/proc/<fixture-pid>/status` ещё показывал
 `R (running)` с pending SIGKILL. Последующий read подтвердил отсутствие этого PID;
 изолированный recheck файла — 17 passed. Это не доказательство исправления.
-Linux branch `LocalExecutionEnvironment.exec().stop()` ждёт отправку SIGKILL,
-но не отдельно quiescence process group после root `close`. Требуется отдельный
-owned/bounded cleanup fix с deterministic tests, без ослабления текущего теста.
-Этап 7 и итоговая система не признаются завершёнными по повторному зелёному запуску.
+На момент обнаружения Linux branch `LocalExecutionEnvironment.exec().stop()`
+ждала отправку SIGKILL, но не отдельно quiescence process group после root `close`.
+
+Исправление: Local exec после сигнала ждёт новый read-only platform probe
+`waitForLinuxProcessGroupExit` для уже принадлежащей ему detached process group.
+Успешное подтверждение возможно после исчезновения группы либо terminal states
+всех наблюдаемых members/tasks. Linux stat fields сверены с
+[proc_pid_stat(5)](https://man7.org/linux/man-pages/man5/proc_pid_stat.5.html).
+Zombie leader не означает завершения остальных threads; недоступная task metadata
+при существующей группе считается неопределённостью, не успешным cleanup — см.
+[proc_pid_task(5)](https://man7.org/linux/man-pages/man5/proc_pid_task.5.html).
+
+Существующий двухсекундный watchdog теперь остаётся включённым до завершения
+observation, а не снимается при parent `close`. Deadline отменяет observer и
+возвращает `PROCESS_CLEANUP_FAILED`, не нормальный success/interrupted ack.
+Monotonic deadline проверяется и перед outcome, поэтому задержанный event-loop
+callback watchdog нельзя обойти поздним успешным observation.
+Root close по-прежнему обязателен; при успешно подтверждённом abort сохраняется
+`PROCESS_INTERRUPTED`. Ошибки observer не раскрывают command/process metadata.
+
+Probe посылает только signal 0 для проверки исходного group ID, не сигналит
+найденные PID. Numeric group 0/1 и invalid IDs отвергаются. Metadata reads идут
+batch-ами до 32, со stop signal между batch-ами и явными пределами enumeration.
+Пустое или недоступное наблюдение существующей группы не считается terminal.
+Обычные zombie members допустимы: reaping их новым родителем не принадлежит этому
+command owner. Никакой PID из прошлого упавшего запуска не используется для kill.
+
+Детерминированные tests отдельно держат observation после real shell close,
+проверяют обе ветви result/abort и сохранение watchdog после close. Unit fixtures
+покрывают живой thread при zombie leader, недоступные tasks, disappearing group,
+malformed stat, invalid group и отмену observation. Исходный real child/grandchild
+test не изменён и не получил дополнительного timeout/skip.
+
+Проверки исправления:
+
+- Targeted core/lifecycle/real Local exec: 41 passed (19 probe, 5 lifecycle,
+  17 исходных real filesystem/process cases).
+- Полный server unit run: 3535 passed, 40 existing skipped.
+- HTTP/WS contract run: 274 passed.
+- Shared/platform/UI packages: 1438 passed.
+- Production server build/lint, UI typecheck/lint и lifecycle SIGTERM/SIGINT smoke:
+  успешно. API version остаётся `11`, transport/protocol schemas не менялись.
+- Real SSH выборка Direct/CLI/SDK chat/restart: 3 passed, 34 отфильтрованы.
+- Docker acceptance с `automaker-nest-stage2-smoke:latest`: 11 passed,
+  4 opt-in skipped; owned cleanup checks успешны.
+- Chromium Agent chat / Running Agents stop / send-stream-reload: 2 passed.
+- Исходный тест реальных child/grandchild дополнительно запущен 25 раз без
+  изменения assertion/timeout; каждый запуск выбирает 1 case, 16 отфильтрованы.
+
+Первые прогоны новых fixture tests выявили ошибки именно тестового scheduler/model:
+Vitest fake timers не управляли `node:timers/promises`, а one-shot mock queue
+не вызывала нужный observation gate. Они заменены явным observation gate и
+исправленной очередью. Production test не ослаблен. Lint также потребовал явный
+Node `perf_hooks` import вместо неописанного ESLint global `performance`;
+сборка и targeted tests перепроверены после исправления.
+
+Граница: исправляется найденный Linux Local exec race для обычных потомков в
+принадлежащей command process group на читаемом procfs. Это не sandbox, не
+доказательство containment для deliberate setsid/process-group/privilege escapes
+и не complete provider/terminal cancellation audit. Windows/macOS реализация
+group termination этим Linux probe не сертифицируется. Этап 7 и вся миграция
+остаются незавершёнными по остальным gates.
 
 ## Тесты
 

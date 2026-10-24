@@ -325,3 +325,31 @@ legacy Google value общим Settings Save. Legacy credentials settings transp
 из-за длины ключа: настоящий verifier пока не реализован. Нельзя считать это
 завершённой provider acceptance. Остальные consumer/auth/lifecycle/security gates
 и unsafe downgrade, игнорирующий Google deletion metadata, остаются открытыми.
+
+## ADR-021: Linux Local exec acknowledgement после group quiescence
+
+Отправка SIGKILL и root `close` не являются достаточным доказательством завершения
+обычных дочерних процессов. Linux Local exec дополнительно ждёт read-only
+`waitForLinuxProcessGroupExit` для исходного owned detached group ID. Успешный
+result или `PROCESS_INTERRUPTED` выдаётся только после root close и наблюдаемого
+исчезновения группы либо terminal states её members/tasks. Сигналы найденным PID
+не отправляются; probe использует только signal 0 для исходной группы.
+
+`/proc/pid/stat` разбирается с учётом скобок/пробелов в comm; Linux stat pgrp и
+terminal state definitions следуют [Linux man-pages](https://man7.org/linux/man-pages/man5/proc_pid_stat.5.html).
+Наличие zombie leader не освобождает от проверки оставшихся threads. Недоступные
+tasks не считаются успешным cleanup: [task directory может стать недоступным после завершения main thread](https://man7.org/linux/man-pages/man5/proc_pid_task.5.html).
+При пустых/неопределённых наблюдениях существующей группы polling продолжается
+только до deadline владельца. Reads batched/bounded, observer отменяется сигналом.
+
+Существующий watchdog в 2 секунды остаётся включённым и после root close, пока
+observer не закончил работу. Deadline и read/permission/parse failures означают
+`PROCESS_CLEANUP_FAILED`, без раскрытия process metadata и без ложного terminal ack.
+Monotonic clock проверяется перед outcome независимо от своевременности callback
+watchdog в event loop.
+Таймаут не увеличивается ради теста; исходный реальный regression test сохранён.
+
+Это не sandbox и не containment deliberate session/group/privilege escapes.
+Предполагается читаемый procfs текущего PID namespace; Windows/macOS требуют
+своей acceptance. Изменение не сертифицирует все SDK/CLI/terminal cancellation
+paths, не меняет HTTP contracts/API version и не закрывает весь этап 7.

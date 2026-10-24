@@ -176,3 +176,12 @@ runners. Credentials реальных AI providers им не нужны.
   runner не зависит от свободности стандартных `3100–3119`.
 - Native Windows runner и browser executable в этом окружении отсутствуют; соответствующая
   fail-closed policy покрыта unit-тестами, browser-only smoke остаётся отдельным opt-in job.
+
+### Follow-up Linux Local exec cleanup (2026-10-24)
+
+После обнаружения race в этапе 7 усилен terminal acknowledgement Local exec:
+SIGKILL/root close дополняются bounded process-group/task quiescence probe.
+Исходный child/grandchild test сохранён без ослабления. Watchdog не снимается
+до observation, а monotonic deadline не позволяет поздний false success.
+Подробности, evidence и ограничения перечислены в
+[документе этапа 7](07-providers-and-agents.md#local-exec-lifecycle-regression-обнаружение-и-исправление-2026-10-24).
