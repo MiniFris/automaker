@@ -13,7 +13,7 @@ import {
 } from '@automaker/types';
 import { buildPromptWithImages, createLogger, isAuthenticationError } from '@automaker/utils';
 import { getFeatureDir } from '@automaker/platform';
-import * as secureFs from '../lib/secure-fs.js';
+import type { ExecutionFilesystem } from './execution-filesystem.js';
 import { TypedEventBus } from './typed-event-bus.js';
 import { FeatureStateManager } from './feature-state-manager.js';
 import { PlanApprovalService } from './plan-approval-service.js';
@@ -77,7 +77,8 @@ export class AgentExecutor {
     private eventBus: TypedEventBus,
     private featureStateManager: FeatureStateManager,
     private planApprovalService: PlanApprovalService,
-    private settingsService: SettingsService | null = null
+    private settingsService: SettingsService | null = null,
+    private readonly filesystem: ExecutionFilesystem
   ) {}
 
   private stateFor(
@@ -230,8 +231,8 @@ export class AgentExecutor {
     const writeToFile = async (): Promise<void> => {
       try {
         await this.write(options, async () => {
-          await secureFs.mkdir(path.dirname(outputPath), { recursive: true });
-          await secureFs.writeFile(
+          await this.filesystem.mkdir(path.dirname(outputPath), { recursive: true });
+          await this.filesystem.writeFile(
             outputPath,
             responseText +
               (directToolResults.length
@@ -249,8 +250,8 @@ export class AgentExecutor {
       if (!lines.length) return;
       try {
         await this.write(options, async () => {
-          await secureFs.mkdir(path.dirname(rawOutputPath), { recursive: true });
-          await secureFs.appendFile(rawOutputPath, lines.join('\n') + '\n');
+          await this.filesystem.mkdir(path.dirname(rawOutputPath), { recursive: true });
+          await this.filesystem.appendFile(rawOutputPath, lines.join('\n') + '\n');
         });
       } catch {
         /* Debug output must not override the execution outcome. */

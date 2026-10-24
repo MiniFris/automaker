@@ -1,4 +1,10 @@
 import {
+  TerminalCreateSessionSchema,
+  TerminalResizeSchema,
+  TerminalSessionIdSchema,
+  TerminalSettingsSchema,
+} from '@automaker/contracts/domains/terminal';
+import {
   Body,
   Controller,
   Delete,
@@ -14,6 +20,7 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { AllowedPathFields, AllowedPathGuard } from '../../core/security/index.js';
+import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
 import { ExecutionEnvironmentError } from '../../services/execution-environment/runtime.js';
 import {
   MAX_MAX_SESSIONS,
@@ -67,7 +74,10 @@ export class TerminalController {
 
   @Get('sessions/:id')
   @UseGuards(TerminalAccessGuard)
-  session(@Param('id') id: string, @Res() response: Response) {
+  session(
+    @Param('id', new ZodValidationPipe(TerminalSessionIdSchema)) id: string,
+    @Res() response: Response
+  ) {
     const session = this.terminal.getSession(id);
     if (session && this.terminal.isSessionClosing(id)) {
       response.status(503).json({
@@ -101,15 +111,7 @@ export class TerminalController {
   @AllowedPathFields('cwd?')
   async createSession(@Body() body: Record<string, unknown>, @Res() response: Response) {
     const { cwd, cols, rows, shell, environmentTargetId } = body ?? {};
-    if (
-      (cwd !== undefined && (typeof cwd !== 'string' || !cwd || cwd.includes('\0'))) ||
-      (shell !== undefined && typeof shell !== 'string') ||
-      (cols !== undefined &&
-        (!Number.isInteger(cols) || (cols as number) < 1 || (cols as number) > 1000)) ||
-      (rows !== undefined &&
-        (!Number.isInteger(rows) || (rows as number) < 1 || (rows as number) > 500)) ||
-      (environmentTargetId !== undefined && typeof environmentTargetId !== 'string')
-    ) {
+    if (!TerminalCreateSessionSchema.safeParse(body).success) {
       response.status(400).json({ success: false, error: 'Invalid terminal options' });
       return;
     }
@@ -160,7 +162,10 @@ export class TerminalController {
 
   @Delete('sessions/:id')
   @UseGuards(TerminalAccessGuard)
-  deleteSession(@Param('id') id: string, @Res() response: Response) {
+  deleteSession(
+    @Param('id', new ZodValidationPipe(TerminalSessionIdSchema)) id: string,
+    @Res() response: Response
+  ) {
     if (!this.terminal.killSession(id)) {
       response.status(404).json({ success: false, error: 'Session not found' });
       return;
@@ -172,19 +177,12 @@ export class TerminalController {
   @HttpCode(200)
   @UseGuards(TerminalAccessGuard)
   resize(
-    @Param('id') id: string,
+    @Param('id', new ZodValidationPipe(TerminalSessionIdSchema)) id: string,
     @Body() body: { cols?: unknown; rows?: unknown },
     @Res() response: Response
   ) {
     const { cols, rows } = body;
-    if (
-      !Number.isInteger(cols) ||
-      !Number.isInteger(rows) ||
-      (cols as number) < 1 ||
-      (cols as number) > 1000 ||
-      (rows as number) < 1 ||
-      (rows as number) > 500
-    ) {
+    if (!TerminalResizeSchema.safeParse(body).success) {
       response
         .status(400)
         .json({ success: false, error: 'cols (1–1000) and rows (1–500) must be integers' });
@@ -213,13 +211,7 @@ export class TerminalController {
   @UseGuards(TerminalAccessGuard)
   updateSettings(@Body() body: { maxSessions?: unknown }, @Res() response: Response) {
     const { maxSessions } = body;
-    if (
-      maxSessions !== undefined &&
-      (typeof maxSessions !== 'number' ||
-        !Number.isInteger(maxSessions) ||
-        maxSessions < MIN_MAX_SESSIONS ||
-        maxSessions > MAX_MAX_SESSIONS)
-    ) {
+    if (!TerminalSettingsSchema.safeParse(body).success) {
       response.status(400).json({
         success: false,
         error: `maxSessions must be an integer between ${MIN_MAX_SESSIONS} and ${MAX_MAX_SESSIONS}`,

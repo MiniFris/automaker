@@ -12,6 +12,7 @@ const output = resolve(root, 'docs/backend-nestjs-migration/artifacts/openapi.js
 const sourceCache = new Map();
 const schemaCache = new Map();
 const components = {};
+const optionalInputs = new Map();
 
 async function source(file) {
   if (!sourceCache.has(file))
@@ -52,6 +53,8 @@ async function resolveSchema(file, name, seen = new Set(), io = 'input') {
       if (schema && typeof schema.safeParse === 'function') {
         const id = `${specifier === '@automaker/contracts' ? 'shared' : specifier.split('/').at(-1)}.${exportedName}${io === 'output' ? '.Response' : ''}`;
         components[id] = z.toJSONSchema(schema, { io });
+        if (io === 'input')
+          optionalInputs.set(`#/components/schemas/${id}`, schema.safeParse(undefined).success);
         found = { $ref: `#/components/schemas/${id}` };
       }
     } else if (specifier.startsWith('.')) {
@@ -72,6 +75,74 @@ async function resolveSchema(file, name, seen = new Set(), io = 'input') {
 
 function decorators(node) {
   return ts.canHaveDecorators(node) ? (ts.getDecorators(node) ?? []) : [];
+}
+
+// Recognize an explicit early rejection of the whole decorated input, not a partial object.
+function guardedInputSchema(method, parameterName) {
+  for (const statement of method.body?.statements ?? []) {
+    if (
+      !ts.isIfStatement(statement) ||
+      !ts.isPrefixUnaryExpression(statement.expression) ||
+      statement.expression.operator !== ts.SyntaxKind.ExclamationToken
+    )
+      continue;
+    const success = statement.expression.operand;
+    if (
+      !ts.isPropertyAccessExpression(success) ||
+      success.name.text !== 'success' ||
+      !ts.isCallExpression(success.expression)
+    )
+      continue;
+    const call = success.expression;
+    if (
+      !ts.isPropertyAccessExpression(call.expression) ||
+      call.expression.name.text !== 'safeParse' ||
+      !ts.isIdentifier(call.expression.expression) ||
+      call.arguments.length !== 1 ||
+      !ts.isIdentifier(call.arguments[0]) ||
+      call.arguments[0].text !== parameterName
+    )
+      continue;
+    if (
+      !ts.isBlock(statement.thenStatement) ||
+      !statement.thenStatement.statements.some(
+        (child) => ts.isReturnStatement(child) && !child.expression
+      )
+    )
+      continue;
+    return call.expression.expression.text;
+  }
+  return undefined;
+}
+
+function ownsResponseBody(method, parameter, decorator) {
+  const options = decorator.arguments[0];
+  const passthrough =
+    options &&
+    ts.isObjectLiteralExpression(options) &&
+    options.properties.some(
+      (p) =>
+        ts.isPropertyAssignment(p) &&
+        p.name.getText() === 'passthrough' &&
+        p.initializer.kind === ts.SyntaxKind.TrueKeyword
+    );
+  if (!passthrough || !ts.isIdentifier(parameter.name)) return true;
+  const name = parameter.name.text;
+  let manual = false;
+  function visit(node) {
+    if (ts.isIdentifier(node) && node.text === name) {
+      const parent = node.parent;
+      if (
+        !ts.isPropertyAccessExpression(parent) ||
+        parent.expression !== node ||
+        !['cookie', 'clearCookie', 'setHeader', 'header', 'append'].includes(parent.name.text)
+      )
+        manual = true;
+    }
+    ts.forEachChild(node, visit);
+  }
+  if (method.body) visit(method.body);
+  return manual;
 }
 
 async function operation(endpoint) {
@@ -105,7 +176,11 @@ async function operation(endpoint) {
       const pipe = call.arguments.find(
         (a) => ts.isNewExpression(a) && a.expression.getText(ast) === 'ZodValidationPipe'
       );
-      const schemaName = pipe?.arguments?.[0]?.getText(ast);
+      const schemaName =
+        pipe?.arguments?.[0]?.getText(ast) ??
+        (ts.isIdentifier(parameter.name)
+          ? guardedInputSchema(method, parameter.name.text)
+          : undefined);
       const schema = schemaName
         ? await resolveSchema(resolve(root, endpoint.source), schemaName)
         : undefined;
@@ -117,7 +192,7 @@ async function operation(endpoint) {
         });
       if (location === 'body') {
         requestBody = {
-          required: !parameter.questionToken,
+          required: !parameter.questionToken && !(schema && optionalInputs.get(schema.$ref)),
           content: { 'application/json': { schema: schema ?? {} } },
         };
       } else if (field) {
@@ -148,10 +223,13 @@ async function operation(endpoint) {
     .find((d) => ts.isCallExpression(d) && d.expression.getText(ast) === 'HttpCode');
   const status =
     statusDecorator?.arguments?.[0]?.getText(ast) ?? (endpoint.method === 'POST' ? '201' : '200');
-  // @Res methods own their status/content: do not invent a 201 or a JSON envelope.
+  // Manual @Res methods own their status/content. Header-only passthrough remains serialized.
   const ownsResponse = method.parameters.some((p) =>
     decorators(p).some(
-      (d) => ts.isCallExpression(d.expression) && d.expression.expression.getText(ast) === 'Res'
+      (d) =>
+        ts.isCallExpression(d.expression) &&
+        d.expression.expression.getText(ast) === 'Res' &&
+        ownsResponseBody(method, p, d.expression)
     )
   );
   const returns = [];

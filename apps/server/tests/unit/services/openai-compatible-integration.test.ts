@@ -1,3 +1,4 @@
+import * as executionFilesystem from '../../../src/lib/secure-fs.js';
 import { PipelineService } from '../../../src/services/pipeline-service.js';
 import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
 import {
@@ -473,7 +474,13 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
         updateFeaturePlanSpec: vi.fn(),
         updateTaskStatus: vi.fn(),
       } as unknown as FeatureStateManager;
-      const executor = new AgentExecutor(bus, state, {} as PlanApprovalService, settings);
+      const executor = new AgentExecutor(
+        bus,
+        state,
+        {} as PlanApprovalService,
+        settings,
+        executionFilesystem
+      );
       const waitForApproval = vi.fn(async () => {
         expect(requests[0].body.tools?.some((tool) => tool.function.name === 'Write')).toBe(false);
         await expect(fs.stat(path.join(root, 'approved.txt'))).rejects.toThrow();
@@ -571,7 +578,8 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
         updateTaskStatus: vi.fn(),
       } as unknown as FeatureStateManager,
       {} as PlanApprovalService,
-      settings
+      settings,
+      executionFilesystem
     );
     const waitForApproval = vi.fn();
     const buildTaskPrompt = vi.fn(() => 'Execute the pending task');
@@ -621,7 +629,13 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       updateFeaturePlanSpec: vi.fn(),
       updateTaskStatus: vi.fn(),
     } as unknown as FeatureStateManager;
-    const executor = new AgentExecutor(bus, state, {} as PlanApprovalService, settings);
+    const executor = new AgentExecutor(
+      bus,
+      state,
+      {} as PlanApprovalService,
+      settings,
+      executionFilesystem
+    );
     handler = (_body, res) => finish(res, '<summary>Pipeline complete</summary>');
     const routed = vi.fn(
       async (
@@ -670,7 +684,8 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       vi.fn(() => 'Feature implementation'),
       vi.fn(),
       routed,
-      new PipelineService()
+      new PipelineService(),
+      executionFilesystem
     );
     await pipeline.executePipeline({
       run,
@@ -860,7 +875,8 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       vi.fn(),
       vi.fn(),
       vi.fn(),
-      new PipelineService()
+      new PipelineService(),
+      executionFilesystem
     );
     const context = {
       projectPath: root,

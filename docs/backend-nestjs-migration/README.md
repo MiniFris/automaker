@@ -1,6 +1,6 @@
 # Полный перенос backend Automaker на NestJS
 
-Обновлено: 2026-10-24. Текущий фокус — завершение этапов 7–10 и оставшихся
+Обновлено: 2026-10-25. Текущий фокус — завершение этапов 7–10 и оставшихся
 application/infra границ этапа 11. Результаты возобновлённой работы собраны
 в [первом checkpoint](artifacts/resumed-goal-checkpoint.md) и последующем
 [native cutover checkpoint](artifacts/native-cutover-checkpoint.md).
@@ -8,6 +8,7 @@ application/infra границ этапа 11. Результаты возобн�
 Следующий проверенный срез: [verification, legacy import, Gemini и performance](artifacts/verification-import-gemini-performance-checkpoint.md).
 Текущий checkpoint: [planning, ideation и singleton retirement](artifacts/planning-ideation-singletons-checkpoint.md).
 Следующий checkpoint: [feature storage, metrics и production artifact](artifacts/feature-storage-metrics-artifact-checkpoint.md).
+Последний checkpoint: [state transactions, execution filesystem и core contracts](artifacts/state-execution-contract-checkpoint.md).
 Полная миграция ещё не завершена; checklist и результаты проверок ведутся
 в документах соответствующих этапов.
 

@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 611,
-    "internalEdges": 2039,
+    "files": 612,
+    "internalEdges": 2043,
     "stronglyConnectedComponents": 2
   },
   "layerEdges": {
@@ -13,11 +13,11 @@
     "core -> services": 9,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 174,
+    "modules -> core": 176,
     "modules -> lib": 48,
     "modules -> modules": 385,
     "modules -> providers": 33,
-    "modules -> services": 173,
+    "modules -> services": 174,
     "modules -> types": 2,
     "providers -> core": 1,
     "providers -> lib": 3,
@@ -35,10 +35,10 @@
     "routes -> services": 156,
     "routes -> types": 2,
     "services -> core": 22,
-    "services -> lib": 73,
+    "services -> lib": 68,
     "services -> modules": 17,
     "services -> providers": 16,
-    "services -> services": 296,
+    "services -> services": 302,
     "services -> types": 3,
     "tests -> lib": 2
   },
@@ -267,11 +267,13 @@
   },
   "externalImports": {
     "@anthropic-ai/claude-agent-sdk": 3,
-    "@automaker/contracts": 22,
+    "@automaker/contracts": 23,
+    "@automaker/contracts/domains/auth": 1,
+    "@automaker/contracts/domains/terminal": 2,
     "@automaker/dependency-resolver": 1,
     "@automaker/git-utils": 12,
     "@automaker/model-resolver": 20,
-    "@automaker/platform": 74,
+    "@automaker/platform": 73,
     "@automaker/prompts": 3,
     "@automaker/types": 180,
     "@automaker/utils": 160,
@@ -317,7 +319,7 @@
     "node:url": 4,
     "node:util": 13,
     "os": 13,
-    "path": 71,
+    "path": 70,
     "reflect-metadata": 1,
     "ssh2": 3,
     "url": 1,
@@ -1422,6 +1424,10 @@
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
+      "target": "apps/server/src/core/security/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
       "target": "apps/server/src/core/security/security.service.ts"
     },
     {
@@ -1447,6 +1453,10 @@
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
       "target": "apps/server/src/services/auto-mode/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
+      "target": "apps/server/src/services/execution-filesystem.ts"
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
@@ -3887,6 +3897,10 @@
     {
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
       "target": "apps/server/src/core/security/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/terminal/terminal.controller.ts",
+      "target": "apps/server/src/core/validation/zod-validation.pipe.ts"
     },
     {
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
@@ -6778,10 +6792,6 @@
     },
     {
       "source": "apps/server/src/services/agent-executor.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/services/agent-executor.ts",
       "target": "apps/server/src/lib/settings-helpers.ts"
     },
     {
@@ -6791,6 +6801,10 @@
     {
       "source": "apps/server/src/services/agent-executor.ts",
       "target": "apps/server/src/services/agent-executor-types.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent-executor.ts",
+      "target": "apps/server/src/services/execution-filesystem.ts"
     },
     {
       "source": "apps/server/src/services/agent-executor.ts",
@@ -7298,10 +7312,6 @@
     },
     {
       "source": "apps/server/src/services/auto-mode/facade.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/services/auto-mode/facade.ts",
       "target": "apps/server/src/lib/settings-helpers.ts"
     },
     {
@@ -7335,6 +7345,10 @@
     {
       "source": "apps/server/src/services/auto-mode/facade.ts",
       "target": "apps/server/src/services/execution-environment/local.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/facade.ts",
+      "target": "apps/server/src/services/execution-filesystem.ts"
     },
     {
       "source": "apps/server/src/services/auto-mode/facade.ts",
@@ -8005,12 +8019,16 @@
       "target": "apps/server/src/services/execution-environment/runtime.ts"
     },
     {
-      "source": "apps/server/src/services/execution-service.ts",
-      "target": "apps/server/src/lib/sdk-options.ts"
+      "source": "apps/server/src/services/execution-filesystem.ts",
+      "target": "apps/server/src/lib/secure-fs.ts"
+    },
+    {
+      "source": "apps/server/src/services/execution-filesystem.ts",
+      "target": "apps/server/src/services/agent-executor-types.ts"
     },
     {
       "source": "apps/server/src/services/execution-service.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
+      "target": "apps/server/src/lib/sdk-options.ts"
     },
     {
       "source": "apps/server/src/services/execution-service.ts",
@@ -8027,6 +8045,10 @@
     {
       "source": "apps/server/src/services/execution-service.ts",
       "target": "apps/server/src/services/execution-environment/feature-workspace.ts"
+    },
+    {
+      "source": "apps/server/src/services/execution-service.ts",
+      "target": "apps/server/src/services/execution-filesystem.ts"
     },
     {
       "source": "apps/server/src/services/execution-service.ts",
@@ -8091,10 +8113,6 @@
     {
       "source": "apps/server/src/services/feature-state-manager.ts",
       "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/services/feature-state-manager.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
     },
     {
       "source": "apps/server/src/services/feature-state-manager.ts",
@@ -8198,10 +8216,6 @@
     },
     {
       "source": "apps/server/src/services/pipeline-orchestrator.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/services/pipeline-orchestrator.ts",
       "target": "apps/server/src/lib/settings-helpers.ts"
     },
     {
@@ -8227,6 +8241,10 @@
     {
       "source": "apps/server/src/services/pipeline-orchestrator.ts",
       "target": "apps/server/src/services/execution-environment/feature-workspace.ts"
+    },
+    {
+      "source": "apps/server/src/services/pipeline-orchestrator.ts",
+      "target": "apps/server/src/services/execution-filesystem.ts"
     },
     {
       "source": "apps/server/src/services/pipeline-orchestrator.ts",
@@ -8298,15 +8316,15 @@
     },
     {
       "source": "apps/server/src/services/recovery-service.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/services/recovery-service.ts",
       "target": "apps/server/src/lib/settings-helpers.ts"
     },
     {
       "source": "apps/server/src/services/recovery-service.ts",
       "target": "apps/server/src/services/concurrency-manager.ts"
+    },
+    {
+      "source": "apps/server/src/services/recovery-service.ts",
+      "target": "apps/server/src/services/execution-filesystem.ts"
     },
     {
       "source": "apps/server/src/services/recovery-service.ts",

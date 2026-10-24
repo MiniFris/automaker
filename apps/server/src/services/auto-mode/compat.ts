@@ -41,6 +41,7 @@ export class AutoModeServiceCompat {
     providerRegistry: ProviderRegistry,
     toolPolicy: ToolPolicyService | undefined,
     pipeline: PipelineService,
+    filesystem: import('../execution-filesystem.js').ExecutionFilesystem,
     runtime?: {
       contexts: ProjectRunContextRegistry;
       coordinator?: FeatureRunCoordinator;
@@ -69,6 +70,7 @@ export class AutoModeServiceCompat {
       toolPolicy,
       pipeline,
       validateWorkingDirectory: runtime?.validateWorkingDirectory,
+      filesystem,
     };
   }
 

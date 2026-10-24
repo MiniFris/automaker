@@ -1,3 +1,4 @@
+import * as executionFilesystem from '../../../src/lib/secure-fs.js';
 /**
  * Tests for status + providerId coexistence in PipelineOrchestrator options.
  *
@@ -206,7 +207,8 @@ describe('PipelineOrchestrator - status and providerId coexistence', () => {
       vi.fn().mockReturnValue('Feature prompt content'),
       vi.fn().mockResolvedValue(undefined),
       mockRunAgentFn,
-      pipelineService as never
+      pipelineService as never,
+      executionFilesystem
     );
   });
 

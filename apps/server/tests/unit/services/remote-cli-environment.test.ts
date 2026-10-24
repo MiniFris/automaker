@@ -1,3 +1,4 @@
+import * as executionFilesystem from '../../../src/lib/secure-fs.js';
 import { PipelineService } from '../../../src/services/pipeline-service.js';
 import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
 import {
@@ -268,6 +269,7 @@ const send=event=>process.stdout.write(JSON.stringify(event)+'\\n');
       });
       const events = createEventEmitter();
       const facade = AutoModeServiceFacade.create(project, {
+        filesystem: executionFilesystem,
         pipeline: new PipelineService(),
         providerRegistry: createTestProviderRegistry(settings),
         events,
@@ -306,7 +308,8 @@ const send=event=>process.stdout.write(JSON.stringify(event)+'\\n');
         vi.fn(),
         vi.fn(),
         vi.fn(),
-        new PipelineService()
+        new PipelineService(),
+        executionFilesystem
       );
       expect(
         await pipeline.executeTestStep(

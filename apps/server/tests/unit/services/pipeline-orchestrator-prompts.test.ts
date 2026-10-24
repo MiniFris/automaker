@@ -1,3 +1,4 @@
+import * as executionFilesystem from '../../../src/lib/secure-fs.js';
 import { PipelineService } from '../../../src/services/pipeline-service.js';
 import { describe, it, expect, vi } from 'vitest';
 import { PipelineOrchestrator } from '../../../src/services/pipeline-orchestrator.js';
@@ -30,7 +31,8 @@ describe('PipelineOrchestrator Prompts', () => {
       mockBuildFeaturePrompt,
       null as any, // executeFeatureFn
       null as any,
-      new PipelineService() // runAgentFn
+      new PipelineService(),
+      executionFilesystem // runAgentFn
     );
 
     const step = {

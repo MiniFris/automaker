@@ -1,3 +1,4 @@
+import * as executionFilesystem from '../../../src/lib/secure-fs.js';
 import { PipelineService } from '../../../src/services/pipeline-service.js';
 const pipelineService = new PipelineService();
 import { NtfyService } from '../../../src/services/ntfy-service.js';
@@ -390,6 +391,7 @@ describe.skipIf(process.platform !== 'linux')(
         const seen: unknown[] = [];
         events.subscribe((_type, event) => seen.push(event));
         const facade = AutoModeServiceFacade.create(project, {
+          filesystem: executionFilesystem,
           pipeline: pipelineService as never,
           providerRegistry: createTestProviderRegistry(settings),
           events,
@@ -433,7 +435,8 @@ describe.skipIf(process.platform !== 'linux')(
           vi.fn(),
           vi.fn(),
           vi.fn(),
-          pipelineService as never
+          pipelineService as never,
+          executionFilesystem
         );
         expect(
           await pipeline.executeTestStep(
@@ -467,6 +470,7 @@ describe.skipIf(process.platform !== 'linux')(
           executionEnvironment: { default: { mode: 'local' }, profiles: [] },
         });
         const restarted = AutoModeServiceFacade.create(project, {
+          filesystem: executionFilesystem,
           pipeline: pipelineService as never,
           providerRegistry: createTestProviderRegistry(settings),
           events,
@@ -497,6 +501,7 @@ describe.skipIf(process.platform !== 'linux')(
           if ((event as { type?: string }).type === 'plan_approval_required') waiting = true;
         });
         const facade = AutoModeServiceFacade.create(project, {
+          filesystem: executionFilesystem,
           pipeline: pipelineService as never,
           providerRegistry: createTestProviderRegistry(settings),
           events,
@@ -550,6 +555,7 @@ describe.skipIf(process.platform !== 'linux')(
         await pipelineService.savePipelineConfig(project, { version: 1, steps: [step] });
         const events = createEventEmitter();
         const facade = AutoModeServiceFacade.create(project, {
+          filesystem: executionFilesystem,
           pipeline: pipelineService as never,
           providerRegistry: createTestProviderRegistry(settings),
           events,
@@ -649,6 +655,7 @@ describe.skipIf(process.platform !== 'linux')(
       async () => {
         const events = createEventEmitter();
         const facade = AutoModeServiceFacade.create(project, {
+          filesystem: executionFilesystem,
           pipeline: pipelineService as never,
           providerRegistry: createTestProviderRegistry(settings),
           events,
@@ -682,6 +689,7 @@ describe.skipIf(process.platform !== 'linux')(
       async () => {
         const events = createEventEmitter();
         const facade = AutoModeServiceFacade.create(project, {
+          filesystem: executionFilesystem,
           pipeline: pipelineService as never,
           providerRegistry: createTestProviderRegistry(settings),
           events,

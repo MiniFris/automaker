@@ -1,3 +1,4 @@
+import * as executionFilesystem from '../../../src/lib/secure-fs.js';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
@@ -66,7 +67,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
       expect(executor).toBeInstanceOf(AgentExecutor);
     });
@@ -76,7 +78,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        null
+        null,
+        executionFilesystem
       );
       expect(executor).toBeInstanceOf(AgentExecutor);
     });
@@ -85,7 +88,9 @@ describe('AgentExecutor', () => {
       const executor = new AgentExecutor(
         mockEventBus,
         mockFeatureStateManager,
-        mockPlanApprovalService
+        mockPlanApprovalService,
+        null,
+        executionFilesystem
       );
       expect(executor).toBeInstanceOf(AgentExecutor);
     });
@@ -95,7 +100,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
       // Verify executor was created - actual use tested via execute()
       expect(executor).toBeDefined();
@@ -106,7 +112,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
       expect(executor).toBeDefined();
     });
@@ -116,7 +123,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
       expect(executor).toBeDefined();
     });
@@ -263,7 +271,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
       expect(typeof executor.execute).toBe('function');
     });
@@ -273,7 +282,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       // Type check - verifying the signature accepts the expected parameters
@@ -348,7 +358,8 @@ describe('AgentExecutor', () => {
         customEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       expect(executor).toBeInstanceOf(AgentExecutor);
@@ -366,7 +377,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         customStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       expect(executor).toBeInstanceOf(AgentExecutor);
@@ -382,7 +394,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        customSettingsService
+        customSettingsService,
+        executionFilesystem
       );
 
       expect(executor).toBeInstanceOf(AgentExecutor);
@@ -399,7 +412,9 @@ describe('AgentExecutor', () => {
       const executor = new AgentExecutor(
         mockEventBus,
         mockFeatureStateManager,
-        mockPlanApprovalService
+        mockPlanApprovalService,
+        null,
+        executionFilesystem
       );
       const failure = new Error('Stop at provider boundary');
       const executeQuery = vi.fn(async function* () {
@@ -443,7 +458,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       // Create an already-aborted controller
@@ -490,7 +506,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       const mockProvider = {
@@ -530,7 +547,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       const mockProvider = {
@@ -575,7 +593,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       const mockProvider = {
@@ -635,7 +654,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       const mockProvider = {
@@ -691,7 +711,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       const mockProvider = {
@@ -736,7 +757,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       const mockProvider = {
@@ -776,7 +798,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       const mockProvider = {
@@ -817,7 +840,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       const mockProvider = {
@@ -865,7 +889,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       const mockProvider = {
@@ -907,7 +932,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       const mockProvider = {
@@ -948,7 +974,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       const mockProvider = {
@@ -990,7 +1017,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       const mockProvider = {
@@ -1039,7 +1067,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       const mockProvider = {
@@ -1080,7 +1109,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       const mockProvider = {
@@ -1136,7 +1166,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       const mockProvider = {
@@ -1181,7 +1212,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       const mockProvider = {
@@ -1232,7 +1264,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       const mockProvider = {
@@ -1276,7 +1309,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       const mockProvider = {
@@ -1332,7 +1366,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       const mockProvider = {
@@ -1387,7 +1422,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       // Provider yields no content - only scaffold will be present
@@ -1431,7 +1467,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       const mockProvider = {
@@ -1490,7 +1527,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       const mockProvider = {
@@ -1541,7 +1579,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       const mockProvider = {
@@ -1593,7 +1632,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       const mockProvider = {
@@ -1644,7 +1684,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       const mockProvider = {
@@ -1693,7 +1734,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       // Content that looks like it might have dashes but is actual content
@@ -1745,7 +1787,8 @@ describe('AgentExecutor', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        mockSettingsService
+        mockSettingsService,
+        executionFilesystem
       );
 
       const mockProvider = {

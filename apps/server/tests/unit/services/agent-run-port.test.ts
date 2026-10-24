@@ -1,3 +1,4 @@
+import * as executionFilesystem from '../../../src/lib/secure-fs.js';
 import { afterEach, expect, it, vi } from 'vitest';
 import { AgentExecutor } from '../../../src/services/agent-executor.js';
 import { ConcurrencyManager } from '../../../src/services/concurrency-manager.js';
@@ -26,7 +27,9 @@ it('drains an accepted output write before admitting a replacement incarnation',
   const executor = new AgentExecutor(
     new TypedEventBus(createEventEmitter()),
     {} as never,
-    {} as never
+    {} as never,
+    null,
+    executionFilesystem
   );
   const execution = executor.execute(
     {
@@ -85,7 +88,9 @@ it('rejects stale approval edits, plan/task/summary/output writes after a new in
   const executor = new AgentExecutor(
     new TypedEventBus(createEventEmitter()),
     state as never,
-    {} as never
+    {} as never,
+    null,
+    executionFilesystem
   );
   let approve!: (result: { approved: boolean; editedPlan?: string }) => void;
   const pending = new Promise<{ approved: boolean; editedPlan?: string }>((resolve) => {

@@ -9,7 +9,7 @@ import { createLogger, classifyError, loadContextFiles, recordMemoryUsage } from
 import { resolveModelString, DEFAULT_MODELS } from '@automaker/model-resolver';
 import { getFeatureDir } from '@automaker/platform';
 import type { ProviderRegistry } from '../modules/providers/provider-registry.service.js';
-import * as secureFs from '../lib/secure-fs.js';
+import { capturedExecutionFilesystem, type ExecutionFilesystem } from './execution-filesystem.js';
 import {
   getPromptCustomization,
   getAutoLoadClaudeMdSetting,
@@ -91,6 +91,7 @@ export class ExecutionService {
     private loadContextFilesFn: LoadContextFilesFn,
     private readonly providerRegistry: ProviderRegistry,
     private readonly pipeline: PipelineService,
+    private readonly filesystem: ExecutionFilesystem,
     private readonly directoryValidator: (cwd: string) => void = validateWorkingDirectory
   ) {}
 
@@ -191,6 +192,7 @@ ${feature.spec}
       this.concurrencyManager,
       tempRunningFeature
     );
+    const localFilesystem = capturedExecutionFilesystem(this.filesystem, runPort);
     const current = () => this.concurrencyManager.isCurrent(tempRunningFeature);
     const updateStatus = (status: string) =>
       this.concurrencyManager.coordinator.status(
@@ -324,7 +326,7 @@ ${feature.spec}
         ? await remoteService!.context(remote, abortController.signal)
         : await this.loadContextFilesFn({
             projectPath,
-            fsModule: secureFs as Parameters<typeof loadContextFiles>[0]['fsModule'],
+            fsModule: localFilesystem as Parameters<typeof loadContextFiles>[0]['fsModule'],
             taskContext: {
               title: feature.title ?? '',
               description: feature.description ?? '',
@@ -512,7 +514,7 @@ Please continue from where you left off and complete all remaining tasks. Use th
       const outputPath = path.join(getFeatureDir(projectPath, featureId), 'agent-output.md');
       let agentOutput = '';
       try {
-        agentOutput = (await secureFs.readFile(outputPath, 'utf-8')) as string;
+        agentOutput = (await this.filesystem.readFile(outputPath, 'utf-8')) as string;
       } catch {
         /* */
       }
@@ -584,7 +586,7 @@ Please continue from where you left off and complete all remaining tasks. Use th
               contextResult.memoryFiles,
               agentOutput,
               true,
-              secureFs as Parameters<typeof recordMemoryUsage>[4]
+              localFilesystem as Parameters<typeof recordMemoryUsage>[4]
             );
         }
         if (remote)

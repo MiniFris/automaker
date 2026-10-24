@@ -22,7 +22,7 @@ import type {
 import { createLogger, loadContextFiles, classifyError } from '@automaker/utils';
 import { getFeatureDir } from '@automaker/platform';
 import { resolveModelString, DEFAULT_MODELS } from '@automaker/model-resolver';
-import * as secureFs from '../lib/secure-fs.js';
+import { capturedExecutionFilesystem, type ExecutionFilesystem } from './execution-filesystem.js';
 import {
   getPromptCustomization,
   getAutoLoadClaudeMdSetting,
@@ -79,6 +79,7 @@ export class PipelineOrchestrator {
     private executeFeatureFn: ExecuteFeatureFn,
     private runAgentFn: RunAgentFn,
     private readonly pipeline: PipelineService,
+    private readonly filesystem: ExecutionFilesystem,
     private readonly directoryValidator: (cwd: string) => void = validateWorkingDirectory
   ) {}
 
@@ -127,6 +128,10 @@ export class PipelineOrchestrator {
   async executePipeline(ctx: PipelineContext): Promise<void> {
     const run = ctx.run ?? this.concurrencyManager.getRunningFeature(ctx.featureId);
     this.requireCurrent(run);
+    const localFilesystem = capturedExecutionFilesystem(
+      this.filesystem,
+      this.concurrencyManager.coordinator.bind(this.concurrencyManager, run!)
+    );
     const remoteService = this.settingsService
       ? new FeatureWorkspaceService(this.settingsService)
       : undefined;
@@ -150,7 +155,7 @@ export class PipelineOrchestrator {
       ? await remoteService!.context(remote, abortController.signal)
       : await this.loadContextFilesFn({
           projectPath,
-          fsModule: secureFs as Parameters<typeof loadContextFiles>[0]['fsModule'],
+          fsModule: localFilesystem as Parameters<typeof loadContextFiles>[0]['fsModule'],
           taskContext: { title: feature.title ?? '', description: feature.description ?? '' },
         });
     const contextFilesPrompt = filterClaudeMdFromContext(
@@ -173,7 +178,7 @@ export class PipelineOrchestrator {
     const contextPath = path.join(getFeatureDir(projectPath, featureId), 'agent-output.md');
     let previousContext = '';
     try {
-      previousContext = (await secureFs.readFile(contextPath, 'utf-8')) as string;
+      previousContext = (await this.filesystem.readFile(contextPath, 'utf-8')) as string;
     } catch {
       /* */
     }
@@ -228,7 +233,7 @@ export class PipelineOrchestrator {
         throw new globalThis.DOMException('Pipeline execution aborted', 'AbortError');
       this.requireCurrent(run);
       try {
-        previousContext = (await secureFs.readFile(contextPath, 'utf-8')) as string;
+        previousContext = (await this.filesystem.readFile(contextPath, 'utf-8')) as string;
       } catch {
         /* */
       }
@@ -349,7 +354,7 @@ export class PipelineOrchestrator {
     const contextPath = path.join(getFeatureDir(projectPath, featureId), 'agent-output.md');
     let hasContext = false;
     try {
-      await secureFs.access(contextPath);
+      await this.filesystem.access(contextPath);
       hasContext = true;
     } catch {
       /* No context */

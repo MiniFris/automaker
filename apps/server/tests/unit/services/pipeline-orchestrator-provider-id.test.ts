@@ -1,3 +1,4 @@
+import * as executionFilesystem from '../../../src/lib/secure-fs.js';
 /**
  * Tests for providerId passthrough in PipelineOrchestrator
  * Verifies that feature.providerId is forwarded to runAgentFn in both
@@ -215,7 +216,8 @@ describe('PipelineOrchestrator - providerId passthrough', () => {
       mockBuildFeaturePromptFn,
       mockExecuteFeatureFn,
       mockRunAgentFn,
-      pipelineService as never
+      pipelineService as never,
+      executionFilesystem
     );
   });
 

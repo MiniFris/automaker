@@ -6,6 +6,10 @@
  */
 
 import * as pty from 'node-pty';
+import {
+  TERMINAL_MIN_MAX_SESSIONS,
+  TERMINAL_MAX_MAX_SESSIONS,
+} from '@automaker/contracts/domains/terminal';
 import { EventEmitter } from 'events';
 import * as os from 'os';
 import * as path from 'path';
@@ -62,9 +66,9 @@ const OMP_THEME_ENV_VAR = 'AUTOMAKER_OMP_THEME';
 // Maximum scrollback buffer size (characters)
 const MAX_SCROLLBACK_SIZE = 50000; // ~50KB per terminal
 
-// Session limit constants - shared with routes/settings.ts
-export const MIN_MAX_SESSIONS = 1;
-export const MAX_MAX_SESSIONS = 1000;
+// Preserve the public service names while sharing the HTTP contract bounds.
+export const MIN_MAX_SESSIONS = TERMINAL_MIN_MAX_SESSIONS;
+export const MAX_MAX_SESSIONS = TERMINAL_MAX_MAX_SESSIONS;
 
 // Throttle output to prevent overwhelming WebSocket under heavy load
 // Using 4ms for responsive input feedback while still preventing flood

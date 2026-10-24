@@ -1,3 +1,4 @@
+import * as executionFilesystem from '../../../src/lib/secure-fs.js';
 /**
  * Unit tests for RecoveryService
  *
@@ -42,8 +43,9 @@ vi.mock('@automaker/platform', () => ({
 }));
 
 vi.mock('@/lib/secure-fs.js', () => ({
-  access: vi.fn().mockRejectedValue(new Error('ENOENT')),
-  readFile: vi.fn().mockRejectedValue(new Error('ENOENT')),
+  mkdir: vi.fn().mockResolvedValue(undefined),
+  access: vi.fn().mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' })),
+  readFile: vi.fn().mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' })),
   writeFile: vi.fn().mockResolvedValue(undefined),
   unlink: vi.fn().mockResolvedValue(undefined),
   readdir: vi.fn().mockResolvedValue([]),
@@ -105,8 +107,12 @@ describe('recovery-service.ts', () => {
     utils = await import('@automaker/utils');
 
     // Reset secure-fs mocks to default behavior
-    vi.mocked(secureFs.access).mockRejectedValue(new Error('ENOENT'));
-    vi.mocked(secureFs.readFile).mockRejectedValue(new Error('ENOENT'));
+    vi.mocked(secureFs.access).mockRejectedValue(
+      Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    );
+    vi.mocked(secureFs.readFile).mockRejectedValue(
+      Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    );
     vi.mocked(secureFs.writeFile).mockResolvedValue(undefined);
     vi.mocked(secureFs.unlink).mockResolvedValue(undefined);
     vi.mocked(secureFs.readdir).mockResolvedValue([]);
@@ -140,7 +146,8 @@ describe('recovery-service.ts', () => {
       mockResumePipeline,
       mockIsFeatureRunning,
       mockAcquireRunningFeature,
-      mockReleaseRunningFeature
+      mockReleaseRunningFeature,
+      executionFilesystem
     );
   });
 
@@ -257,12 +264,12 @@ describe('recovery-service.ts', () => {
       expect(result).toEqual(DEFAULT_EXECUTION_STATE);
     });
 
-    it('returns default state on other errors and logs', async () => {
+    it('preserves unexpected read errors instead of treating state as missing', async () => {
       vi.mocked(secureFs.readFile).mockRejectedValueOnce(new Error('Permission denied'));
 
-      const result = await service.loadExecutionState('/test/project');
-
-      expect(result).toEqual(DEFAULT_EXECUTION_STATE);
+      await expect(service.loadExecutionState('/test/project')).rejects.toThrow(
+        'Permission denied'
+      );
     });
   });
 
@@ -281,10 +288,12 @@ describe('recovery-service.ts', () => {
       await expect(service.clearExecutionState('/test/project')).resolves.not.toThrow();
     });
 
-    it('logs error on other failures', async () => {
+    it('propagates other failures', async () => {
       vi.mocked(secureFs.unlink).mockRejectedValueOnce(new Error('Permission denied'));
 
-      await expect(service.clearExecutionState('/test/project')).resolves.not.toThrow();
+      await expect(service.clearExecutionState('/test/project')).rejects.toThrow(
+        'Permission denied'
+      );
     });
   });
 
@@ -301,7 +310,9 @@ describe('recovery-service.ts', () => {
     });
 
     it('returns false when agent-output.md is missing', async () => {
-      vi.mocked(secureFs.access).mockRejectedValueOnce(new Error('ENOENT'));
+      vi.mocked(secureFs.access).mockRejectedValueOnce(
+        Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+      );
 
       const result = await service.contextExists('/test/project', 'feature-1');
 
@@ -328,7 +339,8 @@ describe('recovery-service.ts', () => {
         mockResumePipeline,
         (id) => manager.isRunning(id),
         (options) => manager.acquireAsync(options),
-        (id, expected) => manager.release(id, { expected })
+        (id, expected) => manager.release(id, { expected }),
+        executionFilesystem
       );
       const resuming = recovery.resumeFeature('/test/project', 'feature-1');
       await vi.waitFor(() => expect(mockExecuteFeature).toHaveBeenCalled());
@@ -364,7 +376,9 @@ describe('recovery-service.ts', () => {
     });
 
     it('detects pipeline status for feature', async () => {
-      vi.mocked(secureFs.access).mockRejectedValue(new Error('ENOENT'));
+      vi.mocked(secureFs.access).mockRejectedValue(
+        Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+      );
       await service.resumeFeature('/test/project', 'feature-1');
 
       expect(mockDetectPipelineStatus).toHaveBeenCalledWith(
@@ -441,7 +455,9 @@ describe('recovery-service.ts', () => {
     });
 
     it('calls executeFeature fresh when no context', async () => {
-      vi.mocked(secureFs.access).mockRejectedValueOnce(new Error('ENOENT'));
+      vi.mocked(secureFs.access).mockRejectedValueOnce(
+        Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+      );
 
       await service.resumeFeature('/test/project', 'feature-1');
 
@@ -484,7 +500,9 @@ describe('recovery-service.ts', () => {
     });
 
     it('acquires running feature with allowReuse when calledInternally', async () => {
-      vi.mocked(secureFs.access).mockRejectedValue(new Error('ENOENT'));
+      vi.mocked(secureFs.access).mockRejectedValue(
+        Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+      );
       await service.resumeFeature('/test/project', 'feature-1', false, true);
 
       expect(mockAcquireRunningFeature).toHaveBeenCalledWith({
@@ -713,7 +731,7 @@ describe('recovery-service.ts', () => {
       // First feature has context, second doesn't
       vi.mocked(secureFs.access)
         .mockResolvedValueOnce(undefined) // feature-with has context
-        .mockRejectedValueOnce(new Error('ENOENT')); // feature-without doesn't
+        .mockRejectedValueOnce(Object.assign(new Error('ENOENT'), { code: 'ENOENT' })); // feature-without doesn't
 
       mockLoadFeature
         .mockResolvedValueOnce({

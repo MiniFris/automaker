@@ -17,6 +17,12 @@ import { LoginAttemptStore } from './login-attempt.store.js';
 import { Public } from './public.decorator.js';
 import { LoginRequestSchema, type LoginRequest } from './auth.schemas.js';
 import { RUNTIME_CONFIG, type RuntimeConfig } from '../config/index.js';
+import {
+  AuthStatusResponseSchema,
+  LoginResponseSchema,
+  WebSocketTokenResponseSchema,
+  LogoutResponseSchema,
+} from '@automaker/contracts/domains/auth';
 
 @Controller('auth')
 export class AuthController {
@@ -41,7 +47,7 @@ export class AuthController {
       );
       authenticated = true;
     }
-    return { success: true, authenticated, required: true };
+    return AuthStatusResponseSchema.parse({ success: true, authenticated, required: true });
   }
 
   @Public()
@@ -70,12 +76,16 @@ export class AuthController {
     this.attempts.reset(clientIp);
     const token = await this.auth.createSession();
     response.cookie(this.auth.sessionCookieName, token, this.auth.sessionCookieOptions);
-    return { success: true, message: 'Logged in successfully.', token };
+    return LoginResponseSchema.parse({ success: true, message: 'Logged in successfully.', token });
   }
 
   @Get('token')
   token(): Record<string, unknown> {
-    return { success: true, token: this.auth.issueWebSocketToken(), expiresIn: 300 };
+    return WebSocketTokenResponseSchema.parse({
+      success: true,
+      token: this.auth.issueWebSocketToken(),
+      expiresIn: 300,
+    });
   }
 
   @Public()
@@ -92,7 +102,7 @@ export class AuthController {
       maxAge: 0,
       expires: new Date(0),
     });
-    return { success: true, message: 'Logged out successfully.' };
+    return LogoutResponseSchema.parse({ success: true, message: 'Logged out successfully.' });
   }
 
   private clientIp(request: Request): string {

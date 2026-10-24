@@ -439,6 +439,42 @@ export class FeatureLoader {
     );
   }
 
+  /** Internal state transaction: strict current document read and commit share the mutation lane. */
+  async mutate(
+    projectPath: string,
+    featureId: string,
+    mutation: (feature: Feature) => boolean | void | Promise<boolean | void>
+  ): Promise<Feature | null> {
+    return this.run(this.getFeatureJsonPath(projectPath, featureId), async () => {
+      const feature = this.runtime
+        ? await this.readFeature(projectPath, featureId, true)
+        : await this.getLegacy(projectPath, featureId);
+      if (!feature || (await mutation(feature)) === false) return null;
+      if (feature.id !== featureId)
+        throw new ConflictDomainError('Feature ID cannot change during mutation.');
+      const committed = { ...feature };
+      delete committed.titleGenerating;
+      await atomicWriteJson(this.getFeatureJsonPath(projectPath, featureId), committed, {
+        backupCount: DEFAULT_BACKUP_COUNT,
+        filesystem: this.filesystem,
+        recoverableTemporaryFiles: !this.runtime,
+      });
+      return committed;
+    });
+  }
+
+  async listIds(projectPath: string): Promise<string[]> {
+    try {
+      const entries = (await this.filesystem.readdir(this.getFeaturesDir(projectPath), {
+        withFileTypes: true,
+      })) as import('node:fs').Dirent[];
+      return entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
+      throw error;
+    }
+  }
+
   private async getLegacy(projectPath: string, featureId: string): Promise<Feature | null> {
     const featureJsonPath = this.getFeatureJsonPath(projectPath, featureId);
 

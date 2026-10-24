@@ -7,10 +7,10 @@
   },
   "x-coverage": {
     "operations": 318,
-    "sharedOrNoInput": 276,
-    "incompleteInput": 42,
-    "sharedRuntimeResponses": 1,
-    "unverifiedResponses": 317
+    "sharedOrNoInput": 281,
+    "incompleteInput": 37,
+    "sharedRuntimeResponses": 10,
+    "unverifiedResponses": 308
   },
   "paths": {
     "/api/agent/clear": {
@@ -319,7 +319,7 @@
         "tags": [
           "auth"
         ],
-        "x-source": "apps/server/src/core/auth/auth.controller.ts:48",
+        "x-source": "apps/server/src/core/auth/auth.controller.ts:54",
         "x-access": "public-before-global-auth",
         "x-request-contract": "incomplete",
         "x-unresolved-inputs": [
@@ -328,7 +328,7 @@
             "reason": "Raw request access is not a shared input contract."
           }
         ],
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -340,8 +340,18 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/auth.LoginResponseSchema.Response"
+                }
+              }
+            }
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -352,7 +362,7 @@
         "tags": [
           "auth"
         ],
-        "x-source": "apps/server/src/core/auth/auth.controller.ts:82",
+        "x-source": "apps/server/src/core/auth/auth.controller.ts:92",
         "x-access": "public-before-global-auth",
         "x-request-contract": "incomplete",
         "x-unresolved-inputs": [
@@ -361,10 +371,20 @@
             "reason": "Raw request access is not a shared input contract."
           }
         ],
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "responses": {
+          "200": {
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/auth.LogoutResponseSchema.Response"
+                }
+              }
+            }
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -375,7 +395,7 @@
         "tags": [
           "auth"
         ],
-        "x-source": "apps/server/src/core/auth/auth.controller.ts:30",
+        "x-source": "apps/server/src/core/auth/auth.controller.ts:36",
         "x-access": "public-before-global-auth",
         "x-request-contract": "incomplete",
         "x-unresolved-inputs": [
@@ -384,10 +404,20 @@
             "reason": "Raw request access is not a shared input contract."
           }
         ],
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "responses": {
+          "200": {
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/auth.AuthStatusResponseSchema.Response"
+                }
+              }
+            }
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -398,13 +428,20 @@
         "tags": [
           "auth"
         ],
-        "x-source": "apps/server/src/core/auth/auth.controller.ts:76",
+        "x-source": "apps/server/src/core/auth/auth.controller.ts:82",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/auth.WebSocketTokenResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -2983,13 +3020,23 @@
         "tags": [
           "health"
         ],
-        "x-source": "apps/server/src/core/health/health.controller.ts:52",
+        "x-source": "apps/server/src/core/health/health.controller.ts:63",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "responses": {
+          "200": {
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/shared.DetailedHealthResponseSchema.Response"
+                }
+              }
+            }
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -3000,13 +3047,20 @@
         "tags": [
           "health"
         ],
-        "x-source": "apps/server/src/core/health/health.controller.ts:31",
+        "x-source": "apps/server/src/core/health/health.controller.ts:42",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/shared.HealthEnvironmentResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -3020,13 +3074,20 @@
         "tags": [
           "health"
         ],
-        "x-source": "apps/server/src/core/health/health.controller.ts:40",
+        "x-source": "apps/server/src/core/health/health.controller.ts:51",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/shared.LivenessResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -3040,13 +3101,20 @@
         "tags": [
           "health"
         ],
-        "x-source": "apps/server/src/core/health/health.controller.ts:45",
+        "x-source": "apps/server/src/core/health/health.controller.ts:56",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/shared.ReadinessResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -3060,13 +3128,20 @@
         "tags": [
           "health"
         ],
-        "x-source": "apps/server/src/core/health/health.controller.ts:25",
+        "x-source": "apps/server/src/core/health/health.controller.ts:32",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/shared.HealthResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -7062,7 +7137,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:44",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:51",
         "x-access": "protected",
         "x-request-contract": "incomplete",
         "x-unresolved-inputs": [
@@ -7092,7 +7167,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:51",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:58",
         "x-access": "protected",
         "x-request-contract": "incomplete",
         "x-unresolved-inputs": [
@@ -7118,18 +7193,9 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:171",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:176",
         "x-access": "protected",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "path",
-            "name": "id"
-          },
-          {
-            "in": "body"
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
         "parameters": [
           {
@@ -7137,7 +7203,7 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/terminal.TerminalSessionIdSchema"
             }
           }
         ],
@@ -7145,7 +7211,9 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": {}
+              "schema": {
+                "$ref": "#/components/schemas/terminal.TerminalResizeSchema"
+              }
             }
           }
         },
@@ -7162,15 +7230,9 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:161",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:163",
         "x-access": "protected",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "path",
-            "name": "id"
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
         "parameters": [
           {
@@ -7178,7 +7240,7 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/terminal.TerminalSessionIdSchema"
             }
           }
         ],
@@ -7193,15 +7255,9 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:68",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:75",
         "x-access": "protected",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "path",
-            "name": "id"
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
         "parameters": [
           {
@@ -7209,7 +7265,7 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/terminal.TerminalSessionIdSchema"
             }
           }
         ],
@@ -7226,7 +7282,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:62",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:69",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -7244,20 +7300,17 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:98",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:108",
         "x-access": "protected",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "body"
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
         "requestBody": {
-          "required": true,
+          "required": false,
           "content": {
             "application/json": {
-              "schema": {}
+              "schema": {
+                "$ref": "#/components/schemas/terminal.TerminalCreateSessionSchema"
+              }
             }
           }
         },
@@ -7274,7 +7327,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:200",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:198",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -7292,20 +7345,17 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:212",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:210",
         "x-access": "protected",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "body"
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {}
+              "schema": {
+                "$ref": "#/components/schemas/terminal.TerminalSettingsSchema"
+              }
             }
           }
         },
@@ -7322,7 +7372,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:32",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:39",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -9240,6 +9290,29 @@
         ],
         "additionalProperties": false
       },
+      "auth.AuthStatusResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "authenticated": {
+            "type": "boolean"
+          },
+          "required": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "success",
+          "authenticated",
+          "required"
+        ],
+        "additionalProperties": false
+      },
       "auth.LoginRequestSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -9251,6 +9324,72 @@
         },
         "required": [
           "apiKey"
+        ],
+        "additionalProperties": false
+      },
+      "auth.LoginResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "message": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "token"
+        ],
+        "additionalProperties": false
+      },
+      "auth.LogoutResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "success",
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "auth.WebSocketTokenResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "token": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expiresIn": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "success",
+          "token",
+          "expiresIn"
         ],
         "additionalProperties": false
       },
@@ -11917,6 +12056,116 @@
         ],
         "additionalProperties": false
       },
+      "shared.DetailedHealthResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uptime": {
+            "type": "number",
+            "minimum": 0
+          },
+          "memory": {
+            "type": "object",
+            "properties": {
+              "rss": {
+                "type": "number",
+                "minimum": 0
+              },
+              "heapTotal": {
+                "type": "number",
+                "minimum": 0
+              },
+              "heapUsed": {
+                "type": "number",
+                "minimum": 0
+              },
+              "external": {
+                "type": "number",
+                "minimum": 0
+              },
+              "arrayBuffers": {
+                "type": "number",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "rss",
+              "heapTotal",
+              "heapUsed",
+              "external",
+              "arrayBuffers"
+            ],
+            "additionalProperties": {}
+          },
+          "dataDir": {
+            "type": "string"
+          },
+          "auth": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "method": {
+                "type": "string",
+                "enum": [
+                  "disabled",
+                  "api_key_or_session"
+                ]
+              }
+            },
+            "required": [
+              "enabled",
+              "method"
+            ],
+            "additionalProperties": false
+          },
+          "env": {
+            "type": "object",
+            "properties": {
+              "nodeVersion": {
+                "type": "string"
+              },
+              "platform": {
+                "type": "string"
+              },
+              "arch": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "nodeVersion",
+              "platform",
+              "arch"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "status",
+          "timestamp",
+          "version",
+          "uptime",
+          "memory",
+          "dataDir",
+          "auth",
+          "env"
+        ],
+        "additionalProperties": false
+      },
       "shared.DirectSettingsMutationSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -12295,6 +12544,67 @@
           "type": "string"
         },
         "additionalProperties": {}
+      },
+      "shared.HealthEnvironmentResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "isContainerized": {
+            "type": "boolean"
+          },
+          "skipSandboxWarning": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "isContainerized"
+        ],
+        "additionalProperties": false
+      },
+      "shared.HealthResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "status",
+          "timestamp",
+          "version"
+        ],
+        "additionalProperties": false
+      },
+      "shared.LivenessResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          }
+        },
+        "required": [
+          "status",
+          "timestamp"
+        ],
+        "additionalProperties": false
       },
       "shared.LocalStorageMigrationRequestSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -12796,6 +13106,26 @@
         ],
         "additionalProperties": false
       },
+      "shared.ReadinessResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ready"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          }
+        },
+        "required": [
+          "status",
+          "timestamp"
+        ],
+        "additionalProperties": false
+      },
       "shared.SessionCreateSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -13032,6 +13362,94 @@
           "parentDir"
         ],
         "additionalProperties": false
+      },
+      "terminal.TerminalCreateSessionSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "anyOf": [
+          {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "cwd": {
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "^[^\\0]+$"
+                  },
+                  "cols": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000
+                  },
+                  "rows": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 500
+                  },
+                  "shell": {
+                    "type": "string"
+                  },
+                  "environmentTargetId": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": {}
+              },
+              {
+                "type": "array",
+                "items": {}
+              }
+            ]
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "terminal.TerminalResizeSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "cols": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "rows": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          }
+        },
+        "required": [
+          "cols",
+          "rows"
+        ],
+        "additionalProperties": {}
+      },
+      "terminal.TerminalSessionIdSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "string"
+      },
+      "terminal.TerminalSettingsSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "maxSessions": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000
+              }
+            },
+            "additionalProperties": {}
+          },
+          {
+            "type": "array",
+            "items": {}
+          }
+        ]
       },
       "worktree.DevSessionSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",

@@ -1,3 +1,4 @@
+import * as executionFilesystem from '../../src/lib/secure-fs.js';
 import { PipelineService } from '../../src/services/pipeline-service.js';
 import { NtfyService } from '../../src/services/ntfy-service.js';
 import { createTestProviderRegistry } from '../helpers/provider-registry.js';
@@ -625,6 +626,7 @@ process.stdout.write(JSON.stringify({type:'result',subtype:'success'})+'\\n');
     const events = createEventEmitter();
     const service = new FeatureWorkspaceService(settings);
     const facade = AutoModeServiceFacade.create(featureProject, {
+      filesystem: executionFilesystem,
       pipeline: new PipelineService(),
       providerRegistry: createTestProviderRegistry(settings),
       events,
@@ -677,7 +679,8 @@ process.stdout.write(JSON.stringify({type:'result',subtype:'success'})+'\\n');
         vi.fn(),
         vi.fn(),
         vi.fn(),
-        new PipelineService()
+        new PipelineService(),
+        executionFilesystem
       );
       expect(
         await pipeline.executeTestStep(

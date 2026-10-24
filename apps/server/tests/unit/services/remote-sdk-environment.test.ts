@@ -1,3 +1,4 @@
+import * as executionFilesystem from '../../../src/lib/secure-fs.js';
 import { PipelineService } from '../../../src/services/pipeline-service.js';
 import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
 import {
@@ -288,6 +289,7 @@ describe.skipIf(process.platform !== 'linux')('target-side SDK setup and executi
       skipTests: true,
     });
     const facade = AutoModeServiceFacade.create(project, {
+      filesystem: executionFilesystem,
       pipeline: new PipelineService(),
       providerRegistry: createTestProviderRegistry(settings),
       events: createEventEmitter(),

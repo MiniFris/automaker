@@ -52,6 +52,8 @@ export interface SharedServices {
  * Options for creating an AutoModeServiceFacade instance
  */
 export interface FacadeOptions {
+  /** Application-owned local output/context/memory IO. */
+  filesystem: import('../execution-filesystem.js').ExecutionFilesystem;
   /** EventEmitter for broadcasting events to clients */
   events: EventEmitter;
   /** SettingsService for reading project/global settings (optional) */

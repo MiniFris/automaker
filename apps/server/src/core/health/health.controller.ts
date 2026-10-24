@@ -4,6 +4,13 @@ import { Public } from '../auth/index.js';
 import { HOST_ENVIRONMENT, RUNTIME_CONFIG, type RuntimeConfig } from '../config/index.js';
 import { ReadinessStateService } from '../lifecycle/readiness-state.service.js';
 import { getVersion } from '../../lib/version.js';
+import {
+  HealthResponseSchema,
+  HealthEnvironmentResponseSchema,
+  LivenessResponseSchema,
+  ReadinessResponseSchema,
+  DetailedHealthResponseSchema,
+} from '@automaker/contracts';
 
 @Controller('health')
 export class HealthController {
@@ -24,36 +31,40 @@ export class HealthController {
   @Public()
   @Get()
   index(): { status: 'ok'; timestamp: string; version: string } {
-    return { status: 'ok', timestamp: new Date().toISOString(), version: getVersion() };
+    return HealthResponseSchema.parse({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      version: getVersion(),
+    });
   }
 
   @Public()
   @Get('environment')
   environment(): { isContainerized: boolean; skipSandboxWarning?: boolean } {
-    return {
+    return HealthEnvironmentResponseSchema.parse({
       isContainerized: this.config.execution.containerized,
       skipSandboxWarning: this.config.execution.skipSandboxWarning,
-    };
+    });
   }
 
   @Public()
   @Get('live')
   live(): { status: 'ok'; timestamp: string } {
-    return { status: 'ok', timestamp: new Date().toISOString() };
+    return LivenessResponseSchema.parse({ status: 'ok', timestamp: new Date().toISOString() });
   }
   @Public()
   @Get('ready')
   ready(): { status: 'ready'; timestamp: string } {
     if (!this.readiness.snapshot().ready)
       throw new ServiceUnavailableException('Application is not ready.');
-    return { status: 'ready', timestamp: new Date().toISOString() };
+    return ReadinessResponseSchema.parse({ status: 'ready', timestamp: new Date().toISOString() });
   }
 
   @Get('detailed')
   detailed(@Res({ passthrough: true }) response: ServerResponse): Record<string, unknown> {
     if (this.embeddedInstanceId)
       response.setHeader('x-automaker-instance-id', this.embeddedInstanceId);
-    return {
+    return DetailedHealthResponseSchema.parse({
       status: 'ok',
       timestamp: new Date().toISOString(),
       version: getVersion(),
@@ -65,6 +76,6 @@ export class HealthController {
         method: this.config.auth.disabled ? 'disabled' : 'api_key_or_session',
       },
       env: { nodeVersion: process.version, platform: process.platform, arch: process.arch },
-    };
+    });
   }
 }

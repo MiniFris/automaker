@@ -25,7 +25,7 @@ import {
 import { resolveModelString } from '@automaker/model-resolver';
 import { createLogger, loadContextFiles, classifyError } from '@automaker/utils';
 import { getFeatureDir } from '@automaker/platform';
-import * as secureFs from '../../lib/secure-fs.js';
+import type { ExecutionFilesystem } from '../execution-filesystem.js';
 import { validateWorkingDirectory, createAutoModeOptions } from '../../lib/sdk-options.js';
 import { hasRemoteEnvironment } from '../../providers/environment-execution.js';
 import { isRemoteCliModel, isRemoteSdkModel } from '@automaker/types';
@@ -88,6 +88,7 @@ export class AutoModeServiceFacade {
     private readonly recoveryService: RecoveryService,
     private readonly pipelineOrchestrator: PipelineOrchestrator,
     private readonly settingsService: SettingsService | null,
+    private readonly filesystem: ExecutionFilesystem,
     private readonly directoryValidator: (cwd: string) => void = validateWorkingDirectory
   ) {}
 
@@ -176,6 +177,7 @@ export class AutoModeServiceFacade {
       providerRegistry,
       toolPolicy,
       pipeline,
+      filesystem,
       sharedServices,
     } = options;
 
@@ -202,7 +204,8 @@ export class AutoModeServiceFacade {
       eventBus,
       featureStateManager,
       planApprovalService,
-      settingsService
+      settingsService,
+      filesystem
     );
     const testRunnerService = new TestRunnerService();
 
@@ -447,6 +450,7 @@ export class AutoModeServiceFacade {
         getFacade().executeFeature(featureId, useWorktrees, false, undefined, opts),
       createRunAgentFn(),
       pipeline,
+      filesystem,
       options.validateWorkingDirectory
     );
 
@@ -577,6 +581,7 @@ export class AutoModeServiceFacade {
       loadContextFiles,
       providerRegistry,
       pipeline,
+      filesystem,
       options.validateWorkingDirectory
     );
 
@@ -596,6 +601,7 @@ export class AutoModeServiceFacade {
       (featureId) => concurrencyManager.isRunning(featureId),
       (opts) => concurrencyManager.acquireAsync(opts),
       (featureId, expected) => concurrencyManager.release(featureId, { expected }),
+      filesystem,
       () => getFacade().stopping
     );
 
@@ -614,6 +620,7 @@ export class AutoModeServiceFacade {
       recoveryService,
       pipelineOrchestrator,
       settingsService,
+      filesystem,
       options.validateWorkingDirectory
     );
 
@@ -781,7 +788,7 @@ export class AutoModeServiceFacade {
       const featureDir = getFeatureDir(this.projectPath, featureId);
       let previousContext = '';
       try {
-        previousContext = (await secureFs.readFile(
+        previousContext = (await this.filesystem.readFile(
           path.join(featureDir, 'agent-output.md'),
           'utf-8'
         )) as string;
@@ -878,7 +885,7 @@ export class AutoModeServiceFacade {
         );
         if (resolved) {
           try {
-            await secureFs.access(resolved);
+            await this.filesystem.access(resolved);
             workDir = resolved;
           } catch {
             /* Preserve project-directory fallback. */
@@ -986,7 +993,7 @@ export class AutoModeServiceFacade {
 
     if (providedWorktreePath) {
       try {
-        await secureFs.access(providedWorktreePath);
+        await this.filesystem.access(providedWorktreePath);
         workDir = providedWorktreePath;
       } catch {
         // Use project path

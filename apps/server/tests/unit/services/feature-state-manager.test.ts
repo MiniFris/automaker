@@ -77,6 +77,41 @@ describe('FeatureStateManager', () => {
 
     mockFeatureLoader = {
       syncFeatureToAppSpec: vi.fn(),
+      get: vi.fn(async (project, id) => {
+        try {
+          return (
+            await readJsonWithRecovery(
+              path.join(getFeatureDir(project, id), 'feature.json'),
+              null,
+              { maxBackups: 3, autoRestore: true }
+            )
+          ).data;
+        } catch {
+          return null;
+        }
+      }),
+      listIds: vi.fn(async (project) => {
+        try {
+          return (await secureFs.readdir(getFeaturesDir(project), { withFileTypes: true }))
+            .filter((entry) => entry.isDirectory())
+            .map((entry) => entry.name);
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
+          throw error;
+        }
+      }),
+      mutate: vi.fn(async (project, id, mutation) => {
+        const file = path.join(getFeatureDir(project, id), 'feature.json');
+        const feature = (
+          await readJsonWithRecovery<Feature | null>(file, null, {
+            maxBackups: 3,
+            autoRestore: true,
+          })
+        ).data;
+        if (!feature || (await mutation(feature)) === false) return null;
+        await atomicWriteJson(file, feature, { backupCount: 3 });
+        return feature;
+      }),
     } as unknown as FeatureLoader;
     notificationServiceRef = { createNotification: vi.fn() };
 

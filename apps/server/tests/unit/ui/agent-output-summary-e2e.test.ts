@@ -21,6 +21,7 @@ import type { EventEmitter } from '@/lib/events.js';
 import type { FeatureLoader } from '@/services/feature-loader.js';
 import { atomicWriteJson, readJsonWithRecovery } from '@automaker/utils';
 import { getFeatureDir } from '@automaker/platform';
+import path from 'node:path';
 
 // Mock dependencies
 vi.mock('@/lib/secure-fs.js', () => ({
@@ -175,6 +176,18 @@ describe('Agent Output Summary E2E Flow', () => {
     };
 
     const mockFeatureLoader = {
+      mutate: vi.fn(async (project, id, mutation) => {
+        const file = path.join(getFeatureDir(project, id), 'feature.json');
+        const feature = (
+          await readJsonWithRecovery<Feature | null>(file, null, {
+            maxBackups: 3,
+            autoRestore: true,
+          })
+        ).data;
+        if (!feature || (await mutation(feature)) === false) return null;
+        await atomicWriteJson(file, feature, { backupCount: 3 });
+        return feature;
+      }),
       syncFeatureToAppSpec: vi.fn(),
     } as unknown as FeatureLoader;
 

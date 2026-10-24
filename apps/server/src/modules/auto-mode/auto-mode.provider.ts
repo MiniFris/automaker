@@ -11,6 +11,8 @@ import { PipelineService } from '../../services/pipeline-service.js';
 import { ProjectRunContextRegistry } from './project-run-context.registry.js';
 import { SecurityService } from '../../core/security/security.service.js';
 import { FeatureRunCoordinator } from '../orchestration/feature-run-coordinator.service.js';
+import { SECURE_FILESYSTEM } from '../../core/security/index.js';
+import type { ExecutionFilesystem } from '../../services/execution-filesystem.js';
 
 export const autoModeProvider: FactoryProvider<AutoModeServiceCompat> = {
   provide: AutoModeServiceCompat,
@@ -22,6 +24,7 @@ export const autoModeProvider: FactoryProvider<AutoModeServiceCompat> = {
     ProviderRegistry,
     ToolPolicyService,
     PipelineService,
+    SECURE_FILESYSTEM,
     ProjectRunContextRegistry,
     SecurityService,
     FeatureRunCoordinator,
@@ -34,6 +37,7 @@ export const autoModeProvider: FactoryProvider<AutoModeServiceCompat> = {
     providers: ProviderRegistry,
     policy: ToolPolicyService,
     pipeline: PipelineService,
+    filesystem: ExecutionFilesystem,
     contexts: ProjectRunContextRegistry,
     security: SecurityService,
     coordinator: FeatureRunCoordinator
@@ -47,6 +51,7 @@ export const autoModeProvider: FactoryProvider<AutoModeServiceCompat> = {
       providers,
       policy,
       pipeline,
+      filesystem,
       {
         contexts,
         coordinator,

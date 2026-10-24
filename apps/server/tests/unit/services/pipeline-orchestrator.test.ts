@@ -1,3 +1,4 @@
+import * as executionFilesystem from '../../../src/lib/secure-fs.js';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { Feature, PipelineStep, PipelineConfig } from '@automaker/types';
 import { toDirectModelId } from '@automaker/types';
@@ -45,6 +46,10 @@ import { performMerge } from '../../../src/services/merge-service.js';
 
 // Mock secureFs
 vi.mock('../../../src/lib/secure-fs.js', () => ({
+  readdir: vi.fn(),
+  mkdir: vi.fn(),
+  writeFile: vi.fn(),
+  appendFile: vi.fn(),
   readFile: vi.fn(),
   access: vi.fn(),
 }));
@@ -242,7 +247,8 @@ describe('PipelineOrchestrator', () => {
       mockBuildFeaturePromptFn,
       mockExecuteFeatureFn,
       mockRunAgentFn,
-      pipelineService as never
+      pipelineService as never,
+      executionFilesystem
     );
   });
 
@@ -298,7 +304,8 @@ describe('PipelineOrchestrator', () => {
       mockBuildFeaturePromptFn,
       mockExecuteFeatureFn,
       mockRunAgentFn,
-      pipelineService as never
+      pipelineService as never,
+      executionFilesystem
     );
     const feature = { ...testFeature, model: toDirectModelId('remote') };
     const context = {
@@ -352,7 +359,8 @@ describe('PipelineOrchestrator', () => {
         mockBuildFeaturePromptFn,
         mockExecuteFeatureFn,
         mockRunAgentFn,
-        pipelineService as never
+        pipelineService as never,
+        executionFilesystem
       );
       expect(orch).toBeInstanceOf(PipelineOrchestrator);
     });
