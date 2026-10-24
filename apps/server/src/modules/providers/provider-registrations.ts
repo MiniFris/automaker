@@ -18,7 +18,8 @@ import type { SettingsService } from '../../services/settings-service.js';
 import type { ProviderRegistration } from './provider-registry.service.js';
 
 export function createProviderRegistrations(
-  settings: SettingsService
+  settings: SettingsService,
+  environment?: () => Promise<Readonly<NodeJS.ProcessEnv>>
 ): readonly ProviderRegistration[] {
   return Object.freeze([
     {
@@ -33,7 +34,7 @@ export function createProviderRegistrations(
       canHandleModel: (model: string) =>
         model.startsWith('claude-') ||
         ['opus', 'sonnet', 'haiku'].some((name) => model.includes(name)),
-      create: () => new ClaudeProvider(),
+      create: () => new ClaudeProvider(environment),
     },
     {
       name: 'cursor',
@@ -46,7 +47,7 @@ export function createProviderRegistrations(
       aliases: ['openai'],
       priority: 5,
       canHandleModel: isCodexModel,
-      create: () => new CodexProvider(settings),
+      create: () => new CodexProvider(settings, environment),
     },
     {
       name: 'opencode',

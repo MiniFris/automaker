@@ -20,6 +20,7 @@ import {
 import { ProviderConnectionRepository } from './provider-connection.repository.js';
 import { SetupCredentialCache } from './setup-credential-cache.service.js';
 import { SettingsService } from '../../services/settings-service.js';
+import { resolveApplicationKey } from '../../providers/credential-policy.js';
 
 const errors: Record<Exclude<ClaudeVerificationOutcome, 'verified'>, string> = {
   authentication: 'Claude credentials were rejected.',
@@ -156,13 +157,19 @@ export class ClaudeVerificationService {
           const key =
             parsed.data.apiKey ??
             (this.keys.get('anthropic') ||
-              stored?.apiKeys.anthropic ||
-              (this.keys.isEnvironmentConfigured(
-                'ANTHROPIC_API_KEY',
-                !!this.environment.ANTHROPIC_API_KEY
-              )
-                ? this.environment.ANTHROPIC_API_KEY
-                : undefined));
+              resolveApplicationKey(
+                stored!,
+                {
+                  ...this.environment,
+                  ANTHROPIC_API_KEY: this.keys.isEnvironmentConfigured(
+                    'ANTHROPIC_API_KEY',
+                    !!this.environment.ANTHROPIC_API_KEY
+                  )
+                    ? this.environment.ANTHROPIC_API_KEY
+                    : undefined,
+                },
+                'anthropic'
+              ));
           if (!key || !key.trim())
             return result(
               'authentication',

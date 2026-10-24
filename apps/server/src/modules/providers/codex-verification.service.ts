@@ -24,6 +24,7 @@ import { CodexCredentialRuntime } from '../../core/platform/codex-credential.run
 import { ProviderConnectionRepository } from './provider-connection.repository.js';
 import { SetupCredentialCache } from './setup-credential-cache.service.js';
 import { SettingsService } from '../../services/settings-service.js';
+import { resolveApplicationKey } from '../../providers/credential-policy.js';
 
 const errors: Record<Exclude<CodexVerificationOutcome, 'verified'>, string> = {
   authentication: 'Codex credentials could not be verified.',
@@ -180,13 +181,19 @@ export class CodexVerificationService {
           apiKey =
             parsed.data.apiKey ??
             (this.keys.get('openai') ||
-              stored?.apiKeys.openai ||
-              (this.keys.isEnvironmentConfigured(
-                'OPENAI_API_KEY',
-                !!this.environment.OPENAI_API_KEY
-              )
-                ? this.environment.OPENAI_API_KEY
-                : undefined));
+              resolveApplicationKey(
+                stored!,
+                {
+                  ...this.environment,
+                  OPENAI_API_KEY: this.keys.isEnvironmentConfigured(
+                    'OPENAI_API_KEY',
+                    !!this.environment.OPENAI_API_KEY
+                  )
+                    ? this.environment.OPENAI_API_KEY
+                    : undefined,
+                },
+                'openai'
+              ));
           if (!apiKey?.trim())
             return result(
               'authentication',

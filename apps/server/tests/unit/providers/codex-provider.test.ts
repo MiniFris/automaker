@@ -506,6 +506,26 @@ describe('codex-provider.ts', () => {
       });
       await cli.dispose();
     });
+    it('treats an empty application snapshot as authoritative instead of re-reading credentials later', async () => {
+      vi.mocked(findCodexCliPath).mockResolvedValue(null);
+      vi.mocked(getCodexAuthIndicators).mockResolvedValue({
+        hasAuthFile: false,
+        hasApiKey: false,
+        hasOAuthToken: false,
+      });
+      const settings = {
+        getGlobalSettings: async () => ({}),
+        getCredentials: vi.fn().mockResolvedValue({ apiKeys: { openai: 'sk-later-key' } }),
+      };
+      const scoped = new CodexProvider(settings as never, async () => ({}));
+      const messages = await collectAsyncGenerator(
+        scoped.executeQuery({ prompt: 'offline', cwd: '/tmp', model: 'gpt-5.2', allowedTools: [] })
+      );
+      expect(settings.getCredentials).not.toHaveBeenCalled();
+      expect(codexRunMock).not.toHaveBeenCalled();
+      expect(messages.some((message) => message.type === 'error')).toBe(true);
+      await scoped.dispose();
+    });
 
     it('falls back to CLI when no tools are requested and no API key is available', async () => {
       vi.mocked(spawnJSONLProcess).mockReturnValue((async function* () {})());

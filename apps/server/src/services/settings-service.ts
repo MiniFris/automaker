@@ -8,6 +8,11 @@
  */
 
 import { createLogger } from '@automaker/utils';
+import {
+  validateCredentialPolicy,
+  SETUP_CREDENTIAL_ENV,
+  type SetupCredentialProvider,
+} from '../providers/credential-policy.js';
 import * as secureFs from '../lib/secure-fs.js';
 import os from 'os';
 import path from 'path';
@@ -776,7 +781,11 @@ export class SettingsService {
    */
   async getCredentials(): Promise<Credentials> {
     const credentialsPath = getCredentialsPath(this.dataDir);
-    const credentials = await this.files.read<Credentials>(credentialsPath, DEFAULT_CREDENTIALS);
+    const credentials = await this.files.read<Credentials>(
+      credentialsPath,
+      DEFAULT_CREDENTIALS,
+      true
+    );
 
     return {
       ...DEFAULT_CREDENTIALS,
@@ -802,6 +811,41 @@ export class SettingsService {
     const write = this.credentialWrites.then(() => this.updateCredentialsNow(updates));
     this.credentialWrites = write.catch(() => {});
     return write;
+  }
+
+  async setSetupCredential(provider: SetupCredentialProvider, value: string | null): Promise<void> {
+    if (
+      !Object.hasOwn(SETUP_CREDENTIAL_ENV, provider) ||
+      (value !== null &&
+        (typeof value !== 'string' ||
+          !value ||
+          value.length > 8192 ||
+          /[\x00-\x20\x7f]/.test(value)))
+    )
+      throw new Error('Invalid application credential update.');
+    const write = this.credentialWrites.then(async () => {
+      const current = await this.getCredentials();
+      validateCredentialPolicy(current);
+      await this.updateCredentialsNow({
+        disabledBootstrapApiKeys: {
+          ...current.disabledBootstrapApiKeys,
+          [provider]: value === null,
+          ...(value && provider === 'anthropic' ? { anthropic_oauth_token: true } : {}),
+          ...(value && provider === 'anthropic_oauth_token' ? { anthropic: true } : {}),
+        },
+        ...(provider === 'anthropic_oauth_token'
+          ? {
+              anthropicOAuthToken: value ?? '',
+              ...(value && { apiKeys: { anthropic: '' } as Credentials['apiKeys'] }),
+            }
+          : {
+              apiKeys: { [provider]: value ?? '' } as Credentials['apiKeys'],
+              ...(value && provider === 'anthropic' && { anthropicOAuthToken: '' }),
+            }),
+      });
+    });
+    this.credentialWrites = write.catch(() => {});
+    await write;
   }
 
   private async updateCredentialsNow(updates: Partial<Credentials>): Promise<Credentials> {
@@ -871,6 +915,7 @@ export class SettingsService {
       };
     }
 
+    validateCredentialPolicy(updated);
     await this.files.write(credentialsPath, updated, true);
     logger.info('Credentials updated');
 

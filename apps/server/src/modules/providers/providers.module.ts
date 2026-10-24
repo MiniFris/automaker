@@ -20,6 +20,7 @@ import { CursorModelConfigService } from './cursor-model-config.service.js';
 import { ClaudeVerificationService } from './claude-verification.service.js';
 import { CodexVerificationService } from './codex-verification.service.js';
 import { GithubAuthenticationService } from './github-authentication.service.js';
+import { ApplicationCredentialsService } from './application-credentials.service.js';
 import {
   CodexVerificationRuntime,
   NodeCodexVerificationRuntime,
@@ -61,12 +62,18 @@ import {
     ClaudeVerificationService,
     CodexVerificationService,
     GithubAuthenticationService,
+    ApplicationCredentialsService,
     { provide: CodexCredentialRuntime, useClass: NodeCodexCredentialRuntime },
     { provide: CODEX_CREDENTIAL_PROCESS, useValue: spawnCodexCredentialProcess },
     { provide: CodexVerificationRuntime, useClass: NodeCodexVerificationRuntime },
     { provide: ClaudeVerificationRuntime, useClass: NodeClaudeVerificationRuntime },
     { provide: SetupStatusRuntime, useClass: NodeSetupStatusRuntime },
   ],
-  exports: [ProviderRegistry, ProviderConnectionRepository, ToolPolicyService],
+  exports: [
+    ProviderRegistry,
+    ProviderConnectionRepository,
+    ToolPolicyService,
+    ApplicationCredentialsService,
+  ],
 })
 export class ProvidersModule {}

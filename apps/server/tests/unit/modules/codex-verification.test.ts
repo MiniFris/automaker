@@ -82,6 +82,15 @@ it('honors bootstrap deletion and rejects invalid keys before HTTP execution', a
   ).toBe(false);
   expect(runtime.run).not.toHaveBeenCalled();
 });
+it('honors durable bootstrap deletion even with a fresh setup cache', async () => {
+  const { service, request, runtime, settings } = fixture({ OPENAI_API_KEY: key });
+  settings.getCredentials.mockResolvedValue({
+    apiKeys: { openai: '' },
+    disabledBootstrapApiKeys: { openai: true },
+  } as never);
+  expect((await service.verify(await request(), 'client')).authenticated).toBe(false);
+  expect(runtime.run).not.toHaveBeenCalled();
+});
 it.each(['instanceId', 'workingDirectory', 'endpoint'] as const)(
   'rejects stale %s before a model query',
   async (field) => {

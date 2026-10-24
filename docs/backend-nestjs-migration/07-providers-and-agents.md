@@ -1781,6 +1781,96 @@ Native key
 persistence/activation, usage ownership и оставшиеся capability/lifecycle пункты
 этапа 7 всё ещё обязательны. Этапы 8–11 не объявляются завершёнными.
 
+### Срез: durable credential policy и application-owned runtime resolver
+
+`ApplicationCredentialsService` подключён через Nest к production provider factory:
+Claude/Codex получают environment callback конкретной application, а не общий mutable
+process.env. Context читается заново для каждого query; managed key имеет приоритет
+над bootstrap key. Codex callback snapshot авторитетен: отсутствие ключа не вызывает
+повторное чтение credentials с более поздним состоянием. Raw legacy constructors
+сохранены для compatibility composition и не объявляются application-owned transport.
+Inline/profile credentials остаются самостоятельными явными источниками и не
+отзываются удалением application key.
+
+Общий `resolveApplicationKey` учитывает managed key, immutable bootstrap environment
+и `disabledBootstrapApiKeys`. Эти optional metadata и отдельный `anthropicOAuthToken`
+хранятся только в private credentials record, не в global settings или masked
+credentials response. Secret передаётся SDK через per-query environment;
+subscription token не выдаётся за Anthropic API key. Setup mode переключается с
+очисткой competing managed value и отключением его bootstrap fallback. Temporary
+wizard cache пока сохраняется для legacy commands, но API-key/token entries в нём
+теперь взаимоисключающие.
+
+`SettingsService.setSetupCredential` выполняет credential + deletion-policy update
+одним atomic private write на той же FIFO, что и обычный updateCredentials. Delete
+очищает managed value и сохраняет запрет bootstrap fallback; новый store снимает
+соответствующий запрет. Другие provider keys сохраняются. Primary credentials file
+имеет mode 0600 на Unix. Это не secure erase backups, bootstrap `.env` или vendor
+CLI logins, не revocation удалённого token и не межпроцессная блокировка нескольких
+приложений с одним DATA_DIR.
+
+`ApplicationCredentialsService.change` сериализует persistence + activation и
+очищает stale wizard values только после успешного durable commit. Ошибка записи
+не активирует новый key. Before-shutdown закрывает mutation admission и ждёт FIFO;
+read snapshots остаются доступны для cleanup уже принятых provider jobs. HTTP-level
+limits и confirmed target будут принадлежать native command boundary при cutover.
+
+Credentials читаются строго: ENOENT означает defaults, но malformed JSON, permission
+или другие read errors не превращаются в пустой record. Иначе повреждение файла
+могло бы потерять deletion policy и снова включить bootstrap secret. Private parse/
+read errors не логируются и заменяются статическим сообщением. Malformed policy
+отвергается при resolve и до overwrite при update; после отказа FIFO работает.
+Старый backend может игнорировать metadata: автоматический downgrade/rollback
+по-прежнему запрещён до cutover preflight этапа 10. Additive schema сама по себе
+не является downgrade protection.
+
+Claude/Codex API-key verification используют тот же resolver и учитывают durable
+deletion с новым пустым wizard cache. Supplied unsaved verification key остаётся
+отдельным opt-in источником без persistence. Native model queries этого среза
+не активируют credentials через process.env mutation.
+
+OpenAI Docs использован для SDK environment boundary:
+[Codex SDK](https://developers.openai.com/codex/sdk). Реальная форма apiKey/env
+проверяется по установленной 0.98.0 и ранее добавленным offline CLI contracts,
+не предполагается из более новой документации. Новых SDK parameters или upgrade нет.
+
+Проверки среза:
+
+- 15 credential-policy cases с real-filesystem и controlled lifecycle ports: managed precedence, restart после
+  delete, private primary mode, переключение token/API-key, concurrent FIFO с
+  обычным credential update, app isolation и legacy-cache mode transition.
+  Corrupt file не перезаписывается и не возвращает bootstrap key; malformed
+  policy update не повреждает valid record и не ломает следующую FIFO operation.
+  Дополнительно проверены post-commit cache activation, failed write без активации
+  и shutdown drain/rejection нового write.
+- Реальная Nest composition двух applications использует production registry,
+  provider factories, settings и resolver. Только vendor SDK calls и CLI auth
+  discovery явно заменены offline ports: видны разные credentials в настоящих
+  adapter options, а после restart удалённый key отсутствует и новый Codex SDK
+  query не запускается. Это не live authentication/account acceptance.
+- Claude/Codex verification tests проверяют durable deletion с новым cache;
+  Codex adapter test запрещает second credential read после пустого snapshot.
+- `npm run test:server:unit`: 3474 passed, 40 существующих skips.
+- `npm run test:server:contract`: 271 passed.
+- `npm run test:packages`: 1387 passed.
+- Types/server builds, UI typecheck/lint, server lint и lockfile check успешны.
+  UI production и Electron main/preload build успешны с прежним chunk warning;
+  packaged Electron и Windows acceptance не заявляются.
+- Production lifecycle smoke: SIGTERM/SIGINT exit 0 после server build.
+- Chromium с trace: 8 passed, включая consent/refresh и реальные chat workflows.
+- Выбранные real SSH CLI/SDK/Direct chat/restart: 3 passed, 34 filtered.
+- Docker fixture acceptance с `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest`:
+  11 passed, 4 opt-in skipped; owned cleanup проверен. Внешних paid probes нет.
+- Dependency inventory обновлён; route/dependency/API-consumer inventory checks,
+  форматирование и diff check успешны.
+
+Это ещё не перенос setup key endpoints: store/delete handler bridge пока пишет
+process.env/.env. До его удаления обязательны confirmed key target/protocol gate,
+native command admission/drain, согласованный masked/status read model и проверка
+остальных credential consumers, включая другие CLI adapters/remote paths.
+Full credential isolation, status evidence policy, native key mutation checklist
+и этап 7 не объявляются завершёнными только по этому resolver checkpoint.
+
 ## 7.7. Agent routes
 
 - [x] Start/query/follow-up/cancel.

@@ -8,11 +8,13 @@ const logger = createLogger('SettingsFileRepository');
 /** File boundary shared by global, project and credential settings stores. */
 @Injectable()
 export class SettingsFileRepository {
-  async read<T>(filePath: string, defaultValue: T): Promise<T> {
+  async read<T>(filePath: string, defaultValue: T, strict = false): Promise<T> {
     try {
       const content = (await secureFs.readFile(filePath, 'utf-8')) as string;
       return JSON.parse(content) as T;
     } catch (error) {
+      if (strict && (error as NodeJS.ErrnoException).code !== 'ENOENT')
+        throw new Error('Private settings are unavailable.');
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
         logger.error(`Error reading ${filePath}:`, error);
       }

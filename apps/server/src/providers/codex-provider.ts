@@ -718,13 +718,21 @@ export class CodexProvider extends BaseProvider {
   }
   constructor(
     private readonly settingsService?: SettingsService,
-    private readonly environment: Readonly<NodeJS.ProcessEnv> = process.env
+    private readonly environment:
+      | Readonly<NodeJS.ProcessEnv>
+      | (() => Promise<Readonly<NodeJS.ProcessEnv>>) = process.env
   ) {
     super();
   }
 
   getName(): string {
     return 'codex';
+  }
+
+  private async readEnvironment(): Promise<Readonly<NodeJS.ProcessEnv>> {
+    return {
+      ...(typeof this.environment === 'function' ? await this.environment() : this.environment),
+    };
   }
 
   protected async *execute(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
@@ -737,7 +745,7 @@ export class CodexProvider extends BaseProvider {
     }
 
     try {
-      const environment = { ...this.environment };
+      const environment = await this.readEnvironment();
       const mcpServers = options.mcpServers ?? {};
       const hasMcpServers = Object.keys(mcpServers).length > 0;
       const codexSettings = await loadCodexCliSettings(options.codexSettings, this.settingsService);
@@ -777,7 +785,7 @@ export class CodexProvider extends BaseProvider {
 
       const executionPlan = await resolveCodexExecutionPlan(
         options,
-        this.settingsService,
+        typeof this.environment === 'function' ? undefined : this.settingsService,
         environment
       );
       if (executionPlan.mode === CODEX_EXECUTION_MODE_SDK) {
@@ -1118,7 +1126,12 @@ export class CodexProvider extends BaseProvider {
 
   async detectInstallation(): Promise<InstallationStatus> {
     const cliPath = await findCodexCliPath();
-    const hasApiKey = Boolean(await resolveOpenAiApiKey(this.settingsService, this.environment));
+    const hasApiKey = Boolean(
+      await resolveOpenAiApiKey(
+        typeof this.environment === 'function' ? undefined : this.settingsService,
+        await this.readEnvironment()
+      )
+    );
     const installed = !!cliPath;
 
     let version = '';
@@ -1159,7 +1172,13 @@ export class CodexProvider extends BaseProvider {
    */
   async checkAuth(): Promise<CodexAuthStatus> {
     const cliPath = await findCodexCliPath();
-    const hasApiKey = Boolean(await resolveOpenAiApiKey(this.settingsService, this.environment));
+    const environment = await this.readEnvironment();
+    const hasApiKey = Boolean(
+      await resolveOpenAiApiKey(
+        typeof this.environment === 'function' ? undefined : this.settingsService,
+        environment
+      )
+    );
     const authIndicators = await getCodexAuthIndicators();
 
     // Check for API key in environment
@@ -1181,7 +1200,7 @@ export class CodexProvider extends BaseProvider {
           args: ['login', 'status'],
           cwd: process.cwd(),
           env: {
-            ...buildEnv(this.environment),
+            ...buildEnv(environment),
             TERM: 'dumb',
           },
           inheritEnv: false,

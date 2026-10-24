@@ -40,6 +40,7 @@ import { createProviderRegistrations } from '../modules/providers/provider-regis
 import { ProviderRegistry } from '../modules/providers/provider-registry.service.js';
 import { ToolPolicyService } from '../modules/providers/tool-policy.service.js';
 import { RuntimePathsService } from '../core/config/index.js';
+import { ApplicationCredentialsService } from '../modules/providers/application-credentials.service.js';
 import {
   DATA_DIRECTORY,
   LEGACY_EVENT_EMITTER,
@@ -97,9 +98,16 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
     ),
     service(
       'providerRegistry',
-      [tokens.settings, tokens.providerConnections],
-      (settings: SettingsService, connections: ProviderConnectionRepository) =>
-        new ProviderRegistry(createProviderRegistrations(settings), connections)
+      [tokens.settings, tokens.providerConnections, ApplicationCredentialsService],
+      (
+        settings: SettingsService,
+        connections: ProviderConnectionRepository,
+        credentials: ApplicationCredentialsService
+      ) =>
+        new ProviderRegistry(
+          createProviderRegistrations(settings, () => credentials.environment()),
+          connections
+        )
     ),
     service(
       'agentService',

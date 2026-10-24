@@ -227,3 +227,29 @@ API header повышен до `8`. Mounted/refreshed UI не вызывает a
 shutdown drain владеют checks; общий shutdown deadline, public setup access policy
 и гарантии OS-level reap этим не закрываются. Внутренний vendor credential refresh
 возможен и указан в confirmation; самостоятельные login/logout/switch не выполняются.
+
+## ADR-017: Durable bootstrap suppression и application credential snapshots
+
+Удаление application key должно очищать managed value и сохранять запрет bootstrap
+fallback в private credentials record. Empty managed string без policy недостаточен:
+после restart он снова разрешил бы environment key. Setup и обычные credentials
+writes используют одну FIFO и atomic private write; другие provider keys сохраняются.
+API-key/subscription-token modes имеют разные fields и не оставляют competing
+managed/bootstrap auth override активным.
+
+Application credential change активирует durable state только после commit,
+очищает obsolete wizard cache и drain-ит accepted writes при shutdown. Ошибка
+persistence не активирует новый key; HTTP limits/target admission ещё не перенесены.
+
+Production Claude/Codex factories получают per-query environment resolver через
+Nest. Managed state имеет приоритет над bootstrap snapshot; отсутствие выбранного
+key в Codex callback не компенсируется повторным чтением более позднего record.
+API-key verification учитывает ту же policy. Private read/parse errors и malformed
+policy fail closed; defaults разрешены только при ENOENT. Старый backend может
+игнорировать additive metadata, поэтому downgrade/cutover preflight остаётся gate.
+
+Этот срез не подключает новые store/delete HTTP commands. Legacy key bridge,
+confirmation/protocol target, status read model, остальные CLI/remote credential
+consumers и command lifecycle ещё требуют переноса. Metadata не означает token
+revocation, secure erase backups/bootstrap config или отзыв самостоятельного CLI
+login. API header и capability versions этим срезом не меняются.

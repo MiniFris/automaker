@@ -1568,6 +1568,12 @@ export interface GlobalSettings {
  * Keys should never be exposed in UI or logs.
  */
 export interface Credentials {
+  /** Application-owned setup policy; never expose this record through settings DTOs. */
+  disabledBootstrapApiKeys?: Partial<
+    Record<'anthropic' | 'openai' | 'anthropic_oauth_token', boolean>
+  >;
+  /** Claude subscription token, separate from an Anthropic API key. */
+  anthropicOAuthToken?: string;
   /** Version number for schema migration */
   version: number;
   /** Keys referenced by endpoint auth. Never include these in global settings DTOs. */

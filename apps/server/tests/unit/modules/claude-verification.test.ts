@@ -24,6 +24,15 @@ function fixture(environment: NodeJS.ProcessEnv = {}) {
     ({ confirmed: true, target: service.target(authMethod).target }) as const;
   return { service, request, runtime, settings, keys };
 }
+it('honors durable bootstrap deletion with a fresh setup cache', async () => {
+  const { service, request, runtime, settings } = fixture({ ANTHROPIC_API_KEY: key });
+  settings.getCredentials.mockResolvedValue({
+    apiKeys: { anthropic: '' },
+    disabledBootstrapApiKeys: { anthropic: true },
+  } as never);
+  expect((await service.verify(request('api_key'), 'client')).authenticated).toBe(false);
+  expect(runtime.run).not.toHaveBeenCalled();
+});
 it('previews the exact endpoint/model/method without probing credentials or launching an SDK', () => {
   const { service, runtime, settings } = fixture();
   expect(service.target('api_key')).toMatchObject({

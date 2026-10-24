@@ -11,6 +11,8 @@ export class SetupCredentialCache {
   }
 
   set(provider: string, key: string): void {
+    if (key && provider === 'anthropic') this.keys.delete('anthropic_oauth_token');
+    if (key && provider === 'anthropic_oauth_token') this.keys.delete('anthropic');
     if (key) this.keys.set(provider, key);
     else this.keys.delete(provider);
   }
