@@ -6,9 +6,10 @@
     "description": "Generated from native controller routes and shared Zod input schemas. Incomplete inputs and unverified responses are explicitly marked; this is not a complete response contract. JSON Schema cannot express every Zod refinement: shared runtime schemas remain authoritative for validation."
   },
   "x-coverage": {
-    "operations": 317,
-    "sharedOrNoInput": 275,
+    "operations": 318,
+    "sharedOrNoInput": 276,
     "incompleteInput": 42,
+    "sharedRuntimeResponses": 1,
     "unverifiedResponses": 317
   },
   "paths": {
@@ -3602,6 +3603,33 @@
         "responses": {
           "200": {
             "description": "Successful response; response schema not yet verified."
+          },
+          "default": {
+            "description": "Error response; see endpoint implementation."
+          }
+        }
+      }
+    },
+    "/api/metrics": {
+      "get": {
+        "operationId": "MetricsController_snapshot",
+        "tags": [
+          "metrics"
+        ],
+        "x-source": "apps/server/src/core/observability/metrics.controller.ts:9",
+        "x-access": "protected",
+        "x-request-contract": "shared-or-no-input",
+        "x-response-contract": "shared-runtime",
+        "responses": {
+          "200": {
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/shared.MetricsSnapshotSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -12296,6 +12324,150 @@
         },
         "required": [
           "data"
+        ],
+        "additionalProperties": false
+      },
+      "shared.MetricsSnapshotSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "schemaVersion": {
+            "type": "number",
+            "const": 1
+          },
+          "uptimeMs": {
+            "type": "number",
+            "minimum": 0
+          },
+          "providerActiveQueries": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "droppedMeasurements": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "seriesLimit": {
+            "type": "number",
+            "const": 2048
+          },
+          "counters": {
+            "maxItems": 2048,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "labels": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "type": "string",
+                    "maxLength": 160
+                  }
+                },
+                "value": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "name",
+                "labels",
+                "value"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "observations": {
+            "maxItems": 2048,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "labels": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "type": "string",
+                    "maxLength": 160
+                  }
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "sum": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "min": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "max": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "buckets": {
+                  "minItems": 11,
+                  "maxItems": 11,
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "upperBound": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "count": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "required": [
+                      "upperBound",
+                      "count"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "name",
+                "labels",
+                "count",
+                "sum",
+                "min",
+                "max",
+                "buckets"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "uptimeMs",
+          "providerActiveQueries",
+          "droppedMeasurements",
+          "seriesLimit",
+          "counters",
+          "observations"
         ],
         "additionalProperties": false
       },

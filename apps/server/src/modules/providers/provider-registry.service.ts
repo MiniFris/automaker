@@ -15,6 +15,7 @@ import type { InstallationStatus, ModelDefinition } from '../../providers/types.
 import { ProviderConnectionRepository } from './provider-connection.repository.js';
 import { ProviderExecutionScope } from '../../providers/provider-execution-scope.js';
 import type { ModelCapabilities } from '../../providers/provider-contract.js';
+import { ApplicationMetrics } from '../../core/observability/application-metrics.js';
 
 export interface ProviderRegistration {
   readonly name: string;
@@ -51,16 +52,18 @@ export function indexProviderRegistrations(registrations: readonly ProviderRegis
 export class ProviderRegistry implements OnModuleInit, OnApplicationShutdown {
   private readonly registrations: ReadonlyMap<string, ProviderRegistration>;
   private readonly aliases: ReadonlyMap<string, string>;
-  private readonly executions = new ProviderExecutionScope();
+  private readonly executions: ProviderExecutionScope;
 
   constructor(
     @Inject(PROVIDER_REGISTRATIONS) registrations: readonly ProviderRegistration[],
     @Inject(ProviderConnectionRepository)
     private readonly connections: ProviderConnectionRepository,
+    @Inject(ApplicationMetrics) metrics: ApplicationMetrics,
     @Optional()
     @Inject(ProviderDiscoveryService)
     private readonly discovery?: ProviderDiscoveryService
   ) {
+    this.executions = new ProviderExecutionScope(5000, () => metrics.providerQueryStarted());
     const { providers, aliases } = indexProviderRegistrations(registrations);
     this.registrations = providers;
     this.aliases = aliases;

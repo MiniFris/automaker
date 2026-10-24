@@ -1,6 +1,20 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { HttpApiClient } from '@/lib/http-api-client';
 const request = vi.fn();
+
+it('preserves the public Claude CLI bridge through the setup domain without constructing another client', async () => {
+  const status = {
+    success: true,
+    installed: true,
+    recommendation: 'Existing guidance',
+    installCommands: { linux: 'existing command' },
+  };
+  const getClaudeStatus = vi.fn().mockResolvedValue(status);
+  expect(
+    await HttpApiClient.prototype.checkClaudeCli.call({ setup: { getClaudeStatus } } as never)
+  ).toBe(status);
+  expect(getClaudeStatus).toHaveBeenCalledOnce();
+});
 const target = {
   kind: 'application-credential',
   provider: 'openai',

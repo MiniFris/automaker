@@ -1,3 +1,4 @@
+import { ApplicationMetrics } from '../../src/core/observability/application-metrics.js';
 import { ProviderRegistry } from '../../src/modules/providers/provider-registry.service.js';
 import { createProviderRegistrations } from '../../src/modules/providers/provider-registrations.js';
 import { ProviderConnectionRepository } from '../../src/modules/providers/provider-connection.repository.js';
@@ -12,6 +13,7 @@ export function createTestProviderRegistry(
   return new ProviderRegistry(
     createProviderRegistrations(settings),
     ProviderConnectionRepository.forWorkingDirectory(process.cwd()),
+    new ApplicationMetrics(),
     discovery
   );
 }

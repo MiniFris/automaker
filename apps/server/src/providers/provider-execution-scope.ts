@@ -12,6 +12,8 @@ interface Lease {
   done: Promise<void>;
   close: () => Promise<unknown>;
   unconfirmed: boolean;
+  failed: boolean;
+  cancelled: boolean;
 }
 
 async function closeProviderIterator(
@@ -32,12 +34,36 @@ export class ProviderExecutionScope {
   private readonly leases = new Set<Lease>();
   private accepting = true;
   private disposal?: Promise<void>;
-  constructor(private readonly drainTimeoutMs = 5000) {}
+  constructor(
+    private readonly drainTimeoutMs = 5000,
+    private readonly observe?: () => (result: {
+      failed: boolean;
+      cancelled: boolean;
+      unconfirmed: boolean;
+    }) => void
+  ) {}
 
   admit(lease: Lease): () => void {
     if (!this.accepting || [...this.leases].some((item) => item.unconfirmed))
       throw new UnavailableDomainError('Provider execution is not accepting new queries.');
     this.leases.add(lease);
+    let finishObservation: ReturnType<NonNullable<typeof this.observe>> | undefined;
+    try {
+      finishObservation = this.observe?.();
+    } catch {
+      /* Telemetry cannot change execution ownership. */
+    }
+    void lease.done.then(() => {
+      try {
+        finishObservation?.({
+          failed: lease.failed,
+          cancelled: lease.cancelled,
+          unconfirmed: lease.unconfirmed,
+        });
+      } catch {
+        /* Telemetry failures must not become unhandled query failures. */
+      }
+    });
     return () => this.leases.delete(lease);
   }
 
@@ -89,6 +115,8 @@ export function managedProviderStream(
     done,
     close: () => stream.return(undefined),
     unconfirmed: false,
+    failed: false,
+    cancelled: false,
   };
   const generator = (async function* () {
     const release = scope.admit(lease);
@@ -125,9 +153,11 @@ export function managedProviderStream(
         yield result.value;
       }
     } catch (error) {
+      lease.failed = true;
       if (error instanceof ProviderCleanupError) lease.unconfirmed = true;
       throw error;
     } finally {
+      lease.cancelled = controller.signal.aborted || (!completed && !lease.failed);
       if (!completed) controller.abort();
       try {
         await closeProviderIterator(iterator, lease);

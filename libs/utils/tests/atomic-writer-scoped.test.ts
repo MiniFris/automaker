@@ -3,9 +3,42 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { secureFs } from '@automaker/platform';
-import { atomicWriteJson, updateJsonAtomically } from '../src/atomic-writer.js';
+import {
+  atomicWriteJson,
+  updateJsonAtomically,
+  readJsonWithRecovery,
+} from '../src/atomic-writer.js';
 
 describe('application-owned atomic writer', () => {
+  it('recovers through the scoped owner and rejects ambiguous reads or failed restores in strict mode', async () => {
+    const filesystem = owner(root),
+      target = path.join(root, 'feature.json');
+    await fs.writeFile(target, '{broken');
+    await fs.writeFile(target + '.bak1', JSON.stringify({ restored: true }));
+    expect(
+      await readJsonWithRecovery(target, null, { filesystem, strictErrors: true })
+    ).toMatchObject({ data: { restored: true }, source: 'backup' });
+    const read = filesystem.readFile.bind(filesystem);
+    const failing = vi
+      .spyOn(filesystem, 'readFile')
+      .mockImplementation((candidate, ...args) =>
+        candidate === target
+          ? Promise.reject(Object.assign(new Error('Owned read failure'), { code: 'EIO' }))
+          : read(candidate, ...args)
+      );
+    await expect(
+      readJsonWithRecovery(target, null, { filesystem, strictErrors: true })
+    ).rejects.toMatchObject({ code: 'EIO' });
+    failing.mockRestore();
+    await fs.writeFile(target, '{broken');
+    vi.spyOn(filesystem, 'copyFile').mockRejectedValueOnce(
+      Object.assign(new Error('Owned restore failure'), { code: 'ENOENT' })
+    );
+    await expect(
+      readJsonWithRecovery(target, null, { filesystem, strictErrors: true })
+    ).rejects.toMatchObject({ code: 'ENOENT' });
+    expect(await fs.readFile(target, 'utf8')).toBe('{broken');
+  });
   let root: string;
   const owners: Array<ReturnType<typeof secureFs.createSecureFs>> = [];
   beforeEach(async () => {

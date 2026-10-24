@@ -1,3 +1,4 @@
+import { ApplicationMetrics } from '../../../src/core/observability/application-metrics.js';
 import { describe, expect, it, vi } from 'vitest';
 import { createProviderRegistrations } from '../../../src/modules/providers/provider-registrations.js';
 import { ProviderRegistry } from '../../../src/modules/providers/provider-registry.service.js';
@@ -27,9 +28,13 @@ const model = (id: string, flags: Partial<ModelDefinition> = {}): ModelDefinitio
   ...flags,
 });
 const registry = (adapter: CatalogProvider) =>
-  new ProviderRegistry([{ name: 'fixture', canHandleModel: () => true, create: () => adapter }], {
-    isDisconnected: () => false,
-  } as never);
+  new ProviderRegistry(
+    [{ name: 'fixture', canHandleModel: () => true, create: () => adapter }],
+    {
+      isDisconnected: () => false,
+    } as never,
+    new ApplicationMetrics()
+  );
 const none = { vision: false, tools: false, reasoning: false };
 const matrix = {
   claude: [true, true, true, true, true],

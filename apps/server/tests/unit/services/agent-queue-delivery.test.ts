@@ -1,3 +1,4 @@
+import { ApplicationMetrics } from '../../../src/core/observability/application-metrics.js';
 import { mkdtemp, readFile, writeFile, stat, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -262,9 +263,13 @@ describe('durable queued delivery recovery', () => {
     ]);
     const provider = new MockProvider('claude');
     const execute = vi.spyOn(provider, 'executeQuery');
-    const registry = new ProviderRegistry([{ name: 'claude', create: () => provider }], {
-      isDisconnected: () => false,
-    } as never);
+    const registry = new ProviderRegistry(
+      [{ name: 'claude', create: () => provider }],
+      {
+        isDisconnected: () => false,
+      } as never,
+      new ApplicationMetrics()
+    );
     const state = createTestAgentState(directory, createTestAgentEvents(createEventEmitter()), {
       repository,
       sessions,

@@ -1,3 +1,4 @@
+import { ApplicationMetrics } from '../../../src/core/observability/application-metrics.js';
 import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -39,9 +40,13 @@ describe('agent storage failure boundaries', () => {
       }),
       undefined,
       ...createTestAgentProviders(
-        new ProviderRegistry([{ name: 'claude', create: () => new MockProvider('claude') }], {
-          isDisconnected: () => false,
-        } as never)
+        new ProviderRegistry(
+          [{ name: 'claude', create: () => new MockProvider('claude') }],
+          {
+            isDisconnected: () => false,
+          } as never,
+          new ApplicationMetrics()
+        )
       )
     );
     execute = vi.spyOn(MockProvider.prototype, 'executeQuery');

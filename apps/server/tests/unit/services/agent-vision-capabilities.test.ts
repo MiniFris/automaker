@@ -1,3 +1,4 @@
+import { ApplicationMetrics } from '../../../src/core/observability/application-metrics.js';
 import { mkdtemp, rm } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -16,9 +17,13 @@ it.each(['cursor', 'gemini'])(
   'rejects images for text-only %s transport before reading attachments or starting a provider',
   async (name) => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'automaker-vision-capability-'));
-    const registry = new ProviderRegistry(createProviderRegistrations({} as never), {
-      isDisconnected: () => false,
-    } as never);
+    const registry = new ProviderRegistry(
+      createProviderRegistrations({} as never),
+      {
+        isDisconnected: () => false,
+      } as never,
+      new ApplicationMetrics()
+    );
     const models = registry.byName(name)!.getAvailableModels();
     const candidate = models.find((model) => model.supportsVision === true) ?? models[0];
     const state = createTestAgentState(directory, createTestAgentEvents(createEventEmitter()));

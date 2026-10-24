@@ -1,9 +1,10 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
-import { Injectable, type NestMiddleware } from '@nestjs/common';
+import { Inject, Injectable, type NestMiddleware } from '@nestjs/common';
 import type { NextFunction, Request, Response } from 'express';
 import { createLogger } from '@automaker/utils';
+import { METRICS, type Metrics } from './metrics.js';
 
 const logger = createLogger('HTTP');
 const storage = new AsyncLocalStorage<{ correlationId: string }>();
@@ -23,20 +24,43 @@ export function runWithCorrelationContext<T>(correlationId: string, callback: ()
 
 @Injectable()
 export class RequestContextMiddleware implements NestMiddleware {
+  constructor(@Inject(METRICS) private readonly metrics: Metrics) {}
   use(request: Request, response: Response, next: NextFunction): void {
     const supplied = request.header('x-request-id');
     const correlationId = createCorrelationId(supplied);
     const startedAt = performance.now();
     response.setHeader('x-request-id', correlationId);
-    response.once('finish', () =>
+    let recorded = false;
+    const record = (outcome: 'completed' | 'aborted') => {
+      if (recorded) return;
+      recorded = true;
+      const durationMs = performance.now() - startedAt;
+      // Use registered route templates, never attacker-controlled URLs/IDs/query strings.
+      const route = typeof request.route?.path === 'string' ? request.route.path : 'unmatched';
+      const method = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'].includes(
+        request.method
+      )
+        ? request.method
+        : 'other';
+      const labels = {
+        method,
+        route,
+        status: String(response.statusCode),
+        outcome,
+      };
+      this.metrics.increment('http_requests_total', labels);
+      this.metrics.observe('http_request_duration_ms', durationMs, labels);
       logger.debug('request completed', {
         correlationId,
         method: request.method,
-        path: request.path,
+        route,
         status: response.statusCode,
-        durationMs: Math.round((performance.now() - startedAt) * 100) / 100,
-      })
-    );
+        durationMs: Math.round(durationMs * 100) / 100,
+        outcome,
+      });
+    };
+    response.once('finish', () => record('completed'));
+    response.once('close', () => record(response.writableFinished ? 'completed' : 'aborted'));
     runWithCorrelationContext(correlationId, next);
   }
 }

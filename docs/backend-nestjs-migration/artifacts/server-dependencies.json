@@ -2,18 +2,18 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 609,
-    "internalEdges": 2029,
+    "files": 611,
+    "internalEdges": 2039,
     "stronglyConnectedComponents": 2
   },
   "layerEdges": {
-    "core -> core": 64,
+    "core -> core": 70,
     "core -> lib": 6,
     "core -> middleware": 1,
     "core -> services": 9,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 171,
+    "modules -> core": 174,
     "modules -> lib": 48,
     "modules -> modules": 385,
     "modules -> providers": 33,
@@ -34,7 +34,7 @@
     "routes -> routes": 287,
     "routes -> services": 156,
     "routes -> types": 2,
-    "services -> core": 21,
+    "services -> core": 22,
     "services -> lib": 73,
     "services -> modules": 17,
     "services -> providers": 16,
@@ -246,6 +246,7 @@
       "apps/server/src/services/execution-environment/preview-tunnel.ts",
       "apps/server/src/services/execution-environment/terminal.ts",
       "apps/server/src/services/execution-environment/test-runner.ts",
+      "apps/server/src/services/feature-loader.ts",
       "apps/server/src/services/mcp-test-service.ts",
       "apps/server/src/services/ntfy-service.ts",
       "apps/server/src/services/pipeline-config.repository.ts",
@@ -266,20 +267,20 @@
   },
   "externalImports": {
     "@anthropic-ai/claude-agent-sdk": 3,
-    "@automaker/contracts": 21,
+    "@automaker/contracts": 22,
     "@automaker/dependency-resolver": 1,
     "@automaker/git-utils": 12,
     "@automaker/model-resolver": 20,
     "@automaker/platform": 74,
     "@automaker/prompts": 3,
     "@automaker/types": 180,
-    "@automaker/utils": 159,
+    "@automaker/utils": 160,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 191,
+    "@nestjs/common": 193,
     "@nestjs/core": 8,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
@@ -300,7 +301,7 @@
     "node:async_hooks": 1,
     "node:buffer": 1,
     "node:child_process": 13,
-    "node:crypto": 37,
+    "node:crypto": 39,
     "node:events": 1,
     "node:fs": 10,
     "node:fs/promises": 19,
@@ -308,7 +309,7 @@
     "node:net": 3,
     "node:os": 11,
     "node:path": 61,
-    "node:perf_hooks": 16,
+    "node:perf_hooks": 18,
     "node:stream": 6,
     "node:stream/web": 2,
     "node:string_decoder": 4,
@@ -732,7 +733,31 @@
       "target": "apps/server/src/core/lifecycle/supervisor.ts"
     },
     {
+      "source": "apps/server/src/core/observability/application-metrics.ts",
+      "target": "apps/server/src/core/observability/metrics.ts"
+    },
+    {
+      "source": "apps/server/src/core/observability/application-metrics.ts",
+      "target": "apps/server/src/core/observability/request-context.ts"
+    },
+    {
+      "source": "apps/server/src/core/observability/metrics.controller.ts",
+      "target": "apps/server/src/core/observability/application-metrics.ts"
+    },
+    {
       "source": "apps/server/src/core/observability/observability.module.ts",
+      "target": "apps/server/src/core/observability/application-metrics.ts"
+    },
+    {
+      "source": "apps/server/src/core/observability/observability.module.ts",
+      "target": "apps/server/src/core/observability/metrics.controller.ts"
+    },
+    {
+      "source": "apps/server/src/core/observability/observability.module.ts",
+      "target": "apps/server/src/core/observability/metrics.ts"
+    },
+    {
+      "source": "apps/server/src/core/observability/request-context.ts",
       "target": "apps/server/src/core/observability/metrics.ts"
     },
     {
@@ -1894,6 +1919,14 @@
     {
       "source": "apps/server/src/modules/features/feature-query.service.ts",
       "target": "apps/server/src/services/feature-loader.ts"
+    },
+    {
+      "source": "apps/server/src/modules/features/feature-storage.module.ts",
+      "target": "apps/server/src/core/security/security.module.ts"
+    },
+    {
+      "source": "apps/server/src/modules/features/feature-storage.module.ts",
+      "target": "apps/server/src/core/security/security.service.ts"
     },
     {
       "source": "apps/server/src/modules/features/feature-storage.module.ts",
@@ -3178,6 +3211,10 @@
     {
       "source": "apps/server/src/modules/providers/provider-registrations.ts",
       "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/provider-registry.service.ts",
+      "target": "apps/server/src/core/observability/application-metrics.ts"
     },
     {
       "source": "apps/server/src/modules/providers/provider-registry.service.ts",
@@ -8034,6 +8071,10 @@
     {
       "source": "apps/server/src/services/feature-export-service.ts",
       "target": "apps/server/src/services/feature-loader.ts"
+    },
+    {
+      "source": "apps/server/src/services/feature-loader.ts",
+      "target": "apps/server/src/core/errors/index.ts"
     },
     {
       "source": "apps/server/src/services/feature-loader.ts",

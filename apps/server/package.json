@@ -14,7 +14,7 @@
     "dev": "tsx watch src/main.ts",
     "dev:test": "tsx src/main.ts",
     "dev:e2e": "tsx tests/e2e-server.ts",
-    "build": "node scripts/clean-build.mjs && tsc",
+    "build": "node scripts/clean-build.mjs && tsc && node scripts/check-build.mjs",
     "start": "node dist/main.js",
     "lint": "eslint src/",
     "test": "vitest",

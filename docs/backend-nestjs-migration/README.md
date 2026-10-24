@@ -7,6 +7,7 @@ application/infra границ этапа 11. Результаты возобн�
 Последующий проверенный срез: [run ownership, providers и filesystem](artifacts/run-ownership-provider-filesystem-checkpoint.md).
 Следующий проверенный срез: [verification, legacy import, Gemini и performance](artifacts/verification-import-gemini-performance-checkpoint.md).
 Текущий checkpoint: [planning, ideation и singleton retirement](artifacts/planning-ideation-singletons-checkpoint.md).
+Следующий checkpoint: [feature storage, metrics и production artifact](artifacts/feature-storage-metrics-artifact-checkpoint.md).
 Полная миграция ещё не завершена; checklist и результаты проверок ведутся
 в документах соответствующих этапов.
 

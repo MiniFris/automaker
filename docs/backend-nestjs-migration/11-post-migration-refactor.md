@@ -132,7 +132,10 @@ Application services тестируются на in-memory/fake ports; adapter c
 ## 11.4. Contracts и клиент
 
 - [ ] Завершить shared schema coverage всех endpoints.
-- [ ] Разбить большой UI HTTP client по domain modules.
+- [x] Разбить большой UI HTTP client по domain modules. 29 namespaces вынесены
+      в typed factories; root сохраняет auth/fetch/WS ownership и Electron/filesystem
+      compatibility bridges. См. [domain audit](artifacts/shared-inputs-openapi-client-audit.md)
+      и [setup extraction](artifacts/setup-client-extraction-audit.md).
 - [x] Добавить generated/verified OpenAPI artifact. Проверяются все 317 native
       operations и ссылки на shared inputs; 42 incomplete inputs и все unverified
       responses явно отмечены. Это не закрывает отдельный пункт полной coverage.

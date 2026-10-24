@@ -1,3 +1,4 @@
+import { ApplicationMetrics } from '../../../src/core/observability/application-metrics.js';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { BaseProvider } from '../../../src/providers/base-provider.js';
@@ -44,7 +45,8 @@ describe('ProviderRegistry', () => {
           create: () => provider('cursor'),
         },
       ],
-      connections() as never
+      connections() as never,
+      new ApplicationMetrics()
     );
 
     expect(registry.names()).toEqual(['claude', 'codex', 'cursor']);
@@ -70,9 +72,9 @@ describe('ProviderRegistry', () => {
       'anthropic',
     ],
   ])('rejects duplicate provider ownership', (registrations, duplicate) => {
-    expect(() => new ProviderRegistry(registrations, connections() as never)).toThrow(
-      `Duplicate provider name or alias: ${duplicate}.`
-    );
+    expect(
+      () => new ProviderRegistry(registrations, connections() as never, new ApplicationMetrics())
+    ).toThrow(`Duplicate provider name or alias: ${duplicate}.`);
   });
 
   it('fails closed for unknown capabilities and disconnected providers', () => {
@@ -82,11 +84,17 @@ describe('ProviderRegistry', () => {
         create: () => provider('claude'),
       },
     ];
-    expect(new ProviderRegistry(registrations, connections()).supportsVision('missing')).toBe(
-      false
-    );
+    expect(
+      new ProviderRegistry(registrations, connections(), new ApplicationMetrics()).supportsVision(
+        'missing'
+      )
+    ).toBe(false);
     expect(() =>
-      new ProviderRegistry(registrations, connections(true)).providerForModel('x')
+      new ProviderRegistry(
+        registrations,
+        connections(true),
+        new ApplicationMetrics()
+      ).providerForModel('x')
     ).toThrow('disconnected');
   });
 
@@ -99,7 +107,8 @@ describe('ProviderRegistry', () => {
         { name: 'claude', create: () => first },
         { name: 'cursor', create: () => second },
       ],
-      connections() as never
+      connections() as never,
+      new ApplicationMetrics()
     );
     expect(() => registry.onModuleInit()).toThrow(
       'Duplicate model ID claude-model: providers claude and cursor.'
@@ -118,7 +127,8 @@ describe('ProviderRegistry', () => {
         { name: 'claude', create: () => first },
         { name: 'cursor', create: () => second },
       ],
-      connections() as never
+      connections() as never,
+      new ApplicationMetrics()
     );
     expect(() => registry.onModuleInit()).not.toThrow();
     expect(registry.allModels()).toHaveLength(2);
@@ -132,7 +142,8 @@ describe('ProviderRegistry', () => {
     adapter.getAvailableModels = () => [{ ...model, id }];
     const registry = new ProviderRegistry(
       [{ name: 'claude', create: () => adapter }],
-      connections() as never
+      connections() as never,
+      new ApplicationMetrics()
     );
     expect(() => registry.onModuleInit()).toThrow('Invalid model ID');
   });
@@ -147,6 +158,7 @@ describe('ProviderRegistry', () => {
         },
       ],
       connections(),
+      new ApplicationMetrics(),
       {
         statuses: vi.fn().mockResolvedValue({
           claude: { installed: true },

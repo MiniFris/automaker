@@ -1,3 +1,4 @@
+import { ApplicationMetrics } from '../../../src/core/observability/application-metrics.js';
 import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -123,9 +124,13 @@ describe('AgentService execution ownership', () => {
       }),
       undefined,
       ...createTestAgentProviders(
-        new ProviderRegistry([{ name: 'claude', create: () => provider }], {
-          isDisconnected: () => false,
-        } as never)
+        new ProviderRegistry(
+          [{ name: 'claude', create: () => provider }],
+          {
+            isDisconnected: () => false,
+          } as never,
+          new ApplicationMetrics()
+        )
       )
     );
     await service.initialize();

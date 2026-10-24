@@ -1,3 +1,4 @@
+import { ApplicationMetrics } from '../../../src/core/observability/application-metrics.js';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -44,7 +45,8 @@ it.each([false, true])(
     }
     const providers = new ProviderRegistry(
       [{ name: 'claude', create: () => new BrokenProvider('claude') }],
-      { isDisconnected: () => false } as never
+      { isDisconnected: () => false } as never,
+      new ApplicationMetrics()
     );
     const events: Array<{ type: string; errorType?: string; error?: string }> = [];
     const emitter = createEventEmitter();

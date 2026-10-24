@@ -2,9 +2,65 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import path from 'node:path';
 import { ESLint } from 'eslint';
+import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
+import os from 'node:os';
+import ts from 'typescript';
+import { assertProductionServerArtifact } from '../../apps/server/scripts/check-build.mjs';
 
 const cwd = path.resolve(import.meta.dirname, '../../apps/server');
 const eslint = new ESLint({ cwd });
+
+test('production compiler roots and transitive imports exclude characterization routes', () => {
+  const config = ts.readConfigFile(path.join(cwd, 'tsconfig.json'), ts.sys.readFile);
+  assert.equal(config.error, undefined);
+  const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, cwd);
+  assert.equal(parsed.errors.length, 0);
+  const routes = path.join(cwd, 'src/routes') + path.sep;
+  assert.ok(!parsed.fileNames.some((file) => file.startsWith(routes)));
+  const program = ts.createProgram(parsed.fileNames, parsed.options);
+  assert.ok(!program.getSourceFiles().some((file) => file.fileName.startsWith(routes)));
+});
+
+test('build guard rejects excluded legacy code emitted through a transitive import', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'automaker-build-boundary-'));
+  try {
+    const source = path.join(root, 'src'),
+      output = path.join(root, 'dist');
+    for (const reserved of ['routes', 'legacy']) {
+      await mkdir(path.join(source, reserved), { recursive: true });
+      await writeFile(path.join(source, reserved, 'hidden.ts'), 'export const hidden = true;');
+    }
+    await writeFile(
+      path.join(source, 'main.ts'),
+      "import './routes/hidden.js'; import './legacy/hidden.js';"
+    );
+    const parsed = ts.parseJsonConfigFileContent(
+      {
+        compilerOptions: {
+          target: 'ES2022',
+          module: 'NodeNext',
+          moduleResolution: 'NodeNext',
+          rootDir: 'src',
+          outDir: 'dist',
+          skipLibCheck: true,
+        },
+        include: ['src/**/*.ts'],
+        exclude: ['src/routes', 'src/legacy'],
+      },
+      ts.sys,
+      root
+    );
+    assert.deepEqual(parsed.fileNames, [path.join(source, 'main.ts')]);
+    assert.equal(ts.createProgram(parsed.fileNames, parsed.options).emit().emitSkipped, false);
+    await assert.rejects(assertProductionServerArtifact(output), /must not contain routes/);
+    await rm(path.join(output, 'routes'), { recursive: true });
+    await assert.rejects(assertProductionServerArtifact(output), /must not contain legacy/);
+    await rm(path.join(output, 'legacy'), { recursive: true });
+    await assertProductionServerArtifact(output);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
 test('controllers delegate filesystem, shell execution and route implementations', async () => {
   for (const source of [
     "import { spawn } from 'node:child_process'; export const run = spawn;",

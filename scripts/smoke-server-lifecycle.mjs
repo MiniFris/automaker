@@ -8,8 +8,10 @@ import { createServer } from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
+import { assertProductionServerArtifact } from '../apps/server/scripts/check-build.mjs';
 
 const repositoryRoot = path.resolve(import.meta.dirname, '..');
+await assertProductionServerArtifact(path.join(repositoryRoot, 'apps/server/dist'));
 
 async function smoke(signal) {
   const temporary = await mkdtemp(path.join(os.tmpdir(), 'automaker-lifecycle-smoke-'));

@@ -22,8 +22,8 @@ async function source(file) {
   return sourceCache.get(file);
 }
 
-async function resolveSchema(file, name, seen = new Set()) {
-  const key = `${file}#${name}`;
+async function resolveSchema(file, name, seen = new Set(), io = 'input') {
+  const key = `${file}#${name}#${io}`;
   if (seen.has(key)) throw new Error(`Schema export cycle: ${key}`);
   seen.add(key);
   if (schemaCache.has(key)) return schemaCache.get(key);
@@ -50,15 +50,16 @@ async function resolveSchema(file, name, seen = new Set()) {
       const shared = await import(specifier);
       const schema = shared[exportedName];
       if (schema && typeof schema.safeParse === 'function') {
-        const id = `${specifier === '@automaker/contracts' ? 'shared' : specifier.split('/').at(-1)}.${exportedName}`;
-        components[id] = z.toJSONSchema(schema, { io: 'input' });
+        const id = `${specifier === '@automaker/contracts' ? 'shared' : specifier.split('/').at(-1)}.${exportedName}${io === 'output' ? '.Response' : ''}`;
+        components[id] = z.toJSONSchema(schema, { io });
         found = { $ref: `#/components/schemas/${id}` };
       }
     } else if (specifier.startsWith('.')) {
       found = await resolveSchema(
         resolve(dirname(file), specifier.replace(/\.js$/, '.ts')),
         exportedName,
-        new Set(seen)
+        new Set(seen),
+        io
       );
     }
     if (found) {
@@ -153,6 +154,26 @@ async function operation(endpoint) {
       (d) => ts.isCallExpression(d.expression) && d.expression.expression.getText(ast) === 'Res'
     )
   );
+  const returns = [];
+  function collectReturns(node) {
+    if (node !== method.body && ts.isFunctionLike(node)) return;
+    if (ts.isReturnStatement(node)) returns.push(node);
+    ts.forEachChild(node, collectReturns);
+  }
+  if (method.body) collectReturns(method.body);
+  const returned = returns.length === 1 ? returns[0].expression : undefined;
+  const parsed =
+    returned &&
+    ts.isCallExpression(returned) &&
+    ts.isPropertyAccessExpression(returned.expression) &&
+    returned.expression.name.text === 'parse' &&
+    ts.isIdentifier(returned.expression.expression)
+      ? returned.expression.expression.text
+      : undefined;
+  const responseSchema =
+    !ownsResponse && parsed
+      ? await resolveSchema(resolve(root, endpoint.source), parsed, new Set(), 'output')
+      : undefined;
   return {
     operationId: handler.replace('.', '_'),
     tags: [endpoint.group],
@@ -161,7 +182,7 @@ async function operation(endpoint) {
     'x-request-contract': unresolved.length ? 'incomplete' : 'shared-or-no-input',
     ...(unresolved.length && { 'x-unresolved-inputs': unresolved }),
     // Response schemas are not inferred from TypeScript annotations or arbitrary examples.
-    'x-response-contract': 'unverified',
+    'x-response-contract': responseSchema ? 'shared-runtime' : 'unverified',
     ...(parameters.length && { parameters }),
     ...(requestBody && { requestBody }),
     responses: ownsResponse
@@ -172,7 +193,12 @@ async function operation(endpoint) {
           },
         }
       : {
-          [status]: { description: 'Successful response; response schema not yet verified.' },
+          [status]: responseSchema
+            ? {
+                description: 'Response validated by the shared runtime schema.',
+                content: { 'application/json': { schema: responseSchema } },
+              }
+            : { description: 'Successful response; response schema not yet verified.' },
           default: { description: 'Error response; see endpoint implementation.' },
         },
   };
@@ -187,6 +213,7 @@ export async function generateDocument() {
   );
   const paths = {};
   let incomplete = 0;
+  let sharedResponses = 0;
   for (const endpoint of inventory.endpoints) {
     if (endpoint.owner !== 'nestjs') throw new Error(`Non-native endpoint: ${endpoint.path}`);
     const path = endpoint.path.replace(/:([A-Za-z0-9_]+)/g, '{$1}');
@@ -195,6 +222,7 @@ export async function generateDocument() {
     if (paths[path][key]) throw new Error(`Duplicate route: ${key} ${path}`);
     paths[path][key] = await operation(endpoint);
     if (paths[path][key]['x-request-contract'] === 'incomplete') incomplete++;
+    if (paths[path][key]['x-response-contract'] === 'shared-runtime') sharedResponses++;
   }
   return {
     openapi: '3.1.0',
@@ -208,7 +236,8 @@ export async function generateDocument() {
       operations: inventory.endpoints.length,
       sharedOrNoInput: inventory.endpoints.length - incomplete,
       incompleteInput: incomplete,
-      unverifiedResponses: inventory.endpoints.length,
+      sharedRuntimeResponses: sharedResponses,
+      unverifiedResponses: inventory.endpoints.length - sharedResponses,
     },
     paths,
     components: {

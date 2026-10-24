@@ -1,3 +1,4 @@
+import { ApplicationMetrics } from '../../../src/core/observability/application-metrics.js';
 import { mkdtemp, mkdir, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -59,9 +60,13 @@ describe('chat routing with real settings and SDK option construction', () => {
         },
       ]);
       const execute = vi.spyOn(adapter, 'executeQuery');
-      const registry = new ProviderRegistry([{ name: 'claude', create: () => adapter }], {
-        isDisconnected: () => false,
-      } as never);
+      const registry = new ProviderRegistry(
+        [{ name: 'claude', create: () => adapter }],
+        {
+          isDisconnected: () => false,
+        } as never,
+        new ApplicationMetrics()
+      );
       const create = () =>
         new AgentService(
           ...createTestAgentState(

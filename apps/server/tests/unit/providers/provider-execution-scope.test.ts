@@ -1,3 +1,4 @@
+import { ApplicationMetrics } from '../../../src/core/observability/application-metrics.js';
 import { describe, expect, it, vi } from 'vitest';
 import { MockProvider } from '../../helpers/mock-provider.js';
 import {
@@ -34,7 +35,11 @@ const packet: ProviderMessage = {
   message: { role: 'assistant', content: [{ type: 'text', text: 'Reply' }] },
 };
 const registry = (create: () => ControlledProvider) =>
-  new ProviderRegistry([{ name: 'claude', create }], { isDisconnected: () => false } as never);
+  new ProviderRegistry(
+    [{ name: 'claude', create }],
+    { isDisconnected: () => false } as never,
+    new ApplicationMetrics()
+  );
 
 describe('provider query ownership', () => {
   it('forwards parent cancellation while keeping disposal idempotent', async () => {

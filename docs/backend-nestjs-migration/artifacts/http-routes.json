@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "sourceRoot": "apps/server/src",
-  "total": 317,
+  "total": 318,
   "groups": {
     "agent": 10,
     "auth": 4,
@@ -20,6 +20,7 @@
     "health": 5,
     "ideation": 16,
     "mcp": 2,
+    "metrics": 1,
     "models": 2,
     "notifications": 4,
     "pipeline": 6,
@@ -1908,6 +1909,21 @@
         "MCPController.tools"
       ],
       "potentialMutation": true,
+      "validatesProjectPath": false,
+      "streamsResponse": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/metrics",
+      "group": "metrics",
+      "owner": "nestjs",
+      "access": "protected",
+      "source": "apps/server/src/core/observability/metrics.controller.ts",
+      "line": 9,
+      "middleware": [
+        "MetricsController.snapshot"
+      ],
+      "potentialMutation": false,
       "validatesProjectPath": false,
       "streamsResponse": false
     },

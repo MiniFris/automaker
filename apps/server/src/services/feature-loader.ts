@@ -4,6 +4,8 @@
  */
 
 import path from 'path';
+import { performance } from 'node:perf_hooks';
+import { randomUUID } from 'node:crypto';
 import type { Feature, DescriptionHistoryEntry } from '@automaker/types';
 import {
   createLogger,
@@ -11,6 +13,7 @@ import {
   readJsonWithRecovery,
   logRecoveryWarning,
   DEFAULT_BACKUP_COUNT,
+  type AtomicWriteFilesystem,
 } from '@automaker/utils';
 import * as secureFs from '../lib/secure-fs.js';
 import { atomicWriteText } from '../lib/atomic-write-text.js';
@@ -19,8 +22,12 @@ import {
   getFeatureDir,
   getFeatureImagesDir,
   getAppSpecPath,
-  ensureAutomakerDir,
 } from '@automaker/platform';
+import {
+  ConflictDomainError,
+  UnavailableDomainError,
+  ValidationDomainError,
+} from '../core/errors/index.js';
 import { addImplementedFeature, type ImplementedFeature } from '../lib/xml-extractor.js';
 
 const logger = createLogger('FeatureLoader');
@@ -28,19 +35,107 @@ const logger = createLogger('FeatureLoader');
 // Re-export Feature type for convenience
 export type { Feature };
 
+export type FeatureFilesystem = AtomicWriteFilesystem &
+  Pick<typeof secureFs, 'readdir' | 'rm' | 'link'>;
+export interface FeatureStorageRuntime {
+  filesystem: FeatureFilesystem;
+  canonicalProject(projectPath: string): string;
+}
+
+export class FeatureStorageCleanupError extends Error {
+  readonly code = 'FEATURE_STORAGE_CLEANUP_FAILED';
+  constructor() {
+    super('Feature storage cleanup could not be confirmed.');
+  }
+}
+
 export class FeatureLoader {
+  private readonly filesystem: FeatureFilesystem;
+  private readonly tails = new Map<string, Promise<unknown>>();
+  private accepted = 0;
+  private stopping = false;
+  private closing?: Promise<void>;
+
+  constructor(private readonly runtime?: FeatureStorageRuntime) {
+    if (runtime && (!runtime.filesystem || !runtime.canonicalProject))
+      throw new Error('Feature storage requires explicit runtime dependencies.');
+    this.filesystem = runtime ? runtime.filesystem : secureFs;
+  }
+
+  private project(project: string): string {
+    return this.runtime ? this.runtime.canonicalProject(project) : project;
+  }
+
+  private run<T>(file: string, action: () => Promise<T>): Promise<T> {
+    if (!this.runtime) return action();
+    if (this.stopping) throw new UnavailableDomainError('Feature storage is shutting down.');
+    if (this.accepted >= 256) throw new UnavailableDomainError('Feature storage queue is busy.');
+    this.accepted++;
+    const previous = this.tails.get(file) ?? Promise.resolve();
+    const result = previous.catch(() => {}).then(action);
+    const tail = result.finally(() => {
+      this.accepted--;
+      if (this.tails.get(file) === tail) this.tails.delete(file);
+    });
+    this.tails.set(file, tail);
+    return tail;
+  }
+
+  beforeApplicationShutdown(): Promise<void> {
+    if (this.closing) return this.closing;
+    this.stopping = true;
+    const deadline = performance.now() + 5000;
+    let timer: NodeJS.Timeout | undefined;
+    this.closing = Promise.race([
+      Promise.allSettled([...this.tails.values()]).then(() => {
+        if (performance.now() >= deadline) throw new FeatureStorageCleanupError();
+      }),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new FeatureStorageCleanupError()), 5000);
+      }),
+    ]).finally(() => clearTimeout(timer));
+    return this.closing;
+  }
+
+  private async readFeature(
+    project: string,
+    featureId: string,
+    strict: boolean
+  ): Promise<Feature | null> {
+    let result;
+    try {
+      result = await readJsonWithRecovery<Feature | null>(
+        this.getFeatureJsonPath(project, featureId),
+        null,
+        {
+          maxBackups: DEFAULT_BACKUP_COUNT,
+          autoRestore: true,
+          filesystem: this.filesystem,
+          strictErrors: true,
+        }
+      );
+    } catch (error) {
+      if (!strict && error instanceof SyntaxError) return null;
+      throw error;
+    }
+    logRecoveryWarning(result, `Feature ${featureId}`, logger);
+    if (strict && result.data && (typeof result.data !== 'object' || result.data.id !== featureId))
+      throw new ConflictDomainError('Stored feature identity is inconsistent.');
+    if (result.data?.titleGenerating) delete result.data.titleGenerating;
+    return result.data;
+  }
   /**
    * Get the features directory path
    */
   getFeaturesDir(projectPath: string): string {
-    return getFeaturesDir(projectPath);
+    return getFeaturesDir(this.project(projectPath));
   }
 
   /**
    * Get the images directory path for a feature
    */
   getFeatureImagesDir(projectPath: string, featureId: string): string {
-    return getFeatureImagesDir(projectPath, featureId);
+    return getFeatureImagesDir(this.project(projectPath), featureId);
   }
 
   /**
@@ -64,7 +159,7 @@ export class FeatureLoader {
       if (!newPathSet.has(oldPath)) {
         try {
           // Paths are now absolute
-          await secureFs.unlink(oldPath);
+          await this.filesystem.unlink(oldPath);
           logger.info(`Deleted orphaned image: ${oldPath}`);
         } catch (error) {
           // Ignore errors when deleting (file may already be gone)
@@ -87,7 +182,7 @@ export class FeatureLoader {
     }
 
     const featureImagesDir = this.getFeatureImagesDir(projectPath, featureId);
-    await secureFs.mkdir(featureImagesDir, { recursive: true });
+    await this.filesystem.mkdir(featureImagesDir, { recursive: true });
 
     const updatedPaths: Array<string | { path: string; [key: string]: unknown }> = [];
 
@@ -108,8 +203,9 @@ export class FeatureLoader {
 
         // Check if file exists
         try {
-          await secureFs.access(fullOriginalPath);
-        } catch {
+          await this.filesystem.access(fullOriginalPath);
+        } catch (error) {
+          if (this.runtime && (error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
           logger.warn(`Image not found, skipping: ${fullOriginalPath}`);
           continue;
         }
@@ -119,12 +215,12 @@ export class FeatureLoader {
         const newPath = path.join(featureImagesDir, filename);
 
         // Copy the file
-        await secureFs.copyFile(fullOriginalPath, newPath);
+        await this.filesystem.copyFile(fullOriginalPath, newPath);
         logger.info(`Copied image: ${originalPath} -> ${newPath}`);
 
         // Try to delete the original temp file
         try {
-          await secureFs.unlink(fullOriginalPath);
+          await this.filesystem.unlink(fullOriginalPath);
         } catch {
           // Ignore errors when deleting temp file
         }
@@ -150,7 +246,12 @@ export class FeatureLoader {
    * Get the path to a specific feature folder
    */
   getFeatureDir(projectPath: string, featureId: string): string {
-    return getFeatureDir(projectPath, featureId);
+    if (
+      this.runtime &&
+      (!featureId || featureId === '.' || featureId === '..' || /[\\/\0]/.test(featureId))
+    )
+      throw new ValidationDomainError('Invalid feature ID path component.');
+    return getFeatureDir(this.project(projectPath), featureId);
   }
 
   /**
@@ -190,28 +291,35 @@ export class FeatureLoader {
 
       // Check if features directory exists
       try {
-        await secureFs.access(featuresDir);
-      } catch {
+        await this.filesystem.access(featuresDir);
+      } catch (error) {
+        if (this.runtime && (error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
         return [];
       }
 
       // Read all feature directories
       // secureFs.readdir returns Dirent[] but typed as generic; cast to access isDirectory()
-      const entries = (await secureFs.readdir(featuresDir, {
+      const entries = (await this.filesystem.readdir(featuresDir, {
         withFileTypes: true,
       })) as import('fs').Dirent[];
       const featureDirs = entries.filter((entry) => entry.isDirectory());
 
       // Load all features concurrently with automatic recovery from backups
-      const featurePromises = featureDirs.map(async (dir) => {
+      const loadFeature = async (dir: import('fs').Dirent) => {
         const featureId = dir.name;
         const featureJsonPath = this.getFeatureJsonPath(projectPath, featureId);
 
         // Use recovery-enabled read to handle corrupted files
-        const result = await readJsonWithRecovery<Feature | null>(featureJsonPath, null, {
-          maxBackups: DEFAULT_BACKUP_COUNT,
-          autoRestore: true,
-        });
+        const result = this.runtime
+          ? {
+              data: await this.get(projectPath, featureId),
+              recovered: false,
+              source: 'main' as const,
+            }
+          : await readJsonWithRecovery<Feature | null>(featureJsonPath, null, {
+              maxBackups: DEFAULT_BACKUP_COUNT,
+              autoRestore: true,
+            });
 
         logRecoveryWarning(result, `Feature ${featureId}`, logger);
 
@@ -235,9 +343,11 @@ export class FeatureLoader {
         }
 
         return feature;
-      });
+      };
 
-      const results = await Promise.all(featurePromises);
+      const results: Array<Feature | null> = [];
+      for (let index = 0; index < featureDirs.length; index += 16)
+        results.push(...(await Promise.all(featureDirs.slice(index, index + 16).map(loadFeature))));
       const features = results.filter((f): f is Feature => f !== null);
 
       // Sort by creation order (feature IDs contain timestamp)
@@ -250,6 +360,7 @@ export class FeatureLoader {
       return features;
     } catch (error) {
       logger.error('Failed to get all features:', error);
+      if (this.runtime) throw error;
       return [];
     }
   }
@@ -322,6 +433,13 @@ export class FeatureLoader {
    * Uses automatic recovery from backups if the main file is corrupted
    */
   async get(projectPath: string, featureId: string): Promise<Feature | null> {
+    if (!this.runtime) return this.getLegacy(projectPath, featureId);
+    return this.run(this.getFeatureJsonPath(projectPath, featureId), () =>
+      this.readFeature(projectPath, featureId, false)
+    );
+  }
+
+  private async getLegacy(projectPath: string, featureId: string): Promise<Feature | null> {
     const featureJsonPath = this.getFeatureJsonPath(projectPath, featureId);
 
     // Use recovery-enabled read to handle corrupted files
@@ -346,15 +464,24 @@ export class FeatureLoader {
    * Create a new feature
    */
   async create(projectPath: string, featureData: Partial<Feature>): Promise<Feature> {
+    const data = { ...featureData, id: featureData.id ?? this.generateFeatureId() };
+    return this.run(this.getFeatureJsonPath(projectPath, data.id), () =>
+      this.createOwned(projectPath, data)
+    );
+  }
+
+  private async createOwned(projectPath: string, featureData: Partial<Feature>): Promise<Feature> {
     const featureId = featureData.id || this.generateFeatureId();
+    if (this.runtime && (await this.readFeature(projectPath, featureId, true)))
+      throw new ConflictDomainError('Feature already exists.');
     const featureDir = this.getFeatureDir(projectPath, featureId);
     const featureJsonPath = this.getFeatureJsonPath(projectPath, featureId);
 
     // Ensure automaker directory exists
-    await ensureAutomakerDir(projectPath);
+    await this.filesystem.mkdir(this.getFeaturesDir(projectPath), { recursive: true });
 
     // Create feature directory
-    await secureFs.mkdir(featureDir, { recursive: true });
+    await this.filesystem.mkdir(featureDir, { recursive: true });
 
     // Migrate images from temp directory to feature directory
     const migratedImagePaths = await this.migrateImages(
@@ -392,7 +519,28 @@ export class FeatureLoader {
     delete featureToWrite.titleGenerating;
 
     // Write feature.json atomically with backup support
-    await atomicWriteJson(featureJsonPath, featureToWrite, { backupCount: DEFAULT_BACKUP_COUNT });
+    if (this.runtime) {
+      const temporary = featureJsonPath + '.create.' + randomUUID();
+      try {
+        await this.filesystem.writeFile(temporary, JSON.stringify(featureToWrite, null, 2), {
+          encoding: 'utf8',
+          flag: 'wx',
+        });
+        try {
+          await this.filesystem.link(temporary, featureJsonPath);
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code === 'EEXIST')
+            throw new ConflictDomainError('Feature already exists.');
+          throw error;
+        }
+      } finally {
+        await this.filesystem.unlink(temporary).catch(() => {});
+      }
+    } else
+      await atomicWriteJson(featureJsonPath, featureToWrite, {
+        backupCount: DEFAULT_BACKUP_COUNT,
+        filesystem: this.filesystem,
+      });
 
     logger.info(`Created feature ${featureId}`);
     return feature;
@@ -415,7 +563,31 @@ export class FeatureLoader {
     enhancementMode?: 'improve' | 'technical' | 'simplify' | 'acceptance' | 'ux-reviewer',
     preEnhancementDescription?: string
   ): Promise<Feature> {
-    const feature = await this.get(projectPath, featureId);
+    return this.run(this.getFeatureJsonPath(projectPath, featureId), () =>
+      this.updateOwned(
+        projectPath,
+        featureId,
+        updates,
+        descriptionHistorySource,
+        enhancementMode,
+        preEnhancementDescription
+      )
+    );
+  }
+
+  private async updateOwned(
+    projectPath: string,
+    featureId: string,
+    updates: Partial<Feature>,
+    descriptionHistorySource?: 'enhance' | 'edit',
+    enhancementMode?: 'improve' | 'technical' | 'simplify' | 'acceptance' | 'ux-reviewer',
+    preEnhancementDescription?: string
+  ): Promise<Feature> {
+    if (this.runtime && updates.id !== undefined && updates.id !== featureId)
+      throw new ConflictDomainError('Feature ID cannot change during update.');
+    const feature = this.runtime
+      ? await this.readFeature(projectPath, featureId, true)
+      : await this.get(projectPath, featureId);
     if (!feature) {
       throw new Error(`Feature ${featureId} not found`);
     }
@@ -423,9 +595,6 @@ export class FeatureLoader {
     // Handle image path changes
     let updatedImagePaths = updates.imagePaths;
     if (updates.imagePaths !== undefined) {
-      // Delete orphaned images (images that were removed)
-      await this.deleteOrphanedImages(projectPath, feature.imagePaths, updates.imagePaths);
-
       // Migrate any new images
       updatedImagePaths = await this.migrateImages(projectPath, featureId, updates.imagePaths);
     }
@@ -482,7 +651,14 @@ export class FeatureLoader {
 
     // Write back to file atomically with backup support
     const featureJsonPath = this.getFeatureJsonPath(projectPath, featureId);
-    await atomicWriteJson(featureJsonPath, featureToWrite, { backupCount: DEFAULT_BACKUP_COUNT });
+    await atomicWriteJson(featureJsonPath, featureToWrite, {
+      backupCount: DEFAULT_BACKUP_COUNT,
+      filesystem: this.filesystem,
+      recoverableTemporaryFiles: !this.runtime,
+    });
+    // Old metadata still references these files until the new JSON is committed.
+    if (updates.imagePaths !== undefined)
+      await this.deleteOrphanedImages(projectPath, feature.imagePaths, updates.imagePaths);
 
     logger.info(`Updated feature ${featureId}`);
     return updatedFeature;
@@ -492,13 +668,20 @@ export class FeatureLoader {
    * Delete a feature
    */
   async delete(projectPath: string, featureId: string): Promise<boolean> {
+    return this.run(this.getFeatureJsonPath(projectPath, featureId), () =>
+      this.deleteOwned(projectPath, featureId)
+    );
+  }
+
+  private async deleteOwned(projectPath: string, featureId: string): Promise<boolean> {
     try {
       const featureDir = this.getFeatureDir(projectPath, featureId);
-      await secureFs.rm(featureDir, { recursive: true, force: true });
+      await this.filesystem.rm(featureDir, { recursive: true, force: true });
       logger.info(`Deleted feature ${featureId}`);
       return true;
     } catch (error) {
       logger.error(`Failed to delete feature ${featureId}:`, error);
+      if (this.runtime) throw error;
       return false;
     }
   }
@@ -509,7 +692,7 @@ export class FeatureLoader {
   async getAgentOutput(projectPath: string, featureId: string): Promise<string | null> {
     try {
       const agentOutputPath = this.getAgentOutputPath(projectPath, featureId);
-      const content = (await secureFs.readFile(agentOutputPath, 'utf-8')) as string;
+      const content = (await this.filesystem.readFile(agentOutputPath, 'utf-8')) as string;
       return content;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
@@ -526,7 +709,7 @@ export class FeatureLoader {
   async getRawOutput(projectPath: string, featureId: string): Promise<string | null> {
     try {
       const rawOutputPath = this.getRawOutputPath(projectPath, featureId);
-      const content = (await secureFs.readFile(rawOutputPath, 'utf-8')) as string;
+      const content = (await this.filesystem.readFile(rawOutputPath, 'utf-8')) as string;
       return content;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
@@ -541,20 +724,36 @@ export class FeatureLoader {
    * Save agent output for a feature
    */
   async saveAgentOutput(projectPath: string, featureId: string, content: string): Promise<void> {
+    return this.run(this.getAgentOutputPath(projectPath, featureId), () =>
+      this.saveAgentOutputOwned(projectPath, featureId, content)
+    );
+  }
+
+  private async saveAgentOutputOwned(
+    projectPath: string,
+    featureId: string,
+    content: string
+  ): Promise<void> {
     const featureDir = this.getFeatureDir(projectPath, featureId);
-    await secureFs.mkdir(featureDir, { recursive: true });
+    await this.filesystem.mkdir(featureDir, { recursive: true });
 
     const agentOutputPath = this.getAgentOutputPath(projectPath, featureId);
-    await atomicWriteText(agentOutputPath, content);
+    await atomicWriteText(agentOutputPath, content, this.filesystem);
   }
 
   /**
    * Delete agent output for a feature
    */
   async deleteAgentOutput(projectPath: string, featureId: string): Promise<void> {
+    return this.run(this.getAgentOutputPath(projectPath, featureId), () =>
+      this.deleteAgentOutputOwned(projectPath, featureId)
+    );
+  }
+
+  private async deleteAgentOutputOwned(projectPath: string, featureId: string): Promise<void> {
     try {
       const agentOutputPath = this.getAgentOutputPath(projectPath, featureId);
-      await secureFs.unlink(agentOutputPath);
+      await this.filesystem.unlink(agentOutputPath);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
         throw error;
@@ -579,13 +778,23 @@ export class FeatureLoader {
     feature: Feature,
     fileLocations?: string[]
   ): Promise<boolean> {
+    return this.run(getAppSpecPath(this.project(projectPath)), () =>
+      this.syncFeatureToAppSpecOwned(projectPath, feature, fileLocations)
+    );
+  }
+
+  private async syncFeatureToAppSpecOwned(
+    projectPath: string,
+    feature: Feature,
+    fileLocations?: string[]
+  ): Promise<boolean> {
     try {
-      const appSpecPath = getAppSpecPath(projectPath);
+      const appSpecPath = getAppSpecPath(this.project(projectPath));
 
       // Read the current app_spec.txt
       let specContent: string;
       try {
-        specContent = (await secureFs.readFile(appSpecPath, 'utf-8')) as string;
+        specContent = (await this.filesystem.readFile(appSpecPath, 'utf-8')) as string;
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
           logger.info(`No app_spec.txt found for project, skipping sync for feature ${feature.id}`);
@@ -612,7 +821,7 @@ export class FeatureLoader {
       }
 
       // Write the updated spec back to the file
-      await atomicWriteText(appSpecPath, updatedSpecContent);
+      await atomicWriteText(appSpecPath, updatedSpecContent, this.filesystem);
 
       logger.info(`Synced feature "${featureName}" to app_spec.txt`);
       return true;

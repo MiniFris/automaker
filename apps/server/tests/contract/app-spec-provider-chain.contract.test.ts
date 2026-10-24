@@ -1,3 +1,4 @@
+import { ApplicationMetrics } from '../../src/core/observability/application-metrics.js';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -49,7 +50,8 @@ describe('spec to features provider workflow', () => {
       }
       const providers = new ProviderRegistry(
         [{ name: 'claude', create: () => new WorkflowProvider('claude') }],
-        { isDisconnected: () => false } as never
+        { isDisconnected: () => false } as never,
+        new ApplicationMetrics()
       );
       const filesystem = secureFs.createSecureFs((candidate) => {
         const absolute = path.resolve(candidate),

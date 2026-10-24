@@ -52,6 +52,19 @@ test('unknown responses and inline input validators remain explicitly incomplete
   assert.equal(operation['x-request-contract'], 'incomplete');
   assert.equal(operation['x-response-contract'], 'unverified');
   assert.ok(operation['x-unresolved-inputs'].some((input) => input.in === 'body'));
-  assert.equal(document['x-coverage'].unverifiedResponses, inventory.endpoints.length);
+  assert.equal(
+    document['x-coverage'].unverifiedResponses + document['x-coverage'].sharedRuntimeResponses,
+    inventory.endpoints.length
+  );
   assert.ok(!JSON.stringify(document).includes('ZodValidationPipe'));
+});
+
+test('publishes an output schema only for a direct shared runtime parse response', () => {
+  const operation = document.paths['/api/metrics'].get;
+  assert.equal(operation['x-response-contract'], 'shared-runtime');
+  const reference = operation.responses['200'].content['application/json'].schema.$ref;
+  const schema = document.components.schemas[reference.split('/').at(-1)];
+  assert.equal(schema.properties.seriesLimit.const, 2048);
+  assert.ok(schema.required.includes('providerActiveQueries'));
+  assert.equal(document.paths['/api/health'].get['x-response-contract'], 'unverified');
 });
