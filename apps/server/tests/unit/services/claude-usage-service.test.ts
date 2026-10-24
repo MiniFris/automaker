@@ -539,6 +539,26 @@ Resets Jan 15, 3pm
   });
 
   describe('executeClaudeUsageCommandPty', () => {
+    it('reports an explicit trust requirement without approving it or sending usage commands', async () => {
+      const service = new ClaudeUsageService();
+      let onData!: (data: string) => void;
+      const terminal = {
+        onData: vi.fn((callback) => {
+          onData = callback;
+        }),
+        onExit: vi.fn(),
+        write: vi.fn(),
+        kill: vi.fn(),
+      };
+      vi.mocked(pty.spawn).mockReturnValue(terminal as never);
+      const query = service.fetchUsageData();
+      const assertion = expect(query).rejects.toThrow('TRUST_PROMPT_PENDING');
+      await Promise.resolve();
+      onData('Quick safety check: Yes, I trust this folder');
+      await assertion;
+      expect(terminal.write).not.toHaveBeenCalled();
+      expect(terminal.kill).toHaveBeenCalledOnce();
+    });
     // Note: The service now uses PTY for all platforms, using process.cwd() as the working directory
     beforeEach(() => {
       vi.mocked(os.platform).mockReturnValue('win32');

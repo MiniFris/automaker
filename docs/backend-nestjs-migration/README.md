@@ -4,6 +4,7 @@
 application/infra границ этапа 11. Результаты возобновлённой работы собраны
 в [первом checkpoint](artifacts/resumed-goal-checkpoint.md) и последующем
 [native cutover checkpoint](artifacts/native-cutover-checkpoint.md).
+Последующий проверенный срез: [run ownership, providers и filesystem](artifacts/run-ownership-provider-filesystem-checkpoint.md).
 Полная миграция ещё не завершена; checklist и результаты проверок ведутся
 в документах соответствующих этапов.
 

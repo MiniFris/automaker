@@ -6,6 +6,10 @@ import { createNestApplication } from '../../src/main.js';
 import { AutoModeServiceCompat } from '../../src/services/auto-mode/index.js';
 import { MockProvider } from '../helpers/mock-provider.js';
 import { FeatureLoader } from '../../src/services/feature-loader.js';
+import { FeatureRunCoordinator } from '../../src/modules/orchestration/feature-run-coordinator.service.js';
+import { ProjectRunContextRegistry } from '../../src/modules/auto-mode/project-run-context.registry.js';
+import type { ExecuteOptions } from '@automaker/types';
+import type { ProviderMessage } from '../../src/providers/types.js';
 
 let root: string;
 const apps: Awaited<ReturnType<typeof createNestApplication>>[] = [];
@@ -196,4 +200,70 @@ it('runs a real native feature through an offline provider after the immediate H
     const stored = await owner.app.get(FeatureLoader).get(owner.project, feature.id);
     expect(stored?.status).toBe('waiting_approval');
   });
+});
+
+it('keeps a restarted native run owned when the stopped provider completes late', async () => {
+  const releases: Array<() => void> = [];
+  class DelayedProvider extends MockProvider {
+    protected async *execute(_options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+      let release!: () => void;
+      const held = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      releases.push(release);
+      yield {
+        type: 'assistant',
+        message: {
+          role: 'assistant',
+          content: [{ type: 'text', text: 'Owned offline execution' }],
+        },
+      };
+      await held;
+      yield { type: 'result', subtype: 'success' };
+    }
+  }
+  const owner = await start('restart-workflow', new DelayedProvider('claude'));
+  const loader = owner.app.get(FeatureLoader);
+  const feature = await loader.create(owner.project, {
+    id: 'restart-feature',
+    title: 'Restart fixture',
+    description: 'Offline fixture',
+    model: 'claude-sonnet',
+    status: 'backlog',
+    skipTests: true,
+    planningMode: 'skip',
+    useWorktree: false,
+  });
+  const manager = owner.runtime.getGlobalService().getSharedServices().concurrencyManager;
+  expect(manager.coordinator).toBe(owner.app.get(FeatureRunCoordinator));
+  const run = () =>
+    owner.post('run-feature', { projectPath: owner.project, featureId: feature.id });
+  try {
+    expect(await run()).toMatchObject({ status: 200 });
+    await vi.waitFor(() => expect(releases).toHaveLength(1));
+    const first = manager.getRunningFeature(feature.id)!;
+    expect(await owner.post('stop-feature', { featureId: feature.id })).toMatchObject({
+      status: 200,
+    });
+    expect(await run()).toMatchObject({ status: 200 });
+    await vi.waitFor(() => expect(releases).toHaveLength(2));
+    const second = manager.getRunningFeature(feature.id)!;
+    expect(second.incarnation).not.toBe(first.incarnation);
+    // Drain the old accepted HTTP command, rather than relying on a sleep.
+    const contexts = owner.app.get(ProjectRunContextRegistry);
+    const all = (
+      contexts as unknown as { contexts: Map<string, { pendingCommands: Set<Promise<unknown>> }> }
+    ).contexts;
+    const commands = [...all.values()].flatMap((context) => [...context.pendingCommands]);
+    releases[0]();
+    await commands[0];
+    expect(manager.getRunningFeature(feature.id)).toBe(second);
+    expect((await loader.get(owner.project, feature.id))?.status).toBe('in_progress');
+    releases[1]();
+    await vi.waitFor(async () =>
+      expect((await loader.get(owner.project, feature.id))?.status).toBe('waiting_approval')
+    );
+  } finally {
+    for (const release of releases) release();
+  }
 });

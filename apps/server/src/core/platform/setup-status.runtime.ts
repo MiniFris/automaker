@@ -23,6 +23,14 @@ export interface HostCliInstallation {
   path: string;
   method: 'none' | 'path' | 'local';
 }
+export type HostCliName =
+  | 'claude'
+  | 'gh'
+  | 'codex'
+  | 'opencode'
+  | 'cursor-agent'
+  | 'gemini'
+  | 'copilot';
 
 export type ClaudeStatusIndicators = Pick<
   ClaudeAuthIndicators,
@@ -36,7 +44,7 @@ export type ClaudeStatusIndicators = Pick<
 /** Host-only read port. No application service launches commands or reads OS globals. */
 export abstract class SetupStatusRuntime {
   abstract platformInfo(): { platform: string; arch: string; homeDir: string };
-  abstract detect(name: 'claude' | 'gh' | 'codex' | 'opencode'): Promise<HostCliInstallation>;
+  abstract detect(name: HostCliName): Promise<HostCliInstallation>;
   abstract profileHint(name: 'codex' | 'opencode'): Promise<boolean>;
   abstract claudeIndicators(): Promise<ClaudeStatusIndicators>;
   abstract codexIndicators(): Promise<{
@@ -67,7 +75,7 @@ export class NodeSetupStatusRuntime extends SetupStatusRuntime implements OnAppl
     return { platform: os.platform(), arch: os.arch(), homeDir: os.homedir() };
   }
 
-  detect(name: 'claude' | 'gh' | 'codex' | 'opencode'): Promise<HostCliInstallation> {
+  detect(name: HostCliName): Promise<HostCliInstallation> {
     return this.track(async () => {
       const status: HostCliInstallation = {
         installed: false,

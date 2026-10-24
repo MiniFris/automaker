@@ -13,6 +13,8 @@
 import fs from 'fs/promises';
 import fsSync, { type Dirent, type Stats } from 'fs';
 import path from 'path';
+import { pipeline } from 'node:stream/promises';
+import { Readable, Transform, type Writable } from 'node:stream';
 import { SecureFsQueue, type SecureFsLifecycleOptions } from './secure-fs-queue.js';
 export { SecureFsAdmissionError, SecureFsCleanupError } from './secure-fs-queue.js';
 export type { SecureFsLifecycleOptions } from './secure-fs-queue.js';
@@ -66,6 +68,92 @@ export function createSecureFs(
   }
   function owned<Args extends unknown[], Result>(operation: (...args: Args) => Promise<Result>) {
     return (...args: Args): Promise<Result> => queue.run(() => operation(...args));
+  }
+
+  /** Own the complete stream lifetime, including descriptor close and cancellation. */
+  async function pipeFile(
+    filePath: string,
+    destination: Writable,
+    options: { signal?: AbortSignal; maxBytes?: number } = {}
+  ): Promise<void> {
+    options.signal?.throwIfAborted();
+    const canonical = validatePath(filePath);
+    if (
+      options.maxBytes !== undefined &&
+      (!Number.isSafeInteger(options.maxBytes) || options.maxBytes < 0)
+    )
+      throw new RangeError('Invalid file byte limit.');
+    const source =
+      options.maxBytes === 0
+        ? Readable.from([])
+        : fsSync.createReadStream(
+            validatePath(canonical),
+            options.maxBytes === undefined ? {} : { end: options.maxBytes - 1 }
+          );
+    await pipeline(source, destination, { signal: options.signal });
+  }
+
+  async function writeStream(
+    filePath: string,
+    source: Readable,
+    options: { signal?: AbortSignal; maxBytes: number; mode?: number }
+  ): Promise<void> {
+    options.signal?.throwIfAborted();
+    if (!Number.isSafeInteger(options.maxBytes) || options.maxBytes < 0)
+      throw new RangeError('Invalid file byte limit.');
+    const canonical = validatePath(filePath);
+    let bytes = 0;
+    const limit = new Transform({
+      transform(chunk, _encoding, callback) {
+        bytes += chunk.byteLength;
+        callback(
+          bytes > options.maxBytes
+            ? Object.assign(new Error('Stream exceeds the byte limit.'), {
+                code: 'STREAM_BYTE_LIMIT',
+              })
+            : null,
+          bytes > options.maxBytes ? undefined : chunk
+        );
+      },
+    });
+    await pipeline(
+      source,
+      limit,
+      fsSync.createWriteStream(validatePath(canonical), {
+        flags: 'wx',
+        mode: options.mode ?? 0o600,
+      }),
+      { signal: options.signal }
+    );
+  }
+
+  /** One transfer may both read and write without recursively taking queue slots. */
+  async function withFileStreams<T>(
+    operation: (streams: {
+      pipeFile: typeof pipeFile;
+      writeStream: typeof writeStream;
+    }) => Promise<T>
+  ): Promise<T> {
+    let active = true;
+    const pending = new Set<Promise<unknown>>();
+    const scoped =
+      <Args extends unknown[], Result>(method: (...args: Args) => Promise<Result>) =>
+      (...args: Args): Promise<Result> => {
+        if (!active) return Promise.reject(new Error('File stream scope is closed.'));
+        const result = method(...args);
+        pending.add(result);
+        void result.then(
+          () => pending.delete(result),
+          () => pending.delete(result)
+        );
+        return result;
+      };
+    try {
+      return await operation({ pipeFile: scoped(pipeFile), writeStream: scoped(writeStream) });
+    } finally {
+      active = false;
+      await Promise.allSettled([...pending]);
+    }
   }
 
   /**
@@ -659,6 +747,9 @@ export function createSecureFs(
     close: () => queue.close(),
     access: owned(access),
     readFile: owned(readFile),
+    pipeFile: owned(pipeFile),
+    writeStream: owned(writeStream),
+    withFileStreams: owned(withFileStreams),
     writeFile: owned(writeFile),
     mkdir: owned(mkdir),
     readdir: owned(readdir) as typeof readdir,
@@ -699,6 +790,9 @@ export const {
   getActiveOperations,
   access,
   readFile,
+  pipeFile,
+  writeStream,
+  withFileStreams,
   writeFile,
   mkdir,
   readdir,

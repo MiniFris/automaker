@@ -157,6 +157,14 @@ describe('PipelineOrchestrator - providerId passthrough', () => {
     } as unknown as WorktreeResolver;
 
     mockConcurrencyManager = {
+      isCurrent: vi.fn().mockReturnValue(true),
+      coordinator: {
+        status: vi.fn(async (_manager, _run, _status, write) => {
+          await write();
+          return true;
+        }),
+        acceptCompletion: vi.fn().mockReturnValue(true),
+      },
       acquire: vi.fn().mockImplementation(({ featureId, isAutoMode }) => ({
         featureId,
         projectPath: '/test/project',
@@ -166,7 +174,7 @@ describe('PipelineOrchestrator - providerId passthrough', () => {
         isAutoMode: isAutoMode ?? false,
       })),
       release: vi.fn(),
-      getRunningFeature: vi.fn().mockReturnValue(undefined),
+      getRunningFeature: vi.fn().mockReturnValue({ featureId: 'feature-1' }),
     } as unknown as ConcurrencyManager;
 
     mockUpdateFeatureStatusFn = vi.fn().mockResolvedValue(undefined);

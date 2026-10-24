@@ -99,11 +99,15 @@ export class ExecutionService {
     projectPath: string;
     isAutoMode: boolean;
     allowReuse?: boolean;
-  }): RunningFeature {
-    return this.concurrencyManager.acquire(options);
+    expected?: RunningFeature;
+  }): Promise<RunningFeature> {
+    return this.concurrencyManager.acquireAsync(options);
   }
 
-  private releaseRunningFeature(featureId: string, options?: { force?: boolean }): void {
+  private releaseRunningFeature(
+    featureId: string,
+    options?: { force?: boolean; expected?: RunningFeature }
+  ): void {
     this.concurrencyManager.release(featureId, options);
   }
 
@@ -173,15 +177,24 @@ ${feature.spec}
     useWorktrees = false,
     isAutoMode = false,
     providedWorktreePath?: string,
-    options?: { continuationPrompt?: string; _calledInternally?: boolean }
+    options?: { continuationPrompt?: string; _calledInternally?: boolean; _run?: RunningFeature }
   ): Promise<void> {
-    const tempRunningFeature = this.acquireRunningFeature({
+    const tempRunningFeature = await this.acquireRunningFeature({
       featureId,
       projectPath,
       isAutoMode,
       allowReuse: options?._calledInternally,
+      expected: options?._run,
     });
     const abortController = tempRunningFeature.abortController;
+    const current = () => this.concurrencyManager.isCurrent(tempRunningFeature);
+    const updateStatus = (status: string) =>
+      this.concurrencyManager.coordinator.status(
+        this.concurrencyManager,
+        tempRunningFeature,
+        status,
+        () => this.updateFeatureStatusFn(projectPath, featureId, status)
+      );
     if (isAutoMode) await this.saveExecutionStateFn(projectPath);
     let feature: Feature | null = null;
     let pipelineCompleted = false;
@@ -215,7 +228,7 @@ ${feature.spec}
           feature.status === 'ready' ||
           feature.status === 'interrupted')
       ) {
-        await this.updateFeatureStatusFn(projectPath, featureId, 'in_progress');
+        if (!(await updateStatus('in_progress'))) return;
       }
 
       if (!options?.continuationPrompt) {
@@ -231,11 +244,17 @@ ${feature.spec}
             useWorktrees,
             isAutoMode,
             providedWorktreePath,
-            { continuationPrompt, _calledInternally: true }
+            { continuationPrompt, _calledInternally: true, _run: tempRunningFeature }
           );
         }
         if (await this.contextExistsFn(projectPath, featureId)) {
-          return await this.resumeFeatureFn(projectPath, featureId, useWorktrees, true);
+          return await this.resumeFeatureFn(
+            projectPath,
+            featureId,
+            useWorktrees,
+            true,
+            tempRunningFeature
+          );
         }
       }
 
@@ -271,7 +290,7 @@ ${feature.spec}
           feature.status === 'ready' ||
           feature.status === 'interrupted')
       ) {
-        await this.updateFeatureStatusFn(projectPath, featureId, 'in_progress');
+        if (!(await updateStatus('in_progress'))) return;
       }
       this.eventBus.emitAutoModeEvent('auto_mode_feature_start', {
         featureId,
@@ -454,6 +473,7 @@ Please continue from where you left off and complete all remaining tasks. Use th
         .filter((step) => !excludedStepIds.has(step.id));
       if (sortedSteps.length > 0) {
         await this.executePipelineFn({
+          run: tempRunningFeature,
           projectPath,
           featureId,
           feature,
@@ -514,7 +534,8 @@ Please continue from where you left off and complete all remaining tasks. Use th
         finalStatus = 'verified';
       }
 
-      await this.updateFeatureStatusFn(projectPath, featureId, finalStatus);
+      if (!(await updateStatus(finalStatus))) return;
+      if (!current()) return;
       this.recordSuccessFn();
 
       // Check final task completion state for accurate reporting
@@ -530,7 +551,15 @@ Please continue from where you left off and complete all remaining tasks. Use th
         // The agent-executor already extracts and saves summaries during execution
         if (agentOutput && !completedFeature?.summary) {
           const summary = extractSummary(agentOutput);
-          if (summary) await this.saveFeatureSummaryFn(projectPath, featureId, summary);
+          if (
+            summary &&
+            !(await this.concurrencyManager.coordinator.mutate(
+              this.concurrencyManager,
+              tempRunningFeature,
+              () => this.saveFeatureSummaryFn(projectPath, featureId, summary)
+            ))
+          )
+            return;
         }
         if (contextResult.memoryFiles.length > 0 && agentOutput) {
           if (remote)
@@ -569,7 +598,14 @@ Please continue from where you left off and complete all remaining tasks. Use th
       if (hasIncompleteTasks)
         completionMessage += ` (${completedTasks}/${totalTasks} tasks completed)`;
 
-      if (isAutoMode) {
+      if (
+        isAutoMode &&
+        this.concurrencyManager.coordinator.acceptCompletion(
+          this.concurrencyManager,
+          tempRunningFeature,
+          'execution-complete'
+        )
+      ) {
         this.eventBus.emitAutoModeEvent('auto_mode_feature_complete', {
           featureId,
           featureName: feature.title,
@@ -583,10 +619,18 @@ Please continue from where you left off and complete all remaining tasks. Use th
         });
       }
     } catch (error) {
+      if (!current()) return;
       const errorInfo = classifyError(error);
       if (errorInfo.isAbort) {
-        await this.updateFeatureStatusFn(projectPath, featureId, 'interrupted');
-        if (isAutoMode) {
+        if (!(await updateStatus('interrupted'))) return;
+        if (
+          isAutoMode &&
+          this.concurrencyManager.coordinator.acceptCompletion(
+            this.concurrencyManager,
+            tempRunningFeature,
+            'execution-complete'
+          )
+        ) {
           this.eventBus.emitAutoModeEvent('auto_mode_feature_complete', {
             featureId,
             featureName: feature?.title,
@@ -621,8 +665,9 @@ Please continue from where you left off and complete all remaining tasks. Use th
           );
         }
         if (currentStatus !== 'merge_conflict') {
-          await this.updateFeatureStatusFn(projectPath, featureId, fallbackStatus);
+          if (!(await updateStatus(fallbackStatus))) return;
         }
+        if (!current()) return;
         this.eventBus.emitAutoModeEvent('auto_mode_error', {
           featureId,
           featureName: feature?.title,
@@ -636,7 +681,7 @@ Please continue from where you left off and complete all remaining tasks. Use th
         }
       }
     } finally {
-      this.releaseRunningFeature(featureId);
+      this.releaseRunningFeature(featureId, { expected: tempRunningFeature });
       if (isAutoMode && projectPath) await this.saveExecutionStateFn(projectPath);
     }
   }
@@ -653,7 +698,12 @@ Please continue from where you left off and complete all remaining tasks. Use th
     // eventually runs. By persisting and emitting the status change here, the
     // board updates immediately regardless of how long the subprocess takes to stop.
     try {
-      await this.updateFeatureStatusFn(projectPath, featureId, 'interrupted');
+      await this.concurrencyManager.coordinator.status(
+        this.concurrencyManager,
+        running,
+        'interrupted',
+        () => this.updateFeatureStatusFn(projectPath, featureId, 'interrupted')
+      );
     } catch (err) {
       // Non-fatal: the abort still proceeds and executeFeature's catch block
       // will attempt the same update once the subprocess terminates.
@@ -661,7 +711,8 @@ Please continue from where you left off and complete all remaining tasks. Use th
     }
 
     running.abortController.abort();
-    if (!running.remoteWorkspace) this.releaseRunningFeature(featureId, { force: true });
+    if (!running.remoteWorkspace)
+      this.releaseRunningFeature(featureId, { force: true, expected: running });
     return true;
   }
 }

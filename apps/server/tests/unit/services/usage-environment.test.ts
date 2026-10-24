@@ -29,7 +29,66 @@ afterEach(() => {
 });
 
 describe('application-owned usage environment seams', () => {
-  it('uses the captured Gemini HOME, discovery environment and cwd, including secondary search', async () => {
+  it('redacts resolved z.ai verification failures and errors published through the owned bus', async () => {
+    const emit = vi.fn();
+    const service = new ZaiUsageService({}, { emit });
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('PRIVATE_VENDOR_ERROR')));
+    expect(await service.verifyApiKey('offline-key')).toMatchObject({
+      authenticated: false,
+      error: 'Failed to contact z.ai API.',
+    });
+    expect(JSON.stringify(emit.mock.calls)).not.toContain('PRIVATE_VENDOR_ERROR');
+    expect(emit).toHaveBeenCalledWith(
+      'notification:created',
+      expect.objectContaining({ id: expect.any(String), type: 'zai.verify.result' })
+    );
+    vi.mocked(fetch).mockResolvedValue(
+      new Response('', { status: 503, statusText: 'PRIVATE_VENDOR_ERROR' })
+    );
+    expect(await service.verifyApiKey('offline-key')).toMatchObject({
+      error: 'API request failed (503).',
+    });
+  });
+
+  it('preserves Gemini quota reads using an existing unexpired token without refreshing it', async () => {
+    const service = new GeminiUsageService({ HOME: '/offline-home' });
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+    vi.mocked(fs.readFileSync).mockReturnValue(
+      JSON.stringify({ access_token: 'offline-token', expiry_date: Date.now() + 3_600_000 })
+    );
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('{}', { status: 200 }))
+      .mockResolvedValueOnce(new Response('{"buckets":[]}', { status: 200 }));
+    vi.stubGlobal('fetch', fetch);
+    const usage = await service.fetchUsageData();
+    expect(usage).toMatchObject({ authenticated: true });
+    expect(usage).not.toHaveProperty('error');
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch.mock.calls.map(([url]) => String(url))).not.toContain(
+      'https://oauth2.googleapis.com/token'
+    );
+    expect(execFileSync).not.toHaveBeenCalled();
+  });
+  it('leaves expired Gemini credentials unchanged and never contacts OAuth or quota APIs', async () => {
+    const service = new GeminiUsageService({ HOME: '/offline-home' });
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+    const credential = JSON.stringify({
+      access_token: 'expired',
+      refresh_token: 'refresh',
+      expiry_date: Date.now() - 1,
+    });
+    vi.mocked(fs.readFileSync).mockReturnValue(credential);
+    const write = vi.spyOn(fs, 'writeFileSync');
+    const fetch = vi.fn();
+    vi.stubGlobal('fetch', fetch);
+    expect(await service.fetchUsageData()).toMatchObject({ authenticated: false });
+    expect(write).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
+    expect(execFileSync).not.toHaveBeenCalled();
+    write.mockRestore();
+  });
+  it('uses the captured Gemini HOME without CLI discovery, OAuth refresh or vendor writes', async () => {
     const environment = { HOME: '/offline-home', PATH: '/offline-bin', FIXTURE: 'before' };
     const service = new GeminiUsageService(environment, '/offline-workspace');
     environment.HOME = '/changed';
@@ -51,15 +110,7 @@ describe('application-owned usage environment seams', () => {
     vi.stubGlobal('fetch', fetch);
     expect(await service.fetchUsageData()).toMatchObject({ authenticated: false });
     const calls = vi.mocked(execFileSync).mock.calls;
-    expect(calls).toHaveLength(process.platform === 'win32' ? 1 : 2);
-    for (const [, , options] of calls) {
-      expect(options).toMatchObject({
-        env: { HOME: '/offline-home', PATH: '/offline-bin', FIXTURE: 'before' },
-        cwd: '/offline-workspace',
-        timeout: 5000,
-      });
-      expect((options as { env: NodeJS.ProcessEnv }).env).not.toHaveProperty('ANTHROPIC_API_KEY');
-    }
+    expect(calls).toHaveLength(0);
     expect(fetch).not.toHaveBeenCalled();
   });
 

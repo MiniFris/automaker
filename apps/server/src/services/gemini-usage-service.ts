@@ -5,15 +5,14 @@
  * Uses the internal Google Cloud quota API (same as CodexBar).
  * See: https://github.com/steipete/CodexBar/blob/main/docs/gemini.md
  *
- * OAuth credentials are extracted from the Gemini CLI installation,
- * not hardcoded, to ensure compatibility with CLI updates.
+ * Reads an existing CLI access token for quota requests. OAuth refresh and
+ * vendor credential writes remain the responsibility of the Gemini CLI.
  */
 
 import { createLogger } from '@automaker/utils';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { execFileSync } from 'child_process';
 
 const logger = createLogger('GeminiUsage');
 
@@ -22,9 +21,6 @@ const QUOTA_API_URL = 'https://cloudcode-pa.googleapis.com/v1internal:retrieveUs
 
 // Code Assist endpoint for getting project ID and tier info
 const CODE_ASSIST_URL = 'https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist';
-
-// Google OAuth endpoints for token refresh
-const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
 /** Default timeout for fetch requests in milliseconds */
 const FETCH_TIMEOUT_MS = 10_000;
@@ -90,11 +86,6 @@ interface OAuthCredentials {
   client_secret?: string;
 }
 
-interface OAuthClientCredentials {
-  clientId: string;
-  clientSecret: string;
-}
-
 interface QuotaResponse {
   // The actual API returns 'buckets', not 'quotaBuckets'
   buckets?: Array<{
@@ -121,7 +112,6 @@ interface QuotaResponse {
 export class GeminiUsageService {
   private cachedCredentials: OAuthCredentials | null = null;
   private cachedCredentialsAt: number | null = null;
-  private cachedClientCredentials: OAuthClientCredentials | null = null;
   private credentialsPath: string;
   /** The actual path from which credentials were loaded (for write-back) */
   private loadedCredentialsPath: string | null = null;
@@ -167,7 +157,7 @@ export class GeminiUsageService {
     }
 
     try {
-      // Get a valid access token (refresh if needed)
+      // Reuse only an existing usable access token; never refresh on a usage read.
       const accessToken = await this.getValidAccessToken(creds);
 
       if (!accessToken) {
@@ -350,7 +340,7 @@ export class GeminiUsageService {
         usedPercent: 0,
         remainingPercent: 100,
         lastUpdated: new Date().toISOString(),
-        error: `Failed to fetch quota: ${errorMsg}`,
+        error: 'Failed to fetch Gemini quota.',
       };
     }
   }
@@ -432,353 +422,12 @@ export class GeminiUsageService {
     return null;
   }
 
-  /**
-   * Find the Gemini CLI binary path
-   */
-  private findGeminiBinaryPath(): string | null {
-    // Try 'which' on Unix-like systems, 'where' on Windows
-    const whichCmd = process.platform === 'win32' ? 'where' : 'which';
-    try {
-      const whichResult = execFileSync(whichCmd, ['gemini'], {
-        env: { ...this.environment },
-        cwd: this.workingDirectory,
-        encoding: 'utf8',
-        timeout: 5000,
-        stdio: ['pipe', 'pipe', 'pipe'],
-      }).trim();
-      // 'where' on Windows may return multiple lines; take the first
-      const firstLine = whichResult.split('\n')[0]?.trim();
-      if (firstLine && fs.existsSync(firstLine)) {
-        return firstLine;
-      }
-    } catch {
-      // Ignore errors from 'which'/'where'
-    }
-
-    // Check common installation paths
-    const possiblePaths = [
-      // npm global installs
-      path.join(this.homeDirectory, '.npm-global', 'bin', 'gemini'),
-      '/usr/local/bin/gemini',
-      '/usr/bin/gemini',
-      // Homebrew
-      '/opt/homebrew/bin/gemini',
-      '/usr/local/opt/gemini/bin/gemini',
-      // nvm/fnm node installs
-      path.join(this.homeDirectory, '.nvm', 'versions', 'node'),
-      path.join(this.homeDirectory, '.fnm', 'node-versions'),
-      // Windows
-      path.join(this.homeDirectory, 'AppData', 'Roaming', 'npm', 'gemini.cmd'),
-      path.join(this.homeDirectory, 'AppData', 'Roaming', 'npm', 'gemini'),
-    ];
-
-    for (const p of possiblePaths) {
-      if (fs.existsSync(p)) {
-        return p;
-      }
-    }
-
-    return null;
-  }
-
-  /**
-   * Extract OAuth client credentials from Gemini CLI installation
-   * This mimics CodexBar's approach of finding oauth2.js in the CLI
-   */
-  private extractOAuthClientCredentials(): OAuthClientCredentials | null {
-    if (this.cachedClientCredentials) {
-      return this.cachedClientCredentials;
-    }
-
-    const geminiBinary = this.findGeminiBinaryPath();
-    if (!geminiBinary) {
-      logger.debug('[extractOAuthClientCredentials] Gemini binary not found');
-      return null;
-    }
-
-    // Resolve symlinks to find actual location
-    let resolvedPath = geminiBinary;
-    try {
-      resolvedPath = fs.realpathSync(geminiBinary);
-    } catch {
-      // Use original path if realpath fails
-    }
-
-    const baseDir = path.dirname(resolvedPath);
-    logger.debug('[extractOAuthClientCredentials] Base dir:', baseDir);
-
-    // Possible locations for oauth2.js relative to the binary
-    // Based on CodexBar's search patterns
-    const possibleOAuth2Paths = [
-      // npm global install structure
-      path.join(
-        baseDir,
-        '..',
-        'lib',
-        'node_modules',
-        '@google',
-        'gemini-cli',
-        'dist',
-        'src',
-        'code_assist',
-        'oauth2.js'
-      ),
-      path.join(
-        baseDir,
-        '..',
-        'lib',
-        'node_modules',
-        '@google',
-        'gemini-cli-core',
-        'dist',
-        'src',
-        'code_assist',
-        'oauth2.js'
-      ),
-      // Homebrew/libexec structure
-      path.join(
-        baseDir,
-        '..',
-        'libexec',
-        'lib',
-        'node_modules',
-        '@google',
-        'gemini-cli',
-        'dist',
-        'src',
-        'code_assist',
-        'oauth2.js'
-      ),
-      path.join(
-        baseDir,
-        '..',
-        'libexec',
-        'lib',
-        'node_modules',
-        '@google',
-        'gemini-cli-core',
-        'dist',
-        'src',
-        'code_assist',
-        'oauth2.js'
-      ),
-      // Direct sibling
-      path.join(baseDir, '..', 'gemini-cli-core', 'dist', 'src', 'code_assist', 'oauth2.js'),
-      path.join(baseDir, '..', 'gemini-cli', 'dist', 'src', 'code_assist', 'oauth2.js'),
-      // Alternative node_modules structures
-      path.join(
-        baseDir,
-        '..',
-        '..',
-        'lib',
-        'node_modules',
-        '@google',
-        'gemini-cli',
-        'dist',
-        'src',
-        'code_assist',
-        'oauth2.js'
-      ),
-      path.join(
-        baseDir,
-        '..',
-        '..',
-        'lib',
-        'node_modules',
-        '@google',
-        'gemini-cli-core',
-        'dist',
-        'src',
-        'code_assist',
-        'oauth2.js'
-      ),
-    ];
-
-    for (const oauth2Path of possibleOAuth2Paths) {
-      try {
-        const normalizedPath = path.normalize(oauth2Path);
-        if (fs.existsSync(normalizedPath)) {
-          logger.debug('[extractOAuthClientCredentials] Found oauth2.js at:', normalizedPath);
-          const content = fs.readFileSync(normalizedPath, 'utf8');
-          const creds = this.parseOAuthCredentialsFromSource(content);
-          if (creds) {
-            this.cachedClientCredentials = creds;
-            logger.info('[extractOAuthClientCredentials] Extracted credentials from CLI');
-            return creds;
-          }
-        }
-      } catch (error) {
-        logger.debug('[extractOAuthClientCredentials] Failed to read', oauth2Path, error);
-      }
-    }
-
-    // Try finding oauth2.js by searching in node_modules (POSIX only)
-    if (process.platform !== 'win32') {
-      try {
-        const searchBase = path.resolve(baseDir, '..');
-        const searchResult = execFileSync(
-          'find',
-          [searchBase, '-name', 'oauth2.js', '-path', '*gemini*', '-path', '*code_assist*'],
-          {
-            encoding: 'utf8',
-            timeout: 5000,
-            stdio: ['pipe', 'pipe', 'pipe'],
-            env: { ...this.environment },
-            cwd: this.workingDirectory,
-          }
-        )
-          .trim()
-          .split('\n')[0]; // Take first result
-
-        if (searchResult && fs.existsSync(searchResult)) {
-          logger.debug('[extractOAuthClientCredentials] Found via search:', searchResult);
-          const content = fs.readFileSync(searchResult, 'utf8');
-          const creds = this.parseOAuthCredentialsFromSource(content);
-          if (creds) {
-            this.cachedClientCredentials = creds;
-            logger.info(
-              '[extractOAuthClientCredentials] Extracted credentials from CLI (via search)'
-            );
-            return creds;
-          }
-        }
-      } catch {
-        // Ignore search errors
-      }
-    }
-
-    logger.warn('[extractOAuthClientCredentials] Could not extract credentials from CLI');
-    return null;
-  }
-
-  /**
-   * Parse OAuth client credentials from oauth2.js source code
-   */
-  private parseOAuthCredentialsFromSource(content: string): OAuthClientCredentials | null {
-    // Patterns based on CodexBar's regex extraction
-    // Look for: OAUTH_CLIENT_ID = "..." or const clientId = "..."
-    const clientIdPatterns = [
-      /OAUTH_CLIENT_ID\s*=\s*["']([^"']+)["']/,
-      /clientId\s*[:=]\s*["']([^"']+)["']/,
-      /client_id\s*[:=]\s*["']([^"']+)["']/,
-      /"clientId"\s*:\s*["']([^"']+)["']/,
-    ];
-
-    const clientSecretPatterns = [
-      /OAUTH_CLIENT_SECRET\s*=\s*["']([^"']+)["']/,
-      /clientSecret\s*[:=]\s*["']([^"']+)["']/,
-      /client_secret\s*[:=]\s*["']([^"']+)["']/,
-      /"clientSecret"\s*:\s*["']([^"']+)["']/,
-    ];
-
-    let clientId: string | null = null;
-    let clientSecret: string | null = null;
-
-    for (const pattern of clientIdPatterns) {
-      const match = content.match(pattern);
-      if (match && match[1]) {
-        clientId = match[1];
-        break;
-      }
-    }
-
-    for (const pattern of clientSecretPatterns) {
-      const match = content.match(pattern);
-      if (match && match[1]) {
-        clientSecret = match[1];
-        break;
-      }
-    }
-
-    if (clientId && clientSecret) {
-      logger.debug('[parseOAuthCredentialsFromSource] Found client credentials');
-      return { clientId, clientSecret };
-    }
-
-    return null;
-  }
-
-  /**
-   * Get a valid access token, refreshing if necessary
-   */
+  /** Passive usage never refreshes OAuth credentials or writes the vendor profile. */
   private async getValidAccessToken(creds: OAuthCredentials): Promise<string | null> {
-    // Check if current token is still valid (with 5 min buffer)
-    if (creds.access_token && creds.expiry_date) {
-      const now = Date.now();
-      if (creds.expiry_date > now + 5 * 60 * 1000) {
-        logger.debug('[getValidAccessToken] Using existing token (not expired)');
-        return creds.access_token;
-      }
-    }
-
-    // If we have a refresh token, try to refresh
-    if (creds.refresh_token) {
-      // Try to extract credentials from CLI first
-      const extractedCreds = this.extractOAuthClientCredentials();
-
-      // Use extracted credentials, then fall back to credentials in file
-      const clientId = extractedCreds?.clientId || creds.client_id;
-      const clientSecret = extractedCreds?.clientSecret || creds.client_secret;
-
-      if (!clientId || !clientSecret) {
-        logger.error('[getValidAccessToken] No client credentials available for token refresh');
-        // Return existing token even if expired - it might still work
-        return creds.access_token || null;
-      }
-
-      try {
-        logger.debug('[getValidAccessToken] Refreshing token...');
-        const response = await fetch(GOOGLE_TOKEN_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: new URLSearchParams({
-            client_id: clientId,
-            client_secret: clientSecret,
-            refresh_token: creds.refresh_token,
-            grant_type: 'refresh_token',
-          }),
-          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-        });
-
-        if (response.ok) {
-          const data = (await response.json()) as { access_token?: string; expires_in?: number };
-          const newAccessToken = data.access_token;
-          const expiresIn = data.expires_in || 3600;
-
-          if (newAccessToken) {
-            logger.info('[getValidAccessToken] Token refreshed successfully');
-
-            // Update cached credentials
-            this.cachedCredentials = {
-              ...creds,
-              access_token: newAccessToken,
-              expiry_date: Date.now() + expiresIn * 1000,
-            };
-            this.cachedCredentialsAt = Date.now();
-
-            // Save back to the file the credentials were loaded from
-            const writePath = this.loadedCredentialsPath || this.credentialsPath;
-            try {
-              fs.writeFileSync(writePath, JSON.stringify(this.cachedCredentials, null, 2));
-            } catch (e) {
-              logger.debug('[getValidAccessToken] Could not save refreshed token:', e);
-            }
-
-            return newAccessToken;
-          }
-        } else {
-          const errorText = await response.text().catch(() => '');
-          logger.error('[getValidAccessToken] Token refresh failed:', response.status, errorText);
-        }
-      } catch (error) {
-        logger.error('[getValidAccessToken] Token refresh error:', error);
-      }
-    }
-
-    // Return current access token even if it might be expired
-    return creds.access_token || null;
+    if (!creds.access_token) return null;
+    if (creds.expiry_date !== undefined && creds.expiry_date <= Date.now() + 5 * 60 * 1000)
+      return null;
+    return creds.access_token;
   }
 
   /**
@@ -814,7 +463,6 @@ export class GeminiUsageService {
   clearCache(): void {
     this.cachedCredentials = null;
     this.cachedCredentialsAt = null;
-    this.cachedClientCredentials = null;
   }
 }
 

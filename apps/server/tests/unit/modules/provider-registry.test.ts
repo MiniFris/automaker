@@ -146,7 +146,13 @@ describe('ProviderRegistry', () => {
           create: () => provider('openai-compatible'),
         },
       ],
-      connections()
+      connections(),
+      {
+        statuses: vi.fn().mockResolvedValue({
+          claude: { installed: true },
+          'openai-compatible': { installed: true },
+        }),
+      } as never
     );
     expect(registry.providerNameForModel('direct-custom')).toBe('openai-compatible');
     await expect(registry.statuses()).resolves.toEqual({

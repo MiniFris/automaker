@@ -22,6 +22,7 @@ import type { SettingsService } from '../settings-service.js';
 import type { NotificationService } from '../notification-service.js';
 import type { SharedServices, AutoModeStatus, RunningAgentInfo } from './types.js';
 import { pipelineService, type PipelineService } from '../pipeline-service.js';
+import { FeatureRunCoordinator } from '../../modules/orchestration/feature-run-coordinator.service.js';
 
 const logger = createLogger('GlobalAutoModeService');
 
@@ -43,13 +44,15 @@ export class GlobalAutoModeService {
     settingsService: SettingsService | null,
     featureLoader: FeatureLoader = new FeatureLoader(),
     notificationService: NotificationService | null = null,
-    pipeline: PipelineService = pipelineService
+    pipeline: PipelineService = pipelineService,
+    coordinator?: FeatureRunCoordinator
   ) {
     this.featureLoader = featureLoader;
     this.eventBus = new TypedEventBus(events);
     this.worktreeResolver = new WorktreeResolver(settingsService);
-    this.concurrencyManager = new ConcurrencyManager((p) =>
-      this.worktreeResolver.getCurrentBranch(p)
+    this.concurrencyManager = new ConcurrencyManager(
+      (p) => this.worktreeResolver.getCurrentBranch(p),
+      coordinator
     );
     this.featureStateManager = new FeatureStateManager(
       events,

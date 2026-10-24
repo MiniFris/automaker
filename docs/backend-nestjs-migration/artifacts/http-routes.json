@@ -658,7 +658,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/prompt-enhancement/prompt-enhancement.controller.ts",
-      "line": 26,
+      "line": 27,
       "middleware": [
         "PromptEnhancementController.enhance"
       ],

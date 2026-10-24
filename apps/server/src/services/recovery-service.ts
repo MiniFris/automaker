@@ -52,7 +52,7 @@ export type ExecuteFeatureFn = (
   useWorktrees: boolean,
   isAutoMode: boolean,
   providedWorktreePath?: string,
-  options?: { continuationPrompt?: string; _calledInternally?: boolean }
+  options?: { continuationPrompt?: string; _calledInternally?: boolean; _run?: RunningFeature }
 ) => Promise<void>;
 export type LoadFeatureFn = (projectPath: string, featureId: string) => Promise<Feature | null>;
 export type DetectPipelineStatusFn = (
@@ -64,7 +64,8 @@ export type ResumePipelineFn = (
   projectPath: string,
   feature: Feature,
   useWorktrees: boolean,
-  pipelineInfo: PipelineStatusInfo
+  pipelineInfo: PipelineStatusInfo,
+  expected?: RunningFeature
 ) => Promise<void>;
 export type IsFeatureRunningFn = (featureId: string) => boolean;
 export type AcquireRunningFeatureFn = (options: {
@@ -72,8 +73,9 @@ export type AcquireRunningFeatureFn = (options: {
   projectPath: string;
   isAutoMode: boolean;
   allowReuse?: boolean;
-}) => RunningFeature;
-export type ReleaseRunningFeatureFn = (featureId: string) => void;
+  expected?: RunningFeature;
+}) => RunningFeature | Promise<RunningFeature>;
+export type ReleaseRunningFeatureFn = (featureId: string, expected?: RunningFeature) => void;
 
 export class RecoveryService {
   constructor(
@@ -179,7 +181,8 @@ export class RecoveryService {
     projectPath: string,
     featureId: string,
     context: string,
-    useWorktrees: boolean
+    useWorktrees: boolean,
+    lease: RunningFeature
   ): Promise<void> {
     const feature = await this.loadFeatureFn(projectPath, featureId);
     if (!feature) throw new Error(`Feature ${featureId} not found`);
@@ -192,6 +195,7 @@ export class RecoveryService {
     return this.executeFeatureFn(projectPath, featureId, useWorktrees, false, undefined, {
       continuationPrompt: prompt,
       _calledInternally: true,
+      _run: lease,
     });
   }
 
@@ -199,15 +203,17 @@ export class RecoveryService {
     projectPath: string,
     featureId: string,
     useWorktrees = false,
-    _calledInternally = false
+    _calledInternally = false,
+    expected?: RunningFeature
   ): Promise<void> {
     if (this.isStopping()) return;
     if (!_calledInternally && this.isFeatureRunningFn(featureId)) return;
-    this.acquireRunningFeatureFn({
+    const lease = await this.acquireRunningFeatureFn({
       featureId,
       projectPath,
       isAutoMode: false,
       allowReuse: _calledInternally,
+      expected,
     });
     try {
       const feature = await this.loadFeatureFn(projectPath, featureId);
@@ -218,7 +224,7 @@ export class RecoveryService {
         (feature.status || '') as FeatureStatusWithPipeline
       );
       if (pipelineInfo.isPipeline)
-        return await this.resumePipelineFn(projectPath, feature, useWorktrees, pipelineInfo);
+        return await this.resumePipelineFn(projectPath, feature, useWorktrees, pipelineInfo, lease);
       const hasContext = await this.contextExists(projectPath, featureId);
       if (hasContext) {
         const context = (await secureFs.readFile(
@@ -232,7 +238,13 @@ export class RecoveryService {
           hasContext: true,
           message: `Resuming feature "${feature.title}" from saved context`,
         });
-        return await this.executeFeatureWithContext(projectPath, featureId, context, useWorktrees);
+        return await this.executeFeatureWithContext(
+          projectPath,
+          featureId,
+          context,
+          useWorktrees,
+          lease
+        );
       }
       this.eventBus.emitAutoModeEvent('auto_mode_feature_resuming', {
         featureId,
@@ -243,9 +255,10 @@ export class RecoveryService {
       });
       return await this.executeFeatureFn(projectPath, featureId, useWorktrees, false, undefined, {
         _calledInternally: true,
+        _run: lease,
       });
     } finally {
-      this.releaseRunningFeatureFn(featureId);
+      this.releaseRunningFeatureFn(featureId, lease);
     }
   }
 

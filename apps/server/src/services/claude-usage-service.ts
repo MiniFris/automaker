@@ -204,7 +204,7 @@ export class ClaudeUsageService {
 
       // POSIX paths are argv data, never shell source.
       const command = this.isWindows ? 'cmd.exe' : this.claudeBinary;
-      // Use --add-dir to whitelist the current directory and bypass the trust prompt
+      // Include the working directory; trust prompts require explicit user approval.
       // We don't pass /usage here, we'll type it into the REPL
       const args = this.isWindows
         ? ['/c', 'claude', '--add-dir', workingDirectory]
@@ -328,7 +328,6 @@ export class ClaudeUsageService {
       }, 45000); // 45 second timeout
 
       let hasSentCommand = false;
-      let hasApprovedTrust = false;
 
       ptyProcess.onData((data: string) => {
         output += data;
@@ -402,23 +401,23 @@ export class ClaudeUsageService {
         // - "Do you want to work in this folder?"
         // - "Ready to code here?" / "I'll need permission to work with your files"
         // - "Quick safety check" / "Yes, I trust this folder"
-        // Since we are running in cwd (project dir), it is safe to approve.
         if (
-          !hasApprovedTrust &&
-          (cleanOutput.includes('Do you want to work in this folder?') ||
-            cleanOutput.includes('Ready to code here') ||
-            cleanOutput.includes('permission to work with your files') ||
-            cleanOutput.includes('trust this folder') ||
-            cleanOutput.includes('safety check'))
+          cleanOutput.includes('Do you want to work in this folder?') ||
+          cleanOutput.includes('Ready to code here') ||
+          cleanOutput.includes('permission to work with your files') ||
+          cleanOutput.includes('trust this folder') ||
+          cleanOutput.includes('safety check')
         ) {
-          hasApprovedTrust = true;
           hasSeenTrustPrompt = true;
-          // Wait a tiny bit to ensure prompt is ready, then send Enter
-          setTimeout(() => {
-            if (!settled && ptyProcess && !ptyProcess.killed) {
-              ptyProcess.write('\r');
-            }
-          }, 1000);
+          if (!settled) {
+            settled = true;
+            clearTimeout(timeoutId);
+            this.killPtyProcess(ptyProcess);
+            reject(
+              new Error('TRUST_PROMPT_PENDING: Approve the folder explicitly in the Claude CLI.')
+            );
+          }
+          return;
         }
 
         // Detect REPL prompt and send /usage command

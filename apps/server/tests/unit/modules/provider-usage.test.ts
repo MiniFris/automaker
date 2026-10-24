@@ -26,11 +26,7 @@ const fixture = () => {
   const settings = {
     getCredentials: vi.fn().mockResolvedValue({ apiKeys: { zai: 'stored-key' } }),
   };
-  const providers = {
-    byName: vi.fn().mockReturnValue({
-      detectInstallation: vi.fn().mockResolvedValue({ installed: true, authenticated: true }),
-    }),
-  };
+  const discovery = { statuses: vi.fn().mockResolvedValue({ gemini: { installed: true } }) };
   const config = {
     providers: { isEnvironmentVariableConfigured: vi.fn().mockReturnValue(false) },
   };
@@ -41,13 +37,43 @@ const fixture = () => {
     gemini as never,
     zai as never,
     settings as never,
-    providers as never,
+    discovery as never,
     config as never
   );
-  return { service, claude, codexModels, zai, settings, config };
+  return { service, claude, codex, codexModels, gemini, zai, settings, config };
 };
 
 describe('ProviderUsageService', () => {
+  it.each([
+    'claudeUsage',
+    'codexUsage',
+    'codexModelCatalog',
+    'geminiUsage',
+    'zaiUsage',
+    'zaiConfigure',
+    'zaiVerify',
+  ] as const)('does not expose upstream exception text from %s', async (method) => {
+    const f = fixture();
+    const failure = new Error('PRIVATE_TOKEN_AND_PATH_SENTINEL');
+    f.claude.fetchUsageData.mockRejectedValue(failure);
+    f.codex.fetchUsageData.mockRejectedValue(failure);
+    f.codexModels.getModelsWithMetadata.mockRejectedValue(failure);
+    f.gemini.fetchUsageData.mockRejectedValue(failure);
+    f.zai.isAvailable.mockReturnValue(true);
+    f.zai.fetchUsageData.mockRejectedValue(failure);
+    f.zai.configure.mockRejectedValue(failure);
+    f.zai.verifyApiKey.mockRejectedValue(failure);
+    const result =
+      method === 'codexModelCatalog'
+        ? await f.service.codexModelCatalog(true)
+        : method === 'zaiConfigure'
+          ? await f.service.zaiConfigure({ apiToken: 'fixture' })
+          : method === 'zaiVerify'
+            ? await f.service.zaiVerify({ apiKey: 'fixture' })
+            : await f.service[method]();
+    expect(JSON.stringify(result)).not.toContain('PRIVATE_TOKEN_AND_PATH_SENTINEL');
+    expect(result.body).toHaveProperty('error');
+  });
   it('loads the stored z.ai token during Nest lifecycle initialization', async () => {
     const { service, zai } = fixture();
     await service.onModuleInit();

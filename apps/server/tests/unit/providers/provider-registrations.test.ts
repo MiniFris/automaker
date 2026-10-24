@@ -8,6 +8,7 @@ import { OpencodeProvider } from '@/providers/opencode-provider.js';
 import { GeminiProvider } from '@/providers/gemini-provider.js';
 import { CopilotProvider } from '@/providers/copilot-provider.js';
 import { OpenAICompatibleProvider } from '@/providers/openai-compatible-provider.js';
+import { ProviderDiscoveryService } from '@/modules/providers/provider-discovery.service.js';
 
 describe('explicit provider registrations', () => {
   let registry: ReturnType<typeof createTestProviderRegistry>;
@@ -20,7 +21,14 @@ describe('explicit provider registrations', () => {
   let detectCopilotSpy: any;
 
   beforeEach(() => {
-    registry = createTestProviderRegistry(new SettingsService('/unused-provider-registry-test'));
+    registry = createTestProviderRegistry(
+      new SettingsService('/unused-provider-registry-test'),
+      new ProviderDiscoveryService({
+        detect: vi
+          .fn()
+          .mockResolvedValue({ installed: true, version: '', path: '', method: 'path' }),
+      } as never)
+    );
     consoleSpy = {
       warn: vi.spyOn(console, 'warn').mockImplementation(() => {}),
     };
@@ -248,10 +256,19 @@ describe('explicit provider registrations', () => {
       expect(statuses).toHaveProperty('claude');
     });
 
-    it('should call detectInstallation on each provider', async () => {
+    it('does not call execution adapter detectInstallation during discovery', async () => {
       const statuses = await registry.statuses();
 
       expect(statuses.claude).toHaveProperty('installed');
+      for (const spy of [
+        detectClaudeSpy,
+        detectCursorSpy,
+        detectCodexSpy,
+        detectOpencodeSpy,
+        detectGeminiSpy,
+        detectCopilotSpy,
+      ])
+        expect(spy).not.toHaveBeenCalled();
     });
 
     it('should return correct provider names as keys', async () => {

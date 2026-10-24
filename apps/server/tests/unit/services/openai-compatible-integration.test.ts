@@ -23,6 +23,7 @@ import { TypedEventBus } from '@/services/typed-event-bus.js';
 import type { FeatureStateManager } from '@/services/feature-state-manager.js';
 import type { PlanApprovalService } from '@/services/plan-approval-service.js';
 import { PipelineOrchestrator } from '@/services/pipeline-orchestrator.js';
+import { ConcurrencyManager } from '@/services/concurrency-manager.js';
 import { EnvironmentBindingStore } from '@/services/execution-environment/bindings.js';
 
 type RequestBody = {
@@ -607,6 +608,12 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
   });
 
   it('routes a pipeline step through AgentExecutor to the selected direct endpoint', async () => {
+    const manager = new ConcurrencyManager();
+    const run = manager.acquire({
+      projectPath: root,
+      featureId: 'pipeline-feature',
+      isAutoMode: false,
+    });
     const events = createEventEmitter();
     const bus = new TypedEventBus(events);
     const state = {
@@ -655,7 +662,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       executor,
       {} as never,
       {} as never,
-      {} as never,
+      manager,
       settings,
       vi.fn(),
       vi.fn(async () => ({ files: [], formattedPrompt: '' })),
@@ -664,6 +671,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       routed
     );
     await pipeline.executePipeline({
+      run,
       projectPath: root,
       featureId: 'pipeline-feature',
       feature: {
@@ -687,7 +695,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       workDir: root,
       worktreePath: null,
       branchName: null,
-      abortController: new AbortController(),
+      abortController: run.abortController,
       autoLoadClaudeMd: true,
       testAttempts: 0,
       maxTestAttempts: 1,

@@ -40,6 +40,7 @@ import {
 import { execGitCommand } from '@automaker/git-utils';
 import { TypedEventBus } from '../typed-event-bus.js';
 import { ConcurrencyManager } from '../concurrency-manager.js';
+import type { RunningFeature } from '../concurrency-manager.js';
 import { WorktreeResolver } from '../worktree-resolver.js';
 import { FeatureStateManager } from '../feature-state-manager.js';
 import { PlanApprovalService } from '../plan-approval-service.js';
@@ -537,8 +538,8 @@ export class AutoModeServiceFacade {
         // use the supplied FeatureMemoryWriter for managed runs, not controller fs.
       },
       (pPath, featureId) => getFacade().contextExists(featureId),
-      (pPath, featureId, useWorktrees, _calledInternally) =>
-        getFacade().resumeFeature(featureId, useWorktrees, _calledInternally),
+      (pPath, featureId, useWorktrees, _calledInternally, expected) =>
+        getFacade().resumeFeature(featureId, useWorktrees, _calledInternally, expected),
       (errorInfo) => {
         // Track failure against ALL active worktrees for this project.
         // The ExecutionService callbacks don't receive branchName, so we
@@ -588,11 +589,11 @@ export class AutoModeServiceFacade {
       (pPath, featureId) => featureStateManager.loadFeature(pPath, featureId),
       (pPath, featureId, status) =>
         pipelineOrchestrator.detectPipelineStatus(pPath, featureId, status),
-      (pPath, feature, useWorktrees, pipelineInfo) =>
-        pipelineOrchestrator.resumePipeline(pPath, feature, useWorktrees, pipelineInfo),
+      (pPath, feature, useWorktrees, pipelineInfo, expected) =>
+        pipelineOrchestrator.resumePipeline(pPath, feature, useWorktrees, pipelineInfo, expected),
       (featureId) => concurrencyManager.isRunning(featureId),
-      (opts) => concurrencyManager.acquire(opts),
-      (featureId) => concurrencyManager.release(featureId),
+      (opts) => concurrencyManager.acquireAsync(opts),
+      (featureId, expected) => concurrencyManager.release(featureId, { expected }),
       () => getFacade().stopping
     );
 
@@ -688,6 +689,7 @@ export class AutoModeServiceFacade {
     options?: {
       continuationPrompt?: string;
       _calledInternally?: boolean;
+      _run?: RunningFeature;
     }
   ): Promise<void> {
     if (this.stopping) throw new Error('Auto mode is shutting down.');
@@ -730,7 +732,8 @@ export class AutoModeServiceFacade {
   async resumeFeature(
     featureId: string,
     useWorktrees = false,
-    _calledInternally = false
+    _calledInternally = false,
+    expected?: RunningFeature
   ): Promise<void> {
     // Note: ExecutionService.executeFeature catches its own errors internally and
     // does NOT re-throw them (it emits auto_mode_error and returns normally).
@@ -742,7 +745,8 @@ export class AutoModeServiceFacade {
         this.projectPath,
         featureId,
         useWorktrees,
-        _calledInternally
+        _calledInternally,
+        expected
       );
     } catch (error) {
       this.handleFacadeError(error, 'resumeFeature', featureId);
@@ -832,6 +836,7 @@ export class AutoModeServiceFacade {
    * @param featureId - The feature ID to verify
    */
   async verifyFeature(featureId: string): Promise<boolean> {
+    const observedRun = this.concurrencyManager.getRunningFeature(featureId);
     const feature = await this.featureStateManager.loadFeature(this.projectPath, featureId);
     const remote =
       feature && this.settingsService
@@ -871,7 +876,7 @@ export class AutoModeServiceFacade {
     let allPassed = true;
     const results: Array<{ check: string; passed: boolean; output?: string }> = [];
     const verificationLease = remote
-      ? this.concurrencyManager.acquire({
+      ? await this.concurrencyManager.acquireAsync({
           featureId,
           projectPath: this.projectPath,
           isAutoMode: false,
@@ -923,11 +928,18 @@ export class AutoModeServiceFacade {
         }
       }
     } finally {
-      if (verificationLease) this.concurrencyManager.release(featureId);
+      if (verificationLease)
+        this.concurrencyManager.release(featureId, { expected: verificationLease });
     }
 
-    const runningEntryForVerify = this.concurrencyManager.getRunningFeature(featureId);
-    if (runningEntryForVerify?.isAutoMode) {
+    if (
+      observedRun?.isAutoMode &&
+      this.concurrencyManager.coordinator.acceptCompletion(
+        this.concurrencyManager,
+        observedRun,
+        'verification-complete'
+      )
+    ) {
       this.eventBus.emitAutoModeEvent('auto_mode_feature_complete', {
         featureId,
         featureName: feature?.title,
@@ -950,6 +962,7 @@ export class AutoModeServiceFacade {
    * @param providedWorktreePath - Optional worktree path
    */
   async commitFeature(featureId: string, providedWorktreePath?: string): Promise<string | null> {
+    const observedRun = this.concurrencyManager.getRunningFeature(featureId);
     const remoteFeature = await this.featureStateManager.loadFeature(this.projectPath, featureId);
     if (remoteFeature && this.settingsService) {
       const service = new FeatureWorkspaceService(this.settingsService);
@@ -966,7 +979,7 @@ export class AutoModeServiceFacade {
           throw new Error(
             'The supplied path is not the pinned remote feature workspace. No local Git operation was performed.'
           );
-        const lease = this.concurrencyManager.acquire({
+        const lease = await this.concurrencyManager.acquireAsync({
           featureId,
           projectPath: this.projectPath,
           isAutoMode: false,
@@ -976,7 +989,7 @@ export class AutoModeServiceFacade {
         try {
           return await service.commit(remote, remoteFeature, lease.abortController.signal);
         } finally {
-          this.concurrencyManager.release(featureId);
+          this.concurrencyManager.release(featureId, { expected: lease });
         }
       }
     }
@@ -1019,8 +1032,14 @@ export class AutoModeServiceFacade {
       await execGitCommand(['commit', '-m', commitMessage], workDir);
       const hash = await execGitCommand(['rev-parse', 'HEAD'], workDir);
 
-      const runningEntryForCommit = this.concurrencyManager.getRunningFeature(featureId);
-      if (runningEntryForCommit?.isAutoMode) {
+      if (
+        observedRun?.isAutoMode &&
+        this.concurrencyManager.coordinator.acceptCompletion(
+          this.concurrencyManager,
+          observedRun,
+          'commit-complete'
+        )
+      ) {
         this.eventBus.emitAutoModeEvent('auto_mode_feature_complete', {
           featureId,
           featureName: feature?.title,
@@ -1049,7 +1068,7 @@ export class AutoModeServiceFacade {
       throw new Error('Stop this feature before merging its remote workspace.');
     const feature = await this.featureStateManager.loadFeature(this.projectPath, featureId);
     if (!feature) throw new Error('Feature not found.');
-    const lease = this.concurrencyManager.acquire({
+    const lease = await this.concurrencyManager.acquireAsync({
       featureId,
       projectPath: this.projectPath,
       isAutoMode: false,
@@ -1069,7 +1088,7 @@ export class AutoModeServiceFacade {
       lease.remoteWorkspace = true;
       await service.merge(remote, lease.abortController.signal);
     } finally {
-      this.concurrencyManager.release(featureId);
+      this.concurrencyManager.release(featureId, { expected: lease });
     }
   }
 

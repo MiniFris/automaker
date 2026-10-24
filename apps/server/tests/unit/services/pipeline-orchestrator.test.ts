@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { Feature, PipelineStep, PipelineConfig } from '@automaker/types';
 import { toDirectModelId } from '@automaker/types';
 import { SSHFeatureService } from '../../../src/services/execution-environment/ssh-feature.js';
+import { ConcurrencyManager as ActualConcurrencyManager } from '../../../src/services/concurrency-manager.js';
 import {
   PipelineOrchestrator,
   type PipelineContext,
@@ -173,6 +174,15 @@ describe('PipelineOrchestrator', () => {
     } as unknown as WorktreeResolver;
 
     mockConcurrencyManager = {
+      acquireAsync: vi.fn((options) => Promise.resolve(mockConcurrencyManager.acquire(options))),
+      isCurrent: vi.fn().mockReturnValue(true),
+      coordinator: {
+        status: vi.fn(async (_manager, _run, _status, write) => {
+          await write();
+          return true;
+        }),
+        acceptCompletion: vi.fn().mockReturnValue(true),
+      },
       acquire: vi.fn().mockImplementation(({ featureId, isAutoMode }) => ({
         featureId,
         projectPath: '/test/project',
@@ -182,7 +192,9 @@ describe('PipelineOrchestrator', () => {
         isAutoMode: isAutoMode ?? false,
       })),
       release: vi.fn(),
-      getRunningFeature: vi.fn().mockReturnValue(undefined),
+      getRunningFeature: vi
+        .fn()
+        .mockReturnValue({ featureId: 'feature-1', abortController: new AbortController() }),
     } as unknown as ConcurrencyManager;
 
     mockSettingsService = null;
@@ -230,6 +242,36 @@ describe('PipelineOrchestrator', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('does not finalize or release a new incarnation when a stopped pipeline finishes late', async () => {
+    const manager = new ActualConcurrencyManager();
+    Object.assign(orchestrator, { concurrencyManager: manager });
+    let finish!: () => void;
+    const held = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    vi.mocked(mockRunAgentFn).mockReturnValue(held);
+    const running = orchestrator.resumeFromStep(
+      '/test/project',
+      { ...testFeature, branchName: null },
+      false,
+      0,
+      { version: 1, steps: [testSteps[0]] }
+    );
+    await vi.waitFor(() => expect(mockRunAgentFn).toHaveBeenCalled());
+    const first = manager.getRunningFeature('feature-1')!;
+    manager.release('feature-1', { force: true, expected: first });
+    const second = await manager.acquireAsync({
+      projectPath: '/test/project',
+      featureId: 'feature-1',
+      isAutoMode: false,
+    });
+    vi.mocked(mockUpdateFeatureStatusFn).mockClear();
+    finish();
+    await running;
+    expect(manager.getRunningFeature('feature-1')).toBe(second);
+    expect(mockUpdateFeatureStatusFn).not.toHaveBeenCalled();
   });
 
   it('fails SSH preflight for pipeline start/resume and merge without local Git or source context', async () => {
@@ -622,7 +664,10 @@ describe('PipelineOrchestrator', () => {
 
     it('should not emit auto_mode_feature_complete on success when isAutoMode is false', async () => {
       vi.mocked(performMerge).mockResolvedValue({ success: true });
-      vi.mocked(mockConcurrencyManager.getRunningFeature).mockReturnValue(undefined);
+      vi.mocked(mockConcurrencyManager.getRunningFeature).mockReturnValue({
+        featureId: 'feature-1',
+        isAutoMode: false,
+      } as never);
 
       const context = createMergeContext();
       await orchestrator.attemptMerge(context);
@@ -741,7 +786,10 @@ describe('PipelineOrchestrator', () => {
         step: null,
       };
 
-      vi.mocked(mockConcurrencyManager.getRunningFeature).mockReturnValue(undefined);
+      vi.mocked(mockConcurrencyManager.getRunningFeature).mockReturnValue({
+        featureId: 'feature-1',
+        isAutoMode: false,
+      } as never);
 
       await orchestrator.resumePipeline('/test/project', testFeature, true, invalidPipelineInfo);
 
@@ -823,7 +871,9 @@ describe('PipelineOrchestrator', () => {
     it('should release slot on completion', async () => {
       await orchestrator.resumeFromStep('/test/project', testFeature, true, 0, testConfig);
 
-      expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1');
+      expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1', {
+        expected: expect.objectContaining({ featureId: 'feature-1' }),
+      });
     });
 
     it('should release slot on error', async () => {
@@ -831,7 +881,9 @@ describe('PipelineOrchestrator', () => {
 
       await orchestrator.resumeFromStep('/test/project', testFeature, true, 0, testConfig);
 
-      expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1');
+      expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1', {
+        expected: expect.objectContaining({ featureId: 'feature-1' }),
+      });
     });
   });
 

@@ -1,5 +1,6 @@
 import { type DynamicModule, Global, Module } from '@nestjs/common';
 import { HOST_ENVIRONMENT, RuntimePathsService } from '../../core/config/index.js';
+import { EVENT_BUS, type EventBus } from '../../core/eventing/index.js';
 import { ClaudeUsageService } from '../../services/claude-usage-service.js';
 import { CodexUsageService } from '../../services/codex-usage-service.js';
 import { CodexAppServerService } from '../../services/codex-app-server-service.js';
@@ -22,6 +23,7 @@ import {
 } from './provider-registry.service.js';
 import { ProviderUsageController } from './provider-usage.controller.js';
 import { ProviderUsageService } from './provider-usage.service.js';
+import { ProviderDiscoveryService } from './provider-discovery.service.js';
 import { ProviderSetupStatusService } from './provider-setup-status.service.js';
 import { ProviderModelCatalogService } from './provider-model-catalog.service.js';
 import { SetupController } from './setup.controller.js';
@@ -64,6 +66,7 @@ import {
   providers: [
     ProviderConnectionRepository,
     ProviderRegistry,
+    ProviderDiscoveryService,
     {
       provide: ClaudeUsageService,
       inject: [ApplicationCredentialsService, RuntimePathsService],
@@ -101,8 +104,9 @@ import {
     },
     {
       provide: ZaiUsageService,
-      inject: [HOST_ENVIRONMENT],
-      useFactory: (environment: Readonly<NodeJS.ProcessEnv>) => new ZaiUsageService(environment),
+      inject: [HOST_ENVIRONMENT, EVENT_BUS],
+      useFactory: (environment: Readonly<NodeJS.ProcessEnv>, events: EventBus) =>
+        new ZaiUsageService(environment, events),
     },
     CodexModelWarmup,
     ProviderUsageService,

@@ -31,9 +31,6 @@ COPY libs/model-resolver/package*.json ./libs/model-resolver/
 COPY libs/dependency-resolver/package*.json ./libs/dependency-resolver/
 COPY libs/git-utils/package*.json ./libs/git-utils/
 
-# Copy scripts (needed by npm workspace)
-COPY scripts ./scripts
-
 # =============================================================================
 # SERVER BUILD STAGE
 # =============================================================================
@@ -45,19 +42,20 @@ COPY apps/server/package*.json ./apps/server/
 # Install dependencies (--ignore-scripts to skip husky/prepare, then rebuild native modules)
 RUN npm ci --ignore-scripts && npm rebuild node-pty
 
+# Browser assets depend on the lockfile, not application source. Keep downloads
+# cached when only backend/libs/scripts change.
+RUN PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers ./node_modules/.bin/playwright install chromium
+
 # Ensure nested workspace node_modules exists (npm may nest conflicting deps here; COPY below requires the path)
 RUN mkdir -p /app/apps/server/node_modules
 
 # Copy all source files
+COPY scripts ./scripts
 COPY libs ./libs
 COPY apps/server ./apps/server
 
 # Build packages in dependency order, then build server
 RUN npm run build:packages && npm run build --workspace=apps/server
-
-# Use the lockfile-pinned build-time CLI to fetch browser runtime assets before
-# removing the test toolchain. Target projects provide their own test runner.
-RUN PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers ./node_modules/.bin/playwright install chromium
 
 # Runtime artifacts must not depend on the builder's TypeScript/test toolchain.
 RUN npm prune --omit=dev --ignore-scripts
@@ -219,6 +217,7 @@ COPY apps/ui/package*.json ./apps/ui/
 RUN npm ci --ignore-scripts
 
 # Copy all source files
+COPY scripts ./scripts
 COPY libs ./libs
 COPY apps/ui ./apps/ui
 

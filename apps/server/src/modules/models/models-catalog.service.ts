@@ -52,7 +52,8 @@ export class ModelsCatalogService {
           version: statuses.cursor?.version,
           path: statuses.cursor?.path,
           method: statuses.cursor?.method,
-          authenticated: statuses.cursor?.authenticated,
+          authenticated: false,
+          authenticationChecked: false,
         },
         'openai-compatible': {
           available: Boolean(

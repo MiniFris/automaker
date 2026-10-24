@@ -11,6 +11,7 @@ import {
 import { AllowedPathFields, AllowedPathGuard } from '../../core/security/index.js';
 import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
 import { PromptEnhancementService } from './prompt-enhancement.service.js';
+import { DomainError } from '../../core/errors/index.js';
 import {
   PromptEnhancementRequestSchema,
   type PromptEnhancementRequest,
@@ -25,13 +26,14 @@ export class PromptEnhancementController {
 
   @Post()
   @HttpCode(200)
-  @AllowedPathFields('projectPath')
+  @AllowedPathFields('projectPath?')
   async enhance(
     @Body(new ZodValidationPipe(PromptEnhancementRequestSchema)) body: PromptEnhancementRequest
   ) {
     try {
       return await this.enhancement.enhance(body);
     } catch (error) {
+      if (error instanceof DomainError) throw error;
       const message = error instanceof Error ? error.message : 'Unknown error occurred';
       throw new HttpException({ success: false, error: message }, HttpStatus.INTERNAL_SERVER_ERROR);
     }

@@ -69,6 +69,8 @@
     "inventory:api-consumers": "node scripts/generate-server-api-consumer-inventory.mjs",
     "inventory:api-consumers:check": "node scripts/generate-server-api-consumer-inventory.mjs --check",
     "baseline:server": "npm run build:server && node scripts/measure-server-baseline.mjs",
+    "preflight:backend:downgrade": "node scripts/check-backend-downgrade.mjs",
+    "test:backend:downgrade": "node --test scripts/tests/backend-downgrade.test.mjs",
     "smoke:server:lifecycle": "npm run build:server && node scripts/smoke-server-lifecycle.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

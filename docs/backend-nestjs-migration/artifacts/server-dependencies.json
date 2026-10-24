@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 597,
-    "internalEdges": 1969,
-    "stronglyConnectedComponents": 1
+    "files": 599,
+    "internalEdges": 1988,
+    "stronglyConnectedComponents": 2
   },
   "layerEdges": {
     "core -> core": 60,
@@ -13,10 +13,10 @@
     "core -> services": 9,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 151,
-    "modules -> lib": 29,
-    "modules -> modules": 353,
-    "modules -> providers": 29,
+    "modules -> core": 157,
+    "modules -> lib": 30,
+    "modules -> modules": 357,
+    "modules -> providers": 30,
     "modules -> routes": 9,
     "modules -> services": 162,
     "modules -> types": 2,
@@ -35,16 +35,20 @@
     "routes -> routes": 289,
     "routes -> services": 164,
     "routes -> types": 2,
-    "services -> core": 18,
-    "services -> lib": 74,
-    "services -> modules": 10,
+    "services -> core": 19,
+    "services -> lib": 73,
+    "services -> modules": 14,
     "services -> providers": 16,
     "services -> routes": 1,
-    "services -> services": 291,
+    "services -> services": 294,
     "services -> types": 2,
     "tests -> lib": 2
   },
   "cycles": [
+    [
+      "apps/server/src/modules/orchestration/feature-run-coordinator.service.ts",
+      "apps/server/src/services/concurrency-manager.ts"
+    ],
     [
       "apps/server/src/providers/environment-execution.ts",
       "apps/server/src/providers/openai-compatible/execution.ts",
@@ -145,7 +149,6 @@
       "apps/server/src/lib/auth-utils.ts",
       "apps/server/src/lib/cli-detection.ts",
       "apps/server/src/modules/event-history/event-replay.service.ts",
-      "apps/server/src/modules/files/local-download.service.ts",
       "apps/server/src/modules/github/github-command.runtime.ts",
       "apps/server/src/modules/templates/template-command.runner.ts",
       "apps/server/src/providers/cli-provider.ts",
@@ -189,7 +192,6 @@
       "apps/server/src/services/execution-environment/ssh-worker.ts",
       "apps/server/src/services/execution-environment/ssh.ts",
       "apps/server/src/services/execution-environment/terminal.ts",
-      "apps/server/src/services/gemini-usage-service.ts",
       "apps/server/src/services/init-script-service.ts",
       "apps/server/src/services/mcp-test-service.ts",
       "apps/server/src/services/pr-service.ts",
@@ -209,6 +211,7 @@
       "apps/server/src/modules/auto-mode/project-run-context.registry.ts",
       "apps/server/src/modules/event-history/event-replay.service.ts",
       "apps/server/src/modules/files/files-command.service.ts",
+      "apps/server/src/modules/files/local-download.service.ts",
       "apps/server/src/modules/github/github-command.runtime.ts",
       "apps/server/src/modules/github/github-discovery.service.ts",
       "apps/server/src/modules/github/github-review.service.ts",
@@ -286,12 +289,12 @@
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 186,
+    "@nestjs/common": 187,
     "@nestjs/core": 8,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
     "ajv": 4,
-    "child_process": 35,
+    "child_process": 34,
     "cookie": 1,
     "cookie-parser": 1,
     "cors": 1,
@@ -299,26 +302,29 @@
     "dotenv": 1,
     "events": 1,
     "express": 184,
+    "fflate": 1,
     "fs": 11,
     "fs/promises": 13,
     "net": 1,
     "node-pty": 2,
     "node:async_hooks": 1,
-    "node:child_process": 14,
-    "node:crypto": 31,
-    "node:fs": 10,
+    "node:buffer": 1,
+    "node:child_process": 13,
+    "node:crypto": 33,
+    "node:events": 1,
+    "node:fs": 9,
     "node:fs/promises": 18,
     "node:http": 7,
     "node:net": 3,
-    "node:os": 12,
-    "node:path": 55,
+    "node:os": 11,
+    "node:path": 56,
     "node:perf_hooks": 15,
-    "node:stream": 5,
+    "node:stream": 6,
     "node:stream/web": 2,
     "node:string_decoder": 4,
     "node:timers/promises": 5,
     "node:url": 4,
-    "node:util": 13,
+    "node:util": 12,
     "os": 14,
     "path": 72,
     "reflect-metadata": 1,
@@ -1241,6 +1247,10 @@
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
+      "target": "apps/server/src/modules/orchestration/feature-run-coordinator.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
       "target": "apps/server/src/modules/providers/provider-registry.service.ts"
     },
     {
@@ -1889,15 +1899,23 @@
     },
     {
       "source": "apps/server/src/modules/files/local-download.service.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/files/local-download.service.ts",
       "target": "apps/server/src/core/errors/index.ts"
     },
     {
       "source": "apps/server/src/modules/files/local-download.service.ts",
-      "target": "apps/server/src/core/security/security.service.ts"
+      "target": "apps/server/src/core/security/index.ts"
     },
     {
       "source": "apps/server/src/modules/files/local-download.service.ts",
       "target": "apps/server/src/lib/secure-fs.ts"
+    },
+    {
+      "source": "apps/server/src/modules/files/local-download.service.ts",
+      "target": "apps/server/src/modules/files/local-zip-archive.ts"
     },
     {
       "source": "apps/server/src/modules/files/local-project-file.adapter.ts",
@@ -1914,6 +1932,10 @@
     {
       "source": "apps/server/src/modules/files/local-project-file.adapter.ts",
       "target": "apps/server/src/modules/files/project-file.port.ts"
+    },
+    {
+      "source": "apps/server/src/modules/files/local-zip-archive.ts",
+      "target": "apps/server/src/lib/secure-fs.ts"
     },
     {
       "source": "apps/server/src/modules/git/git-application.service.ts",
@@ -2488,6 +2510,10 @@
       "target": "apps/server/src/modules/orchestration/feature-run-state-machine.ts"
     },
     {
+      "source": "apps/server/src/modules/orchestration/feature-run-coordinator.service.ts",
+      "target": "apps/server/src/services/concurrency-manager.ts"
+    },
+    {
       "source": "apps/server/src/modules/orchestration/orchestration.module.ts",
       "target": "apps/server/src/modules/orchestration/background-integrations.lifecycle.ts"
     },
@@ -2593,6 +2619,10 @@
     },
     {
       "source": "apps/server/src/modules/prompt-enhancement/prompt-enhancement.controller.ts",
+      "target": "apps/server/src/core/errors/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/prompt-enhancement/prompt-enhancement.controller.ts",
       "target": "apps/server/src/core/security/index.ts"
     },
     {
@@ -2633,6 +2663,14 @@
     },
     {
       "source": "apps/server/src/modules/prompt-enhancement/prompt-enhancement.service.ts",
+      "target": "apps/server/src/core/errors/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/prompt-enhancement/prompt-enhancement.service.ts",
+      "target": "apps/server/src/core/security/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/prompt-enhancement/prompt-enhancement.service.ts",
       "target": "apps/server/src/lib/enhancement-prompts.ts"
     },
     {
@@ -2654,10 +2692,6 @@
     {
       "source": "apps/server/src/modules/prompt-enhancement/prompt-enhancement.service.ts",
       "target": "apps/server/src/modules/prompt-enhancement/prompt-query.port.ts"
-    },
-    {
-      "source": "apps/server/src/modules/prompt-enhancement/prompt-enhancement.service.ts",
-      "target": "apps/server/src/services/feature-loader.ts"
     },
     {
       "source": "apps/server/src/modules/prompt-enhancement/prompt-enhancement.service.ts",
@@ -2848,6 +2882,14 @@
       "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
+      "source": "apps/server/src/modules/providers/provider-discovery.service.ts",
+      "target": "apps/server/src/core/platform/setup-status.runtime.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/provider-discovery.service.ts",
+      "target": "apps/server/src/providers/types.ts"
+    },
+    {
       "source": "apps/server/src/modules/providers/provider-install-guidance.service.ts",
       "target": "apps/server/src/modules/providers/provider-connection-command.service.ts"
     },
@@ -2905,6 +2947,10 @@
     },
     {
       "source": "apps/server/src/modules/providers/provider-registry.service.ts",
+      "target": "apps/server/src/modules/providers/provider-discovery.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/provider-registry.service.ts",
       "target": "apps/server/src/providers/base-provider.ts"
     },
     {
@@ -2949,7 +2995,7 @@
     },
     {
       "source": "apps/server/src/modules/providers/provider-usage.service.ts",
-      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
+      "target": "apps/server/src/modules/providers/provider-discovery.service.ts"
     },
     {
       "source": "apps/server/src/modules/providers/provider-usage.service.ts",
@@ -2982,6 +3028,10 @@
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
       "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/core/eventing/index.ts"
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
@@ -3050,6 +3100,10 @@
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
       "target": "apps/server/src/modules/providers/provider-connection.repository.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/modules/providers/provider-discovery.service.ts"
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
@@ -7021,6 +7075,10 @@
     },
     {
       "source": "apps/server/src/services/auto-mode/compat.ts",
+      "target": "apps/server/src/modules/orchestration/feature-run-coordinator.service.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/compat.ts",
       "target": "apps/server/src/modules/providers/provider-registry.service.ts"
     },
     {
@@ -7097,6 +7155,10 @@
     },
     {
       "source": "apps/server/src/services/auto-mode/facade.ts",
+      "target": "apps/server/src/services/concurrency-manager.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/facade.ts",
       "target": "apps/server/src/services/execution-environment/feature-workspace.ts"
     },
     {
@@ -7142,6 +7204,10 @@
     {
       "source": "apps/server/src/services/auto-mode/global-service.ts",
       "target": "apps/server/src/lib/events.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/global-service.ts",
+      "target": "apps/server/src/modules/orchestration/feature-run-coordinator.service.ts"
     },
     {
       "source": "apps/server/src/services/auto-mode/global-service.ts",
@@ -7314,6 +7380,14 @@
     {
       "source": "apps/server/src/services/concurrency-manager.ts",
       "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/services/concurrency-manager.ts",
+      "target": "apps/server/src/modules/orchestration/feature-run-coordinator.service.ts"
+    },
+    {
+      "source": "apps/server/src/services/concurrency-manager.ts",
+      "target": "apps/server/src/modules/orchestration/feature-run-state-machine.ts"
     },
     {
       "source": "apps/server/src/services/dev-server-service.ts",
@@ -7805,6 +7879,10 @@
     },
     {
       "source": "apps/server/src/services/execution-types.ts",
+      "target": "apps/server/src/services/concurrency-manager.ts"
+    },
+    {
+      "source": "apps/server/src/services/execution-types.ts",
       "target": "apps/server/src/services/execution-environment/memory.ts"
     },
     {
@@ -8004,6 +8082,10 @@
       "target": "apps/server/src/services/pipeline-config.repository.ts"
     },
     {
+      "source": "apps/server/src/services/pipeline-types.ts",
+      "target": "apps/server/src/services/concurrency-manager.ts"
+    },
+    {
       "source": "apps/server/src/services/plan-approval-service.ts",
       "target": "apps/server/src/services/feature-state-manager.ts"
     },
@@ -8193,7 +8275,7 @@
     },
     {
       "source": "apps/server/src/services/zai-usage-service.ts",
-      "target": "apps/server/src/lib/events.ts"
+      "target": "apps/server/src/core/eventing/index.ts"
     },
     {
       "source": "apps/server/src/services/zai-usage-service.ts",

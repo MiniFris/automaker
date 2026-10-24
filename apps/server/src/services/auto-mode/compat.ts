@@ -21,6 +21,7 @@ import type { ProviderRegistry } from '../../modules/providers/provider-registry
 import type { ToolPolicyService } from '../../modules/providers/tool-policy.service.js';
 import { pipelineService, type PipelineService } from '../pipeline-service.js';
 import { ProjectRunContextRegistry } from '../../modules/auto-mode/project-run-context.registry.js';
+import type { FeatureRunCoordinator } from '../../modules/orchestration/feature-run-coordinator.service.js';
 
 /**
  * AutoModeServiceCompat wraps GlobalAutoModeService and facades to provide
@@ -42,6 +43,7 @@ export class AutoModeServiceCompat {
     pipeline: PipelineService = pipelineService,
     runtime?: {
       contexts: ProjectRunContextRegistry;
+      coordinator?: FeatureRunCoordinator;
       validateWorkingDirectory?: (cwd: string) => void;
     }
   ) {
@@ -51,7 +53,8 @@ export class AutoModeServiceCompat {
       settingsService,
       featureLoader,
       notificationService,
-      pipeline
+      pipeline,
+      runtime?.coordinator
     );
     const sharedServices = this.globalService.getSharedServices();
 

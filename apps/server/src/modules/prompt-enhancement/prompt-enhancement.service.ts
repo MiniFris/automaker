@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { getAppSpecPath } from '@automaker/platform';
+import { getAppSpecPath, getFeaturesDir } from '@automaker/platform';
+import path from 'node:path';
 import {
   CLAUDE_MODEL_MAP,
   type ClaudeCompatibleProvider,
@@ -8,7 +9,9 @@ import {
 import { createLogger } from '@automaker/utils';
 import { resolveModelString } from '@automaker/model-resolver';
 import { RuntimePathsService } from '../../core/config/index.js';
-import * as secureFs from '../../lib/secure-fs.js';
+import type * as SecureFilesystem from '../../lib/secure-fs.js';
+import { SECURE_FILESYSTEM } from '../../core/security/index.js';
+import { mapInfrastructureError, UnavailableDomainError } from '../../core/errors/index.js';
 import {
   buildUserPrompt,
   isValidEnhancementMode,
@@ -21,7 +24,6 @@ import {
   extractXmlSection,
   unescapeXml,
 } from '../../lib/xml-extractor.js';
-import { FeatureLoader } from '../../services/feature-loader.js';
 import { SettingsService } from '../../services/settings-service.js';
 import { PROMPT_QUERY, type PromptQuery } from './prompt-query.port.js';
 import type { PromptEnhancementRequest } from './prompt-enhancement.schemas.js';
@@ -32,9 +34,9 @@ const logger = createLogger('PromptEnhancement');
 export class PromptEnhancementService {
   constructor(
     @Inject(SettingsService) private readonly settings: SettingsService,
-    @Inject(FeatureLoader) private readonly features: FeatureLoader,
     @Inject(PROMPT_QUERY) private readonly query: PromptQuery,
-    @Inject(RuntimePathsService) private readonly paths: RuntimePathsService
+    @Inject(RuntimePathsService) private readonly paths: RuntimePathsService,
+    @Inject(SECURE_FILESYSTEM) private readonly filesystem: typeof SecureFilesystem
   ) {}
 
   async enhance(input: PromptEnhancementRequest) {
@@ -102,7 +104,10 @@ export class PromptEnhancementService {
     const contextBlocks: string[] = [];
 
     try {
-      const specContent = (await secureFs.readFile(getAppSpecPath(projectPath), 'utf-8')) as string;
+      const specContent = (await this.filesystem.readFile(
+        getAppSpecPath(projectPath),
+        'utf-8'
+      )) as string;
       const projectName = extractXmlSection(specContent, 'project_name');
       const overview = extractXmlSection(specContent, 'overview');
       const techStack = extractTechnologyStack(specContent);
@@ -118,14 +123,12 @@ export class PromptEnhancementService {
         contextBlocks.push(`PROJECT CONTEXT:\n${summary.map((line) => `- ${line}`).join('\n')}`);
       }
     } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw mapInfrastructureError(error);
       logger.debug('No app_spec.txt context available for enhancement', error);
     }
 
     try {
-      const features = await this.features.getAll(projectPath);
-      const titles = features
-        .map((feature) => feature.title || feature.name || feature.id)
-        .filter(Boolean);
+      const titles = await this.featureTitles(projectPath);
       if (titles.length) {
         const listed = titles.slice(0, 30).map((title) => `- ${title}`);
         contextBlocks.push(
@@ -133,9 +136,48 @@ export class PromptEnhancementService {
         );
       }
     } catch (error) {
-      logger.debug('Failed to load existing features for enhancement context', error);
+      throw mapInfrastructureError(error);
     }
 
     return contextBlocks.length ? contextBlocks.join('\n\n') : null;
+  }
+
+  private async featureTitles(projectPath: string): Promise<string[]> {
+    const directory = getFeaturesDir(projectPath);
+    let entries;
+    try {
+      entries = await this.filesystem.readdir(directory, { withFileTypes: true });
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
+      throw error;
+    }
+    const titles: string[] = [];
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      let content: string;
+      try {
+        content = (await this.filesystem.readFile(
+          path.join(directory, entry.name, 'feature.json'),
+          'utf-8'
+        )) as string;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') continue;
+        throw error;
+      }
+      let feature: Record<string, unknown>;
+      try {
+        feature = JSON.parse(content);
+        if (!feature || typeof feature !== 'object' || Array.isArray(feature)) throw new Error();
+      } catch {
+        throw new UnavailableDomainError('Project feature context is unavailable.');
+      }
+      const title = [feature.title, feature.name, feature.id].find(
+        (value) => typeof value === 'string' && value.length
+      );
+      if (typeof title === 'string') titles.push(title);
+      // Only 30 titles enter the prompt; one more is enough to retain its ellipsis.
+      if (titles.length > 30) break;
+    }
+    return titles;
   }
 }

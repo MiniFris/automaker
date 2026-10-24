@@ -10,6 +10,7 @@ import { ToolPolicyService } from '../providers/tool-policy.service.js';
 import { PipelineService } from '../../services/pipeline-service.js';
 import { ProjectRunContextRegistry } from './project-run-context.registry.js';
 import { SecurityService } from '../../core/security/security.service.js';
+import { FeatureRunCoordinator } from '../orchestration/feature-run-coordinator.service.js';
 
 export const autoModeProvider: FactoryProvider<AutoModeServiceCompat> = {
   provide: AutoModeServiceCompat,
@@ -23,6 +24,7 @@ export const autoModeProvider: FactoryProvider<AutoModeServiceCompat> = {
     PipelineService,
     ProjectRunContextRegistry,
     SecurityService,
+    FeatureRunCoordinator,
   ],
   useFactory: (
     events: EventEmitter,
@@ -33,7 +35,8 @@ export const autoModeProvider: FactoryProvider<AutoModeServiceCompat> = {
     policy: ToolPolicyService,
     pipeline: PipelineService,
     contexts: ProjectRunContextRegistry,
-    security: SecurityService
+    security: SecurityService,
+    coordinator: FeatureRunCoordinator
   ) =>
     new AutoModeServiceCompat(
       events,
@@ -46,6 +49,7 @@ export const autoModeProvider: FactoryProvider<AutoModeServiceCompat> = {
       pipeline,
       {
         contexts,
+        coordinator,
         validateWorkingDirectory: (cwd) => {
           security.validateLocalPath(cwd, 'auto mode working directory');
         },

@@ -3,8 +3,10 @@
  */
 
 import type { Feature, PipelineStep, PipelineConfig } from '@automaker/types';
+import type { RunningFeature } from './concurrency-manager.js';
 
 export interface PipelineContext {
+  run?: RunningFeature;
   projectPath: string;
   featureId: string;
   feature: Feature;
@@ -60,7 +62,7 @@ export type ExecuteFeatureFn = (
   useWorktrees: boolean,
   useScreenshots: boolean,
   model?: string,
-  options?: { _calledInternally?: boolean }
+  options?: { _calledInternally?: boolean; _run?: RunningFeature }
 ) => Promise<void>;
 
 export type RunAgentFn = (

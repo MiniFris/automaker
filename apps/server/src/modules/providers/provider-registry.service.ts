@@ -1,4 +1,12 @@
-import { Inject, Injectable, type OnModuleInit, type OnApplicationShutdown } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Optional,
+  ServiceUnavailableException,
+  type OnModuleInit,
+  type OnApplicationShutdown,
+} from '@nestjs/common';
+import { ProviderDiscoveryService } from './provider-discovery.service.js';
 import type { ModelProvider } from '@automaker/types';
 import { isDirectModel } from '@automaker/types';
 
@@ -48,7 +56,10 @@ export class ProviderRegistry implements OnModuleInit, OnApplicationShutdown {
   constructor(
     @Inject(PROVIDER_REGISTRATIONS) registrations: readonly ProviderRegistration[],
     @Inject(ProviderConnectionRepository)
-    private readonly connections: ProviderConnectionRepository
+    private readonly connections: ProviderConnectionRepository,
+    @Optional()
+    @Inject(ProviderDiscoveryService)
+    private readonly discovery?: ProviderDiscoveryService
   ) {
     const { providers, aliases } = indexProviderRegistrations(registrations);
     this.registrations = providers;
@@ -133,13 +144,9 @@ export class ProviderRegistry implements OnModuleInit, OnApplicationShutdown {
   }
 
   async statuses(): Promise<Record<string, InstallationStatus>> {
-    const entries = await Promise.all(
-      [...this.registrations.entries()].map(async ([name, registration]) => [
-        name,
-        await registration.create().detectInstallation(),
-      ])
-    );
-    return Object.fromEntries(entries);
+    if (!this.discovery)
+      throw new ServiceUnavailableException('Provider discovery is unavailable.');
+    return this.discovery.statuses(this.names());
   }
 
   supportsVision(modelId: string): boolean {

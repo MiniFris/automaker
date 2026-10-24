@@ -185,7 +185,15 @@ describe('PipelineOrchestrator - status and providerId coexistence', () => {
           isAutoMode: false,
         })),
         release: vi.fn(),
-        getRunningFeature: vi.fn().mockReturnValue(undefined),
+        getRunningFeature: vi.fn().mockReturnValue({ featureId: 'feature-1' }),
+        isCurrent: vi.fn().mockReturnValue(true),
+        coordinator: {
+          status: vi.fn(async (_manager, _run, _status, write) => {
+            await write();
+            return true;
+          }),
+          acceptCompletion: vi.fn().mockReturnValue(true),
+        },
       } as unknown as ConcurrencyManager,
       null,
       vi.fn().mockResolvedValue(undefined),

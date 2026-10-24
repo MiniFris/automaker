@@ -135,6 +135,11 @@ Storage migrations должны быть backward-readable либо сопров
       не должны попасть в автоматическое выполнение. Проверить отказ небезопасного
       запуска и согласованный snapshot/явное преобразование перед downgrade.
 
+      Реализованы standalone read-only preflight и offline full-snapshot restore
+      fixture: [audit](artifacts/downgrade-preflight-audit.md),
+      [операционная процедура](../backend-storage-downgrade.md).
+      Проверка конкретного старого artifact на staging остаётся частью rollout.
+
 ## 10.8. Документация
 
 - [ ] README commands и prerequisites.

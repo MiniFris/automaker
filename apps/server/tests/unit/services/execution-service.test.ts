@@ -175,6 +175,19 @@ describe('execution-service.ts', () => {
     } as unknown as TypedEventBus;
 
     mockConcurrencyManager = {
+      acquireAsync: vi.fn((options) => Promise.resolve(mockConcurrencyManager.acquire(options))),
+      isCurrent: vi.fn().mockReturnValue(true),
+      coordinator: {
+        mutate: vi.fn(async (_manager, _run, write) => {
+          await write();
+          return true;
+        }),
+        status: vi.fn(async (_manager, _run, _status, write) => {
+          await write();
+          return true;
+        }),
+        acceptCompletion: vi.fn().mockReturnValue(true),
+      },
       acquire: vi.fn().mockImplementation(({ featureId, isAutoMode }) => ({
         ...createRunningFeature(featureId),
         isAutoMode: isAutoMode ?? false,
@@ -314,7 +327,9 @@ describe('execution-service.ts', () => {
         error: expect.stringContaining('SSH fixture unavailable'),
       })
     );
-    expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1', undefined);
+    expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1', {
+      expected: expect.objectContaining({ featureId: 'feature-1' }),
+    });
   });
 
   it.each([false, true])(
@@ -685,7 +700,9 @@ describe('execution-service.ts', () => {
     it('releases running feature in finally block', async () => {
       await service.executeFeature('/test/project', 'feature-1');
 
-      expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1', undefined);
+      expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1', {
+        expected: expect.objectContaining({ featureId: 'feature-1' }),
+      });
     });
 
     it('redirects to resumeFeature when context exists', async () => {
@@ -714,7 +731,13 @@ describe('execution-service.ts', () => {
 
       await svc.executeFeature('/test/project', 'feature-1', true);
 
-      expect(mockResumeFeatureFn).toHaveBeenCalledWith('/test/project', 'feature-1', true, true);
+      expect(mockResumeFeatureFn).toHaveBeenCalledWith(
+        '/test/project',
+        'feature-1',
+        true,
+        true,
+        expect.objectContaining({ featureId: 'feature-1' })
+      );
       // Should not run agent
       expect(mockRunAgentFn).not.toHaveBeenCalled();
     });
@@ -1411,7 +1434,9 @@ describe('execution-service.ts', () => {
 
       await svc.executeFeature('/test/project', 'feature-1');
 
-      expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1', undefined);
+      expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1', {
+        expected: expect.objectContaining({ featureId: 'feature-1' }),
+      });
     });
   });
 
@@ -1441,7 +1466,10 @@ describe('execution-service.ts', () => {
 
       await service.stopFeature('feature-1');
 
-      expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1', { force: true });
+      expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1', {
+        force: true,
+        expected: expect.objectContaining({ featureId: 'feature-1' }),
+      });
     });
 
     it('immediately updates feature status to interrupted before subprocess terminates', async () => {
@@ -1469,7 +1497,10 @@ describe('execution-service.ts', () => {
 
       expect(result).toBe(true);
       expect(abortSpy).toHaveBeenCalled();
-      expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1', { force: true });
+      expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1', {
+        force: true,
+        expected: expect.objectContaining({ featureId: 'feature-1' }),
+      });
     });
   });
 

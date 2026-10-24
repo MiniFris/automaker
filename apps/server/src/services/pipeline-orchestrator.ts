@@ -35,7 +35,7 @@ import type { FeatureStateManager } from './feature-state-manager.js';
 import type { AgentExecutor } from './agent-executor.js';
 import type { WorktreeResolver } from './worktree-resolver.js';
 import type { SettingsService } from './settings-service.js';
-import type { ConcurrencyManager } from './concurrency-manager.js';
+import type { ConcurrencyManager, RunningFeature } from './concurrency-manager.js';
 import { pipelineService, type PipelineService } from './pipeline-service.js';
 import type { TestRunnerService, TestRunStatus } from './test-runner-service.js';
 import { performMerge } from './merge-service.js';
@@ -82,7 +82,51 @@ export class PipelineOrchestrator {
     private readonly directoryValidator: (cwd: string) => void = validateWorkingDirectory
   ) {}
 
+  private requireCurrent(run: RunningFeature | undefined): void {
+    if (!run || !this.concurrencyManager.isCurrent(run)) {
+      const error = new Error('Feature run was superseded');
+      error.name = 'AbortError';
+      throw error;
+    }
+  }
+
+  private async writeStatus(
+    run: RunningFeature | undefined,
+    projectPath: string,
+    featureId: string,
+    status: string
+  ): Promise<void> {
+    if (
+      !run ||
+      !(await this.concurrencyManager.coordinator.status(this.concurrencyManager, run, status, () =>
+        this.updateFeatureStatusFn(projectPath, featureId, status)
+      ))
+    ) {
+      const error = new Error('Feature run was superseded');
+      error.name = 'AbortError';
+      throw error;
+    }
+    if (!this.concurrencyManager.isCurrent(run)) {
+      const error = new Error('Feature run was superseded');
+      error.name = 'AbortError';
+      throw error;
+    }
+  }
+
+  private canComplete(run: RunningFeature | undefined): boolean {
+    return (
+      !!run?.isAutoMode &&
+      this.concurrencyManager.coordinator.acceptCompletion(
+        this.concurrencyManager,
+        run,
+        'execution-complete'
+      )
+    );
+  }
+
   async executePipeline(ctx: PipelineContext): Promise<void> {
+    const run = ctx.run ?? this.concurrencyManager.getRunningFeature(ctx.featureId);
+    this.requireCurrent(run);
     const remoteService = this.settingsService
       ? new FeatureWorkspaceService(this.settingsService)
       : undefined;
@@ -137,7 +181,7 @@ export class PipelineOrchestrator {
     for (let i = 0; i < steps.length; i++) {
       const step = steps[i];
       if (abortController.signal.aborted) throw new Error('Pipeline execution aborted');
-      await this.updateFeatureStatusFn(projectPath, featureId, `pipeline_${step.id}`);
+      await this.writeStatus(run, projectPath, featureId, `pipeline_${step.id}`);
       this.eventBus.emitAutoModeEvent('auto_mode_progress', {
         featureId,
         branchName: feature.branchName ?? null,
@@ -179,11 +223,13 @@ export class PipelineOrchestrator {
       );
       if (abortController.signal.aborted)
         throw new globalThis.DOMException('Pipeline execution aborted', 'AbortError');
+      this.requireCurrent(run);
       try {
         previousContext = (await secureFs.readFile(contextPath, 'utf-8')) as string;
       } catch {
         /* */
       }
+      this.requireCurrent(run);
       this.eventBus.emitAutoModeEvent('pipeline_step_complete', {
         featureId,
         stepId: step.id,
@@ -197,7 +243,8 @@ export class PipelineOrchestrator {
       const mergeResult = await this.attemptMerge(ctx);
       if (!mergeResult.success && (mergeResult.hasConflicts || remote)) {
         if (remote) {
-          await this.updateFeatureStatusFn(
+          await this.writeStatus(
+            run,
             projectPath,
             featureId,
             mergeResult.hasConflicts ? 'merge_conflict' : 'waiting_approval'
@@ -284,14 +331,16 @@ export class PipelineOrchestrator {
     projectPath: string,
     feature: Feature,
     useWorktrees: boolean,
-    pipelineInfo: PipelineStatusInfo
+    pipelineInfo: PipelineStatusInfo,
+    expected?: RunningFeature
   ): Promise<void> {
+    const run = expected ?? this.concurrencyManager.getRunningFeature(feature.id);
+    this.requireCurrent(run);
     if (this.settingsService)
       await new FeatureWorkspaceService(this.settingsService).prepare(
         projectPath,
         feature,
-        this.concurrencyManager.getRunningFeature(feature.id)?.abortController.signal ??
-          new AbortController().signal
+        run?.abortController.signal ?? new AbortController().signal
       );
     const featureId = feature.id;
     const contextPath = path.join(getFeatureDir(projectPath, featureId), 'agent-output.md');
@@ -305,18 +354,18 @@ export class PipelineOrchestrator {
 
     if (!hasContext) {
       logger.warn(`No context for feature ${featureId}, restarting pipeline`);
-      await this.updateFeatureStatusFn(projectPath, featureId, 'in_progress');
+      await this.writeStatus(run, projectPath, featureId, 'in_progress');
       return this.executeFeatureFn(projectPath, featureId, useWorktrees, false, undefined, {
         _calledInternally: true,
+        _run: run,
       });
     }
 
     if (pipelineInfo.stepIndex === -1) {
       logger.warn(`Step ${pipelineInfo.stepId} no longer exists, completing feature`);
       const finalStatus = feature.skipTests ? 'waiting_approval' : 'verified';
-      await this.updateFeatureStatusFn(projectPath, featureId, finalStatus);
-      const runningEntryForStep = this.concurrencyManager.getRunningFeature(featureId);
-      if (runningEntryForStep?.isAutoMode) {
+      await this.writeStatus(run, projectPath, featureId, finalStatus);
+      if (this.canComplete(run)) {
         this.eventBus.emitAutoModeEvent('auto_mode_feature_complete', {
           featureId,
           featureName: feature.title,
@@ -336,7 +385,8 @@ export class PipelineOrchestrator {
       feature,
       useWorktrees,
       pipelineInfo.stepIndex,
-      pipelineInfo.config
+      pipelineInfo.config,
+      run
     );
   }
 
@@ -346,8 +396,10 @@ export class PipelineOrchestrator {
     feature: Feature,
     useWorktrees: boolean,
     startFromStepIndex: number,
-    pipelineConfig: PipelineConfig
+    pipelineConfig: PipelineConfig,
+    expected?: RunningFeature
   ): Promise<void> {
+    let run = expected ?? this.concurrencyManager.getRunningFeature(feature.id);
     const remoteService = this.settingsService
       ? new FeatureWorkspaceService(this.settingsService)
       : undefined;
@@ -367,9 +419,8 @@ export class PipelineOrchestrator {
         feature.excludedPipelineSteps
       );
       if (!this.pipeline.isPipelineStatus(nextStatus)) {
-        await this.updateFeatureStatusFn(projectPath, featureId, nextStatus);
-        const runningEntryForExcluded = this.concurrencyManager.getRunningFeature(featureId);
-        if (runningEntryForExcluded?.isAutoMode) {
+        await this.writeStatus(run, projectPath, featureId, nextStatus);
+        if (this.canComplete(run)) {
           this.eventBus.emitAutoModeEvent('auto_mode_feature_complete', {
             featureId,
             featureName: feature.title,
@@ -393,9 +444,8 @@ export class PipelineOrchestrator {
       .filter((step) => !excludedStepIds.has(step.id));
     if (stepsToExecute.length === 0) {
       const finalStatus = feature.skipTests ? 'waiting_approval' : 'verified';
-      await this.updateFeatureStatusFn(projectPath, featureId, finalStatus);
-      const runningEntryForAllExcluded = this.concurrencyManager.getRunningFeature(featureId);
-      if (runningEntryForAllExcluded?.isAutoMode) {
+      await this.writeStatus(run, projectPath, featureId, finalStatus);
+      if (this.canComplete(run)) {
         this.eventBus.emitAutoModeEvent('auto_mode_feature_complete', {
           featureId,
           featureName: feature.title,
@@ -409,12 +459,14 @@ export class PipelineOrchestrator {
       return;
     }
 
-    const runningEntry = this.concurrencyManager.acquire({
+    const runningEntry = await this.concurrencyManager.acquireAsync({
       featureId,
       projectPath,
       isAutoMode: false,
       allowReuse: true,
+      expected: run,
     });
+    run = runningEntry;
     const abortController = runningEntry.abortController;
     runningEntry.branchName = feature.branchName ?? null;
     let pipelineCompleted = false;
@@ -463,6 +515,7 @@ export class PipelineOrchestrator {
         '[AutoMode]'
       );
       const context: PipelineContext = {
+        run: runningEntry,
         projectPath,
         featureId,
         feature,
@@ -491,10 +544,10 @@ export class PipelineOrchestrator {
         reloadedFeature.status !== 'merge_conflict' &&
         !(remote && reloadedFeature.status === 'waiting_approval')
       ) {
-        await this.updateFeatureStatusFn(projectPath, featureId, finalStatus);
+        await this.writeStatus(run, projectPath, featureId, finalStatus);
       }
       logger.info(`Pipeline resume completed for feature ${featureId}`);
-      if (runningEntry.isAutoMode) {
+      if (this.canComplete(runningEntry)) {
         this.eventBus.emitAutoModeEvent('auto_mode_feature_complete', {
           featureId,
           featureName: feature.title,
@@ -506,9 +559,10 @@ export class PipelineOrchestrator {
         });
       }
     } catch (error) {
+      if (!this.concurrencyManager.isCurrent(runningEntry)) return;
       const errorInfo = classifyError(error);
       if (errorInfo.isAbort) {
-        if (runningEntry.isAutoMode) {
+        if (this.canComplete(runningEntry)) {
           this.eventBus.emitAutoModeEvent('auto_mode_feature_complete', {
             featureId,
             featureName: feature.title,
@@ -533,7 +587,7 @@ export class PipelineOrchestrator {
         // Don't overwrite terminal states like 'merge_conflict' that were set during pipeline execution
         const currentFeature = await this.featureStateManager.loadFeature(projectPath, featureId);
         if (currentFeature?.status !== 'merge_conflict') {
-          await this.updateFeatureStatusFn(projectPath, featureId, fallbackStatus);
+          await this.writeStatus(run, projectPath, featureId, fallbackStatus);
         }
         this.eventBus.emitAutoModeEvent('auto_mode_error', {
           featureId,
@@ -545,7 +599,7 @@ export class PipelineOrchestrator {
         });
       }
     } finally {
-      this.concurrencyManager.release(featureId);
+      this.concurrencyManager.release(featureId, { expected: runningEntry });
     }
   }
 
@@ -707,6 +761,8 @@ export class PipelineOrchestrator {
 
   /** Attempt to merge feature branch (REQ-F05) */
   async attemptMerge(context: PipelineContext): Promise<MergeResult> {
+    const run = context.run ?? this.concurrencyManager.getRunningFeature(context.featureId);
+    this.requireCurrent(run);
     const { projectPath, featureId, branchName, worktreePath, feature } = context;
     if (!branchName) return { success: false, error: 'No branch name for merge' };
     if (this.settingsService) {
@@ -747,9 +803,10 @@ export class PipelineOrchestrator {
         this.eventBus.getUnderlyingEmitter()
       );
 
+      this.requireCurrent(run);
       if (!result.success) {
         if (result.hasConflicts) {
-          await this.updateFeatureStatusFn(projectPath, featureId, 'merge_conflict');
+          await this.writeStatus(run, projectPath, featureId, 'merge_conflict');
           this.eventBus.emitAutoModeEvent('pipeline_merge_conflict', {
             featureId,
             branchName,
@@ -761,8 +818,7 @@ export class PipelineOrchestrator {
       }
 
       logger.info(`Auto-merge successful for feature ${featureId}`);
-      const runningEntryForMerge = this.concurrencyManager.getRunningFeature(featureId);
-      if (runningEntryForMerge?.isAutoMode) {
+      if (this.canComplete(run)) {
         this.eventBus.emitAutoModeEvent('auto_mode_feature_complete', {
           featureId,
           featureName: feature.title,

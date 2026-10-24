@@ -1,5 +1,6 @@
 import { createLogger } from '@automaker/utils';
-import { createEventEmitter } from '../lib/events.js';
+import { randomUUID } from 'node:crypto';
+import type { EventBus } from '../core/eventing/index.js';
 import type { SettingsService } from './settings-service.js';
 
 const logger = createLogger('ZaiUsage');
@@ -143,8 +144,19 @@ export class ZaiUsageService {
   private apiHost: string = 'https://api.z.ai';
   private readonly environment: Readonly<NodeJS.ProcessEnv>;
 
-  constructor(environment: Readonly<NodeJS.ProcessEnv> = process.env) {
+  constructor(
+    environment: Readonly<NodeJS.ProcessEnv> = process.env,
+    private readonly events?: Pick<EventBus, 'emit'>
+  ) {
     this.environment = Object.freeze({ ...environment });
+  }
+
+  private notify(payload: { type: string; [key: string]: unknown }): void {
+    this.events?.emit('notification:created', {
+      ...payload,
+      id: randomUUID(),
+      ...(typeof payload.error === 'string' ? { error: 'z.ai request failed.' } : {}),
+    });
   }
 
   /**
@@ -199,21 +211,13 @@ export class ZaiUsageService {
     options: { apiToken?: string; apiHost?: string },
     settingsService: SettingsService
   ): Promise<ConfigureResult> {
-    const emitter = createEventEmitter();
-
     if (options.apiToken !== undefined) {
-      // Set in-memory token
-      this.setApiToken(options.apiToken || '');
-
-      // Persist to credentials
-      try {
-        await settingsService.updateCredentials({
-          apiKeys: { zai: options.apiToken || '' },
-        } as Parameters<typeof settingsService.updateCredentials>[0]);
-        logger.info('[configure] Saved z.ai API key to credentials');
-      } catch (persistError) {
-        logger.error('[configure] Failed to persist z.ai API key:', persistError);
-      }
+      // Activate only the canonical committed value (masked input may be ignored
+      // by SettingsService). Failed persistence must leave active state intact.
+      const stored = await settingsService.updateCredentials({
+        apiKeys: { zai: options.apiToken || '' },
+      } as Parameters<typeof settingsService.updateCredentials>[0]);
+      this.setApiToken(stored.apiKeys.zai || '');
     }
 
     if (options.apiHost) {
@@ -222,11 +226,13 @@ export class ZaiUsageService {
 
     const result: ConfigureResult = {
       success: true,
-      message: 'z.ai configuration updated',
+      message: options.apiHost
+        ? 'z.ai configuration updated; custom API host applies until server restart'
+        : 'z.ai configuration updated',
       isAvailable: this.isAvailable(),
     };
 
-    emitter.emit('notification:created', {
+    this.notify({
       type: 'zai.configured',
       success: result.success,
       isAvailable: result.isAvailable,
@@ -240,8 +246,6 @@ export class ZaiUsageService {
    * Makes a test request to the z.ai quota URL with the given key.
    */
   async verifyApiKey(apiKey: string | undefined): Promise<VerifyResult> {
-    const emitter = createEventEmitter();
-
     if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length === 0) {
       return {
         success: false,
@@ -283,11 +287,11 @@ export class ZaiUsageService {
         result = {
           success: false,
           authenticated: false,
-          error: `API request failed: ${response.status} ${response.statusText}`,
+          error: `API request failed (${response.status}).`,
         };
       }
 
-      emitter.emit('notification:created', {
+      this.notify({
         type: 'zai.verify.result',
         success: result.success,
         authenticated: result.authenticated,
@@ -302,7 +306,7 @@ export class ZaiUsageService {
           authenticated: false,
           error: 'Request timed out. The z.ai API did not respond in time.',
         };
-        emitter.emit('notification:created', {
+        this.notify({
           type: 'zai.verify.result',
           success: false,
           error: 'timeout',
@@ -313,7 +317,7 @@ export class ZaiUsageService {
       const message = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Error verifying z.ai API key:', error);
 
-      emitter.emit('notification:created', {
+      this.notify({
         type: 'zai.verify.result',
         success: false,
         error: message,
@@ -322,7 +326,7 @@ export class ZaiUsageService {
       return {
         success: false,
         authenticated: false,
-        error: `Network error: ${message}`,
+        error: 'Failed to contact z.ai API.',
       };
     }
   }
@@ -332,9 +336,8 @@ export class ZaiUsageService {
    */
   async fetchUsageData(): Promise<ZaiUsageData> {
     logger.info('[fetchUsageData] Starting...');
-    const emitter = createEventEmitter();
 
-    emitter.emit('notification:created', { type: 'zai.usage.start' });
+    this.notify({ type: 'zai.usage.start' });
 
     const token = this.getApiToken();
     if (!token) {
@@ -342,7 +345,7 @@ export class ZaiUsageService {
       const error = new Error(
         'z.ai API token not configured. Set Z_AI_API_KEY environment variable.'
       );
-      emitter.emit('notification:created', {
+      this.notify({
         type: 'zai.usage.error',
         error: error.message,
       });
@@ -380,7 +383,7 @@ export class ZaiUsageService {
 
         const result = this.parseApiResponse(data);
 
-        emitter.emit('notification:created', {
+        this.notify({
           type: 'zai.usage.success',
           data: result,
         });
@@ -393,7 +396,7 @@ export class ZaiUsageService {
       // Handle abort/timeout errors
       if (error instanceof Error && error.name === 'AbortError') {
         const timeoutError = new Error(`z.ai API request timed out after ${FETCH_TIMEOUT_MS}ms`);
-        emitter.emit('notification:created', {
+        this.notify({
           type: 'zai.usage.error',
           error: timeoutError.message,
         });
@@ -401,7 +404,7 @@ export class ZaiUsageService {
       }
 
       if (error instanceof Error && error.message.includes('z.ai API')) {
-        emitter.emit('notification:created', {
+        this.notify({
           type: 'zai.usage.error',
           error: error.message,
         });
@@ -412,7 +415,7 @@ export class ZaiUsageService {
       const fetchError = new Error(
         `Failed to fetch z.ai usage data: ${error instanceof Error ? error.message : String(error)}`
       );
-      emitter.emit('notification:created', {
+      this.notify({
         type: 'zai.usage.error',
         error: fetchError.message,
       });

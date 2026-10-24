@@ -10,6 +10,11 @@ const logger = createLogger('ExceptionFilter');
 export class GlobalExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
     const response = host.switchToHttp().getResponse<Response>();
+    if (response.destroyed || response.writableEnded) return;
+    if (response.headersSent) {
+      response.destroy();
+      return;
+    }
     const correlationId = getCorrelationId();
     const domainError = exception instanceof DomainError ? exception : undefined;
     const status =

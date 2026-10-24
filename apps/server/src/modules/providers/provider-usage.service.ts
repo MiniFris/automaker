@@ -8,7 +8,7 @@ import { CodexModelCacheService } from '../../services/codex-model-cache-service
 import { CodexUsageService } from '../../services/codex-usage-service.js';
 import { GeminiUsageService } from '../../services/gemini-usage-service.js';
 import { ZaiUsageService } from '../../services/zai-usage-service.js';
-import { ProviderRegistry } from './provider-registry.service.js';
+import { ProviderDiscoveryService } from './provider-discovery.service.js';
 import type { ZaiConfigureRequest, ZaiVerifyRequest } from './provider-usage.schemas.js';
 
 const logger = createLogger('ProviderUsage');
@@ -28,7 +28,7 @@ export class ProviderUsageService implements OnModuleInit {
     @Inject(GeminiUsageService) private readonly gemini: GeminiUsageService,
     @Inject(ZaiUsageService) private readonly zai: ZaiUsageService,
     @Inject(SettingsService) private readonly settings: SettingsService,
-    @Inject(ProviderRegistry) private readonly providers: ProviderRegistry,
+    @Inject(ProviderDiscoveryService) private readonly discovery: ProviderDiscoveryService,
     @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig
   ) {}
 
@@ -68,7 +68,7 @@ export class ProviderUsageService implements OnModuleInit {
           message: 'The Claude CLI took too long to respond',
         });
       logger.error('Claude usage failed:', detail);
-      return ok({ error: detail }, 500);
+      return ok({ error: 'Failed to fetch Claude usage.' }, 500);
     }
   }
 
@@ -88,14 +88,17 @@ export class ProviderUsageService implements OnModuleInit {
           message: "Please run 'codex login' to authenticate",
         });
       if (detail.includes('not available') || detail.includes('does not provide'))
-        return ok({ error: 'Usage statistics not available', message: detail });
+        return ok({
+          error: 'Usage statistics not available',
+          message: 'Codex does not provide usage statistics for this account.',
+        });
       if (detail.includes('timed out'))
         return ok({
           error: 'Command timed out',
           message: 'The Codex CLI took too long to respond',
         });
       logger.error('Codex usage failed:', detail);
-      return ok({ error: detail }, 500);
+      return ok({ error: 'Failed to fetch Codex usage.' }, 500);
     }
   }
 
@@ -114,7 +117,7 @@ export class ProviderUsageService implements OnModuleInit {
           );
     } catch (error) {
       logger.error('Codex model discovery failed:', message(error));
-      return ok({ success: false, error: message(error) }, 500);
+      return ok({ success: false, error: 'Failed to read Codex models.' }, 500);
     }
   }
 
@@ -129,25 +132,26 @@ export class ProviderUsageService implements OnModuleInit {
         usedPercent: 0,
         remainingPercent: 100,
         lastUpdated: new Date().toISOString(),
-        error: `Failed to fetch Gemini usage: ${message(error)}`,
+        error: 'Failed to fetch Gemini usage.',
       });
     }
   }
 
   async geminiStatus(): Promise<ProviderHttpResult> {
     try {
-      const status = await this.providers.byName('gemini')!.detectInstallation();
+      const { gemini: status } = await this.discovery.statuses(['gemini']);
       return ok({
         success: true,
         installed: status.installed,
         version: status.version || null,
         path: status.path || null,
-        authenticated: status.authenticated || false,
-        authMethod: status.authenticated ? (status.hasApiKey ? 'api_key' : 'cli_login') : 'none',
+        authenticated: false,
+        authenticationChecked: false,
+        authMethod: 'none',
         hasCredentialsFile: false,
       });
     } catch (error) {
-      return ok({ success: false, error: message(error) }, 500);
+      return ok({ success: false, error: 'Failed to read Gemini status.' }, 500);
     }
   }
 
@@ -161,7 +165,7 @@ export class ProviderUsageService implements OnModuleInit {
       );
     } catch (error) {
       logger.error('z.ai configuration failed:', message(error));
-      return ok({ error: message(error) }, 500);
+      return ok({ error: 'Failed to save z.ai configuration.' }, 500);
     }
   }
 
@@ -172,7 +176,7 @@ export class ProviderUsageService implements OnModuleInit {
       return ok({
         success: false,
         authenticated: false,
-        error: `Network error: ${message(error)}`,
+        error: 'Failed to verify z.ai credentials.',
       });
     }
   }
@@ -193,8 +197,8 @@ export class ProviderUsageService implements OnModuleInit {
           message: 'Set Z_AI_API_KEY environment variable to enable z.ai usage tracking',
         });
       if (detail.includes('failed') || detail.includes('request'))
-        return ok({ error: 'API request failed', message: detail });
-      return ok({ error: detail }, 500);
+        return ok({ error: 'API request failed', message: 'Failed to fetch z.ai usage.' });
+      return ok({ error: 'Failed to fetch z.ai usage.' }, 500);
     }
   }
 

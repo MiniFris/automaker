@@ -14,6 +14,8 @@
 
 import type { ModelProvider } from '@automaker/types';
 import { UnavailableDomainError } from '../core/errors/domain-errors.js';
+import { FeatureRunCoordinator } from '../modules/orchestration/feature-run-coordinator.service.js';
+import type { FeatureRunState } from '../modules/orchestration/feature-run-state-machine.js';
 
 /**
  * Function type for getting the current branch of a project.
@@ -25,6 +27,12 @@ export type GetCurrentBranchFn = (projectPath: string) => Promise<string | null>
  * Represents a running feature execution with all tracking metadata
  */
 export interface RunningFeature {
+  readonly incarnation: symbol;
+  state: FeatureRunState;
+  completedEvents: Set<string>;
+  mutationTail: Promise<unknown>;
+  pendingMutations: number;
+  released: boolean;
   /** Keep the lease until managed workspace processes confirm cancellation/cleanup. */
   remoteWorkspace?: boolean;
   featureId: string;
@@ -43,6 +51,7 @@ export interface RunningFeature {
  * Parameters for acquiring a running feature slot
  */
 export interface AcquireParams {
+  expected?: RunningFeature;
   featureId: string;
   projectPath: string;
   isAutoMode: boolean;
@@ -57,6 +66,7 @@ export interface AcquireParams {
  * (e.g., during resume operations) and should only be released when all references are done.
  */
 export class ConcurrencyManager {
+  readonly coordinator: FeatureRunCoordinator;
   private stopping = false;
   private runningFeatures = new Map<string, RunningFeature>();
   private getCurrentBranch: GetCurrentBranchFn;
@@ -65,7 +75,8 @@ export class ConcurrencyManager {
    * @param getCurrentBranch - Function to get the current branch for a project.
    *                           If not provided, defaults to returning 'main'.
    */
-  constructor(getCurrentBranch?: GetCurrentBranchFn) {
+  constructor(getCurrentBranch?: GetCurrentBranchFn, coordinator = new FeatureRunCoordinator()) {
+    this.coordinator = coordinator;
     this.getCurrentBranch = getCurrentBranch ?? (() => Promise.resolve('main'));
   }
 
@@ -85,7 +96,14 @@ export class ConcurrencyManager {
   acquire(params: AcquireParams): RunningFeature {
     if (this.stopping) throw new UnavailableDomainError('Feature execution is shutting down.');
     const existing = this.runningFeatures.get(params.featureId);
+    if (params.expected && existing !== params.expected) {
+      const error = new Error('Feature run was superseded');
+      error.name = 'AbortError';
+      throw error;
+    }
     if (existing) {
+      if (existing.projectPath !== params.projectPath) throw new Error('already running');
+      if (existing.released) throw new Error('Feature status writes are still draining');
       if (!params.allowReuse) {
         throw new Error('already running');
       }
@@ -95,6 +113,12 @@ export class ConcurrencyManager {
 
     const abortController = params.abortController ?? new AbortController();
     const entry: RunningFeature = {
+      incarnation: Symbol(params.featureId),
+      state: 'queued',
+      completedEvents: new Set(),
+      mutationTail: Promise.resolve(),
+      pendingMutations: 0,
+      released: false,
       featureId: params.featureId,
       projectPath: params.projectPath,
       worktreePath: null,
@@ -112,6 +136,19 @@ export class ConcurrencyManager {
     this.stopping = true;
   }
 
+  async acquireAsync(params: AcquireParams): Promise<RunningFeature> {
+    let previous = this.runningFeatures.get(params.featureId);
+    while (previous?.released && previous.pendingMutations) {
+      await previous.mutationTail.catch(() => {});
+      previous = this.runningFeatures.get(params.featureId);
+    }
+    return this.acquire(params);
+  }
+
+  isCurrent(entry: RunningFeature): boolean {
+    return this.runningFeatures.get(entry.featureId) === entry && !entry.released;
+  }
+
   /**
    * Release a slot in the runningFeatures map for a feature.
    * Decrements leaseCount and only removes the entry when it reaches zero,
@@ -120,21 +157,35 @@ export class ConcurrencyManager {
    * @param featureId - ID of the feature to release
    * @param options.force - If true, immediately removes the entry regardless of leaseCount
    */
-  release(featureId: string, options?: { force?: boolean }): void {
+  release(featureId: string, options?: { force?: boolean; expected?: RunningFeature }): void {
     const entry = this.runningFeatures.get(featureId);
     if (!entry) {
       return;
     }
+    if (options?.expected && entry !== options.expected) return;
+    if (entry.released) return;
 
     if (options?.force) {
-      this.runningFeatures.delete(featureId);
+      entry.released = true;
+      if (!entry.pendingMutations) this.runningFeatures.delete(featureId);
       return;
     }
 
     entry.leaseCount -= 1;
     if (entry.leaseCount <= 0) {
-      this.runningFeatures.delete(featureId);
+      entry.released = true;
+      if (!entry.pendingMutations) this.runningFeatures.delete(featureId);
     }
+  }
+
+  finishMutation(entry: RunningFeature): void {
+    entry.pendingMutations--;
+    if (
+      entry.released &&
+      !entry.pendingMutations &&
+      this.runningFeatures.get(entry.featureId) === entry
+    )
+      this.runningFeatures.delete(entry.featureId);
   }
 
   /**
@@ -144,7 +195,8 @@ export class ConcurrencyManager {
    * @returns true if the feature is in the runningFeatures map
    */
   isRunning(featureId: string): boolean {
-    return this.runningFeatures.has(featureId);
+    const entry = this.runningFeatures.get(featureId);
+    return !!entry && !entry.released;
   }
 
   /**
@@ -154,7 +206,8 @@ export class ConcurrencyManager {
    * @returns The RunningFeature entry or undefined if not running
    */
   getRunningFeature(featureId: string): RunningFeature | undefined {
-    return this.runningFeatures.get(featureId);
+    const entry = this.runningFeatures.get(featureId);
+    return entry?.released ? undefined : entry;
   }
 
   /**
@@ -166,6 +219,7 @@ export class ConcurrencyManager {
   getRunningCount(projectPath: string): number {
     let count = 0;
     for (const [, feature] of this.runningFeatures) {
+      if (feature.released) continue;
       if (feature.projectPath === projectPath) {
         count++;
       }
@@ -196,6 +250,7 @@ export class ConcurrencyManager {
 
     let count = 0;
     for (const [, feature] of this.runningFeatures) {
+      if (feature.released) continue;
       // If autoModeOnly is set, skip manually started features
       if (options?.autoModeOnly && !feature.isAutoMode) {
         continue;
@@ -226,7 +281,7 @@ export class ConcurrencyManager {
    * @returns Array of all RunningFeature entries
    */
   getAllRunning(): RunningFeature[] {
-    return Array.from(this.runningFeatures.values());
+    return Array.from(this.runningFeatures.values()).filter((entry) => !entry.released);
   }
 
   /**
@@ -247,6 +302,7 @@ export class ConcurrencyManager {
     const featureIds: string[] = [];
 
     for (const [, feature] of this.runningFeatures) {
+      if (feature.released) continue;
       if (feature.projectPath !== projectPath) continue;
       const featureBranch = feature.branchName ?? null;
 

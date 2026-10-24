@@ -11,6 +11,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import path from 'path';
 import { RecoveryService, DEFAULT_EXECUTION_STATE } from '@/services/recovery-service.js';
+import { ConcurrencyManager } from '@/services/concurrency-manager.js';
 import type { Feature } from '@automaker/types';
 
 /**
@@ -309,6 +310,39 @@ describe('recovery-service.ts', () => {
   });
 
   describe('resumeFeature', () => {
+    it('releases only its own incarnation after a stopped recovery finishes late', async () => {
+      const manager = new ConcurrencyManager();
+      let finish!: () => void;
+      const held = new Promise<void>((resolve) => {
+        finish = resolve;
+      });
+      mockExecuteFeature.mockReturnValue(held);
+      mockLoadFeature.mockResolvedValue({ id: 'feature-1', status: 'interrupted' });
+      const recovery = new RecoveryService(
+        mockEventBus as never,
+        manager,
+        null,
+        mockExecuteFeature,
+        mockLoadFeature,
+        mockDetectPipelineStatus,
+        mockResumePipeline,
+        (id) => manager.isRunning(id),
+        (options) => manager.acquireAsync(options),
+        (id, expected) => manager.release(id, { expected })
+      );
+      const resuming = recovery.resumeFeature('/test/project', 'feature-1');
+      await vi.waitFor(() => expect(mockExecuteFeature).toHaveBeenCalled());
+      const first = manager.getRunningFeature('feature-1')!;
+      manager.release('feature-1', { force: true, expected: first });
+      const second = await manager.acquireAsync({
+        projectPath: '/test/project',
+        featureId: 'feature-1',
+        isAutoMode: false,
+      });
+      finish();
+      await resuming;
+      expect(manager.getRunningFeature('feature-1')).toBe(second);
+    });
     const mockFeature: Feature = {
       id: 'feature-1',
       title: 'Test Feature',
@@ -363,7 +397,8 @@ describe('recovery-service.ts', () => {
         '/test/project',
         mockFeature,
         false,
-        pipelineInfo
+        pipelineInfo,
+        expect.objectContaining({ featureId: 'feature-1' })
       );
       expect(mockExecuteFeature).not.toHaveBeenCalled();
     });
@@ -434,7 +469,10 @@ describe('recovery-service.ts', () => {
 
       await expect(service.resumeFeature('/test/project', 'feature-1')).rejects.toThrow();
 
-      expect(mockReleaseRunningFeature).toHaveBeenCalledWith('feature-1');
+      expect(mockReleaseRunningFeature).toHaveBeenCalledWith(
+        'feature-1',
+        expect.objectContaining({ featureId: 'feature-1' })
+      );
     });
 
     it('throws error if feature not found', async () => {
