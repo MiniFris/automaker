@@ -1,4 +1,5 @@
 import { translate } from '@/lib/i18n';
+import { verifyClaudeWithConsent } from '@/lib/claude-verification-consent';
 // API key management state with validation and persistence
 import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -131,9 +132,9 @@ export function useApiKeyManagement() {
     setTestResult(null);
 
     try {
-      const api = getHttpApiClient();
       // Pass the current input value to test unsaved keys
-      const data = await api.setup.verifyClaudeAuth('api_key', anthropicKey);
+      const data = await verifyClaudeWithConsent('api_key', anthropicKey);
+      if (!data) return;
 
       if (data.success && data.authenticated) {
         setTestResult({

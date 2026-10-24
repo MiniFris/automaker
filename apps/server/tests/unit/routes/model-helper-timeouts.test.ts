@@ -9,7 +9,8 @@ import { SettingsService } from '@/services/settings-service.js';
 import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
 import { createGenerateCommitMessageHandler } from '@/routes/worktree/routes/generate-commit-message.js';
 import { createGeneratePRDescriptionHandler } from '@/routes/worktree/routes/generate-pr-description.js';
-import { createVerifyClaudeAuthHandler } from '@/routes/setup/routes/verify-claude-auth.js';
+import { ClaudeVerificationService } from '@/modules/providers/claude-verification.service.js';
+import { ProviderConnectionRepository } from '@/modules/providers/provider-connection.repository.js';
 import { createVerifyCodexAuthHandler } from '@/routes/setup/routes/verify-codex-auth.js';
 import { SetupCredentialCache } from '@/modules/providers/setup-credential-cache.service.js';
 
@@ -102,14 +103,29 @@ it.each(['Claude', 'Codex'] as const)(
     const timer = vi.spyOn(globalThis, 'setTimeout');
     const json = vi.fn();
     const keys = new SetupCredentialCache();
-    const handler =
-      label === 'Claude'
-        ? createVerifyClaudeAuthHandler(settings, keys)
-        : createVerifyCodexAuthHandler(settings, providers, keys);
-    await handler(
-      { body: { authMethod: 'api_key', apiKey: 'invalid' }, ip: 'fixture' } as Request,
-      { json } as unknown as Response
-    );
+    if (label === 'Claude') {
+      const service = new ClaudeVerificationService(
+        { run: vi.fn() } as never,
+        ProviderConnectionRepository.forWorkingDirectory(project),
+        {},
+        keys,
+        settings
+      );
+      json(
+        await service.verify(
+          { confirmed: true, target: service.target('api_key').target, apiKey: 'invalid' },
+          'fixture'
+        )
+      );
+    } else
+      await createVerifyCodexAuthHandler(
+        settings,
+        providers,
+        keys
+      )(
+        { body: { authMethod: 'api_key', apiKey: 'invalid' }, ip: 'fixture' } as Request,
+        { json } as unknown as Response
+      );
     expect(timer).toHaveBeenCalledWith(expect.any(Function), 4321);
     expect(json).toHaveBeenCalledWith(expect.objectContaining({ authenticated: false }));
   }

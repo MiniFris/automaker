@@ -24,6 +24,8 @@ import {
   CursorEnabledModelsRequestSchema,
   type CursorDefaultModelRequest,
   type CursorEnabledModelsRequest,
+  ClaudeVerificationRequestSchema,
+  type ClaudeVerificationRequest,
   type CliConnectionProvider,
   type ProviderDisconnectRequest,
   type ProviderReconnectRequest,
@@ -40,6 +42,7 @@ import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js'
 import { ProviderInstallGuidanceService } from './provider-install-guidance.service.js';
 import { CursorPermissionsService } from './cursor-permissions.service.js';
 import { CursorModelConfigService } from './cursor-model-config.service.js';
+import { ClaudeVerificationService } from './claude-verification.service.js';
 
 @Public()
 @Controller('setup')
@@ -54,7 +57,8 @@ export class SetupController {
     @Inject(ProviderInstallGuidanceService)
     private readonly installation: ProviderInstallGuidanceService,
     @Inject(CursorPermissionsService) private readonly permissions: CursorPermissionsService,
-    @Inject(CursorModelConfigService) private readonly modelConfig: CursorModelConfigService
+    @Inject(CursorModelConfigService) private readonly modelConfig: CursorModelConfigService,
+    @Inject(ClaudeVerificationService) private readonly verification: ClaudeVerificationService
   ) {}
 
   private run(name: SetupHandlerName, request: Request, response: Response) {
@@ -98,8 +102,16 @@ export class SetupController {
   @Get('platform') platform() {
     return this.hostStatus.platform();
   }
-  @Post('verify-claude-auth') verifyClaudeAuth(@Req() q: Request, @Res() s: Response) {
-    return this.run('verifyClaudeAuth', q, s);
+  @Get('claude-verification-target') claudeVerificationTarget(
+    @Query('authMethod') authMethod: string
+  ) {
+    return this.verification.target(authMethod);
+  }
+  @Post('verify-claude-auth') @HttpCode(200) verifyClaudeAuth(
+    @Body(new ZodValidationPipe(ClaudeVerificationRequestSchema)) body: ClaudeVerificationRequest,
+    @Req() request: Request
+  ) {
+    return this.verification.verify(body, request.ip || request.socket.remoteAddress || 'unknown');
   }
   @Post('verify-codex-auth') verifyCodexAuth(@Req() q: Request, @Res() s: Response) {
     return this.run('verifyCodexAuth', q, s);

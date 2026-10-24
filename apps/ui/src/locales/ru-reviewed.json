@@ -429,5 +429,7 @@
   "This changes Cursor CLI permissions on the backend host, not on an SSH or Docker target. Existing runs are not restarted.": "Это изменит разрешения Cursor CLI на хосте бэкенда, а не в SSH- или Docker-окружении. Уже запущенные задачи не перезапускаются.",
   "Confirm permission change": "Подтвердить изменение разрешений",
   "Inspect target before changing permissions.": "Проверьте целевой файл перед изменением разрешений.",
-  "No project target selected.": "Целевой проект не выбран."
+  "No project target selected.": "Целевой проект не выбран.",
+  "Verify Claude connection": "Проверить соединение с Claude",
+  "Run a Claude verification query? This may incur charges. No tools are enabled.\nMethod: {method}\nModel: {model}\nEndpoint: {endpoint}\nBackend: {directory}\nInstance: {instance}": "Выполнить проверочный запрос Claude? Возможна плата за запрос. Инструменты отключены.\nРежим: {method}\nМодель: {model}\nEndpoint: {endpoint}\nБэкенд: {directory}\nЭкземпляр: {instance}"
 }

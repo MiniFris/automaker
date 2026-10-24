@@ -3,7 +3,6 @@ import type { Request, RequestHandler, Response } from 'express';
 
 import { createDeleteApiKeyHandler } from '../../routes/setup/routes/delete-api-key.js';
 import { createStoreApiKeyHandler } from '../../routes/setup/routes/store-api-key.js';
-import { createVerifyClaudeAuthHandler } from '../../routes/setup/routes/verify-claude-auth.js';
 import { createVerifyCodexAuthHandler } from '../../routes/setup/routes/verify-codex-auth.js';
 import { SettingsService } from '../../services/settings-service.js';
 import { ProviderRegistry } from './provider-registry.service.js';
@@ -44,7 +43,6 @@ export class SetupHandlersService {
     return {
       storeApiKey: createStoreApiKeyHandler(keys),
       deleteApiKey: createDeleteApiKeyHandler(keys),
-      verifyClaudeAuth: createVerifyClaudeAuthHandler(settings, keys),
       verifyCodexAuth: createVerifyCodexAuthHandler(settings, providers, keys),
     } satisfies Record<string, RequestHandler>;
   }

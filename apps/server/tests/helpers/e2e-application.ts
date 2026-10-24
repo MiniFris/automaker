@@ -18,6 +18,7 @@ import { createProviderRegistrations } from '../../src/modules/providers/provide
 import { SetupHandlersService } from '../../src/modules/providers/setup-handlers.service.js';
 import { SetupCredentialCache } from '../../src/modules/providers/setup-credential-cache.service.js';
 import { SetupStatusRuntime } from '../../src/core/platform/setup-status.runtime.js';
+import { ClaudeVerificationRuntime } from '../../src/core/platform/claude-verification.runtime.js';
 import type { SetupHandlerName } from '../../src/modules/providers/setup-handlers.service.js';
 import { SettingsService } from '../../src/services/settings-service.js';
 import { MockProvider } from './mock-provider.js';
@@ -53,6 +54,7 @@ export async function createE2eApplication(
           hostEnvironment: {
             ...environment,
             CURSOR_CONFIG_DIR: path.join(dataDirectory, 'host-cursor-profile'),
+            ANTHROPIC_BASE_URL: 'https://claude-verification.fixture.invalid',
           },
         }),
       ],
@@ -89,7 +91,7 @@ export async function createE2eApplication(
           const real = new SetupHandlersService(settings, providers, keys);
           return {
             run(name: SetupHandlerName, request: Request, response: Response) {
-              if (name === 'verifyClaudeAuth' || name === 'verifyCodexAuth') {
+              if (name === 'verifyCodexAuth') {
                 response.json({ success: true, authenticated: true });
                 return Promise.resolve();
               }
@@ -98,6 +100,8 @@ export async function createE2eApplication(
           };
         },
       })
+      .overrideProvider(ClaudeVerificationRuntime)
+      .useValue({ run: async () => 'verified' })
       .overrideProvider(SetupStatusRuntime)
       .useValue({
         platformInfo: () => ({ platform: os.platform(), arch: os.arch(), homeDir: os.homedir() }),

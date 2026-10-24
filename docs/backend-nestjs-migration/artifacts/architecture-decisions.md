@@ -148,3 +148,23 @@ Permissions и models переиспользуют один injectable host JSON
 Global UI settings остаются settings-store preferences и не превращаются в project
 file operations. Этот перенос не меняет фактический provider runtime model selection,
 не добавляет remote writes и не означает завершения setup auth/keys/verify hardening.
+
+## ADR-013: API v6 confirmed billable Claude verification
+
+Claude verify требует approval конкретного host instance/root, endpoint, model и
+authentication method. Read-only preview имеет отдельный `protocolVersion: 1`;
+новый client не отправляет POST старому backend без этой capability и не заменяет
+approved target автоматически. API header повышен до `6`.
+
+Native runtime передаёт environment конкретному SDK query, не меняет process.env
+и не использует глобальные auth-session/limiter singletons. API-key и CLI modes
+разделены. Query выполняется без tools/MCP/project settings/session persistence;
+successful terminal result обязателен. Raw diagnostics не становятся HTTP details
+или application logs. Active probes ограничены, abort/close/drain управляются
+владельцем Nest application. Это не гарантия OS-level child reap или sandbox.
+
+Verification может стоить денег: UI явно показывает target и предупреждение перед
+POST, автоматическая проверка при загрузке/refresh Claude setup удалена. CLI login,
+marker changes и managed key persistence не являются side effects этой операции.
+Public setup access policy и перенос Codex verify/ключей остаются незавершёнными
+gates, а не считаются решёнными наличием UUID или confirmation boolean.

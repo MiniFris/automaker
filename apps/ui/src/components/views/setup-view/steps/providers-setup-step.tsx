@@ -1,4 +1,5 @@
 import { translate, useUiLocale } from '@/lib/i18n';
+import { verifyClaudeWithConsent } from '@/lib/claude-verification-consent';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -72,7 +73,7 @@ function ClaudeContent() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationError, setVerificationError] = useState<string | null>(null);
   const [isDeletingApiKey, setIsDeletingApiKey] = useState(false);
-  const hasVerifiedRef = useRef(false);
+  const verificationBusy = useRef(false);
 
   const installApi = useCallback(
     (signal?: AbortSignal) => getElectronAPI().setup?.installClaude(signal) || Promise.reject(),
@@ -80,13 +81,10 @@ function ClaudeContent() {
   );
   const getStoreState = useCallback(() => useSetupStore.getState().claudeCliStatus, []);
 
-  // Auto-verify CLI authentication
+  // Billable verification is only requested by an explicit user action.
   const verifyAuth = useCallback(async () => {
-    // Guard against duplicate verification
-    if (hasVerifiedRef.current) {
-      return;
-    }
-
+    if (verificationBusy.current) return;
+    verificationBusy.current = true;
     setIsVerifying(true);
     setClaudeIsVerifying(true); // Update store for parent to see
     setVerificationError(null);
@@ -95,13 +93,13 @@ function ClaudeContent() {
       if (!api.setup?.verifyClaudeAuth) {
         return;
       }
-      const result = await api.setup.verifyClaudeAuth('cli');
+      const result = await verifyClaudeWithConsent('cli');
+      if (!result) return;
       const hasLimitReachedError =
         result.error?.toLowerCase().includes('limit reached') ||
         result.error?.toLowerCase().includes('rate limit');
 
       if (result.authenticated && !hasLimitReachedError) {
-        hasVerifiedRef.current = true;
         // Use getState() to avoid dependency on claudeAuthStatus
         const currentAuthStatus = useSetupStore.getState().claudeAuthStatus;
         setClaudeAuthStatus({
@@ -119,17 +117,16 @@ function ClaudeContent() {
       const errorMessage = error instanceof Error ? error.message : 'Verification failed';
       setVerificationError(errorMessage);
     } finally {
+      verificationBusy.current = false;
       setIsVerifying(false);
       setClaudeIsVerifying(false); // Update store when done
     }
   }, [setClaudeAuthStatus, setClaudeIsVerifying]);
 
-  // Check status and auto-verify
+  // Passive status never starts a billable SDK query.
   const checkStatus = useCallback(async () => {
     setIsChecking(true);
     setVerificationError(null);
-    // Reset verification guard to allow fresh verification (for manual refresh)
-    hasVerifiedRef.current = false;
     try {
       const api = getElectronAPI();
       if (!api.setup?.getClaudeStatus) return;
@@ -144,10 +141,6 @@ function ClaudeContent() {
 
         if (result.installed) {
           toast.success(translate('Claude CLI installed!'));
-          // Auto-verify if CLI is installed
-          setIsChecking(false);
-          await verifyAuth();
-          return;
         }
       }
     } catch {
@@ -155,10 +148,9 @@ function ClaudeContent() {
     } finally {
       setIsChecking(false);
     }
-  }, [setClaudeCliStatus, verifyAuth]);
+  }, [setClaudeCliStatus]);
 
   const onInstallSuccess = useCallback(() => {
-    hasVerifiedRef.current = false;
     return checkStatus();
   }, [checkStatus]);
 
@@ -204,7 +196,6 @@ function ClaudeContent() {
           hasCredentialsFile: currentAuthStatus?.hasCredentialsFile || false,
         });
         // Reset verification guard so next check can verify again
-        hasVerifiedRef.current = false;
         toast.success(translate('API key deleted successfully'));
       }
     } catch {
@@ -299,6 +290,12 @@ function ClaudeContent() {
                 : translate('Verifying authentication...')}
             </p>
           </div>
+        )}
+
+        {claudeCliStatus?.installed && !isChecking && (
+          <Button disabled={isVerifying} onClick={verifyAuth}>
+            {translate('Verify Claude connection')}
+          </Button>
         )}
 
         {/* Not Installed */}

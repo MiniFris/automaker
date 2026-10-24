@@ -17,6 +17,11 @@ import { CursorPermissionsRepository } from './cursor-permissions.repository.js'
 import { CursorPermissionsService } from './cursor-permissions.service.js';
 import { HostSetupJsonFiles } from './host-setup-json-files.js';
 import { CursorModelConfigService } from './cursor-model-config.service.js';
+import { ClaudeVerificationService } from './claude-verification.service.js';
+import {
+  ClaudeVerificationRuntime,
+  NodeClaudeVerificationRuntime,
+} from '../../core/platform/claude-verification.runtime.js';
 import {
   SetupStatusRuntime,
   NodeSetupStatusRuntime,
@@ -41,6 +46,8 @@ import {
     CursorPermissionsService,
     HostSetupJsonFiles,
     CursorModelConfigService,
+    ClaudeVerificationService,
+    { provide: ClaudeVerificationRuntime, useClass: NodeClaudeVerificationRuntime },
     { provide: SetupStatusRuntime, useClass: NodeSetupStatusRuntime },
   ],
   exports: [ProviderRegistry, ProviderConnectionRepository, ToolPolicyService],

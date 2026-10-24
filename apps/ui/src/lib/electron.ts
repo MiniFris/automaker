@@ -3,6 +3,8 @@ import type {
   PendingPlanApprovalResponse,
   ProviderDisconnectRequest,
   ProviderReconnectRequest,
+  ClaudeVerificationRequest,
+  ClaudeVerificationResponse,
 } from '@automaker/contracts';
 // Type definitions for Electron IPC API
 import type { SessionListItem, Message } from '@/types/electron';
@@ -1644,12 +1646,7 @@ interface SetupAPI {
     isMac: boolean;
     isLinux: boolean;
   }>;
-  verifyClaudeAuth: (authMethod?: 'cli' | 'api_key') => Promise<{
-    success: boolean;
-    authenticated: boolean;
-    authType?: 'oauth' | 'api_key' | 'cli';
-    error?: string;
-  }>;
+  verifyClaudeAuth: (input: ClaudeVerificationRequest) => Promise<ClaudeVerificationResponse>;
   getGhStatus?: () => Promise<{
     success: boolean;
     installed: boolean;
@@ -1985,13 +1982,15 @@ function createMockSetupAPI(): SetupAPI {
       };
     },
 
-    verifyClaudeAuth: async (authMethod?: 'cli' | 'api_key') => {
-      console.log('[Mock] Verifying Claude auth with method:', authMethod);
+    verifyClaudeAuth: async (input: ClaudeVerificationRequest) => {
       // Mock always returns not authenticated
       return {
         success: true,
         authenticated: false,
         error: 'Mock environment - authentication not available',
+        target: input.target,
+        authType: input.target.authMethod,
+        verification: 'unverified' as const,
       };
     },
 

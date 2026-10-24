@@ -875,7 +875,9 @@ filesystem I/O и ошибки Nest hooks, также требует hardening �
         target preview, confirmation, FIFO writes и UI dialog (API v4).
   - [x] Cursor project model config: native read/default-model/models, known-model
         validation, host-file target, confirmation и protocol gate (API v5).
-  - [ ] Key/verify mutations и единый setup target policy; настоящий host
+  - [x] Claude verification: native runtime, explicit billable-query consent,
+        endpoint/model/method target, isolated environment и protocol gate (API v6).
+  - [ ] Key/Codex-verify mutations и единый setup target policy; настоящий host
         installer, если потребуется, проектируется отдельно с confirmation.
 
 ### Срез: native Gemini/Copilot/Cursor setup status
@@ -1438,6 +1440,97 @@ filesystem race или power-loss durability. Общая setup auth/CSRF policy 
   `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest`: 11 passed,
   4 opt-in skipped; afterAll успешно проверил cleanup owned containers/image/volume.
 
+### Срез: native confirmed Claude verification / API v6
+
+POST `/api/setup/verify-claude-auth` переведён из handler bridge в
+`ClaudeVerificationService` / `ClaudeVerificationRuntime`. Legacy handler удалён,
+восстанавливается из Git. Bridge теперь содержит store/delete API key и Codex verify.
+Ключи и provider runtime нельзя переносить простой заменой `process.env` на cache:
+должны оставаться согласованы действительные источники credentials. Их native
+persistence/activation и Codex verify ещё не закрыты.
+
+GET `/api/setup/claude-verification-target?authMethod=cli|api_key` — read-only preview
+с `protocolVersion: 1`, kind `host-claude-verification`, provider, instance UUID,
+backend working directory, method, model `claude-sonnet-4-6` и фактический endpoint
+из immutable `HOST_ENVIRONMENT` (по умолчанию Anthropic). URL с embedded credentials,
+query/hash или не-HTTP protocol отклоняется до раскрытия metadata или SDK call.
+Это host application probe, не SSH/Docker verification. Preview не читает ключи,
+не запускает query и не является доказательством валидности credentials.
+
+Mutation требует strict shared DTO с `confirmed: true` и исходным target. CLI mode
+не принимает supplied API key. Server повторно сравнивает instance/root/model/
+method/endpoint перед admission; неверные запросы не запускают SDK. API header
+повышен до `6`. Client проверяет supported preview до POST и сравнивает исходный
+approval с preview и response. Новый target не подставляется автоматически. API v5
+не получает старый verification POST лишь из-за наличия типизированного body.
+Прочие capability versions не меняются (connection 3, Cursor permissions/models 1).
+
+API-key mode выбирает supplied key, application setup cache, managed settings key
+или bootstrap key; последнее учитывает application tombstone legacy delete.
+CLI mode явно исключает API-key/token overrides. Каждому SDK query передаётся
+собственный environment, очищены альтернативные cloud-provider flags/custom auth
+headers, endpoint задан явно. `process.env`, `.env`, SetupCredentialCache и managed
+credentials этой операцией не изменяются. Native code не создаёт глобальных auth
+sessions и не передаёт key в confirmation text/response/log. Возможные внутренние
+credential refresh/cache effects самого vendor CLI этим не объявляются запрещёнными
+или полностью проверенными.
+
+Runtime запускает один turn без built-in tools/MCP, с `settingSources: []`,
+`strictMcpConfig: true`, `persistSession: false` и `dontAsk`; stdout messages не
+накапливаются и не логируются, stderr callback не пересылает raw diagnostics.
+Проверяются пределы 100 messages / 128 KiB одного сериализованного сообщения.
+Успех требует terminal `result/subtype: success`, явного `is_error: false` и
+непустого result. Partial text, empty/error result, billing/rate-limit/auth error
+и поздний результат после abort не становятся authenticated success. Ошибки
+нормализованы; metadata вроде `billingMethod` не классифицируется как error text.
+
+Сервис имеет application-scoped rate limit (5 attempts/client/60 s, bounded map),
+не более четырёх active probes, shared saved connection-test timeout с верхним
+пределом SDK wait 120 s. Shutdown сначала закрывает admission, abort-ит активные
+controller и ждёт завершения принятых операций; повторные/reentrant callers получают
+один drain promise. SDK abort вызывает `Query.close()` и завершает ожидание hung
+iterator. Это не доказательство OS process-tree reap на всех SDK/OS, не общий
+shutdown deadline, не sandbox, не remote/provider parity и не live account acceptance.
+Общая public setup auth/CSRF policy не изменена и остаётся hardening gate.
+
+UI использует read-only inspection и нативный Web/Electron confirmation dialog:
+стоимость запроса, method, model, endpoint, backend root и UUID видны до POST, ключ
+не показывается. Отмена не делает query. Mount/refresh Claude setup больше не
+запускают paid verification автоматически; есть отдельная кнопка. Старый SDK auth
+source не выдаётся за доказанный OAuth/subscription account. Desktop mock и E2E
+composition обновлены: native schemas/service сохраняются, только runtime port
+явно заменён offline fixture; production flags не включают успешные mocks.
+
+Проверки:
+
+- 21 service cases и 13 SDK-adapter cases: target/credential modes, isolation,
+  rate/concurrency limits, timeout, reentrant shutdown, close и normalized outcomes.
+- 9 shared schema, 10 HTTP-client, 3 consent cases; проверено отсутствие POST
+  старому backend и отсутствие supplied secret в dialog text.
+- Native HTTP двух apps проверяет 400/409 до probe, разные endpoints/environments,
+  отсутствие persistence и реальный Nest close с delayed in-flight runtime.
+- Старый E2E composition contract был обновлён с unconfirmed body на новый DTO;
+  production input gate не ослаблен. В новом concurrency unit fixture короткий
+  timeout отделён от lifecycle case, чтобы deadline не подменял shutdown evidence.
+- `npm run test:server:unit`: 3390 passed, 40 skipped.
+- `npm run test:server:contract`: 266 passed.
+- `npm run test:packages`: 1340 passed.
+- Contracts/server build, UI typecheck/lint, server lint, lockfile: успешно.
+- UI production + Electron main/preload build успешны с прежним chunk warning;
+  packaged Electron и Windows acceptance не заявляются.
+- Lifecycle smoke после server build: SIGTERM/SIGINT exit 0.
+- Chromium `--trace=on`: 6 passed, включая отсутствие auto-Claude POST,
+  cancel/confirm/target evidence и пять прежних workflows. Probe offline, без
+  upstream charges или использования настоящих account credentials.
+- Выбранные SSH CLI/SDK/Direct chat/restart: 3 passed, 34 отфильтрованы.
+- Полный Docker fixture acceptance с
+  `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest`: 11 passed,
+  4 opt-in skipped; cleanup owned containers/image/volume проверен.
+
+Этап 7 остаётся открыт: Codex verify всё ещё legacy, setup key writes ещё имеют
+process-env/.env effects; usage, passive GH auth, общий capability/tool policy и
+остальные незавершённые пункты требуют работы. Этапы 8–11 не объявляются завершёнными.
+
 ## 7.7. Agent routes
 
 - [x] Start/query/follow-up/cancel.
@@ -1523,7 +1616,7 @@ capability/dispose contract, tool policy и оставшиеся setup/usage mod
 
 ## Exit criteria
 
-- Versioned connection contract (API v5, connection protocol 3) проверен совместно с Web/Electron HTTP clients:
+- Versioned connection contract (API v6, connection protocol 3) проверен совместно с Web/Electron HTTP clients:
   без confirmation — 400, при другом instance/provider/path — 409 до записи,
   фактический target возвращается в success response и показан в UI confirmation.
 - Client не отправляет connection POST на server без поддерживаемого read-only

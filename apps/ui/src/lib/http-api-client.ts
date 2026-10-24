@@ -8,6 +8,12 @@
 import { createLogger } from '@automaker/utils/logger';
 import { ProviderInstallGuidanceSchema, type ProviderInstallGuidance } from '@automaker/contracts';
 import {
+  ClaudeVerificationTargetResponseSchema,
+  ClaudeVerificationRequestSchema,
+  ClaudeVerificationResponseSchema,
+  type ClaudeVerificationRequest,
+} from '@automaker/contracts';
+import {
   CursorModelConfigTargetSchema,
   CursorModelConfigTargetResponseSchema,
   CursorModelConfigResponseSchema,
@@ -1764,15 +1770,26 @@ export class HttpApiClient implements ElectronAPI {
       isLinux: boolean;
     }> => this.get('/api/setup/platform'),
 
-    verifyClaudeAuth: (
-      authMethod?: 'cli' | 'api_key',
-      apiKey?: string
-    ): Promise<{
-      success: boolean;
-      authenticated: boolean;
-      authType?: 'oauth' | 'api_key' | 'cli';
-      error?: string;
-    }> => this.post('/api/setup/verify-claude-auth', { authMethod, apiKey }),
+    getClaudeVerificationTarget: async (authMethod: 'cli' | 'api_key') => {
+      const response = ClaudeVerificationTargetResponseSchema.parse(
+        await this.get(`/api/setup/claude-verification-target?authMethod=${authMethod}`)
+      );
+      if (response.target.authMethod !== authMethod)
+        throw new Error('Claude verification method does not match selection.');
+      return response;
+    },
+    verifyClaudeAuth: async (input: ClaudeVerificationRequest) => {
+      const request = ClaudeVerificationRequestSchema.parse(input);
+      const preview = await this.setup.getClaudeVerificationTarget(request.target.authMethod);
+      if (JSON.stringify(preview.target) !== JSON.stringify(request.target))
+        throw new Error('Claude verification target changed. Inspect and confirm it again.');
+      const response = ClaudeVerificationResponseSchema.parse(
+        await this.post('/api/setup/verify-claude-auth', request)
+      );
+      if (JSON.stringify(response.target) !== JSON.stringify(request.target))
+        throw new Error('Claude verification response target does not match confirmation.');
+      return response;
+    },
 
     getGhStatus: (): Promise<{
       success: boolean;

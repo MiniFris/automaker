@@ -74,10 +74,22 @@ describe('explicit Nest E2E composition', () => {
       const base = `http://127.0.0.1:${port}/api`;
       expect((await fetch(`${base}/models/available`)).status).toBe(401);
       for (const provider of ['claude', 'codex']) {
+        const body =
+          provider === 'claude'
+            ? {
+                confirmed: true,
+                target: (
+                  await (
+                    await fetch(`${base}/setup/claude-verification-target?authMethod=api_key`)
+                  ).json()
+                ).target,
+                apiKey: 'sk-ant-fixture-not-a-real-key',
+              }
+            : { authMethod: 'api_key', apiKey: 'fixture-not-a-real-key' };
         const response = await fetch(`${base}/setup/verify-${provider}-auth`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-api-key': 'automaker-test-api-key' },
-          body: JSON.stringify({ authMethod: 'api_key', apiKey: 'fixture-not-a-real-key' }),
+          body: JSON.stringify(body),
         });
         expect(response.status).toBe(200);
         expect(await response.json()).toMatchObject({ authenticated: true });

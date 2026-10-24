@@ -1,4 +1,5 @@
 import { translate, useUiLocale } from '@/lib/i18n';
+import { verifyClaudeWithConsent } from '@/lib/claude-verification-consent';
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -133,7 +134,11 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
       }
 
       // Pass "cli" to verify CLI authentication only (ignores any API key)
-      const result = await api.setup.verifyClaudeAuth('cli');
+      const result = await verifyClaudeWithConsent('cli');
+      if (!result) {
+        setCliVerificationStatus('idle');
+        return;
+      }
 
       // Check for "Limit reached" error - treat as unverified
       const hasLimitReachedError =
@@ -143,20 +148,13 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
       if (result.authenticated && !hasLimitReachedError) {
         setCliVerificationStatus('verified');
         // Store the auth type for displaying specific success message
-        const authType = result.authType === 'oauth' ? 'oauth' : 'cli';
-        setCliAuthType(authType);
+        setCliAuthType('cli');
         setClaudeAuthStatus({
           authenticated: true,
-          method: authType === 'oauth' ? 'oauth_token' : 'cli_authenticated',
+          method: 'cli_authenticated',
           hasCredentialsFile: claudeAuthStatus?.hasCredentialsFile || false,
-          oauthTokenValid: authType === 'oauth',
         });
-        // Show specific success message based on auth type
-        if (authType === 'oauth') {
-          toast.success(translate('Claude Code subscription detected and verified!'));
-        } else {
-          toast.success(translate('Claude CLI authentication verified!'));
-        }
+        toast.success(translate('Claude CLI authentication verified!'));
       } else {
         setCliVerificationStatus('error');
         setCliVerificationError(
@@ -197,7 +195,11 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
       }
 
       // Pass "api_key" to verify API key authentication only
-      const result = await api.setup.verifyClaudeAuth('api_key');
+      const result = await verifyClaudeWithConsent('api_key');
+      if (!result) {
+        setApiKeyVerificationStatus('idle');
+        return;
+      }
 
       if (result.authenticated) {
         setApiKeyVerificationStatus('verified');
