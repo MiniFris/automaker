@@ -12,7 +12,7 @@ afterEach(() => {
 
 function fixture(initial = false) {
   const keys = new SetupCredentialCache();
-  const bridge = new SetupHandlersService({} as never, {} as never, keys);
+  const bridge = new SetupHandlersService(keys);
   const status = new HostSetupStatusService({} as never, {} as never, keys, {
     providers: { isEnvironmentVariableConfigured: () => initial },
   } as never);

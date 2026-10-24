@@ -26,6 +26,8 @@ import {
   type CursorEnabledModelsRequest,
   ClaudeVerificationRequestSchema,
   type ClaudeVerificationRequest,
+  CodexVerificationRequestSchema,
+  type CodexVerificationRequest,
   type CliConnectionProvider,
   type ProviderDisconnectRequest,
   type ProviderReconnectRequest,
@@ -43,6 +45,7 @@ import { ProviderInstallGuidanceService } from './provider-install-guidance.serv
 import { CursorPermissionsService } from './cursor-permissions.service.js';
 import { CursorModelConfigService } from './cursor-model-config.service.js';
 import { ClaudeVerificationService } from './claude-verification.service.js';
+import { CodexVerificationService } from './codex-verification.service.js';
 
 @Public()
 @Controller('setup')
@@ -58,7 +61,8 @@ export class SetupController {
     private readonly installation: ProviderInstallGuidanceService,
     @Inject(CursorPermissionsService) private readonly permissions: CursorPermissionsService,
     @Inject(CursorModelConfigService) private readonly modelConfig: CursorModelConfigService,
-    @Inject(ClaudeVerificationService) private readonly verification: ClaudeVerificationService
+    @Inject(ClaudeVerificationService) private readonly verification: ClaudeVerificationService,
+    @Inject(CodexVerificationService) private readonly codexVerification: CodexVerificationService
   ) {}
 
   private run(name: SetupHandlerName, request: Request, response: Response) {
@@ -113,8 +117,19 @@ export class SetupController {
   ) {
     return this.verification.verify(body, request.ip || request.socket.remoteAddress || 'unknown');
   }
-  @Post('verify-codex-auth') verifyCodexAuth(@Req() q: Request, @Res() s: Response) {
-    return this.run('verifyCodexAuth', q, s);
+  @Get('codex-verification-target') codexVerificationTarget(
+    @Query('authMethod') authMethod: string
+  ) {
+    return this.codexVerification.target(authMethod);
+  }
+  @Post('verify-codex-auth') @HttpCode(200) verifyCodexAuth(
+    @Body(new ZodValidationPipe(CodexVerificationRequestSchema)) body: CodexVerificationRequest,
+    @Req() request: Request
+  ) {
+    return this.codexVerification.verify(
+      body,
+      request.ip || request.socket.remoteAddress || 'unknown'
+    );
   }
   @Get('gh-status') ghStatus() {
     return this.hostStatus.github();

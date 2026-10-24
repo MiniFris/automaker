@@ -5,6 +5,8 @@ import type {
   ProviderReconnectRequest,
   ClaudeVerificationRequest,
   ClaudeVerificationResponse,
+  CodexVerificationRequest,
+  CodexVerificationResponse,
 } from '@automaker/contracts';
 // Type definitions for Electron IPC API
 import type { SessionListItem, Message } from '@/types/electron';
@@ -1727,14 +1729,7 @@ interface SetupAPI {
     message?: string;
     error?: string;
   }>;
-  verifyCodexAuth?: (
-    authMethod: 'cli' | 'api_key',
-    apiKey?: string
-  ) => Promise<{
-    success: boolean;
-    authenticated: boolean;
-    error?: string;
-  }>;
+  verifyCodexAuth?: (input: CodexVerificationRequest) => Promise<CodexVerificationResponse>;
   // OpenCode CLI methods
   getOpencodeStatus?: () => Promise<{
     success: boolean;
@@ -2073,11 +2068,13 @@ function createMockSetupAPI(): SetupAPI {
       };
     },
 
-    verifyCodexAuth: async (authMethod: 'cli' | 'api_key') => {
-      console.log('[Mock] Verifying Codex auth with method:', authMethod);
+    verifyCodexAuth: async (input: CodexVerificationRequest) => {
       return {
         success: true,
         authenticated: false,
+        target: input.target,
+        authType: input.target.authMethod,
+        verification: 'unverified' as const,
         error: 'Mock environment - authentication not available',
       };
     },

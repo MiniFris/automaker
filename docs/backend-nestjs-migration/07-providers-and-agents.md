@@ -877,7 +877,9 @@ filesystem I/O и ошибки Nest hooks, также требует hardening �
         validation, host-file target, confirmation и protocol gate (API v5).
   - [x] Claude verification: native runtime, explicit billable-query consent,
         endpoint/model/method target, isolated environment и protocol gate (API v6).
-  - [ ] Key/Codex-verify mutations и единый setup target policy; настоящий host
+  - [x] Codex verification: native auth-only CLI RPC и tool-free Responses probe,
+        CLI/API-key separation, confirmed endpoint/model/profile и protocol gate (API v7).
+  - [ ] Key mutations и единый setup target policy; настоящий host
         installer, если потребуется, проектируется отдельно с confirmation.
 
 ### Срез: native Gemini/Copilot/Cursor setup status
@@ -1527,9 +1529,103 @@ composition обновлены: native schemas/service сохраняются, �
   `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest`: 11 passed,
   4 opt-in skipped; cleanup owned containers/image/volume проверен.
 
-Этап 7 остаётся открыт: Codex verify всё ещё legacy, setup key writes ещё имеют
+На момент Claude checkpoint Codex verify оставался legacy; следующий срез ниже
+переносит его отдельно. Setup key writes ещё имеют
 process-env/.env effects; usage, passive GH auth, общий capability/tool policy и
 остальные незавершённые пункты требуют работы. Этапы 8–11 не объявляются завершёнными.
+
+### Срез: native confirmed Codex verification / API v7
+
+POST `/api/setup/verify-codex-auth` обслуживается `CodexVerificationService`,
+`CodexCredentialRuntime` и `CodexVerificationRuntime`. Legacy handler удалён;
+`SetupHandlersService` теперь содержит только store/delete API key. Их глобальные
+environment/.env effects и согласованная native credential activation остаются
+отдельной незавершённой задачей, а не заменяются cache-only поведением.
+
+GET `/api/setup/codex-verification-target?authMethod=cli|api_key` возвращает strict
+shared preview с `protocolVersion: 1`: host instance UUID, backend directory,
+method, credential kind, CLI profile directory (только CLI), endpoint и фиксированную
+модель `gpt-5.2-codex`. API header повышен до `7`; остальные capability versions
+сохранены. API-key preview не читает ключи и не запускает CLI. CLI preview получает
+только auth metadata без токена и без refresh. Preview не является authentication proof.
+
+Confirmed POST повторно сверяет весь target до paid query; другой instance/root,
+endpoint/profile или смена credential kind требуют нового approval. Client до POST
+проверяет capability и не подменяет approved target новым preview. Native confirmation
+показывает endpoint/model/method/root/UUID/profile, стоимость и возможность CLI
+credential refresh; секреты туда не попадают. Cancel не делает model query.
+
+Выбор транспорта основан не на предположении о `allowedTools: []`. Offline contract
+с настоящим закреплённым Codex SDK/CLI 0.98.0 доказывает, что даже ограниченный exec
+всё ещё предлагает `apply_patch` и `view_image`. Поэтому verification не создаёт
+SDK thread/turn и не использует agent execution loop. CLI запускается только для
+JSONL initialize/initialized/getAuthStatus, с bounded stdout и drained private stderr.
+Metadata запрашивается с `includeToken: false, refreshToken: false`; token/refresh
+допустимы только для confirmed CLI probe. Параметры legacy RPC проверены настоящим
+bundled CLI с fake auth.json в owned temporary profile, а не перенесены из текущей
+документации нового app-server. Поддержка других CLI versions этим не утверждается.
+
+API-key mode использует supplied unsaved key, setup cache, managed settings или
+bootstrap key с application tombstone. Он никогда не запускает CLI. CLI mode
+исключает OPENAI_API_KEY/CODEX_API_KEY overrides, не принимает supplied API key и
+не подменяется API-key mode при ошибке. Endpoint API-key: OPENAI_BASE_URL или
+`https://api.openai.com/v1/responses`; ChatGPT: CODEX_VERIFY_CHATGPT_BASE_URL или
+`https://chatgpt.com/backend-api/codex/responses`. Endpoints без embedded credentials,
+query/hash и только HTTP(S); redirects запрещены. Managed credentials, `.env`,
+process.env и application connection markers этой операцией не меняются.
+
+HTTP/SSE request содержит `tools: []`, `tool_choice: none`, `store: false`,
+`stream: true`; tool calls никогда не dispatch-ятся. JWT account claim нужен только
+для ChatGPT account header и не считается proof. Неподдерживаемый/opaque credential
+отклоняется без успешной authentication. Успех требует terminal response.completed,
+completed status, непустой message output и отсутствия tool output/error. Partial,
+incomplete, billing/rate-limit/auth errors и поздний result после abort не становятся
+verified. Response size/event count ограничены, raw upstream/CLI errors не раскрываются.
+
+Application-scoped admission: 5 attempts/client/minute, bounded client map, максимум
+4 probes и один CLI probe для исключения параллельного refresh в одной app. Timeout
+берётся из сохранённого connectionTestTimeoutMs с пределом 120 s; auth RPC отдельно
+ограничен 10 s. Shutdown закрывает admission, abort-ит и drain-ит принятые операции;
+CLI child после SIGTERM при необходимости получает SIGKILL, runtime ждёт actual close.
+Real child fixtures проверяют malformed/flood/hung peers и ignore-SIGTERM. Это не
+глобальный filesystem shutdown deadline, cross-process refresh lock или гарантия
+process-tree reaping на всех OS. Public setup auth/CSRF policy не закрыта UUID/consent.
+
+OpenAI Docs использован для разделения app-server и Responses/SSE contracts:
+[app-server](https://developers.openai.com/codex/app-server),
+[streaming Responses](https://developers.openai.com/api/docs/guides/streaming-responses).
+Текущие docs не являются доказательством legacy getAuthStatus 0.98.0: его форма
+проверена локальным CLI contract. Live account, paid upstream, packaged Electron,
+Windows и remote verification parity не заявляются.
+
+Проверки среза:
+
+- 19 service, 16 HTTP/SSE runtime и 9 real-child auth runtime cases: credentials
+  isolation, stale target/profile/kind, bounded admission, timeout, abort/drain/reap.
+- 9 shared schema, 12 client и 3 consent cases: capability gate, отсутствие POST
+  старому backend/после смены CLI profile, отсутствие secret в dialog text.
+- 3 новых HTTP/runtime contracts: настоящий bundled CLI auth RPC; отрицательная
+  проверка SDK tools; native HTTP двух apps с 400/409 до probe, без bridge/persistence
+  и с реальным Nest shutdown при незавершённом query.
+- `npm run test:server:unit`: 3434 passed, 40 skipped (существующие skips).
+- `npm run test:server:contract`: 269 passed.
+- `npm run test:packages`: 1364 passed.
+- `npm run build --workspace=libs/contracts`, server production build, UI production
+  и Electron main/preload build, `npm run typecheck`, оба lint:errors и lockfile —
+  успешно. Прежнее предупреждение UI chunk size остаётся; packaged Electron не проверен.
+- `node scripts/smoke-server-lifecycle.mjs`: SIGTERM/SIGINT exit 0 после server build.
+- Chromium с `--trace=on`: 7 passed, включая новый Codex unsaved-key cancel/confirm
+  и шесть прежних workflows. Verification ports в E2E явно offline; production
+  schemas/controller/service остаются настоящими. Paid upstream/account не проверялись.
+- `npm run test:ssh --workspace=apps/server --` для real chat CLI/SDK/Direct сценариев:
+  3 passed, 34 filtered; сохранён pinned binding после restart/default change.
+- `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest npm run test:docker
+--workspace=apps/server`: 11 passed, 4 opt-in skipped; owned cleanup проверяется
+  afterAll, пропущенные live opt-in проверки не считаются пройденными.
+- Route/dependency/API-consumer inventories обновлены; все три inventory:\*:check
+  подтверждают актуальность. Форматирование и `git diff --check` выполнены.
+
+Этап 7 и этапы 8–11 остаются открытыми.
 
 ## 7.7. Agent routes
 

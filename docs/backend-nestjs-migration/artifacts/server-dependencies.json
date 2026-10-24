@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 599,
-    "internalEdges": 1983,
+    "files": 601,
+    "internalEdges": 1990,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
-    "core -> core": 52,
+    "core -> core": 55,
     "core -> legacy": 2,
     "core -> lib": 5,
     "core -> middleware": 1,
@@ -20,12 +20,12 @@
     "legacy -> services": 33,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 103,
+    "modules -> core": 109,
     "modules -> legacy": 29,
     "modules -> lib": 24,
-    "modules -> modules": 282,
+    "modules -> modules": 285,
     "modules -> providers": 24,
-    "modules -> routes": 35,
+    "modules -> routes": 34,
     "modules -> services": 112,
     "modules -> types": 2,
     "providers -> core": 1,
@@ -39,12 +39,12 @@
     "root -> modules": 28,
     "root -> root": 4,
     "root -> services": 21,
-    "routes -> lib": 104,
+    "routes -> lib": 103,
     "routes -> middleware": 8,
-    "routes -> modules": 12,
+    "routes -> modules": 10,
     "routes -> providers": 12,
     "routes -> routes": 347,
-    "routes -> services": 191,
+    "routes -> services": 190,
     "routes -> types": 3,
     "services -> core": 8,
     "services -> lib": 77,
@@ -97,7 +97,6 @@
       "apps/server/src/routes/settings/openai-compatible.ts",
       "apps/server/src/routes/setup/routes/delete-api-key.ts",
       "apps/server/src/routes/setup/routes/store-api-key.ts",
-      "apps/server/src/routes/setup/routes/verify-codex-auth.ts",
       "apps/server/src/routes/terminal/common.ts",
       "apps/server/src/routes/worktree/common.ts",
       "apps/server/src/routes/worktree/routes/continue-operation.ts",
@@ -144,7 +143,6 @@
       "apps/server/src/routes/fs/routes/resolve-directory.ts",
       "apps/server/src/routes/setup/common.ts",
       "apps/server/src/routes/setup/routes/delete-api-key.ts",
-      "apps/server/src/routes/setup/routes/verify-codex-auth.ts",
       "apps/server/src/services/claude-usage-service.ts",
       "apps/server/src/services/codex-app-server-service.ts",
       "apps/server/src/services/execution-environment/docker-worker.ts",
@@ -158,6 +156,7 @@
       "apps/server/src/services/execution-environment/docker-worker.ts"
     ],
     "childProcess": [
+      "apps/server/src/core/platform/codex-credential.runtime.ts",
       "apps/server/src/core/platform/setup-status.runtime.ts",
       "apps/server/src/lib/auth-utils.ts",
       "apps/server/src/lib/cli-detection.ts",
@@ -220,6 +219,7 @@
     "timers": [
       "apps/server/src/core/auth/auth.service.ts",
       "apps/server/src/core/lifecycle/supervisor-coordinator.service.ts",
+      "apps/server/src/core/platform/codex-credential.runtime.ts",
       "apps/server/src/legacy-application.ts",
       "apps/server/src/lib/auth-utils.ts",
       "apps/server/src/lib/error-handler.ts",
@@ -227,6 +227,7 @@
       "apps/server/src/modules/event-history/event-replay.service.ts",
       "apps/server/src/modules/orchestration/background-integrations.lifecycle.ts",
       "apps/server/src/modules/providers/claude-verification.service.ts",
+      "apps/server/src/modules/providers/codex-verification.service.ts",
       "apps/server/src/modules/terminal/terminal-access.service.ts",
       "apps/server/src/modules/terminal/websocket-transport.service.ts",
       "apps/server/src/providers/openai-compatible/agent-loop.ts",
@@ -237,7 +238,6 @@
       "apps/server/src/routes/backlog-plan/generate-plan.ts",
       "apps/server/src/routes/github/routes/list-comments.ts",
       "apps/server/src/routes/github/routes/validate-issue.ts",
-      "apps/server/src/routes/setup/routes/verify-codex-auth.ts",
       "apps/server/src/routes/terminal/common.ts",
       "apps/server/src/routes/worktree/routes/checkout-branch.ts",
       "apps/server/src/routes/worktree/routes/create.ts",
@@ -288,20 +288,20 @@
   },
   "externalImports": {
     "@anthropic-ai/claude-agent-sdk": 3,
-    "@automaker/contracts": 21,
+    "@automaker/contracts": 22,
     "@automaker/dependency-resolver": 1,
     "@automaker/git-utils": 12,
     "@automaker/model-resolver": 20,
-    "@automaker/platform": 78,
+    "@automaker/platform": 77,
     "@automaker/prompts": 3,
     "@automaker/types": 177,
-    "@automaker/utils": 173,
+    "@automaker/utils": 172,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 161,
+    "@nestjs/common": 164,
     "@nestjs/core": 7,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
@@ -313,27 +313,27 @@
     "crypto": 4,
     "dotenv": 1,
     "events": 1,
-    "express": 223,
+    "express": 222,
     "fs": 11,
     "fs/promises": 13,
     "net": 1,
     "node-pty": 2,
     "node:async_hooks": 1,
-    "node:child_process": 11,
+    "node:child_process": 12,
     "node:crypto": 30,
     "node:fs": 7,
     "node:fs/promises": 16,
     "node:http": 7,
     "node:net": 2,
-    "node:os": 8,
-    "node:path": 44,
+    "node:os": 9,
+    "node:path": 46,
     "node:perf_hooks": 2,
     "node:stream": 5,
-    "node:stream/web": 1,
+    "node:stream/web": 2,
     "node:string_decoder": 3,
     "node:timers/promises": 3,
-    "node:url": 1,
-    "node:util": 12,
+    "node:url": 3,
+    "node:util": 13,
     "os": 14,
     "path": 75,
     "readline": 1,
@@ -694,6 +694,18 @@
     {
       "source": "apps/server/src/core/observability/observability.module.ts",
       "target": "apps/server/src/core/observability/metrics.ts"
+    },
+    {
+      "source": "apps/server/src/core/platform/codex-credential.runtime.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/core/platform/codex-credential.runtime.ts",
+      "target": "apps/server/src/core/errors/index.ts"
+    },
+    {
+      "source": "apps/server/src/core/platform/codex-verification.runtime.ts",
+      "target": "apps/server/src/core/platform/codex-credential.runtime.ts"
     },
     {
       "source": "apps/server/src/core/platform/setup-status.runtime.ts",
@@ -2560,6 +2572,34 @@
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
+      "source": "apps/server/src/modules/providers/codex-verification.service.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/codex-verification.service.ts",
+      "target": "apps/server/src/core/errors/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/codex-verification.service.ts",
+      "target": "apps/server/src/core/platform/codex-credential.runtime.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/codex-verification.service.ts",
+      "target": "apps/server/src/core/platform/codex-verification.runtime.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/codex-verification.service.ts",
+      "target": "apps/server/src/modules/providers/provider-connection.repository.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/codex-verification.service.ts",
+      "target": "apps/server/src/modules/providers/setup-credential-cache.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/codex-verification.service.ts",
+      "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
       "source": "apps/server/src/modules/providers/cursor-model-config.service.ts",
       "target": "apps/server/src/core/errors/index.ts"
     },
@@ -2789,6 +2829,14 @@
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/core/platform/codex-credential.runtime.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/core/platform/codex-verification.runtime.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
       "target": "apps/server/src/core/platform/setup-status.runtime.ts"
     },
     {
@@ -2798,6 +2846,10 @@
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
       "target": "apps/server/src/modules/providers/claude-verification.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/modules/providers/codex-verification.service.ts"
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
@@ -2869,10 +2921,6 @@
     },
     {
       "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
       "target": "apps/server/src/modules/providers/setup-credential-cache.service.ts"
     },
     {
@@ -2882,14 +2930,6 @@
     {
       "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
       "target": "apps/server/src/routes/setup/routes/store-api-key.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/routes/setup/routes/verify-codex-auth.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/services/settings-service.ts"
     },
     {
       "source": "apps/server/src/modules/providers/setup.controller.ts",
@@ -2902,6 +2942,10 @@
     {
       "source": "apps/server/src/modules/providers/setup.controller.ts",
       "target": "apps/server/src/modules/providers/claude-verification.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "target": "apps/server/src/modules/providers/codex-verification.service.ts"
     },
     {
       "source": "apps/server/src/modules/providers/setup.controller.ts",
@@ -5854,22 +5898,6 @@
     {
       "source": "apps/server/src/routes/setup/routes/store-api-key.ts",
       "target": "apps/server/src/routes/setup/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/verify-codex-auth.ts",
-      "target": "apps/server/src/lib/auth-utils.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/verify-codex-auth.ts",
-      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/verify-codex-auth.ts",
-      "target": "apps/server/src/modules/providers/setup-credential-cache.service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/verify-codex-auth.ts",
-      "target": "apps/server/src/services/settings-service.ts"
     },
     {
       "source": "apps/server/src/routes/terminal/common.ts",

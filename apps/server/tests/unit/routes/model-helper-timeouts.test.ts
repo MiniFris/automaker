@@ -11,7 +11,7 @@ import { createGenerateCommitMessageHandler } from '@/routes/worktree/routes/gen
 import { createGeneratePRDescriptionHandler } from '@/routes/worktree/routes/generate-pr-description.js';
 import { ClaudeVerificationService } from '@/modules/providers/claude-verification.service.js';
 import { ProviderConnectionRepository } from '@/modules/providers/provider-connection.repository.js';
-import { createVerifyCodexAuthHandler } from '@/routes/setup/routes/verify-codex-auth.js';
+import { CodexVerificationService } from '@/modules/providers/codex-verification.service.js';
 import { SetupCredentialCache } from '@/modules/providers/setup-credential-cache.service.js';
 
 let directory: string, project: string, settings: SettingsService;
@@ -117,15 +117,22 @@ it.each(['Claude', 'Codex'] as const)(
           'fixture'
         )
       );
-    } else
-      await createVerifyCodexAuthHandler(
-        settings,
-        providers,
-        keys
-      )(
-        { body: { authMethod: 'api_key', apiKey: 'invalid' }, ip: 'fixture' } as Request,
-        { json } as unknown as Response
+    } else {
+      const service = new CodexVerificationService(
+        { run: vi.fn() } as never,
+        { read: vi.fn() } as never,
+        ProviderConnectionRepository.forWorkingDirectory(project),
+        {},
+        keys,
+        settings
       );
+      json(
+        await service.verify(
+          { confirmed: true, target: (await service.target('api_key')).target, apiKey: 'invalid' },
+          'fixture'
+        )
+      );
+    }
     expect(timer).toHaveBeenCalledWith(expect.any(Function), 4321);
     expect(json).toHaveBeenCalledWith(expect.objectContaining({ authenticated: false }));
   }

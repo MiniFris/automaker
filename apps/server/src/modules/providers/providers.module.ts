@@ -18,6 +18,17 @@ import { CursorPermissionsService } from './cursor-permissions.service.js';
 import { HostSetupJsonFiles } from './host-setup-json-files.js';
 import { CursorModelConfigService } from './cursor-model-config.service.js';
 import { ClaudeVerificationService } from './claude-verification.service.js';
+import { CodexVerificationService } from './codex-verification.service.js';
+import {
+  CodexVerificationRuntime,
+  NodeCodexVerificationRuntime,
+} from '../../core/platform/codex-verification.runtime.js';
+import {
+  CodexCredentialRuntime,
+  NodeCodexCredentialRuntime,
+  CODEX_CREDENTIAL_PROCESS,
+  spawnCodexCredentialProcess,
+} from '../../core/platform/codex-credential.runtime.js';
 import {
   ClaudeVerificationRuntime,
   NodeClaudeVerificationRuntime,
@@ -47,6 +58,10 @@ import {
     HostSetupJsonFiles,
     CursorModelConfigService,
     ClaudeVerificationService,
+    CodexVerificationService,
+    { provide: CodexCredentialRuntime, useClass: NodeCodexCredentialRuntime },
+    { provide: CODEX_CREDENTIAL_PROCESS, useValue: spawnCodexCredentialProcess },
+    { provide: CodexVerificationRuntime, useClass: NodeCodexVerificationRuntime },
     { provide: ClaudeVerificationRuntime, useClass: NodeClaudeVerificationRuntime },
     { provide: SetupStatusRuntime, useClass: NodeSetupStatusRuntime },
   ],

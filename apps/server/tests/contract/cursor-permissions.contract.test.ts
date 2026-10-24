@@ -41,7 +41,7 @@ it('serves native Cursor permissions with versioned file-target consent, app iso
         headers: { 'Content-Type': 'application/json' },
         body: body === undefined ? undefined : JSON.stringify(body),
       });
-      expect(response.headers.get(API_CONTRACT_VERSION_HEADER)).toBe('6');
+      expect(response.headers.get(API_CONTRACT_VERSION_HEADER)).toBe('7');
       return { status: response.status, body: await response.json() };
     };
     return { runtime, request, root, bridge };

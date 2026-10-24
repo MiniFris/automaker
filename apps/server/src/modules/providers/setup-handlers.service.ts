@@ -3,9 +3,6 @@ import type { Request, RequestHandler, Response } from 'express';
 
 import { createDeleteApiKeyHandler } from '../../routes/setup/routes/delete-api-key.js';
 import { createStoreApiKeyHandler } from '../../routes/setup/routes/store-api-key.js';
-import { createVerifyCodexAuthHandler } from '../../routes/setup/routes/verify-codex-auth.js';
-import { SettingsService } from '../../services/settings-service.js';
-import { ProviderRegistry } from './provider-registry.service.js';
 import { SetupCredentialCache } from './setup-credential-cache.service.js';
 
 export type SetupHandlerName = keyof ReturnType<SetupHandlersService['createHandlers']>;
@@ -18,12 +15,8 @@ export type SetupHandlerName = keyof ReturnType<SetupHandlersService['createHand
 export class SetupHandlersService {
   private readonly handlers: Record<string, RequestHandler>;
 
-  constructor(
-    @Inject(SettingsService) settings: SettingsService,
-    @Inject(ProviderRegistry) providers: ProviderRegistry,
-    @Inject(SetupCredentialCache) keys: SetupCredentialCache
-  ) {
-    this.handlers = this.createHandlers(settings, providers, keys);
+  constructor(@Inject(SetupCredentialCache) keys: SetupCredentialCache) {
+    this.handlers = this.createHandlers(keys);
   }
 
   run(name: SetupHandlerName, request: Request, response: Response): Promise<void> {
@@ -35,15 +28,10 @@ export class SetupHandlersService {
     );
   }
 
-  private createHandlers(
-    settings: SettingsService,
-    providers: ProviderRegistry,
-    keys: SetupCredentialCache
-  ) {
+  private createHandlers(keys: SetupCredentialCache) {
     return {
       storeApiKey: createStoreApiKeyHandler(keys),
       deleteApiKey: createDeleteApiKeyHandler(keys),
-      verifyCodexAuth: createVerifyCodexAuthHandler(settings, providers, keys),
     } satisfies Record<string, RequestHandler>;
   }
 }

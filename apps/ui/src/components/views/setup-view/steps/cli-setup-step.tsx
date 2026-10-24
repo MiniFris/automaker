@@ -105,12 +105,15 @@ interface CliSetupConfig {
   verifyAuthApi: (
     method: 'cli' | 'api_key',
     apiKey?: string
-  ) => Promise<{
-    success: boolean;
-    authenticated: boolean;
-    error?: string;
-    details?: string;
-  }>;
+  ) => Promise<
+    | undefined
+    | {
+        success: boolean;
+        authenticated: boolean;
+        error?: string;
+        details?: string;
+      }
+  >;
   apiKeyHelpText: string;
 }
 
@@ -185,6 +188,10 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
 
     try {
       const result = await config.verifyAuthApi('cli');
+      if (!result) {
+        setCliVerificationStatus('idle');
+        return;
+      }
 
       const hasLimitOrBillingError =
         result.error?.toLowerCase().includes('limit reached') ||
@@ -228,6 +235,10 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
 
     try {
       const result = await config.verifyAuthApi('api_key', apiKey);
+      if (!result) {
+        setApiKeyVerificationStatus('idle');
+        return;
+      }
 
       const hasLimitOrBillingError =
         result.error?.toLowerCase().includes('limit reached') ||

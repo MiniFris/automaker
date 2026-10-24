@@ -168,3 +168,30 @@ POST, автоматическая проверка при загрузке/refr
 marker changes и managed key persistence не являются side effects этой операции.
 Public setup access policy и перенос Codex verify/ключей остаются незавершёнными
 gates, а не считаются решёнными наличием UUID или confirmation boolean.
+
+## ADR-014: API v7 confirmed Codex verification без agent tools
+
+Native Codex verification использует отдельный protocol-1 preview и strict confirmed
+request. Target включает instance/root, auth method, credential kind/profile, model
+и endpoint. Новый client проверяет capability до POST и не заменяет approved target;
+API header повышен до `7`. Key persistence/activation остаётся отдельной задачей.
+
+Настоящий SDK/CLI 0.98.0 в offline contract всё ещё объявляет apply_patch/view_image
+при ограниченном exec config. Поэтому no-tools verification не строится на
+allowedTools/sandbox/approval flags: model query — прямой Responses HTTP/SSE с пустыми
+tools и tool_choice none, без agent thread/turn и локального tool loop. CLI нужен
+только для credential RPC. getAuthStatus 0.98.0 проверен на bundled CLI, а не выведен
+из документации современного account/read. Metadata не включает токен/refresh;
+их получение допускается после approval CLI verification. API-key mode не запускает CLI.
+
+Mode/kind не подменяются при ошибке. Только successful terminal response с message
+output доказывает probe success; partial/billing/rate-limit/error/tool output — нет.
+Private diagnostics не публикуются. Per-app admission, saved timeout, abort и drain
+владеют lifecycle; auth child завершается и reap-ится перед возвратом. Это не общий
+shutdown deadline и не доказательство всех OS/remote/live-account вариантов.
+
+OpenAI Docs помог разделить transports:
+[app-server](https://developers.openai.com/codex/app-server) и
+[Responses SSE](https://developers.openai.com/api/docs/guides/streaming-responses).
+Поддержка protocol конкретной pinned version дополнительно проверяется offline
+контрактами. Общий provider tool policy и setup auth/CSRF остаются открытыми gates.

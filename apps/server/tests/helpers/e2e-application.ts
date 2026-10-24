@@ -15,14 +15,12 @@ import { LEGACY_SERVICES } from '../../src/legacy/legacy.tokens.js';
 import { ProviderRegistry } from '../../src/modules/providers/provider-registry.service.js';
 import { ProviderConnectionRepository } from '../../src/modules/providers/provider-connection.repository.js';
 import { createProviderRegistrations } from '../../src/modules/providers/provider-registrations.js';
-import { SetupHandlersService } from '../../src/modules/providers/setup-handlers.service.js';
-import { SetupCredentialCache } from '../../src/modules/providers/setup-credential-cache.service.js';
 import { SetupStatusRuntime } from '../../src/core/platform/setup-status.runtime.js';
 import { ClaudeVerificationRuntime } from '../../src/core/platform/claude-verification.runtime.js';
-import type { SetupHandlerName } from '../../src/modules/providers/setup-handlers.service.js';
+import { CodexCredentialRuntime } from '../../src/core/platform/codex-credential.runtime.js';
+import { CodexVerificationRuntime } from '../../src/core/platform/codex-verification.runtime.js';
 import { SettingsService } from '../../src/services/settings-service.js';
 import { MockProvider } from './mock-provider.js';
-import type { Request, Response } from 'express';
 
 /** Test-only composition: production bootstrap has no environment-controlled mocks. */
 export async function createE2eApplication(
@@ -80,26 +78,10 @@ export async function createE2eApplication(
             connections
           ),
       })
-      .overrideProvider(SetupHandlersService)
-      .useFactory({
-        inject: [SettingsService, ProviderRegistry, SetupCredentialCache],
-        factory: (
-          settings: SettingsService,
-          providers: ProviderRegistry,
-          keys: SetupCredentialCache
-        ) => {
-          const real = new SetupHandlersService(settings, providers, keys);
-          return {
-            run(name: SetupHandlerName, request: Request, response: Response) {
-              if (name === 'verifyCodexAuth') {
-                response.json({ success: true, authenticated: true });
-                return Promise.resolve();
-              }
-              return real.run(name, request, response);
-            },
-          };
-        },
-      })
+      .overrideProvider(CodexCredentialRuntime)
+      .useValue({ read: async () => ({ kind: 'api-key' }) })
+      .overrideProvider(CodexVerificationRuntime)
+      .useValue({ run: async () => 'verified' })
       .overrideProvider(ClaudeVerificationRuntime)
       .useValue({ run: async () => 'verified' })
       .overrideProvider(SetupStatusRuntime)

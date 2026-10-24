@@ -431,5 +431,6 @@
   "Inspect target before changing permissions.": "Проверьте целевой файл перед изменением разрешений.",
   "No project target selected.": "Целевой проект не выбран.",
   "Verify Claude connection": "Проверить соединение с Claude",
+  "Run a Codex verification query? This may incur charges. No tools are enabled. CLI credentials may be refreshed.\nMethod: {method}\nModel: {model}\nEndpoint: {endpoint}\nBackend: {directory}\nInstance: {instance}\nCLI profile: {profile}": "Выполнить проверочный запрос Codex? Возможна плата за запрос. Инструменты отключены. CLI может обновить учётные данные.\nРежим: {method}\nМодель: {model}\nEndpoint: {endpoint}\nБэкенд: {directory}\nЭкземпляр: {instance}\nПрофиль CLI: {profile}",
   "Run a Claude verification query? This may incur charges. No tools are enabled.\nMethod: {method}\nModel: {model}\nEndpoint: {endpoint}\nBackend: {directory}\nInstance: {instance}": "Выполнить проверочный запрос Claude? Возможна плата за запрос. Инструменты отключены.\nРежим: {method}\nМодель: {model}\nEndpoint: {endpoint}\nБэкенд: {directory}\nЭкземпляр: {instance}"
 }

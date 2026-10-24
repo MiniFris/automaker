@@ -1,5 +1,6 @@
 import { translate } from '@/lib/i18n';
 import { verifyClaudeWithConsent } from '@/lib/claude-verification-consent';
+import { verifyCodexWithConsent } from '@/lib/codex-verification-consent';
 // API key management state with validation and persistence
 import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -188,8 +189,8 @@ export function useApiKeyManagement() {
     setOpenaiTestResult(null);
 
     try {
-      const api = getHttpApiClient();
-      const data = await api.setup.verifyCodexAuth('api_key', openaiKey);
+      const data = await verifyCodexWithConsent('api_key', openaiKey);
+      if (!data) return;
 
       if (data.success && data.authenticated) {
         setOpenaiTestResult({

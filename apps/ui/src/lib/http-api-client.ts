@@ -8,6 +8,12 @@
 import { createLogger } from '@automaker/utils/logger';
 import { ProviderInstallGuidanceSchema, type ProviderInstallGuidance } from '@automaker/contracts';
 import {
+  CodexVerificationTargetResponseSchema,
+  CodexVerificationRequestSchema,
+  CodexVerificationResponseSchema,
+  type CodexVerificationRequest,
+} from '@automaker/contracts';
+import {
   ClaudeVerificationTargetResponseSchema,
   ClaudeVerificationRequestSchema,
   ClaudeVerificationResponseSchema,
@@ -2019,14 +2025,26 @@ export class HttpApiClient implements ElectronAPI {
       error?: string;
     }> => this.disconnectSetupProvider('codex', request),
 
-    verifyCodexAuth: (
-      authMethod: 'cli' | 'api_key',
-      apiKey?: string
-    ): Promise<{
-      success: boolean;
-      authenticated: boolean;
-      error?: string;
-    }> => this.post('/api/setup/verify-codex-auth', { authMethod, apiKey }),
+    getCodexVerificationTarget: async (authMethod: 'cli' | 'api_key') => {
+      const response = CodexVerificationTargetResponseSchema.parse(
+        await this.get(`/api/setup/codex-verification-target?authMethod=${authMethod}`)
+      );
+      if (response.target.authMethod !== authMethod)
+        throw new Error('Codex verification method does not match selection.');
+      return response;
+    },
+    verifyCodexAuth: async (input: CodexVerificationRequest) => {
+      const request = CodexVerificationRequestSchema.parse(input);
+      const preview = await this.setup.getCodexVerificationTarget(request.target.authMethod);
+      if (JSON.stringify(preview.target) !== JSON.stringify(request.target))
+        throw new Error('Codex verification target changed. Inspect and confirm it again.');
+      const response = CodexVerificationResponseSchema.parse(
+        await this.post('/api/setup/verify-codex-auth', request)
+      );
+      if (JSON.stringify(response.target) !== JSON.stringify(request.target))
+        throw new Error('Codex verification response target does not match confirmation.');
+      return response;
+    },
 
     // OpenCode CLI methods
     getOpencodeStatus: (): Promise<{

@@ -85,7 +85,15 @@ describe('explicit Nest E2E composition', () => {
                 ).target,
                 apiKey: 'sk-ant-fixture-not-a-real-key',
               }
-            : { authMethod: 'api_key', apiKey: 'fixture-not-a-real-key' };
+            : {
+                confirmed: true,
+                target: (
+                  await (
+                    await fetch(`${base}/setup/codex-verification-target?authMethod=api_key`)
+                  ).json()
+                ).target,
+                apiKey: 'sk-fixture-not-a-real-key-123',
+              };
         const response = await fetch(`${base}/setup/verify-${provider}-auth`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-api-key': 'automaker-test-api-key' },
