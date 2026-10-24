@@ -11,7 +11,13 @@ import { spawn, execSync, type ChildProcess } from 'child_process';
 import * as secureFs from '../lib/secure-fs.js';
 import path from 'path';
 import net from 'net';
-import { createLogger } from '@automaker/utils';
+import { atomicWriteJson, createLogger, type AtomicWriteFilesystem } from '@automaker/utils';
+import {
+  drainLocalProcessWork,
+  localDirectoryExists,
+  missingLocalPath,
+  type LocalProcessPreflight,
+} from './local-process-preflight.js';
 import type { EventEmitter } from '../lib/events.js';
 import fs from 'fs/promises';
 import { constants } from 'fs';
@@ -140,7 +146,21 @@ const MAX_PORT = 3099; // Safety limit
 // Common livereload ports that may need cleanup when stopping dev servers
 const LIVERELOAD_PORTS = [35729, 35730, 35731] as const;
 
+export interface DevServerRuntime extends LocalProcessPreflight {
+  stateFilesystem: AtomicWriteFilesystem;
+  dataDirectory: string;
+}
+
 export class DevServerService {
+  private readonly acceptedStarts = new Set<Promise<unknown>>();
+  private closing = false;
+  private cleanupPromise?: Promise<void>;
+  private stateFailure = false;
+  private stateClosed = false;
+  constructor(private readonly runtime?: DevServerRuntime) {
+    if (runtime) this.dataDir = runtime.dataDirectory;
+  }
+
   private runningServers: Map<string, DevServerInfo> = new Map();
   private startingServers: Set<string> = new Set();
   private allocatedPorts: Set<number> = new Set();
@@ -152,7 +172,7 @@ export class DevServerService {
    * Initialize the service with data directory for persistence
    */
   async initialize(dataDir: string, emitter: EventEmitter): Promise<void> {
-    this.dataDir = dataDir;
+    this.dataDir = this.runtime?.dataDirectory ?? dataDir;
     this.emitter = emitter;
     await this.loadState();
   }
@@ -169,36 +189,42 @@ export class DevServerService {
    * Save the current state of running servers to disk
    */
   private async saveState(): Promise<void> {
+    if (this.runtime && this.stateClosed) throw new Error('Local dev server state is closed.');
     if (!this.dataDir) return;
 
-    // Queue the save operation to prevent concurrent writes
-    this.saveQueue = this.saveQueue
-      .then(async () => {
-        if (!this.dataDir) return;
-        try {
-          const statePath = path.join(this.dataDir, 'dev-servers.json');
-          const persistedInfo: PersistedDevServerInfo[] = Array.from(
-            this.runningServers.values()
-          ).map((s) => ({
-            worktreePath: s.worktreePath,
-            allocatedPort: s.allocatedPort,
-            port: s.port,
-            url: s.url,
-            startedAt: s.startedAt.toISOString(),
-            urlDetected: s.urlDetected,
-            customCommand: s.customCommand,
-          }));
-
-          await fs.writeFile(statePath, JSON.stringify(persistedInfo, null, 2));
-          logger.debug(`Saved dev server state to ${statePath}`);
-        } catch (error) {
-          logger.error('Failed to save dev server state:', error);
+    const save = async () => {
+      if (!this.dataDir) return;
+      const statePath = path.join(this.dataDir, 'dev-servers.json');
+      const persistedInfo: PersistedDevServerInfo[] = Array.from(this.runningServers.values()).map(
+        (server) => ({
+          worktreePath: server.worktreePath,
+          allocatedPort: server.allocatedPort,
+          port: server.port,
+          url: server.url,
+          startedAt: server.startedAt.toISOString(),
+          urlDetected: server.urlDetected,
+          customCommand: server.customCommand,
+        })
+      );
+      try {
+        if (this.runtime)
+          await atomicWriteJson(statePath, persistedInfo, {
+            filesystem: this.runtime.stateFilesystem,
+            mode: 0o600,
+            recoverableTemporaryFiles: false,
+          });
+        else await fs.writeFile(statePath, JSON.stringify(persistedInfo, null, 2));
+        if (this.runtime && !this.closing) this.stateFailure = false;
+        logger.debug(`Saved dev server state to ${statePath}`);
+      } catch (error) {
+        if (this.runtime) {
+          this.stateFailure = true;
+          throw new Error('Local dev server state could not be persisted.');
         }
-      })
-      .catch((error) => {
-        logger.error('Error in save queue:', error);
-      });
-
+        logger.error('Failed to save dev server state:', error);
+      }
+    };
+    this.saveQueue = this.saveQueue.catch(() => {}).then(save);
     return this.saveQueue;
   }
 
@@ -211,14 +237,16 @@ export class DevServerService {
     try {
       const statePath = path.join(this.dataDir, 'dev-servers.json');
       try {
-        await fs.access(statePath, constants.F_OK);
-      } catch {
-        // File doesn't exist, which is fine
+        await (this.runtime?.stateFilesystem ?? fs).access(statePath, constants.F_OK);
+      } catch (error) {
+        if (this.runtime && (error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
         return;
       }
 
-      const content = await fs.readFile(statePath, 'utf-8');
-      const rawParsed: unknown = JSON.parse(content);
+      const content = await (this.runtime?.stateFilesystem ?? fs).readFile(statePath, 'utf-8');
+      const rawParsed: unknown = JSON.parse(
+        typeof content === 'string' ? content : content.toString('utf8')
+      );
 
       if (!Array.isArray(rawParsed)) {
         logger.warn('Dev server state file is not an array, skipping load');
@@ -286,6 +314,7 @@ export class DevServerService {
         await this.saveState();
       }
     } catch (error) {
+      if (this.runtime) throw error;
       logger.error('Failed to load dev server state:', error);
     }
   }
@@ -667,9 +696,10 @@ export class DevServerService {
    */
   private async fileExists(filePath: string): Promise<boolean> {
     try {
-      await secureFs.access(filePath);
+      await (this.runtime?.filesystem ?? secureFs).access(filePath);
       return true;
-    } catch {
+    } catch (error) {
+      if (this.runtime && !missingLocalPath(error)) throw error;
       return false;
     }
   }
@@ -752,7 +782,25 @@ export class DevServerService {
    * @param worktreePath - The worktree directory path
    * @param customCommand - Optional custom command to run instead of auto-detected dev command
    */
-  async startDevServer(
+  startDevServer(
+    projectPath: string,
+    worktreePath: string,
+    customCommand?: string
+  ): ReturnType<DevServerService['startDevServerInternal']> {
+    if (this.runtime && this.closing)
+      return Promise.resolve({ success: false, error: 'Dev server is shutting down' });
+    const accepted = this.startDevServerInternal(projectPath, worktreePath, customCommand);
+    if (this.runtime) {
+      this.acceptedStarts.add(accepted);
+      void accepted.then(
+        () => this.acceptedStarts.delete(accepted),
+        () => this.acceptedStarts.delete(accepted)
+      );
+    }
+    return accepted;
+  }
+
+  private async startDevServerInternal(
     projectPath: string,
     worktreePath: string,
     customCommand?: string
@@ -789,8 +837,13 @@ export class DevServerService {
     this.startingServers.add(worktreePath);
 
     try {
-      // Verify the worktree exists
-      if (!(await this.fileExists(worktreePath))) {
+      const canonicalCwd = this.runtime ? this.runtime.resolvePath(worktreePath) : worktreePath;
+      // Native preflight pins a directory; DENIED/EIO never become an absence.
+      if (
+        !(this.runtime
+          ? await localDirectoryExists(this.runtime, canonicalCwd)
+          : await this.fileExists(worktreePath))
+      ) {
         return {
           success: false,
           error: `Worktree path does not exist: ${worktreePath}`,
@@ -815,7 +868,7 @@ export class DevServerService {
         logger.debug(`Using custom command: ${normalizedCustomCommand}`);
       } else {
         // Check for package.json when auto-detecting
-        const packageJsonPath = path.join(worktreePath, 'package.json');
+        const packageJsonPath = path.join(canonicalCwd, 'package.json');
         if (!(await this.fileExists(packageJsonPath))) {
           return {
             success: false,
@@ -824,7 +877,7 @@ export class DevServerService {
         }
 
         // Get dev command from package manager detection
-        const detectedCommand = await this.getDevCommand(worktreePath);
+        const detectedCommand = await this.getDevCommand(canonicalCwd);
         if (!detectedCommand) {
           return {
             success: false,
@@ -834,6 +887,8 @@ export class DevServerService {
         devCommand = detectedCommand;
       }
 
+      if (this.runtime && this.closing)
+        return { success: false, error: 'Dev server is shutting down' };
       // Find available port
       let port: number;
       try {
@@ -857,6 +912,10 @@ export class DevServerService {
       // Small delay to ensure related ports are freed
       await new Promise((resolve) => setTimeout(resolve, 100));
 
+      if (this.runtime && this.closing) {
+        this.allocatedPorts.delete(port);
+        return { success: false, error: 'Dev server is shutting down' };
+      }
       logger.info(`Starting dev server on port ${port}`);
       logger.debug(`Working directory (cwd): ${worktreePath}`);
       logger.debug(`Command: ${devCommand.cmd} ${devCommand.args.join(' ')} with PORT=${port}`);
@@ -881,7 +940,7 @@ export class DevServerService {
       };
 
       const devProcess = spawn(devCommand.cmd, devCommand.args, {
-        cwd: worktreePath,
+        cwd: canonicalCwd,
         env,
         stdio: ['ignore', 'pipe', 'pipe'],
         detached: false,
@@ -991,9 +1050,10 @@ export class DevServerService {
       this.runningServers.set(worktreePath, serverInfo);
 
       // Persist state change
-      await this.saveState().catch((err) =>
-        logger.error('Failed to save state in startDevServer:', err)
-      );
+      await this.saveState().catch((err) => {
+        if (this.runtime) throw err;
+        logger.error('Failed to save state in startDevServer:', err);
+      });
 
       // Emit started event for WebSocket subscribers
       if (this.emitter) {
@@ -1134,9 +1194,10 @@ export class DevServerService {
     this.runningServers.delete(worktreePath);
 
     // Persist state change
-    await this.saveState().catch((err) =>
-      logger.error('Failed to save state in stopDevServer:', err)
-    );
+    await this.saveState().catch((err) => {
+      if (this.runtime) throw err;
+      logger.error('Failed to save state in stopDevServer:', err);
+    });
 
     return {
       success: true,
@@ -1284,11 +1345,55 @@ export class DevServerService {
   /**
    * Stop all running dev servers (for cleanup)
    */
-  async stopAll(): Promise<void> {
-    logger.info(`Stopping all ${this.runningServers.size} dev servers`);
+  stopAll(): Promise<void> {
+    if (!this.runtime) return this.stopAllInternal();
+    this.closing = true;
+    return (this.cleanupPromise ??= this.stopAllNative());
+  }
 
-    for (const [worktreePath] of this.runningServers) {
-      await this.stopDevServer(worktreePath);
+  private async stopAllNative(): Promise<void> {
+    let failed = false;
+    try {
+      await drainLocalProcessWork([...this.acceptedStarts]);
+    } catch {
+      failed = true;
     }
+    for (const worktreePath of this.runningServers.keys()) {
+      try {
+        await this.stopDevServer(worktreePath);
+      } catch {
+        failed = true;
+      }
+    }
+    const saveDeadline = Date.now() + 5000;
+    let observed: Promise<void>;
+    do {
+      observed = this.saveQueue;
+      try {
+        await drainLocalProcessWork(
+          [
+            observed.then(() => {
+              if (this.stateFailure) throw new Error();
+            }),
+          ],
+          saveDeadline - Date.now()
+        );
+      } catch {
+        failed = true;
+        break;
+      }
+      if (Date.now() >= saveDeadline) {
+        failed = true;
+        break;
+      }
+    } while (observed !== this.saveQueue);
+    this.stateClosed = true;
+    if (failed || this.stateFailure)
+      throw new Error('Local dev server cleanup could not be confirmed.');
+  }
+
+  private async stopAllInternal(): Promise<void> {
+    logger.info(`Stopping all ${this.runningServers.size} dev servers`);
+    for (const worktreePath of this.runningServers.keys()) await this.stopDevServer(worktreePath);
   }
 }

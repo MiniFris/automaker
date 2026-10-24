@@ -88,6 +88,25 @@ const eslintConfig = defineConfig([
   {
     files: ['src/services/**/*.ts', 'src/providers/**/*.ts'],
     rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'FunctionDeclaration[id.name=/^get.*Service$/]',
+          message:
+            'Pass the application-owned service explicitly instead of a service locator getter.',
+        },
+        {
+          selector:
+            'VariableDeclarator[id.name=/^get.*Service$/] > :matches(ArrowFunctionExpression, FunctionExpression)',
+          message:
+            'Pass the application-owned service explicitly instead of a service locator getter.',
+        },
+        {
+          selector:
+            ':matches(Program > VariableDeclaration, ExportNamedDeclaration > VariableDeclaration) > VariableDeclarator > NewExpression[callee.name=/Service$/]',
+          message: 'Compose service instances inside application factories, not at module scope.',
+        },
+      ],
       'no-restricted-imports': [
         'error',
         {

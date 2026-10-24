@@ -1,8 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import type { SettingsService } from '../services/settings-service.js';
-import type { EventEmitter } from '../lib/events.js';
 import { ProjectGitService } from '../services/execution-environment/project-git.js';
-import { getManagedTestRunnerService } from '../services/execution-environment/test-runner.js';
+import type { ManagedTestRunnerService } from '../services/execution-environment/test-runner.js';
 import { ExecutionEnvironmentError } from '../services/execution-environment/runtime.js';
 import type { TestRunnerService } from '../services/test-runner-service.js';
 import { createGetTestLogsHandler } from './worktree/routes/test-logs.js';
@@ -12,11 +11,10 @@ import { createGetTestLogsHandler } from './worktree/routes/test-logs.js';
  */
 export function environmentTestDispatcher(
   settings: SettingsService,
-  events: EventEmitter,
+  tests: ManagedTestRunnerService,
   local: TestRunnerService
 ) {
   const git = new ProjectGitService(settings);
-  const tests = getManagedTestRunnerService(settings, events);
   return async (req: Request, res: Response, next: NextFunction) => {
     const action = req.path.slice(1);
     if (!['start-tests', 'stop-tests', 'test-logs'].includes(action)) return next();

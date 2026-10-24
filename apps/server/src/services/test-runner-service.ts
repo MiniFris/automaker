@@ -14,6 +14,11 @@
 import { spawn, execSync, type ChildProcess } from 'child_process';
 import * as secureFs from '../lib/secure-fs.js';
 import { createLogger } from '@automaker/utils';
+import {
+  drainLocalProcessWork,
+  localDirectoryExists,
+  type LocalProcessPreflight,
+} from './local-process-preflight.js';
 import type { EventEmitter } from '../lib/events.js';
 
 const logger = createLogger('TestRunnerService');
@@ -85,6 +90,11 @@ export interface TestRunResult {
  * Manages test execution processes across worktrees
  */
 class TestRunnerService {
+  private readonly acceptedStarts = new Set<Promise<unknown>>();
+  private closing = false;
+  private cleanupPromise?: Promise<void>;
+  constructor(private readonly runtime?: LocalProcessPreflight) {}
+
   private sessions: Map<string, TestRunSession> = new Map();
   private emitter: EventEmitter | null = null;
 
@@ -226,7 +236,24 @@ class TestRunnerService {
    * @param options - Configuration for the test run
    * @returns TestRunResult with session info or error
    */
-  async startTests(
+  startTests(
+    worktreePath: string,
+    options: { command: string; testFile?: string }
+  ): Promise<TestRunResult> {
+    if (this.runtime && this.closing)
+      return Promise.resolve({ success: false, error: 'Test runner is shutting down' });
+    const accepted = this.startTestsInternal(worktreePath, options);
+    if (this.runtime) {
+      this.acceptedStarts.add(accepted);
+      void accepted.then(
+        () => this.acceptedStarts.delete(accepted),
+        () => this.acceptedStarts.delete(accepted)
+      );
+    }
+    return accepted;
+  }
+
+  private async startTestsInternal(
     worktreePath: string,
     options: {
       command: string;
@@ -244,14 +271,20 @@ class TestRunnerService {
       };
     }
 
-    // Verify the worktree exists
-    if (!(await this.fileExists(worktreePath))) {
+    const canonicalCwd = this.runtime ? this.runtime.resolvePath(worktreePath) : worktreePath;
+    if (
+      !(this.runtime
+        ? await localDirectoryExists(this.runtime, canonicalCwd)
+        : await this.fileExists(worktreePath))
+    ) {
       return {
         success: false,
         error: `Worktree path does not exist: ${worktreePath}`,
       };
     }
 
+    if (this.runtime && this.closing)
+      return { success: false, error: 'Test runner is shutting down' };
     if (!command) {
       return {
         success: false,
@@ -302,7 +335,7 @@ class TestRunnerService {
     };
 
     const testProcess = spawn(finalCommand, [], {
-      cwd: worktreePath,
+      cwd: canonicalCwd,
       env,
       shell: true,
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -645,7 +678,22 @@ class TestRunnerService {
   /**
    * Cleanup service resources
    */
-  async cleanup(): Promise<void> {
+  cleanup(): Promise<void> {
+    if (!this.runtime) return this.cleanupInternal();
+    this.closing = true;
+    return (this.cleanupPromise ??= (async () => {
+      let failed = false;
+      try {
+        await drainLocalProcessWork([...this.acceptedStarts]);
+      } catch {
+        failed = true;
+      }
+      await this.cleanupInternal();
+      if (failed) throw new Error('Local test runner cleanup could not be confirmed.');
+    })());
+  }
+
+  private async cleanupInternal(): Promise<void> {
     await this.cancelAll();
     this.sessions.clear();
   }

@@ -12,7 +12,9 @@
 - [ ] Удалить Express route factories и неиспользуемые common helpers.
 - [x] Удалить старый `src/index.ts` из production build.
 - [x] Удалить wrapper providers, которые только выдавали legacy instances.
-- [ ] Удалить singleton getters и side-effect registration.
+- [x] Удалить singleton getters и side-effect registration. Native providers
+      регистрируются явно; последние managed dev/test getters и WeakMaps удалены.
+      См. [source-port checkpoint](artifacts/source-ports-and-locators-checkpoint.md).
 - [ ] Удалить временные feature flags/route ownership registry.
 - [ ] Проверить отсутствие imports из удалённых paths.
 
@@ -21,7 +23,8 @@ Express остаётся transitive platform через `@nestjs/platform-expres
 
 Актуальное продолжение: [native cutover checkpoint](artifacts/native-cutover-checkpoint.md).
 Боевые `LegacyModule`, factory и token удалены; startup/shutdown используют native
-DI owners. Удалены terminal и auto-mode route groups; остальные factories/getters
+DI owners. Удалены terminal/auto-mode и ещё 84 unreachable route files; последние
+managed service getters удалены. Оставшиеся 94 characterization route files
 ещё не объявлены удалёнными. Нижеследующие промежуточные срезы сохраняют историю
 проверок и не означают, что удалённый lifecycle bridge всё ещё используется.
 

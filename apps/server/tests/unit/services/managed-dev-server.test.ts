@@ -16,7 +16,7 @@ import { SettingsService } from '@/services/settings-service.js';
 import { ManagedSSH } from '@/services/execution-environment/ssh.js';
 import { ProjectGitService, workspaceAlias } from '@/services/execution-environment/project-git.js';
 import { FeatureWorkspaceService } from '@/services/execution-environment/feature-workspace.js';
-import { getManagedDevServerService } from '@/services/execution-environment/dev-server.js';
+import { ManagedDevServerService } from '@/services/execution-environment/dev-server.js';
 import {
   previewApiGuard,
   isPreviewApiRequest,
@@ -31,8 +31,7 @@ const exec = promisify(execFile),
 describe.skipIf(process.platform !== 'linux')('managed dev/preview on real SSH', () => {
   let auth: Awaited<ReturnType<typeof createTestAuth>>;
   let root: string, project: string, checkout: string, settings: SettingsService;
-  let peer: Awaited<ReturnType<typeof sshPeer>>,
-    service: ReturnType<typeof getManagedDevServerService>;
+  let peer: Awaited<ReturnType<typeof sshPeer>>, service: ManagedDevServerService;
   let server: ReturnType<typeof createServer>, api: string;
   const active = () => new AbortController().signal;
   const post = async (action: string, body: object) => {
@@ -126,7 +125,7 @@ const wss=new WebSocketServer({server});wss.on('connection',ws=>ws.on('message',
       { method: 'existing', remotePath: checkout },
       active()
     );
-    service = getManagedDevServerService(settings, createEventEmitter());
+    service = new ManagedDevServerService(settings, createEventEmitter());
     vi.stubEnv('AUTOMAKER_API_KEY', 'preview-fixture-secret');
     const app = express();
     app.use(express.json());
@@ -137,7 +136,7 @@ const wss=new WebSocketServer({server});wss.on('connection',ws=>ws.on('message',
     app.use(
       '/api/worktree',
       createWorktreeRoutes(
-        createTestWorktreeRouteServices(),
+        createTestWorktreeRouteServices({ managedDev: service }),
         createTestProviderRegistry(settings),
         createEventEmitter(),
         settings

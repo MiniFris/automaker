@@ -10,7 +10,8 @@ application/infra границ этапа 11. Результаты возобн�
 Следующий checkpoint: [feature storage, metrics и production artifact](artifacts/feature-storage-metrics-artifact-checkpoint.md).
 Предыдущий checkpoint: [state transactions, execution filesystem и core contracts](artifacts/state-execution-contract-checkpoint.md).
 Предыдущий checkpoint: [agent storage, recovery и session contracts](artifacts/agent-storage-recovery-session-checkpoint.md).
-Последний checkpoint: [native stores, terminal cleanup и retired routes](artifacts/native-stores-terminal-cleanup-checkpoint.md).
+Предыдущий checkpoint: [native stores, terminal cleanup и retired routes](artifacts/native-stores-terminal-cleanup-checkpoint.md).
+Последний checkpoint: [source ports и service locator retirement](artifacts/source-ports-and-locators-checkpoint.md).
 Полная миграция ещё не завершена; checklist и результаты проверок ведутся
 в документах соответствующих этапов.
 
@@ -233,23 +234,25 @@ recovery предусмотрен `npm run test:ui:bootstrap`; его fixture н
 
 ## Общий Definition of Done
 
-- [ ] Все коммиты миграции находятся в одной ветке `refactor/backend-nestjs-migration`;
+- [x] Все коммиты миграции находятся в одной ветке `refactor/backend-nestjs-migration`;
       отдельные PR не требуются.
 - [ ] После каждого этапа 0–11 выполнен успешный тестовый checkpoint; команды
       и результаты записаны в документ соответствующего этапа.
-- [ ] Все HTTP routes обслуживаются Nest controllers.
-- [ ] Оба WebSocket endpoint управляются Nest lifecycle.
-- [ ] `apps/server/src/index.ts` удалён или оставлен только как временный redirect,
+- [x] Все HTTP routes обслуживаются Nest controllers.
+- [x] Оба WebSocket endpoint управляются Nest lifecycle.
+- [x] `apps/server/src/index.ts` удалён или оставлен только как временный redirect,
       не входящий в production build.
-- [ ] Нет imports из `routes` в `services` и `providers`.
-- [ ] Нет `get*Service()` singleton factories и side-effect provider registration.
+- [x] Нет imports из `routes` в `services` и `providers`.
+- [x] Нет `get*Service()` singleton factories и side-effect provider registration.
 - [ ] Runtime configuration читается через типизированный config layer.
 - [ ] Startup/shutdown корректно завершают agents, PTY, Docker/SSH workers,
       tests, dev servers, timers и sockets.
-- [ ] HTTP/WS contract suites проходят без расхождений.
+- [x] HTTP/WS contract suites проходят без расхождений.
 - [ ] Web, Electron и Docker artifacts проходят smoke tests.
 - [ ] Сохранена обратная совместимость `.automaker/` и settings.
-- [ ] Документация deployment и разработки обновлена.
+- [ ] Завершить сверку документации deployment и разработки. Native architecture,
+      API/observability, storage downgrade и commands/checkpoints уже обновлены;
+      полный deployment/rollout checklist этапа 10 ещё не закрыт.
 
 ## Внешние опорные материалы
 

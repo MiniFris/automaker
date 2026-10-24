@@ -86,7 +86,7 @@ function parseAgentContent(content: string, filePath: string): AgentDefinition |
 /**
  * Directory entry with type information
  */
-interface DirEntry {
+export interface AgentDiscoveryEntry {
   name: string;
   isFile: boolean;
   isDirectory: boolean;
@@ -95,21 +95,27 @@ interface DirEntry {
 /**
  * Filesystem adapter interface for abstracting systemPaths vs secureFs
  */
-interface FsAdapter {
+export interface AgentDiscoveryFilesystem {
   exists: (filePath: string) => Promise<boolean>;
-  readdir: (dirPath: string) => Promise<DirEntry[]>;
+  readdir: (dirPath: string) => Promise<AgentDiscoveryEntry[]>;
   readFile: (filePath: string) => Promise<string>;
+}
+
+export interface AgentDiscoveryRuntime {
+  userDirectory?: string;
+  userFilesystem: AgentDiscoveryFilesystem;
+  projectFilesystem: AgentDiscoveryFilesystem;
 }
 
 /**
  * Create a filesystem adapter for system paths (user directory)
  */
-function createSystemPathAdapter(): FsAdapter {
+function createSystemPathAdapter(): AgentDiscoveryFilesystem {
   return {
     exists: (filePath) => Promise.resolve(systemPaths.systemPathExists(filePath)),
     readdir: async (dirPath) => {
       const entryNames = await systemPaths.systemPathReaddir(dirPath);
-      const entries: DirEntry[] = [];
+      const entries: AgentDiscoveryEntry[] = [];
       for (const name of entryNames) {
         const stat = await systemPaths.systemPathStat(path.join(dirPath, name));
         entries.push({
@@ -127,22 +133,27 @@ function createSystemPathAdapter(): FsAdapter {
 /**
  * Create a filesystem adapter for project paths (secureFs)
  */
-function createSecureFsAdapter(): FsAdapter {
+export function createAgentDiscoveryAdapter(
+  filesystem: Pick<typeof secureFs, 'access' | 'readdir' | 'readFile'>
+): AgentDiscoveryFilesystem {
   return {
     exists: (filePath) =>
-      secureFs
+      filesystem
         .access(filePath)
         .then(() => true)
-        .catch(() => false),
+        .catch((error: NodeJS.ErrnoException) => {
+          if (error.code === 'ENOENT') return false;
+          throw error;
+        }),
     readdir: async (dirPath) => {
-      const entries = await secureFs.readdir(dirPath, { withFileTypes: true });
+      const entries = await filesystem.readdir(dirPath, { withFileTypes: true });
       return entries.map((entry) => ({
         name: entry.name,
         isFile: entry.isFile(),
         isDirectory: entry.isDirectory(),
       }));
     },
-    readFile: (filePath) => secureFs.readFile(filePath, 'utf-8') as Promise<string>,
+    readFile: (filePath) => filesystem.readFile(filePath, 'utf-8') as Promise<string>,
   };
 }
 
@@ -151,12 +162,14 @@ function createSecureFsAdapter(): FsAdapter {
  */
 async function parseAgentFileWithAdapter(
   filePath: string,
-  fsAdapter: FsAdapter
+  fsAdapter: AgentDiscoveryFilesystem,
+  strict: boolean
 ): Promise<AgentDefinition | null> {
   try {
     const content = await fsAdapter.readFile(filePath);
     return parseAgentContent(content, filePath);
   } catch (error) {
+    if (strict && (error as NodeJS.ErrnoException)?.code !== 'ENOENT') throw error;
     logger.error(`Failed to parse agent file: ${filePath}`, error);
     return null;
   }
@@ -170,10 +183,11 @@ async function parseAgentFileWithAdapter(
  */
 async function scanAgentsDirectory(
   baseDir: string,
-  source: 'user' | 'project'
+  source: 'user' | 'project',
+  fsAdapter: AgentDiscoveryFilesystem,
+  strict: boolean
 ): Promise<FilesystemAgent[]> {
   const agents: FilesystemAgent[] = [];
-  const fsAdapter = source === 'user' ? createSystemPathAdapter() : createSecureFsAdapter();
 
   try {
     // Check if directory exists
@@ -191,7 +205,7 @@ async function scanAgentsDirectory(
       if (entry.isFile && entry.name.endsWith('.md')) {
         const agentName = entry.name.slice(0, -3); // Remove .md extension
         const agentFilePath = path.join(baseDir, entry.name);
-        const definition = await parseAgentFileWithAdapter(agentFilePath, fsAdapter);
+        const definition = await parseAgentFileWithAdapter(agentFilePath, fsAdapter, strict);
         if (definition) {
           agents.push({
             name: agentName,
@@ -208,7 +222,7 @@ async function scanAgentsDirectory(
         const agentFileExists = await fsAdapter.exists(agentFilePath);
 
         if (agentFileExists) {
-          const definition = await parseAgentFileWithAdapter(agentFilePath, fsAdapter);
+          const definition = await parseAgentFileWithAdapter(agentFilePath, fsAdapter, strict);
           if (definition) {
             agents.push({
               name: entry.name,
@@ -222,6 +236,7 @@ async function scanAgentsDirectory(
       }
     }
   } catch (error) {
+    if (strict && (error as NodeJS.ErrnoException)?.code !== 'ENOENT') throw error;
     logger.error(`Failed to scan agents directory: ${baseDir}`, error);
   }
 
@@ -233,14 +248,22 @@ async function scanAgentsDirectory(
  */
 export async function discoverFilesystemAgents(
   projectPath?: string,
-  sources: Array<'user' | 'project'> = ['user', 'project']
+  sources: Array<'user' | 'project'> = ['user', 'project'],
+  runtime?: AgentDiscoveryRuntime
 ): Promise<FilesystemAgent[]> {
   const agents: FilesystemAgent[] = [];
 
   // Discover user-level agents from ~/.claude/agents/
-  if (sources.includes('user')) {
-    const userAgentsDir = path.join(os.homedir(), '.claude', 'agents');
-    const userAgents = await scanAgentsDirectory(userAgentsDir, 'user');
+  const userAgentsDir = runtime
+    ? runtime.userDirectory
+    : path.join(os.homedir(), '.claude', 'agents');
+  if (sources.includes('user') && userAgentsDir) {
+    const userAgents = await scanAgentsDirectory(
+      userAgentsDir,
+      'user',
+      runtime?.userFilesystem ?? createSystemPathAdapter(),
+      !!runtime
+    );
     agents.push(...userAgents);
     logger.info(`Discovered ${userAgents.length} user-level agents from ${userAgentsDir}`);
   }
@@ -248,7 +271,12 @@ export async function discoverFilesystemAgents(
   // Discover project-level agents from .claude/agents/
   if (sources.includes('project') && projectPath) {
     const projectAgentsDir = path.join(projectPath, '.claude', 'agents');
-    const projectAgents = await scanAgentsDirectory(projectAgentsDir, 'project');
+    const projectAgents = await scanAgentsDirectory(
+      projectAgentsDir,
+      'project',
+      runtime?.projectFilesystem ?? createAgentDiscoveryAdapter(secureFs),
+      !!runtime
+    );
     agents.push(...projectAgents);
     logger.info(`Discovered ${projectAgents.length} project-level agents from ${projectAgentsDir}`);
   }

@@ -32,7 +32,8 @@ describe('FeatureCommandService', () => {
       {} as never,
       events as never,
       new FeatureTransitionService(),
-      new ProjectFeatureSerializer()
+      new ProjectFeatureSerializer(),
+      { rm: vi.fn() }
     );
 
     await expect(
@@ -53,7 +54,8 @@ describe('FeatureCommandService', () => {
       {} as never,
       { emit: vi.fn() } as never,
       new FeatureTransitionService(),
-      new ProjectFeatureSerializer()
+      new ProjectFeatureSerializer(),
+      { rm: vi.fn() }
     );
 
     await expect(

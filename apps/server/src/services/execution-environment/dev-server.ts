@@ -319,12 +319,3 @@ export class ManagedDevServerService {
     );
   }
 }
-const services = new WeakMap<SettingsService, ManagedDevServerService>();
-export function getManagedDevServerService(settings: SettingsService, events: EventEmitter) {
-  let service = services.get(settings);
-  if (!service) {
-    service = new ManagedDevServerService(settings, events);
-    services.set(settings, service);
-  }
-  return service;
-}

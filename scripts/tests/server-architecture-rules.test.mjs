@@ -78,6 +78,28 @@ test('controllers delegate filesystem, shell execution and route implementations
   }
 });
 for (const folder of ['services', 'providers']) {
+  test(`${folder} rejects service locators and module-level service instances`, async () => {
+    for (const source of [
+      'export function getManagedTestRunnerService() { return cached; }',
+      'export const getManagedTestRunnerService = () => cached;',
+      'const service = new TestRunnerService(); export { service };',
+      'export const service = new TestRunnerService();',
+    ]) {
+      const [result] = await eslint.lintText(source, {
+        filePath: `src/${folder}/singleton-fixture.ts`,
+      });
+      assert.ok(
+        result.messages.some(
+          ({ ruleId, severity }) => ruleId === 'no-restricted-syntax' && severity === 2
+        )
+      );
+    }
+    const [allowed] = await eslint.lintText(
+      'class TestRunnerService {} export function createOwner() { const service = new TestRunnerService(); return service; }',
+      { filePath: `src/${folder}/owner-fixture.ts` }
+    );
+    assert.equal(allowed.errorCount, 0);
+  });
   test(`${folder} cannot import route implementations, re-exports or controller types`, async () => {
     for (const source of [
       "import type { Snapshot } from '../routes/legacy.js'; export type Owned = Snapshot;",

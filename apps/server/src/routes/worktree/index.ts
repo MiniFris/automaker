@@ -89,8 +89,20 @@ export function createWorktreeRoutes(
 ): Router {
   const router = Router();
   if (settingsService) {
-    router.use(environmentDevDispatcher(settingsService, events, services.dev));
-    router.use(environmentTestDispatcher(settingsService, events, services.tests));
+    router.use(
+      environmentDevDispatcher(
+        settingsService,
+        services.createManagedDev(settingsService, events),
+        services.dev
+      )
+    );
+    router.use(
+      environmentTestDispatcher(
+        settingsService,
+        services.createManagedTests(settingsService, events),
+        services.tests
+      )
+    );
     router.use(environmentGitDispatcher(settingsService, 'worktree', isProjectBusy));
   }
 

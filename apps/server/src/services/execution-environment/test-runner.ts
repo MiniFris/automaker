@@ -262,13 +262,3 @@ export class ManagedTestRunnerService {
     );
   }
 }
-
-const services = new WeakMap<SettingsService, ManagedTestRunnerService>();
-export function getManagedTestRunnerService(settings: SettingsService, events: EventEmitter) {
-  let service = services.get(settings);
-  if (!service) {
-    service = new ManagedTestRunnerService(settings, events);
-    services.set(settings, service);
-  }
-  return service;
-}

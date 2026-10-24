@@ -1,8 +1,9 @@
 # Stage 10 cutover/production audit
 
-Reconciled against current source and recorded checkpoints during wave 8. This documentation update starts no build, test, benchmark,
-container or GUI. Recorded artifact runs below belong to their named checkpoints;
-they are not new measurements of the frozen wave 8 source. Stage 10 as a whole is
+Reconciled through the subsequent native-store and source-port checkpoints. This
+document starts no build, test, benchmark, container or GUI. Recorded artifact runs
+below belong to their named checkpoints; they are not measurements of newer source.
+Stage 10 as a whole is
 not declared complete.
 
 ## Gates with existing evidence
@@ -26,32 +27,26 @@ skips), 437 contracts, 1535 package/UI cases and 18 Chromium cases, with product
 builds and inventory/lock/format checks. Those counts identify that historical
 checkpoint; wave 8 results are recorded separately by the owning checkpoint.
 
-## Concrete remaining runtime and source work
+## Subsequent implementation and remaining runtime/source work
 
-- Terminal explicit stop still acknowledges acceptance rather than confirming
-  cleanup or reporting uncertainty end-to-end. In
-  `apps/server/src/modules/terminal/terminal.controller.ts:deleteSession`, boolean
-  `killSession` yields 200. `services/terminal-service.ts:killSession` starts
-  `lifecycle.close()` without awaiting it, logs failure and retains identity.
-  `getAllSessions` has no closing/unknown field. In
-  `apps/ui/src/components/views/terminal-view.tsx`, kill removes the layout even
-  after HTTP/network failure. Existing session GET 503 and WS 4005 correctly prevent
-  recreation, but do not close this original stage-9 requirement.
-- Native TerminalService still needs an application-owned path/filesystem/home
-  boundary. `modules/terminal/terminal-runtime.module.ts` injects SettingsService
-  and maxSessions; `services/terminal-service.ts:resolveWorkingDirectory` uses
-  `os.homedir()` and the module-global `../lib/secure-fs.js.stat`. Native PTY process
-  ownership does not establish scoped filesystem ownership.
-- Other actual global/default IO consumers remain outside the scoped native
-  owners already migrated. Their concrete call chains must be migrated separately;
-  passing source exclusion or idle tests does not replace that work.
-- Legacy route factories remain in `apps/server/src/routes` for source/test
-  characterization. The remaining `getManagedDevServerService` and
-  `getManagedTestRunnerService` exports in `services/execution-environment` are
-  WeakMaps keyed by SettingsService, called from old route adapters. They are not
-  native module owners. `getTerminalService` is no longer present; the earlier
-  claim of a remaining settings caller was historical and is superseded.
-- Deleting source-only compatibility factories/getters, accounting for temporary
+- Terminal DELETE now waits for owned cleanup and retains unknown identity with
+  503; UI failed-stop/unknown-restore panels are retained. Working-directory
+  preflight and fallback use native FS/policy/snapshot home. The earlier two gaps
+  are closed in [terminal audit](terminal-confirmed-stop-audit.md). Broader terminal
+  platform/theme/environment IO remains distinct.
+- Auth/cache, notification/history, validation, agent discovery, worktree metadata
+  and local dev/test filesystem chains have explicit native boundaries; see
+  [native stores](native-stores-terminal-cleanup-checkpoint.md) and
+  [source ports](source-ports-and-locators-checkpoint.md). This does not establish
+  that every remaining platform/config helper is scoped.
+- Native local DevServerService still kills port occupants in selection/stop paths;
+  dev/test PID-tree cleanup and early completion need owned-process proof. Current
+  local filesystem fixtures stop before allocation and do not kill host listeners.
+- Removed 84 unreachable route files; 94 characterization files remain excluded
+  from production. The last managed dev/test getter exports and their WeakMaps
+  were removed; test fixtures now pass explicit owners. Getter/module-instance
+  negative guards supplement existing architecture checks (13 fixture cases).
+- Deleting source-only compatibility factories, accounting for temporary
   flags, and completing public-module/cycle/framework-free dependency rules remain
   source/architecture gates. There is no new evidence of a live legacy bridge.
 

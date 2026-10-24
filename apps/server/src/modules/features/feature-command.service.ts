@@ -20,6 +20,8 @@ import type {
 } from './feature.schemas.js';
 import { FeatureTransitionService } from './feature-transition.service.js';
 import { ProjectFeatureSerializer } from './project-feature-serializer.js';
+import { SECURE_FILESYSTEM } from '../../core/security/index.js';
+import type * as Filesystem from '../../lib/secure-fs.js';
 
 export interface ResolveResult {
   featureId: string;
@@ -37,7 +39,8 @@ export class FeatureCommandService {
     @Inject(FeatureLoader) featureLoader: FeatureLoader,
     @Inject(EVENT_BUS) private readonly events: EventBus,
     @Inject(FeatureTransitionService) private readonly transitions: FeatureTransitionService,
-    @Inject(ProjectFeatureSerializer) private readonly serializer: ProjectFeatureSerializer
+    @Inject(ProjectFeatureSerializer) private readonly serializer: ProjectFeatureSerializer,
+    @Inject(SECURE_FILESYSTEM) private readonly filesystem: Pick<typeof Filesystem, 'rm'>
   ) {
     this.imports = new FeatureExportService(featureLoader);
   }
@@ -209,7 +212,7 @@ export class FeatureCommandService {
     try {
       if (input.action === 'delete') {
         if (missingBranch)
-          await deleteWorktreeMetadata(input.projectPath, missingBranch).catch(() => {});
+          await deleteWorktreeMetadata(input.projectPath, missingBranch, this.filesystem);
         const success = await this.features.delete(input.projectPath, input.featureId);
         return { featureId: input.featureId, success, action: success ? 'deleted' : undefined };
       }
@@ -240,12 +243,12 @@ export class FeatureCommandService {
       if (targetBranch) {
         await execGitCommand(['rev-parse', '--verify', targetBranch], input.projectPath);
       }
+      if (missingBranch)
+        await deleteWorktreeMetadata(input.projectPath, missingBranch, this.filesystem);
       await this.features.update(input.projectPath, input.featureId, {
         branchName: targetBranch,
         status: 'pending',
       });
-      if (missingBranch)
-        await deleteWorktreeMetadata(input.projectPath, missingBranch).catch(() => {});
       return { featureId: input.featureId, success: true, action: 'moved' };
     } catch (error) {
       return {

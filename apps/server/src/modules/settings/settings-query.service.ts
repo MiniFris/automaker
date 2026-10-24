@@ -1,7 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { parseDirectAgentSettings } from '../../providers/openai-compatible/execution.js';
 import { parseOpenAICompatibleEndpoint } from '../../providers/openai-compatible/config.js';
-import { discoverFilesystemAgents } from '../../lib/agent-discovery.js';
+import {
+  createAgentDiscoveryAdapter,
+  discoverFilesystemAgents,
+} from '../../lib/agent-discovery.js';
 import { SettingsService } from '../../services/settings-service.js';
 import {
   parseModelTimeoutSettings,
@@ -12,12 +15,17 @@ import {
 import type { DirectAgentSettings } from '@automaker/types';
 import type { DiscoverAgentsRequest, ProjectSettingsRead } from './settings.schemas.js';
 import { RUNTIME_CONFIG, type RuntimeConfig } from '../../core/config/index.js';
+import { SECURE_FILESYSTEM } from '../../core/security/index.js';
+import type * as Filesystem from '../../lib/secure-fs.js';
+import { AgentProfileSource } from './agent-profile.source.js';
 
 @Injectable()
 export class SettingsQueryService {
   constructor(
     @Inject(SettingsService) private readonly settings: SettingsService,
-    @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig
+    @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig,
+    @Inject(SECURE_FILESYSTEM) private readonly filesystem: typeof Filesystem,
+    @Inject(AgentProfileSource) private readonly profile: AgentProfileSource
   ) {}
 
   async status(): Promise<Record<string, unknown>> {
@@ -54,7 +62,12 @@ export class SettingsQueryService {
       success: true,
       agents: await discoverFilesystemAgents(
         input.projectPath,
-        input.sources ?? ['user', 'project']
+        input.sources ?? ['user', 'project'],
+        {
+          userDirectory: this.profile.directory,
+          userFilesystem: this.profile,
+          projectFilesystem: createAgentDiscoveryAdapter(this.filesystem),
+        }
       ),
     };
   }

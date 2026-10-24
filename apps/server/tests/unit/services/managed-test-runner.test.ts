@@ -12,7 +12,7 @@ import { SettingsService } from '@/services/settings-service.js';
 import { ManagedSSH } from '@/services/execution-environment/ssh.js';
 import { ProjectGitService, workspaceAlias } from '@/services/execution-environment/project-git.js';
 import { FeatureWorkspaceService } from '@/services/execution-environment/feature-workspace.js';
-import { getManagedTestRunnerService } from '@/services/execution-environment/test-runner.js';
+import { ManagedTestRunnerService } from '@/services/execution-environment/test-runner.js';
 import { createWorktreeRoutes } from '@/routes/worktree/index.js';
 import { createEventEmitter } from '@/lib/events.js';
 import { createTestAuth } from '../../helpers/auth-context.js';
@@ -23,7 +23,7 @@ describe.skipIf(process.platform !== 'linux')('manual test runner on real SSH', 
   let auth: Awaited<ReturnType<typeof createTestAuth>>;
   let root: string, project: string, checkout: string, settings: SettingsService;
   let peer: Awaited<ReturnType<typeof sshPeer>>;
-  let tests: ReturnType<typeof getManagedTestRunnerService>;
+  let tests: ManagedTestRunnerService;
   let server: ReturnType<ReturnType<typeof express>['listen']>, url: string;
   let events: ReturnType<typeof createEventEmitter>;
   let received: Array<{ type: string; payload: Record<string, unknown> }>;
@@ -122,7 +122,7 @@ describe.skipIf(process.platform !== 'linux')('manual test runner on real SSH', 
     events.subscribe((type, payload) =>
       received.push({ type, payload: payload as Record<string, unknown> })
     );
-    tests = getManagedTestRunnerService(settings, events);
+    tests = new ManagedTestRunnerService(settings, events);
     vi.stubEnv('AUTOMAKER_API_KEY', 'fixture-secret');
     const app = express();
     app.use(express.json());
@@ -131,7 +131,7 @@ describe.skipIf(process.platform !== 'linux')('manual test runner on real SSH', 
       '/worktree',
       auth.middleware,
       createWorktreeRoutes(
-        createTestWorktreeRouteServices(),
+        createTestWorktreeRouteServices({ managedTests: tests }),
         createTestProviderRegistry(settings),
         events,
         settings

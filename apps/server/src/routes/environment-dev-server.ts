@@ -1,8 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import type { SettingsService } from '../services/settings-service.js';
-import type { EventEmitter } from '../lib/events.js';
 import { ProjectGitService } from '../services/execution-environment/project-git.js';
-import { getManagedDevServerService } from '../services/execution-environment/dev-server.js';
+import type { ManagedDevServerService } from '../services/execution-environment/dev-server.js';
 import { ExecutionEnvironmentError } from '../services/execution-environment/runtime.js';
 import type { DevServerService } from '../services/dev-server-service.js';
 import { createStopDevHandler } from './worktree/routes/stop-dev.js';
@@ -10,11 +9,10 @@ import { createGetDevServerLogsHandler } from './worktree/routes/dev-server-logs
 
 export function environmentDevDispatcher(
   settings: SettingsService,
-  events: EventEmitter,
+  service: ManagedDevServerService,
   local: DevServerService
 ) {
-  const service = getManagedDevServerService(settings, events),
-    git = new ProjectGitService(settings);
+  const git = new ProjectGitService(settings);
   return async (req: Request, res: Response, next: NextFunction) => {
     const action = req.path.slice(1);
     if (!['start-dev', 'stop-dev', 'list-dev-servers', 'dev-server-logs'].includes(action))

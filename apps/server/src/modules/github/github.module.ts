@@ -12,8 +12,12 @@ import { GithubCliCommentsAdapter } from './github-cli-comments.adapter.js';
 import { GithubCliReviewMutationAdapter } from './github-cli-review-mutation.adapter.js';
 import { GithubReviewService } from './github-review.service.js';
 import { GithubRepositoryBoundary } from './github-repository-boundary.js';
+import { SECURE_FILESYSTEM, SecurityModule } from '../../core/security/security.module.js';
+import { SecurityService } from '../../core/security/security.service.js';
+import type { ValidationFilesystem } from '../../lib/validation-storage.js';
 
 @Module({
+  imports: [SecurityModule],
   controllers: [GithubController],
   providers: [
     GithubRepositoryBoundary,
@@ -28,7 +32,14 @@ import { GithubRepositoryBoundary } from './github-repository-boundary.js';
     { provide: GithubReviewMutationPort, useExisting: GithubCliReviewMutationAdapter },
     GithubReviewService,
     IssueValidationRegistry,
-    IssueValidationRepository,
+    {
+      provide: IssueValidationRepository,
+      inject: [SECURE_FILESYSTEM, SecurityService],
+      useFactory: (filesystem: ValidationFilesystem, security: SecurityService) =>
+        new IssueValidationRepository(filesystem, (project) =>
+          security.validateLocalPath(project, 'issue validation storage')
+        ),
+    },
     IssueValidationService,
   ],
 })

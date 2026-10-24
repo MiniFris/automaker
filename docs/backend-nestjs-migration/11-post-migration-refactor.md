@@ -123,9 +123,10 @@ API v13, wire contracts, persisted formats и execution bindings не меняю
       Notification/history, auth storage и Codex model cache затем получили
       scoped FS и drain до filesystem barrier; см.
       [native stores checkpoint](artifacts/native-stores-terminal-cleanup-checkpoint.md).
-      Остальные unscoped consumers (validation storage, dev/test preflight,
-      settings agent discovery, worktree metadata и terminal platform helpers)
-      и coordination ещё требуют переноса;
+      Validation storage, dev/test preflight/state, settings agent discovery и
+      worktree metadata затем переведены на явные native ports:
+      [source-port checkpoint](artifacts/source-ports-and-locators-checkpoint.md).
+      Остальные terminal/platform/config helpers и coordination ещё требуют переноса;
       общий checkbox пока не закрывается.
 - [ ] Filesystem repositories.
 - [ ] Git local/remote adapters.
