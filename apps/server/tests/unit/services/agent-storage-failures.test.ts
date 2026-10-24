@@ -93,7 +93,38 @@ describe('agent storage failure boundaries', () => {
     expect(events.some((event) => event.type === 'complete')).toBe(false);
     expect(events.at(-1)).toMatchObject({ type: 'error', errorType: 'persistence' });
     expect((await service.getHistory(sessionId)).isRunning).toBe(false);
-    expect(await repository.loadMessages(sessionId)).toHaveLength(1);
+    const recovered = await repository.loadMessages(sessionId);
+    expect(recovered).toHaveLength(2);
+    expect(recovered[0]).toMatchObject({ executionStatus: 'completed' });
+    expect(recovered[1]).toMatchObject({
+      role: 'assistant',
+      content: 'Mock agent output for testing.',
+    });
+    expect(execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('recovers a pending terminal intent before changing model, without restoring its old SDK identity later', async () => {
+    execute.mockImplementationOnce(async function* () {
+      yield {
+        type: 'assistant',
+        session_id: 'old-model-sdk',
+        message: { role: 'assistant', content: [{ type: 'text', text: 'Durable result' }] },
+      };
+      yield { type: 'result', subtype: 'success' };
+    });
+    const save = repository.saveMessages.bind(repository);
+    vi.spyOn(repository, 'saveMessages')
+      .mockImplementationOnce(save)
+      .mockRejectedValueOnce(new AgentSessionStorageError('write'));
+    await expect(service.sendMessage({ sessionId, message: 'Once only' })).rejects.toBeInstanceOf(
+      AgentSessionStorageError
+    );
+    await service.updateSessionDetails(sessionId, { model: 'claude-opus' });
+    await service.getHistory(sessionId);
+    expect((await repository.loadMetadata())[sessionId]).toMatchObject({ model: 'claude-opus' });
+    expect((await repository.loadMetadata())[sessionId].sdkSessionId).toBeUndefined();
+    expect(registry.get(sessionId)?.sdkSessionId).toBeUndefined();
+    expect(execute).toHaveBeenCalledTimes(1);
   });
 
   it('emits complete only after the final durable write resolves', async () => {

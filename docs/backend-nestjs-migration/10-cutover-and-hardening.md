@@ -122,7 +122,8 @@ Storage migrations должны быть backward-readable либо сопров
 отдельным downgrade warning. Nest cutover сам по себе не требует изменения storage.
 
 - [ ] Реализовать и проверить downgrade preflight для interrupted queue deliveries
-      и `agent-session-deletions` tombstones. Backend, игнорирующий эти markers,
+      и `agent-session-deletions` tombstones, а также pending `agent-executions`
+      terminal intents/running records. Backend, игнорирующий эти markers,
       нельзя запускать против несовместимого DATA_DIR: незавершённый cleanup или
       stale backups не должны воскресить удалённые сессии, а quarantined prompts
       не должны попасть в автоматическое выполнение. Проверить отказ небезопасного

@@ -42,7 +42,6 @@ export class AgentPromptQueue {
     this.executions.assertSessionOpen(id);
     return this.sessions.serializeQueue(id, async () => {
       this.executions.assertSessionOpen(id);
-      await this.deliveries.recover(id);
       const session = await this.loader.ensure(id);
       this.executions.assertSessionOpen(id);
       if (!session) return { success: false, error: 'Session not found' };
@@ -69,7 +68,6 @@ export class AgentPromptQueue {
 
   async get(id: string): Promise<{ success: boolean; queue?: QueuedPrompt[]; error?: string }> {
     return this.sessions.serializeQueue(id, async () => {
-      await this.deliveries.recover(id);
       const session = await this.loader.ensure(id);
       return session
         ? { success: true, queue: session.promptQueue }
@@ -91,7 +89,6 @@ export class AgentPromptQueue {
     this.executions.assertSessionOpen(id);
     return this.sessions.serializeQueue(id, async () => {
       this.executions.assertSessionOpen(id);
-      await this.deliveries.recover(id);
       const session = await this.loader.ensure(id);
       this.executions.assertSessionOpen(id);
       if (!session) return { success: false, error: 'Session not found' };
@@ -113,9 +110,8 @@ export class AgentPromptQueue {
         id,
         async (controller) => {
           next = await this.sessions.serializeQueue(id, async () => {
-            await this.deliveries.recover(id);
+            const session = await this.loader.ensure(id);
             if (this.deliveries.isOwned(id)) return undefined;
-            const session = this.sessions.get(id);
             if (!session || session.isRunning || !session.promptQueue.length) return undefined;
             controller.signal.throwIfAborted();
             const [first, ...remaining] = session.promptQueue;

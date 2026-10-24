@@ -22,6 +22,7 @@ import { AgentSessionLoader } from './agent/agent-session-loader.js';
 import { AgentConversationCoordinator } from './agent/agent-conversation-coordinator.js';
 import { AgentPromptQueue, type AgentQueuedInput } from './agent/agent-prompt-queue.js';
 import { AgentSessionDeletion } from './agent/agent-session-deletion.js';
+import { AgentExecutionStore, type AgentExecutionRecord } from './agent/agent-execution-store.js';
 import type {
   ActiveSession as Session,
   Message,
@@ -48,6 +49,7 @@ export class AgentService {
     private readonly conversations: AgentConversationCoordinator,
     private readonly queue: AgentPromptQueue,
     private readonly deletion: AgentSessionDeletion,
+    private readonly runs: AgentExecutionStore,
     events: AgentEventPublisher,
     settingsService: SettingsService | undefined,
     private readonly providers: AgentProviderSelector,
@@ -211,19 +213,13 @@ export class AgentService {
 
     session.messages.push(userMessage);
 
-    // Emit started event so UI can show thinking indicator
-    this.emitAgentEvent(sessionId, {
-      type: 'started',
-    });
-
-    // Emit user message event
-    this.emitAgentEvent(sessionId, {
-      type: 'message',
-      message: userMessage,
-    });
-
     let userMessageStored = false;
+    let run: AgentExecutionRecord | undefined;
     try {
+      run = await this.runs.begin(sessionId, userMessage);
+      userMessage.runId = run.runId;
+      this.emitAgentEvent(sessionId, { type: 'started' });
+      this.emitAgentEvent(sessionId, { type: 'message', message: userMessage });
       await this.repository.saveMessages(sessionId, session.messages);
       userMessageStored = true;
       await this.updateSessionTimestamp(sessionId);
@@ -350,7 +346,8 @@ export class AgentService {
 
           session.messages.push(errorMessage);
           if (deliveryId) userMessage.deliveryStatus = 'failed';
-          await this.saveSession(sessionId, session.messages);
+          userMessage.executionStatus = 'failed';
+          await this.runs.complete(run, session.messages, 'failed', session.sdkSessionId);
           controller.signal.throwIfAborted();
 
           this.emitAgentEvent(sessionId, {
@@ -376,7 +373,8 @@ export class AgentService {
       }
       controller.signal.throwIfAborted();
       if (deliveryId) userMessage.deliveryStatus = 'completed';
-      await this.saveSession(sessionId, session.messages);
+      userMessage.executionStatus = 'completed';
+      await this.runs.complete(run, session.messages, 'completed', session.sdkSessionId);
       controller.signal.throwIfAborted();
 
       session.isRunning = false;
@@ -398,8 +396,16 @@ export class AgentService {
       };
     } catch (error) {
       if (error instanceof AgentSessionStorageError) {
-        if (!userMessageStored)
+        if (!userMessageStored) {
           session.messages = session.messages.filter((message) => message.id !== userMessage.id);
+          if (run) {
+            try {
+              await this.runs.abandon(run);
+            } catch {
+              this.logger.warn('Unstarted execution journal remains pending recovery.');
+            }
+          }
+        }
         session.isRunning = false;
         session.abortController?.abort();
         session.abortController = null;
@@ -413,7 +419,8 @@ export class AgentService {
       }
       if (controller.signal.aborted || isAbortError(error)) {
         if (deliveryId) userMessage.deliveryStatus = 'cancelled';
-        await this.saveSession(sessionId, session.messages);
+        userMessage.executionStatus = 'cancelled';
+        if (run) await this.runs.complete(run, session.messages, 'cancelled', session.sdkSessionId);
         session.isRunning = false;
         session.abortController = null;
         return { success: false, aborted: true };
@@ -448,7 +455,8 @@ export class AgentService {
 
       session.messages.push(errorMessage);
       if (deliveryId) userMessage.deliveryStatus = 'failed';
-      await this.saveSession(sessionId, session.messages);
+      userMessage.executionStatus = 'failed';
+      if (run) await this.runs.complete(run, session.messages, 'failed', session.sdkSessionId);
       controller.signal.throwIfAborted();
 
       this.emitAgentEvent(sessionId, {
@@ -459,6 +467,8 @@ export class AgentService {
 
       if (error && typeof error === 'object') this.reportedErrors.add(error);
       throw error;
+    } finally {
+      if (run) this.runs.release(run);
     }
   }
 
@@ -601,6 +611,9 @@ export class AgentService {
     return this.executions.mutate(
       sessionId,
       async () => {
+        // Settle the old model's pending terminal intent before clearing its SDK ID.
+        // Otherwise later hydration could restore that ID onto the new model.
+        await this.ensureSession(sessionId);
         const current = (await this.loadMetadata())[sessionId];
         if (!current) return null;
         const result = await this.updateSession(sessionId, {

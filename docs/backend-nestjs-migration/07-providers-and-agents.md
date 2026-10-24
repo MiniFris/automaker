@@ -154,8 +154,8 @@ UI typecheck, все три inventory checks и production SIGTERM/SIGINT smoke.
 - [x] Отделить execution environment preparation.
 - [x] Отделить stream normalization/event publication.
 - [x] Отделить follow-up/cancel.
-- [ ] Отделить completion persistence/recovery.
-- [ ] Сохранить session identifiers и UI event order.
+- [x] Отделить completion persistence/recovery.
+- [x] Сохранить session identifiers и UI event order.
 
 На первом migration commit этого блока существующий `AgentService` допустимо зарегистрировать целиком как
 Nest provider. Его деление выполняется после переноса routes и contract coverage.
@@ -485,6 +485,93 @@ preflight/downgrade путь либо согласованный pre-migration s
 ещё не реализован; общий manual-run/completion recovery и полный provider adapter
 contract также остаются незавершёнными. Этап 7 не закрывается этим срезом.
 
+### Срез: durable execution и terminal intent
+
+`AgentExecutionStore` выделен в application-scoped Nest provider и передаётся
+явно в `AgentService`, loader и deletion coordinator. Обычные и queued запросы
+получают внутренний UUID `runId`. До первого history save и provider preparation
+атомарно записывается `DATA_DIR/agent-executions/<sessionId>.json`, phase `running`.
+В journal нет provider clients, query options или credentials; pending record
+содержит private user message, а terminal intent — snapshot history и SDK ID.
+Файл имеет mode `0600`; старые backups и uncommitted temps не используются для
+rollback текущего journal.
+
+После завершения iterator cleanup записывается phase `completing` с terminal
+status `completed`, `failed` либо `cancelled`. Только затем сохраняются history,
+metadata timestamp и terminal queue consumption, после чего journal переходит в
+`settled`. Публикация live completion происходит после этого commit. В settled
+record не остаются prompt/history/SDK snapshot; явный clear не возвращает старую
+history при последующей загрузке. Session/message IDs и HTTP endpoints сохранены,
+`runId`/`executionStatus` в messages — additive fields, порядок UI events прежний.
+
+Cold и cached hydration сначала восстанавливают execution intent, а затем queue
+delivery. `completing` заканчивает interrupted persistence без вызова модели,
+включая восстановление SDK ID и history из intent при повреждённом history main.
+`running` без живого owner означает неизвестный terminal outcome: user message
+сохраняется с `executionStatus: interrupted`, SDK resume ID очищается, добавляется
+идемпотентное предупреждение. Запрос не запускается повторно. Для queued run
+предупреждение и paused item создаёт существующий delivery recovery, без второго
+execution warning и без ложного terminal delivery proof.
+
+Handled initial history write failure, до которого provider не мог вызываться,
+закрывает unstarted journal как failed и сохраняет прежний rollback RAM/history.
+Если и эта запись не удалась, остаётся pending record для conservative recovery.
+Повреждённый journal блокирует запуск безопасным 503; неизвестный результат нельзя
+превратить в blank session или автоматический retry.
+
+Terminal intent включает подтверждение queue ledger до освобождения execution
+lease. Это закрывает воспроизведённую тестом гонку: clear history после execution,
+но до внешнего `queue.finish`, раньше мог вернуть уже завершённый queued prompt
+как paused после crash. Теперь queue consumption уже durable; ошибка этой записи
+оставляет execution в `completing` и завершается recovery, без model replay.
+Все queue entrypoints используют один порядок recovery через loader.
+
+Session tombstone имеет приоритет над execution journal; session delete удаляет
+его main/backups/owned temps вместе с остальными artifacts и fence-ит late writes.
+Поддерживается один controller writer на DATA_DIR; это не distributed transaction,
+не гарантия power-loss/fsync и не exactly-once выполнение внешних target effects.
+Recovery ленивый, при hydration, а не автоматическое продолжение jobs при startup.
+
+Проверки: 17 real-filesystem execution tests покрывают ownership, intent/history/
+metadata/settlement/queue-consumption failures, partial recovery, clear/delete,
+corrupt main и запрет backup rollback. Шесть native Nest SIGKILL contracts:
+до первой history write, во время stream, после terminal intent, после history,
+после settlement и перед terminal queue-ledger commit. Они проверяют отсутствие
+model calls после restart, правильный outcome/SDK ID и отсутствие resurrection
+после clear. SIGTERM/SIGINT contracts дополнительно проверяют settled/cancelled
+journal без private snapshots после provider cleanup. Two-app contract проверяет
+независимые store instances.
+
+Model mutation через `/sessions/:id` сначала завершает pending intent внутри
+mutation barrier, а затем меняет модель и сбрасывает SDK ID. Отдельный regression
+test воспроизводит и закрывает восстановление старого SDK ID на новой модели
+при последующей hydration.
+
+Checkpoint среза:
+
+- `npm run test:server:unit`: 3120 passed, 40 skipped.
+- `npm run test:server:contract`: 256 passed.
+- `npm run test:packages`: 1185 passed.
+- `npm run build --workspace=apps/server`, `npm run lint:server:errors`,
+  `npm run typecheck`, `npm run lint:errors`, `npm run lint:lockfile`: успешно.
+- `npm run inventory:server-deps:check`, `npm run inventory:server:check`,
+  `npm run inventory:api-consumers:check`, formatting и `git diff --check`: успешно.
+- `node scripts/smoke-server-lifecycle.mjs`: SIGTERM/SIGINT exit 0.
+- Выбранные SSH Direct/CLI/SDK chat/restart сценарии: 3 passed, 34 отфильтрованы.
+- Полный `test:docker` с локальным
+  `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest`: 11 passed,
+  4 opt-in skipped, cleanup owned resources успешен. Пробный `-t` только для chat
+  оказался невалиден: suite использует bindings/image из предшествующих сценариев.
+  Проверка повторена целиком; оставшийся временный каталог невалидного прогона
+  удалён отдельно, production/user resources не затронуты.
+- Chromium `start-new-chat-session.spec.ts`: 1 passed (send/stream/reload).
+
+Это закрывает decomposition completion persistence/recovery, но не весь этап 7:
+полный provider capability/dispose contract, tool policy, setup/usage границы,
+Running Agents read model и cutover/downgrade gates ещё требуют реализации и
+проверок. Старый backend нельзя запускать против pending execution journals без
+проверенного downgrade preflight либо согласованного pre-migration snapshot.
+
 ### Срез: persisted state и active registry
 
 `AgentStateModule` регистрирует отдельные `AgentSessionRepository` и
@@ -603,8 +690,10 @@ Unit/native HTTP tests покрывают concurrent preparation, delayed cleanu
 chunk, cancel→новый run, clear/delete, обе model mutation paths, timeout без замены
 старого run, interruption write failure и idempotent resource cleanup attempts.
 
-Остаются общий durable execution/completion recovery journal, полный provider
-dispose/terminal contract и удаление queue/backups/journal вместе с session.
+На момент lease-среза оставались общий durable execution/completion recovery
+journal, полный provider dispose/terminal contract и cleanup session artifacts.
+Execution journal и session-delete cleanup закрыты последующими срезами выше;
+полный provider dispose/terminal contract ещё не закрыт.
 Queue handoff уже защищён последующим delivery journal, описанным выше.
 Prompt/context, environment preparation, provider selection, stream normalization/
 publication и follow-up/cancel уже выделены последующими срезами, описанными выше.

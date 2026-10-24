@@ -11,6 +11,7 @@ import { AgentSessionDeletion } from '../../../src/services/agent/agent-session-
 import { AgentSessionLoader } from '../../../src/services/agent/agent-session-loader.js';
 import { AgentSessionStorageError } from '../../../src/services/agent/agent-session-storage.error.js';
 import * as utils from '@automaker/utils';
+import { AgentExecutionStore } from '../../../src/services/agent/agent-execution-store.js';
 
 describe('retry-safe agent session deletion', () => {
   const id = 'one-test';
@@ -22,9 +23,10 @@ describe('retry-safe agent session deletion', () => {
     const sessions = new AgentSessionRegistry();
     const executions = new AgentExecutionCoordinator();
     const deliveries = new AgentQueueDeliveryStore(directory, repository, sessions);
-    const deletion = new AgentSessionDeletion(repository, sessions, executions, deliveries);
-    const loader = new AgentSessionLoader(repository, sessions, directory, deliveries);
-    return { repository, sessions, executions, deliveries, deletion, loader };
+    const runs = new AgentExecutionStore(directory, repository, sessions, deliveries);
+    const deletion = new AgentSessionDeletion(repository, sessions, executions, deliveries, runs);
+    const loader = new AgentSessionLoader(repository, sessions, directory, deliveries, runs);
+    return { repository, sessions, executions, deliveries, deletion, loader, runs };
   }
   let app: ReturnType<typeof application>;
   const artifact = (name: string) => path.join(directory, 'agent-sessions', name);
@@ -46,12 +48,19 @@ describe('retry-safe agent session deletion', () => {
       ]);
       await app.repository.saveQueue(sessionId, [prompt]);
       await app.deliveries.claim(sessionId, prompt);
+      await app.runs.begin(sessionId, {
+        id: 'message',
+        role: 'user',
+        content: 'private conversation',
+        timestamp: 'now',
+      });
     }
   });
   afterEach(async () => {
     vi.restoreAllMocks();
     await app.repository.drain();
     await app.deliveries.onApplicationShutdown();
+    await app.runs.onApplicationShutdown();
     await rm(directory, { recursive: true, force: true });
   });
 
@@ -60,6 +69,7 @@ describe('retry-safe agent session deletion', () => {
       artifact(`${id}.json`),
       artifact(`${id}-queue.json`),
       path.join(directory, 'agent-queue-deliveries', `${id}.json`),
+      path.join(directory, 'agent-executions', `${id}.json`),
     ];
     for (const file of bases) {
       for (const suffix of [

@@ -70,6 +70,7 @@ it.each(['marked', 'artifacts', 'metadata'] as const)(
         'agent-sessions/crash-session.json',
         'agent-sessions/crash-session-queue.json',
         'agent-queue-deliveries/crash-session.json',
+        'agent-executions/crash-session.json',
       ])
         await expect(stat(path.join(directory, relative))).rejects.toMatchObject({
           code: 'ENOENT',

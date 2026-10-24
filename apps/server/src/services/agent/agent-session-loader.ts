@@ -5,6 +5,7 @@ import { AgentSessionRepository } from './agent-session.repository.js';
 import { AgentSessionRegistry } from './agent-session-registry.js';
 import type { ActiveSession } from './agent-session.types.js';
 import { AgentQueueDeliveryStore } from './agent-queue-delivery-store.js';
+import { AgentExecutionStore } from './agent-execution-store.js';
 
 /** Hydrates persisted conversations once per application, never starts or resumes a provider. */
 export class AgentSessionLoader {
@@ -13,7 +14,8 @@ export class AgentSessionLoader {
     private readonly repository: AgentSessionRepository,
     private readonly sessions: AgentSessionRegistry,
     readonly workingDirectory: string,
-    private readonly deliveries: AgentQueueDeliveryStore
+    private readonly deliveries: AgentQueueDeliveryStore,
+    private readonly runs: AgentExecutionStore
   ) {}
 
   async ensure(id: string, workingDirectory?: string): Promise<ActiveSession | null> {
@@ -21,6 +23,7 @@ export class AgentSessionLoader {
       this.sessions.delete(id);
       return null;
     }
+    await this.runs.recover(id);
     await this.deliveries.recover(id);
     return this.sessions.getOrLoad(id, () => this.hydrate(id, workingDirectory));
   }

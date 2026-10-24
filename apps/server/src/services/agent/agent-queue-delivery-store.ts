@@ -85,6 +85,18 @@ export class AgentQueueDeliveryStore {
     });
   }
 
+  /** Called only from a durable terminal execution intent, including cold recovery. */
+  consumeExecution(id: string, deliveryId: string, promptId: string | undefined): Promise<void> {
+    assertCanonicalAgentSessionId(id);
+    return this.serialize(id, async () => {
+      await this.repository.assertAvailable(id);
+      const delivery = await this.read(id);
+      if (!delivery || delivery.deliveryId !== deliveryId || delivery.prompt.id !== promptId)
+        throw new AgentSessionStorageError('read');
+      await this.write(this.settled(delivery, 'consumed'));
+    });
+  }
+
   release(delivery: AgentQueueDelivery): void {
     if (this.owners.get(delivery.sessionId) === delivery.deliveryId)
       this.owners.delete(delivery.sessionId);

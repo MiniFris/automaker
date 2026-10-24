@@ -41,7 +41,7 @@ const providers = {
 function mockStoredFiles(metadata: Record<string, unknown> = {}, messages: unknown[] = []) {
   vi.mocked(fs.readFile).mockImplementation(async (file) => {
     const name = String(file);
-    if (name.includes('agent-queue-deliveries'))
+    if (name.includes('agent-queue-deliveries') || name.includes('agent-executions'))
       throw Object.assign(new Error('Missing fixture delivery'), { code: 'ENOENT' });
     if (name.endsWith('sessions-metadata.json')) return JSON.stringify(metadata);
     if (name.endsWith('-queue.json')) return '[]';
@@ -161,7 +161,11 @@ describe('agent-service.ts', () => {
       expect(
         vi
           .mocked(fs.readFile)
-          .mock.calls.filter(([file]) => !String(file).includes('agent-queue-deliveries'))
+          .mock.calls.filter(
+            ([file]) =>
+              !String(file).includes('agent-queue-deliveries') &&
+              !String(file).includes('agent-executions')
+          )
       ).toHaveLength(2);
     });
   });

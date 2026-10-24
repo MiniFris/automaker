@@ -18,6 +18,7 @@ import { AgentConversationCoordinator } from '../../services/agent/agent-convers
 import { AgentPromptQueue } from '../../services/agent/agent-prompt-queue.js';
 import { AgentQueueDeliveryStore } from '../../services/agent/agent-queue-delivery-store.js';
 import { AgentSessionDeletion } from '../../services/agent/agent-session-deletion.js';
+import { AgentExecutionStore } from '../../services/agent/agent-execution-store.js';
 
 @Global()
 @Module({
@@ -26,19 +27,36 @@ import { AgentSessionDeletion } from '../../services/agent/agent-session-deletio
     AgentPromptBuilder,
     AgentStreamNormalizer,
     {
+      provide: AgentExecutionStore,
+      inject: [
+        RUNTIME_CONFIG,
+        AgentSessionRepository,
+        AgentSessionRegistry,
+        AgentQueueDeliveryStore,
+      ],
+      useFactory: (
+        config: RuntimeConfig,
+        repository: AgentSessionRepository,
+        sessions: AgentSessionRegistry,
+        deliveries: AgentQueueDeliveryStore
+      ) => new AgentExecutionStore(config.storage.dataDirectory, repository, sessions, deliveries),
+    },
+    {
       provide: AgentSessionDeletion,
       inject: [
         AgentSessionRepository,
         AgentSessionRegistry,
         AgentExecutionCoordinator,
         AgentQueueDeliveryStore,
+        AgentExecutionStore,
       ],
       useFactory: (
         repository: AgentSessionRepository,
         sessions: AgentSessionRegistry,
         executions: AgentExecutionCoordinator,
-        deliveries: AgentQueueDeliveryStore
-      ) => new AgentSessionDeletion(repository, sessions, executions, deliveries),
+        deliveries: AgentQueueDeliveryStore,
+        runs: AgentExecutionStore
+      ) => new AgentSessionDeletion(repository, sessions, executions, deliveries, runs),
     },
     {
       provide: AgentQueueDeliveryStore,
@@ -56,13 +74,15 @@ import { AgentSessionDeletion } from '../../services/agent/agent-session-deletio
         AgentSessionRegistry,
         RuntimePathsService,
         AgentQueueDeliveryStore,
+        AgentExecutionStore,
       ],
       useFactory: (
         repository: AgentSessionRepository,
         sessions: AgentSessionRegistry,
         paths: RuntimePathsService,
-        deliveries: AgentQueueDeliveryStore
-      ) => new AgentSessionLoader(repository, sessions, paths.workingDirectory, deliveries),
+        deliveries: AgentQueueDeliveryStore,
+        runs: AgentExecutionStore
+      ) => new AgentSessionLoader(repository, sessions, paths.workingDirectory, deliveries, runs),
     },
     {
       provide: AgentConversationCoordinator,
@@ -141,6 +161,7 @@ import { AgentSessionDeletion } from '../../services/agent/agent-session-deletio
     },
   ],
   exports: [
+    AgentExecutionStore,
     AgentSessionDeletion,
     AgentSessionRegistry,
     AgentSessionRepository,

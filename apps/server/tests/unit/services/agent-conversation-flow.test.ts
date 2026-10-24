@@ -10,6 +10,7 @@ import { AgentPromptQueue } from '../../../src/services/agent/agent-prompt-queue
 import { AgentExecutionCoordinator } from '../../../src/services/agent/agent-execution-coordinator.js';
 import { AgentEventPublisher } from '../../../src/services/agent/agent-event-publisher.js';
 import { AgentQueueDeliveryStore } from '../../../src/services/agent/agent-queue-delivery-store.js';
+import { AgentExecutionStore } from '../../../src/services/agent/agent-execution-store.js';
 import { AgentSessionStorageError } from '../../../src/services/agent/agent-session-storage.error.js';
 import {
   ConflictDomainError,
@@ -51,7 +52,13 @@ describe('conversation/queue application components', () => {
     sessions = new AgentSessionRegistry();
     executions = new AgentExecutionCoordinator(1000);
     const deliveries = new AgentQueueDeliveryStore(directory, repository, sessions);
-    loader = new AgentSessionLoader(repository, sessions, directory, deliveries);
+    loader = new AgentSessionLoader(
+      repository,
+      sessions,
+      directory,
+      deliveries,
+      new AgentExecutionStore(directory, repository, sessions, deliveries)
+    );
     const emitter = createEventEmitter();
     emitter.subscribe((type, payload) => {
       if (type === 'agent:stream') events.push(payload as Record<string, unknown>);
@@ -117,11 +124,17 @@ describe('conversation/queue application components', () => {
       promptQueue: [{ id: 'queued' }],
     });
     const restartedSessions = new AgentSessionRegistry();
+    const restartedDeliveries = new AgentQueueDeliveryStore(
+      directory,
+      repository,
+      restartedSessions
+    );
     const restarted = await new AgentSessionLoader(
       repository,
       restartedSessions,
       directory,
-      new AgentQueueDeliveryStore(directory, repository, restartedSessions)
+      restartedDeliveries,
+      new AgentExecutionStore(directory, repository, restartedSessions, restartedDeliveries)
     ).ensure(id);
     expect(restarted?.sdkSessionId).toBe('saved-sdk');
     expect(restarted?.promptQueue).toEqual(first?.promptQueue);

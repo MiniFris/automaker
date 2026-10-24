@@ -64,6 +64,12 @@ it.each(['SIGTERM', 'SIGINT'] as const)(
         true
       );
       expect(messages.some((message) => message.content.startsWith('Interrupted:'))).toBe(true);
+      const execution = JSON.parse(
+        await readFile(path.join(directory, 'agent-executions', `${sessionId}.json`), 'utf8')
+      );
+      expect(execution).toMatchObject({ phase: 'settled', status: 'cancelled' });
+      expect(execution).not.toHaveProperty('messages');
+      expect(execution).not.toHaveProperty('userMessage');
     } finally {
       clearTimeout(readyTimer);
       if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');

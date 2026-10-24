@@ -21,6 +21,8 @@ export interface Message {
   deliveryId?: string;
   queuedPromptId?: string;
   deliveryStatus?: 'completed' | 'failed' | 'cancelled';
+  runId?: string;
+  executionStatus?: 'completed' | 'failed' | 'cancelled' | 'interrupted';
 }
 
 export interface QueuedPrompt {
