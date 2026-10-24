@@ -57,7 +57,10 @@ describe('native provider setup status', () => {
         installed: true,
         version: '1.2.3',
         path: '/fixture/cli',
-        auth: { authenticated: true, method: 'oauth' },
+        auth:
+          name === 'copilot'
+            ? { authenticated: false, authenticationChecked: false, method: 'none' }
+            : { authenticated: true, method: 'oauth' },
       });
       expect(connections.isDisconnected).toHaveBeenCalledWith(name);
       expect(providers.byName).toHaveBeenCalledWith(name);
@@ -81,13 +84,14 @@ describe('native provider setup status', () => {
     });
   });
 
-  it('preserves Copilot identity but does not expose unrelated auth metadata', async () => {
+  it('does not promote adapter hints or an unverified identity into Copilot authentication', async () => {
     const { service } = fixture();
     expect((await service.status('copilot')).auth).toEqual({
-      authenticated: true,
-      method: 'oauth',
-      login: 'fixture-user',
-      host: 'github.com',
+      authenticated: false,
+      authenticationChecked: false,
+      method: 'none',
+      hasEnvToken: false,
+      hasConfigFile: false,
     });
   });
 

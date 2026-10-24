@@ -7,6 +7,7 @@ import type {
   ClaudeVerificationResponse,
   CodexVerificationRequest,
   CodexVerificationResponse,
+  CopilotSetupStatus,
 } from '@automaker/contracts';
 // Type definitions for Electron IPC API
 import type { SessionListItem, Message } from '@/types/electron';
@@ -1866,25 +1867,7 @@ interface SetupAPI {
     error?: string;
   }>;
   // Copilot SDK methods
-  getCopilotStatus?: () => Promise<{
-    success: boolean;
-    status?: string;
-    installed?: boolean;
-    method?: string;
-    version?: string;
-    path?: string;
-    recommendation?: string;
-    auth?: {
-      authenticated: boolean;
-      method: string;
-      login?: string;
-      host?: string;
-      error?: string;
-    };
-    loginCommand?: string;
-    installCommand?: string;
-    error?: string;
-  }>;
+  getCopilotStatus?: () => Promise<CopilotSetupStatus>;
   onInstallProgress?: (
     callback: (progress: InstallProgressEvent) => void
   ) => (() => void) | undefined;
@@ -2180,9 +2163,19 @@ function createMockSetupAPI(): SetupAPI {
       console.log('[Mock] Getting Copilot status');
       return {
         success: true,
-        status: 'not_installed',
         installed: false,
-        auth: { authenticated: false, method: 'none' },
+        connected: true,
+        version: null,
+        path: null,
+        auth: {
+          authenticated: false,
+          authenticationChecked: false,
+          method: 'none',
+          hasEnvToken: false,
+          hasConfigFile: false,
+        },
+        installCommand: 'npm install -g @github/copilot',
+        loginCommand: 'gh auth login',
       };
     },
 

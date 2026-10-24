@@ -1,4 +1,5 @@
 import { Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { CopilotSetupStatusSchema } from '@automaker/contracts';
 import type { BaseProvider } from '../../providers/base-provider.js';
 import { RUNTIME_CONFIG, type RuntimeConfig } from '../../core/config/index.js';
 import { ProviderConnectionRepository } from './provider-connection.repository.js';
@@ -8,6 +9,8 @@ export type CliSetupProvider = 'gemini' | 'copilot' | 'cursor';
 
 interface CliAuthenticationStatus {
   authenticated: boolean;
+  hasEnvToken?: boolean;
+  hasConfigFile?: boolean;
   method: string;
   hasApiKey?: boolean;
   hasEnvApiKey?: boolean;
@@ -64,6 +67,7 @@ export class ProviderSetupStatusService {
       if (disconnected && name !== 'cursor') {
         return {
           success: true,
+          ...(name === 'copilot' && { connected: false }),
           installed: true,
           version: null,
           path: null,
@@ -82,14 +86,16 @@ export class ProviderSetupStatusService {
           ? Promise.resolve({ authenticated: false, method: 'none' })
           : provider.checkAuth(),
       ]);
-      return {
+      const result = {
         success: true,
+        ...(name === 'copilot' && { connected: !disconnected }),
         installed,
         version: version || null,
         path: installed ? provider.getCliPath() : null,
         auth: this.auth(name, auth, disconnected),
         ...commands[name],
       };
+      return name === 'copilot' ? CopilotSetupStatusSchema.parse(result) : result;
     } catch {
       // CLI errors can contain credentials, environment dumps or command output.
       throw new InternalServerErrorException({
@@ -175,20 +181,23 @@ export class ProviderSetupStatusService {
   }
 
   private auth(name: CliSetupProvider, auth: CliAuthenticationStatus, disconnected: boolean) {
-    const identity = { authenticated: auth.authenticated, method: auth.method };
-    if (name === 'cursor' || (name === 'copilot' && disconnected)) return identity;
-    if (name === 'gemini') {
+    if (name === 'copilot') {
       return {
-        ...identity,
-        hasApiKey: auth.hasApiKey || false,
-        ...(!disconnected && { hasEnvApiKey: auth.hasEnvApiKey || false }),
-        ...(auth.error && { error: 'Provider authentication check failed.' }),
+        authenticated: false,
+        authenticationChecked: false,
+        method: !disconnected && auth.hasEnvToken ? 'oauth' : 'none',
+        hasEnvToken: !disconnected && !!auth.hasEnvToken,
+        hasConfigFile: !disconnected && !!auth.hasConfigFile,
+        ...(!disconnected &&
+          auth.error && { error: 'Local configuration could not be inspected.' }),
       };
     }
+    const identity = { authenticated: auth.authenticated, method: auth.method };
+    if (name === 'cursor') return identity;
     return {
       ...identity,
-      login: auth.login,
-      host: auth.host,
+      hasApiKey: auth.hasApiKey || false,
+      ...(!disconnected && { hasEnvApiKey: auth.hasEnvApiKey || false }),
       ...(auth.error && { error: 'Provider authentication check failed.' }),
     };
   }

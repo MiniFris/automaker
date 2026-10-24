@@ -2081,6 +2081,68 @@ production factories и issued remote runtime без чтения/передач
 Windows/WSL forwarding ещё требуют отдельного аудита; этот срез не доказывает
 полной credential isolation этих путей и не завершает этап 7.
 
+## Passive Copilot setup status и отдельное application connection (2026-10-24)
+
+Удалены вызовы `gh auth status` и `copilot auth status` из `CopilotProvider.checkAuth()`.
+Проверка читает application environment snapshot и только stat-ит `hosts.yml`:
+`GITHUB_TOKEN` не выдаётся наружу, содержимое config-файла вообще не читается.
+Путь использует `GH_CONFIG_DIR`, затем `XDG_CONFIG_HOME`/home context. Директория
+с именем `hosts.yml` не считается config-файлом, а filesystem failure возвращает
+только статическое безопасное сообщение. Version/model CLI subprocesses также
+получают application environment вместо неявного process.env.
+
+Native GET `/api/setup/copilot-status` всегда возвращает
+`auth.authenticationChecked: false` и `auth.authenticated: false`. `hasEnvToken` и
+`hasConfigFile` — только hints, не identity, валидность credentials или entitlement.
+Normalizer не доверяет даже прежнему adapter result с `authenticated: true`.
+Независимый `connected` отражает application disconnect marker: reconnect не
+производит upstream login и не превращает hints в подтверждённую авторизацию.
+
+Общий strict контракт и HTTP client отвергают старые/некорректные auth claims,
+identity/token fields и произвольный error text. API header повышен до `10`;
+server/client обновляются вместе. Capability/protocol versions других commands
+не меняются. UI setup/settings явно показывает «Authentication not checked»,
+не poll-ит успешный login после копирования команды и отдельно предлагает
+confirmed application disconnect/reconnect в settings. Добавлены русские тексты.
+
+Новые проверки: actual production Nest factories в двух приложениях, реальные
+environment snapshots и stat/file hints; installation/version в HTTP test явно
+подменены fixtures. Unit проверяет отсутствие auth commands/file-content reads,
+directory и filesystem errors. Contracts/client отвергают invented identity и
+secrets. Chromium проверяет setup, settings refresh и подтверждённые
+disconnect/reconnect без ложной авторизации. Это не live Copilot account test.
+
+Проверки среза:
+
+- `npm run test:server:unit`: 3502 passed, 40 existing skipped.
+- `npm run test:server:contract`: 273 passed, включая новый production-factory
+  HTTP test в двух applications и обновлённый reconnect invariant.
+- `npm run test:packages`: 1419 passed, включая strict passive schema/client и
+  settings notice/reconnect component tests.
+- Types/contracts/server production builds, Web UI и Electron main/preload build,
+  UI typecheck, server/UI lint, lockfile, formatting, `git diff --check` и три
+  inventory checks: успешно. Packaged Electron этим не проверяется.
+- Lifecycle smoke: SIGTERM/SIGINT exit 0.
+- Выбранные real-SSH Direct/CLI/SDK chat/restart: 3 passed, 34 отфильтрованы.
+- Docker acceptance с `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest`:
+  11 passed, 4 opt-in skipped, cleanup owned resources успешен.
+- Chromium: Copilot passive setup/settings/disconnect/reconnect, GitHub confirmed
+  auth, Cursor disconnect/reload и два Agent chat workflows — итоговый полный
+  повтор 5 passed (`--workers=1 --trace=on`). Предыдущий прогон: 3 passed,
+  2 failed. В новом тесте исправлен URL filter, ошибочно считавший
+  `deauth-copilot` как `auth-copilot`. Независимый Cursor reload упёрся в общий
+  `Loading…`; trace показывает незавершённые Vite module requests при завершении
+  теста. Таймаут не увеличен; этот startup/loading flake не объявляется
+  исправленным. Сохранённые локальные traces:
+  `/tmp/automaker-copilot-passive-cursor-loading-trace.zip` и
+  `/tmp/automaker-copilot-passive-url-filter-trace.zip`.
+
+Границы: passive Copilot не доказывает entitlement; поддерживаемый environment
+hint здесь только `GITHUB_TOKEN`. Прочие vendor credential sources не объявляются
+валидными или отсутствующими по этому flag. Legacy disconnected installation
+fallback, CLI discovery/runtime lifecycle и остальные providers' auth evidence
+ещё требуют аудита. Этап 7 и миграция остаются незавершёнными.
+
 ## Тесты
 
 - Registry priority/aliases/duplicate detection.

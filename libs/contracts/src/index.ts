@@ -12,3 +12,4 @@ export * from './claude-verification.js';
 export * from './codex-verification.js';
 export * from './github-authentication.js';
 export * from './setup-credentials.js';
+export * from './copilot-status.js';

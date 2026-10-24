@@ -41,7 +41,7 @@ it('serves native project model config with target consent, app isolation and no
         headers: { 'Content-Type': 'application/json' },
         body: body === undefined ? undefined : JSON.stringify(body),
       });
-      expect(response.headers.get(API_CONTRACT_VERSION_HEADER)).toBe('9');
+      expect(response.headers.get(API_CONTRACT_VERSION_HEADER)).toBe('10');
       return { status: response.status, body: await response.json() };
     };
     return { runtime, root, request };

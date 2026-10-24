@@ -7,6 +7,7 @@
 
 import { createLogger } from '@automaker/utils/logger';
 import { translate } from './i18n';
+import { CopilotSetupStatusSchema, type CopilotSetupStatus } from '@automaker/contracts';
 import {
   SetupCredentialProviderSchema,
   SetupCredentialTargetResponseSchema,
@@ -2247,25 +2248,13 @@ export class HttpApiClient implements ElectronAPI {
     }> => this.disconnectSetupProvider('gemini', request),
 
     // Copilot SDK methods
-    getCopilotStatus: (): Promise<{
-      success: boolean;
-      status?: string;
-      installed?: boolean;
-      method?: string;
-      version?: string;
-      path?: string;
-      recommendation?: string;
-      auth?: {
-        authenticated: boolean;
-        method: string;
-        login?: string;
-        host?: string;
-        error?: string;
-      };
-      loginCommand?: string;
-      installCommand?: string;
-      error?: string;
-    }> => this.get('/api/setup/copilot-status'),
+    getCopilotStatus: async (): Promise<CopilotSetupStatus> => {
+      const result = CopilotSetupStatusSchema.safeParse(
+        await this.get('/api/setup/copilot-status')
+      );
+      if (!result.success) throw new Error('Copilot status protocol is unavailable.');
+      return result.data;
+    },
 
     onInstallProgress: (
       callback: (progress: { cli?: string; data?: string; type?: string }) => void

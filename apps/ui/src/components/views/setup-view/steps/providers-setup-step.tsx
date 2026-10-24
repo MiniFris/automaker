@@ -1,4 +1,5 @@
 import { translate, useUiLocale } from '@/lib/i18n';
+import { PassiveAuthenticationNotice } from '@/components/shared/passive-authentication-notice';
 import { verifyClaudeWithConsent } from '@/lib/claude-verification-consent';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
@@ -1624,8 +1625,6 @@ function CopilotContent() {
   useUiLocale();
   const { copilotCliStatus, setCopilotCliStatus } = useSetupStore();
   const [isChecking, setIsChecking] = useState(false);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const checkStatus = useCallback(async () => {
     setIsChecking(true);
@@ -1655,9 +1654,6 @@ function CopilotContent() {
 
   useEffect(() => {
     checkStatus();
-    return () => {
-      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-    };
   }, [checkStatus]);
 
   const copyCommand = (command: string) => {
@@ -1666,49 +1662,15 @@ function CopilotContent() {
   };
 
   const handleLogin = async () => {
-    setIsLoggingIn(true);
     try {
-      const loginCommand = copilotCliStatus?.loginCommand || 'gh auth login';
-      await navigator.clipboard.writeText(loginCommand);
-      toast.info(translate('Login command copied! Paste in terminal to authenticate.'));
-
-      let attempts = 0;
-      pollIntervalRef.current = setInterval(async () => {
-        attempts++;
-        try {
-          const api = getElectronAPI();
-          if (!api.setup?.getCopilotStatus) return;
-          const result = await api.setup.getCopilotStatus();
-          if (result.auth?.authenticated) {
-            if (pollIntervalRef.current) {
-              clearInterval(pollIntervalRef.current);
-              pollIntervalRef.current = null;
-            }
-            setCopilotCliStatus({
-              ...copilotCliStatus,
-              installed: result.installed ?? true,
-              version: result.version,
-              path: result.path,
-              auth: result.auth,
-            });
-            setIsLoggingIn(false);
-            toast.success(translate('Successfully authenticated with GitHub!'));
-          }
-        } catch {
-          // Ignore
-        }
-        if (attempts >= 60) {
-          if (pollIntervalRef.current) {
-            clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-          }
-          setIsLoggingIn(false);
-          toast.error(translate('Login timed out. Please try again.'));
-        }
-      }, 2000);
+      await navigator.clipboard.writeText(copilotCliStatus?.loginCommand || 'gh auth login');
+      toast.info(
+        translate(
+          'Login command copied. Run it in your terminal; status refresh does not verify authentication.'
+        )
+      );
     } catch {
-      toast.error(translate('Failed to start login process'));
-      setIsLoggingIn(false);
+      toast.error(translate('Failed to copy login command'));
     }
   };
 
@@ -1728,11 +1690,13 @@ function CopilotContent() {
         </div>
         <CardDescription>
           {copilotCliStatus?.installed
-            ? copilotCliStatus.auth?.authenticated
-              ? translate('Authenticated{value1}', {
-                  value1: copilotCliStatus.version ? ` (v${copilotCliStatus.version})` : '',
-                })
-              : translate('Installed but not authenticated')
+            ? copilotCliStatus.auth?.authenticationChecked === false
+              ? translate('Installed; authentication not checked')
+              : copilotCliStatus.auth?.authenticated
+                ? translate('Authenticated{value1}', {
+                    value1: copilotCliStatus.version ? ` (v${copilotCliStatus.version})` : '',
+                  })
+                : translate('Installed but not authenticated')
             : translate('Not installed on your system')}
         </CardDescription>
       </CardHeader>
@@ -1813,17 +1777,10 @@ function CopilotContent() {
               </div>
             </div>
 
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
-              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-medium text-foreground">
-                  {translate('GitHub not authenticated')}
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {translate('Run the GitHub CLI login command to authenticate.')}
-                </p>
-              </div>
-            </div>
+            <PassiveAuthenticationNotice
+              hasEnvToken={copilotCliStatus.auth?.hasEnvToken}
+              hasConfigFile={copilotCliStatus.auth?.hasConfigFile}
+            />
             <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
               <div className="flex items-center gap-2">
                 <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
@@ -1839,17 +1796,9 @@ function CopilotContent() {
               </div>
               <Button
                 onClick={handleLogin}
-                disabled={isLoggingIn}
                 className="w-full bg-brand-500 hover:bg-brand-600 text-white"
               >
-                {isLoggingIn ? (
-                  <>
-                    <Spinner size="sm" variant="foreground" className="mr-2" />
-                    {translate('Waiting for login...')}
-                  </>
-                ) : (
-                  translate('Copy Command & Wait for Login')
-                )}
+                {translate('Copy login command')}
               </Button>
             </div>
           </div>
@@ -2103,7 +2052,12 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
     isGeminiAuthenticated ||
     isCopilotAuthenticated;
 
-  type ProviderStatus = 'not_installed' | 'installed_not_auth' | 'authenticated' | 'verifying';
+  type ProviderStatus =
+    | 'not_installed'
+    | 'installed_not_auth'
+    | 'authenticated'
+    | 'verifying'
+    | 'unverified';
 
   const getProviderStatus = (
     installed: boolean,
@@ -2156,13 +2110,23 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
       id: 'copilot' as const,
       label: translate('Copilot'),
       icon: CopilotIcon,
-      status: getProviderStatus(isCopilotInstalled, isCopilotAuthenticated),
+      status:
+        isCopilotInstalled && copilotCliStatus?.auth?.authenticationChecked === false
+          ? ('unverified' as const)
+          : getProviderStatus(isCopilotInstalled, isCopilotAuthenticated),
       color: 'text-violet-500',
     },
   ];
 
   const renderStatusIcon = (status: ProviderStatus) => {
     switch (status) {
+      case 'unverified':
+        return (
+          <AlertCircle
+            aria-label={translate('Authentication not checked')}
+            className="w-3 h-3 text-amber-500 absolute -top-1 -right-1.5 bg-background rounded-full"
+          />
+        );
       case 'authenticated':
         return (
           <CheckCircle2 className="w-3 h-3 text-green-500 absolute -top-1 -right-1.5 bg-background rounded-full" />

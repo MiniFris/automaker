@@ -7,6 +7,8 @@ import { cn } from '@/lib/utils';
 import type { CliStatus } from '../shared/types';
 import { CopilotIcon } from '@/components/ui/provider-icon';
 import type { CopilotAuthStatus } from '@automaker/types';
+import { PassiveAuthenticationNotice } from '@/components/shared/passive-authentication-notice';
+import { ProviderDisconnectButton, ProviderReconnectButton } from './provider-connection-button';
 
 // Re-export for backwards compatibility
 export type { CopilotAuthStatus };
@@ -24,6 +26,7 @@ function getAuthMethodLabel(method: CopilotAuthStatus['method']): string {
 
 interface CopilotCliStatusProps {
   status: CliStatus | null;
+  connected?: boolean;
   authStatus?: CopilotAuthStatus | null;
   isChecking: boolean;
   onRefresh: () => void;
@@ -77,6 +80,7 @@ export function CopilotCliStatusSkeleton() {
 
 export function CopilotCliStatus({
   status,
+  connected,
   authStatus,
   isChecking,
   onRefresh,
@@ -161,7 +165,19 @@ export function CopilotCliStatus({
             </div>
 
             {/* Authentication Status */}
-            {authStatus?.authenticated ? (
+            {authStatus?.authenticationChecked === false ? (
+              <div className="space-y-3">
+                <PassiveAuthenticationNotice
+                  hasEnvToken={authStatus.hasEnvToken}
+                  hasConfigFile={authStatus.hasConfigFile}
+                />
+                {connected === false ? (
+                  <ProviderReconnectButton provider="copilot" onRefresh={onRefresh} />
+                ) : (
+                  <ProviderDisconnectButton provider="copilot" onRefresh={onRefresh} />
+                )}
+              </div>
+            ) : authStatus?.authenticated ? (
               <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
                 <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center border border-emerald-500/20 shrink-0">
                   <CheckCircle2 className="w-5 h-5 text-emerald-500" />

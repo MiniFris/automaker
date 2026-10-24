@@ -88,6 +88,9 @@ export interface CopilotCliStatus {
   path?: string | null;
   auth?: {
     authenticated: boolean;
+    authenticationChecked?: boolean;
+    hasEnvToken?: boolean;
+    hasConfigFile?: boolean;
     method: string;
     login?: string;
     host?: string;

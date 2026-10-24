@@ -792,6 +792,7 @@ export class CopilotProvider extends CliProvider {
         encoding: 'utf8',
         timeout: 5000,
         stdio: 'pipe',
+        env: await this.readEnvironment(),
       }).trim();
       return result;
     } catch {
@@ -800,108 +801,37 @@ export class CopilotProvider extends CliProvider {
   }
 
   /**
-   * Check authentication status
-   *
-   * Uses GitHub CLI (gh) to check Copilot authentication status.
-   * The Copilot CLI relies on gh auth for authentication.
+   * Passive local hints only. Token/configuration presence is not authentication,
+   * GitHub identity, or proof of a Copilot subscription. Never launch auth commands.
    */
   async checkAuth(): Promise<CopilotAuthStatus> {
-    this.ensureCliDetected();
-    if (!this.cliPath) {
-      logger.debug('checkAuth: CLI not found');
-      return { authenticated: false, method: 'none' };
-    }
-
-    logger.debug('checkAuth: Starting credential check');
-
-    // Try to check GitHub CLI authentication status first
-    // The Copilot CLI uses gh auth for authentication
+    const environment = await this.readEnvironment();
+    const hasEnvToken = !!environment.GITHUB_TOKEN?.trim();
+    const configDirectory =
+      environment.GH_CONFIG_DIR ||
+      path.join(
+        environment.XDG_CONFIG_HOME ||
+          path.join(environment.HOME || environment.USERPROFILE || os.homedir(), '.config'),
+        'gh'
+      );
+    let hasConfigFile = false;
+    let error: string | undefined;
     try {
-      const ghStatus = execSync('gh auth status --hostname github.com', {
-        encoding: 'utf8',
-        timeout: 10000,
-        stdio: 'pipe',
-      });
-
-      logger.debug(`checkAuth: gh auth status output: ${ghStatus.substring(0, 200)}`);
-
-      // Parse gh auth status output
-      const loggedInMatch = ghStatus.match(/Logged in to github\.com account (\S+)/);
-      if (loggedInMatch) {
-        return {
-          authenticated: true,
-          method: 'oauth',
-          login: loggedInMatch[1],
-          host: 'github.com',
-        };
-      }
-
-      // Check for token auth
-      if (ghStatus.includes('Logged in') || ghStatus.includes('Token:')) {
-        return {
-          authenticated: true,
-          method: 'oauth',
-          host: 'github.com',
-        };
-      }
-    } catch (ghError) {
-      logger.debug(`checkAuth: gh auth status failed: ${ghError}`);
+      // Do not read or parse the file's token/identity into an HTTP status.
+      hasConfigFile = (await fs.stat(path.join(configDirectory, 'hosts.yml'))).isFile();
+    } catch (failure) {
+      if (
+        !(failure && typeof failure === 'object' && 'code' in failure && failure.code === 'ENOENT')
+      )
+        error = 'Local configuration could not be inspected.';
     }
-
-    // Try Copilot-specific auth check if gh is not available
-    try {
-      const result = execSync(`"${this.cliPath}" auth status`, {
-        encoding: 'utf8',
-        timeout: 10000,
-        stdio: 'pipe',
-      });
-
-      logger.debug(`checkAuth: copilot auth status output: ${result.substring(0, 200)}`);
-
-      if (result.includes('authenticated') || result.includes('logged in')) {
-        return {
-          authenticated: true,
-          method: 'cli',
-        };
-      }
-    } catch (copilotError) {
-      logger.debug(`checkAuth: copilot auth status failed: ${copilotError}`);
-    }
-
-    // Check for GITHUB_TOKEN environment variable
-    if (process.env.GITHUB_TOKEN) {
-      logger.debug('checkAuth: Found GITHUB_TOKEN environment variable');
-      return {
-        authenticated: true,
-        method: 'oauth',
-        statusMessage: 'Using GITHUB_TOKEN environment variable',
-      };
-    }
-
-    // Check for gh config file
-    const ghConfigPath = path.join(os.homedir(), '.config', 'gh', 'hosts.yml');
-    try {
-      await fs.access(ghConfigPath);
-      const content = await fs.readFile(ghConfigPath, 'utf8');
-      if (content.includes('github.com') && content.includes('oauth_token')) {
-        logger.debug('checkAuth: Found gh config with oauth_token');
-        return {
-          authenticated: true,
-          method: 'oauth',
-          host: 'github.com',
-        };
-      }
-    } catch {
-      logger.debug('checkAuth: No gh config found');
-    }
-
-    // No credentials found
-    logger.debug('checkAuth: No valid credentials found');
     return {
       authenticated: false,
-      method: 'none',
-      error:
-        'No authentication configured. Run "gh auth login" or install GitHub Copilot extension.',
+      authenticationChecked: false,
+      method: hasEnvToken ? 'oauth' : 'none',
+      hasEnvToken,
+      hasConfigFile,
+      ...(error && { error }),
     };
   }
 
@@ -920,6 +850,7 @@ export class CopilotProvider extends CliProvider {
         encoding: 'utf8',
         timeout: 15000,
         stdio: 'pipe',
+        env: await this.readEnvironment(),
       });
 
       const models = JSON.parse(result) as CopilotRuntimeModel[];

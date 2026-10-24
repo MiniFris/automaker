@@ -85,7 +85,6 @@
       "apps/server/src/providers/cli-provider.ts",
       "apps/server/src/providers/codex-provider.ts",
       "apps/server/src/providers/codex-sdk-client.ts",
-      "apps/server/src/providers/copilot-provider.ts",
       "apps/server/src/providers/cursor-provider.ts",
       "apps/server/src/providers/gemini-provider.ts",
       "apps/server/src/providers/openai-compatible/config.ts",
@@ -284,7 +283,7 @@
   },
   "externalImports": {
     "@anthropic-ai/claude-agent-sdk": 3,
-    "@automaker/contracts": 24,
+    "@automaker/contracts": 25,
     "@automaker/dependency-resolver": 1,
     "@automaker/git-utils": 12,
     "@automaker/model-resolver": 20,

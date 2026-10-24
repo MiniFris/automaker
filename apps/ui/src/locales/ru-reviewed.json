@@ -1,4 +1,12 @@
 {
+  "Authentication not checked": "Авторизация не проверена",
+  "Local token or configuration detected. This does not verify your account or Copilot access.": "Найден локальный токен или конфигурация. Это не подтверждает учётную запись или доступ к Copilot.",
+  "No local token or configuration detected. CLI login is performed separately.": "Локальный токен или конфигурация не найдены. Вход через CLI выполняется отдельно.",
+  "Refreshing status does not run authentication commands or contact GitHub.": "Обновление статуса не запускает команды авторизации и не обращается к GitHub для её проверки.",
+  "Installed; authentication not checked": "Установлен; авторизация не проверена",
+  "Login command copied. Run it in your terminal; status refresh does not verify authentication.": "Команда входа скопирована. Выполните её в терминале; обновление статуса не проверяет авторизацию.",
+  "Failed to copy login command": "Не удалось скопировать команду входа",
+  "Copy login command": "Скопировать команду входа",
   "Saved keys are stored unencrypted in the backend private credentials file. Protect backend and browser data, and never commit credentials to version control.": "Сохранённые ключи находятся в приватном credentials-файле сервера без шифрования. Защищайте данные сервера и браузера и никогда не добавляйте credentials в систему контроля версий.",
   "Configure your AI provider API keys. Saved keys are stored in the backend private credentials file.": "Настройте API-ключи AI-провайдеров. Сохранённые ключи находятся в приватном credentials-файле сервера.",
   "Credential API is not available": "API для сохранения credentials недоступен",

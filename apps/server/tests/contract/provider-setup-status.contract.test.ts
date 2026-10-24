@@ -53,6 +53,10 @@ it('serves native setup status through injected adapters and isolates disconnect
     const first = await start('first');
     const second = await start('second');
     for (const name of names) {
+      const auth =
+        name === 'copilot'
+          ? { authenticated: false, authenticationChecked: false, method: 'none' }
+          : { authenticated: true, method: 'test-fixture' };
       expect(await first.status(name)).toMatchObject({
         code: 200,
         body: {
@@ -60,7 +64,7 @@ it('serves native setup status through injected adapters and isolates disconnect
           installed: true,
           version: 'test-fixture',
           path: '/test-only/cli',
-          auth: { authenticated: true, method: 'test-fixture' },
+          auth,
         },
       });
       await writeFile(path.join(first.workingDirectory, '.automaker', `.${name}-disconnected`), '');
@@ -77,14 +81,14 @@ it('serves native setup status through injected adapters and isolates disconnect
         code: 200,
         body: {
           success: true,
-          auth: { authenticated: true, method: 'test-fixture' },
+          auth,
         },
       });
       await rm(path.join(first.workingDirectory, '.automaker', `.${name}-disconnected`));
       expect(await first.status(name)).toMatchObject({
         code: 200,
         body: {
-          auth: { authenticated: true, method: 'test-fixture' },
+          auth,
         },
       });
     }

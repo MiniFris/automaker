@@ -138,9 +138,6 @@ export function useCopilotCliStatus() {
         throw new Error('Copilot CLI status API not available');
       }
       const result = await api.setup.getCopilotStatus();
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch Copilot CLI status');
-      }
       return result;
     },
     staleTime: STALE_TIMES.CLI_STATUS,

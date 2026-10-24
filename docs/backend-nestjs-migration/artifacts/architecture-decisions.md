@@ -272,3 +272,25 @@ delete/test backend key без выдачи plaintext secret в браузер; 
 отдельное согласие. Missing API/mocks/cancel не сообщают fake persistence success.
 Public setup auth/CSRF, consumer policy остальных adapters и полноценная auth
 evidence normalization остаются gates, не закрытыми одним UUID или metadata flag.
+
+## ADR-019: API v10 passive Copilot setup status
+
+GET `/api/setup/copilot-status` не запускает `gh auth status` или
+`copilot auth status`. `authenticationChecked` и `authenticated` всегда false;
+`hasEnvToken` означает только наличие `GITHUB_TOKEN` в application snapshot,
+`hasConfigFile` — наличие обычного `hosts.yml` по пути из `GH_CONFIG_DIR`,
+`XDG_CONFIG_HOME` или home context. Файл не читается и не разбирается в token/login.
+Ни один из этих hints не доказывает identity, действительность token или Copilot
+entitlement. Ошибки filesystem не раскрывают содержимое или пути в HTTP.
+
+`connected` отдельно отражает application disconnect marker. Confirmed reconnect
+снимает этот marker, но не меняет auth hints на verified. Сервер нормализует даже
+старый adapter result с `authenticated: true` в passive response. Strict shared
+schema и HTTP client отвергают прежние auth/identity claims и произвольные поля;
+API header повышен до `10`, server/client поставляются совместно.
+
+Setup больше не poll-ит якобы successful authentication после копирования login
+command. Settings и setup показывают unverified state; настройки предлагают
+отдельные confirmed disconnect/reconnect. Все paid/live проверки остаются явными;
+GitHub account verification не доказывает Copilot entitlement. Другие providers,
+полный CLI discovery/runtime ownership и public setup auth/CSRF остаются gates.
