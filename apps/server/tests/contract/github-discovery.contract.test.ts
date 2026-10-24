@@ -16,7 +16,7 @@ import {
 import { parseLinuxProcessStat } from '../../src/core/platform/linux-process-group.js';
 
 const execute = promisify(execFile);
-async function start() {
+async function start(inheritedGitContext = false) {
   const fixture = await githubReadFixture();
   const project = path.join(fixture.root, 'project; literal path');
   await mkdir(project);
@@ -29,6 +29,18 @@ async function start() {
     'origin',
     'https://private-user:private-password@github.com/owned/repo.v2.git',
   ]);
+  const other = path.join(fixture.root, 'unrelated');
+  if (inheritedGitContext) {
+    await execute('git', ['-c', 'init.templateDir=', 'init', '--quiet', other]);
+    await execute('git', [
+      '-C',
+      other,
+      'remote',
+      'add',
+      'origin',
+      'https://unrelated.test/other/project.git',
+    ]);
+  }
   const runtime = await createNestApplication({
     host: '127.0.0.1',
     port: 0,
@@ -39,6 +51,17 @@ async function start() {
     enableShutdownHooks: false,
     environment: {
       ...fixture.environment,
+      ...(inheritedGitContext
+        ? {
+            GIT_DIR: path.join(other, '.git'),
+            GIT_WORK_TREE: other,
+            GIT_COMMON_DIR: path.join(other, '.git'),
+            GIT_CONFIG_COUNT: '1',
+            GIT_CONFIG_KEY_0: 'url.https://redirected.test/.insteadOf',
+            GIT_CONFIG_VALUE_0: 'https://github.com/',
+            GIT_CONFIG_PARAMETERS: "'url.https://parameters.test/.insteadOf=https://github.com/'",
+          }
+        : {}),
       NODE_ENV: 'test',
       AUTOMAKER_API_KEY: 'fixture',
       ENABLE_REQUEST_LOGGING: 'false',
@@ -93,6 +116,32 @@ async function ownedFallbackKill(fixture: Awaited<ReturnType<typeof githubReadFi
 describe.skipIf(process.platform !== 'linux')(
   'native GitHub discovery through owned offline CLI fixtures',
   () => {
+    it('binds native HTTP discovery to projectPath rather than the launcher repository/config', async () => {
+      const owner = await start(true);
+      try {
+        const response = await owner.post('check-remote');
+        expect(response.status).toBe(200);
+        expect(response.body).toMatchObject({
+          success: true,
+          hasGitHubRemote: true,
+          owner: 'owned',
+          repo: 'repo.v2',
+          remoteUrl: 'https://github.com/owned/repo.v2.git',
+        });
+        const calls = await owner.fixture.calls();
+        expect(calls).toHaveLength(1);
+        expect(calls[0]).toMatchObject({
+          cwd: owner.project,
+          overrideAbsent: true,
+          gitContextAbsent: true,
+          profileToken: true,
+        });
+      } finally {
+        await owner.app.close();
+        await owner.fixture.cleanup();
+      }
+    });
+
     it('owns native ports once, returns original fields/status and uses argv/stdin with isolated host snapshots', async () => {
       const first = await start(),
         second = await start();

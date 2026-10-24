@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { githubReadFixture } from '../../helpers/github-read-fixture.js';
 import { NodeGithubCommandRuntime } from '../../../src/modules/github/github-command.runtime.js';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import path from 'node:path';
+const execute = promisify(execFile);
 const observer = vi.hoisted(() => ({ wait: vi.fn() }));
 vi.mock('../../../src/core/platform/linux-process-group.js', () => ({
   waitForLinuxProcessGroupExit: observer.wait,
@@ -31,6 +35,77 @@ describe.skipIf(process.platform !== 'linux')('owned GitHub command runtime', ()
     cwd,
     signal,
   });
+
+  it('reads the requested repository despite inherited repository and config overrides', async () => {
+    const project = path.join(fixture.root, 'requested');
+    const other = path.join(fixture.root, 'unrelated');
+    for (const directory of [project, other]) {
+      await execute('git', ['-c', 'init.templateDir=', 'init', '--quiet', directory]);
+      await execute('git', [
+        '-C',
+        directory,
+        'remote',
+        'add',
+        'origin',
+        `https://github.com/owned/${directory === project ? 'requested' : 'unrelated'}.git`,
+      ]);
+    }
+    await runtime.onModuleDestroy();
+    const inherited = {
+      ...fixture.environment,
+      GIT_DIR: path.join(other, '.git'),
+      GIT_WORK_TREE: other,
+      GIT_COMMON_DIR: path.join(other, '.git'),
+      GIT_CONFIG_COUNT: '1',
+      GIT_CONFIG_KEY_0: 'remote.origin.url',
+      GIT_CONFIG_VALUE_0: 'https://github.com/owned/injected.git',
+    };
+    runtime = new NodeGithubCommandRuntime(inherited);
+    const response = await runtime.run({
+      program: 'git',
+      args: ['remote', 'get-url', 'origin'],
+      cwd: project,
+      signal: new AbortController().signal,
+    });
+    expect(response.stdout.trim()).toBe('https://github.com/owned/requested.git');
+    expect(inherited.GIT_DIR).toBe(path.join(other, '.git'));
+    expect(inherited.GIT_CONFIG_COUNT).toBe('1');
+  });
+
+  it.each(['pairs', 'parameters'] as const)(
+    'ignores inherited %s URL rewrites in real Git',
+    async (mode) => {
+      await execute('git', ['-c', 'init.templateDir=', 'init', '--quiet', fixture.root]);
+      await execute('git', [
+        '-C',
+        fixture.root,
+        'remote',
+        'add',
+        'origin',
+        'https://github.com/owned/requested.git',
+      ]);
+      await runtime.onModuleDestroy();
+      runtime = new NodeGithubCommandRuntime({
+        ...fixture.environment,
+        ...(mode === 'pairs'
+          ? {
+              GIT_CONFIG_COUNT: '1',
+              GIT_CONFIG_KEY_0: 'url.https://unrelated.test/.insteadOf',
+              GIT_CONFIG_VALUE_0: 'https://github.com/',
+            }
+          : {
+              GIT_CONFIG_PARAMETERS: "'url.https://unrelated.test/.insteadOf=https://github.com/'",
+            }),
+      });
+      const response = await runtime.run({
+        program: 'git',
+        args: ['remote', 'get-url', 'origin'],
+        cwd: fixture.root,
+        signal: new AbortController().signal,
+      });
+      expect(response.stdout.trim()).toBe('https://github.com/owned/requested.git');
+    }
+  );
 
   it('waits for owned group observation even after the parent process and stdio closed', async () => {
     const entered = deferred(),

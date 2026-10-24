@@ -836,3 +836,21 @@ cross-process leases, all pagination/unknown UX, every HTTP method's auth policy
 all legacy worktree helpers, real Windows/macOS packaging or the remaining stages.
 API details were checked against the official gh api/manual and GitHub GraphQL
 review-thread schema linked in stage 8; live vendor acceptance remains separate.
+
+## ADR-039: discard launcher-local Git context in native GitHub commands
+
+Repository-local environment must not select a repository independently of the
+requested project cwd. The native GitHub runtime removes local Git directory,
+worktree, common-dir, object/index/shallow/namespace overrides and inherited command
+configuration (parameters, count and indexed key/value pairs) for both git and gh.
+Filtering follows Windows key normalization, without mutating the owner's host
+snapshot. Authentication, proxies and explicit global/system Git config profiles
+remain available; trusted host configuration is not treated as a filesystem sandbox.
+
+An owned real-Git regression reproduced selection of a sibling repository before
+the change. Real-Git config-rewrite cases, native HTTP discovery with a redirected
+launcher context and pure Windows environment tests cover the isolation boundary.
+Ancestor discovery, external gitfiles/common directories, config-file includes,
+concurrent filesystem replacement and per-application allowed-root enforcement
+require separate work. This decision does not certify those boundaries or close
+the broader orchestration migration.

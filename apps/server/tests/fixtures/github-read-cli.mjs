@@ -16,6 +16,16 @@ appendFileSync(
     input,
     cwd: process.cwd(),
     overrideAbsent: process.env.GH_REPO === undefined,
+    gitContextAbsent: !Object.keys(process.env).some(
+      (key) =>
+        [
+          'GIT_DIR',
+          'GIT_WORK_TREE',
+          'GIT_COMMON_DIR',
+          'GIT_CONFIG_COUNT',
+          'GIT_CONFIG_PARAMETERS',
+        ].includes(key) || /^GIT_CONFIG_(?:KEY|VALUE)_\d+$/.test(key)
+    ),
     profileToken: process.env.GH_TOKEN === 'fixture-profile-token',
   }) + '\n'
 );

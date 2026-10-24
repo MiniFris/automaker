@@ -449,6 +449,50 @@ origin при наличии upstream и non-web CLI metadata URL: они не �
 ложный negative remote lookup или raw URL error. Финальные suites выполнены после
 последних source edits; test timeout/retries не увеличивались.
 
+### Срез: изоляция inherited Git environment
+
+Native GitHub command runtime больше не наследует repository-local Git context
+запустившего сервер shell/hook. Из environment обоих subprocess types (`git` и
+`gh`) удаляются Git directory/worktree/common-dir, index/object/shallow/namespace
+overrides, `GIT_CONFIG_PARAMETERS`, `GIT_CONFIG_COUNT` и indexed config pairs.
+Windows case normalization происходит до фильтрации; host snapshot не мутируется.
+PATH, HOME, GitHub credentials/enterprise host, proxy и explicit global/system Git
+config profiles сохраняются. Это не sandbox Git configuration: выбранный host
+profile и configuration files по-прежнему считаются доверенной конфигурацией.
+
+Новый regression на двух owned локальных Git repositories сначала воспроизвёл
+ошибку: при cwd requested Git возвращал origin unrelated repository. После
+исправления он возвращает requested origin. Отдельные real-Git cases проверяют
+URL rewrites через indexed config pairs и `GIT_CONFIG_PARAMETERS`; native HTTP
+contract проверяет discovery с одновременно унаследованными redirect variables,
+неизменный public response и получение `gh` очищенного environment с сохранённым
+fixture token. Windows проверен pure environment tests, не Windows subprocess.
+Все Git writes здесь ограничены временными fixture repositories; vendor writes
+и реальные credentials не используются.
+
+Семантика сверена с [Git environment](https://git-scm.com/docs/git) и
+[Git config environment](https://git-scm.com/docs/git-config). Environment isolation
+не закрывает поиск Git repository в родительских directories, `.git`/commondir
+symlinks, linked worktrees вне allowed roots, configuration includes или filesystem
+TOCTOU. Отдельный application-scoped allowed-root audit остаётся обязательным;
+пункты завершения этапа 8 и всей миграции этим срезом не закрываются.
+
+Проверки среза после последних source edits:
+
+- `npm run test:server:unit`: 3669 passed, 40 skipped;
+- `npm run test:server:contract`: 335 passed; targeted discovery/review contracts:
+  12 passed;
+- `npm run test:packages`: 1481 passed;
+- server production build и `lint:server:errors` прошли;
+- production lifecycle smoke: SIGTERM и SIGINT exit 0;
+- все три inventory checks, lockfile check и formatting изменённых файлов прошли.
+
+Эти результаты получены на Linux с доступным Node 22.22.2, который ниже declared
+engine floor 22.22.3; это не acceptance на поддерживаемой Node version. Docker,
+SSH, Chromium и packaged multi-OS acceptance в этом срезе не перезапускались,
+результаты предыдущего среза не выдаются за новые. Полный stage checkpoint и
+поддерживаемый runtime остаются обязательными перед завершением этапа.
+
 ## 8.7. MCPModule
 
 - [ ] Перенести server config lookup в SettingsModule.

@@ -32,6 +32,60 @@ it('preserves case-insensitive Windows PATH/auth while removing every GH_REPO ca
   ]);
 });
 
+it.each(['linux', 'win32'] as const)(
+  'removes inherited repository context without mutating host profiles on %s',
+  (platform) => {
+    const local = [
+      'GIT_ALTERNATE_OBJECT_DIRECTORIES',
+      'GIT_CONFIG',
+      'GIT_CONFIG_PARAMETERS',
+      'GIT_CONFIG_COUNT',
+      'GIT_CONFIG_KEY_0',
+      'GIT_CONFIG_VALUE_0',
+      'GIT_CONFIG_KEY_42',
+      'GIT_CONFIG_VALUE_42',
+      'GIT_OBJECT_DIRECTORY',
+      'GIT_DIR',
+      'GIT_WORK_TREE',
+      'GIT_IMPLICIT_WORK_TREE',
+      'GIT_GRAFT_FILE',
+      'GIT_INDEX_FILE',
+      'GIT_NO_REPLACE_OBJECTS',
+      'GIT_REPLACE_REF_BASE',
+      'GIT_PREFIX',
+      'GIT_SHALLOW_FILE',
+      'GIT_COMMON_DIR',
+      'GIT_NAMESPACE',
+    ];
+    const key = (name: string) => (platform === 'win32' ? name.toLowerCase() : name);
+    const input = {
+      ...Object.fromEntries(local.map((name) => [key(name), 'unrelated-context'])),
+      HOME: '/owned-profile',
+      GH_TOKEN: 'fixture-secret',
+      GH_ENTERPRISE_TOKEN: 'enterprise-secret',
+      GH_HOST: 'enterprise.test',
+      HTTPS_PROXY: 'https://owned-proxy.test',
+      GIT_CONFIG_GLOBAL: '/owned-profile/global-config',
+      GIT_CONFIG_SYSTEM: '/owned-profile/system-config',
+    };
+    const snapshot = { ...input };
+    const environment = githubCommandEnvironment(input, platform);
+    for (const name of local) expect(environment).not.toHaveProperty(name);
+    expect(environment).toMatchObject({
+      HOME: input.HOME,
+      GH_TOKEN: input.GH_TOKEN,
+      GH_ENTERPRISE_TOKEN: input.GH_ENTERPRISE_TOKEN,
+      GH_HOST: input.GH_HOST,
+      HTTPS_PROXY: input.HTTPS_PROXY,
+      GIT_CONFIG_GLOBAL: input.GIT_CONFIG_GLOBAL,
+      GIT_CONFIG_SYSTEM: input.GIT_CONFIG_SYSTEM,
+      GIT_TERMINAL_PROMPT: '0',
+      GH_PROMPT_DISABLED: '1',
+    });
+    expect(input).toEqual(snapshot);
+  }
+);
+
 it('redacts credentials/query fragments and preserves dotted repository names with argv-only listing', async () => {
   const run = vi
     .fn()
