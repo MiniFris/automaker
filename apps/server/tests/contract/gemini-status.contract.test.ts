@@ -45,7 +45,7 @@ it('persists confirmed Google keys, feeds real local children and never promotes
         headers: { 'Content-Type': 'application/json' },
         ...(body !== undefined && { body: JSON.stringify(body) }),
       });
-      expect(response.headers.get('X-Automaker-API-Version')).toBe('11');
+      expect(response.headers.get('X-Automaker-API-Version')).toBe('12');
       return { status: response.status, body: await response.json() };
     };
     const status = async () => GeminiSetupStatusSchema.parse((await request('gemini-status')).body);

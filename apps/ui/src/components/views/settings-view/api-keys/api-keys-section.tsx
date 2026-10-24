@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { useState, useCallback } from 'react';
 import { getElectronAPI } from '@/lib/electron';
 import { toast } from 'sonner';
+import { LegacyCredentialImport } from '@/components/shared/legacy-credential-import';
 
 export function ApiKeysSection() {
   useUiLocale();
@@ -109,6 +110,7 @@ export function ApiKeysSection() {
         </p>
       </div>
       <div className="p-6 space-y-6">
+        <LegacyCredentialImport onImported={refreshApiKeyStatus} />
         {/* API Key Fields with contextual info */}
         {providerConfigs.map((provider) => (
           <div key={provider.key}>

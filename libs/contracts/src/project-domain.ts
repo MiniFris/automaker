@@ -14,7 +14,6 @@ export const DiscoverAgentsSchema = z
   .strict();
 export const ModelTimeoutUpdateSchema = z.object({ timeouts: z.unknown() }).strict();
 export const GlobalSettingsUpdateSchema = z.record(z.string(), z.unknown());
-export const CredentialsUpdateSchema = z.record(z.string(), z.unknown());
 export const ProjectSettingsUpdateSchema = z
   .object({ projectPath: ProjectPathSchema, updates: z.record(z.string(), z.unknown()) })
   .strict();
@@ -35,7 +34,6 @@ export const DirectSettingsMutationSchema = z.record(z.string(), z.unknown());
 export type ProjectSettingsRead = z.infer<typeof ProjectSettingsReadSchema>;
 export type DiscoverAgentsRequest = z.infer<typeof DiscoverAgentsSchema>;
 export type ModelTimeoutUpdate = z.infer<typeof ModelTimeoutUpdateSchema>;
-export type CredentialsUpdate = z.infer<typeof CredentialsUpdateSchema>;
 export type ProjectSettingsUpdate = z.infer<typeof ProjectSettingsUpdateSchema>;
 export type LocalStorageMigrationRequest = z.infer<typeof LocalStorageMigrationRequestSchema>;
 

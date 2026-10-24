@@ -3212,18 +3212,6 @@ export class HttpApiClient implements ElectronAPI {
       error?: string;
     }> => this.get('/api/settings/credentials'),
 
-    updateCredentials: (updates: {
-      apiKeys?: { anthropic?: string; google?: string; openai?: string };
-    }): Promise<{
-      success: boolean;
-      credentials?: {
-        anthropic: { configured: boolean; masked: string };
-        google: { configured: boolean; masked: string };
-        openai: { configured: boolean; masked: string };
-      };
-      error?: string;
-    }> => this.put('/api/settings/credentials', updates),
-
     // Project settings
     getProject: (
       projectPath: string
@@ -3286,6 +3274,7 @@ export class HttpApiClient implements ElectronAPI {
       success: boolean;
       migratedGlobalSettings: boolean;
       migratedCredentials: boolean;
+      credentialImportRequired: boolean;
       migratedProjectCount: number;
       errors: string[];
     }> => this.post('/api/settings/migrate', { data }),

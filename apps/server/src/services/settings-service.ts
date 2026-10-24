@@ -1125,8 +1125,8 @@ export class SettingsService {
    * Migrate settings from localStorage to file-based storage
    *
    * Called during onboarding when UI detects localStorage data but no settings files.
-   * Extracts global settings, credentials, and per-project settings from various
-   * localStorage keys and writes them to the new file-based storage.
+   * Extracts global and per-project settings from localStorage.
+   * Credentials are NOT imported here; they require target-confirmed commands.
    * Collects errors but continues on partial failures.
    *
    * @param localStorageData - Object containing localStorage key/value pairs to migrate
@@ -1142,12 +1142,14 @@ export class SettingsService {
     success: boolean;
     migratedGlobalSettings: boolean;
     migratedCredentials: boolean;
+    credentialImportRequired: boolean;
     migratedProjectCount: number;
     errors: string[];
   }> {
     const errors: string[] = [];
     let migratedGlobalSettings = false;
-    let migratedCredentials = false;
+    const migratedCredentials = false;
+    let credentialImportRequired = false;
     let migratedProjectCount = 0;
 
     try {
@@ -1157,8 +1159,8 @@ export class SettingsService {
         try {
           const parsed = JSON.parse(localStorageData['automaker-storage']);
           appState = parsed.state || parsed;
-        } catch (e) {
-          errors.push(`Failed to parse automaker-storage: ${e}`);
+        } catch {
+          errors.push('Failed to parse automaker-storage.');
         }
       }
 
@@ -1168,8 +1170,8 @@ export class SettingsService {
         try {
           const parsed = JSON.parse(localStorageData['automaker-setup']);
           setupState = parsed.state || parsed;
-        } catch (e) {
-          errors.push(`Failed to parse automaker-setup: ${e}`);
+        } catch {
+          errors.push('Failed to parse automaker-setup.');
         }
       }
 
@@ -1242,24 +1244,13 @@ export class SettingsService {
       migratedGlobalSettings = true;
       logger.info('Migrated global settings from localStorage');
 
-      // Extract and save credentials
-      if (appState.apiKeys) {
-        const apiKeys = appState.apiKeys as {
-          anthropic?: string;
-          google?: string;
-          openai?: string;
-        };
-        await this.updateCredentials({
-          apiKeys: {
-            anthropic: apiKeys.anthropic || '',
-            google: apiKeys.google || '',
-            openai: apiKeys.openai || '',
-            zai: '',
-          },
-        });
-        migratedCredentials = true;
-        logger.info('Migrated credentials from localStorage');
-      }
+      // Settings migration is not consent to replace keys or private deletion policy.
+      // Keep legacy browser data intact; import uses target-confirmed setup commands.
+      credentialImportRequired = !!(
+        appState.apiKeys &&
+        typeof appState.apiKeys === 'object' &&
+        Object.values(appState.apiKeys).some((value) => typeof value === 'string' && !!value.trim())
+      );
 
       // Migrate per-project settings
       const boardBackgroundByProject = appState.boardBackgroundByProject as
@@ -1319,8 +1310,8 @@ export class SettingsService {
             await this.updateProjectSettings(projectPath, projectSettings);
             migratedProjectCount++;
           }
-        } catch (e) {
-          errors.push(`Failed to migrate project settings for ${projectPath}: ${e}`);
+        } catch {
+          errors.push('Failed to migrate project settings.');
         }
       }
 
@@ -1330,16 +1321,18 @@ export class SettingsService {
         success: errors.length === 0,
         migratedGlobalSettings,
         migratedCredentials,
+        credentialImportRequired,
         migratedProjectCount,
         errors,
       };
-    } catch (error) {
-      logger.error('Migration failed:', error);
-      errors.push(`Migration failed: ${error}`);
+    } catch {
+      logger.error('Migration failed.');
+      errors.push('Migration failed.');
       return {
         success: false,
         migratedGlobalSettings,
         migratedCredentials,
+        credentialImportRequired,
         migratedProjectCount,
         errors,
       };

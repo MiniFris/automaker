@@ -1041,17 +1041,6 @@ export interface ElectronAPI {
       };
       error?: string;
     }>;
-    updateCredentials: (updates: {
-      apiKeys?: { anthropic?: string; google?: string; openai?: string };
-    }) => Promise<{
-      success: boolean;
-      credentials?: {
-        anthropic: { configured: boolean; masked: string };
-        google: { configured: boolean; masked: string };
-        openai: { configured: boolean; masked: string };
-      };
-      error?: string;
-    }>;
     getProject: (projectPath: string) => Promise<{
       success: boolean;
       settings?: Record<string, unknown>;
@@ -1069,6 +1058,7 @@ export interface ElectronAPI {
       success: boolean;
       migratedGlobalSettings: boolean;
       migratedCredentials: boolean;
+      credentialImportRequired: boolean;
       migratedProjectCount: number;
       errors: string[];
     }>;

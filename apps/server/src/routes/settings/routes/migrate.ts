@@ -75,6 +75,7 @@ export function createMigrateHandler(settingsService: SettingsService) {
         success: result.success,
         migratedGlobalSettings: result.migratedGlobalSettings,
         migratedCredentials: result.migratedCredentials,
+        credentialImportRequired: result.credentialImportRequired,
         migratedProjectCount: result.migratedProjectCount,
         errors: result.errors,
       });

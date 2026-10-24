@@ -1,9 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { Credentials, GlobalSettings, ProjectSettings } from '../../types/settings.js';
+import type { GlobalSettings, ProjectSettings } from '../../types/settings.js';
 import { SettingsService } from '../../services/settings-service.js';
 import { SettingsDomainEvents } from './settings-domain-events.js';
 import type {
-  CredentialsUpdate,
   LocalStorageMigrationRequest,
   ProjectSettingsUpdate,
   ModelTimeoutUpdate,
@@ -31,11 +30,6 @@ export class SettingsCommandService {
       changed: new Set(Object.keys(updates) as Array<keyof GlobalSettings>),
     });
     return { success: true, settings: current };
-  }
-
-  async updateCredentials(input: CredentialsUpdate): Promise<Record<string, unknown>> {
-    await this.settings.updateCredentials(input as Partial<Credentials>);
-    return { success: true, credentials: await this.settings.getMaskedCredentials() };
   }
 
   async updateProject(input: ProjectSettingsUpdate): Promise<Record<string, unknown>> {

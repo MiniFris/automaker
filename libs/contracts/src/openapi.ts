@@ -8,7 +8,6 @@ import {
   BacklogApplySchema,
   BacklogGenerateSchema,
   BacklogProjectSchema,
-  CredentialsUpdateSchema,
   FeatureBulkDeleteSchema,
   FeatureBulkUpdateSchema,
   FeatureCreateSchema,
@@ -23,7 +22,6 @@ import {
 
 export const PROJECT_DOMAIN_CONTRACT_SCHEMAS = {
   ProjectSettingsUpdate: ProjectSettingsUpdateSchema,
-  CredentialsUpdate: CredentialsUpdateSchema,
   LocalStorageMigrationRequest: LocalStorageMigrationRequestSchema,
   ProjectsOverviewResponse: ProjectsOverviewResponseSchema,
   FeatureCreate: FeatureCreateSchema,

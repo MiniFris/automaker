@@ -6,7 +6,6 @@ export {
   DiscoverAgentsSchema,
   ModelTimeoutUpdateSchema,
   GlobalSettingsUpdateSchema,
-  CredentialsUpdateSchema,
   ProjectSettingsUpdateSchema,
   LocalStorageMigrationRequestSchema,
   DirectSettingsMutationSchema,
@@ -15,7 +14,6 @@ export type {
   ProjectSettingsRead,
   DiscoverAgentsRequest,
   ModelTimeoutUpdate,
-  CredentialsUpdate,
   ProjectSettingsUpdate,
   LocalStorageMigrationRequest,
 } from '@automaker/contracts';

@@ -353,3 +353,34 @@ watchdog в event loop.
 Предполагается читаемый procfs текущего PID namespace; Windows/macOS требуют
 своей acceptance. Изменение не сертифицирует все SDK/CLI/terminal cancellation
 paths, не меняет HTTP contracts/API version и не закрывает весь этап 7.
+
+## ADR-022: API v12 retired bulk credentials transport и explicit browser import
+
+`PUT /api/settings/credentials` остаётся authenticated native tombstone с HTTP 410
+и static `CREDENTIAL_WRITE_RETIRED`. Он не читает DTO/body и не обращается к private
+writer. Старый Express compatibility handler возвращает тот же ответ без writer.
+Loose `CredentialsUpdate` DTO/OpenAPI entry, HTTP/Electron client write method и
+неиспользуемые `useSaveCredentials`/`syncCredentialsToServer` удалены. Masked GET
+остаётся read-only. Server/client должны обновляться совместно, API header — `12`.
+
+Settings localStorage migration больше не импортирует apiKeys и не имеет права
+менять credential policy. `migratedCredentials` всегда false;
+`credentialImportRequired` сообщает о наличии кандидатов для отдельного импорта.
+Нормальный frontend settings debounce sync и до этого не синхронизировал apiKeys;
+не следует приписывать ему несуществовавший автоматический write.
+
+Settings API Keys содержит explicit legacy inspector. На mount он не читает
+кандидатов и не пишет credentials. После Inspect показывает только supported
+provider names; Import каждого ключа проходит existing native target confirmation,
+preflight и writer. Cancellation не считается import; commit не означает auth.
+Исходная browser backup не меняется, а plaintext candidate не попадает в DOM.
+Поддержаны anthropic/google/openai; другие legacy secrets требуют своих форм.
+
+Malformed JSON parser messages нормализуются до static error до Nest external
+exception mapping: body-parser error excerpts не должны отражать credential body.
+Migration parsing/project/outer errors также не возвращают raw input/path details.
+
+Internal typed storage primitive остаётся для endpoint-specific Direct/z.ai
+commands и fixtures; это не разрешение на произвольную HTTP запись private record.
+Их дальнейшие ownership/consent gates, public setup auth/CSRF, encryption/secure
+erase и unsafe downgrade preflight этим срезом не объявляются завершёнными.

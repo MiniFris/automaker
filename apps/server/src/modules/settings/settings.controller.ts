@@ -11,19 +11,18 @@ import {
   Res,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import { RETIRED_CREDENTIAL_WRITE } from '@automaker/contracts';
 
 import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
 import {
   DiscoverAgentsSchema,
   DirectSettingsMutationSchema,
-  CredentialsUpdateSchema,
   GlobalSettingsUpdateSchema,
   LocalStorageMigrationRequestSchema,
   ModelTimeoutUpdateSchema,
   ModelTimeoutProviderSchema,
   ProjectSettingsReadSchema,
   ProjectSettingsUpdateSchema,
-  type CredentialsUpdate,
   type DiscoverAgentsRequest,
   type ProjectSettingsRead,
   type LocalStorageMigrationRequest,
@@ -101,10 +100,9 @@ export class SettingsController {
   }
 
   @Put('credentials')
-  updateCredentials(
-    @Body(new ZodValidationPipe(CredentialsUpdateSchema)) input: CredentialsUpdate
-  ): Promise<Record<string, unknown>> {
-    return this.commands.updateCredentials(input);
+  @HttpCode(410)
+  retiredCredentialsWrite() {
+    return RETIRED_CREDENTIAL_WRITE;
   }
 
   @Put('project')

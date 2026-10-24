@@ -44,7 +44,7 @@ it('persists confirmed native key changes, isolates apps, preserves env files, a
         headers: { 'Content-Type': 'application/json' },
         ...(body !== undefined && { body: JSON.stringify(body) }),
       });
-      expect(response.headers.get('X-Automaker-API-Version')).toBe('11');
+      expect(response.headers.get('X-Automaker-API-Version')).toBe('12');
       return { status: response.status, body: await response.json() };
     };
     return { runtime, root, request };

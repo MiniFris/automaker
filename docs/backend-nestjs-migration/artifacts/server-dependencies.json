@@ -3,7 +3,7 @@
   "sourceRoot": "apps/server/src",
   "summary": {
     "files": 602,
-    "internalEdges": 2002,
+    "internalEdges": 1999,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -43,9 +43,9 @@
     "routes -> middleware": 8,
     "routes -> modules": 8,
     "routes -> providers": 12,
-    "routes -> routes": 345,
-    "routes -> services": 190,
-    "routes -> types": 3,
+    "routes -> routes": 344,
+    "routes -> services": 189,
+    "routes -> types": 2,
     "services -> core": 9,
     "services -> lib": 77,
     "services -> modules": 9,
@@ -282,7 +282,7 @@
   },
   "externalImports": {
     "@anthropic-ai/claude-agent-sdk": 3,
-    "@automaker/contracts": 25,
+    "@automaker/contracts": 27,
     "@automaker/dependency-resolver": 1,
     "@automaker/git-utils": 12,
     "@automaker/model-resolver": 20,
@@ -295,7 +295,7 @@
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 166,
+    "@nestjs/common": 167,
     "@nestjs/core": 7,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
@@ -5888,18 +5888,6 @@
     {
       "source": "apps/server/src/routes/settings/routes/status.ts",
       "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/routes/update-credentials.ts",
-      "target": "apps/server/src/routes/settings/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/routes/update-credentials.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/routes/update-credentials.ts",
-      "target": "apps/server/src/types/settings.ts"
     },
     {
       "source": "apps/server/src/routes/settings/routes/update-global.ts",

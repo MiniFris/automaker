@@ -1,6 +1,7 @@
 import cors from 'cors';
 import express, { type RequestHandler } from 'express';
 import cookieParser from 'cookie-parser';
+import { BadRequestException } from '@nestjs/common';
 import { API_CONTRACT_VERSION, API_CONTRACT_VERSION_HEADER } from '@automaker/contracts';
 
 import type { RuntimeConfig } from '../config/index.js';
@@ -26,6 +27,7 @@ function isLocalOrigin(origin: string): boolean {
 
 export function createPlatformMiddleware(config: RuntimeConfig): RequestHandler[] {
   const allowedOrigins = config.server.corsOrigins;
+  const json = express.json({ limit: '50mb' });
   return [
     (_request, response, next) => {
       response.setHeader(API_CONTRACT_VERSION_HEADER, API_CONTRACT_VERSION);
@@ -48,7 +50,20 @@ export function createPlatformMiddleware(config: RuntimeConfig): RequestHandler[
       },
     }),
     requireJsonContentType,
-    express.json({ limit: '50mb' }),
+    (request, response, next) =>
+      json(request, response, (error?: unknown) => {
+        // Parser messages can contain excerpts of credential-bearing request bodies.
+        if (
+          error &&
+          typeof error === 'object' &&
+          'type' in error &&
+          error.type === 'entity.parse.failed'
+        ) {
+          next(new BadRequestException({ success: false, error: 'Invalid JSON request body.' }));
+          return;
+        }
+        next(error);
+      }),
     cookieParser(),
   ];
 }

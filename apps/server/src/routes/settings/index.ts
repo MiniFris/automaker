@@ -39,7 +39,7 @@ import { createModelTimeoutSettingsRoutes } from './model-timeouts.js';
  * - GET /global - Get global settings
  * - PUT /global - Update global settings
  * - GET /credentials - Get masked credentials (safe for UI)
- * - PUT /credentials - Update API keys
+ * - PUT /credentials - Retired bulk writer (410)
  * - POST /project - Get project settings (requires projectPath in body)
  * - PUT /project - Update project settings
  * - POST /migrate - Migrate settings from localStorage
@@ -63,7 +63,7 @@ export function createSettingsRoutes(settingsService: SettingsService): Router {
 
   // Credentials (separate for security)
   router.get('/credentials', createGetCredentialsHandler(settingsService));
-  router.put('/credentials', createUpdateCredentialsHandler(settingsService));
+  router.put('/credentials', createUpdateCredentialsHandler());
 
   // Project settings
   router.post(

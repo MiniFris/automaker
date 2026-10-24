@@ -2273,6 +2273,66 @@ Node `perf_hooks` import вместо неописанного ESLint global `pe
 group termination этим Linux probe не сертифицируется. Этап 7 и вся миграция
 остаются незавершёнными по остальным gates.
 
+## Bulk credentials transport retirement / explicit browser import (2026-10-24, API v12)
+
+Проверено по фактическим callers: обычный `useSettingsSync` не включает apiKeys
+в синхронизируемые поля и сам не восстанавливал ключи. Обход находился в native
+settings PUT с loose record DTO и в server-side localStorage migration. Оба могли
+обойти target confirmation и заменить private metadata/ключи.
+
+Native `PUT /api/settings/credentials` теперь authenticated HTTP 410 tombstone с
+static `CREDENTIAL_WRITE_RETIRED`, без body inspection/private I/O. Express
+compatibility handler тоже не имеет writer dependency и возвращает 410.
+Неиспользуемые frontend bulk hook/sync helper и write method в HTTP/Electron API
+удалены, как и shared loose write DTO/OpenAPI entry. Masked GET сохранён.
+API header повышен до `12`, остальные setup command protocol versions не меняются.
+
+`SettingsService.migrateFromLocalStorage` продолжает мигрировать обычные settings,
+но не пишет credentials: `migratedCredentials: false`, с отдельным
+`credentialImportRequired`. Существующие credentials/deletion policy не меняются,
+даже при повторном импорте старого browser record. Parse/project failure details
+не включают raw legacy body/path. Общий JSON parser также больше не отражает
+фрагменты credential-bearing malformed bodies в ошибке.
+
+В Settings API Keys добавлен отдельный `LegacyCredentialImport`. Он не выполняет
+inspection/import на mount. После Inspect перечисляет только known provider names;
+raw values остаются в ограниченном ref, не в DOM/status/toasts. Import каждого
+anthropic/google/openai key использует existing native preview/confirmation/
+preflight и FIFO. Cancellation оставляет кандидат доступным и не показывает
+success. После commit UI говорит «authentication not checked». Никакого fallback
+на bulk writer и автоматического import после reload нет. Исходная localStorage
+backup остаётся нетронутой; её наличие не означает безопасность downgrade.
+
+Проверки включают два реальных Nest apps, byte-for-byte unchanged private file
+после retired PUT и повторного settings migration, отсутствие stale keys в global
+settings file, suppressed bootstrap после restart и допустимый новый confirmed
+native import. JSON parse failures не отражают secret input. Unit проверяет
+compatibility tombstone без body access, bounded/whitelisted/prototype-safe browser
+inspection и отсутствие read/write на mount. Chromium проверяет mount, Inspect,
+cancel, confirm, отсутствие plaintext в DOM и неизменность browser backup.
+
+Проверки среза:
+
+- `npm run test:server:unit`: 3536 passed, 40 existing skipped.
+- `npm run test:server:contract`: 275 passed, включая новый реальный HTTP/restart
+  test и сохранение authentication на retired PUT.
+- `npm run test:packages`: 1449 passed. Inspector не читает storage на mount,
+  не показывает keys, не активируется после cancel и игнорирует inherited fields.
+- Production contracts/server и Web UI/Electron main/preload builds, UI typecheck,
+  server/UI lint, formatting, lockfile и три inventory checks: успешно.
+- Lifecycle smoke: SIGTERM/SIGINT exit 0.
+- Real SSH Direct/CLI/SDK chat/restart выборка: 3 passed, 34 отфильтрованы.
+- Docker acceptance с локальным `automaker-nest-stage2-smoke:latest`: 11 passed,
+  4 opt-in skipped; cleanup owned resources успешен.
+- Финальный Chromium набор: 6 passed (`--workers=1 --trace=on`), explicit legacy
+  import, native setup keys, Gemini/Copilot status и два Agent chat workflows.
+  Сохранённый old browser key не восстанавливается при mount/cancel, появляется
+  в backend только после native confirmation; ни один bulk PUT не отправлен.
+
+Граница: это не полный аудит всех endpoint-specific secret types, credential
+profiles, z.ai/Direct ownership, public setup auth/CSRF или downgrade/secure erase.
+Этап 7 и миграция остаются незавершёнными по этим и остальным gates.
+
 ## Тесты
 
 - Registry priority/aliases/duplicate detection.

@@ -2233,7 +2233,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 70,
+      "line": 69,
       "middleware": [
         "SettingsController.discoverAgents"
       ],
@@ -2248,7 +2248,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 57,
+      "line": 56,
       "middleware": [
         "SettingsController.credentials"
       ],
@@ -2263,9 +2263,9 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 103,
+      "line": 102,
       "middleware": [
-        "SettingsController.updateCredentials"
+        "SettingsController.retiredCredentialsWrite"
       ],
       "potentialMutation": true,
       "validatesProjectPath": false,
@@ -2578,7 +2578,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 52,
+      "line": 51,
       "middleware": [
         "SettingsController.global"
       ],
@@ -2593,7 +2593,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 96,
+      "line": 95,
       "middleware": [
         "SettingsController.updateGlobal"
       ],
@@ -2608,7 +2608,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 117,
+      "line": 115,
       "middleware": [
         "SettingsController.migrate"
       ],
@@ -2623,7 +2623,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 83,
+      "line": 82,
       "middleware": [
         "SettingsController.providerModelTimeouts"
       ],
@@ -2638,7 +2638,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 133,
+      "line": 131,
       "middleware": [
         "SettingsController.updateProviderModelTimeouts"
       ],
@@ -2653,7 +2653,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 78,
+      "line": 77,
       "middleware": [
         "SettingsController.modelTimeouts"
       ],
@@ -2668,7 +2668,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 126,
+      "line": 124,
       "middleware": [
         "SettingsController.updateModelTimeouts"
       ],
@@ -2683,7 +2683,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 157,
+      "line": 155,
       "middleware": [
         "SettingsController.updateDirectAgent"
       ],
@@ -2698,7 +2698,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 142,
+      "line": 140,
       "middleware": [
         "SettingsController.updateDirectEndpoint"
       ],
@@ -2713,7 +2713,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 164,
+      "line": 162,
       "middleware": [
         "SettingsController.discoverDirectModels"
       ],
@@ -2728,7 +2728,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 149,
+      "line": 147,
       "middleware": [
         "SettingsController.removeDirectEndpoint"
       ],
@@ -2743,7 +2743,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 176,
+      "line": 174,
       "middleware": [
         "SettingsController.testDirectConnection"
       ],
@@ -2758,7 +2758,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 91,
+      "line": 90,
       "middleware": [
         "SettingsController.openAICompatible"
       ],
@@ -2773,7 +2773,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 62,
+      "line": 61,
       "middleware": [
         "SettingsController.project"
       ],
@@ -2788,7 +2788,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 110,
+      "line": 108,
       "middleware": [
         "SettingsController.updateProject"
       ],
@@ -2803,7 +2803,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 47,
+      "line": 46,
       "middleware": [
         "SettingsController.status"
       ],

@@ -744,7 +744,7 @@ describe('settings-service.ts', () => {
       expect(settings.maxConcurrency).toBe(5);
     });
 
-    it('should migrate credentials from localStorage data', async () => {
+    it('preserves browser credential candidates without importing them through general migration', async () => {
       const localStorageData = {
         'automaker-storage': JSON.stringify({
           state: {
@@ -758,10 +758,11 @@ describe('settings-service.ts', () => {
       const result = await settingsService.migrateFromLocalStorage(localStorageData);
 
       expect(result.success).toBe(true);
-      expect(result.migratedCredentials).toBe(true);
+      expect(result.migratedCredentials).toBe(false);
+      expect(result.credentialImportRequired).toBe(true);
 
       const credentials = await settingsService.getCredentials();
-      expect(credentials.apiKeys.anthropic).toBe('sk-test-key');
+      expect(credentials.apiKeys.anthropic).toBe('');
     });
 
     it('should migrate project settings from localStorage data', async () => {
