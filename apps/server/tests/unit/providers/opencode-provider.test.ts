@@ -51,6 +51,33 @@ describe('opencode-provider.ts', () => {
   });
 
   describe('getAvailableModels', () => {
+    it('returns an expired snapshot without starting an unowned background refresh', () => {
+      const models = provider.getAvailableModels();
+      const cache = provider as unknown as {
+        cachedModels: ModelDefinition[];
+        modelsCacheExpiry: number;
+      };
+      cache.cachedModels = models;
+      cache.modelsCacheExpiry = 0;
+      const refresh = vi.spyOn(provider, 'refreshModels').mockResolvedValue(models);
+      expect(provider.getAvailableModels()).toBe(models);
+      expect(provider.hasCachedModels()).toBe(false);
+      expect(refresh).not.toHaveBeenCalled();
+    });
+
+    it('reports fresh/expired cache so its caller can explicitly await refresh', () => {
+      const cache = provider as unknown as {
+        cachedModels: ModelDefinition[];
+        modelsCacheExpiry: number;
+      };
+      cache.cachedModels = provider.getAvailableModels();
+      cache.modelsCacheExpiry = Date.now() + 60_000;
+      expect(provider.hasCachedModels()).toBe(true);
+      cache.modelsCacheExpiry = Date.now() - 1;
+      expect(provider.hasCachedModels()).toBe(false);
+      expect(provider.getAvailableModels()).toBe(cache.cachedModels);
+    });
+
     it('should return 5 models', () => {
       const models = provider.getAvailableModels();
       expect(models).toHaveLength(5);

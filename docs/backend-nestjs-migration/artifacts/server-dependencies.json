@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 613,
-    "internalEdges": 1991,
+    "files": 610,
+    "internalEdges": 1984,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -20,12 +20,12 @@
     "legacy -> services": 33,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 84,
+    "modules -> core": 85,
     "modules -> legacy": 29,
     "modules -> lib": 24,
-    "modules -> modules": 252,
-    "modules -> providers": 22,
-    "modules -> routes": 59,
+    "modules -> modules": 255,
+    "modules -> providers": 24,
+    "modules -> routes": 55,
     "modules -> services": 111,
     "modules -> types": 2,
     "providers -> core": 1,
@@ -42,9 +42,9 @@
     "routes -> lib": 105,
     "routes -> middleware": 8,
     "routes -> modules": 9,
-    "routes -> providers": 17,
-    "routes -> routes": 375,
-    "routes -> services": 196,
+    "routes -> providers": 13,
+    "routes -> routes": 371,
+    "routes -> services": 195,
     "routes -> types": 3,
     "services -> core": 8,
     "services -> lib": 77,
@@ -99,7 +99,6 @@
       "apps/server/src/routes/setup/routes/auth-opencode.ts",
       "apps/server/src/routes/setup/routes/delete-api-key.ts",
       "apps/server/src/routes/setup/routes/gh-status.ts",
-      "apps/server/src/routes/setup/routes/opencode-status.ts",
       "apps/server/src/routes/setup/routes/store-api-key.ts",
       "apps/server/src/routes/setup/routes/verify-claude-auth.ts",
       "apps/server/src/routes/setup/routes/verify-codex-auth.ts",
@@ -154,7 +153,6 @@
       "apps/server/src/routes/setup/routes/auth-cursor.ts",
       "apps/server/src/routes/setup/routes/auth-gemini.ts",
       "apps/server/src/routes/setup/routes/auth-opencode.ts",
-      "apps/server/src/routes/setup/routes/codex-status.ts",
       "apps/server/src/routes/setup/routes/deauth-claude.ts",
       "apps/server/src/routes/setup/routes/deauth-codex.ts",
       "apps/server/src/routes/setup/routes/deauth-cursor.ts",
@@ -313,14 +311,14 @@
     "@automaker/model-resolver": 20,
     "@automaker/platform": 80,
     "@automaker/prompts": 3,
-    "@automaker/types": 177,
+    "@automaker/types": 175,
     "@automaker/utils": 175,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 149,
+    "@nestjs/common": 150,
     "@nestjs/core": 7,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
@@ -332,8 +330,8 @@
     "crypto": 4,
     "dotenv": 1,
     "events": 1,
-    "express": 247,
-    "fs": 21,
+    "express": 243,
+    "fs": 20,
     "fs/promises": 16,
     "net": 1,
     "node-pty": 2,
@@ -353,7 +351,7 @@
     "node:timers/promises": 3,
     "node:util": 12,
     "os": 16,
-    "path": 89,
+    "path": 88,
     "readline": 1,
     "reflect-metadata": 1,
     "ssh2": 3,
@@ -2554,6 +2552,18 @@
       "target": "apps/server/src/core/config/index.ts"
     },
     {
+      "source": "apps/server/src/modules/providers/provider-model-catalog.service.ts",
+      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/provider-model-catalog.service.ts",
+      "target": "apps/server/src/providers/base-provider.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/provider-model-catalog.service.ts",
+      "target": "apps/server/src/providers/types.ts"
+    },
+    {
       "source": "apps/server/src/modules/providers/provider-registrations.ts",
       "target": "apps/server/src/modules/providers/provider-registry.service.ts"
     },
@@ -2608,6 +2618,10 @@
     {
       "source": "apps/server/src/modules/providers/provider-registry.service.ts",
       "target": "apps/server/src/providers/types.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/provider-setup-status.service.ts",
+      "target": "apps/server/src/core/config/index.ts"
     },
     {
       "source": "apps/server/src/modules/providers/provider-setup-status.service.ts",
@@ -2683,6 +2697,10 @@
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/modules/providers/provider-model-catalog.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
       "target": "apps/server/src/modules/providers/provider-registry.service.ts"
     },
     {
@@ -2747,14 +2765,6 @@
     },
     {
       "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/routes/setup/routes/codex-status.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/routes/setup/routes/copilot-models.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
       "target": "apps/server/src/routes/setup/routes/cursor-config.ts"
     },
     {
@@ -2799,14 +2809,6 @@
     },
     {
       "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/routes/setup/routes/opencode-models.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/routes/setup/routes/opencode-status.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
       "target": "apps/server/src/routes/setup/routes/platform.ts"
     },
     {
@@ -2828,6 +2830,10 @@
     {
       "source": "apps/server/src/modules/providers/setup.controller.ts",
       "target": "apps/server/src/core/auth/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "target": "apps/server/src/modules/providers/provider-model-catalog.service.ts"
     },
     {
       "source": "apps/server/src/modules/providers/setup.controller.ts",
@@ -5790,26 +5796,6 @@
       "target": "apps/server/src/routes/setup/get-claude-status.ts"
     },
     {
-      "source": "apps/server/src/routes/setup/routes/codex-status.ts",
-      "target": "apps/server/src/providers/codex-provider.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/codex-status.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/codex-status.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/copilot-models.ts",
-      "target": "apps/server/src/providers/copilot-provider.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/copilot-models.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
-    },
-    {
       "source": "apps/server/src/routes/setup/routes/cursor-config.ts",
       "target": "apps/server/src/providers/cursor-config-manager.ts"
     },
@@ -5863,22 +5849,6 @@
     },
     {
       "source": "apps/server/src/routes/setup/routes/install-codex.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/opencode-models.ts",
-      "target": "apps/server/src/providers/opencode-provider.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/opencode-models.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/opencode-status.ts",
-      "target": "apps/server/src/providers/opencode-provider.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/opencode-status.ts",
       "target": "apps/server/src/routes/setup/common.ts"
     },
     {

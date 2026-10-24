@@ -1,16 +1,18 @@
-import { Controller, Delete, Get, Inject, Post, Req, Res } from '@nestjs/common';
+import { Controller, Delete, Get, HttpCode, Inject, Post, Query, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
 import { Public } from '../../core/auth/index.js';
 import { SetupHandlersService, type SetupHandlerName } from './setup-handlers.service.js';
 import { ProviderSetupStatusService } from './provider-setup-status.service.js';
+import { ProviderModelCatalogService } from './provider-model-catalog.service.js';
 
 @Public()
 @Controller('setup')
 export class SetupController {
   constructor(
     @Inject(SetupHandlersService) private readonly handlers: SetupHandlersService,
-    @Inject(ProviderSetupStatusService) private readonly statuses: ProviderSetupStatusService
+    @Inject(ProviderSetupStatusService) private readonly statuses: ProviderSetupStatusService,
+    @Inject(ProviderModelCatalogService) private readonly catalogs: ProviderModelCatalogService
   ) {}
 
   private run(name: SetupHandlerName, request: Request, response: Response) {
@@ -62,8 +64,8 @@ export class SetupController {
   @Post('deauth-cursor') deauthCursor(@Req() q: Request, @Res() s: Response) {
     return this.run('deauthCursor', q, s);
   }
-  @Get('codex-status') codexStatus(@Req() q: Request, @Res() s: Response) {
-    return this.run('codexStatus', q, s);
+  @Get('codex-status') codexStatus() {
+    return this.statuses.installationStatus('codex');
   }
   @Post('install-codex') installCodex(@Req() q: Request, @Res() s: Response) {
     return this.run('installCodex', q, s);
@@ -74,8 +76,8 @@ export class SetupController {
   @Post('deauth-codex') deauthCodex(@Req() q: Request, @Res() s: Response) {
     return this.run('deauthCodex', q, s);
   }
-  @Get('opencode-status') opencodeStatus(@Req() q: Request, @Res() s: Response) {
-    return this.run('opencodeStatus', q, s);
+  @Get('opencode-status') opencodeStatus() {
+    return this.statuses.installationStatus('opencode');
   }
   @Post('auth-opencode') authOpencode(@Req() q: Request, @Res() s: Response) {
     return this.run('authOpencode', q, s);
@@ -101,26 +103,26 @@ export class SetupController {
   @Post('deauth-copilot') deauthCopilot(@Req() q: Request, @Res() s: Response) {
     return this.run('deauthCopilot', q, s);
   }
-  @Get('copilot/models') copilotModels(@Req() q: Request, @Res() s: Response) {
-    return this.run('copilotModels', q, s);
+  @Get('copilot/models') copilotModels(@Query('refresh') refresh: string | undefined) {
+    return this.catalogs.models('copilot', refresh === 'true');
   }
-  @Post('copilot/models/refresh') refreshCopilotModels(@Req() q: Request, @Res() s: Response) {
-    return this.run('refreshCopilotModels', q, s);
+  @Post('copilot/models/refresh') @HttpCode(200) refreshCopilotModels() {
+    return this.catalogs.models('copilot', true);
   }
-  @Post('copilot/cache/clear') clearCopilotCache(@Req() q: Request, @Res() s: Response) {
-    return this.run('clearCopilotCache', q, s);
+  @Post('copilot/cache/clear') @HttpCode(200) clearCopilotCache() {
+    return this.catalogs.clear('copilot');
   }
-  @Get('opencode/models') opencodeModels(@Req() q: Request, @Res() s: Response) {
-    return this.run('opencodeModels', q, s);
+  @Get('opencode/models') opencodeModels(@Query('refresh') refresh: string | undefined) {
+    return this.catalogs.models('opencode', refresh === 'true');
   }
-  @Post('opencode/models/refresh') refreshOpencodeModels(@Req() q: Request, @Res() s: Response) {
-    return this.run('refreshOpencodeModels', q, s);
+  @Post('opencode/models/refresh') @HttpCode(200) refreshOpencodeModels() {
+    return this.catalogs.models('opencode', true);
   }
-  @Get('opencode/providers') opencodeProviders(@Req() q: Request, @Res() s: Response) {
-    return this.run('opencodeProviders', q, s);
+  @Get('opencode/providers') opencodeProviders() {
+    return this.catalogs.authenticatedProviders();
   }
-  @Post('opencode/cache/clear') clearOpencodeCache(@Req() q: Request, @Res() s: Response) {
-    return this.run('clearOpencodeCache', q, s);
+  @Post('opencode/cache/clear') @HttpCode(200) clearOpencodeCache() {
+    return this.catalogs.clear('opencode');
   }
   @Get('cursor-config') cursorConfig(@Req() q: Request, @Res() s: Response) {
     return this.run('cursorConfig', q, s);

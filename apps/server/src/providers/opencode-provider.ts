@@ -906,23 +906,16 @@ export class OpencodeProvider extends CliProvider {
   /**
    * Get available models for OpenCode
    *
-   * Returns cached models if available and not expired.
-   * Falls back to default models if cache is empty or CLI is unavailable.
+   * Returns the latest cached snapshot, including an expired one, without I/O.
+   * Falls back to default models if cache is empty.
    *
    * Use `refreshModels()` to force a fresh fetch from the CLI.
    */
   getAvailableModels(): ModelDefinition[] {
-    // Return cached models if available and not expired
-    if (this.cachedModels && Date.now() < this.modelsCacheExpiry) {
-      return this.cachedModels;
-    }
-
-    // Return cached models even if expired (better than nothing)
+    // Catalog access must be offline, including expired snapshots. The native
+    // catalog service explicitly awaits refresh instead of starting an unowned
+    // background CLI process from a synchronous metadata getter.
     if (this.cachedModels) {
-      // Trigger background refresh
-      this.refreshModels().catch((err) => {
-        opencodeLogger.debug(`Background model refresh failed: ${err}`);
-      });
       return this.cachedModels;
     }
 
@@ -1453,10 +1446,14 @@ export class OpencodeProvider extends CliProvider {
   }
 
   /**
-   * Check if we have cached models (not just defaults)
+   * Check if we have fresh cached models (not just defaults)
    */
   hasCachedModels(): boolean {
-    return this.cachedModels !== null && this.cachedModels.length > 0;
+    return (
+      this.cachedModels !== null &&
+      this.cachedModels.length > 0 &&
+      Date.now() < this.modelsCacheExpiry
+    );
   }
 
   // ==========================================================================

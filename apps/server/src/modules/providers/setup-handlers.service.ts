@@ -9,12 +9,6 @@ import { createAuthCursorHandler } from '../../routes/setup/routes/auth-cursor.j
 import { createAuthGeminiHandler } from '../../routes/setup/routes/auth-gemini.js';
 import { createAuthOpencodeHandler } from '../../routes/setup/routes/auth-opencode.js';
 import { createClaudeStatusHandler } from '../../routes/setup/routes/claude-status.js';
-import { createCodexStatusHandler } from '../../routes/setup/routes/codex-status.js';
-import {
-  createClearCopilotCacheHandler,
-  createGetCopilotModelsHandler,
-  createRefreshCopilotModelsHandler,
-} from '../../routes/setup/routes/copilot-models.js';
 import {
   createApplyPermissionProfileHandler,
   createDeleteProjectPermissionsHandler,
@@ -35,13 +29,6 @@ import { createDeleteApiKeyHandler } from '../../routes/setup/routes/delete-api-
 import { createGhStatusHandler } from '../../routes/setup/routes/gh-status.js';
 import { createInstallClaudeHandler } from '../../routes/setup/routes/install-claude.js';
 import { createInstallCodexHandler } from '../../routes/setup/routes/install-codex.js';
-import {
-  createClearOpencodeCacheHandler,
-  createGetOpencodeModelsHandler,
-  createGetOpencodeProvidersHandler,
-  createRefreshOpencodeModelsHandler,
-} from '../../routes/setup/routes/opencode-models.js';
-import { createOpencodeStatusHandler } from '../../routes/setup/routes/opencode-status.js';
 import { createPlatformHandler } from '../../routes/setup/routes/platform.js';
 import { createStoreApiKeyHandler } from '../../routes/setup/routes/store-api-key.js';
 import { createVerifyClaudeAuthHandler } from '../../routes/setup/routes/verify-claude-auth.js';
@@ -90,24 +77,15 @@ export class SetupHandlersService {
       ghStatus: createGhStatusHandler(),
       authCursor: createAuthCursorHandler(),
       deauthCursor: createDeauthCursorHandler(),
-      codexStatus: createCodexStatusHandler(settings),
       installCodex: createInstallCodexHandler(),
       authCodex: createAuthCodexHandler(),
       deauthCodex: createDeauthCodexHandler(),
-      opencodeStatus: createOpencodeStatusHandler(),
       authOpencode: createAuthOpencodeHandler(),
       deauthOpencode: createDeauthOpencodeHandler(),
       authGemini: createAuthGeminiHandler(),
       deauthGemini: createDeauthGeminiHandler(),
       authCopilot: createAuthCopilotHandler(),
       deauthCopilot: createDeauthCopilotHandler(),
-      copilotModels: createGetCopilotModelsHandler(),
-      refreshCopilotModels: createRefreshCopilotModelsHandler(),
-      clearCopilotCache: createClearCopilotCacheHandler(),
-      opencodeModels: createGetOpencodeModelsHandler(),
-      refreshOpencodeModels: createRefreshOpencodeModelsHandler(),
-      opencodeProviders: createGetOpencodeProvidersHandler(),
-      clearOpencodeCache: createClearOpencodeCacheHandler(),
       cursorConfig: createGetCursorConfigHandler(),
       setCursorDefaultModel: createSetCursorDefaultModelHandler(),
       setCursorModels: createSetCursorModelsHandler(),

@@ -862,7 +862,7 @@ filesystem I/O и ошибки Nest hooks, также требует hardening �
 
 - [ ] Перенести provider status и setup endpoints, отложенные на этапе 4.
 - [ ] Перенести Claude/Codex/Gemini/ZAI usage endpoints.
-- [ ] Перенести model discovery/cache refresh.
+- [x] Перенести model discovery/cache refresh.
 - [ ] Status не должен выполнять дорогую авторизацию без явного запроса.
 - [ ] Setup mutation требует подтверждения и возвращает фактический target.
 
@@ -907,6 +907,69 @@ CLI detection/version/auth внутри самих adapters пока испол�
 дорогой `gh auth status`; требование дешёвого passive status без явного auth request
 ещё не выполнено. Live provider login, SSH/Docker и packaged Electron acceptance
 этот срез не проверяет и не объявляет пройденными.
+
+### Срез: native Codex/OpenCode status и application-owned model discovery
+
+Перенесены ещё девять endpoints: Codex/OpenCode status, GET models / POST refresh /
+POST clear для Copilot и OpenCode, GET OpenCode providers. `SetupController`
+возвращает native Nest responses; POST сохраняет HTTP 200. Два status handlers и
+два catalog route modules удалены вместе с module-level provider singletons.
+Прежние реализации доступны в истории Git.
+
+`ProviderSetupStatusService` получает Codex/OpenCode из внедрённого registry,
+не создаёт providers самостоятельно. Codex disconnected response не вызывает
+installation/auth probes. OpenCode environment-key hints читаются из `RUNTIME_CONFIG`,
+а не `process.env` в route. Сохранены install commands, OAuth/key hints,
+missing-installation recommendation и существующая public access policy.
+Сырые исключения не выдаются клиенту.
+
+`ProviderModelCatalogService` владеет отдельными discovery adapter generations
+для каждого приложения и provider name. Повторные reads используют кеш;
+параллельные initial/forced refresh объединяются. Clear отсоединяет поколение:
+его уже запущенный запрос может получить старый результат, но завершившийся refresh
+не восстанавливает кеш для следующих запросов. Новый read получает новый adapter
+из registry. Это опирается на production registrations с fresh-instance factories,
+а не на provider singleton. Отказ refresh не оставляет зависший promise и не мешает
+повторной попытке. При Nest shutdown закрывается admission (503) и ожидаются все
+начатые discovery operations, включая auth discovery и отсоединённые поколения.
+
+OpenCode `getAvailableModels()` теперь всегда offline, даже для expired snapshot.
+`hasCachedModels()` учитывает expiry; сервис явно ожидает обновление просроченного
+каталога вместо запуска background CLI process из synchronous metadata getter.
+Copilot сохраняет существующую cache lifetime policy. Authenticated providers
+возвращаются отдельным отфильтрованным списком, как раньше.
+
+Пункт переноса model discovery/cache refresh отмечен выполненным на уровне
+HTTP/application ownership: Copilot/OpenCode обслуживает новый native сервис,
+Codex catalog уже обслуживается `ProviderUsageController`/`ProviderUsageService`
+с внедрённым `CodexModelCacheService`, общий catalog — `ModelsCatalogService`.
+Это не означает завершения transport-specific CLI/SDK acceptance или usage refactor.
+
+Проверки среза:
+
+- 17 catalog unit cases: lazy cache, expiry, forced refresh, coalescing, clear races,
+  два приложения/provider names, retry, безопасные ошибки, shutdown и auth discovery.
+- 10 дополнительных status cases для Codex/OpenCode и 2 regression cases,
+  доказывающих offline OpenCode getter и явный expiry check.
+- Новый HTTP contract проверяет все девять endpoints, POST 200, независимые кеши и
+  environment hints двух Nest apps, Codex disconnect и реальный Nest shutdown,
+  ожидающий delayed refresh уже очищенного поколения.
+- `npm run test:server:unit`: 3224 passed, 40 skipped.
+- `npm run test:server:contract`: 260 passed.
+- `npm run test:packages`: 1194 passed.
+- Server production build/lint, UI typecheck/lint и lockfile check успешны.
+- Route/dependency inventories обновлены, три inventory checks успешны.
+- Startup/shutdown smoke: SIGTERM/SIGINT exit 0.
+- Chromium chat/Running Agents smoke: 2 passed.
+
+Границы: низкоуровневые CLI helpers, settings/credential sources внутри adapters и
+общий application shutdown deadline ещё требуют работы. Ожидание discovery promise
+не является доказательством OS-level exit всех внешних процессов. Live login,
+SSH/Docker и packaged Electron acceptance для этого среза не запускались. Claude/GH
+status, setup mutations и usage implementations остаются в работе. OpenCode status
+сохраняет прежнюю интерпретацию auth indicators независимо от local disconnect marker;
+согласование этого поведения и дешёвый passive status ещё не закрыты. Этап 7 и вся
+миграция не объявляются завершёнными.
 
 ## 7.7. Agent routes
 

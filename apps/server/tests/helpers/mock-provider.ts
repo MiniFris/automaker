@@ -15,6 +15,7 @@ import type {
 const MOCK_TEXT = 'Mock agent output for testing.';
 
 export class MockProvider extends BaseProvider {
+  private catalogCached = false;
   protected featureCapabilities() {
     return { vision: true, tools: true, reasoning: true };
   }
@@ -85,6 +86,21 @@ export class MockProvider extends BaseProvider {
 
   async checkAuth() {
     return { authenticated: true, method: 'test-fixture' };
+  }
+
+  hasCachedModels(): boolean {
+    return this.catalogCached;
+  }
+
+  async refreshModels(): Promise<ModelDefinition[]> {
+    this.catalogCached = true;
+    return this.getAvailableModels();
+  }
+
+  async fetchAuthenticatedProviders(): Promise<
+    Array<{ id: string; name: string; authenticated: boolean }>
+  > {
+    return [];
   }
 
   getAvailableModels(): ModelDefinition[] {

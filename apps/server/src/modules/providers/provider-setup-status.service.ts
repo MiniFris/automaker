@@ -1,5 +1,6 @@
 import { Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
 import type { BaseProvider } from '../../providers/base-provider.js';
+import { RUNTIME_CONFIG, type RuntimeConfig } from '../../core/config/index.js';
 import { ProviderConnectionRepository } from './provider-connection.repository.js';
 import { ProviderRegistry } from './provider-registry.service.js';
 
@@ -50,7 +51,9 @@ const commands = {
 export class ProviderSetupStatusService {
   constructor(
     @Inject(ProviderRegistry) private readonly providers: ProviderRegistry,
-    @Inject(ProviderConnectionRepository) private readonly connections: ProviderConnectionRepository
+    @Inject(ProviderConnectionRepository)
+    private readonly connections: ProviderConnectionRepository,
+    @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig
   ) {}
 
   async status(name: CliSetupProvider) {
@@ -89,6 +92,70 @@ export class ProviderSetupStatusService {
       };
     } catch {
       // CLI errors can contain credentials, environment dumps or command output.
+      throw new InternalServerErrorException({
+        success: false,
+        error: `Failed to read ${name} status.`,
+      });
+    }
+  }
+
+  async installationStatus(name: 'codex' | 'opencode') {
+    const openCode = name === 'opencode';
+    const installCommand = openCode
+      ? 'curl -fsSL https://opencode.ai/install | bash'
+      : 'npm install -g @openai/codex';
+    const loginCommand = openCode ? 'opencode auth login' : 'codex login';
+    try {
+      // Codex historically masks auth and avoids all provider probes when disconnected.
+      // OpenCode keeps its established status behavior; its adapter owns auth indicators.
+      if (!openCode && this.connections.isDisconnected(name)) {
+        return {
+          success: true,
+          installed: true,
+          version: null,
+          path: null,
+          auth: { authenticated: false, method: 'none', hasApiKey: false },
+          installCommand,
+          loginCommand,
+        };
+      }
+      const provider = this.providers.byName(name);
+      if (!provider) throw new Error('Provider unavailable.');
+      const status = await provider.detectInstallation();
+      return {
+        success: true,
+        installed: status.installed,
+        version: status.version || null,
+        path: status.path || null,
+        auth: {
+          authenticated: status.authenticated || false,
+          method: status.authenticated
+            ? status.hasApiKey
+              ? 'api_key_env'
+              : 'cli_authenticated'
+            : 'none',
+          hasApiKey: status.hasApiKey || false,
+          ...(openCode && {
+            hasEnvApiKey:
+              this.config.providers.isEnvironmentVariableConfigured('ANTHROPIC_API_KEY') ||
+              this.config.providers.isEnvironmentVariableConfigured('OPENAI_API_KEY'),
+            hasOAuthToken: status.hasOAuthToken || false,
+          }),
+        },
+        ...(openCode && {
+          ...(!status.installed && {
+            recommendation: 'Install OpenCode CLI to use multi-provider AI models.',
+          }),
+          installCommands: {
+            macos: installCommand,
+            linux: installCommand,
+            npm: 'npm install -g opencode-ai',
+          },
+        }),
+        installCommand,
+        loginCommand,
+      };
+    } catch {
       throw new InternalServerErrorException({
         success: false,
         error: `Failed to read ${name} status.`,

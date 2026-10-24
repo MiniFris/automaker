@@ -5,6 +5,7 @@ import { ProviderRegistry } from './provider-registry.service.js';
 import { ProviderUsageController } from './provider-usage.controller.js';
 import { ProviderUsageService } from './provider-usage.service.js';
 import { ProviderSetupStatusService } from './provider-setup-status.service.js';
+import { ProviderModelCatalogService } from './provider-model-catalog.service.js';
 import { SetupController } from './setup.controller.js';
 import { SetupHandlersService } from './setup-handlers.service.js';
 import { ToolPolicyService } from './tool-policy.service.js';
@@ -17,6 +18,7 @@ import { ToolPolicyService } from './tool-policy.service.js';
     { provide: ProviderRegistry, useExisting: LEGACY_SERVICES.providerRegistry },
     ProviderUsageService,
     ProviderSetupStatusService,
+    ProviderModelCatalogService,
     SetupHandlersService,
     ToolPolicyService,
   ],
