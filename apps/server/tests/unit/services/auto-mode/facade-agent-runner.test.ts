@@ -19,12 +19,13 @@ import * as settingsHelpers from '../../../../src/lib/settings-helpers.js';
 import type { ProviderRegistry } from '../../../../src/modules/providers/provider-registry.service.js';
 import * as sdkOptions from '../../../../src/lib/sdk-options.js';
 
-const providers = { providerForModel: vi.fn() };
+const providers = { providerForModel: vi.fn(), modelCapabilities: vi.fn() };
 
 describe('AutoModeServiceFacade Agent Runner', () => {
   let mockAgentExecutor: MockAgentExecutor;
   let mockSettingsService: MockSettingsService;
   let facade: AutoModeServiceFacade;
+  let factoryOptions: Parameters<typeof AutoModeServiceFacade.create>[1];
 
   // Type definitions for mocks
   interface MockAgentExecutor {
@@ -62,7 +63,7 @@ describe('AutoModeServiceFacade Agent Runner', () => {
     };
 
     // Helper to access the private createRunAgentFn via factory creation
-    facade = AutoModeServiceFacade.create('/project', {
+    factoryOptions = {
       providerRegistry: providers as unknown as ProviderRegistry,
       events: { on: vi.fn(), emit: vi.fn(), subscribe: vi.fn().mockReturnValue(vi.fn()) } as any,
       settingsService: mockSettingsService,
@@ -74,7 +75,42 @@ describe('AutoModeServiceFacade Agent Runner', () => {
           getRunningFeature: vi.fn().mockReturnValue(null),
         } as any,
       } as any,
+    };
+    facade = AutoModeServiceFacade.create('/project', factoryOptions);
+  });
+
+  it('uses native model tool grants rather than the adapter-wide transport flag', async () => {
+    providers.providerForModel.mockReturnValue({
+      getName: () => 'fixture',
+      getCapabilities: () => ({ tools: true }),
     });
+    providers.modelCapabilities.mockReturnValue({ tools: false });
+    vi.mocked(settingsHelpers.resolveProviderContext).mockResolvedValue({
+      provider: undefined,
+      resolvedModel: undefined,
+      credentials: undefined,
+      modelConfig: undefined,
+    });
+    const policy = {
+      resolve: vi.fn((input) => (input.providerSupportsTools ? input.requested : [])),
+    };
+    const native = AutoModeServiceFacade.create('/project', {
+      ...factoryOptions,
+      toolPolicy: policy as never,
+    });
+    await (native as any).executionService.runAgentFn(
+      '/workdir',
+      'feature',
+      'Prompt',
+      new AbortController(),
+      '/project',
+      [],
+      'text-only'
+    );
+    expect(providers.modelCapabilities).toHaveBeenCalledWith('text-only');
+    expect(policy.resolve).toHaveBeenCalledWith(
+      expect.objectContaining({ providerSupportsTools: false })
+    );
   });
 
   it('should resolve provider by providerId and pass to AgentExecutor', async () => {

@@ -349,7 +349,9 @@ export class AutoModeServiceFacade {
                 opts?.planningMode !== undefined &&
                 opts.planningMode !== 'skip' &&
                 opts.requirePlanApproval === true,
-              providerSupportsTools: provider.getCapabilities().tools,
+              providerSupportsTools: claudeCompatibleProvider
+                ? provider.getCapabilities().tools
+                : providerRegistry.modelCapabilities(resolvedModel).tools,
             })
           : (sdkOpts.allowedTools as string[] | undefined);
 

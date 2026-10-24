@@ -63,15 +63,22 @@ export class AgentProviderSelector {
     return this.registry.supportsVision(model);
   }
 
-  allowedTools(model: string, requested: string[] | undefined): string[] | undefined {
+  allowedTools(
+    model: string,
+    requested: string[] | undefined,
+    selection?: AgentProviderSelection
+  ): string[] | undefined {
     if (!this.tools) return requested;
-    const capabilities = this.registry
-      .byName(this.registry.providerNameForModel(model))
-      ?.getCapabilities();
+    // Native catalogs are model-specific. Claude-compatible endpoints still use
+    // their existing SDK policy until their settings expose explicit tool grants;
+    // a mapsToClaudeModel budget mapping is not a native model capability grant.
+    const supportsTools = selection?.provider
+      ? this.registry.byName('claude')?.getCapabilities().tools === true
+      : this.registry.modelCapabilities(model).tools;
     return this.tools.resolve({
       requested,
       readOnly: false,
-      providerSupportsTools: capabilities?.tools === true,
+      providerSupportsTools: supportsTools,
     });
   }
 

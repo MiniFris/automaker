@@ -11,6 +11,9 @@ import { terminalReason } from '@/providers/provider-contract.js';
 
 // Concrete implementation for testing the abstract class
 class TestProvider extends BaseProvider {
+  protected featureCapabilities() {
+    return { vision: true, reasoning: true };
+  }
   getName(): string {
     return 'test-provider';
   }

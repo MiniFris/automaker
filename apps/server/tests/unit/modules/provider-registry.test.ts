@@ -7,6 +7,7 @@ const provider = (name: string, supportsVision = false) =>
   ({
     getName: () => name,
     attachExecutionScope: vi.fn(),
+    getCapabilities: () => ({ vision: supportsVision, tools: false, reasoning: false }),
     detectInstallation: vi.fn().mockResolvedValue({ installed: true }),
     getAvailableModels: () => [
       { id: `${name}-model`, modelString: `${name}-model`, name, supportsVision },

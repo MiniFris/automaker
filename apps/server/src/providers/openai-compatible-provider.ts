@@ -53,6 +53,9 @@ function outputValidator(options: ExecuteOptions): ValidateFunction | undefined 
  * Legacy settings retain the restricted workspace / pinned Docker-shell backend.
  */
 export class OpenAICompatibleProvider extends BaseProvider {
+  protected featureCapabilities() {
+    return { vision: false, tools: true, reasoning: false, mcp: false, remoteExecution: true };
+  }
   protected cancellationMessages(): readonly ProviderMessage[] {
     return [
       { type: 'error', error: 'Request cancelled.' },

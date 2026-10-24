@@ -6,6 +6,7 @@ import type { BaseProvider } from '../../providers/base-provider.js';
 import type { InstallationStatus, ModelDefinition } from '../../providers/types.js';
 import { ProviderConnectionRepository } from './provider-connection.repository.js';
 import { ProviderExecutionScope } from '../../providers/provider-execution-scope.js';
+import type { ModelCapabilities } from '../../providers/provider-contract.js';
 
 export interface ProviderRegistration {
   readonly name: string;
@@ -136,8 +137,18 @@ export class ProviderRegistry implements OnModuleInit, OnApplicationShutdown {
   }
 
   supportsVision(modelId: string): boolean {
-    if (isDirectModel(modelId.toLowerCase())) return false;
-    return this.providerForModel(modelId).getModelCapabilities(modelId).vision;
+    return this.modelCapabilities(modelId).vision;
+  }
+
+  modelCapabilities(modelId: string): ModelCapabilities {
+    const adapter = this.byName(this.providerNameForModel(modelId));
+    const provider = adapter?.getCapabilities();
+    const model = adapter?.getModelCapabilities(modelId);
+    return Object.freeze({
+      vision: provider?.vision === true && model?.vision === true,
+      tools: provider?.tools === true && model?.tools === true,
+      reasoning: provider?.reasoning === true && model?.reasoning === true,
+    });
   }
 
   private sorted(): ProviderRegistration[] {

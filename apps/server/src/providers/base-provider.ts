@@ -14,6 +14,7 @@ import type {
   ModelCapabilities,
   ProviderAdapter,
   ProviderCapabilities,
+  ProviderFeatureCapabilities,
 } from './provider-contract.js';
 import { ProviderExecutionScope, managedProviderStream } from './provider-execution-scope.js';
 
@@ -76,38 +77,43 @@ export abstract class BaseProvider implements ProviderAdapter {
   abstract getAvailableModels(): ModelDefinition[];
 
   getCapabilities(): ProviderCapabilities {
-    const models = this.getAvailableModels();
     return Object.freeze({
       text: true,
       streaming: true,
-      vision: models.some((model) => model.supportsVision === true),
-      // Model metadata is authoritative. The legacy provider-level feature flag is
-      // too broad and must not grant tools to a model that explicitly disables them.
-      tools: models.some((model) => model.supportsTools === true),
-      reasoning: models.some((model) => model.hasReasoning === true),
-      mcp: this.supportsFeature('mcp'),
-      remoteExecution: this.supportsFeature('remoteExecution'),
+      vision: false,
+      tools: false,
+      reasoning: false,
+      mcp: false,
+      remoteExecution: false,
+      ...this.featureCapabilities(),
       followUp: true,
       cancellation: true,
     });
   }
 
+  protected featureCapabilities(): Partial<ProviderFeatureCapabilities> {
+    return {};
+  }
+
+  protected resolveCapabilityModelId(modelId: string): string {
+    return modelId;
+  }
+
   getModelCapabilities(modelId: string): ModelCapabilities {
-    const normalized = modelId.toLowerCase();
-    const model = this.getAvailableModels().find((candidate) => {
-      const id = candidate.id.toLowerCase();
-      const modelString = candidate.modelString.toLowerCase();
-      return (
-        id === normalized ||
-        modelString === normalized ||
-        id.endsWith(`-${normalized}`) ||
-        modelString.endsWith(`-${normalized}`)
-      );
-    });
+    const normalized = this.resolveCapabilityModelId(modelId.toLowerCase());
+    if (!normalized || normalized.trim() !== normalized)
+      return Object.freeze({ vision: false, tools: false, reasoning: false });
+    const models = this.getAvailableModels();
+    const exact = models.filter((model) => model.id.toLowerCase() === normalized);
+    const matches = exact.length
+      ? exact
+      : models.filter((model) => model.modelString.toLowerCase() === normalized);
+    // A bare SDK ID may identify several application models. Ambiguity must not
+    // grant a feature just because the first matching entry enables it.
     return Object.freeze({
-      vision: model?.supportsVision === true,
-      tools: model?.supportsTools === true,
-      reasoning: model?.hasReasoning === true,
+      vision: matches.length > 0 && matches.every((model) => model.supportsVision === true),
+      tools: matches.length > 0 && matches.every((model) => model.supportsTools === true),
+      reasoning: matches.length > 0 && matches.every((model) => model.hasReasoning === true),
     });
   }
 

@@ -15,6 +15,9 @@ import type {
 const MOCK_TEXT = 'Mock agent output for testing.';
 
 export class MockProvider extends BaseProvider {
+  protected featureCapabilities() {
+    return { vision: true, tools: true, reasoning: true };
+  }
   constructor(
     private readonly providerName = 'mock',
     private readonly models?: ModelDefinition[],

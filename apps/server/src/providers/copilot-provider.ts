@@ -250,6 +250,9 @@ function normalizeCopilotToolInput(
  * - Per-execution working directory support
  */
 export class CopilotProvider extends CliProvider {
+  protected featureCapabilities() {
+    return { vision: false, tools: true, reasoning: false, mcp: false, remoteExecution: true };
+  }
   private runtimeModels: CopilotRuntimeModel[] | null = null;
 
   constructor(config: ProviderConfig = {}) {

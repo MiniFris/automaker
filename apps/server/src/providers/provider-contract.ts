@@ -34,6 +34,12 @@ export interface ModelCapabilities {
   readonly reasoning: boolean;
 }
 
+/** Implemented adapter paths, independent of any model catalog or legacy feature flag. */
+export type ProviderFeatureCapabilities = Pick<
+  ProviderCapabilities,
+  'vision' | 'tools' | 'reasoning' | 'mcp' | 'remoteExecution'
+>;
+
 export type ProviderTerminalReason =
   | 'completed'
   | 'cancelled'

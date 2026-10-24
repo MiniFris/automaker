@@ -264,6 +264,9 @@ export function resetToolUseIdCounter(): void {
  * Anthropic, OpenAI, and more based on user authentication.
  */
 export class OpencodeProvider extends CliProvider {
+  protected featureCapabilities() {
+    return { vision: false, tools: true, reasoning: false, mcp: false, remoteExecution: true };
+  }
   // ==========================================================================
   // Dynamic Model Cache
   // ==========================================================================

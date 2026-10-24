@@ -17,6 +17,7 @@ const registry = {
   supportsVision: vi.fn(),
   providerNameForModel: vi.fn(),
   byName: vi.fn(),
+  modelCapabilities: vi.fn(),
 };
 const selector = new AgentProviderSelector(registry as unknown as ProviderRegistry);
 const result = (value: ClaudeCompatibleProvider | undefined, resolvedModel?: string) => ({
@@ -136,11 +137,28 @@ describe('AgentProviderSelector', () => {
     );
     registry.providerNameForModel.mockReturnValue('fixture');
     registry.byName.mockReturnValue({ getCapabilities: () => ({ tools: true }) });
+    registry.modelCapabilities.mockReturnValue({ tools: true });
     const requested = ['read', 'Bash'];
     expect(policySelector.allowedTools('fixture-model', requested)).toEqual(['Read', 'Bash']);
     expect(requested).toEqual(['read', 'Bash']);
-    registry.byName.mockReturnValue(undefined);
+    registry.modelCapabilities.mockReturnValue({ tools: false });
     expect(policySelector.allowedTools('fixture-model', requested)).toEqual([]);
-    expect(registry.byName).toHaveBeenCalledWith('fixture');
+    expect(registry.modelCapabilities).toHaveBeenCalledWith('fixture-model');
+  });
+  it('keeps the existing configured Claude-compatible tool policy separate from native model grants', () => {
+    const policySelector = new AgentProviderSelector(
+      registry as unknown as ProviderRegistry,
+      new ToolPolicyService()
+    );
+    registry.byName.mockReturnValue({ getCapabilities: () => ({ tools: true }) });
+    registry.modelCapabilities.mockReturnValue({ tools: false });
+    expect(
+      policySelector.allowedTools('GLM-4.7', ['Read'], {
+        provider,
+        resolvedModel: 'claude-sonnet-4-6',
+      })
+    ).toEqual(['Read']);
+    expect(registry.byName).toHaveBeenCalledWith('claude');
+    expect(policySelector.allowedTools('GLM-4.7', ['Read'])).toEqual([]);
   });
 });

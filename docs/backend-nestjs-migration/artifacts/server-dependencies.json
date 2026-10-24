@@ -3,7 +3,7 @@
   "sourceRoot": "apps/server/src",
   "summary": {
     "files": 615,
-    "internalEdges": 1994,
+    "internalEdges": 1995,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -24,7 +24,7 @@
     "modules -> legacy": 29,
     "modules -> lib": 24,
     "modules -> modules": 248,
-    "modules -> providers": 20,
+    "modules -> providers": 21,
     "modules -> routes": 62,
     "modules -> services": 111,
     "modules -> types": 2,
@@ -2599,6 +2599,10 @@
     {
       "source": "apps/server/src/modules/providers/provider-registry.service.ts",
       "target": "apps/server/src/providers/base-provider.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/provider-registry.service.ts",
+      "target": "apps/server/src/providers/provider-contract.ts"
     },
     {
       "source": "apps/server/src/modules/providers/provider-registry.service.ts",

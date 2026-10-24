@@ -181,6 +181,9 @@ function normalizeGeminiToolInput(
  * - Streaming JSON output
  */
 export class GeminiProvider extends CliProvider {
+  protected featureCapabilities() {
+    return { vision: false, tools: true, reasoning: false, mcp: false, remoteExecution: true };
+  }
   constructor(config: ProviderConfig = {}) {
     super(config);
   }
@@ -886,6 +889,7 @@ export class GeminiProvider extends CliProvider {
       description: config.description,
       supportsTools: true,
       supportsVision: config.supportsVision,
+      hasReasoning: config.supportsThinking,
       contextWindow: config.contextWindow,
     }));
   }

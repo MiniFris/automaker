@@ -722,6 +722,9 @@ async function loadCodexInstructions(cwd: string, enabled: boolean): Promise<str
 const logger = createLogger('CodexProvider');
 
 export class CodexProvider extends BaseProvider {
+  protected featureCapabilities() {
+    return { vision: true, tools: true, reasoning: true, mcp: true, remoteExecution: true };
+  }
   constructor(private readonly settingsService?: SettingsService) {
     super();
   }

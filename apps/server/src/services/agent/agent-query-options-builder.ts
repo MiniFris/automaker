@@ -147,7 +147,7 @@ export class AgentQueryOptionsBuilder {
         : undefined;
     if (skill && allowedTools && !allowedTools.includes('Skill')) allowedTools.push('Skill');
     if (task && allowedTools && !allowedTools.includes('Task')) allowedTools.push('Task');
-    allowedTools = this.providers.allowedTools(routingModel, allowedTools);
+    allowedTools = this.providers.allowedTools(routingModel, allowedTools, config.selection);
     const options: ExecuteOptions = {
       prompt: '',
       model: bareModel,

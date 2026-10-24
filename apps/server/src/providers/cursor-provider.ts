@@ -262,6 +262,9 @@ export interface CursorError extends Error {
  * - Text block deduplication (Cursor sends duplicate chunks)
  */
 export class CursorProvider extends CliProvider {
+  protected featureCapabilities() {
+    return { vision: false, tools: true, reasoning: false, mcp: false, remoteExecution: true };
+  }
   /**
    * Version data directory where cursor-agent stores versions
    * The install script creates versioned folders like:

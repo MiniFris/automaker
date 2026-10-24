@@ -17,6 +17,8 @@ import {
   type ClaudeApiProfile,
   type ClaudeCompatibleProvider,
   type Credentials,
+  CLAUDE_MODEL_MAP,
+  CLAUDE_CANONICAL_MAP,
 } from '@automaker/types';
 import type {
   ExecuteOptions,
@@ -185,6 +187,13 @@ function buildEnv(
 }
 
 export class ClaudeProvider extends BaseProvider {
+  protected featureCapabilities() {
+    return { vision: true, tools: true, reasoning: true, mcp: true, remoteExecution: true };
+  }
+  protected resolveCapabilityModelId(modelId: string): string {
+    const aliases: Record<string, string> = { ...CLAUDE_MODEL_MAP, ...CLAUDE_CANONICAL_MAP };
+    return Object.hasOwn(aliases, modelId) ? aliases[modelId] : modelId;
+  }
   getName(): string {
     return 'claude';
   }

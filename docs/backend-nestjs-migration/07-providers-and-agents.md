@@ -34,7 +34,7 @@ AgentsModule
 
 - [x] Зафиксировать общий interface: installation/auth status, models, capabilities,
       start, stream, follow-up, cancel и dispose.
-- [ ] Разделить provider capability и model capability.
+- [x] Разделить provider capability и model capability.
 - [ ] Явно описать vision, tools, thinking/reasoning, MCP и remote execution.
 - [ ] Не считать неизвестную capability автоматически доступной.
 - [ ] Стандартизировать provider events до передачи в application event bus.
@@ -111,6 +111,82 @@ terminal reason normalization, transport-specific cancellation/process-exit
 contracts для каждого SDK/CLI и общий shutdown deadline приложения ещё требуют
 проверок. В частности, successful SDK stop API сам по себе не доказывает exit
 каждого внешнего процесса. Этап 7 и вся миграция остаются незавершёнными.
+
+### Срез: native adapter/model capability boundaries
+
+`getCapabilities()` теперь описывает реализованные пути adapter, не делает
+catalog/probe calls и не выводит grants из legacy `supportsFeature` или наличия
+хотя бы одной богатой модели. Не объявленные feature flags закрыты по умолчанию.
+Text/stream/follow-up/cancellation описывают общий managed stream contract.
+
+| Adapter | Vision path | Tools path | Reasoning controls | MCP path | Remote execution path |
+| --- | --- | --- | --- | --- | --- |
+| Claude | да | да | да | да | да |
+| Codex | да, CLI | да | да | да, CLI | да |
+| Cursor | нет | да | нет | нет | да |
+| Gemini | нет | да | нет | нет | да |
+| Copilot | нет | да | нет | нет | да |
+| OpenCode | нет | да | нет | нет | да |
+| OpenAI-compatible | нет | да | нет | нет | да |
+
+Таблица указывает наличие реализованного пути, а не поддержку каждой возможности
+во всех SDK/CLI modes или execution environments. Например, возможности Codex CLI
+не означают те же возможности SDK path; проверка конкретного runtime остаётся
+отдельной границей. Gemini model metadata получает `hasReasoning` из существующего
+`supportsThinking`, но adapter не обещает поддержку reasoning controls.
+
+`getModelCapabilities()` возвращает независимые model flags из каталога. Для lookup
+разрешены только точный application ID, точный SDK ID и явные Claude aliases из
+`CLAUDE_MODEL_MAP`/`CLAUDE_CANONICAL_MAP`. Fuzzy suffix matching удалён: version/date
+suffix или произвольная часть ID больше не получает capabilities известной модели.
+Точный application ID имеет приоритет; неоднозначный SDK ID получает пересечение
+grants всех совпавших записей, а не первую запись в порядке каталога.
+
+Внутренний `ProviderRegistry.modelCapabilities()` вычисляет adapter ∩ model.
+`supportsVision()` использует это пересечение: text-only CLI paths не получают
+vision только из metadata модели. AgentService tests проверяют отказ до чтения
+attachments и provider execution; Gemini case намеренно использует vision-capable
+модель с неподдерживаемым image transport.
+
+Native chat и Auto Mode формируют tool-option list по capabilities выбранной
+модели, а не по provider-wide флагу. Rich соседняя модель не выдаёт tools text-only
+или неизвестному ID. Это фильтрация SDK options, **не** доказательство полного
+runtime permission enforcement: например, Claude `allowedTools` и фактическая
+регистрация доступных SDK tools — разные границы; их hardening остаётся в 7.5.
+
+Compatibility boundary: настроенные Claude-compatible endpoints пока сохраняют
+прежнюю SDK tool policy. В их model settings ещё нет отдельного explicit tool grant;
+автоматическое отключение всех существующих GLM/MiniMax profiles этим срезом не
+вводится. Эта legacy policy явно передаётся через provider selection, а не выводится
+из `mapsToClaudeModel` budget mapping. Direct endpoint capabilities по-прежнему
+проверяются в server-resolved connection/environment boundary; глобальный native
+catalog не выдаёт grants произвольному Direct model ID.
+
+Проверки: 22 capability tests покрывают все семь adapters, отсутствие catalog probes,
+unknown/partial IDs, неоднозначные SDK IDs, Claude aliases и model-specific tool
+options; отдельные tests покрывают Auto Mode, legacy endpoint compatibility и
+два AgentService image отказа. Native tool filtering не закрывает общий tool policy.
+
+Checkpoint среза:
+
+- `npm run test:server:unit`: 3176 passed, 40 skipped.
+- `npm run test:server:contract`: 258 passed.
+- `npm run test:packages`: 1194 passed.
+- Server production build/lint, UI typecheck, lockfile, formatting и
+  `git diff --check`: успешно.
+- Три generated inventory checks: успешно.
+- Последовательный build → lint → `smoke-server-lifecycle.mjs`: SIGTERM/SIGINT exit 0.
+- Выбранные SSH CLI/SDK/Direct chat/restart: 3 passed, 34 отфильтрованы.
+- Полный Docker acceptance с локальным
+  `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest`: 11 passed,
+  4 opt-in skipped; cleanup owned resources успешен.
+- Chromium send/stream/reload и held-chat Running Agents: 2 passed.
+
+Остаются explicit custom-endpoint grants, runtime/environment-specific capabilities,
+проверки отсутствия silent option/image loss у каждого SDK/CLI path и применение
+policy ко всем tools/MCP entrypoints. Поэтому пункты «не считать неизвестную
+capability автоматически доступной» и полного tool policy пока не закрываются;
+этап 7 не объявляется завершённым.
 
 ## 7.2. ProviderRegistry
 
