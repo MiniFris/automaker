@@ -1,6 +1,8 @@
 import { Global, Module } from '@nestjs/common';
 
 import { RuntimePathsService } from '../../core/config/index.js';
+import { SECURE_FILESYSTEM, SecurityService } from '../../core/security/index.js';
+import type * as SecureFilesystem from '../../lib/secure-fs.js';
 import { SettingsService } from '../../services/settings-service.js';
 import { SettingsFileRepository } from './settings-file.repository.js';
 import { SettingsController } from './settings.controller.js';
@@ -22,7 +24,16 @@ import { ExecutionEnvironmentSettingsService } from './execution-environment-set
       useFactory: (paths: RuntimePathsService, files: SettingsFileRepository) =>
         new SettingsService(paths.dataDirectory, files),
     },
-    SettingsFileRepository,
+    {
+      provide: SettingsFileRepository,
+      inject: [SECURE_FILESYSTEM, SecurityService],
+      useFactory: (filesystem: typeof SecureFilesystem, security: SecurityService) =>
+        new SettingsFileRepository(
+          filesystem,
+          (candidate) => security.validateLocalPath(candidate, 'settings storage'),
+          true
+        ),
+    },
     SettingsQueryService,
     SettingsCommandService,
     SettingsDomainEvents,

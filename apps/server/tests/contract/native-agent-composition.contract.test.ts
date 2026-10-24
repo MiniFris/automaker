@@ -33,7 +33,7 @@ it('owns one native agent facade per application and shares it between chat and 
       second = await start('two');
     for (const runtime of apps) {
       const agent = runtime.app.get(AgentService);
-      expect(runtime.legacy).not.toHaveProperty('services');
+      expect(runtime).not.toHaveProperty('legacy');
       const wrappers = [...runtime.app.get(ModulesContainer).values()]
         .flatMap((module) => [...module.providers.values()])
         .filter((entry) => entry.token === AgentService);

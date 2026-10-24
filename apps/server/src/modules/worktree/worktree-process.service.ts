@@ -1,12 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundDomainError, ValidationDomainError } from '../../core/errors/index.js';
-import { APPLICATION_EVENTS } from '../../core/eventing/application-events.js';
-import type { EventEmitter } from '../../lib/events.js';
 import { DevServerService } from '../../services/dev-server-service.js';
-import { getManagedDevServerService } from '../../services/execution-environment/dev-server.js';
+import { ManagedDevServerService } from '../../services/execution-environment/dev-server.js';
 import { ProjectGitService } from '../../services/execution-environment/project-git.js';
 import { ExecutionEnvironmentError } from '../../services/execution-environment/runtime.js';
-import { getManagedTestRunnerService } from '../../services/execution-environment/test-runner.js';
+import { ManagedTestRunnerService } from '../../services/execution-environment/test-runner.js';
 import { SettingsService } from '../../services/settings-service.js';
 import { TestRunnerService } from '../../services/test-runner-service.js';
 import type {
@@ -19,21 +17,16 @@ import type {
 
 @Injectable()
 export class WorktreeProcessService {
-  private readonly managedDev;
-  private readonly managedTests;
-
   constructor(
     @Inject(SettingsService) private readonly settings: SettingsService,
     @Inject(ProjectGitService) private readonly git: ProjectGitService,
-    @Inject(APPLICATION_EVENTS) events: EventEmitter,
+    @Inject(ManagedDevServerService) private readonly managedDev: ManagedDevServerService,
+    @Inject(ManagedTestRunnerService) private readonly managedTests: ManagedTestRunnerService,
     @Inject(DevServerService)
     private readonly localDev: DevServerService,
     @Inject(TestRunnerService)
     private readonly localTests: TestRunnerService
-  ) {
-    this.managedDev = getManagedDevServerService(settings, events);
-    this.managedTests = getManagedTestRunnerService(settings, events);
-  }
+  ) {}
 
   async startDev(input: StartDevRequest) {
     const previous = this.managedDev.find(input.worktreePath);

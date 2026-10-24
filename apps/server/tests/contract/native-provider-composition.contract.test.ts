@@ -75,7 +75,7 @@ it('owns registry, connection repository and tool policy exactly once per Nest a
       }
     }
     for (const runtime of apps) {
-      expect(runtime.legacy).not.toHaveProperty('services');
+      expect(runtime).not.toHaveProperty('legacy');
       const registry = runtime.app.get(ProviderRegistry),
         policy = runtime.app.get(ToolPolicyService);
       const auto = runtime.app.get(AutoModeServiceCompat) as unknown as {

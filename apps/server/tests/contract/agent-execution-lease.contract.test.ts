@@ -1,3 +1,5 @@
+import { APPLICATION_EVENTS } from '../../src/core/eventing/application-events.js';
+import type { EventEmitter } from '../../src/lib/events.js';
 import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -63,7 +65,7 @@ it('rejects duplicate HTTP admission without erroring the original stream, and a
     providerRegistrations: [{ name: 'claude', create: () => provider }],
   });
   const events: Array<{ type: string }> = [];
-  runtime.legacy.events.subscribe((type, payload) => {
+  runtime.app.get<EventEmitter>(APPLICATION_EVENTS).subscribe((type, payload) => {
     if (type === 'agent:stream') events.push(payload as (typeof events)[number]);
   });
   try {

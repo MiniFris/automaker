@@ -34,7 +34,7 @@ Docker/SSH задания закончены до запуска Chromium/Electr
 | Проверка                                                  | Результат                                                                     |
 | --------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | `npm run test:server:unit`                                | 3731 passed, 40 skipped                                                       |
-| `npm run test:server:contract`                            | 360 passed, включая финальные startup-header contracts                       |
+| `npm run test:server:contract`                            | 360 passed, включая финальные startup-header contracts                        |
 | `npm run test:packages`                                   | 1515 passed                                                                   |
 | Full real SSH: feature, managed terminal, terminal worker | 32 passed                                                                     |
 | Managed Docker                                            | 11 passed, 4 opt-in skipped                                                   |

@@ -19,6 +19,12 @@
 Express остаётся transitive platform через `@nestjs/platform-express`; удаляется
 ручная Express composition, а не сам adapter.
 
+Актуальное продолжение: [native cutover checkpoint](artifacts/native-cutover-checkpoint.md).
+Боевые `LegacyModule`, factory и token удалены; startup/shutdown используют native
+DI owners. Удалены terminal и auto-mode route groups; остальные factories/getters
+ещё не объявлены удалёнными. Нижеследующие промежуточные срезы сохраняют историю
+проверок и не означают, что удалённый lifecycle bridge всё ещё используется.
+
 Промежуточный срез composition: `application-service.providers.ts` создаёт каждый
 stateful service отдельным Nest factory provider с явным `inject`. Lifecycle adapter
 получает готовые зависимости и больше не создаёт services. Local dev/test runners

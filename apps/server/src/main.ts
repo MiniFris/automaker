@@ -2,14 +2,16 @@ import 'reflect-metadata';
 
 import express from 'express';
 import { createServer } from 'node:http';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { createLogger } from '@automaker/utils';
+import dotenv from 'dotenv';
 
 import { AppModule } from './app.module.js';
 import { assertNoLegacyServiceOverrides, parseRuntimeConfig } from './core/config/index.js';
-import type { LegacyApplication, LegacyApplicationOptions } from './legacy-application.js';
-import { LEGACY_APPLICATION } from './legacy/legacy.tokens.js';
+import { installProcessExceptionHandlers } from './core/lifecycle/process-exception-handlers.js';
 import { NestLogger } from './nest-logger.js';
 import { SharedHttpServerExpressAdapter } from './core/http/shared-http-server.adapter.js';
 import type { ProviderRegistration } from './modules/providers/provider-registry.service.js';
@@ -19,10 +21,9 @@ const logger = createLogger('ServerBootstrap');
 
 const DEFAULT_PORT = 3008;
 
-export interface NestApplicationFactoryOptions extends Pick<
-  LegacyApplicationOptions,
-  'dataDir' | 'runStartupTasks'
-> {
+export interface NestApplicationFactoryOptions {
+  dataDir?: string;
+  runStartupTasks?: boolean;
   host?: string;
   port?: number;
   enableShutdownHooks?: boolean;
@@ -34,7 +35,6 @@ export interface NestApplicationFactoryOptions extends Pick<
 
 export interface AutomakerNestApplication {
   app: NestExpressApplication;
-  legacy: LegacyApplication;
   host: string;
   port: number;
   start(): Promise<void>;
@@ -60,7 +60,6 @@ export async function createNestApplication(
       runStartupTasks: options.runStartupTasks ?? true,
       providerRegistrations: options.providerRegistrations,
       hostEnvironment: environment,
-      httpServer,
     }),
     adapter,
     {
@@ -81,11 +80,9 @@ export async function createNestApplication(
     });
     throw error;
   }
-  const legacy = app.get<LegacyApplication>(LEGACY_APPLICATION);
 
   return {
     app,
-    legacy,
     host,
     port,
     async start() {
@@ -96,9 +93,17 @@ export async function createNestApplication(
 }
 
 async function bootstrap(): Promise<void> {
-  const application = await createNestApplication();
-  application.legacy.installExceptionHandlers();
-  await application.start();
+  dotenv.config();
+  const uninstall = installProcessExceptionHandlers();
+  let application: AutomakerNestApplication | undefined;
+  try {
+    application = await createNestApplication();
+    await application.start();
+  } catch (error) {
+    uninstall();
+    await application?.app.close();
+    throw error;
+  }
 }
 
 function logBootstrapFailure(error: unknown): void {
@@ -109,7 +114,9 @@ function logBootstrapFailure(error: unknown): void {
   logger.error('Failed to start Automaker backend', error);
 }
 
-if (process.env.NODE_ENV !== 'test' || process.env.AUTOMAKER_RUN_MAIN === '1') {
+const directEntry =
+  process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url;
+if (process.env.AUTOMAKER_RUN_MAIN === '1' || (directEntry && process.env.NODE_ENV !== 'test')) {
   bootstrap().catch((error) => {
     logBootstrapFailure(error);
     process.exitCode = 1;

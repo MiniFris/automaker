@@ -51,14 +51,17 @@ export interface ToolPolicyInput {
 export class ToolPolicyService {
   resolve(input: ToolPolicyInput): string[] | undefined {
     if (!input.providerSupportsTools) return [];
-    if (input.requested === undefined) return undefined;
+    if (input.requested === undefined && !input.readOnly) return undefined;
+    // An omitted list inherits tools only for unrestricted execution. Delegation
+    // and skills can perform writes, so read-only defaults grant read effects only.
+    const requested = input.requested ?? ['Read', 'LS', 'Glob', 'Grep', 'WebSearch', 'WebFetch'];
     const resolved: string[] = [];
-    for (const rawName of input.requested) {
+    for (const rawName of requested) {
       const key = rawName.replace(/[^a-z]/gi, '').toLowerCase();
       const effect = TOOL_EFFECTS[key];
       const name = CANONICAL_NAMES[key];
       if (!effect || !name) throw new Error(`Unknown tool requested: ${rawName}`);
-      if (input.readOnly && ['write', 'shell', 'delete'].includes(effect)) continue;
+      if (input.readOnly && effect !== 'read') continue;
       if (effect === 'shell' && input.environment?.shell === false) continue;
       if (effect === 'delete' && input.environment?.remove === false) continue;
       if (!resolved.includes(name)) resolved.push(name);

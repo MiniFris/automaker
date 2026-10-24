@@ -78,7 +78,8 @@ export class PipelineOrchestrator {
     private buildFeaturePromptFn: BuildFeaturePromptFn,
     private executeFeatureFn: ExecuteFeatureFn,
     private runAgentFn: RunAgentFn,
-    private readonly pipeline: PipelineService = pipelineService
+    private readonly pipeline: PipelineService = pipelineService,
+    private readonly directoryValidator: (cwd: string) => void = validateWorkingDirectory
   ) {}
 
   async executePipeline(ctx: PipelineContext): Promise<void> {
@@ -164,6 +165,7 @@ export class PipelineOrchestrator {
         {
           projectPath,
           planningMode: 'skip',
+          boundTargetCwd: remote?.binding.cwd ?? ctx.boundTargetCwd,
           requirePlanApproval: false,
           previousContent: previousContext,
           systemPrompt: contextFilesPrompt || undefined,
@@ -420,7 +422,7 @@ export class PipelineOrchestrator {
     try {
       const remote = await remoteService?.prepare(projectPath, feature, abortController.signal);
       runningEntry.remoteWorkspace = !!remote;
-      validateWorkingDirectory(projectPath);
+      this.directoryValidator(projectPath);
       let worktreePath: string | null = null;
       const branchName = feature.branchName;
 
@@ -432,7 +434,7 @@ export class PipelineOrchestrator {
       const workDir =
         remote?.binding.cwd ??
         (worktreePath ? path.resolve(worktreePath) : path.resolve(projectPath));
-      validateWorkingDirectory(workDir);
+      if (!remote) this.directoryValidator(workDir);
       runningEntry.worktreePath = remote?.environment.cwd ?? worktreePath;
       runningEntry.branchName =
         (remote?.binding.sshWorkspace ?? remote?.binding.featureWorkspace)?.baseBranch ??
@@ -466,6 +468,7 @@ export class PipelineOrchestrator {
         feature,
         steps: stepsToExecute,
         workDir,
+        boundTargetCwd: remote?.binding.cwd,
         worktreePath,
         branchName: branchName ?? null,
         abortController,
@@ -640,6 +643,7 @@ export class PipelineOrchestrator {
             reasoningEffort: context.feature.reasoningEffort,
             status: context.feature.status,
             providerId: context.feature.providerId,
+            boundTargetCwd: context.boundTargetCwd,
             branchName: context.feature.branchName,
           }
         );

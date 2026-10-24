@@ -16,7 +16,10 @@ vi.mock('../../../src/lib/settings-helpers.js', () => ({
   getCustomSubagents: vi.fn(),
   getDefaultMaxTurnsSetting: vi.fn(),
 }));
-vi.mock('../../../src/lib/sdk-options.js', () => ({ createChatOptions: vi.fn() }));
+vi.mock('../../../src/lib/sdk-options.js', () => ({
+  createChatOptions: vi.fn(),
+  validateWorkingDirectory: vi.fn(),
+}));
 const selector = new AgentProviderSelector({} as ProviderRegistry);
 const resolve = vi.fn<AgentProviderSelector['resolve']>();
 const builder = new AgentQueryOptionsBuilder(selector);
@@ -231,6 +234,23 @@ describe('AgentQueryOptionsBuilder', () => {
     expect(base.allowedTools).toEqual(['Read', 'Skill']);
     expect(base.settingSources).toEqual(['project', 'local', 'user']);
     expect(helpers.getCustomSubagents).toHaveBeenCalledWith(settings, '/project');
+  });
+  it('does not expand an explicit empty tool policy through enabled skills or delegation', async () => {
+    vi.mocked(helpers.getSkillsConfiguration).mockResolvedValue({
+      enabled: true,
+      sources: ['project'],
+      shouldIncludeInTools: true,
+    });
+    vi.mocked(helpers.getSubagentsConfiguration).mockResolvedValue({
+      enabled: true,
+      sources: ['project'],
+      shouldIncludeInTools: true,
+    });
+    vi.mocked(helpers.getCustomSubagents).mockResolvedValue({
+      planner: { description: 'Plan', prompt: 'Plan carefully' },
+    });
+    vi.mocked(sdk.createChatOptions).mockReturnValue({ ...sdkOptions(), allowedTools: [] });
+    expect(builder.build(await buildInput()).options.allowedTools).toEqual([]);
   });
   it('does not advertise Task when enabled subagents have no definitions', async () => {
     vi.mocked(helpers.getSubagentsConfiguration).mockResolvedValue({

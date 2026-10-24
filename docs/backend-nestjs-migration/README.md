@@ -2,7 +2,8 @@
 
 Обновлено: 2026-10-24. Текущий фокус — завершение этапов 7–10 и оставшихся
 application/infra границ этапа 11. Результаты возобновлённой работы собраны
-в [общем checkpoint](artifacts/resumed-goal-checkpoint.md).
+в [первом checkpoint](artifacts/resumed-goal-checkpoint.md) и последующем
+[native cutover checkpoint](artifacts/native-cutover-checkpoint.md).
 Полная миграция ещё не завершена; checklist и результаты проверок ведутся
 в документах соответствующих этапов.
 

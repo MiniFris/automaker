@@ -51,7 +51,6 @@ export async function createE2eApplication(
         // Native setup mutations must only write into this owned test profile.
         AppModule.register(config, dataDirectory, {
           runStartupTasks: false,
-          httpServer,
           hostEnvironment: {
             ...environment,
             GEMINI_API_KEY: undefined,

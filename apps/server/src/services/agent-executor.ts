@@ -141,11 +141,7 @@ export class AgentExecutor {
         credentials,
         claudeCompatibleProvider,
         sdkSessionId,
-        ...((isDirectModel(options.model ?? effectiveBareModel) ||
-          isRemoteCliModel(options.model ?? effectiveBareModel) ||
-          isRemoteSdkModel(options.model ?? effectiveBareModel)) && {
-          readOnly: planningMode !== 'skip' && requirePlanApproval,
-        }),
+        readOnly: planningMode !== 'skip' && requirePlanApproval,
       },
       this.settingsService,
       {
@@ -901,10 +897,10 @@ export class AgentExecutor {
         credentials: o.credentials,
         claudeCompatibleProvider: o.claudeCompatibleProvider,
         sdkSessionId: o.sdkSessionId,
+        readOnly,
         ...((isDirectModel(o.model ?? o.effectiveBareModel) ||
           isRemoteCliModel(o.model ?? o.effectiveBareModel) ||
           isRemoteSdkModel(o.model ?? o.effectiveBareModel)) && {
-          readOnly,
           systemPrompt: o.sdkOptions?.systemPrompt ?? o.systemPrompt,
         }),
       },

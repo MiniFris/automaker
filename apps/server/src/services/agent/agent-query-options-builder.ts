@@ -1,6 +1,6 @@
 import type { ExecuteOptions, ThinkingLevel, ReasoningEffort } from '@automaker/types';
 import { createLogger } from '@automaker/utils';
-import { createChatOptions } from '../../lib/sdk-options.js';
+import { createChatOptions, validateWorkingDirectory } from '../../lib/sdk-options.js';
 import {
   getAutoLoadClaudeMdSetting,
   getUseClaudeCodeSystemPromptSetting,
@@ -31,7 +31,10 @@ const BASE_TOOLS = [
 /** Loads chat configuration and builds SDK/tool options, without starting a provider. */
 export class AgentQueryOptionsBuilder {
   private readonly logger = createLogger('AgentQueryOptionsBuilder');
-  constructor(private readonly providers: AgentProviderSelector) {}
+  constructor(
+    private readonly providers: AgentProviderSelector,
+    private readonly validateDirectory: (cwd: string) => void = validateWorkingDirectory
+  ) {}
 
   async configuration(input: {
     workingDirectory: string;
@@ -113,6 +116,7 @@ export class AgentQueryOptionsBuilder {
     const mcpServers = Object.keys(config.mcpServers).length ? config.mcpServers : undefined;
     const sdk = createChatOptions({
       cwd: input.workingDirectory,
+      validateWorkingDirectory: this.validateDirectory,
       model: config.selection.resolvedModel || input.model,
       sessionModel: config.selection.resolvedModel ? undefined : input.session.model,
       systemPrompt: input.systemPrompt,
@@ -145,8 +149,9 @@ export class AgentQueryOptionsBuilder {
       : skill || task
         ? [...BASE_TOOLS]
         : undefined;
-    if (skill && allowedTools && !allowedTools.includes('Skill')) allowedTools.push('Skill');
-    if (task && allowedTools && !allowedTools.includes('Task')) allowedTools.push('Task');
+    if (skill && allowedTools?.length && !allowedTools.includes('Skill'))
+      allowedTools.push('Skill');
+    if (task && allowedTools?.length && !allowedTools.includes('Task')) allowedTools.push('Task');
     allowedTools = this.providers.allowedTools(routingModel, allowedTools, config.selection);
     const options: ExecuteOptions = {
       prompt: '',

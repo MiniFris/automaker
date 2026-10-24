@@ -2,53 +2,45 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 611,
-    "internalEdges": 2019,
+    "files": 597,
+    "internalEdges": 1969,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
-    "core -> core": 56,
-    "core -> lib": 4,
+    "core -> core": 60,
+    "core -> lib": 6,
     "core -> middleware": 1,
-    "core -> services": 1,
-    "legacy -> core": 3,
-    "legacy -> legacy": 1,
-    "legacy -> lib": 1,
-    "legacy -> root": 1,
-    "legacy -> services": 6,
+    "core -> services": 9,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 145,
+    "modules -> core": 151,
     "modules -> lib": 29,
-    "modules -> modules": 348,
+    "modules -> modules": 353,
     "modules -> providers": 29,
-    "modules -> routes": 23,
-    "modules -> services": 159,
+    "modules -> routes": 9,
+    "modules -> services": 162,
     "modules -> types": 2,
     "providers -> core": 1,
     "providers -> lib": 3,
     "providers -> modules": 1,
     "providers -> providers": 90,
-    "providers -> services": 21,
-    "root -> core": 15,
-    "root -> legacy": 2,
-    "root -> lib": 2,
+    "providers -> services": 22,
+    "root -> core": 16,
     "root -> modules": 28,
-    "root -> root": 4,
-    "root -> services": 8,
+    "root -> root": 2,
     "routes -> lib": 97,
-    "routes -> middleware": 8,
+    "routes -> middleware": 7,
     "routes -> modules": 7,
     "routes -> providers": 11,
-    "routes -> routes": 316,
-    "routes -> services": 179,
+    "routes -> routes": 289,
+    "routes -> services": 164,
     "routes -> types": 2,
-    "services -> core": 16,
-    "services -> lib": 75,
-    "services -> modules": 9,
+    "services -> core": 18,
+    "services -> lib": 74,
+    "services -> modules": 10,
     "services -> providers": 16,
     "services -> routes": 1,
-    "services -> services": 290,
+    "services -> services": 291,
     "services -> types": 2,
     "tests -> lib": 2
   },
@@ -69,7 +61,6 @@
     "processEnv": [
       "apps/server/src/core/config/runtime-config.module.ts",
       "apps/server/src/core/platform/claude-verification.runtime.ts",
-      "apps/server/src/legacy-application.ts",
       "apps/server/src/lib/auth-utils.ts",
       "apps/server/src/lib/cli-detection.ts",
       "apps/server/src/lib/codex-auth.ts",
@@ -121,7 +112,6 @@
     ],
     "processCwd": [
       "apps/server/src/core/config/runtime-config.ts",
-      "apps/server/src/legacy-application.ts",
       "apps/server/src/lib/auth-utils.ts",
       "apps/server/src/lib/codex-auth.ts",
       "apps/server/src/main.ts",
@@ -145,7 +135,7 @@
     ],
     "processOn": [
       "apps/server/src/core/lifecycle/application-shutdown.ts",
-      "apps/server/src/legacy-application.ts",
+      "apps/server/src/core/lifecycle/process-exception-handlers.ts",
       "apps/server/src/providers/remote-sdk-worker.ts",
       "apps/server/src/services/execution-environment/docker-worker.ts"
     ],
@@ -209,13 +199,14 @@
     "timers": [
       "apps/server/src/core/auth/auth.service.ts",
       "apps/server/src/core/http/shared-http-server.adapter.ts",
+      "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
       "apps/server/src/core/lifecycle/application-shutdown.ts",
       "apps/server/src/core/lifecycle/supervisor-coordinator.service.ts",
       "apps/server/src/core/platform/codex-credential.runtime.ts",
-      "apps/server/src/legacy-application.ts",
       "apps/server/src/lib/auth-utils.ts",
       "apps/server/src/lib/error-handler.ts",
       "apps/server/src/lib/git.ts",
+      "apps/server/src/modules/auto-mode/project-run-context.registry.ts",
       "apps/server/src/modules/event-history/event-replay.service.ts",
       "apps/server/src/modules/files/files-command.service.ts",
       "apps/server/src/modules/github/github-command.runtime.ts",
@@ -258,6 +249,7 @@
       "apps/server/src/services/pipeline-config.repository.ts",
       "apps/server/src/services/pipeline-orchestrator.ts",
       "apps/server/src/services/plan-approval-service.ts",
+      "apps/server/src/services/settings-mutation-queue.ts",
       "apps/server/src/services/terminal-service.ts",
       "apps/server/src/services/terminal-session-lifecycle.ts",
       "apps/server/src/services/test-runner-service.ts",
@@ -281,20 +273,20 @@
   },
   "externalImports": {
     "@anthropic-ai/claude-agent-sdk": 3,
-    "@automaker/contracts": 27,
+    "@automaker/contracts": 28,
     "@automaker/dependency-resolver": 1,
     "@automaker/git-utils": 12,
     "@automaker/model-resolver": 20,
-    "@automaker/platform": 73,
+    "@automaker/platform": 72,
     "@automaker/prompts": 3,
     "@automaker/types": 178,
-    "@automaker/utils": 163,
+    "@automaker/utils": 156,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 185,
+    "@nestjs/common": 186,
     "@nestjs/core": 8,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
@@ -306,7 +298,7 @@
     "crypto": 3,
     "dotenv": 1,
     "events": 1,
-    "express": 201,
+    "express": 184,
     "fs": 11,
     "fs/promises": 13,
     "net": 1,
@@ -316,16 +308,16 @@
     "node:crypto": 31,
     "node:fs": 10,
     "node:fs/promises": 18,
-    "node:http": 8,
+    "node:http": 7,
     "node:net": 3,
     "node:os": 12,
-    "node:path": 52,
-    "node:perf_hooks": 14,
+    "node:path": 55,
+    "node:perf_hooks": 15,
     "node:stream": 5,
     "node:stream/web": 2,
     "node:string_decoder": 4,
     "node:timers/promises": 5,
-    "node:url": 3,
+    "node:url": 4,
     "node:util": 13,
     "os": 14,
     "path": 72,
@@ -336,7 +328,7 @@
     "vitest": 1,
     "ws": 1,
     "yaml": 1,
-    "zod": 23
+    "zod": 24
   },
   "edges": [
     {
@@ -365,6 +357,10 @@
     },
     {
       "source": "apps/server/src/app.module.ts",
+      "target": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts"
+    },
+    {
+      "source": "apps/server/src/app.module.ts",
       "target": "apps/server/src/core/lifecycle/lifecycle.module.ts"
     },
     {
@@ -382,14 +378,6 @@
     {
       "source": "apps/server/src/app.module.ts",
       "target": "apps/server/src/core/validation/validation.module.ts"
-    },
-    {
-      "source": "apps/server/src/app.module.ts",
-      "target": "apps/server/src/legacy-application.ts"
-    },
-    {
-      "source": "apps/server/src/app.module.ts",
-      "target": "apps/server/src/legacy/legacy.module.ts"
     },
     {
       "source": "apps/server/src/app.module.ts",
@@ -672,6 +660,62 @@
       "target": "apps/server/src/services/execution-environment/preview-policy.ts"
     },
     {
+      "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
+      "target": "apps/server/src/core/eventing/application-events.ts"
+    },
+    {
+      "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
+      "target": "apps/server/src/core/lifecycle/readiness-state.service.ts"
+    },
+    {
+      "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
+      "target": "apps/server/src/core/observability/request-context.ts"
+    },
+    {
+      "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
+      "target": "apps/server/src/lib/events.ts"
+    },
+    {
+      "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
+      "target": "apps/server/src/lib/request-logging-state.ts"
+    },
+    {
+      "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
+      "target": "apps/server/src/services/agent-service.ts"
+    },
+    {
+      "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
+      "target": "apps/server/src/services/auto-mode/index.ts"
+    },
+    {
+      "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
+      "target": "apps/server/src/services/dev-server-service.ts"
+    },
+    {
+      "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
+      "target": "apps/server/src/services/execution-environment/dev-server.ts"
+    },
+    {
+      "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
+      "target": "apps/server/src/services/execution-environment/test-runner.ts"
+    },
+    {
+      "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
+      "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
+      "target": "apps/server/src/services/terminal-service.ts"
+    },
+    {
+      "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
+      "target": "apps/server/src/services/test-runner-service.ts"
+    },
+    {
       "source": "apps/server/src/core/lifecycle/lifecycle.module.ts",
       "target": "apps/server/src/core/lifecycle/readiness-state.service.ts"
     },
@@ -748,98 +792,6 @@
       "target": "apps/server/src/core/errors/index.ts"
     },
     {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/core/observability/request-context.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/lib/request-logging-state.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/services/agent-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/services/dev-server-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/services/execution-environment/dev-server.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/services/execution-environment/test-runner.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/services/terminal-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/services/test-runner-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/legacy.module.ts",
-      "target": "apps/server/src/core/config/bootstrap-options.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/legacy.module.ts",
-      "target": "apps/server/src/core/eventing/application-events.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/legacy.module.ts",
-      "target": "apps/server/src/core/lifecycle/readiness-state.service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/legacy.module.ts",
-      "target": "apps/server/src/legacy-application.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/legacy.module.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/legacy.module.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/legacy.module.ts",
-      "target": "apps/server/src/services/agent-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/legacy.module.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/legacy.module.ts",
-      "target": "apps/server/src/services/dev-server-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/legacy.module.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/legacy.module.ts",
-      "target": "apps/server/src/services/terminal-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/legacy.module.ts",
-      "target": "apps/server/src/services/test-runner-service.ts"
-    },
-    {
       "source": "apps/server/src/lib/atomic-write-text.ts",
       "target": "apps/server/src/lib/secure-fs.ts"
     },
@@ -873,11 +825,7 @@
     },
     {
       "source": "apps/server/src/main.ts",
-      "target": "apps/server/src/legacy-application.ts"
-    },
-    {
-      "source": "apps/server/src/main.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
+      "target": "apps/server/src/core/lifecycle/process-exception-handlers.ts"
     },
     {
       "source": "apps/server/src/main.ts",
@@ -894,6 +842,10 @@
     {
       "source": "apps/server/src/modules/agents/agent-application.service.ts",
       "target": "apps/server/src/services/agent-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-service.provider.ts",
+      "target": "apps/server/src/core/security/security.service.ts"
     },
     {
       "source": "apps/server/src/modules/agents/agent-service.provider.ts",
@@ -970,6 +922,10 @@
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
       "target": "apps/server/src/core/eventing/event-bus.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-state.module.ts",
+      "target": "apps/server/src/core/security/security.service.ts"
     },
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
@@ -1212,68 +1168,20 @@
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
-      "source": "apps/server/src/modules/auto-mode/auto-mode-handlers.service.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/analyze-project.ts"
+      "source": "apps/server/src/modules/auto-mode/auto-mode-application.service.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
-      "source": "apps/server/src/modules/auto-mode/auto-mode-handlers.service.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/commit-feature.ts"
+      "source": "apps/server/src/modules/auto-mode/auto-mode-application.service.ts",
+      "target": "apps/server/src/modules/auto-mode/auto-mode.schemas.ts"
     },
     {
-      "source": "apps/server/src/modules/auto-mode/auto-mode-handlers.service.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/context-exists.ts"
+      "source": "apps/server/src/modules/auto-mode/auto-mode-application.service.ts",
+      "target": "apps/server/src/modules/auto-mode/project-run-context.registry.ts"
     },
     {
-      "source": "apps/server/src/modules/auto-mode/auto-mode-handlers.service.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/follow-up-feature.ts"
-    },
-    {
-      "source": "apps/server/src/modules/auto-mode/auto-mode-handlers.service.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/merge-ssh-feature.ts"
-    },
-    {
-      "source": "apps/server/src/modules/auto-mode/auto-mode-handlers.service.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/reconcile.ts"
-    },
-    {
-      "source": "apps/server/src/modules/auto-mode/auto-mode-handlers.service.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/resume-feature.ts"
-    },
-    {
-      "source": "apps/server/src/modules/auto-mode/auto-mode-handlers.service.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/resume-interrupted.ts"
-    },
-    {
-      "source": "apps/server/src/modules/auto-mode/auto-mode-handlers.service.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/run-feature.ts"
-    },
-    {
-      "source": "apps/server/src/modules/auto-mode/auto-mode-handlers.service.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/start.ts"
-    },
-    {
-      "source": "apps/server/src/modules/auto-mode/auto-mode-handlers.service.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/status.ts"
-    },
-    {
-      "source": "apps/server/src/modules/auto-mode/auto-mode-handlers.service.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/stop-feature.ts"
-    },
-    {
-      "source": "apps/server/src/modules/auto-mode/auto-mode-handlers.service.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/stop.ts"
-    },
-    {
-      "source": "apps/server/src/modules/auto-mode/auto-mode-handlers.service.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/verify-feature.ts"
-    },
-    {
-      "source": "apps/server/src/modules/auto-mode/auto-mode-handlers.service.ts",
+      "source": "apps/server/src/modules/auto-mode/auto-mode-application.service.ts",
       "target": "apps/server/src/services/auto-mode/index.ts"
-    },
-    {
-      "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "target": "apps/server/src/core/errors/index.ts"
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
@@ -1285,15 +1193,15 @@
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "target": "apps/server/src/modules/auto-mode/auto-mode-handlers.service.ts"
+      "target": "apps/server/src/modules/auto-mode/auto-mode-application.service.ts"
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
+      "target": "apps/server/src/modules/auto-mode/auto-mode.schemas.ts"
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
-      "target": "apps/server/src/modules/auto-mode/auto-mode-handlers.service.ts"
+      "target": "apps/server/src/modules/auto-mode/auto-mode-application.service.ts"
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
@@ -1302,6 +1210,10 @@
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
       "target": "apps/server/src/modules/auto-mode/auto-mode.provider.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
+      "target": "apps/server/src/modules/auto-mode/project-run-context.registry.ts"
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
@@ -1317,7 +1229,15 @@
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
+      "target": "apps/server/src/core/security/security.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
       "target": "apps/server/src/lib/events.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
+      "target": "apps/server/src/modules/auto-mode/project-run-context.registry.ts"
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
@@ -1346,6 +1266,18 @@
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
       "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/project-run-context.registry.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/project-run-context.registry.ts",
+      "target": "apps/server/src/core/security/security.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/project-run-context.registry.ts",
+      "target": "apps/server/src/services/auto-mode/facade.ts"
     },
     {
       "source": "apps/server/src/modules/backlog-plan/backlog-plan-application.service.ts",
@@ -1662,6 +1594,18 @@
     {
       "source": "apps/server/src/modules/execution/local-process-runtime.module.ts",
       "target": "apps/server/src/services/dev-server-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/execution/local-process-runtime.module.ts",
+      "target": "apps/server/src/services/execution-environment/dev-server.ts"
+    },
+    {
+      "source": "apps/server/src/modules/execution/local-process-runtime.module.ts",
+      "target": "apps/server/src/services/execution-environment/test-runner.ts"
+    },
+    {
+      "source": "apps/server/src/modules/execution/local-process-runtime.module.ts",
+      "target": "apps/server/src/services/settings-service.ts"
     },
     {
       "source": "apps/server/src/modules/execution/local-process-runtime.module.ts",
@@ -2370,6 +2314,10 @@
     {
       "source": "apps/server/src/modules/ideation/ideation.module.ts",
       "target": "apps/server/src/core/eventing/application-events.ts"
+    },
+    {
+      "source": "apps/server/src/modules/ideation/ideation.module.ts",
+      "target": "apps/server/src/core/security/security.service.ts"
     },
     {
       "source": "apps/server/src/modules/ideation/ideation.module.ts",
@@ -3473,6 +3421,14 @@
     },
     {
       "source": "apps/server/src/modules/settings/settings.module.ts",
+      "target": "apps/server/src/core/security/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/settings/settings.module.ts",
+      "target": "apps/server/src/lib/secure-fs.ts"
+    },
+    {
+      "source": "apps/server/src/modules/settings/settings.module.ts",
       "target": "apps/server/src/modules/settings/direct-settings-command.service.ts"
     },
     {
@@ -3706,14 +3662,6 @@
     {
       "source": "apps/server/src/modules/worktree/worktree-process.service.ts",
       "target": "apps/server/src/core/errors/index.ts"
-    },
-    {
-      "source": "apps/server/src/modules/worktree/worktree-process.service.ts",
-      "target": "apps/server/src/core/eventing/application-events.ts"
-    },
-    {
-      "source": "apps/server/src/modules/worktree/worktree-process.service.ts",
-      "target": "apps/server/src/lib/events.ts"
     },
     {
       "source": "apps/server/src/modules/worktree/worktree-process.service.ts",
@@ -4010,6 +3958,10 @@
     {
       "source": "apps/server/src/providers/gemini-provider.ts",
       "target": "apps/server/src/providers/types.ts"
+    },
+    {
+      "source": "apps/server/src/providers/gemini-provider.ts",
+      "target": "apps/server/src/services/execution-environment/runtime.ts"
     },
     {
       "source": "apps/server/src/providers/openai-compatible-provider.ts",
@@ -4586,178 +4538,6 @@
     {
       "source": "apps/server/src/routes/app-spec/sync-spec.ts",
       "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/common.ts",
-      "target": "apps/server/src/routes/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "target": "apps/server/src/middleware/validate-paths.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/analyze-project.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/commit-feature.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/context-exists.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/follow-up-feature.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/merge-ssh-feature.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/reconcile.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/resume-feature.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/resume-interrupted.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/run-feature.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/start.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/status.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/stop-feature.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/stop.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "target": "apps/server/src/routes/auto-mode/routes/verify-feature.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/index.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/analyze-project.ts",
-      "target": "apps/server/src/routes/auto-mode/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/analyze-project.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/commit-feature.ts",
-      "target": "apps/server/src/routes/auto-mode/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/commit-feature.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/context-exists.ts",
-      "target": "apps/server/src/routes/auto-mode/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/context-exists.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/follow-up-feature.ts",
-      "target": "apps/server/src/routes/auto-mode/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/follow-up-feature.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/merge-ssh-feature.ts",
-      "target": "apps/server/src/routes/auto-mode/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/merge-ssh-feature.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/reconcile.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/resume-feature.ts",
-      "target": "apps/server/src/routes/auto-mode/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/resume-feature.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/resume-interrupted.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/run-feature.ts",
-      "target": "apps/server/src/routes/auto-mode/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/run-feature.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/start.ts",
-      "target": "apps/server/src/routes/auto-mode/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/start.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/status.ts",
-      "target": "apps/server/src/routes/auto-mode/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/status.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/stop-feature.ts",
-      "target": "apps/server/src/routes/auto-mode/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/stop-feature.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/stop.ts",
-      "target": "apps/server/src/routes/auto-mode/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/stop.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/verify-feature.ts",
-      "target": "apps/server/src/routes/auto-mode/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/auto-mode/routes/verify-feature.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
     },
     {
       "source": "apps/server/src/routes/backlog-plan/common.ts",
@@ -7237,6 +7017,10 @@
     },
     {
       "source": "apps/server/src/services/auto-mode/compat.ts",
+      "target": "apps/server/src/modules/auto-mode/project-run-context.registry.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/compat.ts",
       "target": "apps/server/src/modules/providers/provider-registry.service.ts"
     },
     {
@@ -7526,6 +7310,10 @@
     {
       "source": "apps/server/src/services/commit-log-service.ts",
       "target": "apps/server/src/lib/git.ts"
+    },
+    {
+      "source": "apps/server/src/services/concurrency-manager.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
       "source": "apps/server/src/services/dev-server-service.ts",
@@ -8264,8 +8052,8 @@
       "target": "apps/server/src/services/typed-event-bus.ts"
     },
     {
-      "source": "apps/server/src/services/settings-service.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
+      "source": "apps/server/src/services/settings-mutation-queue.ts",
+      "target": "apps/server/src/core/errors/index.ts"
     },
     {
       "source": "apps/server/src/services/settings-service.ts",
@@ -8286,6 +8074,10 @@
     {
       "source": "apps/server/src/services/settings-service.ts",
       "target": "apps/server/src/services/execution-environment/config.ts"
+    },
+    {
+      "source": "apps/server/src/services/settings-service.ts",
+      "target": "apps/server/src/services/settings-mutation-queue.ts"
     },
     {
       "source": "apps/server/src/services/settings-service.ts",

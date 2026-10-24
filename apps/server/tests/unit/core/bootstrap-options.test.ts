@@ -1,7 +1,6 @@
 import { expect, it, vi } from 'vitest';
 import { assertNoLegacyServiceOverrides } from '../../../src/core/config/bootstrap-options.js';
 import { AppModule } from '../../../src/app.module.js';
-import { LegacyModule } from '../../../src/legacy/legacy.module.js';
 
 it.each([
   { name: 'undefined', options: { services: undefined } },
@@ -37,11 +36,5 @@ it('accepts native bootstrap options without a service override seam', () => {
 it('rejects direct AppModule composition before resolving config or creating modules', () => {
   expect(() =>
     AppModule.register({} as never, '/unused-bootstrap-fixture', { services: {} } as never)
-  ).toThrow('Legacy service overrides are not supported.');
-});
-
-it('rejects direct legacy lifecycle module composition before constructing anything', () => {
-  expect(() =>
-    LegacyModule.register({ services: {} } as never, '/unused-bootstrap-fixture')
   ).toThrow('Legacy service overrides are not supported.');
 });

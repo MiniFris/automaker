@@ -73,6 +73,7 @@ const logger = createLogger('AutoModeServiceFacade');
  * to use clean names without requiring projectPath as a parameter.
  */
 export class AutoModeServiceFacade {
+  private stopping = false;
   private constructor(
     private readonly projectPath: string,
     private readonly events: EventEmitter,
@@ -86,7 +87,8 @@ export class AutoModeServiceFacade {
     private readonly executionService: ExecutionService,
     private readonly recoveryService: RecoveryService,
     private readonly pipelineOrchestrator: PipelineOrchestrator,
-    private readonly settingsService: SettingsService | null
+    private readonly settingsService: SettingsService | null,
+    private readonly directoryValidator: (cwd: string) => void = validateWorkingDirectory
   ) {}
 
   /**
@@ -331,6 +333,13 @@ export class AutoModeServiceFacade {
           useClaudeCodeSystemPrompt,
           thinkingLevel: opts?.thinkingLevel,
           maxTurns: userMaxTurns,
+          validateWorkingDirectory:
+            typeof opts?.boundTargetCwd === 'string'
+              ? (cwd) => {
+                  if (cwd !== opts.boundTargetCwd || cwd !== workDir)
+                    throw new Error('Feature execution target changed.');
+                }
+              : options.validateWorkingDirectory,
           mcpServers: mcpServers as
             | Record<string, import('@automaker/types').McpServerConfig>
             | undefined,
@@ -434,7 +443,8 @@ export class AutoModeServiceFacade {
       (pPath, featureId, useWorktrees, _isAutoMode, _model, opts) =>
         getFacade().executeFeature(featureId, useWorktrees, false, undefined, opts),
       createRunAgentFn(),
-      pipeline
+      pipeline,
+      options.validateWorkingDirectory
     );
 
     // AutoLoopCoordinator - ALWAYS create new with proper execution callbacks
@@ -563,7 +573,8 @@ export class AutoModeServiceFacade {
       (_pPath) => getFacade().saveExecutionState(),
       loadContextFiles,
       providerRegistry,
-      pipeline
+      pipeline,
+      options.validateWorkingDirectory
     );
 
     // RecoveryService
@@ -581,7 +592,8 @@ export class AutoModeServiceFacade {
         pipelineOrchestrator.resumePipeline(pPath, feature, useWorktrees, pipelineInfo),
       (featureId) => concurrencyManager.isRunning(featureId),
       (opts) => concurrencyManager.acquire(opts),
-      (featureId) => concurrencyManager.release(featureId)
+      (featureId) => concurrencyManager.release(featureId),
+      () => getFacade().stopping
     );
 
     // Create the facade instance
@@ -598,7 +610,8 @@ export class AutoModeServiceFacade {
       executionService,
       recoveryService,
       pipelineOrchestrator,
-      settingsService
+      settingsService,
+      options.validateWorkingDirectory
     );
 
     return facadeInstance;
@@ -677,6 +690,7 @@ export class AutoModeServiceFacade {
       _calledInternally?: boolean;
     }
   ): Promise<void> {
+    if (this.stopping) throw new Error('Auto mode is shutting down.');
     try {
       return await this.executionService.executeFeature(
         this.projectPath,
@@ -749,7 +763,7 @@ export class AutoModeServiceFacade {
     imagePaths?: string[],
     useWorktrees = true
   ): Promise<void> {
-    validateWorkingDirectory(this.projectPath);
+    this.directoryValidator(this.projectPath);
 
     try {
       // Load feature to build the prompt context
@@ -1262,7 +1276,13 @@ export class AutoModeServiceFacade {
     );
   }
 
+  closeAdmission(): void {
+    this.stopping = true;
+    this.concurrencyManager.stopAdmission();
+  }
+
   interruptForShutdown(): void {
+    this.closeAdmission();
     this.autoLoopCoordinator.interruptForShutdown();
     this.planApprovalService.dispose();
   }

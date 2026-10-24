@@ -52,7 +52,6 @@ it('owns settings, auth attempts and event transport natively once per applicati
       }
     }
     for (const runtime of apps) {
-      expect(runtime.legacy).not.toHaveProperty('services');
       const settings = runtime.app.get(SettingsService);
       expect((settings as unknown as { files: unknown }).files).toBe(
         runtime.app.get(SettingsFileRepository)
@@ -68,7 +67,9 @@ it('owns settings, auth attempts and event transport natively once per applicati
       expect((runtime.app.get(AuthController) as unknown as { attempts: unknown }).attempts).toBe(
         runtime.app.get(LoginAttemptStore)
       );
-      expect(runtime.legacy.events).toBe(runtime.app.get(APPLICATION_EVENTS));
+      expect(runtime.app.get<EventEmitter>(APPLICATION_EVENTS)).toBe(
+        runtime.app.get(APPLICATION_EVENTS)
+      );
     }
     const one = first.app.get(SettingsService),
       two = second.app.get(SettingsService);

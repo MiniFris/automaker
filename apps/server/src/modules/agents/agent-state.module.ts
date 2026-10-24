@@ -21,6 +21,7 @@ import { AgentSessionDeletion } from '../../services/agent/agent-session-deletio
 import { AgentExecutionStore } from '../../services/agent/agent-execution-store.js';
 import { AgentService } from '../../services/agent-service.js';
 import { agentServiceProvider } from './agent-service.provider.js';
+import { SecurityService } from '../../core/security/security.service.js';
 
 @Global()
 @Module({
@@ -78,14 +79,26 @@ import { agentServiceProvider } from './agent-service.provider.js';
         RuntimePathsService,
         AgentQueueDeliveryStore,
         AgentExecutionStore,
+        SecurityService,
       ],
       useFactory: (
         repository: AgentSessionRepository,
         sessions: AgentSessionRegistry,
         paths: RuntimePathsService,
         deliveries: AgentQueueDeliveryStore,
-        runs: AgentExecutionStore
-      ) => new AgentSessionLoader(repository, sessions, paths.workingDirectory, deliveries, runs),
+        runs: AgentExecutionStore,
+        security: SecurityService
+      ) =>
+        new AgentSessionLoader(
+          repository,
+          sessions,
+          paths.workingDirectory,
+          deliveries,
+          runs,
+          (cwd) => {
+            security.validateLocalPath(cwd, 'agent session working directory');
+          }
+        ),
     },
     {
       provide: AgentConversationCoordinator,
@@ -147,8 +160,11 @@ import { agentServiceProvider } from './agent-service.provider.js';
     },
     {
       provide: AgentQueryOptionsBuilder,
-      inject: [AgentProviderSelector],
-      useFactory: (providers: AgentProviderSelector) => new AgentQueryOptionsBuilder(providers),
+      inject: [AgentProviderSelector, SecurityService],
+      useFactory: (providers: AgentProviderSelector, security: SecurityService) =>
+        new AgentQueryOptionsBuilder(providers, (cwd) => {
+          security.validateLocalPath(cwd, 'agent SDK working directory');
+        }),
     },
     {
       provide: AgentEnvironmentPreparer,

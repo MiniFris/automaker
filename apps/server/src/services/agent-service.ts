@@ -54,7 +54,8 @@ export class AgentService {
     events: AgentEventPublisher,
     settingsService: SettingsService | undefined,
     private readonly providers: AgentProviderSelector,
-    private readonly queries: AgentQueryOptionsBuilder
+    private readonly queries: AgentQueryOptionsBuilder,
+    private readonly validateDirectory: (cwd: string) => void = validateWorkingDirectory
   ) {
     this.events = events;
     this.settingsService = settingsService ?? null;
@@ -85,7 +86,7 @@ export class AgentService {
       // Session doesn't exist on disk either — create a fresh in-memory session.
       const effectiveWorkingDirectory = workingDirectory || this.loader.workingDirectory;
       const resolvedWorkingDirectory = path.resolve(effectiveWorkingDirectory);
-      validateWorkingDirectory(resolvedWorkingDirectory);
+      this.validateDirectory(resolvedWorkingDirectory);
 
       session = this.sessions.getOrCreate(sessionId, () => ({
         messages: [],
@@ -550,11 +551,11 @@ export class AgentService {
     const resolvedWorkingDirectory = path.resolve(effectiveWorkingDirectory);
 
     // Validate that the working directory is allowed using centralized validation
-    validateWorkingDirectory(resolvedWorkingDirectory);
+    this.validateDirectory(resolvedWorkingDirectory);
 
     // Validate that projectPath is allowed if provided
     if (projectPath) {
-      validateWorkingDirectory(projectPath);
+      this.validateDirectory(projectPath);
     }
 
     const session: SessionMetadata = {

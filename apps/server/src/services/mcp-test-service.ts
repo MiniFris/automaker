@@ -206,6 +206,7 @@ export class MCPTestService {
     serverId: string,
     discoverTools: boolean
   ): Promise<MCPTestResult> {
+    if (this.stopping) return { success: false, error: 'MCP discovery is shutting down' };
     try {
       const globalSettings = await this.settingsService.getGlobalSettings();
       const serverConfig = globalSettings.mcpServers?.find((s) => s.id === serverId);

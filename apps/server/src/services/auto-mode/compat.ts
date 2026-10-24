@@ -20,6 +20,7 @@ import type { FacadeOptions, AutoModeStatus, RunningAgentInfo } from './types.js
 import type { ProviderRegistry } from '../../modules/providers/provider-registry.service.js';
 import type { ToolPolicyService } from '../../modules/providers/tool-policy.service.js';
 import { pipelineService, type PipelineService } from '../pipeline-service.js';
+import { ProjectRunContextRegistry } from '../../modules/auto-mode/project-run-context.registry.js';
 
 /**
  * AutoModeServiceCompat wraps GlobalAutoModeService and facades to provide
@@ -28,7 +29,7 @@ import { pipelineService, type PipelineService } from '../pipeline-service.js';
 export class AutoModeServiceCompat {
   private readonly globalService: GlobalAutoModeService;
   private readonly facadeOptions: FacadeOptions;
-  private readonly facadeCache = new Map<string, AutoModeServiceFacade>();
+  private readonly contexts: ProjectRunContextRegistry;
 
   constructor(
     events: EventEmitter,
@@ -38,8 +39,13 @@ export class AutoModeServiceCompat {
     notificationService: NotificationService | null | undefined,
     providerRegistry: ProviderRegistry,
     toolPolicy?: ToolPolicyService,
-    pipeline: PipelineService = pipelineService
+    pipeline: PipelineService = pipelineService,
+    runtime?: {
+      contexts: ProjectRunContextRegistry;
+      validateWorkingDirectory?: (cwd: string) => void;
+    }
   ) {
+    this.contexts = runtime?.contexts ?? new ProjectRunContextRegistry();
     this.globalService = new GlobalAutoModeService(
       events,
       settingsService,
@@ -59,6 +65,7 @@ export class AutoModeServiceCompat {
       providerRegistry,
       toolPolicy,
       pipeline,
+      validateWorkingDirectory: runtime?.validateWorkingDirectory,
     };
   }
 
@@ -75,12 +82,9 @@ export class AutoModeServiceCompat {
    * (stored in the facade's AutoLoopCoordinator) persists across API calls.
    */
   createFacade(projectPath: string): AutoModeServiceFacade {
-    let facade = this.facadeCache.get(projectPath);
-    if (!facade) {
-      facade = AutoModeServiceFacade.create(projectPath, this.facadeOptions);
-      this.facadeCache.set(projectPath, facade);
-    }
-    return facade;
+    return this.contexts.getOrCreate(projectPath, (canonical) =>
+      AutoModeServiceFacade.create(canonical, this.facadeOptions)
+    );
   }
 
   // ===========================================================================
@@ -115,13 +119,20 @@ export class AutoModeServiceCompat {
   }
 
   /** Called after interruption has been persisted by the application lifecycle. */
+  closeAdmission(): void {
+    this.contexts.stopAdmission();
+    this.globalService.getSharedServices().concurrencyManager.stopAdmission();
+  }
+
   interruptForShutdown(): void {
+    this.closeAdmission();
+    this.contexts.interruptForShutdown();
     const shared = this.globalService.getSharedServices();
+    shared.concurrencyManager.stopAdmission();
     shared.autoLoopCoordinator.interruptForShutdown();
     for (const run of shared.concurrencyManager.getAllRunning()) {
       run.abortController.abort();
     }
-    for (const facade of this.facadeCache.values()) facade.interruptForShutdown();
   }
 
   async reconcileFeatureStates(projectPath: string): Promise<number> {
@@ -273,6 +284,7 @@ export class AutoModeServiceCompat {
   }
 
   async resumeInterruptedFeatures(projectPath: string): Promise<void> {
+    if (this.contexts.isStopping()) return;
     const facade = this.createFacade(projectPath);
     return facade.resumeInterruptedFeatures();
   }

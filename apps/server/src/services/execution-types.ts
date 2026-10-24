@@ -37,6 +37,8 @@ export type RunAgentFn = (
     reasoningEffort?: ReasoningEffort;
     providerId?: string;
     branchName?: string | null;
+    /** Trusted immutable feature-workspace cwd, never accepted from HTTP input. */
+    boundTargetCwd?: string;
   }
 ) => Promise<void>;
 

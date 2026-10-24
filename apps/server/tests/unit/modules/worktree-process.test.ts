@@ -33,7 +33,8 @@ function fixture(options?: { target?: unknown }) {
   const service = new WorktreeProcessService(
     settings as never,
     git as never,
-    { emit: vi.fn() } as never,
+    { find: vi.fn(), list: vi.fn().mockReturnValue([]) } as never,
+    { find: vi.fn(), get: vi.fn(), list: vi.fn().mockReturnValue([]) } as never,
     localDev as never,
     localTests as never
   );

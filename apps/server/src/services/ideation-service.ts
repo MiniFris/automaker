@@ -71,7 +71,8 @@ export class IdeationService {
     events: EventEmitter,
     settingsService: SettingsService | undefined,
     featureLoader: FeatureLoader | undefined,
-    private readonly providerRegistry: ProviderRegistry
+    private readonly providerRegistry: ProviderRegistry,
+    private readonly validateDirectory: (cwd: string) => void = validateWorkingDirectory
   ) {
     this.events = events;
     this.settingsService = settingsService ?? null;
@@ -86,7 +87,7 @@ export class IdeationService {
    * Start a new ideation session
    */
   async startSession(projectPath: string, options?: StartSessionOptions): Promise<IdeationSession> {
-    validateWorkingDirectory(projectPath);
+    this.validateDirectory(projectPath);
     await ensureIdeationDir(projectPath);
 
     const sessionId = this.generateId('session');
@@ -241,6 +242,7 @@ export class IdeationService {
 
       // Create SDK options
       const sdkOptions = createChatOptions({
+        validateWorkingDirectory: this.validateDirectory,
         cwd: projectPath,
         model: modelId,
         systemPrompt,
@@ -369,7 +371,7 @@ export class IdeationService {
    * Create a new idea
    */
   async createIdea(projectPath: string, input: CreateIdeaInput): Promise<Idea> {
-    validateWorkingDirectory(projectPath);
+    this.validateDirectory(projectPath);
     await ensureIdeationDir(projectPath);
 
     const ideaId = this.generateId('idea');
@@ -506,7 +508,7 @@ export class IdeationService {
    * Analyze project structure and generate suggestions
    */
   async analyzeProject(projectPath: string): Promise<ProjectAnalysisResult> {
-    validateWorkingDirectory(projectPath);
+    this.validateDirectory(projectPath);
     await ensureIdeationDir(projectPath);
 
     this.emitAnalysisEvent('ideation:analysis-started', {
@@ -652,7 +654,7 @@ export class IdeationService {
     const suggestionCount = Math.min(Math.max(Math.floor(count ?? 10), 1), 20);
     // Merge with defaults for backward compatibility
     const sources = { ...DEFAULT_IDEATION_CONTEXT_SOURCES, ...contextSources };
-    validateWorkingDirectory(projectPath);
+    this.validateDirectory(projectPath);
 
     // Get the prompt
     const prompt = this.getAllPrompts().find((p) => p.id === promptId);
@@ -734,6 +736,7 @@ export class IdeationService {
 
       // Create SDK options
       const sdkOptions = createChatOptions({
+        validateWorkingDirectory: this.validateDirectory,
         cwd: projectPath,
         model: modelId,
         systemPrompt,

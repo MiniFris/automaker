@@ -13,6 +13,7 @@
  */
 
 import type { ModelProvider } from '@automaker/types';
+import { UnavailableDomainError } from '../core/errors/domain-errors.js';
 
 /**
  * Function type for getting the current branch of a project.
@@ -56,6 +57,7 @@ export interface AcquireParams {
  * (e.g., during resume operations) and should only be released when all references are done.
  */
 export class ConcurrencyManager {
+  private stopping = false;
   private runningFeatures = new Map<string, RunningFeature>();
   private getCurrentBranch: GetCurrentBranchFn;
 
@@ -81,6 +83,7 @@ export class ConcurrencyManager {
    * @throws Error if feature is already running and allowReuse is false
    */
   acquire(params: AcquireParams): RunningFeature {
+    if (this.stopping) throw new UnavailableDomainError('Feature execution is shutting down.');
     const existing = this.runningFeatures.get(params.featureId);
     if (existing) {
       if (!params.allowReuse) {
@@ -103,6 +106,10 @@ export class ConcurrencyManager {
     };
     this.runningFeatures.set(params.featureId, entry);
     return entry;
+  }
+
+  stopAdmission(): void {
+    this.stopping = true;
   }
 
   /**

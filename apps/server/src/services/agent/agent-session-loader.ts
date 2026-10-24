@@ -15,7 +15,8 @@ export class AgentSessionLoader {
     private readonly sessions: AgentSessionRegistry,
     readonly workingDirectory: string,
     private readonly deliveries: AgentQueueDeliveryStore,
-    private readonly runs: AgentExecutionStore
+    private readonly runs: AgentExecutionStore,
+    private readonly validateDirectory: (cwd: string) => void = validateWorkingDirectory
   ) {}
 
   async ensure(id: string, workingDirectory?: string): Promise<ActiveSession | null> {
@@ -44,7 +45,7 @@ export class AgentSessionLoader {
       workingDirectory || saved?.workingDirectory || '.'
     );
     try {
-      validateWorkingDirectory(directory);
+      this.validateDirectory(directory);
     } catch {
       this.logger.warn(`Session "${id}" working directory is not allowed.`);
       return null;

@@ -79,6 +79,29 @@ describe('AutoModeServiceFacade Agent Runner', () => {
     facade = AutoModeServiceFacade.create('/project', factoryOptions);
   });
 
+  it('passes scoped host validation and immutable managed target validation to SDK options', async () => {
+    providers.providerForModel.mockReturnValue({ getName: () => 'fixture' });
+    vi.mocked(settingsHelpers.resolveProviderContext).mockResolvedValue({} as never);
+    const validateWorkingDirectory = vi.fn();
+    const native = AutoModeServiceFacade.create('/project', {
+      ...factoryOptions,
+      validateWorkingDirectory,
+    });
+    const run = (native as any).executionService.runAgentFn;
+    const args = ['/workdir', 'feature', 'Prompt', new AbortController(), '/project', [], 'claude'];
+    await run(...args);
+    expect(vi.mocked(sdkOptions.createAutoModeOptions).mock.lastCall?.[0]).toEqual(
+      expect.objectContaining({ validateWorkingDirectory })
+    );
+    await run(...args, { boundTargetCwd: '/workdir' });
+    const validator = vi.mocked(sdkOptions.createAutoModeOptions).mock.lastCall?.[0]
+      .validateWorkingDirectory;
+    expect(validator).toBeTypeOf('function');
+    expect(() => validator!('/workdir')).not.toThrow();
+    expect(() => validator!('/changed')).toThrow('Feature execution target changed.');
+    expect(validateWorkingDirectory).not.toHaveBeenCalled();
+  });
+
   it('uses native model tool grants rather than the adapter-wide transport flag', async () => {
     providers.providerForModel.mockReturnValue({
       getName: () => 'fixture',

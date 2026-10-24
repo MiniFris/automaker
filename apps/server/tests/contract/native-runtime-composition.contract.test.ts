@@ -12,6 +12,7 @@ import { AgentService } from '../../src/services/agent-service.js';
 import { ProviderRegistry } from '../../src/modules/providers/provider-registry.service.js';
 import { SettingsService } from '../../src/services/settings-service.js';
 import { AutoModeController } from '../../src/modules/auto-mode/auto-mode.controller.js';
+import { AutoModeApplicationService } from '../../src/modules/auto-mode/auto-mode-application.service.js';
 import { RunningAgentsService } from '../../src/modules/agents/running-agents.service.js';
 import { SettingsRuntimeEffectsService } from '../../src/modules/settings/settings-runtime-effects.service.js';
 import { TerminalController } from '../../src/modules/terminal/terminal.controller.js';
@@ -20,6 +21,9 @@ import { WorktreeProcessService } from '../../src/modules/worktree/worktree-proc
 import { AutoModeModule } from '../../src/modules/auto-mode/auto-mode.module.js';
 import { TerminalRuntimeModule } from '../../src/modules/terminal/terminal-runtime.module.js';
 import { LocalProcessRuntimeModule } from '../../src/modules/execution/local-process-runtime.module.js';
+import { ManagedDevServerService } from '../../src/services/execution-environment/dev-server.js';
+import { ManagedTestRunnerService } from '../../src/services/execution-environment/test-runner.js';
+import { SECURE_FILESYSTEM } from '../../src/core/security/security.module.js';
 
 it('owns native runtimes once, applies per-app terminal config and preserves ordered cleanup without a legacy service bag', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'automaker-native-runtimes-'));
@@ -48,6 +52,8 @@ it('owns native runtimes once, applies per-app terminal config and preserves ord
       [AutoModeServiceCompat, AutoModeModule],
       [DevServerService, LocalProcessRuntimeModule],
       [TestRunnerService, LocalProcessRuntimeModule],
+      [ManagedDevServerService, LocalProcessRuntimeModule],
+      [ManagedTestRunnerService, LocalProcessRuntimeModule],
       [TerminalService, TerminalRuntimeModule],
     ] as const) {
       expect(first.app.get(token)).not.toBe(second.app.get(token));
@@ -65,10 +71,11 @@ it('owns native runtimes once, applies per-app terminal config and preserves ord
       }
     }
     for (const runtime of apps) {
-      expect(runtime.legacy).not.toHaveProperty('services');
       const auto = runtime.app.get(AutoModeServiceCompat),
         terminal = runtime.app.get(TerminalService);
-      expect(inspect(runtime.app.get(AutoModeController)).autoMode).toBe(auto);
+      const commands = runtime.app.get(AutoModeApplicationService);
+      expect(inspect(runtime.app.get(AutoModeController)).commands).toBe(commands);
+      expect(inspect(commands).autoMode).toBe(auto);
       expect(inspect(runtime.app.get(RunningAgentsService)).autoMode).toBe(auto);
       expect(inspect(runtime.app.get(TerminalController)).terminal).toBe(terminal);
       expect(inspect(runtime.app.get(WebSocketTransportService)).terminal).toBe(terminal);
@@ -77,6 +84,8 @@ it('owns native runtimes once, applies per-app terminal config and preserves ord
       const processes = inspect(runtime.app.get(WorktreeProcessService));
       expect(processes.localDev).toBe(runtime.app.get(DevServerService));
       expect(processes.localTests).toBe(runtime.app.get(TestRunnerService));
+      expect(processes.managedDev).toBe(runtime.app.get(ManagedDevServerService));
+      expect(processes.managedTests).toBe(runtime.app.get(ManagedTestRunnerService));
     }
     const order: string[] = [];
     const agent = first.app.get(AgentService),
@@ -92,7 +101,13 @@ it('owns native runtimes once, applies per-app terminal config and preserves ord
       cleanTests = tests.cleanup.bind(tests),
       cleanPreview = preview.stopAll.bind(preview),
       closeProviders = providers.onApplicationShutdown.bind(providers);
+    const filesystem = first.app.get(SECURE_FILESYSTEM),
+      closeFilesystem = filesystem.close.bind(filesystem);
     spies.push(
+      vi.spyOn(filesystem, 'close').mockImplementation(() => {
+        order.push('filesystem');
+        return closeFilesystem();
+      }),
       vi.spyOn(agent, 'interruptActiveSessions').mockImplementation((reason) => {
         order.push('agent');
         return interrupt(reason);
@@ -132,11 +147,12 @@ it('owns native runtimes once, applies per-app terminal config and preserves ord
       'terminal',
       'tests',
       'preview',
+      'filesystem',
       'providers',
     ]);
     expect(otherCleanup).not.toHaveBeenCalled();
     expect(second.app.get(TerminalService).getMaxSessions()).toBe(5);
-    await first.legacy.shutdown('duplicate');
+    await first.app.close();
     expect(order).toEqual([
       'agent',
       'feature',
@@ -144,6 +160,7 @@ it('owns native runtimes once, applies per-app terminal config and preserves ord
       'terminal',
       'tests',
       'preview',
+      'filesystem',
       'providers',
     ]);
   } finally {

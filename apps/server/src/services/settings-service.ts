@@ -13,7 +13,6 @@ import {
   SETUP_CREDENTIAL_ENV,
   type SetupCredentialProvider,
 } from '../providers/credential-policy.js';
-import * as secureFs from '../lib/secure-fs.js';
 import os from 'os';
 import path from 'path';
 import fs from 'fs/promises';
@@ -28,8 +27,6 @@ import {
   getGlobalSettingsPath,
   getCredentialsPath,
   getProjectSettingsPath,
-  ensureDataDir,
-  ensureAutomakerDir,
 } from '@automaker/platform';
 import type {
   GlobalSettings,
@@ -68,6 +65,7 @@ import {
   migrateOpencodeModelIds,
 } from '@automaker/types';
 import { SettingsFileRepository } from '../modules/settings/settings-file.repository.js';
+import { SettingsMutationQueue } from './settings-mutation-queue.js';
 
 const logger = createLogger('SettingsService');
 
@@ -85,10 +83,7 @@ const logger = createLogger('SettingsService');
  * Updates use deep merge for nested objects like keyboardShortcuts and apiKeys.
  */
 export class SettingsService {
-  private providerTimeoutWrites: Promise<unknown> = Promise.resolve();
-  private globalWrites: Promise<unknown> = Promise.resolve();
-  private credentialWrites: Promise<unknown> = Promise.resolve();
-  private readonly projectWrites = new Map<string, Promise<unknown>>();
+  private readonly mutations = new SettingsMutationQueue();
   private dataDir: string;
 
   getDataDirectory(): string {
@@ -107,6 +102,10 @@ export class SettingsService {
     this.dataDir = dataDir;
   }
 
+  beforeApplicationShutdown(): Promise<void> {
+    return this.mutations.close();
+  }
+
   // ============================================================================
   // Global Settings
   // ============================================================================
@@ -123,6 +122,10 @@ export class SettingsService {
    * @returns Promise resolving to complete GlobalSettings object
    */
   async getGlobalSettings(): Promise<GlobalSettings> {
+    return this.readGlobalSettings(true);
+  }
+
+  private async readGlobalSettings(persistMigrations: boolean): Promise<GlobalSettings> {
     const settingsPath = getGlobalSettingsPath(this.dataDir);
     const settings = await this.files.read<GlobalSettings>(settingsPath, DEFAULT_GLOBAL_SETTINGS);
 
@@ -236,12 +239,18 @@ export class SettingsService {
     }
 
     // Save migrated settings if needed
-    if (needsSave) {
+    if (needsSave && persistMigrations) {
       try {
-        await ensureDataDir(this.dataDir);
-        await this.files.write(settingsPath, result);
+        result = await this.mutations.run('global', async () => {
+          // A queued command may have committed since this query read the file.
+          const latest = await this.readGlobalSettings(false);
+          await this.files.ensureDirectory(this.dataDir);
+          await this.files.write(settingsPath, latest);
+          return latest;
+        });
         logger.info('Settings migration complete');
       } catch (error) {
+        if (this.files.scoped) throw error;
         logger.error('Failed to save migrated settings:', error);
       }
     }
@@ -534,20 +543,16 @@ export class SettingsService {
     timeouts: ModelTimeoutSettings
   ): Promise<void> {
     const parsed = parseProviderModelTimeoutSettings({ [provider]: timeouts });
-    const write = this.providerTimeoutWrites.then(async () => {
-      const global = await this.getGlobalSettings();
-      await this.updateGlobalSettings({
+    await this.mutations.run('global', async () => {
+      const global = await this.readGlobalSettings(false);
+      await this.updateGlobalSettingsNow({
         providerModelTimeouts: { ...global.providerModelTimeouts, ...parsed },
       });
     });
-    this.providerTimeoutWrites = write.catch(() => {});
-    await write;
   }
 
   async updateGlobalSettings(updates: Partial<GlobalSettings>): Promise<GlobalSettings> {
-    const write = this.globalWrites.then(() => this.updateGlobalSettingsNow(updates));
-    this.globalWrites = write.catch(() => {});
-    return write;
+    return this.mutations.run('global', () => this.updateGlobalSettingsNow(updates));
   }
 
   private async updateGlobalSettingsNow(updates: Partial<GlobalSettings>): Promise<GlobalSettings> {
@@ -557,10 +562,10 @@ export class SettingsService {
       )
     )
       throw new Error('Secrets must be updated through credentials, not global settings.');
-    await ensureDataDir(this.dataDir);
+    await this.files.ensureDirectory(this.dataDir);
     const settingsPath = getGlobalSettingsPath(this.dataDir);
 
-    const current = await this.getGlobalSettings();
+    const current = await this.readGlobalSettings(false);
 
     // Guard against destructive "empty array/object" overwrites.
     // During auth transitions, the UI can briefly have default/empty state and accidentally
@@ -808,9 +813,7 @@ export class SettingsService {
    * @returns Promise resolving to complete updated Credentials object
    */
   async updateCredentials(updates: Partial<Credentials>): Promise<Credentials> {
-    const write = this.credentialWrites.then(() => this.updateCredentialsNow(updates));
-    this.credentialWrites = write.catch(() => {});
-    return write;
+    return this.mutations.run('credentials', () => this.updateCredentialsNow(updates));
   }
 
   async setSetupCredential(provider: SetupCredentialProvider, value: string | null): Promise<void> {
@@ -823,7 +826,7 @@ export class SettingsService {
           /[\x00-\x20\x7f]/.test(value)))
     )
       throw new Error('Invalid application credential update.');
-    const write = this.credentialWrites.then(async () => {
+    await this.mutations.run('credentials', async () => {
       const current = await this.getCredentials();
       validateCredentialPolicy(current);
       await this.updateCredentialsNow({
@@ -844,8 +847,6 @@ export class SettingsService {
             }),
       });
     });
-    this.credentialWrites = write.catch(() => {});
-    await write;
   }
 
   private async updateCredentialsNow(updates: Partial<Credentials>): Promise<Credentials> {
@@ -861,7 +862,7 @@ export class SettingsService {
       )
         throw new Error('Invalid OpenAI-compatible credentials.');
     }
-    await ensureDataDir(this.dataDir);
+    await this.files.ensureDirectory(this.dataDir);
     const credentialsPath = getCredentialsPath(this.dataDir);
 
     const current = await this.getCredentials();
@@ -1014,14 +1015,10 @@ export class SettingsService {
     projectPath: string,
     updates: Partial<ProjectSettings>
   ): Promise<ProjectSettings> {
-    const previous = this.projectWrites.get(projectPath) ?? Promise.resolve();
-    const write = previous.then(() => this.updateProjectSettingsNow(projectPath, updates));
-    const settled = write.catch(() => {});
-    this.projectWrites.set(projectPath, settled);
-    void settled.finally(() => {
-      if (this.projectWrites.get(projectPath) === settled) this.projectWrites.delete(projectPath);
-    });
-    return write;
+    const canonical = this.files.directory(projectPath);
+    return this.mutations.run(`project:${canonical}`, () =>
+      this.updateProjectSettingsNow(canonical, updates)
+    );
   }
 
   private async updateProjectSettingsNow(
@@ -1037,7 +1034,7 @@ export class SettingsService {
             : parseEnvironmentSelection(updates.executionEnvironment),
       };
     }
-    await ensureAutomakerDir(projectPath);
+    await this.files.ensureDirectory(path.join(projectPath, '.automaker'));
     const settingsPath = getProjectSettingsPath(projectPath);
 
     const current = await this.getProjectSettings(projectPath);
@@ -1452,7 +1449,7 @@ export class SettingsService {
 
     // Ensure new data directory exists
     try {
-      await ensureDataDir(this.dataDir);
+      await this.files.ensureDirectory(this.dataDir);
     } catch (error) {
       const msg = `Failed to create data directory: ${error}`;
       logger.error(msg);

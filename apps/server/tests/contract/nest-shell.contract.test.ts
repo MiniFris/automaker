@@ -1,3 +1,5 @@
+import { APPLICATION_EVENTS } from '../../src/core/eventing/application-events.js';
+import type { EventEmitter } from '../../src/lib/events.js';
 import type { AddressInfo } from 'node:net';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
@@ -14,7 +16,6 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 import WebSocket from 'ws';
 
 import { createNestApplication } from '../../src/main.js';
-import { LEGACY_APPLICATION } from '../../src/legacy/legacy.tokens.js';
 import { AutoModeServiceCompat } from '../../src/services/auto-mode/index.js';
 import { DevServerService } from '../../src/services/dev-server-service.js';
 import { TestRunnerService } from '../../src/services/test-runner-service.js';
@@ -73,13 +74,12 @@ describe('Nest shell and legacy bridge contract', () => {
   });
 
   it('creates the application without listening and shares one HTTP server', () => {
-    expect(runtime.app.getHttpServer()).toBe(runtime.legacy.server);
-    expect(runtime.legacy.server.listening).toBe(false);
-    expect(runtime.app.get(LEGACY_APPLICATION)).toBe(runtime.legacy);
+    expect(runtime.app.getHttpServer()).toBe(runtime.app.getHttpAdapter().getHttpServer());
+    expect(runtime.app.getHttpServer().listening).toBe(false);
   });
 
   it('registers the existing stateful service instances without duplicates', () => {
-    expect(runtime.legacy).not.toHaveProperty('services');
+    expect(runtime).not.toHaveProperty('legacy');
     for (const token of [
       AutoModeServiceCompat,
       DevServerService,
@@ -168,7 +168,7 @@ describe('Nest shell and legacy bridge contract', () => {
 
   it('serves the unchanged public health contract through Nest', async () => {
     await runtime.start();
-    const address = runtime.legacy.server.address() as AddressInfo;
+    const address = runtime.app.getHttpServer().address() as AddressInfo;
     const response = await fetch(`http://127.0.0.1:${address.port}/api/health`);
 
     expect(response.status).toBe(200);
@@ -220,7 +220,7 @@ describe('Nest shell and legacy bridge contract', () => {
   });
 
   it('keeps setup endpoints public after their Nest cutover', async () => {
-    const address = runtime.legacy.server.address() as AddressInfo;
+    const address = runtime.app.getHttpServer().address() as AddressInfo;
     const response = await fetch(`http://127.0.0.1:${address.port}/api/setup/platform`);
 
     expect(response.status).toBe(200);
@@ -232,7 +232,7 @@ describe('Nest shell and legacy bridge contract', () => {
   });
 
   it('serves MCP connection checks through Nest without accepting arbitrary configs', async () => {
-    const address = runtime.legacy.server.address() as AddressInfo;
+    const address = runtime.app.getHttpServer().address() as AddressInfo;
     const url = `http://127.0.0.1:${address.port}/api/mcp/test`;
     const headers = {
       'Content-Type': 'application/json',
@@ -259,7 +259,7 @@ describe('Nest shell and legacy bridge contract', () => {
   });
 
   it('serves terminal REST state through the injected singleton', async () => {
-    const address = runtime.legacy.server.address() as AddressInfo;
+    const address = runtime.app.getHttpServer().address() as AddressInfo;
     const response = await fetch(`http://127.0.0.1:${address.port}/api/terminal/status`, {
       headers: { 'x-api-key': 'automaker-test-api-key' },
     });
@@ -272,7 +272,7 @@ describe('Nest shell and legacy bridge contract', () => {
   });
 
   it('allows authenticated clients to recover only the active plan approval ticket', async () => {
-    const address = runtime.legacy.server.address() as AddressInfo;
+    const address = runtime.app.getHttpServer().address() as AddressInfo;
     const endpoint = `http://127.0.0.1:${address.port}/api/auto-mode/pending-plan-approval`;
     const ticket = {
       approvalToken: 'current-ticket',
@@ -327,7 +327,7 @@ describe('Nest shell and legacy bridge contract', () => {
   });
 
   it('validates plan decisions in Nest and returns conflict for a stale ticket', async () => {
-    const address = runtime.legacy.server.address() as AddressInfo;
+    const address = runtime.app.getHttpServer().address() as AddressInfo;
     const endpoint = `http://127.0.0.1:${address.port}/api/auto-mode/approve-plan`;
     const headers = { 'Content-Type': 'application/json', 'x-api-key': 'automaker-test-api-key' };
     const decision = {
@@ -383,7 +383,7 @@ describe('Nest shell and legacy bridge contract', () => {
   });
 
   it('preserves content-type, authentication, CORS, cookie and body-limit middleware', async () => {
-    const address = runtime.legacy.server.address() as AddressInfo;
+    const address = runtime.app.getHttpServer().address() as AddressInfo;
     const baseUrl = `http://127.0.0.1:${address.port}`;
 
     const protectedResponse = await fetch(`${baseUrl}/api/settings/status`);
@@ -418,7 +418,7 @@ describe('Nest shell and legacy bridge contract', () => {
   });
 
   it('keeps WebSocket upgrades on the shared Nest HTTP server', async () => {
-    const address = runtime.legacy.server.address() as AddressInfo;
+    const address = runtime.app.getHttpServer().address() as AddressInfo;
     const unauthorizedStatus = await new Promise<number>((resolve, reject) => {
       const unauthorized = new WebSocket(`ws://127.0.0.1:${address.port}/api/events`);
       unauthorized.once('unexpected-response', (_request, response) => {
@@ -441,7 +441,9 @@ describe('Nest shell and legacy bridge contract', () => {
     const event = new Promise<string>((resolve) =>
       socket.once('message', (message) => resolve(message.toString()))
     );
-    runtime.legacy.events.emit('feature:progress', { featureId: 'nest-ws-contract' });
+    runtime.app
+      .get<EventEmitter>(APPLICATION_EVENTS)
+      .emit('feature:progress', { featureId: 'nest-ws-contract' });
     await expect(event).resolves.toBe(
       JSON.stringify({
         type: 'feature:progress',
@@ -462,7 +464,7 @@ describe('Nest shell and legacy bridge contract', () => {
   });
 
   it('preserves terminal input, resize, ping and multi-viewer reconnect semantics', async () => {
-    const address = runtime.legacy.server.address() as AddressInfo;
+    const address = runtime.app.getHttpServer().address() as AddressInfo;
     const terminal = runtime.app.get(TerminalService);
     const pty = { write: vi.fn(), resize: vi.fn(), kill: vi.fn() };
     const session = {
@@ -521,7 +523,7 @@ describe('Nest shell and legacy bridge contract', () => {
 
   it('serves migrated edge modules exclusively through Nest', async () => {
     const projectPath = await mkdtemp(path.join(os.tmpdir(), 'nest-edge-contract-'));
-    const address = runtime.legacy.server.address() as AddressInfo;
+    const address = runtime.app.getHttpServer().address() as AddressInfo;
     const baseUrl = `http://127.0.0.1:${address.port}`;
     const headers = {
       'Content-Type': 'application/json',
@@ -1176,7 +1178,7 @@ describe('Nest shell and legacy bridge contract', () => {
     const inventory = JSON.parse(await readFile(inventoryPath, 'utf8')) as {
       endpoints: Array<{ access: string; method: string; path: string }>;
     };
-    const address = runtime.legacy.server.address() as AddressInfo;
+    const address = runtime.app.getHttpServer().address() as AddressInfo;
 
     for (const endpoint of inventory.endpoints.filter(({ access }) => access === 'protected')) {
       const requestPath = endpoint.path

@@ -112,6 +112,13 @@ API v13, wire contracts, persisted formats и execution bindings не меняю
       Native guard/policy, SECURE_FILESYSTEM и Files adapter уже переведены в ADR-041;
       остаются legacy init, SDK helpers, settings/atomic writer, download/prompt
       adapters, bounded FS queue shutdown/admission и filesystem coordination.
+      Последующие срезы реализовали bounded FS queue, удаление ambient init и
+      native SDK validators, scoped settings/atomic writer normal path:
+      [filesystem audit](artifacts/filesystem-lifecycle-audit.md),
+      [lifecycle cutover](artifacts/native-lifecycle-cutover-audit.md),
+      [settings audit](artifacts/settings-filesystem-audit.md).
+      Download/prompt, legacy Electron import и остальные unscoped consumers /
+      coordination остаются открытыми; общий checkbox пока не закрывается.
 - [ ] Filesystem repositories.
 - [ ] Git local/remote adapters.
 - [ ] Process/PTY supervisor.

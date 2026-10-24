@@ -8,6 +8,7 @@ import { FeatureLoader } from '../../services/feature-loader.js';
 import { ProviderRegistry } from '../providers/provider-registry.service.js';
 import { APPLICATION_EVENTS } from '../../core/eventing/application-events.js';
 import type { EventEmitter } from '../../lib/events.js';
+import { SecurityService } from '../../core/security/security.service.js';
 
 @Module({
   imports: [FeaturesModule],
@@ -15,13 +16,23 @@ import type { EventEmitter } from '../../lib/events.js';
   providers: [
     {
       provide: IdeationService,
-      inject: [APPLICATION_EVENTS, SettingsService, FeatureLoader, ProviderRegistry],
+      inject: [
+        APPLICATION_EVENTS,
+        SettingsService,
+        FeatureLoader,
+        ProviderRegistry,
+        SecurityService,
+      ],
       useFactory: (
         events: EventEmitter,
         settings: SettingsService,
         features: FeatureLoader,
-        providers: ProviderRegistry
-      ) => new IdeationService(events, settings, features, providers),
+        providers: ProviderRegistry,
+        security: SecurityService
+      ) =>
+        new IdeationService(events, settings, features, providers, (cwd) => {
+          security.validateLocalPath(cwd, 'ideation working directory');
+        }),
     },
     IdeationApplicationService,
   ],

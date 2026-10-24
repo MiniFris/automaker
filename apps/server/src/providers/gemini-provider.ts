@@ -27,6 +27,7 @@ import { createLogger, isAbortError } from '@automaker/utils';
 import type { SubprocessOptions } from '@automaker/platform';
 import { remoteCliRuntime } from './environment-execution.js';
 import { normalizeTodos } from './tool-normalization.js';
+import { ExecutionEnvironmentError } from '../services/execution-environment/runtime.js';
 
 // Create logger for this module
 const logger = createLogger('GeminiProvider');
@@ -244,6 +245,7 @@ export class GeminiProvider extends CliProvider {
   }
 
   buildCliArgs(options: ExecuteOptions): string[] {
+    this.validateToolPolicy(options);
     // Model comes in stripped of provider prefix (e.g., '2.5-flash' from 'gemini-2.5-flash')
     // We need to add 'gemini-' back since it's part of the actual CLI model name
     const bareModel = options.model || '2.5-flash';
@@ -549,6 +551,8 @@ export class GeminiProvider extends CliProvider {
    * Execute a prompt using Gemini CLI with streaming
    */
   protected async *execute(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+    // Reject before local detection, workspace preparation or remote dispatch.
+    this.validateToolPolicy(options);
     const runtime = remoteCliRuntime(options);
     if (!runtime) this.ensureCliDetected();
 
@@ -799,5 +803,17 @@ export class GeminiProvider extends CliProvider {
   supportsFeature(feature: string): boolean {
     const supported = ['tools', 'text', 'streaming', 'vision', 'thinking'];
     return supported.includes(feature);
+  }
+
+  private validateToolPolicy(options: ExecuteOptions): void {
+    // The installed CLI is not version-pinned. --allowed-tools controls approval,
+    // not availability; YOLO would override a restricted approval list. Neither
+    // that flag nor an unverified experimental plan mode can enforce our policy.
+    if (options.readOnly || options.allowedTools !== undefined || options.tools !== undefined) {
+      throw new ExecutionEnvironmentError(
+        'GEMINI_TOOL_POLICY_UNSUPPORTED',
+        'Gemini CLI cannot enforce the requested tool policy. No process was started.'
+      );
+    }
   }
 }

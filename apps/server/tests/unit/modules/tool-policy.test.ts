@@ -5,6 +5,38 @@ import { ToolPolicyService } from '../../../src/modules/providers/tool-policy.se
 const policy = new ToolPolicyService();
 
 describe('ToolPolicyService', () => {
+  it('grants only known read effects for an omitted read-only policy', () => {
+    expect(policy.resolve({ readOnly: true, providerSupportsTools: true })).toEqual([
+      'Read',
+      'LS',
+      'Glob',
+      'Grep',
+      'WebSearch',
+      'WebFetch',
+    ]);
+    expect(policy.resolve({ readOnly: false, providerSupportsTools: true })).toBeUndefined();
+  });
+
+  it('preserves explicit deny-all and refuses delegation as a read-only capability', () => {
+    for (const readOnly of [true, false]) {
+      expect(policy.resolve({ requested: [], readOnly, providerSupportsTools: true })).toEqual([]);
+    }
+    expect(
+      policy.resolve({
+        requested: ['Task', 'Skill', 'TodoWrite', 'Read'],
+        readOnly: true,
+        providerSupportsTools: true,
+      })
+    ).toEqual(['Read']);
+    expect(
+      policy.resolve({
+        requested: ['Task', 'Skill', 'TodoWrite'],
+        readOnly: false,
+        providerSupportsTools: true,
+      })
+    ).toEqual(['Task', 'Skill', 'TodoWrite']);
+  });
+
   it('normalizes aliases, removes duplicates, and fails closed for unknown tools', () => {
     expect(
       policy.resolve({

@@ -8,6 +8,7 @@ import { AgentPromptBuilder } from '../../services/agent/agent-prompt-builder.js
 import { AgentEnvironmentPreparer } from '../../services/agent/agent-environment-preparer.js';
 import { AgentProviderSelector } from '../../services/agent/agent-provider-selector.js';
 import { AgentQueryOptionsBuilder } from '../../services/agent/agent-query-options-builder.js';
+import { SecurityService } from '../../core/security/security.service.js';
 import { AgentEventPublisher } from '../../services/agent/agent-event-publisher.js';
 import { AgentStreamNormalizer } from '../../services/agent/agent-stream-normalizer.js';
 import { AgentSessionLoader } from '../../services/agent/agent-session-loader.js';
@@ -35,6 +36,7 @@ export const agentServiceProvider: FactoryProvider<AgentService> = {
     SettingsService,
     AgentProviderSelector,
     AgentQueryOptionsBuilder,
+    SecurityService,
   ],
   useFactory: (
     repository: AgentSessionRepository,
@@ -51,7 +53,8 @@ export const agentServiceProvider: FactoryProvider<AgentService> = {
     events: AgentEventPublisher,
     settings: SettingsService,
     providers: AgentProviderSelector,
-    queries: AgentQueryOptionsBuilder
+    queries: AgentQueryOptionsBuilder,
+    security: SecurityService
   ) =>
     new AgentService(
       repository,
@@ -68,6 +71,9 @@ export const agentServiceProvider: FactoryProvider<AgentService> = {
       events,
       settings,
       providers,
-      queries
+      queries,
+      (cwd) => {
+        security.validateLocalPath(cwd, 'agent working directory');
+      }
     ),
 };

@@ -51,7 +51,7 @@ it('owns native project storage services once, shares consumer identity, preserv
       }
     }
     for (const runtime of apps) {
-      expect(runtime.legacy).not.toHaveProperty('services');
+      expect(runtime).not.toHaveProperty('legacy');
       const features = runtime.app.get(FeatureLoader),
         notifications = runtime.app.get(NotificationService),
         history = runtime.app.get(EventHistoryService);

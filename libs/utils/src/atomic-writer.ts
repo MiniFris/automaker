@@ -13,6 +13,12 @@ import { mkdirSafe } from './fs-utils.js';
 
 const logger = createLogger('AtomicWriter');
 
+/** Injectable file boundary for application-owned writes; legacy callers keep the default. */
+export type AtomicWriteFilesystem = Pick<
+  typeof secureFs,
+  'access' | 'lstat' | 'mkdir' | 'unlink' | 'rename' | 'copyFile' | 'writeFile' | 'readFile'
+>;
+
 /** Default maximum number of backup files to keep for crash recovery */
 export const DEFAULT_BACKUP_COUNT = 3;
 
@@ -20,6 +26,7 @@ export const DEFAULT_BACKUP_COUNT = 3;
  * Options for atomic write operations
  */
 export interface AtomicWriteOptions {
+  filesystem?: AtomicWriteFilesystem;
   /** Permission bits for a new temporary file (e.g. 0o600 for credentials). */
   mode?: number;
   /** Number of spaces for JSON indentation (default: 2) */
@@ -39,11 +46,12 @@ export interface AtomicWriteOptions {
  */
 export async function rotateBackups(
   filePath: string,
-  maxBackups: number = DEFAULT_BACKUP_COUNT
+  maxBackups: number = DEFAULT_BACKUP_COUNT,
+  filesystem: AtomicWriteFilesystem = secureFs
 ): Promise<void> {
   // Check if the source file exists before attempting backup
   try {
-    await secureFs.access(filePath);
+    await filesystem.access(filePath);
   } catch {
     // No existing file to backup
     return;
@@ -57,10 +65,10 @@ export async function rotateBackups(
     try {
       if (i === maxBackups) {
         // Delete the oldest backup
-        await secureFs.unlink(currentBackup);
+        await filesystem.unlink(currentBackup);
       } else {
         // Rename current backup to next slot
-        await secureFs.rename(currentBackup, nextBackup);
+        await filesystem.rename(currentBackup, nextBackup);
       }
     } catch {
       // Ignore errors - backup file may not exist
@@ -69,7 +77,7 @@ export async function rotateBackups(
 
   // Copy current file to .bak1
   try {
-    await secureFs.copyFile(filePath, `${filePath}.bak1`);
+    await filesystem.copyFile(filePath, `${filePath}.bak1`);
   } catch (error) {
     logger.warn(`Failed to create backup of ${filePath}:`, error);
     // Continue with write even if backup fails
@@ -100,7 +108,7 @@ export async function atomicWriteJson<T>(
   data: T,
   options: AtomicWriteOptions = {}
 ): Promise<void> {
-  const { indent = 2, backupCount = 0 } = options;
+  const { indent = 2, backupCount = 0, filesystem = secureFs } = options;
   const resolvedPath = path.resolve(filePath);
   // Use timestamp + random suffix to ensure uniqueness even for concurrent writes
   const uniqueSuffix = `${Date.now()}.${crypto.randomBytes(4).toString('hex')}`;
@@ -108,26 +116,26 @@ export async function atomicWriteJson<T>(
 
   // Always ensure parent directories exist before writing the temp file
   const dirPath = path.dirname(resolvedPath);
-  await mkdirSafe(dirPath);
+  await mkdirSafe(dirPath, filesystem);
 
   const content = JSON.stringify(data, null, indent);
 
   try {
     // Rotate backups before writing (if backups are enabled)
     if (backupCount > 0) {
-      await rotateBackups(resolvedPath, backupCount);
+      await rotateBackups(resolvedPath, backupCount, filesystem);
     }
 
-    await secureFs.writeFile(
+    await filesystem.writeFile(
       tempPath,
       content,
       options.mode === undefined ? 'utf-8' : { encoding: 'utf-8', mode: options.mode, flag: 'wx' }
     );
-    await secureFs.rename(tempPath, resolvedPath);
+    await filesystem.rename(tempPath, resolvedPath);
   } catch (error) {
     // Clean up temp file if it exists
     try {
-      await secureFs.unlink(tempPath);
+      await filesystem.unlink(tempPath);
     } catch {
       // Ignore cleanup errors - best effort
     }
@@ -152,17 +160,22 @@ export async function atomicWriteJson<T>(
  * const config = await readJsonFile('/path/to/config.json', { version: 1 });
  * ```
  */
-export async function readJsonFile<T>(filePath: string, defaultValue: T): Promise<T> {
+export async function readJsonFile<T>(
+  filePath: string,
+  defaultValue: T,
+  filesystem?: Pick<typeof secureFs, 'readFile'>
+): Promise<T> {
   const resolvedPath = path.resolve(filePath);
 
   try {
-    const content = (await secureFs.readFile(resolvedPath, 'utf-8')) as string;
+    const content = (await (filesystem ?? secureFs).readFile(resolvedPath, 'utf-8')) as string;
     return JSON.parse(content) as T;
   } catch (error) {
     const nodeError = error as NodeJS.ErrnoException;
     if (nodeError.code === 'ENOENT') {
       return defaultValue;
     }
+    if (filesystem && !(error instanceof SyntaxError)) throw error;
     logger.error(`Error reading JSON from ${resolvedPath}:`, error);
     return defaultValue;
   }
@@ -196,7 +209,7 @@ export async function updateJsonAtomically<T>(
   updater: (current: T) => T | Promise<T>,
   options: AtomicWriteOptions = {}
 ): Promise<void> {
-  const current = await readJsonFile(filePath, defaultValue);
+  const current = await readJsonFile(filePath, defaultValue, options.filesystem);
   const updated = await updater(current);
   await atomicWriteJson(filePath, updated, options);
 }

@@ -1,144 +1,154 @@
-import { Body, Controller, HttpCode, Inject, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpCode, Inject, Post, UseGuards } from '@nestjs/common';
 import {
   PendingPlanApprovalRequestSchema,
-  type PendingPlanApprovalRequest,
   PlanApprovalDecisionRequestSchema,
+  type PendingPlanApprovalRequest,
   type PlanApprovalDecisionRequest,
 } from '@automaker/contracts';
-import type { Request, Response } from 'express';
 import { AllowedPathFields, AllowedPathGuard } from '../../core/security/index.js';
-import { AutoModeHandlersService, type AutoModeHandlerName } from './auto-mode-handlers.service.js';
-import { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
 import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
-import { ConflictDomainError } from '../../core/errors/index.js';
+import { AutoModeApplicationService } from './auto-mode-application.service.js';
+import {
+  AutoModeBranchSchema,
+  AutoModeCommitSchema,
+  AutoModeExecuteSchema,
+  AutoModeFeatureSchema,
+  AutoModeFollowUpSchema,
+  AutoModeMergeSchema,
+  AutoModeProjectSchema,
+  AutoModeStartSchema,
+  AutoModeStatusSchema,
+  AutoModeStopFeatureSchema,
+  type AutoModeBranchRequest,
+  type AutoModeCommitRequest,
+  type AutoModeExecuteRequest,
+  type AutoModeFeatureRequest,
+  type AutoModeFollowUpRequest,
+  type AutoModeMergeRequest,
+  type AutoModeProjectRequest,
+  type AutoModeStartRequest,
+  type AutoModeStatusRequest,
+  type AutoModeStopFeatureRequest,
+} from './auto-mode.schemas.js';
 
 @Controller('auto-mode')
 @UseGuards(AllowedPathGuard)
 export class AutoModeController {
   constructor(
-    @Inject(AutoModeHandlersService) private readonly handlers: AutoModeHandlersService,
-    @Inject(AutoModeServiceCompat) private readonly autoMode: AutoModeServiceCompat
+    @Inject(AutoModeApplicationService) private readonly commands: AutoModeApplicationService
   ) {}
-
-  private run(name: AutoModeHandlerName, request: Request, response: Response) {
-    return this.handlers.run(name, request, response);
-  }
-
-  @Post('merge-environment-feature') @AllowedPathFields('projectPath') mergeEnvironmentFeature(
-    @Req() q: Request,
-    @Res() s: Response
+  @Post('merge-environment-feature')
+  @HttpCode(200)
+  @AllowedPathFields('projectPath')
+  mergeEnvironmentFeature(
+    @Body(new ZodValidationPipe(AutoModeMergeSchema)) body: AutoModeMergeRequest
   ) {
-    return this.run('mergeEnvironmentFeature', q, s);
+    return this.commands.mergeFeature(body, true);
   }
-  @Post('merge-ssh-feature') @AllowedPathFields('projectPath') mergeSshFeature(
-    @Req() q: Request,
-    @Res() s: Response
+  @Post('merge-ssh-feature')
+  @HttpCode(200)
+  @AllowedPathFields('projectPath')
+  mergeSshFeature(@Body(new ZodValidationPipe(AutoModeMergeSchema)) body: AutoModeMergeRequest) {
+    return this.commands.mergeFeature(body, false);
+  }
+  @Post('start')
+  @HttpCode(200)
+  @AllowedPathFields('projectPath')
+  start(@Body(new ZodValidationPipe(AutoModeStartSchema)) body: AutoModeStartRequest) {
+    return this.commands.start(body);
+  }
+  @Post('stop')
+  @HttpCode(200)
+  @AllowedPathFields('projectPath')
+  stop(@Body(new ZodValidationPipe(AutoModeBranchSchema)) body: AutoModeBranchRequest) {
+    return this.commands.stop(body);
+  }
+  @Post('stop-feature')
+  @HttpCode(200)
+  stopFeature(
+    @Body(new ZodValidationPipe(AutoModeStopFeatureSchema)) body: AutoModeStopFeatureRequest
   ) {
-    return this.run('mergeSshFeature', q, s);
+    return this.commands.stopFeature(body);
   }
-  @Post('start') @AllowedPathFields('projectPath') start(@Req() q: Request, @Res() s: Response) {
-    return this.run('start', q, s);
+  @Post('status')
+  @HttpCode(200)
+  @AllowedPathFields('projectPath?')
+  status(@Body(new ZodValidationPipe(AutoModeStatusSchema)) body: AutoModeStatusRequest) {
+    return this.commands.status(body);
   }
-  @Post('stop') @AllowedPathFields('projectPath') stop(@Req() q: Request, @Res() s: Response) {
-    return this.run('stop', q, s);
+  @Post('run-feature')
+  @HttpCode(200)
+  @AllowedPathFields('projectPath')
+  runFeature(@Body(new ZodValidationPipe(AutoModeExecuteSchema)) body: AutoModeExecuteRequest) {
+    return this.commands.runFeature(body);
   }
-  @Post('stop-feature') stopFeature(@Req() q: Request, @Res() s: Response) {
-    return this.run('stopFeature', q, s);
+  @Post('verify-feature')
+  @HttpCode(200)
+  @AllowedPathFields('projectPath')
+  verifyFeature(@Body(new ZodValidationPipe(AutoModeFeatureSchema)) body: AutoModeFeatureRequest) {
+    return this.commands.verifyFeature(body);
   }
-  @Post('status') @AllowedPathFields('projectPath?') status(@Req() q: Request, @Res() s: Response) {
-    return this.run('status', q, s);
+  @Post('resume-feature')
+  @HttpCode(200)
+  @AllowedPathFields('projectPath')
+  resumeFeature(@Body(new ZodValidationPipe(AutoModeExecuteSchema)) body: AutoModeExecuteRequest) {
+    return this.commands.resumeFeature(body);
   }
-  @Post('run-feature') @AllowedPathFields('projectPath') runFeature(
-    @Req() q: Request,
-    @Res() s: Response
+  @Post('context-exists')
+  @HttpCode(200)
+  @AllowedPathFields('projectPath')
+  contextExists(@Body(new ZodValidationPipe(AutoModeFeatureSchema)) body: AutoModeFeatureRequest) {
+    return this.commands.contextExists(body);
+  }
+  @Post('analyze-project')
+  @HttpCode(200)
+  @AllowedPathFields('projectPath')
+  analyzeProject(@Body(new ZodValidationPipe(AutoModeProjectSchema)) body: AutoModeProjectRequest) {
+    return this.commands.analyzeProject(body);
+  }
+  @Post('follow-up-feature')
+  @HttpCode(200)
+  @AllowedPathFields('projectPath', 'imagePaths?[]')
+  followUpFeature(
+    @Body(new ZodValidationPipe(AutoModeFollowUpSchema)) body: AutoModeFollowUpRequest
   ) {
-    return this.run('runFeature', q, s);
+    return this.commands.followUpFeature(body);
   }
-  @Post('verify-feature') @AllowedPathFields('projectPath') verifyFeature(
-    @Req() q: Request,
-    @Res() s: Response
-  ) {
-    return this.run('verifyFeature', q, s);
-  }
-  @Post('resume-feature') @AllowedPathFields('projectPath') resumeFeature(
-    @Req() q: Request,
-    @Res() s: Response
-  ) {
-    return this.run('resumeFeature', q, s);
-  }
-  @Post('context-exists') @AllowedPathFields('projectPath') contextExists(
-    @Req() q: Request,
-    @Res() s: Response
-  ) {
-    return this.run('contextExists', q, s);
-  }
-  @Post('analyze-project') @AllowedPathFields('projectPath') analyzeProject(
-    @Req() q: Request,
-    @Res() s: Response
-  ) {
-    return this.run('analyzeProject', q, s);
-  }
-  @Post('follow-up-feature') @AllowedPathFields('projectPath', 'imagePaths[]') followUpFeature(
-    @Req() q: Request,
-    @Res() s: Response
-  ) {
-    return this.run('followUpFeature', q, s);
-  }
-  @Post('commit-feature') @AllowedPathFields('projectPath', 'worktreePath?') commitFeature(
-    @Req() q: Request,
-    @Res() s: Response
-  ) {
-    return this.run('commitFeature', q, s);
+  @Post('commit-feature')
+  @HttpCode(200)
+  @AllowedPathFields('projectPath', 'worktreePath?')
+  commitFeature(@Body(new ZodValidationPipe(AutoModeCommitSchema)) body: AutoModeCommitRequest) {
+    return this.commands.commitFeature(body);
   }
   @Post('approve-plan')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  async approvePlan(
+  approvePlan(
     @Body(new ZodValidationPipe(PlanApprovalDecisionRequestSchema))
     body: PlanApprovalDecisionRequest
   ) {
-    const result = await this.autoMode.resolvePlanApproval(
-      body.projectPath,
-      body.featureId,
-      body.approved,
-      body.editedPlan,
-      body.feedback,
-      body.approvalToken,
-      body.planVersion,
-      body.approvalRunId
-    );
-    if (!result.success) throw new ConflictDomainError(result.error ?? 'Plan approval conflict');
-    return {
-      success: true,
-      approved: body.approved,
-      message: body.approved
-        ? 'Plan approved - implementation will continue'
-        : 'Plan rejected - feature execution stopped',
-    };
+    return this.commands.approvePlan(body);
   }
-
   @Post('pending-plan-approval')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  async pendingPlanApproval(
-    @Body(new ZodValidationPipe(PendingPlanApprovalRequestSchema))
-    body: PendingPlanApprovalRequest
+  pendingPlanApproval(
+    @Body(new ZodValidationPipe(PendingPlanApprovalRequestSchema)) body: PendingPlanApprovalRequest
   ) {
-    return {
-      success: true,
-      approval: await this.autoMode.getPendingPlanApproval(body.projectPath, body.featureId),
-    };
+    return this.commands.pendingPlanApproval(body);
   }
-  @Post('resume-interrupted') @AllowedPathFields('projectPath') resumeInterrupted(
-    @Req() q: Request,
-    @Res() s: Response
+  @Post('resume-interrupted')
+  @HttpCode(200)
+  @AllowedPathFields('projectPath')
+  resumeInterrupted(
+    @Body(new ZodValidationPipe(AutoModeProjectSchema)) body: AutoModeProjectRequest
   ) {
-    return this.run('resumeInterrupted', q, s);
+    return this.commands.resumeInterrupted(body);
   }
-  @Post('reconcile') @AllowedPathFields('projectPath') reconcile(
-    @Req() q: Request,
-    @Res() s: Response
-  ) {
-    return this.run('reconcile', q, s);
+  @Post('reconcile')
+  @HttpCode(200)
+  @AllowedPathFields('projectPath')
+  reconcile(@Body(new ZodValidationPipe(AutoModeProjectSchema)) body: AutoModeProjectRequest) {
+    return this.commands.reconcile(body);
   }
 }

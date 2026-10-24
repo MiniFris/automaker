@@ -17,6 +17,8 @@ export interface PipelineContext {
   useClaudeCodeSystemPrompt?: boolean;
   testAttempts: number;
   maxTestAttempts: number;
+  /** Only supplied by the prepared immutable feature workspace, never a transport DTO. */
+  boundTargetCwd?: string;
 }
 
 export interface PipelineStatusInfo {

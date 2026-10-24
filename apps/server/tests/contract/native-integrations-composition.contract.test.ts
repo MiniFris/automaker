@@ -50,7 +50,7 @@ it('owns integration services once per application and preserves native dependen
       }
     }
     for (const runtime of apps) {
-      expect(runtime.legacy).not.toHaveProperty('services');
+      expect(runtime).not.toHaveProperty('legacy');
       const mcp = runtime.app.get(MCPTestService),
         pipeline = runtime.app.get(PipelineService),
         ideation = runtime.app.get(IdeationService),

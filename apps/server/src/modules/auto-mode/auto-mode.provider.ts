@@ -8,6 +8,8 @@ import { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
 import { ProviderRegistry } from '../providers/provider-registry.service.js';
 import { ToolPolicyService } from '../providers/tool-policy.service.js';
 import { PipelineService } from '../../services/pipeline-service.js';
+import { ProjectRunContextRegistry } from './project-run-context.registry.js';
+import { SecurityService } from '../../core/security/security.service.js';
 
 export const autoModeProvider: FactoryProvider<AutoModeServiceCompat> = {
   provide: AutoModeServiceCompat,
@@ -19,6 +21,8 @@ export const autoModeProvider: FactoryProvider<AutoModeServiceCompat> = {
     ProviderRegistry,
     ToolPolicyService,
     PipelineService,
+    ProjectRunContextRegistry,
+    SecurityService,
   ],
   useFactory: (
     events: EventEmitter,
@@ -27,7 +31,9 @@ export const autoModeProvider: FactoryProvider<AutoModeServiceCompat> = {
     notifications: NotificationService,
     providers: ProviderRegistry,
     policy: ToolPolicyService,
-    pipeline: PipelineService
+    pipeline: PipelineService,
+    contexts: ProjectRunContextRegistry,
+    security: SecurityService
   ) =>
     new AutoModeServiceCompat(
       events,
@@ -37,6 +43,12 @@ export const autoModeProvider: FactoryProvider<AutoModeServiceCompat> = {
       notifications,
       providers,
       policy,
-      pipeline
+      pipeline,
+      {
+        contexts,
+        validateWorkingDirectory: (cwd) => {
+          security.validateLocalPath(cwd, 'auto mode working directory');
+        },
+      }
     ),
 };

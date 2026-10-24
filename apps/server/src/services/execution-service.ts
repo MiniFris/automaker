@@ -90,7 +90,8 @@ export class ExecutionService {
     private saveExecutionStateFn: SaveExecutionStateFn,
     private loadContextFilesFn: LoadContextFilesFn,
     private readonly providerRegistry: ProviderRegistry,
-    private readonly pipeline: PipelineService = pipelineService
+    private readonly pipeline: PipelineService = pipelineService,
+    private readonly directoryValidator: (cwd: string) => void = validateWorkingDirectory
   ) {}
 
   private acquireRunningFeature(options: {
@@ -186,7 +187,7 @@ ${feature.spec}
     let pipelineCompleted = false;
 
     try {
-      validateWorkingDirectory(projectPath);
+      this.directoryValidator(projectPath);
       feature = await this.loadFeatureFn(projectPath, featureId);
       if (!feature) throw new Error(`Feature ${featureId} not found`);
       const remoteService = this.settingsService
@@ -254,7 +255,7 @@ ${feature.spec}
         : worktreePath
           ? path.resolve(worktreePath)
           : path.resolve(projectPath);
-      validateWorkingDirectory(workDir);
+      if (!remote) this.directoryValidator(workDir);
       tempRunningFeature.worktreePath = remote?.environment.cwd ?? worktreePath;
       tempRunningFeature.branchName =
         (remote?.binding.sshWorkspace ?? remote?.binding.featureWorkspace)?.baseBranch ??
@@ -350,6 +351,7 @@ ${feature.spec}
         {
           projectPath,
           planningMode: feature.planningMode,
+          boundTargetCwd: remote?.binding.cwd,
           requirePlanApproval: feature.requirePlanApproval,
           systemPrompt: combinedSystemPrompt || undefined,
           autoLoadClaudeMd,
@@ -418,6 +420,7 @@ Please continue from where you left off and complete all remaining tasks. Use th
           {
             projectPath,
             planningMode: 'skip',
+            boundTargetCwd: remote?.binding.cwd,
             requirePlanApproval: false,
             systemPrompt: combinedSystemPrompt || undefined,
             autoLoadClaudeMd,
@@ -463,6 +466,7 @@ Please continue from where you left off and complete all remaining tasks. Use th
           useClaudeCodeSystemPrompt,
           testAttempts: 0,
           maxTestAttempts: 5,
+          boundTargetCwd: remote?.binding.cwd,
         });
         pipelineCompleted = true;
         // Check if pipeline set a terminal status (e.g., merge_conflict) — don't overwrite it

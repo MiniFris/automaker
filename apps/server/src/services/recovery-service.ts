@@ -86,7 +86,8 @@ export class RecoveryService {
     private resumePipelineFn: ResumePipelineFn,
     private isFeatureRunningFn: IsFeatureRunningFn,
     private acquireRunningFeatureFn: AcquireRunningFeatureFn,
-    private releaseRunningFeatureFn: ReleaseRunningFeatureFn
+    private releaseRunningFeatureFn: ReleaseRunningFeatureFn,
+    private readonly isStopping: () => boolean = () => false
   ) {}
 
   async saveExecutionStateForProject(
@@ -200,6 +201,7 @@ export class RecoveryService {
     useWorktrees = false,
     _calledInternally = false
   ): Promise<void> {
+    if (this.isStopping()) return;
     if (!_calledInternally && this.isFeatureRunningFn(featureId)) return;
     this.acquireRunningFeatureFn({
       featureId,
@@ -248,6 +250,7 @@ export class RecoveryService {
   }
 
   async resumeInterruptedFeatures(projectPath: string): Promise<void> {
+    if (this.isStopping()) return;
     const featuresDir = getFeaturesDir(projectPath);
     try {
       // Load execution state to find features that were running before restart.
@@ -323,6 +326,7 @@ export class RecoveryService {
         })),
       });
       for (const feature of allInterruptedFeatures) {
+        if (this.isStopping()) return;
         try {
           if (!this.isFeatureRunningFn(feature.id))
             await this.resumeFeature(projectPath, feature.id, true);
@@ -333,7 +337,7 @@ export class RecoveryService {
 
       // Clear execution state after successful resume to prevent
       // re-resuming the same features on subsequent calls
-      await this.clearExecutionState(projectPath);
+      if (!this.isStopping()) await this.clearExecutionState(projectPath);
     } catch {
       /* ignore */
     }

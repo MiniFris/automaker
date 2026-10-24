@@ -65,6 +65,7 @@ export {
   rotateBackups,
   logRecoveryWarning,
   DEFAULT_BACKUP_COUNT,
+  type AtomicWriteFilesystem,
   type AtomicWriteOptions,
   type ReadJsonRecoveryResult,
   type ReadJsonRecoveryOptions,

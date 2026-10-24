@@ -1,6 +1,5 @@
 import { DynamicModule, Inject, MiddlewareConsumer, Module, RequestMethod } from '@nestjs/common';
 
-import type { LegacyApplicationOptions } from './legacy-application.js';
 import { AuthModule } from './core/auth/index.js';
 import {
   RUNTIME_CONFIG,
@@ -17,7 +16,10 @@ import { RequestContextMiddleware } from './core/observability/request-context.j
 import { ObservabilityModule } from './core/observability/observability.module.js';
 import { SecurityModule } from './core/security/index.js';
 import { ValidationModule } from './core/validation/validation.module.js';
-import { LegacyModule } from './legacy/legacy.module.js';
+import {
+  APPLICATION_STARTUP_TASKS,
+  ApplicationRuntimeLifecycle,
+} from './core/lifecycle/application-runtime.lifecycle.js';
 import { ModelsModule } from './modules/models/models.module.js';
 import { EventHistoryModule } from './modules/event-history/event-history.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
@@ -53,25 +55,22 @@ export class AppModule {
   static register(
     config: RuntimeConfig,
     workingDirectory: string,
-    serviceOptions: Pick<LegacyApplicationOptions, 'runStartupTasks' | 'httpServer'> & {
+    serviceOptions: {
+      runStartupTasks?: boolean;
       hostEnvironment?: NodeJS.ProcessEnv;
       providerRegistrations?: readonly ProviderRegistration[];
     }
   ): DynamicModule {
     assertNoLegacyServiceOverrides(serviceOptions);
-    const { hostEnvironment, providerRegistrations, ...legacyOptions } = serviceOptions;
+    const { hostEnvironment, providerRegistrations } = serviceOptions;
     return {
       module: AppModule,
+      providers: [
+        { provide: APPLICATION_STARTUP_TASKS, useValue: serviceOptions.runStartupTasks ?? true },
+        ApplicationRuntimeLifecycle,
+      ],
       imports: [
         RuntimeConfigModule.register(config, workingDirectory, hostEnvironment),
-        LegacyModule.register(
-          {
-            ...legacyOptions,
-            dataDir: config.storage.dataDirectory,
-            workingDirectory,
-          },
-          config.storage.dataDirectory
-        ),
         LifecycleModule,
         ErrorsModule,
         EventingModule,
