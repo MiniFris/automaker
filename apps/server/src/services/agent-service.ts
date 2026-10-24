@@ -4,9 +4,8 @@
  */
 
 import path from 'path';
-import type { EventEmitter } from '../lib/events.js';
 import type { ThinkingLevel } from '@automaker/types';
-import { isAbortError, createLogger, classifyError } from '@automaker/utils';
+import { isAbortError, createLogger } from '@automaker/utils';
 import { AgentSessionRepository } from './agent/agent-session.repository.js';
 import { AgentSessionRegistry } from './agent/agent-session-registry.js';
 import { AgentSessionStorageError } from './agent/agent-session-storage.error.js';
@@ -15,6 +14,11 @@ import { AgentPromptBuilder } from './agent/agent-prompt-builder.js';
 import { AgentEnvironmentPreparer } from './agent/agent-environment-preparer.js';
 import { AgentProviderSelector } from './agent/agent-provider-selector.js';
 import { AgentQueryOptionsBuilder } from './agent/agent-query-options-builder.js';
+import {
+  AgentStreamNormalizer,
+  normalizeAgentProviderError,
+} from './agent/agent-stream-normalizer.js';
+import { AgentEventPublisher } from './agent/agent-event-publisher.js';
 import { ConflictDomainError, UnavailableDomainError } from '../core/errors/domain-errors.js';
 import type {
   ActiveSession as Session,
@@ -28,7 +32,7 @@ import type { SettingsService } from './settings-service.js';
 
 export class AgentService {
   private reportedErrors = new WeakSet<object>();
-  private events: EventEmitter;
+  private events: AgentEventPublisher;
   private settingsService: SettingsService | null = null;
   private logger = createLogger('AgentService');
 
@@ -38,7 +42,8 @@ export class AgentService {
     private readonly executions: AgentExecutionCoordinator,
     private readonly prompts: AgentPromptBuilder,
     private readonly environments: AgentEnvironmentPreparer,
-    events: EventEmitter,
+    private readonly streams: AgentStreamNormalizer,
+    events: AgentEventPublisher,
     settingsService: SettingsService | undefined,
     private readonly providers: AgentProviderSelector,
     private readonly queries: AgentQueryOptionsBuilder
@@ -49,20 +54,6 @@ export class AgentService {
 
   async initialize(): Promise<void> {
     await this.repository.initialize();
-  }
-
-  /**
-   * Detect provider-side session errors (session not found, expired, etc.).
-   * Used to decide whether to clear a stale sdkSessionId.
-   */
-  private isStaleSessionError(rawErrorText: string): boolean {
-    const errorLower = rawErrorText.toLowerCase();
-    return (
-      errorLower.includes('session not found') ||
-      errorLower.includes('session expired') ||
-      errorLower.includes('invalid session') ||
-      errorLower.includes('no such session')
-    );
   }
 
   /**
@@ -334,7 +325,6 @@ export class AgentService {
       message: userMessage,
     });
 
-    let completion: Record<string, unknown> | undefined;
     let userMessageStored = false;
     try {
       await this.repository.saveMessages(sessionId, session.messages);
@@ -401,11 +391,12 @@ export class AgentService {
       controller.signal.throwIfAborted();
       const stream = provider.executeQuery(prepared);
 
-      let currentAssistantMessage: Message | null = null;
-      let responseText = '';
-      let modelSucceeded = false;
-      const toolUses: Array<{ name: string; input: unknown }> = [];
-      const toolNamesById = new Map<string, string>();
+      const normalized = this.streams.create((content) => ({
+        id: this.generateId(),
+        role: 'assistant',
+        content,
+        timestamp: new Date().toISOString(),
+      }));
 
       for await (const msg of stream) {
         controller.signal.throwIfAborted();
@@ -416,143 +407,28 @@ export class AgentService {
         //    "Session not found" recovery where the provider started a fresh
         //    session — the stale ID must be replaced with the new one)
         if (msg.session_id && msg.session_id !== session.sdkSessionId) {
-          session.sdkSessionId = msg.session_id;
           // Persist the SDK session ID to ensure conversation continuity across server restarts
           await this.updateSession(sessionId, { sdkSessionId: msg.session_id });
+          session.sdkSessionId = msg.session_id;
+          controller.signal.throwIfAborted();
         }
 
-        if (msg.type === 'assistant') {
-          if (msg.message?.content) {
-            for (const block of msg.message.content) {
-              if (block.type === 'text') {
-                responseText += block.text;
-
-                if (!currentAssistantMessage) {
-                  currentAssistantMessage = {
-                    id: this.generateId(),
-                    role: 'assistant',
-                    content: responseText,
-                    timestamp: new Date().toISOString(),
-                  };
-                  session.messages.push(currentAssistantMessage);
-                } else {
-                  currentAssistantMessage.content = responseText;
-                }
-
-                this.emitAgentEvent(sessionId, {
-                  type: 'stream',
-                  messageId: currentAssistantMessage.id,
-                  content: responseText,
-                  isComplete: false,
-                });
-              } else if (block.type === 'tool_use') {
-                const toolUse = {
-                  name: block.name || 'unknown',
-                  input: block.input,
-                };
-                toolUses.push(toolUse);
-                if (block.tool_use_id) {
-                  toolNamesById.set(block.tool_use_id, toolUse.name);
-                }
-
-                this.emitAgentEvent(sessionId, {
-                  type: 'tool_use',
-                  tool: toolUse,
-                });
-              } else if (block.type === 'tool_result') {
-                const toolUseId = block.tool_use_id;
-                const toolName = toolUseId ? toolNamesById.get(toolUseId) : undefined;
-
-                // Normalize block.content to a string for the emitted event
-                const rawContent: unknown = block.content;
-                let contentString: string;
-                if (typeof rawContent === 'string') {
-                  contentString = rawContent;
-                } else if (Array.isArray(rawContent)) {
-                  // Extract text from content blocks (TextBlock, ImageBlock, etc.)
-                  contentString = rawContent
-                    .map((part: { text?: string; type?: string }) => {
-                      if (typeof part === 'string') return part;
-                      if (part.text) return part.text;
-                      // For non-text blocks (e.g., images), represent as type indicator
-                      if (part.type) return `[${part.type}]`;
-                      return JSON.stringify(part);
-                    })
-                    .join('\n');
-                } else if (rawContent !== undefined && rawContent !== null) {
-                  contentString = JSON.stringify(rawContent);
-                } else {
-                  contentString = '';
-                }
-
-                this.emitAgentEvent(sessionId, {
-                  type: 'tool_result',
-                  tool: {
-                    name: toolName || 'unknown',
-                    input: {
-                      toolUseId,
-                      content: contentString,
-                    },
-                  },
-                });
-              }
-            }
-          }
-        } else if (msg.type === 'result') {
-          modelSucceeded = msg.subtype === 'success';
-          if (msg.subtype === 'success' && msg.result) {
-            if (currentAssistantMessage) {
-              currentAssistantMessage.content = msg.result;
-              responseText = msg.result;
-            }
-          }
-
-          completion = {
-            type: 'complete',
-            messageId: currentAssistantMessage?.id,
-            content: responseText,
-            toolUses,
-          };
-        } else if (msg.type === 'error') {
-          // Some providers (like Codex CLI/SaaS or Cursor CLI) surface failures as
-          // streamed error messages instead of throwing. Handle these here so the
-          // Agent Runner UX matches the Claude/Cursor behavior without changing
-          // their provider implementations.
-
-          // Clean error text: strip ANSI escape codes and the redundant "Error: "
-          // prefix that CLI providers (especially OpenCode) add to stderr output.
-          // The OpenCode provider strips these in normalizeEvent/executeQuery, but
-          // we also strip here as a defense-in-depth measure.
-          //
-          // Without stripping the "Error: " prefix, the wrapping at line ~647
-          // (`content: \`Error: ${enhancedText}\``) produces double-prefixed text:
-          // "Error: Error: Session not found" — confusing for the user.
-          const rawMsgError =
-            (typeof msg.error === 'string' && msg.error.trim()) ||
-            'Unexpected error from provider during agent execution.';
-          let rawErrorText = rawMsgError.replace(/\x1b\[[0-9;]*m/g, '').trim() || rawMsgError;
-          // Remove the CLI's "Error: " prefix to prevent double-wrapping
-          rawErrorText = rawErrorText.replace(/^Error:\s*/i, '').trim() || rawErrorText;
-
-          const errorInfo = classifyError(new Error(rawErrorText));
-
-          // Detect provider-side session errors and proactively clear the stale
-          // sdkSessionId so the next attempt starts a fresh provider session.
-          // This handles providers that don't have built-in session recovery
-          // (unlike OpenCode which auto-retries without the session flag).
-          if (session.sdkSessionId && this.isStaleSessionError(rawErrorText)) {
+        const update = normalized.consume(msg);
+        if (update.newMessage) session.messages.push(update.newMessage);
+        for (const event of update.events) {
+          controller.signal.throwIfAborted();
+          this.emitAgentEvent(sessionId, event);
+        }
+        if (update.error) {
+          const { text: enhancedText, classification: errorInfo, staleSession } = update.error;
+          if (session.sdkSessionId && staleSession) {
             this.logger.info(
               `Clearing stale sdkSessionId for session ${sessionId} after provider session error`
             );
-            session.sdkSessionId = undefined;
             await this.clearSdkSessionId(sessionId);
+            session.sdkSessionId = undefined;
+            controller.signal.throwIfAborted();
           }
-
-          // Keep the provider-supplied text intact (Codex already includes helpful tips),
-          // only add a small rate-limit hint when we can detect it.
-          const enhancedText = errorInfo.isRateLimit
-            ? `${rawErrorText}\n\nTip: It looks like you hit a rate limit. Try waiting a bit or reducing concurrent Agent Runner / Auto Mode tasks.`
-            : rawErrorText;
 
           this.logger.error('Provider error during agent execution:', {
             type: errorInfo.type,
@@ -573,6 +449,7 @@ export class AgentService {
 
           session.messages.push(errorMessage);
           await this.saveSession(sessionId, session.messages);
+          controller.signal.throwIfAborted();
 
           this.emitAgentEvent(sessionId, {
             type: 'error',
@@ -588,7 +465,7 @@ export class AgentService {
       }
 
       try {
-        await execution.recordMemoryUsage(responseText, modelSucceeded);
+        await execution.recordMemoryUsage(normalized.responseText, normalized.modelSucceeded);
       } catch (error) {
         this.logger.warn(
           'Chat target memory statistics were not saved (no replay/fallback):',
@@ -601,14 +478,14 @@ export class AgentService {
 
       session.isRunning = false;
       session.abortController = null;
-      if (completion) this.emitAgentEvent(sessionId, completion);
+      if (normalized.completion) this.emitAgentEvent(sessionId, normalized.completion);
 
       // Process next item in queue after completion
       setImmediate(() => this.processNextInQueue(sessionId));
 
       return {
         success: true,
-        message: currentAssistantMessage,
+        message: normalized.message,
       };
     } catch (error) {
       if (error instanceof AgentSessionStorageError) {
@@ -634,26 +511,23 @@ export class AgentService {
 
       this.logger.error('Error:', error);
 
-      // Strip ANSI escape codes and the "Error: " prefix from thrown error
-      // messages so the UI receives clean text without double-prefixing.
-      let rawThrownMsg = ((error as Error).message || '').replace(/\x1b\[[0-9;]*m/g, '').trim();
-      rawThrownMsg = rawThrownMsg.replace(/^Error:\s*/i, '').trim() || rawThrownMsg;
-      const thrownErrorMsg = rawThrownMsg.toLowerCase();
+      const normalizedError = normalizeAgentProviderError(error);
 
       // Check if the thrown error is a provider-side session error.
       // Clear the stale sdkSessionId so the next retry starts fresh.
-      if (session.sdkSessionId && this.isStaleSessionError(rawThrownMsg)) {
+      if (session.sdkSessionId && normalizedError.staleSession) {
         this.logger.info(
           `Clearing stale sdkSessionId for session ${sessionId} after thrown session error`
         );
-        session.sdkSessionId = undefined;
         await this.clearSdkSessionId(sessionId);
+        session.sdkSessionId = undefined;
+        controller.signal.throwIfAborted();
       }
 
       session.isRunning = false;
       session.abortController = null;
 
-      const cleanErrorMsg = rawThrownMsg || (error as Error).message;
+      const cleanErrorMsg = normalizedError.text;
       const errorMessage: Message = {
         id: this.generateId(),
         role: 'assistant',
@@ -664,6 +538,7 @@ export class AgentService {
 
       session.messages.push(errorMessage);
       await this.saveSession(sessionId, session.messages);
+      controller.signal.throwIfAborted();
 
       this.emitAgentEvent(sessionId, {
         type: 'error',
@@ -1149,7 +1024,7 @@ export class AgentService {
    * Emit an event to the agent stream (private, used internally).
    */
   private emitAgentEvent(sessionId: string, data: Record<string, unknown>): void {
-    this.events.emit('agent:stream', { sessionId, ...data });
+    this.events.publish(sessionId, data);
   }
 
   /**
@@ -1166,7 +1041,7 @@ export class AgentService {
       this.reportedErrors.has(originalError)
     )
       return;
-    this.events.emit('agent:stream', { sessionId, type: 'error', error });
+    this.events.publish(sessionId, { type: 'error', error });
   }
 
   private generateId(): string {

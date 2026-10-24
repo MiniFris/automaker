@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 604,
-    "internalEdges": 1908,
+    "files": 606,
+    "internalEdges": 1916,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -17,16 +17,16 @@
     "legacy -> lib": 1,
     "legacy -> modules": 4,
     "legacy -> root": 2,
-    "legacy -> services": 26,
+    "legacy -> services": 28,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 82,
+    "modules -> core": 83,
     "modules -> legacy": 29,
     "modules -> lib": 24,
     "modules -> modules": 246,
     "modules -> providers": 19,
     "modules -> routes": 62,
-    "modules -> services": 100,
+    "modules -> services": 102,
     "modules -> types": 2,
     "providers -> lib": 5,
     "providers -> modules": 1,
@@ -45,12 +45,12 @@
     "routes -> routes": 378,
     "routes -> services": 196,
     "routes -> types": 3,
-    "services -> core": 4,
-    "services -> lib": 74,
+    "services -> core": 5,
+    "services -> lib": 73,
     "services -> modules": 9,
     "services -> providers": 12,
     "services -> routes": 2,
-    "services -> services": 231,
+    "services -> services": 234,
     "services -> types": 2,
     "tests -> lib": 2
   },
@@ -315,8 +315,8 @@
     "@automaker/model-resolver": 20,
     "@automaker/platform": 80,
     "@automaker/prompts": 3,
-    "@automaker/types": 177,
-    "@automaker/utils": 170,
+    "@automaker/types": 178,
+    "@automaker/utils": 171,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
@@ -917,6 +917,10 @@
     },
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/agent/agent-event-publisher.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
       "target": "apps/server/src/services/agent/agent-execution-coordinator.ts"
     },
     {
@@ -938,6 +942,10 @@
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
       "target": "apps/server/src/services/agent/agent-session.repository.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/agent/agent-stream-normalizer.ts"
     },
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
@@ -1085,6 +1093,10 @@
     },
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
+      "target": "apps/server/src/core/eventing/event-bus.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-state.module.ts",
       "target": "apps/server/src/modules/providers/provider-registry.service.ts"
     },
     {
@@ -1094,6 +1106,10 @@
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
       "target": "apps/server/src/services/agent/agent-environment-preparer.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-state.module.ts",
+      "target": "apps/server/src/services/agent/agent-event-publisher.ts"
     },
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
@@ -1118,6 +1134,10 @@
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
       "target": "apps/server/src/services/agent/agent-session.repository.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-state.module.ts",
+      "target": "apps/server/src/services/agent/agent-stream-normalizer.ts"
     },
     {
       "source": "apps/server/src/modules/agents/agents.controller.ts",
@@ -6701,15 +6721,15 @@
     },
     {
       "source": "apps/server/src/services/agent-service.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/services/agent-service.ts",
       "target": "apps/server/src/lib/sdk-options.ts"
     },
     {
       "source": "apps/server/src/services/agent-service.ts",
       "target": "apps/server/src/services/agent/agent-environment-preparer.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent-service.ts",
+      "target": "apps/server/src/services/agent/agent-event-publisher.ts"
     },
     {
       "source": "apps/server/src/services/agent-service.ts",
@@ -6745,6 +6765,10 @@
     },
     {
       "source": "apps/server/src/services/agent-service.ts",
+      "target": "apps/server/src/services/agent/agent-stream-normalizer.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent-service.ts",
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
@@ -6774,6 +6798,10 @@
     {
       "source": "apps/server/src/services/agent/agent-environment-preparer.ts",
       "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-event-publisher.ts",
+      "target": "apps/server/src/core/eventing/event-bus.ts"
     },
     {
       "source": "apps/server/src/services/agent/agent-execution-coordinator.ts",
@@ -6865,6 +6893,10 @@
     },
     {
       "source": "apps/server/src/services/agent/agent-session.repository.ts",
+      "target": "apps/server/src/services/agent/agent-session.types.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-stream-normalizer.ts",
       "target": "apps/server/src/services/agent/agent-session.types.ts"
     },
     {

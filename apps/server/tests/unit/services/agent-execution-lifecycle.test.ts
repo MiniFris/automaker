@@ -8,7 +8,8 @@ import { AgentSessionRegistry } from '../../../src/services/agent/agent-session-
 import { AgentExecutionCoordinator } from '../../../src/services/agent/agent-execution-coordinator.js';
 import { AgentPromptBuilder } from '../../../src/services/agent/agent-prompt-builder.js';
 import { AgentEnvironmentPreparer } from '../../../src/services/agent/agent-environment-preparer.js';
-import { createTestAgentProviders } from '../../helpers/agent-state.js';
+import { createTestAgentProviders, createTestAgentEvents } from '../../helpers/agent-state.js';
+import { AgentStreamNormalizer } from '../../../src/services/agent/agent-stream-normalizer.js';
 import { AgentSessionStorageError } from '../../../src/services/agent/agent-session-storage.error.js';
 import {
   ConflictDomainError,
@@ -119,7 +120,8 @@ describe('AgentService execution ownership', () => {
       executions,
       new AgentPromptBuilder(),
       new AgentEnvironmentPreparer(new AgentPromptBuilder()),
-      emitter,
+      new AgentStreamNormalizer(),
+      createTestAgentEvents(emitter),
       undefined,
       ...createTestAgentProviders(
         new ProviderRegistry([{ name: 'claude', create: () => provider }], {
@@ -161,6 +163,52 @@ describe('AgentService execution ownership', () => {
     release.release();
     expect((await first).success).toBe(true);
     expect(execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not publish a late chunk when cancelled during SDK ID persistence', async () => {
+    const entering = gate(),
+      allowWrite = gate();
+    const update = repository.updateMetadata.bind(repository);
+    let queryController!: AbortController;
+    let closed = false;
+    execute.mockImplementationOnce(async function* (options: ExecuteOptions) {
+      queryController = options.abortController!;
+      try {
+        yield {
+          type: 'assistant' as const,
+          session_id: 'new-sdk',
+          message: {
+            role: 'assistant' as const,
+            content: [{ type: 'text' as const, text: 'LATE SDK CHUNK' }],
+          },
+        };
+      } finally {
+        closed = true;
+      }
+    });
+    vi.spyOn(repository, 'updateMetadata').mockImplementation(async (id, updates) => {
+      if (updates.sdkSessionId === 'new-sdk') {
+        entering.release();
+        await allowWrite.promise;
+      }
+      return update(id, updates);
+    });
+    const running = send();
+    let stopping: Promise<unknown> | undefined;
+    try {
+      await entering.promise;
+      expect(registry.get(sessionId)?.sdkSessionId).toBeUndefined();
+      stopping = service.stopExecution(sessionId);
+      await vi.waitFor(() => expect(queryController.signal.aborted).toBe(true));
+    } finally {
+      allowWrite.release();
+      if (stopping) await stopping;
+    }
+    expect(await running).toMatchObject({ success: false, aborted: true });
+    expect(closed).toBe(true);
+    expect(events.map((event) => event.type)).toEqual(['started', 'message']);
+    expect((await repository.loadMetadata())[sessionId].sdkSessionId).toBe('new-sdk');
+    expect(await repository.loadMessages(sessionId)).toHaveLength(1);
   });
 
   it('waits for provider cleanup on stop, fences late chunks and then permits a fresh run', async () => {

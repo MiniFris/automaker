@@ -152,7 +152,7 @@ UI typecheck, все три inventory checks и production SIGTERM/SIGINT smoke.
 - [x] Отделить prompt/context construction.
 - [x] Отделить provider selection.
 - [x] Отделить execution environment preparation.
-- [ ] Отделить stream normalization/event publication.
+- [x] Отделить stream normalization/event publication.
 - [ ] Отделить follow-up/cancel.
 - [ ] Отделить completion persistence/recovery.
 - [ ] Сохранить session identifiers и UI event order.
@@ -216,8 +216,8 @@ preparer. Проверки среза:
   проверки (`getHistory` возвращает объект с `messages`); после исправления
   весь Docker-набор повторно прошёл.
 
-Полный этап 7 остаётся незавершённым: normalization и completion/recovery всё ещё
-требуют отдельной декомпозиции и общей приёмки.
+Полный этап 7 остаётся незавершённым: adapter-level contracts и completion/recovery
+всё ещё требуют отдельной работы и общей приёмки.
 
 ### Срез: provider selection и query options
 
@@ -256,9 +256,58 @@ Checkpoint среза:
 - Chromium send/stream/reload smoke: 1 passed.
 - `npm run test:packages`: 1181 passed; `npm run lint:lockfile`: успешно.
 
-Это не завершение этапа 7. Stream normalization, follow-up/cancel decomposition,
+Это не завершение этапа 7. Follow-up/cancel decomposition,
 durable completion/recovery и полный provider capability/lifecycle contract ещё
 не закрыты; этапы 8–11 также не объявляются завершёнными по этому checkpoint.
+
+### Срез: stream normalization и EventBus publication
+
+`AgentStreamNormalizer` — singleton factory query-local `AgentStreamState`:
+накопленный текст, assistant message ID и tool-ID map не разделяются между
+запросами. Нормализатор формирует cumulative stream/tool events и отдельный draft
+completion без I/O и без публикации. `AgentService` по-прежнему владеет порядком
+операций: запись SDK session ID → обработка chunk → iterator cleanup → запись
+истории → публикация completion. Persistence/recovery пока не вынесены целиком.
+
+`AgentEventPublisher` получает application `EVENT_BUS` через Nest factory.
+Все chat events, включая queue/error/interruption, идут через него в тот же
+совместимый envelope `agent:stream`. В `AgentService` больше нет прямого обращения
+к legacy EventEmitter. Native HTTP contracts проверяют одинаковые события на
+application bus и legacy wire, без дублирования, для обычного stream, result-only
+ответа и native SDK tool-use/user-result shape, включая restart/follow-up и IDs.
+
+В этом срезе также исправлены выявленные пограничные случаи:
+
+- Result-only success создаёт assistant message, stream event и persisted history.
+- Native SDK `tool_use.id` связывается с `user` tool results; user text echoes
+  и user tool-use не публикуются как assistant output.
+- SDK ID меняется в active state только после успешной записи metadata. После
+  ожидания этой записи повторно проверяется cancellation; поздний chunk не выходит.
+- Structured tool results с text/image/null/scalar parts приводятся к строке;
+  missing text block не добавляет буквальный `undefined` к ответу.
+- ANSI/Error-prefix cleanup, stale session detection и rate-limit hint используют
+  общий helper; неизвестная форма ошибки даёт непустой fallback.
+
+28 component tests покрывают нормализатор и publisher; четыре дополнительные
+storage/lifecycle регрессии — result-only persistence, failed SDK-ID write,
+iterator cleanup перед completion и cancellation во время metadata write.
+Этот срез не заменяет полный terminal/capability/cancel contract каждого adapter.
+
+Проверки среза:
+
+- `npm run test:server:unit`: 3057 passed, 40 skipped.
+- `npm run test:server:contract`: 243 passed, включая три native chat/restart
+  варианта (chunks, buffered, native-tools) и isolation двух Nest applications.
+- `npm run build --workspace=apps/server`, `npm run lint:server:errors`,
+  `npm run typecheck`: успешно.
+- Три inventory checks и production lifecycle smoke: успешно; SIGTERM/SIGINT exit 0.
+- Выбранные реальные SSH Direct/CLI/SDK chat/restart/default-change сценарии:
+  3 passed, 34 отфильтрованы.
+- Docker acceptance с локальным base image `automaker-nest-stage2-smoke:latest`:
+  11 passed, 4 opt-in skipped, включая real chat/restart, CLI/SDK и cleanup
+  принадлежащих fixture контейнеров/образа/тома.
+- Chromium send/stream/reload smoke: 1 passed.
+- `npm run test:packages`: 1181 passed; `npm run lint:lockfile`: успешно.
 
 ### Срез: persisted state и active registry
 
@@ -379,9 +428,9 @@ chunk, cancel→новый run, clear/delete, обе model mutation paths, timeo
 старого run, interruption write failure и idempotent resource cleanup attempts.
 
 Остаются durable execution/queue recovery journal, полный provider dispose/terminal
-contract, удаление queue/backups вместе с session и decomposition stream logic.
-Prompt/context и environment preparation уже выделены последующими
-срезами, описанными выше. Provider selection также выделен; stream logic ещё остаётся.
+contract и удаление queue/backups вместе с session.
+Prompt/context, environment preparation, provider selection и stream normalization/
+publication уже выделены последующими срезами, описанными выше.
 Общий deadline всей shutdown-последовательности, включая зависший
 filesystem I/O и ошибки Nest hooks, также требует hardening этапа 10. Этап 7 не
 отмечается завершённым по одному успешному lease checkpoint.
@@ -408,7 +457,7 @@ filesystem I/O и ошибки Nest hooks, также требует hardening �
 - [x] Start/query/follow-up/cancel.
 - [x] Session list/history интеграция.
 - [ ] Running agents read model.
-- [ ] Streaming через EventBus compatibility layer.
+- [x] Streaming через EventBus compatibility layer.
 - [x] Request завершение не отменяет долгоживущий agent job.
 - [ ] Shutdown отмечает jobs interrupted до закрытия provider processes.
 

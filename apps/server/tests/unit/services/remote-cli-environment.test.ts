@@ -1,5 +1,9 @@
 import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
-import { createTestAgentState, createTestAgentProviders } from '../../helpers/agent-state.js';
+import {
+  createTestAgentState,
+  createTestAgentProviders,
+  createTestAgentEvents,
+} from '../../helpers/agent-state.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -166,7 +170,7 @@ const send=event=>process.stdout.write(JSON.stringify(event)+'\\n');
     it('uses the real chat service without controller context and keeps the binding on restart/default change', async () => {
       const service = new AgentService(
         ...createTestAgentState(settings.getDataDirectory()),
-        createEventEmitter(),
+        createTestAgentEvents(createEventEmitter()),
         settings,
         ...createTestAgentProviders(createTestProviderRegistry(settings))
       );
@@ -186,7 +190,7 @@ const send=event=>process.stdout.write(JSON.stringify(event)+'\\n');
       });
       const restarted = new AgentService(
         ...createTestAgentState(settings.getDataDirectory()),
-        createEventEmitter(),
+        createTestAgentEvents(createEventEmitter()),
         settings,
         ...createTestAgentProviders(createTestProviderRegistry(settings))
       );

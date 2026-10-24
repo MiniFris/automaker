@@ -10,6 +10,8 @@ import { AgentPromptBuilder } from '../services/agent/agent-prompt-builder.js';
 import { AgentEnvironmentPreparer } from '../services/agent/agent-environment-preparer.js';
 import { AgentProviderSelector } from '../services/agent/agent-provider-selector.js';
 import { AgentQueryOptionsBuilder } from '../services/agent/agent-query-options-builder.js';
+import { AgentEventPublisher } from '../services/agent/agent-event-publisher.js';
+import { AgentStreamNormalizer } from '../services/agent/agent-stream-normalizer.js';
 import { FeatureLoader } from '../services/feature-loader.js';
 import { AutoModeServiceCompat } from '../services/auto-mode/index.js';
 import { TerminalService } from '../services/terminal-service.js';
@@ -102,7 +104,8 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
         AgentExecutionCoordinator,
         AgentPromptBuilder,
         AgentEnvironmentPreparer,
-        LEGACY_EVENT_EMITTER,
+        AgentStreamNormalizer,
+        AgentEventPublisher,
         tokens.settings,
         AgentProviderSelector,
         AgentQueryOptionsBuilder,
@@ -113,7 +116,8 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
         executions: AgentExecutionCoordinator,
         prompts: AgentPromptBuilder,
         environments: AgentEnvironmentPreparer,
-        events: EventEmitter,
+        streams: AgentStreamNormalizer,
+        events: AgentEventPublisher,
         settings: SettingsService,
         providers: AgentProviderSelector,
         queries: AgentQueryOptionsBuilder
@@ -124,6 +128,7 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
           executions,
           prompts,
           environments,
+          streams,
           events,
           settings,
           providers,

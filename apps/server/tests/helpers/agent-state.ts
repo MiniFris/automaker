@@ -7,6 +7,13 @@ import { AgentProviderSelector } from '../../src/services/agent/agent-provider-s
 import { AgentQueryOptionsBuilder } from '../../src/services/agent/agent-query-options-builder.js';
 import type { ProviderRegistry } from '../../src/modules/providers/provider-registry.service.js';
 import type { ToolPolicyService } from '../../src/modules/providers/tool-policy.service.js';
+import { AgentStreamNormalizer } from '../../src/services/agent/agent-stream-normalizer.js';
+import { AgentEventPublisher } from '../../src/services/agent/agent-event-publisher.js';
+import type { EventEmitter } from '../../src/lib/events.js';
+
+export function createTestAgentEvents(events: EventEmitter) {
+  return new AgentEventPublisher(events);
+}
 
 export function createTestAgentProviders(registry: ProviderRegistry, policy?: ToolPolicyService) {
   const providers = new AgentProviderSelector(registry, policy);
@@ -22,5 +29,6 @@ export function createTestAgentState(dataDirectory: string) {
     new AgentExecutionCoordinator(),
     prompts,
     new AgentEnvironmentPreparer(prompts),
+    new AgentStreamNormalizer(),
   ] as const;
 }

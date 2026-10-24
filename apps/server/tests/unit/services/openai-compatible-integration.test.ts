@@ -1,5 +1,9 @@
 import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
-import { createTestAgentState, createTestAgentProviders } from '../../helpers/agent-state.js';
+import {
+  createTestAgentState,
+  createTestAgentProviders,
+  createTestAgentEvents,
+} from '../../helpers/agent-state.js';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -357,7 +361,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     events.subscribe((_type, data) => emitted.push(data));
     const first = new AgentService(
       ...createTestAgentState(settings.getDataDirectory()),
-      events,
+      createTestAgentEvents(events),
       settings,
       ...createTestAgentProviders(createTestProviderRegistry(settings))
     );
@@ -368,7 +372,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     ).toBe(true);
     const restarted = new AgentService(
       ...createTestAgentState(settings.getDataDirectory()),
-      events,
+      createTestAgentEvents(events),
       settings,
       ...createTestAgentProviders(createTestProviderRegistry(settings))
     );
@@ -409,7 +413,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     const events = createEventEmitter();
     const service = new AgentService(
       ...createTestAgentState(settings.getDataDirectory()),
-      events,
+      createTestAgentEvents(events),
       settings,
       ...createTestAgentProviders(createTestProviderRegistry(settings))
     );
@@ -420,7 +424,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     await service.setSessionModel(session.id, model, 'second');
     const restarted = new AgentService(
       ...createTestAgentState(settings.getDataDirectory()),
-      events,
+      createTestAgentEvents(events),
       settings,
       ...createTestAgentProviders(createTestProviderRegistry(settings))
     );
@@ -447,7 +451,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     const events = createEventEmitter();
     const service = new AgentService(
       ...createTestAgentState(settings.getDataDirectory()),
-      events,
+      createTestAgentEvents(events),
       settings,
       ...createTestAgentProviders(createTestProviderRegistry(settings))
     );
@@ -539,7 +543,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     events.subscribe((_type, event) => emitted.push(event));
     const service = new AgentService(
       ...createTestAgentState(settings.getDataDirectory()),
-      events,
+      createTestAgentEvents(events),
       settings,
       ...createTestAgentProviders(createTestProviderRegistry(settings))
     );
@@ -801,7 +805,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     await new EnvironmentBindingStore(settings).confirm(root);
     const first = new AgentService(
       ...createTestAgentState(settings.getDataDirectory()),
-      createEventEmitter(),
+      createTestAgentEvents(createEventEmitter()),
       settings,
       ...createTestAgentProviders(createTestProviderRegistry(settings))
     );
@@ -821,7 +825,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     await settings.updateProjectSettings(root, { executionEnvironment: { mode: 'auto' } });
     const restarted = new AgentService(
       ...createTestAgentState(settings.getDataDirectory()),
-      createEventEmitter(),
+      createTestAgentEvents(createEventEmitter()),
       settings,
       ...createTestAgentProviders(createTestProviderRegistry(settings))
     );

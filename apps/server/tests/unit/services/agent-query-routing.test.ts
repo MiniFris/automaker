@@ -9,7 +9,11 @@ import { SettingsService } from '../../../src/services/settings-service.js';
 import { ProviderRegistry } from '../../../src/modules/providers/provider-registry.service.js';
 import { ToolPolicyService } from '../../../src/modules/providers/tool-policy.service.js';
 import { createEventEmitter } from '../../../src/lib/events.js';
-import { createTestAgentState, createTestAgentProviders } from '../../helpers/agent-state.js';
+import {
+  createTestAgentState,
+  createTestAgentProviders,
+  createTestAgentEvents,
+} from '../../helpers/agent-state.js';
 import { MockProvider } from '../../helpers/mock-provider.js';
 
 describe('chat routing with real settings and SDK option construction', () => {
@@ -61,7 +65,7 @@ describe('chat routing with real settings and SDK option construction', () => {
       const create = () =>
         new AgentService(
           ...createTestAgentState(settings.getDataDirectory()),
-          createEventEmitter(),
+          createTestAgentEvents(createEventEmitter()),
           settings,
           ...createTestAgentProviders(registry, new ToolPolicyService())
         );

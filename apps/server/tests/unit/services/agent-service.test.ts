@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AgentService } from '@/services/agent-service.js';
-import { createTestAgentState, createTestAgentProviders } from '../../helpers/agent-state.js';
+import {
+  createTestAgentState,
+  createTestAgentProviders,
+  createTestAgentEvents,
+} from '../../helpers/agent-state.js';
 import type { ProviderRegistry } from '@/modules/providers/provider-registry.service.js';
 import * as fs from 'fs/promises';
 import * as imageHandler from '@automaker/utils';
@@ -58,7 +62,7 @@ describe('agent-service.ts', () => {
     );
     service = new AgentService(
       ...createTestAgentState('/test/data'),
-      mockEvents as any,
+      createTestAgentEvents(mockEvents),
       undefined,
       ...createTestAgentProviders(providers as unknown as ProviderRegistry)
     );
@@ -704,7 +708,7 @@ describe('agent-service.ts', () => {
       const { AgentService } = await import('@/services/agent-service.js');
       const testService = new AgentService(
         ...createTestAgentState('/test/data'),
-        mockEvents as any,
+        createTestAgentEvents(mockEvents),
         undefined,
         ...createTestAgentProviders(providers as unknown as ProviderRegistry)
       );

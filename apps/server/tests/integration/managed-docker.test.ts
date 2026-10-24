@@ -1,5 +1,9 @@
 import { createTestProviderRegistry } from '../helpers/provider-registry.js';
-import { createTestAgentState, createTestAgentProviders } from '../helpers/agent-state.js';
+import {
+  createTestAgentState,
+  createTestAgentProviders,
+  createTestAgentEvents,
+} from '../helpers/agent-state.js';
 import { AgentService } from '@/services/agent-service.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -359,7 +363,7 @@ describe.skipIf(!base || process.platform !== 'linux')('real managed Docker Engi
       const chat = () =>
         new AgentService(
           ...createTestAgentState(settings.getDataDirectory()),
-          events,
+          createTestAgentEvents(events),
           settings,
           ...createTestAgentProviders(createTestProviderRegistry(settings))
         );

@@ -8,7 +8,8 @@ import { AgentSessionRegistry } from '../../../src/services/agent/agent-session-
 import { AgentExecutionCoordinator } from '../../../src/services/agent/agent-execution-coordinator.js';
 import { AgentPromptBuilder } from '../../../src/services/agent/agent-prompt-builder.js';
 import { AgentEnvironmentPreparer } from '../../../src/services/agent/agent-environment-preparer.js';
-import { createTestAgentProviders } from '../../helpers/agent-state.js';
+import { createTestAgentProviders, createTestAgentEvents } from '../../helpers/agent-state.js';
+import { AgentStreamNormalizer } from '../../../src/services/agent/agent-stream-normalizer.js';
 import { AgentSessionStorageError } from '../../../src/services/agent/agent-session-storage.error.js';
 import { ProviderRegistry } from '../../../src/modules/providers/provider-registry.service.js';
 import { createEventEmitter } from '../../../src/lib/events.js';
@@ -37,7 +38,8 @@ describe('agent storage failure boundaries', () => {
       new AgentExecutionCoordinator(),
       new AgentPromptBuilder(),
       new AgentEnvironmentPreparer(new AgentPromptBuilder()),
-      emitter,
+      new AgentStreamNormalizer(),
+      createTestAgentEvents(emitter),
       undefined,
       ...createTestAgentProviders(
         new ProviderRegistry([{ name: 'claude', create: () => new MockProvider('claude') }], {
@@ -112,6 +114,79 @@ describe('agent storage failure boundaries', () => {
     await vi.waitFor(() => expect(release).toBeTypeOf('function'));
     expect(events.some((event) => event.type === 'complete')).toBe(false);
     release();
+    expect((await sending).success).toBe(true);
+    expect(events.at(-1)?.type).toBe('complete');
+    expect(await repository.loadMessages(sessionId)).toHaveLength(2);
+  });
+
+  it('persists result-only answers with stable stream/completion IDs', async () => {
+    execute.mockImplementationOnce(async function* () {
+      yield { type: 'result' as const, subtype: 'success' as const, result: 'Buffered reply' };
+    });
+    const result = await service.sendMessage({ sessionId, message: 'Buffered request' });
+    expect(result.success).toBe(true);
+    if (!('message' in result) || !result.message) throw new Error('Missing buffered answer');
+    expect(result.message).toMatchObject({ role: 'assistant', content: 'Buffered reply' });
+    expect(events.map((event) => event.type)).toEqual(['started', 'message', 'stream', 'complete']);
+    expect(events[2]).toMatchObject({ messageId: result.message!.id, content: 'Buffered reply' });
+    expect(events[3]).toMatchObject({ messageId: result.message!.id, content: 'Buffered reply' });
+    expect((await repository.loadMessages(sessionId))[1]).toEqual(result.message);
+  });
+
+  it('does not mutate the active SDK ID or publish a chunk when its metadata write fails', async () => {
+    let closed = false;
+    execute.mockImplementationOnce(async function* () {
+      try {
+        yield {
+          type: 'assistant' as const,
+          session_id: 'uncommitted-sdk',
+          message: {
+            role: 'assistant' as const,
+            content: [{ type: 'text' as const, text: 'Must not stream' }],
+          },
+        };
+      } finally {
+        closed = true;
+      }
+    });
+    const update = repository.updateMetadata.bind(repository);
+    vi.spyOn(repository, 'updateMetadata').mockImplementation(async (id, updates) => {
+      if (updates.sdkSessionId) throw new AgentSessionStorageError('write');
+      return update(id, updates);
+    });
+    await expect(service.sendMessage({ sessionId, message: 'SDK request' })).rejects.toBeInstanceOf(
+      AgentSessionStorageError
+    );
+    expect(closed).toBe(true);
+    expect(registry.get(sessionId)?.sdkSessionId).toBeUndefined();
+    expect(events.map((event) => event.type)).toEqual(['started', 'message', 'error']);
+    expect(await repository.loadMessages(sessionId)).toHaveLength(1);
+  });
+
+  it('waits for provider iterator cleanup before durable completion and publication', async () => {
+    let release!: () => void, entered!: () => void;
+    const cleaning = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    const cleanup = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    execute.mockImplementationOnce(async function* () {
+      try {
+        yield { type: 'result' as const, subtype: 'success' as const, result: 'Buffered reply' };
+      } finally {
+        entered();
+        await cleanup;
+      }
+    });
+    const sending = service.sendMessage({ sessionId, message: 'Wait for cleanup' });
+    try {
+      await cleaning;
+      expect(events.some((event) => event.type === 'complete')).toBe(false);
+      expect(await repository.loadMessages(sessionId)).toHaveLength(1);
+    } finally {
+      release();
+    }
     expect((await sending).success).toBe(true);
     expect(events.at(-1)?.type).toBe('complete');
     expect(await repository.loadMessages(sessionId)).toHaveLength(2);

@@ -9,12 +9,21 @@ import { AgentProviderSelector } from '../../services/agent/agent-provider-selec
 import { AgentQueryOptionsBuilder } from '../../services/agent/agent-query-options-builder.js';
 import { ProviderRegistry } from '../providers/provider-registry.service.js';
 import { ToolPolicyService } from '../providers/tool-policy.service.js';
+import { EVENT_BUS, type EventBus } from '../../core/eventing/event-bus.js';
+import { AgentEventPublisher } from '../../services/agent/agent-event-publisher.js';
+import { AgentStreamNormalizer } from '../../services/agent/agent-stream-normalizer.js';
 
 @Global()
 @Module({
   providers: [
     AgentSessionRegistry,
     AgentPromptBuilder,
+    AgentStreamNormalizer,
+    {
+      provide: AgentEventPublisher,
+      inject: [EVENT_BUS],
+      useFactory: (bus: EventBus) => new AgentEventPublisher(bus),
+    },
     {
       provide: AgentProviderSelector,
       inject: [ProviderRegistry, ToolPolicyService],
@@ -47,6 +56,8 @@ import { ToolPolicyService } from '../providers/tool-policy.service.js';
     AgentEnvironmentPreparer,
     AgentProviderSelector,
     AgentQueryOptionsBuilder,
+    AgentEventPublisher,
+    AgentStreamNormalizer,
   ],
 })
 export class AgentStateModule {}

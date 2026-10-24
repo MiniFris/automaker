@@ -1,5 +1,9 @@
 import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
-import { createTestAgentState, createTestAgentProviders } from '../../helpers/agent-state.js';
+import {
+  createTestAgentState,
+  createTestAgentProviders,
+  createTestAgentEvents,
+} from '../../helpers/agent-state.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -233,7 +237,7 @@ describe.skipIf(process.platform !== 'linux')('target-side SDK setup and executi
     await install('claude');
     const service = new AgentService(
       ...createTestAgentState(settings.getDataDirectory()),
-      createEventEmitter(),
+      createTestAgentEvents(createEventEmitter()),
       settings,
       ...createTestAgentProviders(createTestProviderRegistry(settings))
     );
@@ -251,7 +255,7 @@ describe.skipIf(process.platform !== 'linux')('target-side SDK setup and executi
     });
     const restarted = new AgentService(
       ...createTestAgentState(settings.getDataDirectory()),
-      createEventEmitter(),
+      createTestAgentEvents(createEventEmitter()),
       settings,
       ...createTestAgentProviders(createTestProviderRegistry(settings))
     );
