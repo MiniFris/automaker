@@ -3,9 +3,11 @@ import { AutoModeController } from './auto-mode.controller.js';
 import { AutoModeHandlersService } from './auto-mode-handlers.service.js';
 import { autoModeProvider } from './auto-mode.provider.js';
 import { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
+import { PipelineModule } from '../pipeline/pipeline.module.js';
 
 @Global()
 @Module({
+  imports: [PipelineModule],
   controllers: [AutoModeController],
   providers: [autoModeProvider, AutoModeHandlersService],
   exports: [AutoModeServiceCompat],

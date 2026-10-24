@@ -173,6 +173,7 @@ export class AutoModeServiceFacade {
       notificationService = null,
       providerRegistry,
       toolPolicy,
+      pipeline,
       sharedServices,
     } = options;
 
@@ -184,7 +185,12 @@ export class AutoModeServiceFacade {
     const concurrencyManager =
       sharedServices?.concurrencyManager ??
       new ConcurrencyManager((p) => worktreeResolver.getCurrentBranch(p));
-    const featureStateManager = new FeatureStateManager(events, featureLoader, notificationService);
+    const featureStateManager = new FeatureStateManager(
+      events,
+      featureLoader,
+      notificationService,
+      pipeline
+    );
     const planApprovalService = new PlanApprovalService(
       eventBus,
       featureStateManager,
@@ -427,7 +433,8 @@ export class AutoModeServiceFacade {
       buildFeaturePrompt,
       (pPath, featureId, useWorktrees, _isAutoMode, _model, opts) =>
         getFacade().executeFeature(featureId, useWorktrees, false, undefined, opts),
-      createRunAgentFn()
+      createRunAgentFn(),
+      pipeline
     );
 
     // AutoLoopCoordinator - ALWAYS create new with proper execution callbacks
@@ -555,7 +562,8 @@ export class AutoModeServiceFacade {
       },
       (_pPath) => getFacade().saveExecutionState(),
       loadContextFiles,
-      providerRegistry
+      providerRegistry,
+      pipeline
     );
 
     // RecoveryService

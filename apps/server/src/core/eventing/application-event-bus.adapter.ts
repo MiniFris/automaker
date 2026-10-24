@@ -1,6 +1,6 @@
 import type { EventType } from '@automaker/types';
 import type { EventEmitter } from '../../lib/events.js';
-import type { ApplicationEventMap, EventBus, EventHandler } from './event-bus.js';
+import type { AllEventHandler, ApplicationEventMap, EventBus, EventHandler } from './event-bus.js';
 
 export class ApplicationEventBusAdapter implements EventBus {
   private readonly subscriptions = new Set<() => void>();
@@ -9,9 +9,13 @@ export class ApplicationEventBusAdapter implements EventBus {
     this.events.emit(type, payload);
   }
   subscribe<K extends EventType>(type: K, handler: EventHandler<K>): () => void {
-    const unsubscribeTransport = this.events.subscribe((emittedType, payload) => {
-      if (emittedType === type) handler(payload as ApplicationEventMap[K]);
+    return this.subscribeAll((emittedType, payload) => {
+      if ((emittedType as EventType) === (type as EventType))
+        handler(payload as ApplicationEventMap[K]);
     });
+  }
+  subscribeAll(handler: AllEventHandler): () => void {
+    const unsubscribeTransport = this.events.subscribe((type, payload) => handler(type, payload));
     const unsubscribe = () => {
       unsubscribeTransport();
       this.subscriptions.delete(unsubscribe);

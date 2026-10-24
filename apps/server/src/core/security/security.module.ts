@@ -15,10 +15,13 @@ export const SECURE_FILESYSTEM = Symbol('SECURE_FILESYSTEM');
     {
       provide: SECURE_FILESYSTEM,
       inject: [SecurityService],
-      useFactory: (security: SecurityService) =>
-        secureFs.createSecureFs((candidate, options) =>
+      useFactory: (security: SecurityService) => {
+        const filesystem = secureFs.createSecureFs((candidate, options) =>
           security.validateLocalPath(candidate, 'filesystem access', options?.followFinalSymlink)
-        ),
+        );
+        // Domain mutation owners drain in onModuleDestroy, before this barrier.
+        return Object.assign(filesystem, { beforeApplicationShutdown: () => filesystem.close() });
+      },
     },
   ],
   exports: [SecurityService, AllowedPathGuard, ProjectPathPipe, SECURE_FILESYSTEM],

@@ -5,69 +5,22 @@
  * - Pipeline configuration ({projectPath}/.automaker/pipeline.json)
  */
 
-import path from 'path';
 import { createLogger } from '@automaker/utils';
 import * as secureFs from '../lib/secure-fs.js';
 import { ensureAutomakerDir } from '@automaker/platform';
 import type { PipelineConfig, PipelineStep, FeatureStatusWithPipeline } from '@automaker/types';
+import {
+  FilePipelineConfigurationRepository,
+  PipelineConfigurationRepository,
+} from './pipeline-config.repository.js';
 
 const logger = createLogger('PipelineService');
-
-// Default empty pipeline config
-const DEFAULT_PIPELINE_CONFIG: PipelineConfig = {
-  version: 1,
-  steps: [],
-};
-
-/**
- * Atomic file write - write to temp file then rename
- */
-async function atomicWriteJson(filePath: string, data: unknown): Promise<void> {
-  const tempPath = `${filePath}.tmp.${Date.now()}`;
-  const content = JSON.stringify(data, null, 2);
-
-  try {
-    await secureFs.writeFile(tempPath, content, 'utf-8');
-    await secureFs.rename(tempPath, filePath);
-  } catch (error) {
-    // Clean up temp file if it exists
-    try {
-      await secureFs.unlink(tempPath);
-    } catch {
-      // Ignore cleanup errors
-    }
-    throw error;
-  }
-}
-
-/**
- * Safely read JSON file with fallback to default
- */
-async function readJsonFile<T>(filePath: string, defaultValue: T): Promise<T> {
-  try {
-    const content = (await secureFs.readFile(filePath, 'utf-8')) as string;
-    return JSON.parse(content) as T;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      return globalThis.structuredClone(defaultValue);
-    }
-    logger.error(`Error reading ${filePath}:`, error);
-    return globalThis.structuredClone(defaultValue);
-  }
-}
 
 /**
  * Generate a unique ID for pipeline steps
  */
 function generateStepId(): string {
   return `step_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 8)}`;
-}
-
-/**
- * Get the pipeline config file path for a project
- */
-function getPipelineConfigPath(projectPath: string): string {
-  return path.join(projectPath, '.automaker', 'pipeline.json');
 }
 
 /**
@@ -78,6 +31,13 @@ function getPipelineConfigPath(projectPath: string): string {
  * "waiting_approval/verified" columns in the kanban board.
  */
 export class PipelineService {
+  // Direct legacy constructors remain supported; native composition injects its scoped repository.
+  constructor(
+    private readonly repository: PipelineConfigurationRepository = new FilePipelineConfigurationRepository(
+      secureFs,
+      ensureAutomakerDir
+    )
+  ) {}
   /**
    * Get pipeline configuration for a project
    *
@@ -85,14 +45,7 @@ export class PipelineService {
    * @returns Promise resolving to PipelineConfig (empty steps array if no config exists)
    */
   async getPipelineConfig(projectPath: string): Promise<PipelineConfig> {
-    const configPath = getPipelineConfigPath(projectPath);
-    const config = await readJsonFile<PipelineConfig>(configPath, DEFAULT_PIPELINE_CONFIG);
-
-    // Ensure version is set
-    return {
-      ...globalThis.structuredClone(DEFAULT_PIPELINE_CONFIG),
-      ...config,
-    };
+    return this.repository.read(projectPath);
   }
 
   /**
@@ -102,9 +55,7 @@ export class PipelineService {
    * @param config - Complete PipelineConfig to save
    */
   async savePipelineConfig(projectPath: string, config: PipelineConfig): Promise<void> {
-    await ensureAutomakerDir(projectPath);
-    const configPath = getPipelineConfigPath(projectPath);
-    await atomicWriteJson(configPath, config);
+    await this.repository.save(projectPath, config);
     logger.info(`Pipeline config saved for project: ${projectPath}`);
   }
 
@@ -119,28 +70,28 @@ export class PipelineService {
     projectPath: string,
     step: Omit<PipelineStep, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<PipelineStep> {
-    const config = await this.getPipelineConfig(projectPath);
-    const now = new Date().toISOString();
+    const saved = await this.repository.update(projectPath, (config) => {
+      const now = new Date().toISOString();
 
-    const newStep: PipelineStep = {
-      ...step,
-      id: generateStepId(),
-      createdAt: now,
-      updatedAt: now,
-    };
+      const newStep: PipelineStep = {
+        ...step,
+        id: generateStepId(),
+        createdAt: now,
+        updatedAt: now,
+      };
 
-    config.steps.push(newStep);
+      config.steps.push(newStep);
 
-    // Normalize order values
-    config.steps.sort((a, b) => a.order - b.order);
-    config.steps.forEach((s, index) => {
-      s.order = index;
+      // Normalize order values
+      config.steps.sort((a, b) => a.order - b.order);
+      config.steps.forEach((s, index) => {
+        s.order = index;
+      });
+
+      return newStep;
     });
-
-    await this.savePipelineConfig(projectPath, config);
-    logger.info(`Pipeline step added: ${newStep.name} (${newStep.id})`);
-
-    return newStep;
+    logger.info(`Pipeline step added: ${saved.name} (${saved.id})`);
+    return saved;
   }
 
   /**
@@ -155,23 +106,23 @@ export class PipelineService {
     stepId: string,
     updates: Partial<Omit<PipelineStep, 'id' | 'createdAt'>>
   ): Promise<PipelineStep> {
-    const config = await this.getPipelineConfig(projectPath);
-    const stepIndex = config.steps.findIndex((s) => s.id === stepId);
+    const saved = await this.repository.update(projectPath, (config) => {
+      const stepIndex = config.steps.findIndex((s) => s.id === stepId);
 
-    if (stepIndex === -1) {
-      throw new Error(`Pipeline step not found: ${stepId}`);
-    }
+      if (stepIndex === -1) {
+        throw new Error(`Pipeline step not found: ${stepId}`);
+      }
 
-    config.steps[stepIndex] = {
-      ...config.steps[stepIndex],
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    };
+      config.steps[stepIndex] = {
+        ...config.steps[stepIndex],
+        ...updates,
+        updatedAt: new Date().toISOString(),
+      };
 
-    await this.savePipelineConfig(projectPath, config);
+      return config.steps[stepIndex];
+    });
     logger.info(`Pipeline step updated: ${stepId}`);
-
-    return config.steps[stepIndex];
+    return saved;
   }
 
   /**
@@ -181,21 +132,20 @@ export class PipelineService {
    * @param stepId - ID of the step to delete
    */
   async deleteStep(projectPath: string, stepId: string): Promise<void> {
-    const config = await this.getPipelineConfig(projectPath);
-    const stepIndex = config.steps.findIndex((s) => s.id === stepId);
+    await this.repository.update(projectPath, (config) => {
+      const stepIndex = config.steps.findIndex((s) => s.id === stepId);
 
-    if (stepIndex === -1) {
-      throw new Error(`Pipeline step not found: ${stepId}`);
-    }
+      if (stepIndex === -1) {
+        throw new Error(`Pipeline step not found: ${stepId}`);
+      }
 
-    config.steps.splice(stepIndex, 1);
+      config.steps.splice(stepIndex, 1);
 
-    // Normalize order values after deletion
-    config.steps.forEach((s, index) => {
-      s.order = index;
+      // Normalize order values after deletion
+      config.steps.forEach((s, index) => {
+        s.order = index;
+      });
     });
-
-    await this.savePipelineConfig(projectPath, config);
     logger.info(`Pipeline step deleted: ${stepId}`);
   }
 
@@ -206,26 +156,24 @@ export class PipelineService {
    * @param stepIds - Array of step IDs in the desired order
    */
   async reorderSteps(projectPath: string, stepIds: string[]): Promise<void> {
-    const config = await this.getPipelineConfig(projectPath);
-
-    // Validate all step IDs exist
-    const existingIds = new Set(config.steps.map((s) => s.id));
-    for (const id of stepIds) {
-      if (!existingIds.has(id)) {
-        throw new Error(`Pipeline step not found: ${id}`);
+    await this.repository.update(projectPath, (config) => {
+      // Validate all step IDs exist
+      const existingIds = new Set(config.steps.map((s) => s.id));
+      for (const id of stepIds) {
+        if (!existingIds.has(id)) {
+          throw new Error(`Pipeline step not found: ${id}`);
+        }
       }
-    }
 
-    // Create a map for quick lookup
-    const stepMap = new Map(config.steps.map((s) => [s.id, s]));
+      // Create a map for quick lookup
+      const stepMap = new Map(config.steps.map((s) => [s.id, s]));
 
-    // Reorder steps based on stepIds array
-    config.steps = stepIds.map((id, index) => {
-      const step = stepMap.get(id)!;
-      return { ...step, order: index, updatedAt: new Date().toISOString() };
+      // Reorder steps based on stepIds array
+      config.steps = stepIds.map((id, index) => {
+        const step = stepMap.get(id)!;
+        return { ...step, order: index, updatedAt: new Date().toISOString() };
+      });
     });
-
-    await this.savePipelineConfig(projectPath, config);
     logger.info(`Pipeline steps reordered`);
   }
 

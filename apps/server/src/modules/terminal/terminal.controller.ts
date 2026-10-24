@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Inject,
   Param,
   Post,
@@ -41,12 +42,14 @@ export class TerminalController {
   }
 
   @Post('auth')
+  @HttpCode(200)
   authenticate(@Body() body: { password?: unknown }, @Res() response: Response) {
     const result = this.access.authenticate(body?.password);
     response.status(result.status).json(result.body);
   }
 
   @Post('logout')
+  @HttpCode(200)
   logout(@Req() request: Request) {
     const token =
       (typeof request.headers['x-terminal-token'] === 'string'
@@ -93,6 +96,7 @@ export class TerminalController {
   }
 
   @Post('sessions')
+  @HttpCode(200)
   @UseGuards(TerminalAccessGuard, AllowedPathGuard)
   @AllowedPathFields('cwd?')
   async createSession(@Body() body: Record<string, unknown>, @Res() response: Response) {
@@ -165,6 +169,7 @@ export class TerminalController {
   }
 
   @Post('sessions/:id/resize')
+  @HttpCode(200)
   @UseGuards(TerminalAccessGuard)
   resize(
     @Param('id') id: string,

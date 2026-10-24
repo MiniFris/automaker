@@ -7,11 +7,11 @@ export class MCPApplicationService {
   constructor(@Inject(MCPTestService) private readonly mcp: MCPTestService) {}
 
   test(input: MCPServerRequest) {
-    return this.mcp.testServerById(input.serverId);
+    return this.mcp.testConnectionById(input.serverId);
   }
 
   async tools(input: MCPServerRequest) {
-    const result = await this.mcp.testServerById(input.serverId);
+    const result = await this.mcp.listToolsById(input.serverId);
 
     return {
       success: result.success,

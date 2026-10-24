@@ -49,6 +49,7 @@ export interface CodexCliStatus {
   path?: string | null;
   auth?: {
     authenticated: boolean;
+    authenticationChecked?: boolean;
     method: string;
   };
   installCommand?: string;
@@ -63,6 +64,7 @@ export interface OpencodeCliStatus {
   path?: string | null;
   auth?: {
     authenticated: boolean;
+    authenticationChecked?: boolean;
     method: string;
   };
   installCommand?: string;
@@ -119,6 +121,7 @@ export type CodexAuthMethod =
 // Codex Auth Status
 export interface CodexAuthStatus {
   authenticated: boolean;
+  authenticationChecked?: boolean;
   method: CodexAuthMethod;
   hasAuthFile?: boolean;
   hasApiKey?: boolean;
@@ -157,6 +160,9 @@ export type ClaudeAuthMethod =
 // Claude Auth Status
 export interface ClaudeAuthStatus {
   authenticated: boolean;
+  authenticationChecked?: boolean;
+  hasStoredApiKey?: boolean;
+  hasStoredOAuthToken?: boolean;
   method: ClaudeAuthMethod;
   hasCredentialsFile?: boolean;
   oauthTokenValid?: boolean;

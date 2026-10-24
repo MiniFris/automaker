@@ -10,6 +10,7 @@ import {
 } from '../../src/core/platform/setup-status.runtime.js';
 import { SetupCredentialCache } from '../../src/modules/providers/setup-credential-cache.service.js';
 import { GithubAuthenticationService } from '../../src/modules/providers/github-authentication.service.js';
+import { ProviderRegistry } from '../../src/modules/providers/provider-registry.service.js';
 
 it.skipIf(process.platform === 'win32')(
   'serves native host status using owned CLI fixtures and immutable per-app environments',
@@ -24,7 +25,12 @@ it.skipIf(process.platform === 'win32')(
       const bin = path.join(workingDirectory, 'bin');
       await mkdir(bin, { recursive: true });
       await mkdir(path.join(workingDirectory, '.automaker'));
-      for (const command of ['claude', 'gh']) {
+      await mkdir(path.join(workingDirectory, '.codex'));
+      await writeFile(
+        path.join(workingDirectory, '.codex', 'auth.json'),
+        'private-invalid-json-token'
+      );
+      for (const command of ['claude', 'gh', 'codex', 'opencode']) {
         const executable = path.join(bin, command);
         await writeFile(
           executable,
@@ -44,6 +50,7 @@ it.skipIf(process.platform === 'win32')(
         NODE_ENV: 'test',
         AUTOMAKER_API_KEY: 'fixture-api-key',
         ENABLE_REQUEST_LOGGING: 'false',
+        HOME: workingDirectory,
         PATH: `${bin}${path.delimiter}${path.dirname(process.execPath)}${path.delimiter}${originalPath ?? ''}`,
         STATUS_TEST_CWD: workingDirectory,
         STATUS_TEST_USER: name,
@@ -95,6 +102,21 @@ it.skipIf(process.platform === 'win32')(
         ['first', first],
         ['second', second],
       ] as const) {
+        const providers = vi.spyOn(state.runtime.app.get(ProviderRegistry), 'byName');
+        providers.mockClear();
+        for (const provider of ['codex', 'opencode']) {
+          expect(await state.request(`${provider}-status`)).toMatchObject({
+            success: true,
+            installed: true,
+            auth: {
+              authenticated: false,
+              authenticationChecked: false,
+              hasAuthFile: provider === 'codex',
+            },
+          });
+        }
+        expect(providers).not.toHaveBeenCalled();
+        providers.mockRestore();
         const gh = await state.request('gh-status');
         await expect(access(path.join(state.workingDirectory, 'api-count'))).rejects.toMatchObject({
           code: 'ENOENT',
@@ -120,7 +142,11 @@ it.skipIf(process.platform === 'win32')(
           method: 'path',
           version: 'Claude 2.40.1',
           path: path.join(state.workingDirectory, 'bin', 'claude'),
-          auth: { authenticated: name === 'second', hasEnvApiKey: name === 'second' },
+          auth: {
+            authenticated: false,
+            authenticationChecked: false,
+            hasEnvApiKey: name === 'second',
+          },
         });
         expect(await state.request('platform')).toEqual({
           success: true,
@@ -141,7 +167,8 @@ it.skipIf(process.platform === 'win32')(
       }
       first.runtime.app.get(SetupCredentialCache).set('anthropic', 'private-owned-key');
       expect((await first.request('claude-status')).auth).toMatchObject({
-        authenticated: true,
+        authenticated: false,
+        authenticationChecked: false,
         method: 'api_key',
         hasStoredApiKey: true,
       });
@@ -153,7 +180,8 @@ it.skipIf(process.platform === 'win32')(
         hasEnvApiKey: false,
       });
       expect((await second.request('claude-status')).auth).toMatchObject({
-        authenticated: true,
+        authenticated: false,
+        authenticationChecked: false,
         method: 'api_key_env',
       });
       expect(process.env.PATH).toBe(originalPath);

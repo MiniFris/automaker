@@ -19,6 +19,7 @@ import type { ClaudeUsageService } from '../claude-usage-service.js';
 import type { NotificationService } from '../notification-service.js';
 import type { ProviderRegistry } from '../../modules/providers/provider-registry.service.js';
 import type { ToolPolicyService } from '../../modules/providers/tool-policy.service.js';
+import type { PipelineService } from '../pipeline-service.js';
 
 // Re-export types from extracted services for route consumption
 export type { AutoModeConfig, ProjectAutoLoopState } from '../auto-loop-coordinator.js';
@@ -67,6 +68,8 @@ export interface FacadeOptions {
   providerRegistry: ProviderRegistry;
   /** Central policy for provider-independent tool authorization. */
   toolPolicy?: ToolPolicyService;
+  /** Native composition supplies its application-owned configuration service. */
+  pipeline?: PipelineService;
 }
 
 /**

@@ -8,6 +8,7 @@ import type { CliStatus } from '../shared/types';
 import type { CodexAuthStatus } from '@/store/setup-store';
 import { OpenAIIcon } from '@/components/ui/provider-icon';
 import { ProviderDisconnectButton, ProviderReconnectButton } from './provider-connection-button';
+import { PassiveAuthStatus } from './passive-auth-status';
 
 interface CliStatusProps {
   status: CliStatus | null;
@@ -154,7 +155,14 @@ export function CodexCliStatus({ status, authStatus, isChecking, onRefresh }: Cl
               </div>
             </div>
             {/* Authentication Status */}
-            {authStatus?.authenticated ? (
+            {authStatus?.authenticationChecked === false ? (
+              <PassiveAuthStatus
+                provider="codex"
+                hasCredentialsHint={authStatus.hasApiKey}
+                hasConfigFile={authStatus.hasAuthFile}
+                onRefresh={onRefresh}
+              />
+            ) : authStatus?.authenticated ? (
               <div className="flex items-start gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
                 <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center border border-emerald-500/20 shrink-0">
                   <CheckCircle2 className="w-5 h-5 text-emerald-500" />

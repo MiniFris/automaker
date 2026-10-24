@@ -181,7 +181,9 @@ async function handleAppReady(): Promise<void> {
       }
     }
 
-    state.staticPort = await findAvailablePort(DEFAULT_STATIC_PORT);
+    // The backend has not bound yet. Exclude its selected port rather than
+    // selecting the same still-free port for both children after a collision.
+    state.staticPort = await findAvailablePort(DEFAULT_STATIC_PORT, [state.serverPort]);
     if (state.staticPort !== DEFAULT_STATIC_PORT) {
       logger.info(
         'Default static port',

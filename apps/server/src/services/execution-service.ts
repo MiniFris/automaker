@@ -22,7 +22,7 @@ import type { TypedEventBus } from './typed-event-bus.js';
 import type { ConcurrencyManager, RunningFeature } from './concurrency-manager.js';
 import type { WorktreeResolver } from './worktree-resolver.js';
 import type { SettingsService } from './settings-service.js';
-import { pipelineService } from './pipeline-service.js';
+import { pipelineService, type PipelineService } from './pipeline-service.js';
 import { FeatureWorkspaceService } from './execution-environment/feature-workspace.js';
 
 // Re-export callback types from execution-types.ts for backward compatibility
@@ -89,7 +89,8 @@ export class ExecutionService {
     private recordSuccessFn: RecordSuccessFn,
     private saveExecutionStateFn: SaveExecutionStateFn,
     private loadContextFilesFn: LoadContextFilesFn,
-    private readonly providerRegistry: ProviderRegistry
+    private readonly providerRegistry: ProviderRegistry,
+    private readonly pipeline: PipelineService = pipelineService
   ) {}
 
   private acquireRunningFeature(options: {
@@ -443,7 +444,7 @@ Please continue from where you left off and complete all remaining tasks. Use th
       }
 
       abortController.signal.throwIfAborted();
-      const pipelineConfig = await pipelineService.getPipelineConfig(projectPath);
+      const pipelineConfig = await this.pipeline.getPipelineConfig(projectPath);
       const excludedStepIds = new Set(feature.excludedPipelineSteps || []);
       const sortedSteps = [...(pipelineConfig?.steps || [])]
         .sort((a, b) => a.order - b.order)

@@ -8,11 +8,8 @@ import * as pty from 'node-pty';
 import { SettingsService } from '@/services/settings-service.js';
 import { TerminalService } from '@/services/terminal-service.js';
 import * as terminalModule from '@/services/terminal-service.js';
-import express from 'express';
-import { createServer } from 'node:http';
-import { once } from 'node:events';
-import { createTerminalRoutes } from '@/routes/terminal/index.js';
-import { addToken, deleteToken } from '@/routes/terminal/common.js';
+import { createNestApplication } from '@/main.js';
+import { TerminalAccessService } from '@/modules/terminal/terminal-access.service.js';
 import { ManagedSSH } from '@/services/execution-environment/ssh.js';
 import { ProjectGitService, workspaceAlias } from '@/services/execution-environment/project-git.js';
 import { FeatureWorkspaceService } from '@/services/execution-environment/feature-workspace.js';
@@ -116,17 +113,32 @@ describe.skipIf(process.platform !== 'linux')('managed interactive terminal on r
     'authenticates REST sessions, exposes immutable runtime metadata, resizes and stops without recreating missing sessions',
     { timeout: 20000 },
     async () => {
-      vi.spyOn(terminalModule, 'getTerminalService').mockReturnValue(terminals);
-      vi.stubEnv('TERMINAL_PASSWORD', 'fixture');
-      addToken('fixture-token', { createdAt: new Date(), expiresAt: new Date(Date.now() + 60000) });
-      const app = express();
-      app.use(express.json());
-      app.use('/terminal', createTerminalRoutes());
-      const server = createServer(app);
-      server.listen(0, '127.0.0.1');
-      await once(server, 'listening');
-      const url = `http://127.0.0.1:${(server.address() as { port: number }).port}/terminal`;
-      const headers = { 'Content-Type': 'application/json', 'X-Terminal-Token': 'fixture-token' };
+      const native = await createNestApplication({
+        host: '127.0.0.1',
+        port: 0,
+        workingDirectory: root,
+        dataDir: path.join(root, 'data'),
+        providerRegistrations: [],
+        runStartupTasks: false,
+        enableShutdownHooks: false,
+        environment: {
+          NODE_ENV: 'test',
+          AUTOMAKER_API_KEY: 'controller-only-test-secret',
+          TERMINAL_PASSWORD: 'fixture',
+          ENABLE_REQUEST_LOGGING: 'false',
+        },
+      });
+      await native.start();
+      const ownedTerminals = native.app.get(TerminalService);
+      const authentication = native.app.get(TerminalAccessService).authenticate('fixture');
+      expect(authentication.status).toBe(200);
+      const token = (authentication.body as { data: { token: string } }).data.token;
+      const url = `http://127.0.0.1:${(native.app.getHttpServer().address() as { port: number }).port}/api/terminal`;
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-API-Key': 'controller-only-test-secret',
+        'X-Terminal-Token': token,
+      };
       try {
         expect((await fetch(url + '/sessions')).status).toBe(401);
         const target = (await new ProjectGitService(settings).resolve(project))!;
@@ -168,14 +180,12 @@ describe.skipIf(process.platform !== 'linux')('managed interactive terminal on r
         expect(
           (await fetch(url + '/sessions/' + created.id, { method: 'DELETE', headers })).status
         ).toBe(200);
-        await vi.waitFor(() => expect(terminals.getSessionCount()).toBe(0));
+        await vi.waitFor(() => expect(ownedTerminals.getSessionCount()).toBe(0));
         expect((await fetch(url + '/sessions/' + created.id, { headers })).status).toBe(404);
-        expect(terminals.getSessionCount()).toBe(0);
+        expect(ownedTerminals.getSessionCount()).toBe(0);
         expect(pty.spawn).not.toHaveBeenCalled();
       } finally {
-        deleteToken('fixture-token');
-        server.closeAllConnections();
-        await new Promise<void>((resolve) => server.close(() => resolve()));
+        await native.app.close();
       }
     }
   );

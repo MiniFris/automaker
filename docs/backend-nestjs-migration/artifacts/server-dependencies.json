@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 619,
-    "internalEdges": 2031,
+    "files": 611,
+    "internalEdges": 2019,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -20,10 +20,10 @@
     "lib -> services": 1,
     "modules -> core": 145,
     "modules -> lib": 29,
-    "modules -> modules": 347,
+    "modules -> modules": 348,
     "modules -> providers": 29,
     "modules -> routes": 23,
-    "modules -> services": 157,
+    "modules -> services": 159,
     "modules -> types": 2,
     "providers -> core": 1,
     "providers -> lib": 3,
@@ -40,15 +40,15 @@
     "routes -> middleware": 8,
     "routes -> modules": 7,
     "routes -> providers": 11,
-    "routes -> routes": 330,
-    "routes -> services": 186,
+    "routes -> routes": 316,
+    "routes -> services": 179,
     "routes -> types": 2,
-    "services -> core": 15,
-    "services -> lib": 74,
+    "services -> core": 16,
+    "services -> lib": 75,
     "services -> modules": 9,
     "services -> providers": 16,
     "services -> routes": 1,
-    "services -> services": 286,
+    "services -> services": 290,
     "services -> types": 2,
     "tests -> lib": 2
   },
@@ -90,7 +90,6 @@
       "apps/server/src/routes/app-spec/common.ts",
       "apps/server/src/routes/fs/routes/resolve-directory.ts",
       "apps/server/src/routes/settings/openai-compatible.ts",
-      "apps/server/src/routes/terminal/common.ts",
       "apps/server/src/routes/worktree/common.ts",
       "apps/server/src/routes/worktree/routes/continue-operation.ts",
       "apps/server/src/routes/zai/index.ts",
@@ -209,6 +208,7 @@
     ],
     "timers": [
       "apps/server/src/core/auth/auth.service.ts",
+      "apps/server/src/core/http/shared-http-server.adapter.ts",
       "apps/server/src/core/lifecycle/application-shutdown.ts",
       "apps/server/src/core/lifecycle/supervisor-coordinator.service.ts",
       "apps/server/src/core/platform/codex-credential.runtime.ts",
@@ -217,6 +217,7 @@
       "apps/server/src/lib/error-handler.ts",
       "apps/server/src/lib/git.ts",
       "apps/server/src/modules/event-history/event-replay.service.ts",
+      "apps/server/src/modules/files/files-command.service.ts",
       "apps/server/src/modules/github/github-command.runtime.ts",
       "apps/server/src/modules/github/github-discovery.service.ts",
       "apps/server/src/modules/github/github-review.service.ts",
@@ -231,7 +232,6 @@
       "apps/server/src/providers/provider-execution-scope.ts",
       "apps/server/src/providers/remote-sdk-worker.ts",
       "apps/server/src/routes/backlog-plan/generate-plan.ts",
-      "apps/server/src/routes/terminal/common.ts",
       "apps/server/src/routes/worktree/routes/checkout-branch.ts",
       "apps/server/src/routes/worktree/routes/create.ts",
       "apps/server/src/routes/worktree/routes/generate-commit-message.ts",
@@ -255,6 +255,7 @@
       "apps/server/src/services/execution-environment/test-runner.ts",
       "apps/server/src/services/mcp-test-service.ts",
       "apps/server/src/services/ntfy-service.ts",
+      "apps/server/src/services/pipeline-config.repository.ts",
       "apps/server/src/services/pipeline-orchestrator.ts",
       "apps/server/src/services/plan-approval-service.ts",
       "apps/server/src/services/terminal-service.ts",
@@ -286,8 +287,8 @@
     "@automaker/model-resolver": 20,
     "@automaker/platform": 73,
     "@automaker/prompts": 3,
-    "@automaker/types": 177,
-    "@automaker/utils": 165,
+    "@automaker/types": 178,
+    "@automaker/utils": 163,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
@@ -302,24 +303,24 @@
     "cookie": 1,
     "cookie-parser": 1,
     "cors": 1,
-    "crypto": 4,
+    "crypto": 3,
     "dotenv": 1,
     "events": 1,
-    "express": 210,
+    "express": 201,
     "fs": 11,
     "fs/promises": 13,
     "net": 1,
     "node-pty": 2,
     "node:async_hooks": 1,
     "node:child_process": 14,
-    "node:crypto": 30,
+    "node:crypto": 31,
     "node:fs": 10,
     "node:fs/promises": 18,
-    "node:http": 7,
-    "node:net": 2,
+    "node:http": 8,
+    "node:net": 3,
     "node:os": 12,
-    "node:path": 50,
-    "node:perf_hooks": 11,
+    "node:path": 52,
+    "node:perf_hooks": 14,
     "node:stream": 5,
     "node:stream/web": 2,
     "node:string_decoder": 4,
@@ -327,7 +328,7 @@
     "node:url": 3,
     "node:util": 13,
     "os": 14,
-    "path": 73,
+    "path": 72,
     "reflect-metadata": 1,
     "ssh2": 3,
     "url": 1,
@@ -1304,6 +1305,10 @@
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
+      "target": "apps/server/src/modules/pipeline/pipeline.module.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
       "target": "apps/server/src/services/auto-mode/index.ts"
     },
     {
@@ -1333,6 +1338,10 @@
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
       "target": "apps/server/src/services/notification-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
+      "target": "apps/server/src/services/pipeline-service.ts"
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
@@ -2568,11 +2577,23 @@
     },
     {
       "source": "apps/server/src/modules/pipeline/pipeline.module.ts",
+      "target": "apps/server/src/core/security/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/pipeline/pipeline.module.ts",
+      "target": "apps/server/src/lib/secure-fs.ts"
+    },
+    {
+      "source": "apps/server/src/modules/pipeline/pipeline.module.ts",
       "target": "apps/server/src/modules/pipeline/pipeline-application.service.ts"
     },
     {
       "source": "apps/server/src/modules/pipeline/pipeline.module.ts",
       "target": "apps/server/src/modules/pipeline/pipeline.controller.ts"
+    },
+    {
+      "source": "apps/server/src/modules/pipeline/pipeline.module.ts",
+      "target": "apps/server/src/services/pipeline-config.repository.ts"
     },
     {
       "source": "apps/server/src/modules/pipeline/pipeline.module.ts",
@@ -2949,10 +2970,6 @@
     {
       "source": "apps/server/src/modules/providers/provider-registry.service.ts",
       "target": "apps/server/src/providers/types.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/provider-setup-status.service.ts",
-      "target": "apps/server/src/core/config/index.ts"
     },
     {
       "source": "apps/server/src/modules/providers/provider-setup-status.service.ts",
@@ -3592,15 +3609,11 @@
     },
     {
       "source": "apps/server/src/modules/terminal/websocket-transport.service.ts",
-      "target": "apps/server/src/core/eventing/application-events.ts"
+      "target": "apps/server/src/core/eventing/event-bus.ts"
     },
     {
       "source": "apps/server/src/modules/terminal/websocket-transport.service.ts",
       "target": "apps/server/src/core/observability/request-context.ts"
-    },
-    {
-      "source": "apps/server/src/modules/terminal/websocket-transport.service.ts",
-      "target": "apps/server/src/lib/events.ts"
     },
     {
       "source": "apps/server/src/modules/terminal/websocket-transport.service.ts",
@@ -6011,90 +6024,6 @@
       "target": "apps/server/src/types/settings.ts"
     },
     {
-      "source": "apps/server/src/routes/terminal/common.ts",
-      "target": "apps/server/src/routes/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/terminal/index.ts",
-      "target": "apps/server/src/routes/terminal/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/terminal/index.ts",
-      "target": "apps/server/src/routes/terminal/routes/auth.ts"
-    },
-    {
-      "source": "apps/server/src/routes/terminal/index.ts",
-      "target": "apps/server/src/routes/terminal/routes/logout.ts"
-    },
-    {
-      "source": "apps/server/src/routes/terminal/index.ts",
-      "target": "apps/server/src/routes/terminal/routes/session-delete.ts"
-    },
-    {
-      "source": "apps/server/src/routes/terminal/index.ts",
-      "target": "apps/server/src/routes/terminal/routes/session-resize.ts"
-    },
-    {
-      "source": "apps/server/src/routes/terminal/index.ts",
-      "target": "apps/server/src/routes/terminal/routes/sessions.ts"
-    },
-    {
-      "source": "apps/server/src/routes/terminal/index.ts",
-      "target": "apps/server/src/routes/terminal/routes/settings.ts"
-    },
-    {
-      "source": "apps/server/src/routes/terminal/index.ts",
-      "target": "apps/server/src/routes/terminal/routes/status.ts"
-    },
-    {
-      "source": "apps/server/src/routes/terminal/index.ts",
-      "target": "apps/server/src/services/terminal-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/terminal/routes/auth.ts",
-      "target": "apps/server/src/routes/terminal/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/terminal/routes/logout.ts",
-      "target": "apps/server/src/routes/terminal/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/terminal/routes/session-delete.ts",
-      "target": "apps/server/src/services/terminal-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/terminal/routes/session-resize.ts",
-      "target": "apps/server/src/services/terminal-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/terminal/routes/sessions.ts",
-      "target": "apps/server/src/routes/terminal/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/terminal/routes/sessions.ts",
-      "target": "apps/server/src/services/execution-environment/runtime.ts"
-    },
-    {
-      "source": "apps/server/src/routes/terminal/routes/sessions.ts",
-      "target": "apps/server/src/services/terminal-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/terminal/routes/settings.ts",
-      "target": "apps/server/src/routes/terminal/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/terminal/routes/settings.ts",
-      "target": "apps/server/src/services/terminal-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/terminal/routes/status.ts",
-      "target": "apps/server/src/routes/terminal/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/terminal/routes/status.ts",
-      "target": "apps/server/src/services/terminal-service.ts"
-    },
-    {
       "source": "apps/server/src/routes/worktree/common.ts",
       "target": "apps/server/src/routes/common.ts"
     },
@@ -7340,6 +7269,10 @@
     },
     {
       "source": "apps/server/src/services/auto-mode/compat.ts",
+      "target": "apps/server/src/services/pipeline-service.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/compat.ts",
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
@@ -7452,6 +7385,10 @@
     },
     {
       "source": "apps/server/src/services/auto-mode/global-service.ts",
+      "target": "apps/server/src/services/pipeline-service.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/global-service.ts",
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
@@ -7501,6 +7438,10 @@
     {
       "source": "apps/server/src/services/auto-mode/types.ts",
       "target": "apps/server/src/services/notification-service.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/types.ts",
+      "target": "apps/server/src/services/pipeline-service.ts"
     },
     {
       "source": "apps/server/src/services/auto-mode/types.ts",
@@ -8191,6 +8132,14 @@
       "target": "apps/server/src/lib/secure-fs.ts"
     },
     {
+      "source": "apps/server/src/services/pipeline-config.repository.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/services/pipeline-config.repository.ts",
+      "target": "apps/server/src/lib/secure-fs.ts"
+    },
+    {
       "source": "apps/server/src/services/pipeline-orchestrator.ts",
       "target": "apps/server/src/lib/sdk-options.ts"
     },
@@ -8261,6 +8210,10 @@
     {
       "source": "apps/server/src/services/pipeline-service.ts",
       "target": "apps/server/src/lib/secure-fs.ts"
+    },
+    {
+      "source": "apps/server/src/services/pipeline-service.ts",
+      "target": "apps/server/src/services/pipeline-config.repository.ts"
     },
     {
       "source": "apps/server/src/services/plan-approval-service.ts",

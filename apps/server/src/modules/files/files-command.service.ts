@@ -1,9 +1,10 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, type OnModuleDestroy } from '@nestjs/common';
+import { performance } from 'node:perf_hooks';
 import { mapInfrastructureError } from '../../core/errors/index.js';
 import { PROJECT_FILE_PORT, type ProjectFilePort } from './project-file.port.js';
 import { getBoardDir, getImagesDir } from '@automaker/platform';
 import { sanitizeFilename } from '@automaker/utils';
-import { ValidationDomainError } from '../../core/errors/index.js';
+import { UnavailableDomainError, ValidationDomainError } from '../../core/errors/index.js';
 import path from 'node:path';
 import type { SaveImageRequest } from './files.schemas.js';
 
@@ -11,8 +12,11 @@ const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bm
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 
 @Injectable()
-export class FilesCommandService {
+export class FilesCommandService implements OnModuleDestroy {
   private writes: Promise<unknown> = Promise.resolve();
+  private closing = false;
+  private pending = 0;
+  private shutdown?: Promise<void>;
   constructor(@Inject(PROJECT_FILE_PORT) private readonly files: ProjectFilePort) {}
 
   write(filePath: string, content: string) {
@@ -81,7 +85,12 @@ export class FilesCommandService {
     work: () => Promise<void | string>,
     includePath = false
   ): Promise<Record<string, unknown>> {
-    const operation = this.writes.then(work);
+    if (this.closing) throw new UnavailableDomainError('File commands are closing.');
+    if (this.pending >= 256) throw new UnavailableDomainError('File command queue is full.');
+    this.pending++;
+    const operation = this.writes.then(work).finally(() => {
+      this.pending--;
+    });
     this.writes = operation.catch(() => {});
     try {
       const result = await operation;
@@ -90,5 +99,25 @@ export class FilesCommandService {
       if (error && typeof error === 'object' && 'statusCode' in error) throw error;
       throw mapInfrastructureError(error);
     }
+  }
+
+  onModuleDestroy(): Promise<void> {
+    if (this.shutdown) return this.shutdown;
+    this.closing = true;
+    const deadline = performance.now() + 5000;
+    const failure = () =>
+      Object.assign(new Error('File command drain could not be confirmed.'), {
+        code: 'FILE_COMMAND_DRAIN_UNCONFIRMED',
+      });
+    let timer: NodeJS.Timeout | undefined;
+    this.shutdown = Promise.race([
+      this.writes.then(() => {
+        if (performance.now() >= deadline) throw failure();
+      }),
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => reject(failure()), 5000);
+      }),
+    ]).finally(() => clearTimeout(timer));
+    return this.shutdown;
   }
 }

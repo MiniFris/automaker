@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { execFile } from 'node:child_process';
 import os from 'node:os';
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { getClaudeAuthIndicators, getClaudeCliPaths, systemPathAccess } from '@automaker/platform';
 import { NodeSetupStatusRuntime } from '../../../src/core/platform/setup-status.runtime.js';
 
@@ -9,6 +9,7 @@ vi.mock('node:child_process', () => ({ execFile: vi.fn() }));
 vi.mock('node:fs/promises', async () => ({
   ...(await vi.importActual<typeof import('node:fs/promises')>('node:fs/promises')),
   readFile: vi.fn(),
+  stat: vi.fn(),
 }));
 vi.mock('node:os', () => ({
   default: { platform: vi.fn(() => 'linux'), arch: () => 'arm64', homedir: () => '/fixture/home' },
@@ -42,6 +43,9 @@ const runtime = (
 ) => new NodeSetupStatusRuntime(environment, { workingDirectory: '/fixture/app' } as never);
 
 beforeEach(() => {
+  vi.mocked(stat)
+    .mockReset()
+    .mockRejectedValue(Object.assign(new Error('missing'), { code: 'ENOENT' }));
   vi.mocked(readFile)
     .mockReset()
     .mockRejectedValue(Object.assign(new Error('missing'), { code: 'ENOENT' }));
@@ -254,9 +258,31 @@ describe('bounded host setup status runtime', () => {
     expect(closed).toBe(true);
   });
 
-  it('reads auth indicators through the platform port without executing a model', async () => {
-    expect(await runtime().claudeIndicators()).toEqual({ hasCredentialsFile: false });
-    expect(getClaudeAuthIndicators).toHaveBeenCalledOnce();
+  it('reads passive Claude file presence without opening credentials or checking historical activity', async () => {
+    expect(await runtime().claudeIndicators()).toEqual({
+      hasCredentialsFile: false,
+      hasSettingsFile: false,
+      hasStatsCacheWithActivity: false,
+      hasProjectsSessions: false,
+      credentials: null,
+    });
+    expect(stat).toHaveBeenCalledWith('/fixture/user/.claude/.credentials.json');
+    expect(getClaudeAuthIndicators).not.toHaveBeenCalled();
+    expect(readFile).not.toHaveBeenCalled();
     expect(execFile).not.toHaveBeenCalled();
   });
+  it.each(['codex', 'opencode'] as const)(
+    'uses snapshot-local %s auth file metadata, not token contents or an auth command',
+    async (provider) => {
+      vi.mocked(stat).mockResolvedValue({ isFile: () => true } as never);
+      expect(await runtime().profileHint(provider)).toBe(true);
+      expect(stat).toHaveBeenCalledWith(
+        provider === 'codex'
+          ? '/fixture/user/.codex/auth.json'
+          : '/fixture/user/.local/share/opencode/auth.json'
+      );
+      expect(readFile).not.toHaveBeenCalled();
+      expect(execFile).not.toHaveBeenCalled();
+    }
+  );
 });

@@ -62,6 +62,14 @@ export function manageApplicationShutdown(app: INestApplication): { enableSignal
     closing ??= Promise.resolve()
       .then(() => nativeClose(signal))
       .then(() => {
+        try {
+          const adapter = app.getHttpAdapter?.() as
+            | { assertCleanupConfirmed?: () => void }
+            | undefined;
+          adapter?.assertCleanupConfirmed?.();
+        } catch {
+          throw new ApplicationCleanupError();
+        }
         if (failed) throw new ApplicationCleanupError();
       })
       .finally(() => {

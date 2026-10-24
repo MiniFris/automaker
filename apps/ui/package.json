@@ -207,13 +207,6 @@
         "to": "server/package-lock.json"
       },
       {
-        "from": "../../.env",
-        "to": ".env",
-        "filter": [
-          "**/*"
-        ]
-      },
-      {
         "from": "public/logo_larger.png",
         "to": "logo_larger.png"
       }

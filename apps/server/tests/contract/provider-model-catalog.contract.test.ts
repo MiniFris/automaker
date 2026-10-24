@@ -4,6 +4,7 @@ import path from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { expect, it, vi } from 'vitest';
 import { createNestApplication } from '../../src/main.js';
+import { SetupStatusRuntime } from '../../src/core/platform/setup-status.runtime.js';
 import { ProviderModelCatalogService } from '../../src/modules/providers/provider-model-catalog.service.js';
 import { MockProvider } from '../helpers/mock-provider.js';
 
@@ -68,6 +69,14 @@ it('owns model discovery/cache per Nest app and preserves native catalog/status 
       },
     });
     runtimes.push(runtime);
+    const statusRuntime = runtime.app.get(SetupStatusRuntime);
+    const statusDetect = vi.spyOn(statusRuntime, 'detect').mockImplementation(async (name) => ({
+      installed: true,
+      version: `${application}-${name}-version`,
+      path: path.join(workingDirectory, 'bin', name),
+      method: 'path',
+    }));
+    const profileHint = vi.spyOn(statusRuntime, 'profileHint').mockResolvedValue(true);
     await runtime.start();
     const { port } = runtime.app.getHttpServer().address() as AddressInfo;
     const request = async (route: string, method = 'GET') => {
@@ -78,7 +87,7 @@ it('owns model discovery/cache per Nest app and preserves native catalog/status 
       expect(response.status).toBe(200);
       return response.json();
     };
-    return { request, refresh, detect, workingDirectory, runtime };
+    return { request, refresh, detect, statusDetect, profileHint, workingDirectory, runtime };
   };
   try {
     const first = await start('first', true);
@@ -116,23 +125,52 @@ it('owns model discovery/cache per Nest app and preserves native catalog/status 
       expect(await first.request(`${name}-status`)).toMatchObject({
         success: true,
         installed: true,
-        version: 'fixture-version',
-        path: '/fixture/cli',
-        auth: { authenticated: true, method: 'cli_authenticated', hasApiKey: false },
+        version: `first-${name}-version`,
+        path: path.join(first.workingDirectory, 'bin', name),
+        auth: {
+          authenticated: false,
+          authenticationChecked: false,
+          method: 'api_key',
+          hasApiKey: true,
+          hasAuthFile: true,
+        },
       });
+      expect(first.statusDetect).toHaveBeenCalledWith(name);
+      expect(first.profileHint).toHaveBeenCalledWith(name);
     }
+    expect(first.detect).not.toHaveBeenCalled();
     expect((await first.request('opencode-status')).auth).toMatchObject({
       hasEnvApiKey: true,
-      hasOAuthToken: true,
+      hasOAuthToken: false,
     });
     expect((await second.request('opencode-status')).auth).toMatchObject({ hasEnvApiKey: false });
     await writeFile(path.join(first.workingDirectory, '.automaker', '.codex-disconnected'), '');
     first.detect.mockClear();
+    first.profileHint.mockClear();
     expect(await first.request('codex-status')).toMatchObject({
-      auth: { authenticated: false, method: 'none', hasApiKey: false },
+      installed: true,
+      auth: {
+        authenticated: false,
+        authenticationChecked: false,
+        method: 'none',
+        hasApiKey: false,
+        hasAuthFile: false,
+      },
     });
     expect(first.detect).not.toHaveBeenCalled();
-    expect(await second.request('codex-status')).toMatchObject({ auth: { authenticated: true } });
+    expect(first.profileHint).not.toHaveBeenCalled();
+    expect(await second.request('codex-status')).toMatchObject({
+      version: 'second-codex-version',
+      path: path.join(second.workingDirectory, 'bin', 'codex'),
+      auth: {
+        authenticated: false,
+        authenticationChecked: false,
+        method: 'none',
+        hasApiKey: false,
+        hasAuthFile: true,
+      },
+    });
+    expect(second.detect).not.toHaveBeenCalled();
 
     const delayed = new Promise<void>((resolve) => {
       release = resolve;

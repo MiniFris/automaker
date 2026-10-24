@@ -24,30 +24,12 @@ function fixture(disconnected = false) {
   const providers = { byName: vi.fn().mockReturnValue(adapter) };
   const connections = { isDisconnected: vi.fn().mockReturnValue(disconnected) };
   const configured = vi.fn().mockReturnValue(false);
-  const service = new ProviderSetupStatusService(
-    providers as never,
-    connections as never,
-    {
-      providers: { isEnvironmentVariableConfigured: configured },
-    } as never
-  );
+  const service = new ProviderSetupStatusService(providers as never, connections as never);
   return { service, adapter, providers, connections, configured };
 }
 
 const names: CliSetupProvider[] = ['gemini', 'copilot', 'cursor'];
 describe('native provider setup status', () => {
-  it('masks OpenCode credentials when disconnected without probing the adapter', async () => {
-    const { service, providers, configured } = fixture(true);
-    configured.mockReturnValue(true);
-    expect((await service.installationStatus('opencode')).auth).toEqual({
-      authenticated: false,
-      method: 'none',
-      hasApiKey: false,
-      hasEnvApiKey: false,
-      hasOAuthToken: false,
-    });
-    expect(providers.byName).not.toHaveBeenCalled();
-  });
   it.each(names)(
     'uses the injected %s adapter and checks authentication exactly once',
     async (name) => {
@@ -225,106 +207,4 @@ describe('native provider setup status', () => {
     });
     expect(adapter.checkAuth).toHaveBeenCalledTimes(2);
   });
-
-  it.each(['codex', 'opencode'] as const)(
-    'uses the injected %s installation detector once',
-    async (name) => {
-      const { service, adapter, providers } = fixture();
-      expect(await service.installationStatus(name)).toMatchObject({
-        success: true,
-        installed: true,
-        version: null,
-        path: null,
-        auth: { authenticated: true, method: 'api_key_env', hasApiKey: true },
-      });
-      expect(providers.byName).toHaveBeenCalledWith(name);
-      expect(adapter.detectInstallation).toHaveBeenCalledOnce();
-      expect(adapter.checkAuth).not.toHaveBeenCalled();
-    }
-  );
-
-  it('does not probe disconnected Codex or claim its API key is usable', async () => {
-    const { service, providers } = fixture(true);
-    expect(await service.installationStatus('codex')).toEqual({
-      success: true,
-      installed: true,
-      version: null,
-      path: null,
-      auth: { authenticated: false, method: 'none', hasApiKey: false },
-      installCommand: 'npm install -g @openai/codex',
-      loginCommand: 'codex login',
-    });
-    expect(providers.byName).not.toHaveBeenCalled();
-  });
-
-  it.each(['ANTHROPIC_API_KEY', 'OPENAI_API_KEY'])(
-    'reads the OpenCode %s hint from application config',
-    async (variable) => {
-      const { service, configured } = fixture();
-      configured.mockImplementation((name) => name === variable);
-      expect((await service.installationStatus('opencode')).auth).toMatchObject({
-        hasEnvApiKey: true,
-        hasOAuthToken: false,
-      });
-      expect(configured).toHaveBeenCalledWith(variable);
-    }
-  );
-
-  it.each([
-    { authenticated: false, hasApiKey: true, method: 'none' },
-    { authenticated: true, hasApiKey: false, method: 'cli_authenticated' },
-  ])(
-    'derives the Codex auth method from installation status: %s',
-    async ({ authenticated, hasApiKey, method }) => {
-      const { service, adapter } = fixture();
-      adapter.detectInstallation.mockResolvedValue({ installed: true, authenticated, hasApiKey });
-      expect((await service.installationStatus('codex')).auth).toEqual({
-        authenticated,
-        hasApiKey,
-        method,
-      });
-    }
-  );
-
-  it('preserves OpenCode missing installation recommendation and OAuth hints', async () => {
-    const { service, adapter } = fixture();
-    adapter.detectInstallation.mockResolvedValue({
-      installed: false,
-      authenticated: false,
-      hasOAuthToken: true,
-    });
-    expect(await service.installationStatus('opencode')).toEqual({
-      success: true,
-      installed: false,
-      version: null,
-      path: null,
-      auth: {
-        authenticated: false,
-        method: 'none',
-        hasApiKey: false,
-        hasEnvApiKey: false,
-        hasOAuthToken: true,
-      },
-      recommendation: 'Install OpenCode CLI to use multi-provider AI models.',
-      installCommand: 'curl -fsSL https://opencode.ai/install | bash',
-      loginCommand: 'opencode auth login',
-      installCommands: {
-        macos: 'curl -fsSL https://opencode.ai/install | bash',
-        linux: 'curl -fsSL https://opencode.ai/install | bash',
-        npm: 'npm install -g opencode-ai',
-      },
-    });
-  });
-
-  it.each(['codex', 'opencode'] as const)(
-    'returns safe %s detection errors without command output',
-    async (name) => {
-      const { service, adapter } = fixture();
-      adapter.detectInstallation.mockRejectedValue(new Error('private-cli-token'));
-      await expect(service.installationStatus(name)).rejects.toMatchObject({
-        status: 500,
-        response: { success: false, error: `Failed to read ${name} status.` },
-      });
-    }
-  );
 });

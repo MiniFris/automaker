@@ -16,6 +16,7 @@ function fixture() {
       hasProjectsSessions: false,
       credentials: null,
     }),
+    profileHint: vi.fn().mockResolvedValue(false),
     githubAuthentication: vi.fn().mockResolvedValue({ authenticated: true, user: 'fixture' }),
   };
   const connections = { isDisconnected: vi.fn(() => false) };
@@ -33,6 +34,7 @@ function fixture() {
           !!keys.get('openai') ||
           keys.isEnvironmentConfigured('OPENAI_API_KEY', configured('OPENAI_API_KEY')),
         hasGoogleKey: !!keys.get('google'),
+        hasEnvOpenaiKey: configured('OPENAI_API_KEY'),
         hasStoredAnthropicKey: !!keys.get('anthropic'),
         hasStoredAnthropicOAuthToken: !!keys.get('anthropic_oauth_token'),
         hasEnvAnthropicKey: keys.isEnvironmentConfigured(
@@ -46,6 +48,83 @@ function fixture() {
 }
 
 describe('native host setup status', () => {
+  it.each(['codex', 'opencode'] as const)(
+    'reads passive %s installation and profile presence without a provider instance',
+    async (name) => {
+      const { service, runtime } = fixture();
+      runtime.profileHint.mockResolvedValue(true);
+      expect(await service.installationStatus(name)).toMatchObject({
+        installed: true,
+        auth: {
+          authenticated: false,
+          authenticationChecked: false,
+          hasAuthFile: true,
+          hasApiKey: false,
+        },
+      });
+      expect(runtime.detect).toHaveBeenCalledExactlyOnceWith(name);
+      expect(runtime.profileHint).toHaveBeenCalledExactlyOnceWith(name);
+    }
+  );
+  it.each(['codex', 'opencode'] as const)(
+    'does not inspect disconnected %s credentials or assert installation',
+    async (name) => {
+      const { service, runtime, connections } = fixture();
+      connections.isDisconnected.mockReturnValue(true);
+      runtime.detect.mockResolvedValue({ installed: false, method: 'none', version: '', path: '' });
+      expect(await service.installationStatus(name)).toMatchObject({
+        connected: false,
+        installed: false,
+        auth: {
+          authenticated: false,
+          authenticationChecked: false,
+          hasApiKey: false,
+          hasAuthFile: false,
+        },
+      });
+      expect(runtime.profileHint).not.toHaveBeenCalled();
+    }
+  );
+  it.each(['ANTHROPIC_API_KEY', 'OPENAI_API_KEY'])(
+    'reports an application environment %s as a hint, not a verified credential',
+    async (variable) => {
+      const { service, configured } = fixture();
+      configured.mockImplementation((name) => name === variable);
+      expect((await service.installationStatus('opencode')).auth).toMatchObject({
+        authenticationChecked: false,
+        authenticated: false,
+        hasEnvApiKey: true,
+        hasApiKey: true,
+        hasOAuthToken: false,
+      });
+    }
+  );
+  it('retains missing OpenCode installation guidance without parsing OAuth credentials', async () => {
+    const { service, runtime } = fixture();
+    runtime.detect.mockResolvedValue({ installed: false, method: 'none', version: '', path: '' });
+    runtime.profileHint.mockResolvedValue(true);
+    expect(await service.installationStatus('opencode')).toMatchObject({
+      installed: false,
+      recommendation: 'Install OpenCode CLI to use multi-provider AI models.',
+      auth: {
+        authenticated: false,
+        authenticationChecked: false,
+        hasAuthFile: true,
+        hasOAuthToken: false,
+      },
+    });
+  });
+  it.each(['codex', 'opencode'] as const)(
+    'redacts %s installation failure diagnostics',
+    async (name) => {
+      const { service, runtime } = fixture();
+      runtime.detect.mockRejectedValue(new Error('private-cli-token'));
+      await expect(service.installationStatus(name)).rejects.toMatchObject({
+        status: 500,
+        response: { success: false, error: 'Failed to read ' + name + ' status.' },
+      });
+    }
+  );
   it.each(['linux', 'darwin', 'win32'])(
     'reports %s platform flags through the runtime port',
     (platform) => {
@@ -74,6 +153,7 @@ describe('native host setup status', () => {
       path: '/fixture/cli',
       auth: {
         authenticated: false,
+        authenticationChecked: false,
         method: 'none',
         hasCredentialsFile: false,
         hasToken: false,
@@ -110,6 +190,7 @@ describe('native host setup status', () => {
     const result = await service.claude();
     expect(result.auth).toEqual({
       authenticated: false,
+      authenticationChecked: false,
       method: 'none',
       hasCredentialsFile: false,
       hasToken: false,
@@ -128,16 +209,20 @@ describe('native host setup status', () => {
   it.each([
     { hasStatsCacheWithActivity: true, hasRecentActivity: true },
     { hasSettingsFile: true, hasProjectsSessions: true, hasRecentActivity: false },
-  ])('recognizes existing CLI evidence: %s', async ({ hasRecentActivity, ...indicators }) => {
-    const { service, runtime } = fixture();
-    runtime.claudeIndicators.mockResolvedValue(indicators);
-    expect((await service.claude()).auth).toMatchObject({
-      authenticated: true,
-      method: 'cli_authenticated',
-      hasCliAuth: true,
-      hasRecentActivity,
-    });
-  });
+  ])(
+    'does not promote historical CLI evidence to verified authentication: %s',
+    async ({ ...indicators }) => {
+      const { service, runtime } = fixture();
+      runtime.claudeIndicators.mockResolvedValue(indicators);
+      expect((await service.claude()).auth).toMatchObject({
+        authenticated: false,
+        authenticationChecked: false,
+        method: 'none',
+        hasCliAuth: false,
+        hasRecentActivity: false,
+      });
+    }
+  );
 
   it.each([{ hasSettingsFile: true }, { hasProjectsSessions: true }])(
     'does not authenticate from incomplete CLI evidence: %s',
@@ -163,25 +248,23 @@ describe('native host setup status', () => {
       oauthTokenValid: false,
       apiKeyValid: true,
     },
-  ])(
-    'preserves credential priority: %s',
-    async ({ method, oauthTokenValid, apiKeyValid, ...credentials }) => {
-      const { service, runtime } = fixture();
-      runtime.claudeIndicators.mockResolvedValue({
-        hasStatsCacheWithActivity: true,
-        hasCredentialsFile: true,
-        credentials,
-      });
-      expect((await service.claude()).auth).toMatchObject({
-        authenticated: true,
-        hasCredentialsFile: true,
-        hasCliAuth: true,
-        method,
-        oauthTokenValid,
-        apiKeyValid,
-      });
-    }
-  );
+  ])('never inspects or validates credential file contents: %s', async ({ ...credentials }) => {
+    const { service, runtime } = fixture();
+    runtime.claudeIndicators.mockResolvedValue({
+      hasStatsCacheWithActivity: true,
+      hasCredentialsFile: true,
+      credentials,
+    });
+    expect((await service.claude()).auth).toMatchObject({
+      authenticated: false,
+      authenticationChecked: false,
+      hasCredentialsFile: true,
+      hasCliAuth: false,
+      method: 'none',
+      oauthTokenValid: false,
+      apiKeyValid: false,
+    });
+  });
 
   it('gives the configured environment key priority over credential file OAuth', async () => {
     const { service, runtime, configured } = fixture();
@@ -193,8 +276,8 @@ describe('native host setup status', () => {
     expect((await service.claude()).auth).toMatchObject({
       method: 'api_key_env',
       hasEnvApiKey: true,
-      apiKeyValid: true,
-      hasStoredOAuthToken: true,
+      apiKeyValid: false,
+      hasStoredOAuthToken: false,
     });
     expect(configured).toHaveBeenCalledWith('ANTHROPIC_API_KEY');
   });
@@ -206,7 +289,8 @@ describe('native host setup status', () => {
       keys.set(provider, 'private-fixture-key');
       const result = await service.claude();
       expect(result.auth).toMatchObject({
-        authenticated: true,
+        authenticated: false,
+        authenticationChecked: false,
         method: provider === 'anthropic' ? 'api_key' : 'oauth_token',
       });
       expect(JSON.stringify(result)).not.toContain('private-fixture-key');

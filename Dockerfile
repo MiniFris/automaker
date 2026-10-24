@@ -21,6 +21,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Copy all libs package.json files (centralized - add new libs here)
+COPY libs/contracts/package*.json ./libs/contracts/
 COPY libs/types/package*.json ./libs/types/
 COPY libs/utils/package*.json ./libs/utils/
 COPY libs/prompts/package*.json ./libs/prompts/
@@ -29,7 +30,6 @@ COPY libs/spec-parser/package*.json ./libs/spec-parser/
 COPY libs/model-resolver/package*.json ./libs/model-resolver/
 COPY libs/dependency-resolver/package*.json ./libs/dependency-resolver/
 COPY libs/git-utils/package*.json ./libs/git-utils/
-COPY libs/spec-parser/package*.json ./libs/spec-parser/
 
 # Copy scripts (needed by npm workspace)
 COPY scripts ./scripts
@@ -54,6 +54,13 @@ COPY apps/server ./apps/server
 
 # Build packages in dependency order, then build server
 RUN npm run build:packages && npm run build --workspace=apps/server
+
+# Use the lockfile-pinned build-time CLI to fetch browser runtime assets before
+# removing the test toolchain. Target projects provide their own test runner.
+RUN PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers ./node_modules/.bin/playwright install chromium
+
+# Runtime artifacts must not depend on the builder's TypeScript/test toolchain.
+RUN npm prune --omit=dev --ignore-scripts
 
 # =============================================================================
 # SERVER PRODUCTION STAGE
@@ -154,14 +161,8 @@ COPY --from=server-builder /app/node_modules ./node_modules
 # Copy nested workspace dependencies (e.g. ajv v8 for the OpenAI-compatible provider; not hoisted to root due to version conflict)
 COPY --from=server-builder /app/apps/server/node_modules ./apps/server/node_modules
 
-# Install Playwright Chromium browser for AI agent verification tests
-# This adds ~300MB to the image but enables automated testing mode out of the box
-# Using the locally installed playwright ensures we use the pinned version from package-lock.json
-USER automaker
-RUN ./node_modules/.bin/playwright install chromium && \
-    echo "=== Playwright Chromium installed ===" && \
-    ls -la /home/automaker/.cache/ms-playwright/
-USER root
+# Runtime browser cache remains available without shipping the builder's dev dependencies.
+COPY --from=server-builder --chown=automaker:automaker /opt/playwright-browsers /home/automaker/.cache/ms-playwright
 
 # Create data and projects directories
 RUN mkdir -p /data /projects && chown automaker:automaker /data /projects

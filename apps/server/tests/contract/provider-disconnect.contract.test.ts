@@ -58,6 +58,7 @@ it('requires a confirmed instance/provider target and persists only the selected
       hasAuthFile: true,
       hasOAuthToken: true,
     });
+    vi.spyOn(runtime.app.get(SetupStatusRuntime), 'profileHint').mockResolvedValue(true);
     vi.spyOn(runtime.app.get(SetupStatusRuntime), 'cursorCredentials').mockResolvedValue(true);
     await runtime.start();
     const { port } = runtime.app.getHttpServer().address() as AddressInfo;
@@ -153,9 +154,9 @@ it('requires a confirmed instance/provider target and persists only the selected
       );
       expect(first.registry.providerForModel(`${provider}-fixture`).getName()).toBe(provider);
       const status = (await first.request(`${provider}-status`)).body.auth;
-      expect(status.authenticated).toBe(!['copilot', 'gemini', 'cursor'].includes(provider));
-      if (['copilot', 'gemini', 'cursor'].includes(provider))
-        expect(status.authenticationChecked).toBe(false);
+      expect(status.authenticated).toBe(false);
+      expect(status.authenticationChecked).toBe(false);
+      if (['codex', 'opencode'].includes(provider)) expect(status.hasAuthFile).toBe(true);
     }
     expect(await readdir(path.join(first.workingDirectory, '.automaker'))).toEqual([]);
 

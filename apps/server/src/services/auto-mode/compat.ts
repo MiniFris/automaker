@@ -19,6 +19,7 @@ import type { NotificationService } from '../notification-service.js';
 import type { FacadeOptions, AutoModeStatus, RunningAgentInfo } from './types.js';
 import type { ProviderRegistry } from '../../modules/providers/provider-registry.service.js';
 import type { ToolPolicyService } from '../../modules/providers/tool-policy.service.js';
+import { pipelineService, type PipelineService } from '../pipeline-service.js';
 
 /**
  * AutoModeServiceCompat wraps GlobalAutoModeService and facades to provide
@@ -36,13 +37,15 @@ export class AutoModeServiceCompat {
     claudeUsageService: ClaudeUsageService | null | undefined,
     notificationService: NotificationService | null | undefined,
     providerRegistry: ProviderRegistry,
-    toolPolicy?: ToolPolicyService
+    toolPolicy?: ToolPolicyService,
+    pipeline: PipelineService = pipelineService
   ) {
     this.globalService = new GlobalAutoModeService(
       events,
       settingsService,
       featureLoader,
-      notificationService
+      notificationService,
+      pipeline
     );
     const sharedServices = this.globalService.getSharedServices();
 
@@ -55,6 +58,7 @@ export class AutoModeServiceCompat {
       notificationService: notificationService ?? null,
       providerRegistry,
       toolPolicy,
+      pipeline,
     };
   }
 

@@ -54,6 +54,7 @@ interface CliStatusApiResponse {
   path?: string;
   auth?: {
     authenticated: boolean;
+    authenticationChecked?: boolean;
     method: string;
     hasCredentialsFile?: boolean;
     hasStoredOAuthToken?: boolean;
@@ -176,7 +177,11 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
   const { isSaving: isSavingApiKey, saveToken: saveApiKeyToken } = useTokenSave({
     provider: config.apiKeyProvider,
     onSuccess: () => {
-      setAuthStatus(config.buildApiKeyAuthStatus(authStatus));
+      setAuthStatus({
+        ...config.buildApiKeyAuthStatus(authStatus),
+        authenticated: false,
+        authenticationChecked: false,
+      });
       setApiKeys({ ...apiKeys, [config.apiKeyProvider]: apiKey });
       toast.success(translate('API key saved successfully!'));
     },
@@ -202,7 +207,7 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
       if (result.authenticated) {
         // Auth succeeded - even if rate limited or billing issue
         setCliVerificationStatus('verified');
-        setAuthStatus(config.buildCliAuthStatus(authStatus));
+        setAuthStatus({ ...config.buildCliAuthStatus(authStatus), authenticationChecked: true });
 
         if (hasLimitOrBillingError) {
           // Show warning but keep auth verified
@@ -249,7 +254,7 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
       if (result.authenticated) {
         // Auth succeeded - even if rate limited or billing issue
         setApiKeyVerificationStatus('verified');
-        setAuthStatus(config.buildApiKeyAuthStatus(authStatus));
+        setAuthStatus({ ...config.buildApiKeyAuthStatus(authStatus), authenticationChecked: true });
 
         if (hasLimitOrBillingError) {
           // Show warning but keep auth verified

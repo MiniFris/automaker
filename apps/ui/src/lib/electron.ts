@@ -1587,6 +1587,7 @@ interface SetupAPI {
     path?: string;
     auth?: {
       authenticated: boolean;
+      authenticationChecked?: boolean;
       method: string;
       hasCredentialsFile?: boolean;
       hasToken?: boolean;
@@ -1680,6 +1681,7 @@ interface SetupAPI {
     path?: string;
     auth?: {
       authenticated: boolean;
+      authenticationChecked?: boolean;
       method: string;
       hasAuthFile?: boolean;
       hasOAuthToken?: boolean;
@@ -1728,6 +1730,7 @@ interface SetupAPI {
     };
     auth?: {
       authenticated: boolean;
+      authenticationChecked?: boolean;
       method: string;
       hasAuthFile?: boolean;
       hasOAuthToken?: boolean;

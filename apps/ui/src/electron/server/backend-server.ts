@@ -6,8 +6,8 @@
  */
 
 import path from 'path';
-import http from 'http';
-import { spawn, execSync } from 'child_process';
+import { randomUUID } from 'node:crypto';
+import { spawn, execSync, type ChildProcess } from 'child_process';
 import { app } from 'electron';
 import {
   findNodeExecutable,
@@ -17,6 +17,7 @@ import {
 } from '@automaker/platform';
 import { createLogger } from '@automaker/utils/logger';
 import { state } from '../state';
+import { probeBackend, type EmbeddedBackendIdentity } from './health-probe';
 
 const logger = createLogger('BackendServer');
 const serverLogger = createLogger('Server');
@@ -140,6 +141,7 @@ export async function startServer(): Promise<void> {
     logger.info('Enhanced PATH with Node directory:', path.dirname(command));
   }
 
+  const startupId = randomUUID();
   const env = {
     ...process.env,
     PATH: enhancedPath,
@@ -150,6 +152,7 @@ export async function startServer(): Promise<void> {
     ...(app.isPackaged && { ELECTRON_RUN_AS_NODE: '1' }),
     // Pass API key to server for CSRF protection
     AUTOMAKER_API_KEY: state.apiKey!,
+    AUTOMAKER_EMBEDDED_SERVER_ID: startupId,
     // Only set ALLOWED_ROOT_DIRECTORY if explicitly provided in environment
     // If not set, server will allow access to all paths
     ...(process.env.ALLOWED_ROOT_DIRECTORY && {
@@ -166,56 +169,57 @@ export async function startServer(): Promise<void> {
   logger.info('Server root (cwd):', serverRoot);
   logger.info('NODE_PATH:', serverNodeModules);
 
-  state.serverProcess = spawn(command, args, {
+  const child = spawn(command, args, {
     cwd: serverRoot,
     env,
     stdio: ['ignore', 'pipe', 'pipe'],
   });
+  state.serverProcess = child;
 
-  state.serverProcess.stdout?.on('data', (data) => {
+  child.stdout?.on('data', (data) => {
     serverLogger.info(data.toString().trim());
   });
 
-  state.serverProcess.stderr?.on('data', (data) => {
+  child.stderr?.on('data', (data) => {
     serverLogger.error(data.toString().trim());
   });
 
-  state.serverProcess.on('close', (code) => {
+  child.on('close', (code) => {
     serverLogger.info('Process exited with code', code);
-    state.serverProcess = null;
+    if (state.serverProcess === child) state.serverProcess = null;
   });
 
-  state.serverProcess.on('error', (err) => {
+  child.on('error', (err) => {
     serverLogger.error('Failed to start server process:', err);
-    state.serverProcess = null;
+    if (state.serverProcess === child) state.serverProcess = null;
   });
 
-  await waitForServer();
+  await waitForServer(30, { apiKey: state.apiKey!, startupId, dataDirectory: dataDir }, child);
 }
 
 /**
  * Wait for server to be available
  */
-export async function waitForServer(maxAttempts = 30): Promise<void> {
+export async function waitForServer(
+  maxAttempts = 30,
+  identity?: EmbeddedBackendIdentity,
+  child?: ChildProcess
+): Promise<void> {
+  const external = state.isExternalServerMode;
+  if (!external && (!identity || !child))
+    throw new Error('Embedded backend startup identity is unavailable.');
+  const exited = () =>
+    !external &&
+    (state.serverProcess !== child || child?.exitCode !== null || child?.signalCode !== null);
   for (let i = 0; i < maxAttempts; i++) {
+    if (exited()) throw new Error('Embedded backend exited before becoming ready.');
     try {
-      await new Promise<void>((resolve, reject) => {
-        const req = http.get(`http://localhost:${state.serverPort}/api/health`, (res) => {
-          if (res.statusCode === 200) {
-            resolve();
-          } else {
-            reject(new Error(`Status: ${res.statusCode}`));
-          }
-        });
-        req.on('error', reject);
-        req.setTimeout(1000, () => {
-          req.destroy();
-          reject(new Error('Timeout'));
-        });
-      });
+      await probeBackend(state.serverPort, external ? undefined : identity);
+      if (exited()) throw new Error('Embedded backend exited before becoming ready.');
       logger.info('Server is ready');
       return;
     } catch {
+      if (exited()) throw new Error('Embedded backend exited before becoming ready.');
       await new Promise((r) => setTimeout(r, 500));
     }
   }

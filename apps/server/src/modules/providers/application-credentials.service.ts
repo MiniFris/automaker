@@ -52,6 +52,8 @@ export class ApplicationCredentialsService {
       hasAnthropicKey,
       hasGoogleKey: !!environment.GEMINI_API_KEY?.trim() || !!environment.GOOGLE_API_KEY?.trim(),
       hasOpenaiKey: !!environment.OPENAI_API_KEY,
+      hasEnvOpenaiKey:
+        !!environment.OPENAI_API_KEY && !(this.cache.get('openai') || credentials.apiKeys.openai),
       hasStoredAnthropicKey,
       hasEnvAnthropicKey: hasAnthropicKey && !hasStoredAnthropicKey,
       hasStoredAnthropicOAuthToken:

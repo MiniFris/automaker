@@ -109,10 +109,11 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
     provider: 'anthropic',
     onSuccess: () => {
       setClaudeAuthStatus({
-        authenticated: true,
+        authenticated: false,
+        authenticationChecked: false,
         method: 'api_key',
         hasCredentialsFile: false,
-        apiKeyValid: true,
+        apiKeyValid: false,
       });
       setApiKeys({ ...apiKeys, anthropic: apiKey });
       toast.success(translate('API key saved successfully!'));
@@ -151,6 +152,7 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
         setCliAuthType('cli');
         setClaudeAuthStatus({
           authenticated: true,
+          authenticationChecked: true,
           method: 'cli_authenticated',
           hasCredentialsFile: claudeAuthStatus?.hasCredentialsFile || false,
         });
@@ -205,6 +207,7 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
         setApiKeyVerificationStatus('verified');
         setClaudeAuthStatus({
           authenticated: true,
+          authenticationChecked: true,
           method: 'api_key',
           hasCredentialsFile: false,
           apiKeyValid: true,

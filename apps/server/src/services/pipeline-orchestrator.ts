@@ -36,7 +36,7 @@ import type { AgentExecutor } from './agent-executor.js';
 import type { WorktreeResolver } from './worktree-resolver.js';
 import type { SettingsService } from './settings-service.js';
 import type { ConcurrencyManager } from './concurrency-manager.js';
-import { pipelineService } from './pipeline-service.js';
+import { pipelineService, type PipelineService } from './pipeline-service.js';
 import type { TestRunnerService, TestRunStatus } from './test-runner-service.js';
 import { performMerge } from './merge-service.js';
 import type {
@@ -77,7 +77,8 @@ export class PipelineOrchestrator {
     private loadContextFilesFn: typeof loadContextFiles,
     private buildFeaturePromptFn: BuildFeaturePromptFn,
     private executeFeatureFn: ExecuteFeatureFn,
-    private runAgentFn: RunAgentFn
+    private runAgentFn: RunAgentFn,
+    private readonly pipeline: PipelineService = pipelineService
   ) {}
 
   async executePipeline(ctx: PipelineContext): Promise<void> {
@@ -242,7 +243,7 @@ export class PipelineOrchestrator {
     featureId: string,
     currentStatus: FeatureStatusWithPipeline
   ): Promise<PipelineStatusInfo> {
-    const isPipeline = pipelineService.isPipelineStatus(currentStatus);
+    const isPipeline = this.pipeline.isPipelineStatus(currentStatus);
     if (!isPipeline)
       return {
         isPipeline: false,
@@ -252,7 +253,7 @@ export class PipelineOrchestrator {
         step: null,
         config: null,
       };
-    const stepId = pipelineService.getStepIdFromStatus(currentStatus);
+    const stepId = this.pipeline.getStepIdFromStatus(currentStatus);
     if (!stepId)
       return {
         isPipeline: true,
@@ -262,7 +263,7 @@ export class PipelineOrchestrator {
         step: null,
         config: null,
       };
-    const config = await pipelineService.getPipelineConfig(projectPath);
+    const config = await this.pipeline.getPipelineConfig(projectPath);
     if (!config || config.steps.length === 0)
       return { isPipeline: true, stepId, stepIndex: -1, totalSteps: 0, step: null, config: null };
     const sortedSteps = [...config.steps].sort((a, b) => a.order - b.order);
@@ -357,13 +358,13 @@ export class PipelineOrchestrator {
     let currentStep = allSortedSteps[startFromStepIndex];
 
     if (excludedStepIds.has(currentStep.id)) {
-      const nextStatus = pipelineService.getNextStatus(
+      const nextStatus = this.pipeline.getNextStatus(
         `pipeline_${currentStep.id}`,
         pipelineConfig,
         feature.skipTests ?? false,
         feature.excludedPipelineSteps
       );
-      if (!pipelineService.isPipelineStatus(nextStatus)) {
+      if (!this.pipeline.isPipelineStatus(nextStatus)) {
         await this.updateFeatureStatusFn(projectPath, featureId, nextStatus);
         const runningEntryForExcluded = this.concurrencyManager.getRunningFeature(featureId);
         if (runningEntryForExcluded?.isAutoMode) {
@@ -379,7 +380,7 @@ export class PipelineOrchestrator {
         }
         return;
       }
-      const nextStepId = pipelineService.getStepIdFromStatus(nextStatus);
+      const nextStepId = this.pipeline.getStepIdFromStatus(nextStatus);
       const nextStepIndex = allSortedSteps.findIndex((s) => s.id === nextStepId);
       if (nextStepIndex === -1) throw new Error(`Next step ${nextStepId} not found`);
       startFromStepIndex = nextStepIndex;

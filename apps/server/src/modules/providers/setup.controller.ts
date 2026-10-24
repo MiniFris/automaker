@@ -171,7 +171,7 @@ export class SetupController {
     return this.connections.disconnect('cursor', body);
   }
   @Get('codex-status') codexStatus() {
-    return this.statuses.installationStatus('codex');
+    return this.hostStatus.installationStatus('codex');
   }
   @Post('install-codex') @HttpCode(200) installCodex() {
     return this.installation.instructions('codex');
@@ -187,7 +187,7 @@ export class SetupController {
     return this.connections.disconnect('codex', body);
   }
   @Get('opencode-status') opencodeStatus() {
-    return this.statuses.installationStatus('opencode');
+    return this.hostStatus.installationStatus('opencode');
   }
   @Post('auth-opencode') @HttpCode(200) authOpencode(
     @Body(new ZodValidationPipe(ProviderReconnectRequestSchema)) body: ProviderReconnectRequest

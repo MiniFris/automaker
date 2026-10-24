@@ -29,7 +29,7 @@ import type { EventEmitter } from '../lib/events.js';
 import type { AutoModeEventType } from './typed-event-bus.js';
 import type { NotificationService } from './notification-service.js';
 import { FeatureLoader } from './feature-loader.js';
-import { pipelineService } from './pipeline-service.js';
+import { pipelineService, type PipelineService } from './pipeline-service.js';
 
 const logger = createLogger('FeatureStateManager');
 
@@ -81,7 +81,8 @@ export class FeatureStateManager {
   constructor(
     events: EventEmitter,
     featureLoader: FeatureLoader,
-    notificationService: NotificationService | null = null
+    notificationService: NotificationService | null = null,
+    private readonly pipeline: PipelineService = pipelineService
   ) {
     this.events = events;
     this.featureLoader = featureLoader;
@@ -660,9 +661,9 @@ export class FeatureStateManager {
    */
   private async getPipelineStepName(projectPath: string, status: string): Promise<string> {
     try {
-      const stepId = pipelineService.getStepIdFromStatus(status as FeatureStatusWithPipeline);
+      const stepId = this.pipeline.getStepIdFromStatus(status as FeatureStatusWithPipeline);
       if (stepId) {
-        const step = await pipelineService.getStep(projectPath, stepId);
+        const step = await this.pipeline.getStep(projectPath, stepId);
         if (step) return step.name;
       }
     } catch (error) {

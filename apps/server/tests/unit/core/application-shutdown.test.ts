@@ -65,3 +65,25 @@ it('preserves receiver binding and shares successful explicit close without inst
   expect(notify).toHaveBeenCalledOnce();
   expect(process.listenerCount('SIGTERM')).toBe(count);
 });
+
+it('checks unconfirmed HTTP disposal only after the framework attempted all later provider hooks', async () => {
+  const events: string[] = [];
+  const app = {
+    get: () => new Map(),
+    getHttpAdapter: () => ({
+      assertCleanupConfirmed: () => {
+        events.push('checked transport');
+        throw new Error('private-socket-detail');
+      },
+    }),
+    close: vi.fn(async () => {
+      events.push('later provider disposed');
+    }),
+  };
+  manageApplicationShutdown(app as never);
+  const close = app.close();
+  await expect(close).rejects.toMatchObject({ code: 'APPLICATION_CLEANUP_FAILED' });
+  await expect(close).rejects.not.toThrow('private-socket-detail');
+  expect(events).toEqual(['later provider disposed', 'checked transport']);
+  expect(app.close()).toBe(close);
+});

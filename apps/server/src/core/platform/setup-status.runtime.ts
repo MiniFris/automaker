@@ -7,11 +7,10 @@ import {
 import { execFile } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import {
   getClaudeCliPaths,
   getGitHubCliPaths,
-  getClaudeAuthIndicators,
   getCodexAuthIndicators,
   systemPathAccess,
   type ClaudeAuthIndicators,
@@ -37,7 +36,8 @@ export type ClaudeStatusIndicators = Pick<
 /** Host-only read port. No application service launches commands or reads OS globals. */
 export abstract class SetupStatusRuntime {
   abstract platformInfo(): { platform: string; arch: string; homeDir: string };
-  abstract detect(name: 'claude' | 'gh'): Promise<HostCliInstallation>;
+  abstract detect(name: 'claude' | 'gh' | 'codex' | 'opencode'): Promise<HostCliInstallation>;
+  abstract profileHint(name: 'codex' | 'opencode'): Promise<boolean>;
   abstract claudeIndicators(): Promise<ClaudeStatusIndicators>;
   abstract codexIndicators(): Promise<{
     hasApiKey: boolean;
@@ -67,7 +67,7 @@ export class NodeSetupStatusRuntime extends SetupStatusRuntime implements OnAppl
     return { platform: os.platform(), arch: os.arch(), homeDir: os.homedir() };
   }
 
-  detect(name: 'claude' | 'gh'): Promise<HostCliInstallation> {
+  detect(name: 'claude' | 'gh' | 'codex' | 'opencode'): Promise<HostCliInstallation> {
     return this.track(async () => {
       const status: HostCliInstallation = {
         installed: false,
@@ -86,7 +86,22 @@ export class NodeSetupStatusRuntime extends SetupStatusRuntime implements OnAppl
         /* Try the host's known installation paths below. */
       }
       if (!status.installed) {
-        for (const candidate of name === 'claude' ? getClaudeCliPaths() : getGitHubCliPaths()) {
+        const home = this.environment.HOME || this.environment.USERPROFILE;
+        const candidates =
+          name === 'claude'
+            ? getClaudeCliPaths()
+            : name === 'gh'
+              ? getGitHubCliPaths()
+              : home
+                ? [
+                    path.join(home, '.local', 'bin', name),
+                    path.join(home, `.${name}`, 'bin', name),
+                    ...(this.environment.APPDATA
+                      ? [path.join(this.environment.APPDATA, 'npm', `${name}.cmd`)]
+                      : []),
+                  ]
+                : [];
+        for (const candidate of candidates) {
           try {
             if (await systemPathAccess(candidate)) {
               status.path = candidate;
@@ -111,7 +126,52 @@ export class NodeSetupStatusRuntime extends SetupStatusRuntime implements OnAppl
   }
 
   claudeIndicators(): Promise<ClaudeStatusIndicators> {
-    return this.track(() => getClaudeAuthIndicators());
+    return this.track(async () => {
+      const home = this.environment.HOME || this.environment.USERPROFILE;
+      const directory = this.environment.CLAUDE_CONFIG_DIR
+        ? this.paths.resolveFromWorkingDirectory(this.environment.CLAUDE_CONFIG_DIR)
+        : home
+          ? path.join(home, '.claude')
+          : undefined;
+      const hasCredentialsFile = directory
+        ? await this.fileHint(path.join(directory, '.credentials.json'))
+        : false;
+      return {
+        hasCredentialsFile,
+        hasSettingsFile: false,
+        hasStatsCacheWithActivity: false,
+        hasProjectsSessions: false,
+        credentials: null,
+      };
+    });
+  }
+
+  profileHint(name: 'codex' | 'opencode'): Promise<boolean> {
+    return this.track(async () => {
+      const home = this.environment.HOME || this.environment.USERPROFILE;
+      const base =
+        name === 'codex'
+          ? this.environment.CODEX_HOME
+            ? this.paths.resolveFromWorkingDirectory(this.environment.CODEX_HOME)
+            : home
+              ? path.join(home, '.codex')
+              : undefined
+          : this.environment.XDG_DATA_HOME
+            ? this.paths.resolveFromWorkingDirectory(this.environment.XDG_DATA_HOME, 'opencode')
+            : home
+              ? path.join(home, '.local', 'share', 'opencode')
+              : undefined;
+      return base ? this.fileHint(path.join(base, 'auth.json')) : false;
+    });
+  }
+
+  private async fileHint(candidate: string): Promise<boolean> {
+    try {
+      return (await stat(candidate)).isFile();
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false;
+      throw error;
+    }
   }
 
   codexIndicators() {

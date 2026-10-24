@@ -66,6 +66,7 @@ export class HostSetupStatusService {
       const cli = await this.runtime.detect('claude');
       const auth = {
         authenticated: false,
+        authenticationChecked: false,
         method: 'none',
         hasCredentialsFile: false,
         hasToken: false,
@@ -83,45 +84,14 @@ export class HostSetupStatusService {
         auth.hasStoredApiKey = presence.hasStoredAnthropicKey;
         auth.hasEnvApiKey = presence.hasEnvAnthropicKey;
         const indicators = await this.runtime.claudeIndicators();
-        if (indicators.hasStatsCacheWithActivity) {
-          auth.hasRecentActivity = true;
-          auth.hasCliAuth = true;
-          auth.authenticated = true;
-          auth.method = 'cli_authenticated';
-        }
-        if (!auth.hasCliAuth && indicators.hasSettingsFile && indicators.hasProjectsSessions) {
-          auth.hasCliAuth = true;
-          auth.authenticated = true;
-          auth.method = 'cli_authenticated';
-        }
-        if (indicators.hasCredentialsFile && indicators.credentials) {
-          auth.hasCredentialsFile = true;
-          if (indicators.credentials.hasOAuthToken) {
-            auth.hasStoredOAuthToken = true;
-            auth.oauthTokenValid = true;
-            auth.authenticated = true;
-            auth.method = 'oauth_token';
-          } else if (indicators.credentials.hasApiKey) {
-            auth.apiKeyValid = true;
-            auth.authenticated = true;
-            auth.method = 'api_key';
-          }
-        }
-        if (auth.hasEnvApiKey) {
-          auth.authenticated = true;
-          auth.apiKeyValid = true;
-          auth.method = 'api_key_env';
-        }
-        if (!auth.authenticated && auth.hasStoredOAuthToken) {
-          auth.authenticated = true;
-          auth.oauthTokenValid = true;
-          auth.method = 'oauth_token';
-        }
-        if (!auth.authenticated && auth.hasStoredApiKey) {
-          auth.authenticated = true;
-          auth.apiKeyValid = true;
-          auth.method = 'api_key';
-        }
+        auth.hasCredentialsFile = indicators.hasCredentialsFile;
+        auth.method = auth.hasEnvApiKey
+          ? 'api_key_env'
+          : auth.hasStoredApiKey
+            ? 'api_key'
+            : auth.hasStoredOAuthToken
+              ? 'oauth_token'
+              : 'none';
       }
       return {
         success: true,
@@ -134,6 +104,56 @@ export class HostSetupStatusService {
       };
     } catch (error) {
       throw this.failure(error, 'Claude');
+    }
+  }
+
+  async installationStatus(name: 'codex' | 'opencode') {
+    try {
+      const disconnected = this.connections.isDisconnected(name);
+      const cli = await this.runtime.detect(name);
+      const presence = disconnected ? undefined : await this.credentials.presence();
+      const hasAuthFile = !disconnected && (await this.runtime.profileHint(name));
+      const hasApiKey =
+        !disconnected &&
+        (name === 'codex'
+          ? !!presence?.hasOpenaiKey
+          : !!presence?.hasOpenaiKey || !!presence?.hasAnthropicKey);
+      const installCommand =
+        name === 'codex'
+          ? 'npm install -g @openai/codex'
+          : 'curl -fsSL https://opencode.ai/install | bash';
+      return {
+        success: true,
+        connected: !disconnected,
+        installed: cli.installed,
+        version: cli.version || null,
+        path: cli.path || null,
+        auth: {
+          authenticated: false,
+          authenticationChecked: false,
+          method: hasApiKey ? 'api_key' : 'none',
+          hasApiKey,
+          hasAuthFile,
+          ...(name === 'opencode' && {
+            hasEnvApiKey: !!presence?.hasEnvAnthropicKey || !!presence?.hasEnvOpenaiKey,
+            hasOAuthToken: false,
+          }),
+        },
+        ...(name === 'opencode' && {
+          installCommands: {
+            macos: installCommand,
+            linux: installCommand,
+            npm: 'npm install -g opencode-ai',
+          },
+          ...(!cli.installed && {
+            recommendation: 'Install OpenCode CLI to use multi-provider AI models.',
+          }),
+        }),
+        installCommand,
+        loginCommand: name === 'codex' ? 'codex login' : 'opencode auth login',
+      };
+    } catch (error) {
+      throw this.failure(error, name);
     }
   }
 

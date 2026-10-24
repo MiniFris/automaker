@@ -1,4 +1,5 @@
 import { translate, useUiLocale } from '@/lib/i18n';
+import { canAttemptCliProvider } from '@/lib/provider-readiness';
 import { PassiveAuthenticationNotice } from '@/components/shared/passive-authentication-notice';
 import { CursorSetupPanel } from '@/components/shared/cursor-setup-panel';
 import { GeminiCredentialsForm } from '@/components/shared/gemini-credentials-form';
@@ -249,13 +250,15 @@ function ClaudeContent() {
         </div>
         <CardDescription>
           {claudeCliStatus?.installed
-            ? claudeAuthStatus?.authenticated
-              ? translate('Authenticated{value1}', {
-                  value1: claudeCliStatus.version ? ` (v${claudeCliStatus.version})` : '',
-                })
-              : isVerifying
-                ? translate('Verifying authentication...')
-                : translate('Installed but not authenticated')
+            ? claudeAuthStatus?.authenticationChecked === false
+              ? translate('Authentication not checked')
+              : claudeAuthStatus?.authenticated
+                ? translate('Authenticated{value1}', {
+                    value1: claudeCliStatus.version ? ` (v${claudeCliStatus.version})` : '',
+                  })
+                : isVerifying
+                  ? translate('Verifying authentication...')
+                  : translate('Installed but not authenticated')
             : translate('Not installed on your system')}
         </CardDescription>
       </CardHeader>
@@ -498,7 +501,6 @@ function CodexContent() {
   const [apiKey, setApiKey] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const checkStatus = useCallback(async () => {
     setIsChecking(true);
@@ -513,7 +515,7 @@ function CodexContent() {
           path: result.path ?? null,
           method: 'none',
         });
-        if (result.auth?.authenticated) {
+        if (result.auth) {
           const validMethods = ['api_key_env', 'api_key', 'cli_authenticated', 'none'] as const;
           type CodexAuthMethod = (typeof validMethods)[number];
           const method: CodexAuthMethod = validMethods.includes(
@@ -522,10 +524,12 @@ function CodexContent() {
             ? (result.auth.method as CodexAuthMethod)
             : 'cli_authenticated';
           setCodexAuthStatus({
-            authenticated: true,
+            authenticated: result.auth.authenticated,
+            authenticationChecked: result.auth.authenticationChecked,
             method,
           });
-          toast.success(translate('Codex CLI is ready!'));
+          if (result.auth.authenticationChecked !== false && result.auth.authenticated)
+            toast.success(translate('Codex CLI is ready!'));
         }
       }
     } catch {
@@ -537,9 +541,6 @@ function CodexContent() {
 
   useEffect(() => {
     checkStatus();
-    return () => {
-      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-    };
   }, [checkStatus]);
 
   const copyCommand = (command: string) => {
@@ -559,7 +560,11 @@ function CodexContent() {
       const result = await api.setup.saveApiKey('openai', apiKey);
       if (result.success) {
         setApiKeys({ ...apiKeys, openai: apiKey });
-        setCodexAuthStatus({ authenticated: true, method: 'api_key' });
+        setCodexAuthStatus({
+          authenticated: false,
+          authenticationChecked: false,
+          method: 'api_key',
+        });
         toast.success(translate('API key saved successfully!'));
       }
     } catch {
@@ -575,34 +580,7 @@ function CodexContent() {
       await navigator.clipboard.writeText('codex login');
       toast.info(translate('Login command copied! Paste in terminal to authenticate.'));
 
-      let attempts = 0;
-      pollIntervalRef.current = setInterval(async () => {
-        attempts++;
-        try {
-          const api = getElectronAPI();
-          if (!api.setup?.getCodexStatus) return;
-          const result = await api.setup.getCodexStatus();
-          if (result.auth?.authenticated) {
-            if (pollIntervalRef.current) {
-              clearInterval(pollIntervalRef.current);
-              pollIntervalRef.current = null;
-            }
-            setCodexAuthStatus({ authenticated: true, method: 'cli_authenticated' });
-            setIsLoggingIn(false);
-            toast.success(translate('Successfully logged in to Codex!'));
-          }
-        } catch {
-          // Ignore
-        }
-        if (attempts >= 60) {
-          if (pollIntervalRef.current) {
-            clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-          }
-          setIsLoggingIn(false);
-          toast.error(translate('Login timed out. Please try again.'));
-        }
-      }, 2000);
+      setIsLoggingIn(false);
     } catch {
       toast.error(translate('Failed to start login process'));
       setIsLoggingIn(false);
@@ -625,11 +603,13 @@ function CodexContent() {
         </div>
         <CardDescription>
           {codexCliStatus?.installed
-            ? codexAuthStatus?.authenticated
-              ? translate('Authenticated{value1}', {
-                  value1: codexCliStatus.version ? ` (v${codexCliStatus.version})` : '',
-                })
-              : translate('Installed but not authenticated')
+            ? codexAuthStatus?.authenticationChecked === false
+              ? translate('Authentication not checked')
+              : codexAuthStatus?.authenticated
+                ? translate('Authenticated{value1}', {
+                    value1: codexCliStatus.version ? ` (v${codexCliStatus.version})` : '',
+                  })
+                : translate('Installed but not authenticated')
             : translate('Not installed on your system')}
         </CardDescription>
       </CardHeader>
@@ -814,7 +794,6 @@ function OpencodeContent() {
   const { opencodeCliStatus, setOpencodeCliStatus } = useSetupStore();
   const [isChecking, setIsChecking] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const checkStatus = useCallback(async () => {
     setIsChecking(true);
@@ -849,9 +828,6 @@ function OpencodeContent() {
 
   useEffect(() => {
     checkStatus();
-    return () => {
-      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-    };
   }, [checkStatus]);
 
   const copyCommand = (command: string) => {
@@ -866,40 +842,7 @@ function OpencodeContent() {
       await navigator.clipboard.writeText(loginCommand);
       toast.info(translate('Login command copied! Paste in terminal to authenticate.'));
 
-      let attempts = 0;
-      pollIntervalRef.current = setInterval(async () => {
-        attempts++;
-        try {
-          const api = getElectronAPI();
-          if (!api.setup?.getOpencodeStatus) return;
-          const result = await api.setup.getOpencodeStatus();
-          if (result.auth?.authenticated) {
-            if (pollIntervalRef.current) {
-              clearInterval(pollIntervalRef.current);
-              pollIntervalRef.current = null;
-            }
-            setOpencodeCliStatus({
-              ...opencodeCliStatus,
-              installed: result.installed ?? true,
-              version: result.version,
-              path: result.path,
-              auth: result.auth,
-            });
-            setIsLoggingIn(false);
-            toast.success(translate('Successfully logged in to OpenCode!'));
-          }
-        } catch {
-          // Ignore
-        }
-        if (attempts >= 60) {
-          if (pollIntervalRef.current) {
-            clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-          }
-          setIsLoggingIn(false);
-          toast.error(translate('Login timed out. Please try again.'));
-        }
-      }, 2000);
+      setIsLoggingIn(false);
     } catch {
       toast.error(translate('Failed to start login process'));
       setIsLoggingIn(false);
@@ -922,11 +865,13 @@ function OpencodeContent() {
         </div>
         <CardDescription>
           {opencodeCliStatus?.installed
-            ? opencodeCliStatus.auth?.authenticated
-              ? translate('Authenticated{value1}', {
-                  value1: opencodeCliStatus.version ? ` (v${opencodeCliStatus.version})` : '',
-                })
-              : translate('Installed but not authenticated')
+            ? opencodeCliStatus.auth?.authenticationChecked === false
+              ? translate('Authentication not checked')
+              : opencodeCliStatus.auth?.authenticated
+                ? translate('Authenticated{value1}', {
+                    value1: opencodeCliStatus.version ? ` (v${opencodeCliStatus.version})` : '',
+                  })
+                : translate('Installed but not authenticated')
             : translate('Not installed on your system')}
         </CardDescription>
       </CardHeader>
@@ -1454,7 +1399,7 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
             path: result.path ?? null,
             method: 'none',
           });
-          if (result.auth?.authenticated) {
+          if (result.auth) {
             const validMethods = ['api_key_env', 'api_key', 'cli_authenticated', 'none'] as const;
             type CodexAuthMethodType = (typeof validMethods)[number];
             const method: CodexAuthMethodType = validMethods.includes(
@@ -1463,7 +1408,8 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
               ? (result.auth.method as CodexAuthMethodType)
               : 'cli_authenticated';
             setCodexAuthStatus({
-              authenticated: true,
+              authenticated: result.auth.authenticated,
+              authenticationChecked: result.auth.authenticationChecked,
               method,
             });
           }
@@ -1593,10 +1539,10 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
 
   const hasAtLeastOneProvider =
     hasConfiguredDirectEndpoint ||
-    isClaudeAuthenticated ||
+    canAttemptCliProvider(claudeCliStatus, claudeAuthStatus) ||
     isCursorAuthenticated ||
-    isCodexAuthenticated ||
-    isOpencodeAuthenticated ||
+    canAttemptCliProvider(codexCliStatus, codexAuthStatus) ||
+    canAttemptCliProvider(opencodeCliStatus, opencodeCliStatus?.auth) ||
     isGeminiAuthenticated ||
     isCopilotAuthenticated;
 
@@ -1623,7 +1569,10 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
       id: 'claude' as const,
       label: translate('Claude'),
       icon: AnthropicIcon,
-      status: getProviderStatus(isClaudeInstalled, isClaudeAuthenticated, claudeIsVerifying),
+      status:
+        isClaudeInstalled && !claudeIsVerifying && claudeAuthStatus?.authenticationChecked === false
+          ? ('unverified' as const)
+          : getProviderStatus(isClaudeInstalled, isClaudeAuthenticated, claudeIsVerifying),
       color: 'text-brand-500',
     },
     {
@@ -1637,14 +1586,20 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
       id: 'codex' as const,
       label: translate('Codex'),
       icon: OpenAIIcon,
-      status: getProviderStatus(isCodexInstalled, isCodexAuthenticated),
+      status:
+        isCodexInstalled && codexAuthStatus?.authenticationChecked === false
+          ? ('unverified' as const)
+          : getProviderStatus(isCodexInstalled, isCodexAuthenticated),
       color: 'text-emerald-500',
     },
     {
       id: 'opencode' as const,
       label: translate('OpenCode'),
       icon: OpenCodeIcon,
-      status: getProviderStatus(isOpencodeInstalled, isOpencodeAuthenticated),
+      status:
+        isOpencodeInstalled && opencodeCliStatus?.auth?.authenticationChecked === false
+          ? ('unverified' as const)
+          : getProviderStatus(isOpencodeInstalled, isOpencodeAuthenticated),
       color: 'text-green-500',
     },
     {

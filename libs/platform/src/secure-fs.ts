@@ -6,14 +6,16 @@
  * not just at the API layer. This provides defense-in-depth security.
  *
  * This module also implements:
- * - Concurrency limiting via p-limit to prevent ENFILE/EMFILE errors
+ * - Bounded owner queues and concurrency limiting to prevent ENFILE/EMFILE errors
  * - Retry logic with exponential backoff for transient file descriptor errors
  */
 
 import fs from 'fs/promises';
 import fsSync, { type Dirent, type Stats } from 'fs';
 import path from 'path';
-import pLimit from 'p-limit';
+import { SecureFsQueue, type SecureFsLifecycleOptions } from './secure-fs-queue.js';
+export { SecureFsAdmissionError, SecureFsCleanupError } from './secure-fs-queue.js';
+export type { SecureFsLifecycleOptions } from './secure-fs-queue.js';
 import { validatePath as legacyValidatePath } from './security.js';
 
 /**
@@ -51,25 +53,31 @@ export interface WriteFileSyncOptions {
 
 /** Independent validator, throttle configuration and queue for one owner. */
 export function createSecureFs(
-  validatePath: (candidate: string, options?: { followFinalSymlink: boolean }) => string
+  policy: (candidate: string, options?: { followFinalSymlink: boolean }) => string,
+  lifecycle: SecureFsLifecycleOptions = {}
 ) {
   let config: ThrottleConfig = { ...DEFAULT_CONFIG };
-  let fsLimit = pLimit(config.maxConcurrency);
+  const queue = new SecureFsQueue(lifecycle);
+  function validatePath(candidate: string, options?: { followFinalSymlink: boolean }): string {
+    queue.assertOpen();
+    const result = policy(candidate, options);
+    queue.assertOpen();
+    return result;
+  }
+  function owned<Args extends unknown[], Result>(operation: (...args: Args) => Promise<Result>) {
+    return (...args: Args): Promise<Result> => queue.run(() => operation(...args));
+  }
 
   /**
    * Configure the file operation throttling settings
    * @param newConfig - Partial configuration to merge with defaults
    */
   function configureThrottling(newConfig: Partial<ThrottleConfig>): void {
+    queue.assertOpen();
     const newConcurrency = newConfig.maxConcurrency;
 
     if (newConcurrency !== undefined && newConcurrency !== config.maxConcurrency) {
-      if (fsLimit.activeCount > 0 || fsLimit.pendingCount > 0) {
-        throw new Error(
-          `[SecureFS] Cannot change maxConcurrency while operations are in flight. Active: ${fsLimit.activeCount}, Pending: ${fsLimit.pendingCount}`
-        );
-      }
-      fsLimit = pLimit(newConcurrency);
+      queue.configureConcurrency(newConcurrency);
     }
 
     config = { ...config, ...newConfig };
@@ -86,14 +94,14 @@ export function createSecureFs(
    * Get the number of pending operations in the queue
    */
   function getPendingOperations(): number {
-    return fsLimit.pendingCount;
+    return queue.pendingCount;
   }
 
   /**
    * Get the number of active operations currently running
    */
   function getActiveOperations(): number {
-    return fsLimit.activeCount;
+    return queue.activeCount;
   }
 
   /**
@@ -121,43 +129,35 @@ export function createSecureFs(
   }
 
   /**
-   * Sleep for a specified duration
-   */
-  function sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  /**
    * Execute a file operation with throttling and retry logic
    */
   async function executeWithRetry<T>(
     operation: () => Promise<T>,
     operationName: string
   ): Promise<T> {
-    return fsLimit(async () => {
-      let lastError: unknown;
+    let lastError: unknown;
 
-      for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
-        try {
-          return await operation();
-        } catch (error) {
-          lastError = error;
+    for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
+      try {
+        queue.assertOpen();
+        return await operation();
+      } catch (error) {
+        lastError = error;
 
-          if (isFileDescriptorError(error) && attempt < config.maxRetries) {
-            const delay = calculateDelay(attempt);
-            console.warn(
-              `[SecureFS] ${operationName.split('(')[0]}: File descriptor error (attempt ${attempt + 1}/${config.maxRetries + 1}), retrying in ${delay}ms`
-            );
-            await sleep(delay);
-            continue;
-          }
-
-          throw error;
+        if (isFileDescriptorError(error) && attempt < config.maxRetries) {
+          const delay = calculateDelay(attempt);
+          console.warn(
+            `[SecureFS] ${operationName.split('(')[0]}: File descriptor error (attempt ${attempt + 1}/${config.maxRetries + 1}), retrying in ${delay}ms`
+          );
+          await queue.retryDelay(delay);
+          continue;
         }
-      }
 
-      throw lastError;
-    });
+        throw error;
+      }
+    }
+
+    throw lastError;
   }
 
   /**
@@ -656,18 +656,19 @@ export function createSecureFs(
     getThrottlingConfig,
     getPendingOperations,
     getActiveOperations,
-    access,
-    readFile,
-    writeFile,
-    mkdir,
-    readdir,
-    stat,
-    rm,
-    unlink,
-    copyFile,
-    appendFile,
-    rename,
-    lstat,
+    close: () => queue.close(),
+    access: owned(access),
+    readFile: owned(readFile),
+    writeFile: owned(writeFile),
+    mkdir: owned(mkdir),
+    readdir: owned(readdir) as typeof readdir,
+    stat: owned(stat),
+    rm: owned(rm),
+    unlink: owned(unlink),
+    copyFile: owned(copyFile),
+    appendFile: owned(appendFile),
+    rename: owned(rename),
+    lstat: owned(lstat),
     joinPath,
     resolvePath,
     existsSync,
@@ -679,11 +680,11 @@ export function createSecureFs(
     accessSync,
     unlinkSync,
     rmSync,
-    readEnvFile,
+    readEnvFile: owned(readEnvFile),
     readEnvFileSync,
-    writeEnvKey,
+    writeEnvKey: owned(writeEnvKey),
     writeEnvKeySync,
-    removeEnvKey,
+    removeEnvKey: owned(removeEnvKey),
     removeEnvKeySync,
   };
 }
@@ -725,4 +726,4 @@ export const {
   writeEnvKeySync,
   removeEnvKey,
   removeEnvKeySync,
-} = createSecureFs(legacyValidatePath);
+} = createSecureFs(legacyValidatePath, { maxOperations: Infinity });

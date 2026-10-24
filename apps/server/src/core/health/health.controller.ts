@@ -1,15 +1,25 @@
-import { Controller, Get, Inject, ServiceUnavailableException } from '@nestjs/common';
+import { Controller, Get, Inject, Res, ServiceUnavailableException } from '@nestjs/common';
+import type { ServerResponse } from 'node:http';
 import { Public } from '../auth/index.js';
-import { RUNTIME_CONFIG, type RuntimeConfig } from '../config/index.js';
+import { HOST_ENVIRONMENT, RUNTIME_CONFIG, type RuntimeConfig } from '../config/index.js';
 import { ReadinessStateService } from '../lifecycle/readiness-state.service.js';
 import { getVersion } from '../../lib/version.js';
 
 @Controller('health')
 export class HealthController {
+  private readonly embeddedInstanceId?: string;
   constructor(
     @Inject(ReadinessStateService) private readonly readiness: ReadinessStateService,
-    @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig
-  ) {}
+    @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig,
+    @Inject(HOST_ENVIRONMENT) environment: Readonly<NodeJS.ProcessEnv>
+  ) {
+    const value = environment.AUTOMAKER_EMBEDDED_SERVER_ID;
+    if (
+      value &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+    )
+      this.embeddedInstanceId = value;
+  }
 
   @Public()
   @Get()
@@ -40,7 +50,9 @@ export class HealthController {
   }
 
   @Get('detailed')
-  detailed(): Record<string, unknown> {
+  detailed(@Res({ passthrough: true }) response: ServerResponse): Record<string, unknown> {
+    if (this.embeddedInstanceId)
+      response.setHeader('x-automaker-instance-id', this.embeddedInstanceId);
     return {
       status: 'ok',
       timestamp: new Date().toISOString(),

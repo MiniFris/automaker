@@ -50,6 +50,22 @@ export class MCPTestService {
    * Test connection to an MCP server and list its tools
    */
   async testServer(serverConfig: MCPServerConfig): Promise<MCPTestResult> {
+    return this.inspectServer(serverConfig, true);
+  }
+
+  /** Connection testing deliberately does not enumerate remote tools. */
+  async testConnectionById(serverId: string): Promise<MCPTestResult> {
+    return this.inspectSavedServer(serverId, false);
+  }
+
+  async listToolsById(serverId: string): Promise<MCPTestResult> {
+    return this.inspectSavedServer(serverId, true);
+  }
+
+  private async inspectServer(
+    serverConfig: MCPServerConfig,
+    discoverTools: boolean
+  ): Promise<MCPTestResult> {
     const startTime = Date.now();
     let client: Client | null = null;
     let transport:
@@ -74,10 +90,13 @@ export class MCPTestService {
       await this.withTimeout(client.connect(transport), 'Connection timeout');
 
       // List tools with timeout
-      const toolsResult = await this.withTimeout(client.listTools(), 'List tools timeout');
+      const toolsResult = discoverTools
+        ? await this.withTimeout(client.listTools(), 'List tools timeout')
+        : undefined;
       if (
-        toolsResult.tools.length > 1000 ||
-        Buffer.byteLength(JSON.stringify(toolsResult)) > 1024 * 1024
+        toolsResult &&
+        (toolsResult.tools.length > 1000 ||
+          Buffer.byteLength(JSON.stringify(toolsResult)) > 1024 * 1024)
       ) {
         throw new Error('MCP tool catalog exceeds the allowed size');
       }
@@ -85,7 +104,7 @@ export class MCPTestService {
       const connectionTime = Date.now() - startTime;
 
       // Convert tools to MCPToolInfo format
-      const tools: MCPToolInfo[] = (toolsResult.tools || []).map(
+      const tools: MCPToolInfo[] | undefined = toolsResult?.tools.map(
         (tool: { name: string; description?: string; inputSchema?: Record<string, unknown> }) => ({
           name: tool.name,
           description: tool.description,
@@ -96,7 +115,7 @@ export class MCPTestService {
 
       return {
         success: true,
-        tools,
+        ...(tools && { tools }),
         connectionTime,
         serverInfo: {
           name: client.getServerVersion()?.name ?? serverConfig.name,
@@ -180,6 +199,13 @@ export class MCPTestService {
    * Test server by ID (looks up config from settings)
    */
   async testServerById(serverId: string): Promise<MCPTestResult> {
+    return this.inspectSavedServer(serverId, true);
+  }
+
+  private async inspectSavedServer(
+    serverId: string,
+    discoverTools: boolean
+  ): Promise<MCPTestResult> {
     try {
       const globalSettings = await this.settingsService.getGlobalSettings();
       const serverConfig = globalSettings.mcpServers?.find((s) => s.id === serverId);
@@ -191,7 +217,7 @@ export class MCPTestService {
         };
       }
 
-      return this.testServer(serverConfig);
+      return this.inspectServer(serverConfig, discoverTools);
     } catch (error) {
       return {
         success: false,

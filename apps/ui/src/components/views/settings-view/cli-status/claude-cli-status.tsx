@@ -8,6 +8,7 @@ import type { CliStatus } from '../shared/types';
 import type { ClaudeAuthStatus } from '@/store/setup-store';
 import { AnthropicIcon } from '@/components/ui/provider-icon';
 import { ProviderDisconnectButton, ProviderReconnectButton } from './provider-connection-button';
+import { PassiveAuthStatus } from './passive-auth-status';
 
 interface CliStatusProps {
   status: CliStatus | null;
@@ -161,7 +162,14 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
               </div>
             </div>
             {/* Authentication Status */}
-            {authStatus?.authenticated ? (
+            {authStatus?.authenticationChecked === false ? (
+              <PassiveAuthStatus
+                provider="claude"
+                hasCredentialsHint={authStatus.method !== 'none'}
+                hasConfigFile={authStatus.hasCredentialsFile}
+                onRefresh={onRefresh}
+              />
+            ) : authStatus?.authenticated ? (
               <div className="flex items-start gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
                 <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center border border-emerald-500/20 shrink-0">
                   <CheckCircle2 className="w-5 h-5 text-emerald-500" />

@@ -1573,7 +1573,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/core/health/health.controller.ts",
-      "line": 42,
+      "line": 52,
       "middleware": [
         "HealthController.detailed"
       ],
@@ -1588,7 +1588,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/core/health/health.controller.ts",
-      "line": 21,
+      "line": 31,
       "middleware": [
         "HealthController.environment"
       ],
@@ -1603,7 +1603,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/core/health/health.controller.ts",
-      "line": 30,
+      "line": 40,
       "middleware": [
         "HealthController.live"
       ],
@@ -1618,7 +1618,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/core/health/health.controller.ts",
-      "line": 35,
+      "line": 45,
       "middleware": [
         "HealthController.ready"
       ],
@@ -1633,7 +1633,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/core/health/health.controller.ts",
-      "line": 15,
+      "line": 25,
       "middleware": [
         "HealthController.index"
       ],
@@ -3673,7 +3673,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 43,
+      "line": 44,
       "middleware": [
         "TerminalController.authenticate"
       ],
@@ -3688,7 +3688,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 49,
+      "line": 51,
       "middleware": [
         "TerminalController.logout"
       ],
@@ -3703,7 +3703,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 167,
+      "line": 171,
       "middleware": [
         "TerminalController.resize"
       ],
@@ -3718,7 +3718,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 157,
+      "line": 161,
       "middleware": [
         "TerminalController.deleteSession"
       ],
@@ -3733,7 +3733,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 65,
+      "line": 68,
       "middleware": [
         "TerminalController.session"
       ],
@@ -3748,7 +3748,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 59,
+      "line": 62,
       "middleware": [
         "TerminalController.sessions"
       ],
@@ -3763,7 +3763,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 95,
+      "line": 98,
       "middleware": [
         "TerminalController.createSession"
       ],
@@ -3778,7 +3778,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 195,
+      "line": 200,
       "middleware": [
         "TerminalController.settings"
       ],
@@ -3793,7 +3793,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 207,
+      "line": 212,
       "middleware": [
         "TerminalController.updateSettings"
       ],
@@ -3808,7 +3808,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 31,
+      "line": 32,
       "middleware": [
         "TerminalController.status"
       ],

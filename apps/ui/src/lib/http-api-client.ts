@@ -1761,6 +1761,7 @@ export class HttpApiClient implements ElectronAPI {
       path?: string;
       auth?: {
         authenticated: boolean;
+        authenticationChecked?: boolean;
         method: string;
         hasCredentialsFile?: boolean;
         hasToken?: boolean;
@@ -2054,6 +2055,7 @@ export class HttpApiClient implements ElectronAPI {
       path?: string;
       auth?: {
         authenticated: boolean;
+        authenticationChecked?: boolean;
         method: string;
         hasAuthFile?: boolean;
         hasOAuthToken?: boolean;
@@ -2130,6 +2132,7 @@ export class HttpApiClient implements ElectronAPI {
       };
       auth?: {
         authenticated: boolean;
+        authenticationChecked?: boolean;
         method: string;
         hasAuthFile?: boolean;
         hasOAuthToken?: boolean;

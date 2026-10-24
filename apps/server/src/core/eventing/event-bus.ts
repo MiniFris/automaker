@@ -30,10 +30,15 @@ export interface ApplicationEventMap extends Record<EventType, unknown> {
 }
 
 export type EventHandler<K extends EventType> = (payload: ApplicationEventMap[K]) => void;
+export type AllEventHandler = <K extends EventType>(
+  type: K,
+  payload: ApplicationEventMap[K]
+) => void;
 
 export interface EventBus {
   emit<K extends EventType>(type: K, payload: ApplicationEventMap[K]): void;
   subscribe<K extends EventType>(type: K, handler: EventHandler<K>): () => void;
+  subscribeAll(handler: AllEventHandler): () => void;
   dispose(): void;
 }
 

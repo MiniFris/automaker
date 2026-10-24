@@ -48,6 +48,20 @@ describe('MCP discovery transport lifecycle', () => {
     await expectProcessClosed(pidPath);
   });
 
+  it('tests connection without waiting for tool discovery, and keeps tool-list failure separate', async () => {
+    const connection = await fixture('hang-list');
+    const result = await connection.service.testConnectionById('fixture');
+    expect(result).toMatchObject({ success: true, serverInfo: { name: 'automaker-contract-mcp' } });
+    expect(result).not.toHaveProperty('tools');
+    await expectProcessClosed(connection.pidPath);
+    const discovery = await fixture('hang-list');
+    expect(await discovery.service.listToolsById('fixture')).toMatchObject({
+      success: false,
+      error: 'List tools timeout',
+    });
+    await expectProcessClosed(discovery.pidPath);
+  });
+
   it.each(['hang-connect', 'hang-list'])(
     'bounds %s and closes the spawned server',
     async (mode) => {

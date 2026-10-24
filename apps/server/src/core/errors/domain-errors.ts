@@ -68,6 +68,8 @@ export class UnknownOutcomeDomainError extends DomainError {
 export function mapInfrastructureError(error: unknown): DomainError {
   if (error instanceof DomainError) return error;
   const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
+  if (code === 'FILESYSTEM_CLOSED' || code === 'FILESYSTEM_BUSY')
+    return new UnavailableDomainError('Filesystem is not accepting operations.');
   const message = error instanceof Error ? error.message : String(error);
   if (code === 'ENOENT') return new NotFoundDomainError('Resource not found.');
   if (code === 'EACCES' || code === 'EPERM') return new ForbiddenDomainError('Permission denied.');

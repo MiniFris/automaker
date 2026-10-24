@@ -7,6 +7,7 @@ import { NotificationService } from '../../services/notification-service.js';
 import { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
 import { ProviderRegistry } from '../providers/provider-registry.service.js';
 import { ToolPolicyService } from '../providers/tool-policy.service.js';
+import { PipelineService } from '../../services/pipeline-service.js';
 
 export const autoModeProvider: FactoryProvider<AutoModeServiceCompat> = {
   provide: AutoModeServiceCompat,
@@ -17,6 +18,7 @@ export const autoModeProvider: FactoryProvider<AutoModeServiceCompat> = {
     NotificationService,
     ProviderRegistry,
     ToolPolicyService,
+    PipelineService,
   ],
   useFactory: (
     events: EventEmitter,
@@ -24,7 +26,17 @@ export const autoModeProvider: FactoryProvider<AutoModeServiceCompat> = {
     features: FeatureLoader,
     notifications: NotificationService,
     providers: ProviderRegistry,
-    policy: ToolPolicyService
+    policy: ToolPolicyService,
+    pipeline: PipelineService
   ) =>
-    new AutoModeServiceCompat(events, settings, features, null, notifications, providers, policy),
+    new AutoModeServiceCompat(
+      events,
+      settings,
+      features,
+      null,
+      notifications,
+      providers,
+      policy,
+      pipeline
+    ),
 };

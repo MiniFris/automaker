@@ -1,4 +1,5 @@
 import { translate, useUiLocale } from '@/lib/i18n';
+import { canAttemptCliProvider } from '@/lib/provider-readiness';
 import { useAppStore } from '@/store/app-store';
 import { useSetupStore } from '@/store/setup-store';
 import { Label } from '@/components/ui/label';
@@ -25,7 +26,7 @@ export function ProjectClaudeSection({ project }: ProjectClaudeSectionProps) {
     disabledProviders,
     setProjectClaudeApiProfile,
   } = useAppStore();
-  const { claudeAuthStatus } = useSetupStore();
+  const { claudeAuthStatus, claudeCliStatus } = useSetupStore();
 
   // Get project-level override from project
   const projectActiveProfileId = project.activeClaudeApiProfileId;
@@ -42,7 +43,7 @@ export function ProjectClaudeSection({ project }: ProjectClaudeSectionProps) {
   // Check if Claude is available
   const isClaudeDisabled = disabledProviders.includes('claude');
   const hasProfiles = claudeApiProfiles.length > 0;
-  const isClaudeAuthenticated = claudeAuthStatus?.authenticated;
+  const isClaudeAuthenticated = canAttemptCliProvider(claudeCliStatus, claudeAuthStatus);
 
   // Get global profile name for display
   const globalProfile = globalActiveProfileId
