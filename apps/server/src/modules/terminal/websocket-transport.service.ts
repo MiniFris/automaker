@@ -148,6 +148,10 @@ export class WebSocketTransportService implements OnApplicationBootstrap, OnAppl
       return;
     }
     const session = this.terminal.getSession(sessionId);
+    if (session && this.terminal.isSessionClosing(sessionId)) {
+      socket.close(4005, 'Terminal cleanup pending or unconfirmed');
+      return;
+    }
     if (!session) {
       socket.close(
         4004,

@@ -13,6 +13,7 @@ import { LEGACY_APPLICATION } from './legacy/legacy.tokens.js';
 import { NestLogger } from './nest-logger.js';
 import { SharedHttpServerExpressAdapter } from './core/http/shared-http-server.adapter.js';
 import type { ProviderRegistration } from './modules/providers/provider-registry.service.js';
+import { manageApplicationShutdown } from './core/lifecycle/application-shutdown.js';
 
 const logger = createLogger('ServerBootstrap');
 
@@ -70,12 +71,9 @@ export async function createNestApplication(
   );
 
   app.setGlobalPrefix('api');
-  if (options.enableShutdownHooks ?? true) {
-    // Exit only after Nest has completed the application cleanup hooks.
-    app.enableShutdownHooks([], { useProcessExit: true });
-  }
-
   try {
+    const shutdown = manageApplicationShutdown(app);
+    if (options.enableShutdownHooks ?? true) shutdown.enableSignals();
     await app.init();
   } catch (error) {
     await app.close().catch((closeError) => {

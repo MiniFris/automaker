@@ -9,6 +9,7 @@ import * as pty from 'node-pty';
 import { EventEmitter } from 'events';
 import * as os from 'os';
 import * as path from 'path';
+import { performance } from 'node:perf_hooks';
 // secureFs is used for user-controllable paths (working directory validation)
 // to enforce ALLOWED_ROOT_DIRECTORY security boundary
 import * as secureFs from '../lib/secure-fs.js';
@@ -18,6 +19,7 @@ import type { ProjectGitEnvironment } from '@automaker/types';
 import { ProjectGitService } from './execution-environment/project-git.js';
 import { ManagedTerminalPty, type TerminalPty } from './execution-environment/terminal.js';
 import { ExecutionEnvironmentError } from './execution-environment/runtime.js';
+import { TerminalSessionLifecycle, terminalCleanupError } from './terminal-session-lifecycle.js';
 import { getTerminalThemeColors, getAllTerminalThemes } from '../lib/terminal-themes-data.js';
 import {
   getRcFilePath,
@@ -217,6 +219,10 @@ export function claimTerminalStartup(
 export class TerminalService extends EventEmitter {
   private maxSessions: number;
   private pendingCreations = 0;
+  private stopping = false;
+  private shutdown?: Promise<void>;
+  private readonly creations = new Set<Promise<TerminalSession | null>>();
+  private readonly lifecycles = new Map<string, TerminalSessionLifecycle>();
   private sessions: Map<string, TerminalSession> = new Map();
   private dataCallbacks: Set<DataCallback> = new Set();
   private exitCallbacks: Set<ExitCallback> = new Set();
@@ -234,22 +240,6 @@ export class TerminalService extends EventEmitter {
     this.settingsService = settingsService || null;
     this.maxSessions =
       initialMaxSessions ?? Number.parseInt(process.env.TERMINAL_MAX_SESSIONS || '1000', 10);
-  }
-
-  /**
-   * Kill a PTY process with platform-specific handling.
-   * Windows doesn't support Unix signals like SIGTERM/SIGKILL, so we call kill() without arguments.
-   * On Unix-like systems (macOS, Linux), we can specify the signal.
-   *
-   * @param ptyProcess - The PTY process to kill
-   * @param signal - The signal to send on Unix-like systems (default: 'SIGTERM')
-   */
-  private killPtyProcess(ptyProcess: TerminalPty, signal: string = 'SIGTERM'): void {
-    if (this.isWindows) {
-      ptyProcess.kill();
-    } else {
-      ptyProcess.kill(signal);
-    }
   }
 
   /**
@@ -447,14 +437,27 @@ export class TerminalService extends EventEmitter {
    * Create a new terminal session
    * Returns null if the maximum session limit has been reached
    */
-  async createSession(options: TerminalOptions = {}): Promise<TerminalSession | null> {
-    if (this.sessions.size + this.pendingCreations >= this.maxSessions) return null;
+  createSession(options: TerminalOptions = {}): Promise<TerminalSession | null> {
+    if (this.stopping || this.sessions.size + this.pendingCreations >= this.maxSessions)
+      return Promise.resolve(null);
     this.pendingCreations++;
-    try {
-      return await this.createSessionInternal(options);
-    } finally {
-      this.pendingCreations--;
-    }
+    const creation = this.createSessionInternal(options)
+      .then(async (session) => {
+        const lifecycle = session ? this.lifecycles.get(session.id) : undefined;
+        if (session && !lifecycle) return null;
+        if (lifecycle) await lifecycle.ready();
+        if (session && (this.stopping || lifecycle!.closing)) {
+          await lifecycle!.close();
+          return null;
+        }
+        return session;
+      })
+      .finally(() => {
+        this.pendingCreations--;
+        this.creations.delete(creation);
+      });
+    this.creations.add(creation);
+    return creation;
   }
 
   private async createSessionInternal(options: TerminalOptions): Promise<TerminalSession | null> {
@@ -727,6 +730,12 @@ export class TerminalService extends EventEmitter {
     };
 
     this.sessions.set(id, session);
+    const lifecycle = new TerminalSessionLifecycle(ptyProcess, this.isWindows);
+    this.lifecycles.set(id, lifecycle);
+    const finish = () => {
+      this.sessions.delete(id);
+      this.lifecycles.delete(id);
+    };
 
     // Flush buffered output to clients (throttled)
     const flushOutput = () => {
@@ -750,6 +759,7 @@ export class TerminalService extends EventEmitter {
 
     // Forward data events with throttling
     ptyProcess.onData((data) => {
+      if (lifecycle.closing) return;
       // Skip ALL output during resize/reconnect to prevent prompt redraw duplication
       // This drops both scrollback AND live output during the suppression window
       // Without this, prompt redraws from SIGWINCH go to live clients causing duplicates
@@ -777,6 +787,31 @@ export class TerminalService extends EventEmitter {
 
     // Handle exit
     ptyProcess.onExit(({ exitCode }) => {
+      lifecycle.markExited();
+      const publishExit = (code: number) => {
+        for (const callback of this.exitCallbacks) {
+          try {
+            callback(id, code);
+          } catch {
+            logger.error('Terminal exit subscriber failed.');
+          }
+        }
+        try {
+          this.emit('exit', id, code);
+        } catch {
+          logger.error('Terminal exit subscriber failed.');
+        }
+      };
+      void lifecycle.close().then(
+        () => {
+          finish();
+          publishExit(exitCode);
+        },
+        () => {
+          logger.error('Terminal cleanup could not be confirmed; retaining session identity.');
+          publishExit(255);
+        }
+      );
       if (session.flushTimeout) clearTimeout(session.flushTimeout);
       if (session.resizeDebounceTimeout) clearTimeout(session.resizeDebounceTimeout);
       if (session.outputBuffer) {
@@ -788,9 +823,7 @@ export class TerminalService extends EventEmitter {
           ? 'Session terminated'
           : `Session exited with code ${exitCode}`;
       logger.info(`${exitMessage} (${id})`);
-      this.sessions.delete(id);
-      this.exitCallbacks.forEach((cb) => cb(id, exitCode));
-      this.emit('exit', id, exitCode);
+      // Exit alone does not prove the original Linux process group is quiescent.
     });
 
     logger.info(`Session ${id} created successfully`);
@@ -801,6 +834,7 @@ export class TerminalService extends EventEmitter {
    * Write data to a terminal session
    */
   write(sessionId: string, data: string): boolean {
+    if (this.stopping || this.lifecycles.get(sessionId)?.closing) return false;
     if (typeof data !== 'string' || Buffer.byteLength(data) > 1024 * 1024) return false;
     const session = this.sessions.get(sessionId);
     if (!session) {
@@ -817,6 +851,7 @@ export class TerminalService extends EventEmitter {
    *                         Should be false for the initial resize so the first prompt isn't dropped.
    */
   resize(sessionId: string, cols: number, rows: number, suppressOutput: boolean = true): boolean {
+    if (this.stopping || this.lifecycles.get(sessionId)?.closing) return false;
     if (
       !Number.isInteger(cols) ||
       !Number.isInteger(rows) ||
@@ -866,53 +901,19 @@ export class TerminalService extends EventEmitter {
    */
   killSession(sessionId: string): boolean {
     const session = this.sessions.get(sessionId);
-    if (!session) {
-      return false;
-    }
-    if (session.pty instanceof ManagedTerminalPty) {
-      session.pty.kill(); // Retain identity until target confirms cleanup (or reports unknown).
-      return true;
-    }
-    try {
-      // Clean up flush timeout
-      if (session.flushTimeout) {
-        clearTimeout(session.flushTimeout);
-        session.flushTimeout = null;
-      }
-      // Clean up resize debounce timeout
-      if (session.resizeDebounceTimeout) {
-        clearTimeout(session.resizeDebounceTimeout);
-        session.resizeDebounceTimeout = null;
-      }
-
-      // First try graceful SIGTERM to allow process cleanup
-      // On Windows, killPtyProcess calls kill() without signal since Windows doesn't support Unix signals
-      logger.info(`Session ${sessionId} sending SIGTERM`);
-      this.killPtyProcess(session.pty, 'SIGTERM');
-
-      // Schedule SIGKILL fallback if process doesn't exit gracefully
-      // The onExit handler will remove session from map when it actually exits
-      setTimeout(() => {
-        if (this.sessions.has(sessionId)) {
-          logger.info(`Session ${sessionId} still alive after SIGTERM, sending SIGKILL`);
-          try {
-            this.killPtyProcess(session.pty, 'SIGKILL');
-          } catch {
-            // Process may have already exited
-          }
-          // Force remove from map if still present
-          this.sessions.delete(sessionId);
-        }
-      }, 1000);
-
-      logger.info(`Session ${sessionId} kill initiated`);
-      return true;
-    } catch (error) {
-      logger.error(`Error killing session ${sessionId}:`, error);
-      // Still try to remove from map even if kill fails
-      this.sessions.delete(sessionId);
-      return false;
-    }
+    const lifecycle = this.lifecycles.get(sessionId);
+    if (!session || !lifecycle) return false;
+    if (session.flushTimeout) clearTimeout(session.flushTimeout);
+    if (session.resizeDebounceTimeout) clearTimeout(session.resizeDebounceTimeout);
+    session.flushTimeout = null;
+    session.resizeDebounceTimeout = null;
+    const accepted = lifecycle.requestClose();
+    void lifecycle
+      .close()
+      .catch(() =>
+        logger.error('Terminal cleanup could not be confirmed; retaining session identity.')
+      );
+    return accepted;
   }
 
   /**
@@ -920,6 +921,10 @@ export class TerminalService extends EventEmitter {
    */
   getSession(sessionId: string): TerminalSession | undefined {
     return this.sessions.get(sessionId);
+  }
+
+  isSessionClosing(sessionId: string): boolean {
+    return this.stopping || this.lifecycles.get(sessionId)?.closing === true;
   }
 
   /**
@@ -1030,21 +1035,40 @@ export class TerminalService extends EventEmitter {
   /**
    * Clean up all sessions
    */
-  cleanup(): void {
-    logger.info(`Cleaning up ${this.sessions.size} sessions`);
-    this.sessions.forEach((session, id) => {
-      try {
-        // Clean up flush timeout
-        if (session.flushTimeout) {
-          clearTimeout(session.flushTimeout);
-        }
-        // Use platform-specific kill to ensure proper termination on Windows
-        this.killPtyProcess(session.pty);
-      } catch {
-        // Ignore errors during cleanup
-      }
-      this.sessions.delete(id);
+  cleanup(): Promise<void> {
+    if (this.shutdown) return this.shutdown;
+    this.stopping = true;
+    const deadline = performance.now() + 25_000;
+    const tasks: Promise<unknown>[] = [...this.creations].map((creation) =>
+      creation.catch((error) => {
+        if (error instanceof ExecutionEnvironmentError && error.code === 'TERMINAL_CLEANUP_FAILED')
+          throw error;
+      })
+    );
+    for (const [id, lifecycle] of this.lifecycles) {
+      const session = this.sessions.get(id);
+      if (session?.flushTimeout) clearTimeout(session.flushTimeout);
+      if (session?.resizeDebounceTimeout) clearTimeout(session.resizeDebounceTimeout);
+      tasks.push(
+        lifecycle.close().then(() => {
+          this.sessions.delete(id);
+          this.lifecycles.delete(id);
+        })
+      );
+    }
+    let timer: NodeJS.Timeout | undefined;
+    this.shutdown = Promise.race([
+      Promise.allSettled(tasks).then((results) => {
+        if (performance.now() >= deadline || results.some((result) => result.status === 'rejected'))
+          throw terminalCleanupError();
+      }),
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => reject(terminalCleanupError()), 25_000);
+      }),
+    ]).finally(() => {
+      if (timer) clearTimeout(timer);
     });
+    return this.shutdown;
   }
 }
 

@@ -27,9 +27,12 @@ describe('AllowedPathGuard', () => {
 
   it('fails closed when an array descriptor receives a non-array value', () => {
     const reflector = { getAllAndOverride: vi.fn().mockReturnValue(['imagePaths[]']) };
-    const guard = new AllowedPathGuard(reflector as never, {
-      validateLocalPath: vi.fn(),
-    } as never);
+    const guard = new AllowedPathGuard(
+      reflector as never,
+      {
+        validateLocalPath: vi.fn(),
+      } as never
+    );
 
     expect(() => guard.canActivate(context({ imagePaths: '/tmp/one.png' }) as never)).toThrow(
       'imagePaths must be an array of path strings'

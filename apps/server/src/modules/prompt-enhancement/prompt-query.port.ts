@@ -1,4 +1,7 @@
-import type { SimpleQueryOptions, SimpleQueryResult } from '../../providers/simple-query-service.js';
+import type {
+  SimpleQueryOptions,
+  SimpleQueryResult,
+} from '../../providers/simple-query-service.js';
 
 export const PROMPT_QUERY = Symbol('PROMPT_QUERY');
 

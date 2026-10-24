@@ -28,8 +28,10 @@ describe.skipIf(process.platform !== 'linux')('managed interactive terminal on r
   let root: string, project: string, checkout: string, settings: SettingsService;
   let peer: Awaited<ReturnType<typeof sshPeer>>, terminals: TerminalService;
   let targetEnv: Record<string, string>;
+  let unknownCleanup = false;
   const active = () => new AbortController().signal;
   beforeEach(async () => {
+    unknownCleanup = false;
     root = await fs.mkdtemp(path.join(os.tmpdir(), "managed-terminal-'"));
     project = path.join(root, 'controller');
     checkout = path.join(root, 'target');
@@ -80,11 +82,18 @@ describe.skipIf(process.platform !== 'linux')('managed interactive terminal on r
     vi.stubEnv('AUTOMAKER_API_KEY', 'controller-only-test-secret');
   }, 15000);
   afterEach(async () => {
-    terminals?.cleanup();
-    await peer?.close();
-    await fs.rm(root, { recursive: true, force: true });
-    vi.unstubAllEnvs();
-    vi.restoreAllMocks();
+    try {
+      if (unknownCleanup)
+        await expect(terminals.cleanup()).rejects.toMatchObject({
+          code: 'TERMINAL_CLEANUP_FAILED',
+        });
+      else await terminals?.cleanup();
+    } finally {
+      await peer?.close();
+      await fs.rm(root, { recursive: true, force: true });
+      vi.unstubAllEnvs();
+      vi.restoreAllMocks();
+    }
   });
   const create = async (cwd = project) => {
     const target = (await new ProjectGitService(settings).resolve(cwd))!;
@@ -246,11 +255,13 @@ describe.skipIf(process.platform !== 'linux')('managed interactive terminal on r
       );
       const pid = Number(await fs.readFile(path.join(checkout, 'background.pid'), 'utf8'));
       peer.disconnect();
+      unknownCleanup = true;
       await vi.waitFor(() => expect(exits).toEqual([255]));
       await vi.waitFor(async () => {
         await expect(fs.stat(`/proc/${pid}`)).rejects.toMatchObject({ code: 'ENOENT' });
       });
       expect(output.join('')).toContain('commands were not replayed');
+      expect(terminals.getSession(session.id)).toBe(session);
       expect(await fs.readFile(path.join(checkout, 'effects'), 'utf8')).toBe('once\n');
       expect(pty.spawn).not.toHaveBeenCalled();
     }

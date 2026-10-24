@@ -104,3 +104,102 @@ shutdown и Local/Docker/SSH terminal tests. Следующий этап до н
 - Shutdown закрывает WS и PTY resources в пределах deadline.
 - Полный checkpoint этапа 9 успешно выполнен и зафиксирован завершающим коммитом
   в единственной migration-ветке.
+
+## Срез 2026-10-24: подтверждённый terminal drain и результат shutdown
+
+Это промежуточный срез, не завершение этапа 9. Native TerminalRuntimeModule уже
+владеет TerminalService (ADR-033); текущие изменения закрывают active-session
+cleanup, который прежний idle lifecycle checkpoint не доказывал.
+
+### Владение и завершение sessions
+
+- TerminalSessionLifecycle владеет подтверждением выхода каждой PTY. `killSession`
+  по-прежнему возвращает boolean принятия запроса, а не доказательство cleanup.
+  Удаление session по таймеру без подтверждения выхода больше не выполняется.
+- В Linux до публикации локальной PTY проверяются PPID, starttime и собственные
+  process group/session. Реальный `forkpty` возвращается в родительский процесс
+  раньше обязательного завершения `login_tty`/`setsid` в дочернем: readiness ждёт
+  только ту же генерацию child, не присваивает владение повторно использованным PID.
+- TERM и KILL отправляются только исходной проверенной process group.
+  Read-only `/proc` observer ждёт также остальные job-control groups исходной
+  session; обнаружение их ID не даёт права посылать им сигналы. Живые дополнительные
+  groups означают неподтверждённый cleanup, а не ложный успех.
+- Пустое чтение procfs при исчезновении task не считается доказательством выхода:
+  выполняется повторное read-only наблюдение в пределах исходного deadline.
+  Завершённые zombie/dead tasks не считаются работающим процессом; внешний reaper
+  не принадлежит приложению.
+- Локальное завершение ограничено 3.5 s, с TERM→KILL escalation до 1 s;
+  managed transport — 22 s и обязательным target `exitConfirmed`.
+  Потеря transport не подтверждает остановку remote process: exit 255 уведомляет
+  subscribers, но неизвестная session identity сохраняется.
+- Async `TerminalService.cleanup()` идемпотентен, закрывает admission/input/resize,
+  запускает sibling cleanup, ждёт уже принятые creations, включая позднюю PTY,
+  и ограничивает общий drain 25 s. Неуспешная очистка сохраняет identity и возвращает
+  статическую `TERMINAL_CLEANUP_FAILED`, без raw process/provider diagnostics.
+- GET известной закрывающейся/неподтверждённой session возвращает 503 `UNAVAILABLE`;
+  WS отклоняет подключение с 4005 до `connected` и startup handshake. Такая session
+  не создаётся заново, startup command не replay-ится. API остаётся v13: DTO shapes,
+  execution binding и persisted formats не меняются.
+
+### Проверяемый Nest shutdown
+
+Установленный Nest 12 логирует ошибки lifecycle hooks и продолжает shutdown, поэтому
+одного успешного `app.close()` недостаточно для подтверждения cleanup. Новый
+`manageApplicationShutdown` сохраняет вызов последующих hooks, но собирает сам факт
+ошибки и отклоняет публичный `app.close()` статической `APPLICATION_CLEANUP_FAILED`.
+Повторный close использует тот же результат, без повторного выполнения hooks.
+
+Signal handlers используют этот же checked close: SIGTERM/SIGINT завершают процесс
+с 0 только при успехе, с 1 при ошибке; watchdog ограничен 30 s. Ошибка terminal
+cleanup не пропускает последующий provider cleanup. Это описано в ADR-034.
+
+### Доказательства и границы
+
+- `terminal-drain.contract.test.ts`: реальная Nest app и реальная `/bin/sh` PTY
+  с owned Node fixture, TERM-resistant root/child; close ждёт остановки, запрещает
+  новую session и удаляет старую identity только после подтверждения.
+- `terminal-pty-ownership.test.ts`: до-setsid readiness и изменение PID generation
+  без отправки сигнала новому процессу.
+- `linux-process-session.test.ts`: дополнительные группы, kernel SID 0 и пустой
+  procfs read; наблюдение не посылает terminating signals обнаруженным IDs.
+- `terminal-session-lifecycle.test.ts`, `terminal-service.test.ts`: deadlines,
+  escalation, удержание unknown identity, late creation и managed transport loss.
+- `terminal-closing-admission.contract.test.ts`: реальные HTTP/WS gates и отказ
+  close при ошибке cleanup, с проверкой последующего provider cleanup.
+- `shutdown-failure-signal.contract.test.ts`: отдельный server process получает
+  SIGTERM и выходит с 1 только после выполнения provider cleanup, без private error
+  в stderr. `application-shutdown.test.ts` проверяет dedup/receiver/idempotence.
+
+Проверки текущего среза:
+
+- `npm run test:server:unit`: 3599 passed, 40 skipped;
+- `npm run test:server:contract`: 316 passed;
+- `npm run test:packages`: 1473 passed;
+- server production build, server/UI lint, UI typecheck и UI build прошли;
+- Docker acceptance с owned image `automaker-nest-stage2-smoke:latest`: 11 passed,
+  4 opt-in skipped; managed SSH terminal: 7 passed;
+- `node scripts/smoke-server-lifecycle.mjs`: SIGTERM и SIGINT, exit 0.
+- Chromium regression (hooks settings, feature create/edit, provider status,
+  credentials/consent и held agent chat): 17 passed, без test retries;
+- все три generated inventories обновлены и прошли `:check`.
+- полный `npm run format:check` и `git diff --check` прошли. Исходная проверка
+  обнаружила пять ранее неформатированных source/test files и generated Playwright
+  auth state: первые исправлены только форматированием, `.auth/` добавлен в
+  `.prettierignore` как генерируемый test artifact, уже исключённый из Git.
+
+Во время chat reload браузерный runner дважды вывел Vite WS proxy `ECONNRESET`;
+17 tests прошли, но источник proxy reset не установлен и не объявляется исправленным.
+
+Первый lint текущего среза выявил пустой catch; после пояснения error precedence
+повторный lint прошёл. В предыдущем общем запуске real-PTY contract дал unknown
+cleanup: установленный forkpty race и пустой procfs read защищены отдельными
+regressions, но точная причина той единственной ошибки не установлена. Финальные
+unit/contract suites прошли без увеличения timeout/retries тестов.
+
+Этот срез не доказывает containment намеренного `setsid` escape, очистку всех
+job-control groups сигналами, cross-platform process-tree drain или ownership
+внешней environment. UI отображение сохранённого unknown state, полный transport
+stress/backpressure и прочие gates этапов 7–11 остаются обязательными. Signal path
+проверен для production-модели одной app в process; одновременные signal-enabled
+Nest apps в одном process не сертифицированы. UI build не заменяет packaged
+Electron acceptance на Linux/Windows/macOS.

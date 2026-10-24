@@ -1,6 +1,14 @@
 import fs from 'node:fs/promises';
 import { setTimeout as delay } from 'node:timers/promises';
 
+class ProcfsObservationPending extends Error {}
+async function readProcessStat(file: string, signal: AbortSignal): Promise<string> {
+  const stat = await fs.readFile(file, { encoding: 'utf8', signal });
+  // procfs can return an empty read while a task disappears. This is not exit proof.
+  if (!stat.trim()) throw new ProcfsObservationPending();
+  return stat;
+}
+
 /** Read-only observations of an already-owned, detached Linux process group. */
 export interface LinuxProcessGroupProbe {
   exists(group: number): boolean;
@@ -27,6 +35,66 @@ export function parseLinuxProcessStat(stat: string): { group: number; state: str
   return { state: fields[0], group };
 }
 
+export function linuxProcessSession(stat: string): number {
+  parseLinuxProcessStat(stat);
+  const value = stat
+    .slice(stat.lastIndexOf(')') + 1)
+    .trim()
+    .split(/\s+/)[3];
+  if (!/^(0|[1-9]\d*)$/.test(value ?? '') || !Number.isSafeInteger(Number(value)))
+    throw new Error('Process session observation is unavailable.');
+  return Number(value);
+}
+
+/** Read-only: ordinary PTY jobs may use different groups in the same owned session. */
+export async function waitForLinuxSessionExit(session: number, signal: AbortSignal): Promise<void> {
+  if (!Number.isSafeInteger(session) || session <= 1)
+    throw new Error('Invalid owned process session.');
+  for (;;) {
+    try {
+      signal.throwIfAborted();
+      const pids = (await fs.readdir('/proc')).filter((name) => /^[1-9]\d*$/.test(name));
+      if (pids.length > 131_072) throw new Error('Process session observation limit exceeded.');
+      const groups = new Set<number>();
+      for (let offset = 0; offset < pids.length; offset += 32) {
+        signal.throwIfAborted();
+        await Promise.all(
+          pids.slice(offset, offset + 32).map(async (pid) => {
+            try {
+              const stat = await readProcessStat(`/proc/${pid}/stat`, signal);
+              if (linuxProcessSession(stat) === session)
+                groups.add(parseLinuxProcessStat(stat).group);
+            } catch (error) {
+              if (!['ENOENT', 'ESRCH'].includes((error as NodeJS.ErrnoException).code ?? ''))
+                throw error;
+            }
+          })
+        );
+      }
+      signal.throwIfAborted();
+      if (!groups.size) return;
+      if (groups.size > 1024) throw new Error('Process session observation limit exceeded.');
+      let quiescent = true;
+      for (const group of groups) {
+        const states = await procfsProbe.states(group, signal);
+        if (
+          !(states.length && states.every((state) => ['Z', 'X', 'x'].includes(state))) &&
+          procfsProbe.exists(group)
+        )
+          quiescent = false;
+      }
+      if (quiescent) return;
+      for (const group of groups) {
+        await waitForLinuxProcessGroupExit(group, signal);
+      }
+      // Rescan for jobs forked into another group before their parent stopped.
+    } catch (error) {
+      if (!(error instanceof ProcfsObservationPending)) throw error;
+      await delay(10, undefined, { signal });
+    }
+  }
+}
+
 const procfsProbe: LinuxProcessGroupProbe = {
   exists(group) {
     try {
@@ -49,9 +117,7 @@ const procfsProbe: LinuxProcessGroupProbe = {
           try {
             return {
               pid,
-              ...parseLinuxProcessStat(
-                await fs.readFile(`/proc/${pid}/stat`, { encoding: 'utf8', signal })
-              ),
+              ...parseLinuxProcessStat(await readProcessStat(`/proc/${pid}/stat`, signal)),
             };
           } catch (error) {
             if (['ENOENT', 'ESRCH'].includes((error as NodeJS.ErrnoException).code ?? ''))
@@ -88,10 +154,7 @@ const procfsProbe: LinuxProcessGroupProbe = {
             tasks.slice(offset, offset + 32).map(async (task) => {
               try {
                 return parseLinuxProcessStat(
-                  await fs.readFile(`/proc/${member.pid}/task/${task}/stat`, {
-                    encoding: 'utf8',
-                    signal,
-                  })
+                  await readProcessStat(`/proc/${member.pid}/task/${task}/stat`, signal)
                 );
               } catch (error) {
                 if (['ENOENT', 'ESRCH'].includes((error as NodeJS.ErrnoException).code ?? ''))
@@ -125,7 +188,14 @@ export async function waitForLinuxProcessGroupExit(
   for (;;) {
     signal.throwIfAborted();
     if (!probe.exists(group)) return;
-    const states = await probe.states(group, signal);
+    let states: readonly string[];
+    try {
+      states = await probe.states(group, signal);
+    } catch (error) {
+      if (!(error instanceof ProcfsObservationPending)) throw error;
+      await delay(10, undefined, { signal });
+      continue;
+    }
     signal.throwIfAborted();
     if (states.length && states.every((state) => ['Z', 'X', 'x'].includes(state))) return;
     if (!probe.exists(group)) return;

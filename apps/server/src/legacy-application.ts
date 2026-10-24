@@ -412,7 +412,7 @@ export function createLegacyApplication(
         await task();
       } catch (error) {
         failures.push(error);
-        logger.error(`Shutdown task "${name}" failed; continuing resource cleanup:`, error);
+        logger.error(`Shutdown task "${name}" failed; continuing resource cleanup.`);
       }
     };
     try {

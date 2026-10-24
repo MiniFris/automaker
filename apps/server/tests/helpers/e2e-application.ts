@@ -9,6 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { AppModule } from '../../src/app.module.js';
+import { manageApplicationShutdown } from '../../src/core/lifecycle/application-shutdown.js';
 import { parseRuntimeConfig } from '../../src/core/config/index.js';
 import { SharedHttpServerExpressAdapter } from '../../src/core/http/shared-http-server.adapter.js';
 import { PROVIDER_REGISTRATIONS } from '../../src/modules/providers/provider-registry.service.js';
@@ -131,8 +132,9 @@ export async function createE2eApplication(
       logger: false,
     });
     app.setGlobalPrefix('api');
+    const shutdown = manageApplicationShutdown(app);
     await app.init();
-    return { app, dataDirectory, host: config.server.host, port: config.server.port };
+    return { app, shutdown, dataDirectory, host: config.server.host, port: config.server.port };
   } catch (error) {
     await app?.close();
     await cleanup();

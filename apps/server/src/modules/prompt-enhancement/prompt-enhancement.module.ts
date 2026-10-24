@@ -11,8 +11,8 @@ import { PromptEnhancementService } from './prompt-enhancement.service.js';
     {
       provide: PROMPT_QUERY,
       inject: [ProviderRegistry],
-      useFactory: (registry: ProviderRegistry) =>
-        (options: Parameters<typeof simpleQuery>[0]) => simpleQuery(options, registry),
+      useFactory: (registry: ProviderRegistry) => (options: Parameters<typeof simpleQuery>[0]) =>
+        simpleQuery(options, registry),
     },
     PromptEnhancementService,
   ],

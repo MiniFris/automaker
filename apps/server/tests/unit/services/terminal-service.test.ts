@@ -67,6 +67,9 @@ describe('terminal-service.ts', () => {
       resize: vi.fn(),
       kill: vi.fn(),
     };
+    mockPtyProcess.kill.mockImplementation(() => {
+      for (const [exit] of mockPtyProcess.onExit.mock.calls) exit({ exitCode: 0 });
+    });
 
     vi.mocked(pty.spawn).mockReturnValue(mockPtyProcess);
     vi.mocked(os.homedir).mockReturnValue('/home/user');
@@ -81,8 +84,8 @@ describe('terminal-service.ts', () => {
     vi.mocked(secureFs.stat).mockResolvedValue({ isDirectory: () => true } as any);
   });
 
-  afterEach(() => {
-    service.cleanup();
+  afterEach(async () => {
+    await service.cleanup();
   });
 
   describe('detectShell', () => {
@@ -407,6 +410,7 @@ describe('terminal-service.ts', () => {
       // Simulate exit event
       const onExitHandler = mockPtyProcess.onExit.mock.calls[0][0];
       onExitHandler({ exitCode: 0 });
+      await service.cleanup();
 
       expect(session).not.toBeNull();
       expect(exitCallback).toHaveBeenCalledWith(session!.id, 0);
@@ -478,15 +482,18 @@ describe('terminal-service.ts', () => {
       vi.spyOn(process, 'env', 'get').mockReturnValue({ SHELL: '/bin/bash' });
 
       const session = await service.createSession();
+      mockPtyProcess.kill.mockImplementation(() => {});
       const result = service.killSession(session!.id);
 
       expect(result).toBe(true);
       expect(mockPtyProcess.kill).toHaveBeenCalledWith('SIGTERM');
 
-      // Session is removed after SIGKILL timeout (1 second)
-      vi.advanceTimersByTime(1000);
+      await vi.advanceTimersByTimeAsync(1000);
 
       expect(mockPtyProcess.kill).toHaveBeenCalledWith('SIGKILL');
+      expect(service.getSession(session!.id)).toBe(session);
+      for (const [exit] of mockPtyProcess.onExit.mock.calls) exit({ exitCode: 0 });
+      await service.cleanup();
       expect(service.getSession(session!.id)).toBeUndefined();
 
       vi.useRealTimers();
@@ -510,7 +517,45 @@ describe('terminal-service.ts', () => {
       const result = service.killSession(session!.id);
 
       expect(result).toBe(false);
+      expect(service.getSession(session!.id)).toBe(session);
+      for (const [exit] of mockPtyProcess.onExit.mock.calls) exit({ exitCode: 0 });
     });
+  });
+
+  it('retains uncertain identities and closes admission after failed shutdown', async () => {
+    vi.useFakeTimers();
+    try {
+      const uncertain = new TerminalService(undefined, 1);
+      const session = await uncertain.createSession();
+      mockPtyProcess.kill.mockImplementation(() => {});
+      const closing = uncertain.cleanup();
+      const rejected = expect(closing).rejects.toMatchObject({ code: 'TERMINAL_CLEANUP_FAILED' });
+      await vi.advanceTimersByTimeAsync(3500);
+      await rejected;
+      expect(uncertain.getSession(session!.id)).toBe(session);
+      expect(await uncertain.createSession()).toBeNull();
+      expect(uncertain.write(session!.id, 'must not execute')).toBe(false);
+      expect(uncertain.resize(session!.id, 80, 24)).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('drains a creation already awaiting filesystem work without exposing its late PTY', async () => {
+    let release!: (value: unknown) => void;
+    vi.mocked(secureFs.stat).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        }) as never
+    );
+    const creating = service.createSession({ cwd: '/project' });
+    const closing = service.cleanup();
+    expect(await service.createSession()).toBeNull();
+    release({ isDirectory: () => true });
+    expect(await creating).toBeNull();
+    await closing;
+    expect(service.getAllSessions()).toEqual([]);
   });
 
   describe('getSession', () => {
@@ -609,7 +654,7 @@ describe('terminal-service.ts', () => {
       const session1 = await service.createSession();
       const session2 = await service.createSession();
 
-      service.cleanup();
+      await service.cleanup();
 
       expect(session1).not.toBeNull();
       expect(session2).not.toBeNull();
@@ -628,7 +673,9 @@ describe('terminal-service.ts', () => {
 
       await service.createSession();
 
-      expect(() => service.cleanup()).not.toThrow();
+      const cleanup = service.cleanup();
+      for (const [exit] of mockPtyProcess.onExit.mock.calls) exit({ exitCode: 0 });
+      await expect(cleanup).resolves.toBeUndefined();
     });
   });
 

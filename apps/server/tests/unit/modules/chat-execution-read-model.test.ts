@@ -6,18 +6,16 @@ import { AgentSessionRegistry } from '../../../src/services/agent/agent-session-
 function fixture() {
   const executions = new AgentExecutionCoordinator();
   const sessions = new AgentSessionRegistry();
-  const loadMetadata = vi
-    .fn()
-    .mockResolvedValue({
-      chat: {
-        id: 'chat',
-        name: 'Named chat',
-        projectPath: '/project',
-        workingDirectory: '/worktree',
-        model: 'sonnet',
-        sdkSessionId: 'private-sdk',
-      },
-    });
+  const loadMetadata = vi.fn().mockResolvedValue({
+    chat: {
+      id: 'chat',
+      name: 'Named chat',
+      projectPath: '/project',
+      workingDirectory: '/worktree',
+      model: 'sonnet',
+      sdkSessionId: 'private-sdk',
+    },
+  });
   const model = new ChatExecutionReadModel(sessions, { loadMetadata } as never, executions);
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {

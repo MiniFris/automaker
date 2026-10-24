@@ -66,6 +66,14 @@ export class TerminalController {
   @UseGuards(TerminalAccessGuard)
   session(@Param('id') id: string, @Res() response: Response) {
     const session = this.terminal.getSession(id);
+    if (session && this.terminal.isSessionClosing(id)) {
+      response.status(503).json({
+        success: false,
+        errorCode: 'UNAVAILABLE',
+        error: 'Terminal cleanup is pending or unconfirmed. No shell was recreated.',
+      });
+      return;
+    }
     if (!session) {
       response.status(404).json({
         success: false,

@@ -1888,7 +1888,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/mcp/mcp.controller.ts",
-      "line": 13,
+      "line": 10,
       "middleware": [
         "MCPController.test"
       ],
@@ -1903,7 +1903,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/mcp/mcp.controller.ts",
-      "line": 19,
+      "line": 16,
       "middleware": [
         "MCPController.tools"
       ],
@@ -3703,7 +3703,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 159,
+      "line": 167,
       "middleware": [
         "TerminalController.resize"
       ],
@@ -3718,7 +3718,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 149,
+      "line": 157,
       "middleware": [
         "TerminalController.deleteSession"
       ],
@@ -3763,7 +3763,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 87,
+      "line": 95,
       "middleware": [
         "TerminalController.createSession"
       ],
@@ -3778,7 +3778,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 187,
+      "line": 195,
       "middleware": [
         "TerminalController.settings"
       ],
@@ -3793,7 +3793,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 199,
+      "line": 207,
       "middleware": [
         "TerminalController.updateSettings"
       ],

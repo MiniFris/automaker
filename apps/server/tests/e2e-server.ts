@@ -12,11 +12,11 @@ const dataDirectory = await mkdtemp(path.join(os.tmpdir(), 'automaker-nest-e2e-'
 process.env.DATA_DIR = dataDirectory;
 try {
   const { createE2eApplication } = await import('./helpers/e2e-application.js');
-  const { app, port } = await createE2eApplication(
+  const { app, port, shutdown } = await createE2eApplication(
     { ...process.env, HOST: '127.0.0.1' },
     dataDirectory
   );
-  app.enableShutdownHooks([], { useProcessExit: true });
+  shutdown.enableSignals();
   try {
     await app.listen(port, '127.0.0.1');
   } catch (error) {

@@ -46,6 +46,8 @@ backward-compatible.
 исправления после тестирования.
 Отдельные feature/stage branches не создаются. Отдельный PR не является обязательным
 условием этапа, route group или завершения миграции.
+Уже созданная migration-ветка используется до конца программы; для нового этапа
+новая ветка не создаётся.
 
 ## ADR-008: Mandatory stage checkpoints
 
@@ -56,6 +58,8 @@ backward-compatible.
 Пропуск обязательной проверки не означает успешного checkpoint.
 Если проверка упала, исправления коммитятся в ту же migration-ветку, после чего
 checkpoint этапа повторяется. Отдельный PR не нужен и не заменяет тестирование.
+Порядок сдачи каждого этапа: изменения в единственной migration-ветке → обязательное
+тестирование после этапа → запись результатов → завершающий коммит в той же ветке.
 
 ## ADR-009: API v2 confirmed provider disconnect
 
@@ -644,3 +648,42 @@ remaining route helpers or execution registries. Idle cleanup ordering does not
 prove active PTY/process-tree drain or all terminal environment ownership. API v13,
 wire/persisted formats and execution bindings remain unchanged; stages 7–11 are
 not declared complete.
+
+## ADR-034: confirmed terminal drain and truthful application shutdown
+
+TerminalSessionLifecycle retains session identity until PTY exit and, on Linux,
+read-only quiescence of the original process session are confirmed. Signals target
+only the original verified PTY group. PPID/starttime guard the asynchronous forkpty
+pre-setsid readiness window; a reused PID never grants signalling authority.
+Other job-control groups are observed, not newly adopted as signal targets.
+Inconclusive empty procfs reads are reobserved within the same deadline, not
+interpreted as successful cleanup.
+
+TerminalService closes admission/input and drains pending creations and all
+existing siblings. Local/managed/global deadlines are bounded; managed transport
+loss without a target exit frame remains failure. Failed cleanup retains identity
+and rejects with static diagnostics. Existing closing sessions cannot reconnect,
+claim startup or silently recreate themselves: HTTP 503 UNAVAILABLE and WS 4005
+precede connected/startup handling. killSession's boolean still means request
+acceptance, not completed cleanup. No API-v13 DTO or persistence change is made.
+
+Installed Nest 12 catches/logs lifecycle hook failures rather than rejecting close.
+manageApplicationShutdown wraps the current application-owned hooks before init,
+preserves receiver and later cleanup attempts, deduplicates shared instances and
+rejects public close with ApplicationCleanupError if any hook failed. Cached close
+preserves that outcome. Static errors prevent private cleanup diagnostics from
+being rethrown through Nest logging. The public implementation is captured through
+its property descriptor/prototype: NestFactory's lazy proxy method lookup would
+otherwise recurse after replacement, and its set trap is not ordinary assignment.
+No framework source is patched.
+
+Owned supported-OS signal handlers call the same checked close, remove themselves
+when settled and exit 0 only on success, 1 on cleanup failure, with a 30 s watchdog.
+Real child-process SIGTERM contracts prove provider cleanup still runs after
+terminal failure and private errors are not logged. Ordinary explicit-close
+contracts verify successful native PTY drainage and failure propagation separately.
+
+This does not certify deliberately escaped process sessions, signalling discovered
+job groups, external environment ownership, unsupported-platform process trees,
+simultaneous multiple signal-enabled applications per process or completion of
+remaining stage 7–11 requirements. Full evidence and limits are recorded in stage 9.
