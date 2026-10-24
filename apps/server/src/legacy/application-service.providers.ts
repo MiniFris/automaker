@@ -7,6 +7,7 @@ import { AgentSessionRepository } from '../services/agent/agent-session.reposito
 import { AgentSessionRegistry } from '../services/agent/agent-session-registry.js';
 import { AgentExecutionCoordinator } from '../services/agent/agent-execution-coordinator.js';
 import { AgentPromptBuilder } from '../services/agent/agent-prompt-builder.js';
+import { AgentEnvironmentPreparer } from '../services/agent/agent-environment-preparer.js';
 import { FeatureLoader } from '../services/feature-loader.js';
 import { AutoModeServiceCompat } from '../services/auto-mode/index.js';
 import { TerminalService } from '../services/terminal-service.js';
@@ -98,6 +99,7 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
         AgentSessionRegistry,
         AgentExecutionCoordinator,
         AgentPromptBuilder,
+        AgentEnvironmentPreparer,
         LEGACY_EVENT_EMITTER,
         tokens.settings,
         tokens.providerRegistry,
@@ -108,6 +110,7 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
         sessions: AgentSessionRegistry,
         executions: AgentExecutionCoordinator,
         prompts: AgentPromptBuilder,
+        environments: AgentEnvironmentPreparer,
         events: EventEmitter,
         settings: SettingsService,
         providers: ProviderRegistry,
@@ -118,6 +121,7 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
           sessions,
           executions,
           prompts,
+          environments,
           events,
           settings,
           providers,

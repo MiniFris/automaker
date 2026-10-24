@@ -15,6 +15,7 @@ import { AgentSessionRegistry } from './agent/agent-session-registry.js';
 import { AgentSessionStorageError } from './agent/agent-session-storage.error.js';
 import { AgentExecutionCoordinator } from './agent/agent-execution-coordinator.js';
 import { AgentPromptBuilder } from './agent/agent-prompt-builder.js';
+import { AgentEnvironmentPreparer } from './agent/agent-environment-preparer.js';
 import { ConflictDomainError, UnavailableDomainError } from '../core/errors/domain-errors.js';
 import type {
   ActiveSession as Session,
@@ -24,10 +25,6 @@ import type {
   AgentMessageInput,
 } from './agent/agent-session.types.js';
 import { createChatOptions, validateWorkingDirectory } from '../lib/sdk-options.js';
-import { prepareDirectExecution } from '../providers/openai-compatible/execution.js';
-import { hasRemoteEnvironment } from '../providers/environment-execution.js';
-import { FeatureWorkspaceService } from './execution-environment/feature-workspace.js';
-import { isIssuedEnvironment } from './execution-environment/runtime.js';
 import type { SettingsService } from './settings-service.js';
 import {
   getAutoLoadClaudeMdSetting,
@@ -53,6 +50,7 @@ export class AgentService {
     private readonly sessions: AgentSessionRegistry,
     private readonly executions: AgentExecutionCoordinator,
     private readonly prompts: AgentPromptBuilder,
+    private readonly environments: AgentEnvironmentPreparer,
     events: EventEmitter,
     settingsService: SettingsService | undefined,
     private readonly providerRegistry: ProviderRegistry,
@@ -428,13 +426,12 @@ export class AgentService {
         }
       }
 
-      const remoteContext =
-        this.settingsService &&
-        (await hasRemoteEnvironment(
-          this.settingsService,
-          session.projectPath ?? effectiveWorkDir,
-          `chat:${sessionId}`
-        ));
+      const remoteContext = await this.environments.usesManagedContext(
+        this.settingsService,
+        session.projectPath ?? effectiveWorkDir,
+        `chat:${sessionId}`,
+        controller.signal
+      );
       const combinedSystemPrompt = await this.prompts.systemPrompt({
         workingDirectory: effectiveWorkDir,
         message,
@@ -580,34 +577,19 @@ export class AgentService {
       options.prompt = await this.prompts.content(message, imagePaths, controller.signal);
 
       // Execute via provider
-      const prepared = await prepareDirectExecution(options, this.settingsService, {
-        model: requestedModel ?? effectiveModel,
-        providerId: session.providerId,
-        projectPath: session.projectPath ?? effectiveWorkDir,
-        runKey: `chat:${sessionId}`,
+      const execution = await this.environments.prepare({
+        options,
+        settings: this.settingsService,
+        selection: {
+          model: requestedModel ?? effectiveModel,
+          providerId: session.providerId,
+          projectPath: session.projectPath ?? effectiveWorkDir,
+          runKey: `chat:${sessionId}`,
+        },
+        managedContext: remoteContext,
+        onBinding: (binding) => this.updateSession(sessionId, { executionEnvironment: binding }),
       });
-      if (prepared.executionEnvironmentBinding)
-        await this.updateSession(sessionId, {
-          executionEnvironment: prepared.executionEnvironmentBinding,
-        });
-      const binding = prepared.executionEnvironmentBinding;
-      const runtime = prepared.executionEnvironmentRuntime;
-      const managedContext =
-        remoteContext && binding && isIssuedEnvironment(runtime) && this.settingsService
-          ? {
-              service: new FeatureWorkspaceService(this.settingsService),
-              run: { binding, environment: runtime },
-            }
-          : undefined;
-      const targetContext = managedContext
-        ? await managedContext.service.context(managedContext.run, prepared.abortController!.signal)
-        : undefined;
-      if (targetContext?.formattedPrompt) {
-        prepared.systemPrompt = this.prompts.appendContext(
-          prepared.systemPrompt,
-          targetContext.formattedPrompt
-        );
-      }
+      const prepared = execution.options;
       const allowDisconnected =
         prepared.executionEnvironmentBinding?.type === 'ssh' ||
         prepared.executionEnvironmentBinding?.type === 'docker';
@@ -803,22 +785,13 @@ export class AgentService {
         }
       }
 
-      if (managedContext && targetContext?.memoryFiles.length) {
-        try {
-          await managedContext.service
-            .memory(managedContext.run)
-            .recordUsage(
-              targetContext.memoryFiles,
-              responseText,
-              modelSucceeded,
-              prepared.abortController!.signal
-            );
-        } catch (error) {
-          this.logger.warn(
-            'Chat target memory statistics were not saved (no replay/fallback):',
-            error
-          );
-        }
+      try {
+        await execution.recordMemoryUsage(responseText, modelSucceeded);
+      } catch (error) {
+        this.logger.warn(
+          'Chat target memory statistics were not saved (no replay/fallback):',
+          error
+        );
       }
       controller.signal.throwIfAborted();
       await this.saveSession(sessionId, session.messages);

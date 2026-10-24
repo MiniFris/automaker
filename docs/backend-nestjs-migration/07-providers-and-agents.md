@@ -151,7 +151,7 @@ UI typecheck, все три inventory checks и production SIGTERM/SIGINT smoke.
 - [x] Отделить persisted session repository от active session registry.
 - [x] Отделить prompt/context construction.
 - [ ] Отделить provider selection.
-- [ ] Отделить execution environment preparation.
+- [x] Отделить execution environment preparation.
 - [ ] Отделить stream normalization/event publication.
 - [ ] Отделить follow-up/cancel.
 - [ ] Отделить completion persistence/recovery.
@@ -178,6 +178,45 @@ controller context и сохранение binding после restart/default ch
 Production lifecycle smoke завершился с exit 0 для SIGTERM и SIGINT.
 Это проверка среза, а не завершение этапа 7: оставшаяся декомпозиция и полный
 provider/environment acceptance checkpoint остаются обязательными.
+
+### Срез: execution environment preparation
+
+`AgentEnvironmentPreparer` получает `AgentPromptBuilder` через Nest factory и
+явно передаётся в `AgentService`. Он определяет необходимость managed context по
+сохранённой конфигурации/binding, подготавливает execution options, дожидается
+сохранения binding и только затем читает target context через выданный runtime.
+При отмене во время подготовки полученный binding сохраняется, но последующее
+чтение context и запуск provider прекращаются. Запись статистики target memory
+остаётся best-effort без повторного выполнения и controller fallback.
+
+17 component tests проверяют порядок сохранения/чтения, отмену до и во время
+подготовки, ошибки конфигурации и persistence, отсутствие replay/fallback и
+сохранение SDK preset. Контракт двух приложений проверяет независимые экземпляры
+preparer. Проверки среза:
+
+- `npm run test:server:unit`: 2990 passed, 40 skipped.
+- `npm run test:server:contract`: 241 passed.
+- `npm run build --workspace=apps/server`, `npm run lint:server:errors`,
+  `npm run typecheck`: успешно.
+- Три inventory checks и `node scripts/smoke-server-lifecycle.mjs`: успешно;
+  production SIGTERM/SIGINT завершаются с exit 0.
+- Выбранные SSH chat/restart/default-change сценарии Direct/CLI/SDK: 3 passed,
+  34 отфильтрованы.
+- Chromium `tests/agent/start-new-chat-session.spec.ts`: 1 passed, включая
+  send/stream/reload истории.
+- `npm run test:packages`: 1181 shared package/UI tests passed;
+  `npm run lint:lockfile`: успешно.
+- `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest npm run
+test:docker --workspace=apps/server`: 11 passed, 4 opt-in skipped. Расширенный
+  Direct сценарий проходит через настоящий `AgentService`: tools, stream/complete,
+  повторная загрузка persisted history и сохранение Docker binding после смены
+  project environment на Local. Набор проверяет очистку принадлежащих fixture
+  контейнеров, образа и тома. Первый прогон обнаружил ошибку новой тестовой
+  проверки (`getHistory` возвращает объект с `messages`); после исправления
+  весь Docker-набор повторно прошёл.
+
+Полный этап 7 остаётся незавершённым: provider selection, normalization и
+completion/recovery всё ещё требуют отдельной декомпозиции и общей приёмки.
 
 ### Срез: persisted state и active registry
 
@@ -298,8 +337,10 @@ chunk, cancel→новый run, clear/delete, обе model mutation paths, timeo
 старого run, interruption write failure и idempotent resource cleanup attempts.
 
 Остаются durable execution/queue recovery journal, полный provider dispose/terminal
-contract, удаление queue/backups вместе с session и decomposition prompt/execution/
-stream logic. Общий deadline всей shutdown-последовательности, включая зависший
+contract, удаление queue/backups вместе с session и decomposition stream logic.
+Prompt/context и environment preparation уже выделены последующими
+срезами, описанными выше; provider selection и stream logic ещё остаются.
+Общий deadline всей shutdown-последовательности, включая зависший
 filesystem I/O и ошибки Nest hooks, также требует hardening этапа 10. Этап 7 не
 отмечается завершённым по одному успешному lease checkpoint.
 

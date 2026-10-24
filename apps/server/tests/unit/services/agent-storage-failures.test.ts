@@ -7,6 +7,7 @@ import { AgentSessionRepository } from '../../../src/services/agent/agent-sessio
 import { AgentSessionRegistry } from '../../../src/services/agent/agent-session-registry.js';
 import { AgentExecutionCoordinator } from '../../../src/services/agent/agent-execution-coordinator.js';
 import { AgentPromptBuilder } from '../../../src/services/agent/agent-prompt-builder.js';
+import { AgentEnvironmentPreparer } from '../../../src/services/agent/agent-environment-preparer.js';
 import { AgentSessionStorageError } from '../../../src/services/agent/agent-session-storage.error.js';
 import { ProviderRegistry } from '../../../src/modules/providers/provider-registry.service.js';
 import { createEventEmitter } from '../../../src/lib/events.js';
@@ -34,6 +35,7 @@ describe('agent storage failure boundaries', () => {
       registry,
       new AgentExecutionCoordinator(),
       new AgentPromptBuilder(),
+      new AgentEnvironmentPreparer(new AgentPromptBuilder()),
       emitter,
       undefined,
       new ProviderRegistry([{ name: 'claude', create: () => new MockProvider('claude') }], {

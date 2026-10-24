@@ -4,12 +4,18 @@ import { AgentSessionRepository } from '../../services/agent/agent-session.repos
 import { AgentSessionRegistry } from '../../services/agent/agent-session-registry.js';
 import { AgentExecutionCoordinator } from '../../services/agent/agent-execution-coordinator.js';
 import { AgentPromptBuilder } from '../../services/agent/agent-prompt-builder.js';
+import { AgentEnvironmentPreparer } from '../../services/agent/agent-environment-preparer.js';
 
 @Global()
 @Module({
   providers: [
     AgentSessionRegistry,
     AgentPromptBuilder,
+    {
+      provide: AgentEnvironmentPreparer,
+      inject: [AgentPromptBuilder],
+      useFactory: (prompts: AgentPromptBuilder) => new AgentEnvironmentPreparer(prompts),
+    },
     { provide: AgentExecutionCoordinator, useFactory: () => new AgentExecutionCoordinator() },
     {
       provide: AgentSessionRepository,
@@ -23,6 +29,7 @@ import { AgentPromptBuilder } from '../../services/agent/agent-prompt-builder.js
     AgentSessionRepository,
     AgentExecutionCoordinator,
     AgentPromptBuilder,
+    AgentEnvironmentPreparer,
   ],
 })
 export class AgentStateModule {}

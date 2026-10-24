@@ -7,6 +7,7 @@ import { AgentSessionRepository } from '../../../src/services/agent/agent-sessio
 import { AgentSessionRegistry } from '../../../src/services/agent/agent-session-registry.js';
 import { AgentExecutionCoordinator } from '../../../src/services/agent/agent-execution-coordinator.js';
 import { AgentPromptBuilder } from '../../../src/services/agent/agent-prompt-builder.js';
+import { AgentEnvironmentPreparer } from '../../../src/services/agent/agent-environment-preparer.js';
 import { AgentSessionStorageError } from '../../../src/services/agent/agent-session-storage.error.js';
 import {
   ConflictDomainError,
@@ -116,6 +117,7 @@ describe('AgentService execution ownership', () => {
       registry,
       executions,
       new AgentPromptBuilder(),
+      new AgentEnvironmentPreparer(new AgentPromptBuilder()),
       emitter,
       undefined,
       new ProviderRegistry([{ name: 'claude', create: () => provider }], {

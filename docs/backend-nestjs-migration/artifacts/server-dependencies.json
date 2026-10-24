@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 601,
-    "internalEdges": 1889,
+    "files": 602,
+    "internalEdges": 1894,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -17,7 +17,7 @@
     "legacy -> lib": 1,
     "legacy -> modules": 4,
     "legacy -> root": 2,
-    "legacy -> services": 23,
+    "legacy -> services": 24,
     "lib -> lib": 3,
     "lib -> services": 1,
     "modules -> core": 82,
@@ -26,7 +26,7 @@
     "modules -> modules": 244,
     "modules -> providers": 19,
     "modules -> routes": 62,
-    "modules -> services": 97,
+    "modules -> services": 98,
     "modules -> types": 2,
     "providers -> lib": 5,
     "providers -> modules": 1,
@@ -46,11 +46,11 @@
     "routes -> services": 196,
     "routes -> types": 3,
     "services -> core": 4,
-    "services -> lib": 73,
+    "services -> lib": 72,
     "services -> modules": 9,
-    "services -> providers": 11,
+    "services -> providers": 12,
     "services -> routes": 2,
-    "services -> services": 222,
+    "services -> services": 225,
     "services -> types": 2,
     "tests -> lib": 2
   },
@@ -315,7 +315,7 @@
     "@automaker/model-resolver": 20,
     "@automaker/platform": 80,
     "@automaker/prompts": 3,
-    "@automaker/types": 174,
+    "@automaker/types": 175,
     "@automaker/utils": 168,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
@@ -913,6 +913,10 @@
     },
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/agent/agent-environment-preparer.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
       "target": "apps/server/src/services/agent/agent-execution-coordinator.ts"
     },
     {
@@ -1070,6 +1074,10 @@
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
       "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-state.module.ts",
+      "target": "apps/server/src/services/agent/agent-environment-preparer.ts"
     },
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
@@ -6677,10 +6685,6 @@
     },
     {
       "source": "apps/server/src/services/agent-service.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/services/agent-service.ts",
       "target": "apps/server/src/lib/settings-helpers.ts"
     },
     {
@@ -6693,11 +6697,7 @@
     },
     {
       "source": "apps/server/src/services/agent-service.ts",
-      "target": "apps/server/src/providers/environment-execution.ts"
-    },
-    {
-      "source": "apps/server/src/services/agent-service.ts",
-      "target": "apps/server/src/providers/openai-compatible/execution.ts"
+      "target": "apps/server/src/services/agent/agent-environment-preparer.ts"
     },
     {
       "source": "apps/server/src/services/agent-service.ts",
@@ -6725,14 +6725,34 @@
     },
     {
       "source": "apps/server/src/services/agent-service.ts",
+      "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-environment-preparer.ts",
+      "target": "apps/server/src/providers/environment-execution.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-environment-preparer.ts",
+      "target": "apps/server/src/providers/openai-compatible/execution.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-environment-preparer.ts",
+      "target": "apps/server/src/providers/types.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-environment-preparer.ts",
+      "target": "apps/server/src/services/agent/agent-prompt-builder.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-environment-preparer.ts",
       "target": "apps/server/src/services/execution-environment/feature-workspace.ts"
     },
     {
-      "source": "apps/server/src/services/agent-service.ts",
+      "source": "apps/server/src/services/agent/agent-environment-preparer.ts",
       "target": "apps/server/src/services/execution-environment/runtime.ts"
     },
     {
-      "source": "apps/server/src/services/agent-service.ts",
+      "source": "apps/server/src/services/agent/agent-environment-preparer.ts",
       "target": "apps/server/src/services/settings-service.ts"
     },
     {

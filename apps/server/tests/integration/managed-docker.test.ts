@@ -1,4 +1,6 @@
 import { createTestProviderRegistry } from '../helpers/provider-registry.js';
+import { createTestAgentState } from '../helpers/agent-state.js';
+import { AgentService } from '@/services/agent-service.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -252,7 +254,7 @@ describe.skipIf(!base || process.platform !== 'linux')('real managed Docker Engi
       vi.unstubAllEnvs();
     }
   }, 30000);
-  it('runs a complete Direct-model tool cycle and pipeline command in the pinned Docker environment', async () => {
+  it('runs Direct tools, real chat/restart and a pipeline command in the pinned Docker environment', async () => {
     let count = 0;
     const endpoint = createServer((req, res) => {
       req.resume();
@@ -348,6 +350,65 @@ describe.skipIf(!base || process.platform !== 'linux')('real managed Docker Engi
           { projectPath: project, runKey: 'feature:real-direct' }
         )
       ).toMatchObject({ exitCode: 0, output: 'pipeline-ok' });
+
+      const events = createEventEmitter();
+      const streamed: Array<{ sessionId: string; type: string; content?: string }> = [];
+      const unsubscribe = events.subscribe((type, payload) => {
+        if (type === 'agent:stream') streamed.push(payload as (typeof streamed)[number]);
+      });
+      const chat = () =>
+        new AgentService(
+          ...createTestAgentState(settings.getDataDirectory()),
+          events,
+          settings,
+          createTestProviderRegistry(settings)
+        );
+      const service = chat();
+      await service.initialize();
+      const session = await service.createSession('Docker chat', project, project, model, 'test');
+      count = 0;
+      expect(
+        (await service.sendMessage({ sessionId: session.id, message: 'Work in Docker' })).success
+      ).toBe(true);
+      expect(count).toBe(4);
+      const chatBinding = (await service.listSessions()).find(
+        (item) => item.id === session.id
+      )!.executionEnvironment!;
+      expect(chatBinding.type).toBe('docker');
+      expect(chatBinding.docker?.containerId).toBe(bindings[0].containerId);
+      await settings.updateProjectSettings(project, { executionEnvironment: { mode: 'local' } });
+      try {
+        const restarted = chat();
+        await restarted.initialize();
+        count = 0;
+        expect(
+          (
+            await restarted.sendMessage({
+              sessionId: session.id,
+              message: 'Continue in pinned Docker',
+            })
+          ).success
+        ).toBe(true);
+        expect(count).toBe(4);
+        expect(
+          (await restarted.listSessions()).find((item) => item.id === session.id)!
+            .executionEnvironment
+        ).toEqual(chatBinding);
+        expect(
+          (await restarted.getHistory(session.id)).messages?.filter(
+            (item) => item.role === 'assistant'
+          )
+        ).toHaveLength(2);
+        expect(streamed.filter((event) => event.type === 'stream')).toEqual([
+          expect.objectContaining({ sessionId: session.id, content: 'Docker workflow complete' }),
+          expect.objectContaining({ sessionId: session.id, content: 'Docker workflow complete' }),
+        ]);
+        expect(streamed.filter((event) => event.type === 'complete')).toHaveLength(2);
+        expect(await fs.readFile(path.join(project, 'direct.txt'), 'utf8')).toBe('42');
+      } finally {
+        unsubscribe();
+        await settings.updateProjectSettings(project, { executionEnvironment: { mode: 'auto' } });
+      }
     } finally {
       endpoint.closeAllConnections();
       await new Promise<void>((resolve) => endpoint.close(() => resolve()));
