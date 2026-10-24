@@ -21,9 +21,27 @@ function fixture() {
   const connections = { isDisconnected: vi.fn(() => false) };
   const configured = vi.fn(() => false);
   const keys = new SetupCredentialCache();
-  const service = new HostSetupStatusService(runtime as never, connections as never, keys, {
-    providers: { isEnvironmentVariableConfigured: configured },
-  } as never);
+  const service = new HostSetupStatusService(
+    runtime as never,
+    connections as never,
+    {
+      presence: async () => ({
+        hasAnthropicKey:
+          !!keys.get('anthropic') ||
+          keys.isEnvironmentConfigured('ANTHROPIC_API_KEY', configured('ANTHROPIC_API_KEY')),
+        hasOpenaiKey:
+          !!keys.get('openai') ||
+          keys.isEnvironmentConfigured('OPENAI_API_KEY', configured('OPENAI_API_KEY')),
+        hasGoogleKey: !!keys.get('google'),
+        hasStoredAnthropicKey: !!keys.get('anthropic'),
+        hasStoredAnthropicOAuthToken: !!keys.get('anthropic_oauth_token'),
+        hasEnvAnthropicKey: keys.isEnvironmentConfigured(
+          'ANTHROPIC_API_KEY',
+          configured('ANTHROPIC_API_KEY')
+        ),
+      }),
+    } as never
+  );
   return { service, runtime, connections, keys, configured };
 }
 
@@ -208,11 +226,11 @@ describe('native host setup status', () => {
     expect((await first.service.claude()).auth.authenticated).toBe(false);
   });
 
-  it('reports API-key booleans only and does not probe CLI/network', () => {
+  it('reports API-key booleans only and does not probe CLI/network', async () => {
     const { service, keys, runtime } = fixture();
     keys.set('openai', 'private-openai');
     keys.set('google', 'private-google');
-    expect(service.apiKeys()).toEqual({
+    expect(await service.apiKeys()).toEqual({
       success: true,
       hasAnthropicKey: false,
       hasGoogleKey: true,

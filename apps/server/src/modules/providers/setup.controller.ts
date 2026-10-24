@@ -1,15 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  Inject,
-  Post,
-  Query,
-  Req,
-  Res,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Inject, Post, Query, Req } from '@nestjs/common';
 import {
   CliConnectionProviderSchema,
   ProviderDisconnectRequestSchema,
@@ -30,14 +19,18 @@ import {
   type CodexVerificationRequest,
   GithubAuthenticationRequestSchema,
   type GithubAuthenticationRequest,
+  SetupCredentialStoreRequestSchema,
+  SetupCredentialDeleteRequestSchema,
+  type SetupCredentialStoreRequest,
+  type SetupCredentialDeleteRequest,
   type CliConnectionProvider,
   type ProviderDisconnectRequest,
   type ProviderReconnectRequest,
 } from '@automaker/contracts';
-import type { Request, Response } from 'express';
+import type { Request } from 'express';
 
 import { Public } from '../../core/auth/index.js';
-import { SetupHandlersService, type SetupHandlerName } from './setup-handlers.service.js';
+import { SetupCredentialsService } from './setup-credentials.service.js';
 import { ProviderSetupStatusService } from './provider-setup-status.service.js';
 import { ProviderModelCatalogService } from './provider-model-catalog.service.js';
 import { HostSetupStatusService } from './host-setup-status.service.js';
@@ -54,7 +47,7 @@ import { GithubAuthenticationService } from './github-authentication.service.js'
 @Controller('setup')
 export class SetupController {
   constructor(
-    @Inject(SetupHandlersService) private readonly handlers: SetupHandlersService,
+    @Inject(SetupCredentialsService) private readonly credentials: SetupCredentialsService,
     @Inject(ProviderSetupStatusService) private readonly statuses: ProviderSetupStatusService,
     @Inject(ProviderModelCatalogService) private readonly catalogs: ProviderModelCatalogService,
     @Inject(HostSetupStatusService) private readonly hostStatus: HostSetupStatusService,
@@ -69,13 +62,6 @@ export class SetupController {
     @Inject(GithubAuthenticationService)
     private readonly githubAuthentication: GithubAuthenticationService
   ) {}
-
-  private run(name: SetupHandlerName, request: Request, response: Response) {
-    // Express handlers historically defaulted to 200; Nest POST defaults to 201.
-    // Individual handlers may still replace this with an explicit error status.
-    response.status(200);
-    return this.handlers.run(name, request, response);
-  }
 
   @Get('claude-status') claudeStatus() {
     return this.hostStatus.claude();
@@ -99,11 +85,30 @@ export class SetupController {
   ) {
     return this.connections.disconnect('claude', body);
   }
-  @Post('store-api-key') storeApiKey(@Req() q: Request, @Res() s: Response) {
-    return this.run('storeApiKey', q, s);
+  @Get('credential-target') credentialTarget(@Query('provider') provider: string) {
+    return this.credentials.target(provider);
   }
-  @Post('delete-api-key') deleteApiKey(@Req() q: Request, @Res() s: Response) {
-    return this.run('deleteApiKey', q, s);
+  @Post('store-api-key') @HttpCode(200) storeApiKey(
+    @Body(new ZodValidationPipe(SetupCredentialStoreRequestSchema))
+    body: SetupCredentialStoreRequest,
+    @Req() request: Request
+  ) {
+    return this.credentials.change(
+      'store',
+      body,
+      request.ip || request.socket.remoteAddress || 'unknown'
+    );
+  }
+  @Post('delete-api-key') @HttpCode(200) deleteApiKey(
+    @Body(new ZodValidationPipe(SetupCredentialDeleteRequestSchema))
+    body: SetupCredentialDeleteRequest,
+    @Req() request: Request
+  ) {
+    return this.credentials.change(
+      'delete',
+      body,
+      request.ip || request.socket.remoteAddress || 'unknown'
+    );
   }
   @Get('api-keys') apiKeys() {
     return this.hostStatus.apiKeys();

@@ -11,7 +11,6 @@ import { createNestApplication } from '../../src/main.js';
 import { CodexCredentialRuntime } from '../../src/core/platform/codex-credential.runtime.js';
 import { CodexVerificationRuntime } from '../../src/core/platform/codex-verification.runtime.js';
 import { CodexVerificationService } from '../../src/modules/providers/codex-verification.service.js';
-import { SetupHandlersService } from '../../src/modules/providers/setup-handlers.service.js';
 import { SettingsService } from '../../src/services/settings-service.js';
 
 it('serves confirmed native Codex verification with isolated targets, no legacy bridge and shutdown draining', async () => {
@@ -45,7 +44,6 @@ it('serves confirmed native Codex verification with isolated targets, no legacy 
     const run = vi
       .spyOn(runtime.app.get(CodexVerificationRuntime), 'run')
       .mockResolvedValue('verified');
-    const bridge = vi.spyOn(runtime.app.get(SetupHandlersService), 'run');
     await runtime.start();
     const { port } = runtime.app.getHttpServer().address() as AddressInfo;
     const request = async (route: string, body?: unknown) => {
@@ -56,7 +54,7 @@ it('serves confirmed native Codex verification with isolated targets, no legacy 
       });
       return { status: response.status, body: await response.json() };
     };
-    return { runtime, root, read, run, bridge, request };
+    return { runtime, root, read, run, request };
   };
   try {
     const first = await start('first');
@@ -107,8 +105,6 @@ it('serves confirmed native Codex verification with isolated targets, no legacy 
         .authenticated
     ).toBe(true);
     expect(second.read.mock.calls.every(([includeToken]) => includeToken === false)).toBe(true);
-    expect(first.bridge).not.toHaveBeenCalled();
-    expect(second.bridge).not.toHaveBeenCalled();
     expect(process.env).toEqual(before);
     first.run.mockImplementationOnce(async () => {
       await new Promise<void>((resolve) => {

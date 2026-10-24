@@ -9,7 +9,6 @@ import {
   API_CONTRACT_VERSION_HEADER,
 } from '@automaker/contracts';
 import { createNestApplication } from '../../src/main.js';
-import { SetupHandlersService } from '../../src/modules/providers/setup-handlers.service.js';
 import { ClaudeVerificationRuntime } from '../../src/core/platform/claude-verification.runtime.js';
 import { ClaudeVerificationService } from '../../src/modules/providers/claude-verification.service.js';
 import { SettingsService } from '../../src/services/settings-service.js';
@@ -42,7 +41,6 @@ it('serves native consent-gated verification with app-specific environment and n
     const run = vi
       .spyOn(runtime.app.get(ClaudeVerificationRuntime), 'run')
       .mockResolvedValue('verified');
-    const bridge = vi.spyOn(runtime.app.get(SetupHandlersService), 'run');
     await runtime.start();
     const { port } = runtime.app.getHttpServer().address() as AddressInfo;
     const request = async (route: string, body?: unknown) => {
@@ -51,10 +49,10 @@ it('serves native consent-gated verification with app-specific environment and n
         headers: { 'Content-Type': 'application/json' },
         ...(body !== undefined && { body: JSON.stringify(body) }),
       });
-      expect(response.headers.get(API_CONTRACT_VERSION_HEADER)).toBe('8');
+      expect(response.headers.get(API_CONTRACT_VERSION_HEADER)).toBe('9');
       return { status: response.status, body: await response.json() };
     };
-    return { runtime, root, request, run, bridge };
+    return { runtime, root, request, run };
   };
   try {
     const first = await start('first');
@@ -103,8 +101,6 @@ it('serves native consent-gated verification with app-specific environment and n
         .authenticated
     ).toBe(true);
     expect(second.run.mock.calls[0][0].environment.ANTHROPIC_API_KEY).toBeUndefined();
-    expect(first.bridge).not.toHaveBeenCalled();
-    expect(second.bridge).not.toHaveBeenCalled();
     expect(process.env).toEqual(before);
     expect(
       (await first.runtime.app.get(SettingsService).getCredentials()).apiKeys.anthropic

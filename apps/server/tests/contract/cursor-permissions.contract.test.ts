@@ -8,7 +8,6 @@ import {
   CursorPermissionsTargetResponseSchema,
 } from '@automaker/contracts';
 import { createNestApplication } from '../../src/main.js';
-import { SetupHandlersService } from '../../src/modules/providers/setup-handlers.service.js';
 
 it('serves native Cursor permissions with versioned file-target consent, app isolation and fallback', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'automaker-cursor-permissions-http-'));
@@ -32,7 +31,6 @@ it('serves native Cursor permissions with versioned file-target consent, app iso
       },
     });
     apps.push(runtime);
-    const bridge = vi.spyOn(runtime.app.get(SetupHandlersService), 'run');
     await runtime.start();
     const { port } = runtime.app.getHttpServer().address() as AddressInfo;
     const request = async (route: string, method = 'GET', body?: unknown) => {
@@ -41,10 +39,10 @@ it('serves native Cursor permissions with versioned file-target consent, app iso
         headers: { 'Content-Type': 'application/json' },
         body: body === undefined ? undefined : JSON.stringify(body),
       });
-      expect(response.headers.get(API_CONTRACT_VERSION_HEADER)).toBe('8');
+      expect(response.headers.get(API_CONTRACT_VERSION_HEADER)).toBe('9');
       return { status: response.status, body: await response.json() };
     };
-    return { runtime, request, root, bridge };
+    return { runtime, request, root };
   };
   try {
     const first = await start('first');
@@ -145,8 +143,6 @@ it('serves native Cursor permissions with versioned file-target consent, app iso
       profileId: 'development',
     });
     expect((await first.request('cursor-permissions/example?profileId=invalid')).status).toBe(400);
-    expect(first.bridge).not.toHaveBeenCalled();
-    expect(second.bridge).not.toHaveBeenCalled();
   } finally {
     for (const runtime of apps) await runtime.app.close();
     await rm(directory, { recursive: true, force: true });

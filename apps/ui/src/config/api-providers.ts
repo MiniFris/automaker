@@ -13,7 +13,7 @@ export interface ProviderConfig {
   setValue: Dispatch<SetStateAction<string>>;
   showValue: boolean;
   setShowValue: Dispatch<SetStateAction<boolean>>;
-  hasStoredKey: string | null | undefined;
+  hasStoredKey: string | boolean | null | undefined;
   inputTestId: string;
   toggleTestId: string;
   testButton: {
@@ -33,6 +33,7 @@ export interface ProviderConfig {
 
 export interface ProviderConfigParams {
   apiKeys: ApiKeys;
+  configuredKeys?: Partial<Record<ProviderKey, boolean>>;
   anthropic: {
     value: string;
     setValue: Dispatch<SetStateAction<string>>;
@@ -73,6 +74,7 @@ export interface ProviderConfigParams {
 
 export const buildProviderConfigs = ({
   apiKeys,
+  configuredKeys = {},
   anthropic,
   openai,
   zai,
@@ -86,12 +88,12 @@ export const buildProviderConfigs = ({
     setValue: anthropic.setValue,
     showValue: anthropic.show,
     setShowValue: anthropic.setShow,
-    hasStoredKey: apiKeys.anthropic,
+    hasStoredKey: apiKeys.anthropic || !!configuredKeys.anthropic,
     inputTestId: 'anthropic-api-key-input',
     toggleTestId: 'toggle-anthropic-visibility',
     testButton: {
       onClick: anthropic.onTest,
-      disabled: !anthropic.value || anthropic.testing,
+      disabled: (!anthropic.value && !configuredKeys.anthropic) || anthropic.testing,
       loading: anthropic.testing,
       testId: 'test-claude-connection',
     },
@@ -112,12 +114,12 @@ export const buildProviderConfigs = ({
     setValue: openai.setValue,
     showValue: openai.show,
     setShowValue: openai.setShow,
-    hasStoredKey: apiKeys.openai,
+    hasStoredKey: apiKeys.openai || !!configuredKeys.openai,
     inputTestId: 'openai-api-key-input',
     toggleTestId: 'toggle-openai-visibility',
     testButton: {
       onClick: openai.onTest,
-      disabled: !openai.value || openai.testing,
+      disabled: (!openai.value && !configuredKeys.openai) || openai.testing,
       loading: openai.testing,
       testId: 'test-openai-connection',
     },

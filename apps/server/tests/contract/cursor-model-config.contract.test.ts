@@ -9,7 +9,6 @@ import {
   API_CONTRACT_VERSION_HEADER,
 } from '@automaker/contracts';
 import { createNestApplication } from '../../src/main.js';
-import { SetupHandlersService } from '../../src/modules/providers/setup-handlers.service.js';
 import { SettingsService } from '../../src/services/settings-service.js';
 
 it('serves native project model config with target consent, app isolation and no changes to global model settings', async () => {
@@ -34,7 +33,6 @@ it('serves native project model config with target consent, app isolation and no
       },
     });
     apps.push(runtime);
-    const bridge = vi.spyOn(runtime.app.get(SetupHandlersService), 'run');
     await runtime.start();
     const { port } = runtime.app.getHttpServer().address() as AddressInfo;
     const request = async (route: string, method = 'GET', body?: unknown) => {
@@ -43,10 +41,10 @@ it('serves native project model config with target consent, app isolation and no
         headers: { 'Content-Type': 'application/json' },
         body: body === undefined ? undefined : JSON.stringify(body),
       });
-      expect(response.headers.get(API_CONTRACT_VERSION_HEADER)).toBe('8');
+      expect(response.headers.get(API_CONTRACT_VERSION_HEADER)).toBe('9');
       return { status: response.status, body: await response.json() };
     };
-    return { runtime, root, request, bridge };
+    return { runtime, root, request };
   };
   try {
     const first = await start('first');
@@ -125,8 +123,6 @@ it('serves native project model config with target consent, app isolation and no
     const after = await first.runtime.app.get(SettingsService).getGlobalSettings();
     expect(after.cursorDefaultModel).toBe(before.cursorDefaultModel);
     expect(after.enabledCursorModels).toEqual(before.enabledCursorModels);
-    expect(first.bridge).not.toHaveBeenCalled();
-    expect(second.bridge).not.toHaveBeenCalled();
   } finally {
     for (const runtime of apps) await runtime.app.close();
     await rm(directory, { recursive: true, force: true });

@@ -1,4 +1,9 @@
 {
+  "Saved keys are stored unencrypted in the backend private credentials file. Protect backend and browser data, and never commit credentials to version control.": "Сохранённые ключи находятся в приватном credentials-файле сервера без шифрования. Защищайте данные сервера и браузера и никогда не добавляйте credentials в систему контроля версий.",
+  "Configure your AI provider API keys. Saved keys are stored in the backend private credentials file.": "Настройте API-ключи AI-провайдеров. Сохранённые ключи находятся в приватном credentials-файле сервера.",
+  "Credential API is not available": "API для сохранения credentials недоступен",
+  "Credential change cancelled": "Изменение credentials отменено",
+  "Change application credentials?\nOperation: {operation}\nProvider: {provider}\nBackend: {directory}\nInstance: {instance}\nPrivate file: {file}\nDeletion disables bootstrap fallback for this application. CLI logins, bootstrap configuration and backups are not removed.": "Изменить credentials приложения?\nОперация: {operation}\nПровайдер: {provider}\nСервер: {directory}\nЭкземпляр: {instance}\nПриватный файл: {file}\nУдаление отключает bootstrap-fallback для этого приложения. CLI-логины, исходные настройки и резервные копии сохраняются.",
   "Refresh GitHub installation status": "Обновить статус установки GitHub CLI",
   "Authentication not checked": "Аутентификация не проверена",
   "Authentication not verified": "Аутентификация не подтверждена",

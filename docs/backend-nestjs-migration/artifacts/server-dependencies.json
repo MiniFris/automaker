@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 604,
-    "internalEdges": 2005,
+    "files": 601,
+    "internalEdges": 2001,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -23,10 +23,10 @@
     "modules -> core": 114,
     "modules -> legacy": 29,
     "modules -> lib": 24,
-    "modules -> modules": 290,
+    "modules -> modules": 291,
     "modules -> providers": 27,
-    "modules -> routes": 34,
-    "modules -> services": 113,
+    "modules -> routes": 32,
+    "modules -> services": 114,
     "modules -> types": 2,
     "providers -> core": 1,
     "providers -> lib": 4,
@@ -41,9 +41,9 @@
     "root -> services": 21,
     "routes -> lib": 103,
     "routes -> middleware": 8,
-    "routes -> modules": 10,
+    "routes -> modules": 8,
     "routes -> providers": 12,
-    "routes -> routes": 347,
+    "routes -> routes": 345,
     "routes -> services": 190,
     "routes -> types": 3,
     "services -> core": 8,
@@ -95,8 +95,6 @@
       "apps/server/src/routes/app-spec/common.ts",
       "apps/server/src/routes/fs/routes/resolve-directory.ts",
       "apps/server/src/routes/settings/openai-compatible.ts",
-      "apps/server/src/routes/setup/routes/delete-api-key.ts",
-      "apps/server/src/routes/setup/routes/store-api-key.ts",
       "apps/server/src/routes/terminal/common.ts",
       "apps/server/src/routes/worktree/common.ts",
       "apps/server/src/routes/worktree/routes/continue-operation.ts",
@@ -141,8 +139,6 @@
       "apps/server/src/providers/remote-sdk-worker.ts",
       "apps/server/src/providers/simple-query-service.ts",
       "apps/server/src/routes/fs/routes/resolve-directory.ts",
-      "apps/server/src/routes/setup/common.ts",
-      "apps/server/src/routes/setup/routes/delete-api-key.ts",
       "apps/server/src/services/claude-usage-service.ts",
       "apps/server/src/services/codex-app-server-service.ts",
       "apps/server/src/services/execution-environment/docker-worker.ts",
@@ -288,14 +284,14 @@
   },
   "externalImports": {
     "@anthropic-ai/claude-agent-sdk": 3,
-    "@automaker/contracts": 23,
+    "@automaker/contracts": 24,
     "@automaker/dependency-resolver": 1,
     "@automaker/git-utils": 12,
     "@automaker/model-resolver": 20,
-    "@automaker/platform": 77,
+    "@automaker/platform": 75,
     "@automaker/prompts": 3,
     "@automaker/types": 178,
-    "@automaker/utils": 172,
+    "@automaker/utils": 169,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
@@ -313,7 +309,7 @@
     "crypto": 4,
     "dotenv": 1,
     "events": 1,
-    "express": 222,
+    "express": 219,
     "fs": 11,
     "fs/promises": 13,
     "net": 1,
@@ -326,7 +322,7 @@
     "node:http": 7,
     "node:net": 2,
     "node:os": 9,
-    "node:path": 46,
+    "node:path": 47,
     "node:perf_hooks": 2,
     "node:stream": 5,
     "node:stream/web": 2,
@@ -335,7 +331,7 @@
     "node:url": 3,
     "node:util": 13,
     "os": 14,
-    "path": 75,
+    "path": 73,
     "readline": 1,
     "reflect-metadata": 1,
     "ssh2": 3,
@@ -2693,19 +2689,15 @@
     },
     {
       "source": "apps/server/src/modules/providers/host-setup-status.service.ts",
-      "target": "apps/server/src/core/config/index.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/host-setup-status.service.ts",
       "target": "apps/server/src/core/platform/setup-status.runtime.ts"
     },
     {
       "source": "apps/server/src/modules/providers/host-setup-status.service.ts",
-      "target": "apps/server/src/modules/providers/provider-connection.repository.ts"
+      "target": "apps/server/src/modules/providers/application-credentials.service.ts"
     },
     {
       "source": "apps/server/src/modules/providers/host-setup-status.service.ts",
-      "target": "apps/server/src/modules/providers/setup-credential-cache.service.ts"
+      "target": "apps/server/src/modules/providers/provider-connection.repository.ts"
     },
     {
       "source": "apps/server/src/modules/providers/provider-connection-command.service.ts",
@@ -2965,7 +2957,7 @@
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
-      "target": "apps/server/src/modules/providers/setup-handlers.service.ts"
+      "target": "apps/server/src/modules/providers/setup-credentials.service.ts"
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
@@ -2976,16 +2968,20 @@
       "target": "apps/server/src/modules/providers/tool-policy.service.ts"
     },
     {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/modules/providers/setup-credential-cache.service.ts"
+      "source": "apps/server/src/modules/providers/setup-credentials.service.ts",
+      "target": "apps/server/src/core/errors/index.ts"
     },
     {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/routes/setup/routes/delete-api-key.ts"
+      "source": "apps/server/src/modules/providers/setup-credentials.service.ts",
+      "target": "apps/server/src/modules/providers/application-credentials.service.ts"
     },
     {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/routes/setup/routes/store-api-key.ts"
+      "source": "apps/server/src/modules/providers/setup-credentials.service.ts",
+      "target": "apps/server/src/modules/providers/provider-connection.repository.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/setup-credentials.service.ts",
+      "target": "apps/server/src/services/settings-service.ts"
     },
     {
       "source": "apps/server/src/modules/providers/setup.controller.ts",
@@ -3037,7 +3033,7 @@
     },
     {
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "target": "apps/server/src/modules/providers/setup-handlers.service.ts"
+      "target": "apps/server/src/modules/providers/setup-credentials.service.ts"
     },
     {
       "source": "apps/server/src/modules/sessions/legacy-session.adapter.ts",
@@ -5938,22 +5934,6 @@
     {
       "source": "apps/server/src/routes/settings/routes/update-project.ts",
       "target": "apps/server/src/types/settings.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/common.ts",
-      "target": "apps/server/src/routes/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/delete-api-key.ts",
-      "target": "apps/server/src/modules/providers/setup-credential-cache.service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/store-api-key.ts",
-      "target": "apps/server/src/modules/providers/setup-credential-cache.service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/store-api-key.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
     },
     {
       "source": "apps/server/src/routes/terminal/common.ts",

@@ -253,3 +253,22 @@ confirmation/protocol target, status read model, остальные CLI/remote c
 consumers и command lifecycle ещё требуют переноса. Metadata не означает token
 revocation, secure erase backups/bootstrap config или отзыв самостоятельного CLI
 login. API header и capability versions этим срезом не меняются.
+
+## ADR-018: API v9 confirmed native application key commands
+
+Setup store/delete требуют protocol-1 storage preview и literal confirmed target
+с application UUID/root, provider и private credentials path. Client проверяет
+capability до POST и не подменяет approval новым target. API header — `9`.
+Старые unconfirmed bodies отклоняются; server/client cutover выполняется вместе.
+
+Native command владеет bounded admission, writer FIFO и shutdown drain. Committed
+configured state не является successful authentication proof. Activation следует
+за persistence; delete подавляет bootstrap fallback без изменения process.env/.env.
+Setup handler bridge и dotenv key helpers удалены. CLI logins, operator config и
+backups не удаляются, token не отзывается у upstream. Это показано в confirmation.
+
+Presence/status читает private persisted state. Settings после reload позволяет
+delete/test backend key без выдачи plaintext secret в браузер; verification имеет
+отдельное согласие. Missing API/mocks/cancel не сообщают fake persistence success.
+Public setup auth/CSRF, consumer policy остальных adapters и полноценная auth
+evidence normalization остаются gates, не закрытыми одним UUID или metadata flag.

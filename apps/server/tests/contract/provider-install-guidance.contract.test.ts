@@ -5,7 +5,6 @@ import type { AddressInfo } from 'node:net';
 import { expect, it, vi } from 'vitest';
 import { ProviderInstallGuidanceSchema } from '@automaker/contracts';
 import { createNestApplication } from '../../src/main.js';
-import { SetupHandlersService } from '../../src/modules/providers/setup-handlers.service.js';
 import { ProviderConnectionCommandService } from '../../src/modules/providers/provider-connection-command.service.js';
 import { SetupStatusRuntime } from '../../src/core/platform/setup-status.runtime.js';
 
@@ -25,7 +24,6 @@ it('serves native read-only install guidance without bridge calls, probes or con
     },
   });
   try {
-    const bridge = vi.spyOn(runtime.app.get(SetupHandlersService), 'run');
     const connections = runtime.app.get(ProviderConnectionCommandService);
     const disconnect = vi.spyOn(connections, 'disconnect');
     const reconnect = vi.spyOn(connections, 'reconnect');
@@ -62,7 +60,6 @@ it('serves native read-only install guidance without bridge calls, probes or con
       });
       expect(body.target.workingDirectory).toBe(directory);
     }
-    expect(bridge).not.toHaveBeenCalled();
     expect(disconnect).not.toHaveBeenCalled();
     expect(reconnect).not.toHaveBeenCalled();
     expect(claude).not.toHaveBeenCalled();

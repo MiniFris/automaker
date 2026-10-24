@@ -7,7 +7,7 @@ import { ProviderUsageService } from './provider-usage.service.js';
 import { ProviderSetupStatusService } from './provider-setup-status.service.js';
 import { ProviderModelCatalogService } from './provider-model-catalog.service.js';
 import { SetupController } from './setup.controller.js';
-import { SetupHandlersService } from './setup-handlers.service.js';
+import { SetupCredentialsService } from './setup-credentials.service.js';
 import { ToolPolicyService } from './tool-policy.service.js';
 import { HostSetupStatusService } from './host-setup-status.service.js';
 import { SetupCredentialCache } from './setup-credential-cache.service.js';
@@ -49,7 +49,7 @@ import {
     ProviderUsageService,
     ProviderSetupStatusService,
     ProviderModelCatalogService,
-    SetupHandlersService,
+    SetupCredentialsService,
     ToolPolicyService,
     SetupCredentialCache,
     HostSetupStatusService,

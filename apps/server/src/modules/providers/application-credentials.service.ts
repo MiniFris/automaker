@@ -41,6 +41,25 @@ export class ApplicationCredentialsService {
     return this.closing;
   }
   async environment(): Promise<NodeJS.ProcessEnv> {
+    return (await this.snapshot()).environment;
+  }
+  async presence() {
+    const { environment, credentials } = await this.snapshot();
+    const hasAnthropicKey = !!environment.ANTHROPIC_API_KEY;
+    const hasStoredAnthropicKey =
+      hasAnthropicKey && !!(this.cache.get('anthropic') || credentials.apiKeys.anthropic);
+    return {
+      hasAnthropicKey,
+      hasGoogleKey: !!credentials.apiKeys.google || !!this.cache.get('google'),
+      hasOpenaiKey: !!environment.OPENAI_API_KEY,
+      hasStoredAnthropicKey,
+      hasEnvAnthropicKey: hasAnthropicKey && !hasStoredAnthropicKey,
+      hasStoredAnthropicOAuthToken:
+        !!environment.CLAUDE_CODE_OAUTH_TOKEN &&
+        !!(this.cache.get('anthropic_oauth_token') || credentials.anthropicOAuthToken),
+    };
+  }
+  private async snapshot() {
     const credentials = await this.settings.getCredentials();
     const environment = { ...this.bootstrap };
     for (const provider of Object.keys(SETUP_CREDENTIAL_ENV) as SetupCredentialProvider[]) {
@@ -65,6 +84,6 @@ export class ApplicationCredentialsService {
     // A stale alternate Codex key must not override the selected application key.
     if (environment.OPENAI_API_KEY) environment.CODEX_API_KEY = environment.OPENAI_API_KEY;
     else delete environment.CODEX_API_KEY;
-    return environment;
+    return { environment, credentials };
   }
 }

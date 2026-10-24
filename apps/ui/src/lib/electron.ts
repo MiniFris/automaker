@@ -1895,7 +1895,7 @@ interface SetupAPI {
 function createMockSetupAPI(): SetupAPI {
   const mockStoreApiKey = async (provider: string, _apiKey: string) => {
     console.log('[Mock] Storing API key for:', provider);
-    return { success: true };
+    return { success: false, error: 'Mock environment - credential persistence unavailable' };
   };
 
   return {
@@ -1961,8 +1961,8 @@ function createMockSetupAPI(): SetupAPI {
     deleteApiKey: async (provider: string) => {
       console.log('[Mock] Deleting API key for:', provider);
       return {
-        success: true,
-        message: translate('API key for {value1} deleted', { value1: provider }),
+        success: false,
+        error: 'Mock environment - credential persistence unavailable',
       };
     },
 

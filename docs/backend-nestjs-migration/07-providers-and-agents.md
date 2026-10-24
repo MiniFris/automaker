@@ -881,7 +881,9 @@ filesystem I/O и ошибки Nest hooks, также требует hardening �
         endpoint/model/method target, isolated environment и protocol gate (API v6).
   - [x] Codex verification: native auth-only CLI RPC и tool-free Responses probe,
         CLI/API-key separation, confirmed endpoint/model/profile и protocol gate (API v7).
-  - [ ] Key mutations и единый setup target policy; настоящий host
+  - [x] Key store/delete: native commands, private storage target/confirmation,
+        durable activation, protocol gate и removal setup handler bridge (API v9).
+  - [ ] Единый setup/credential-consumer policy; настоящий host
         installer, если потребуется, проектируется отдельно с confirmation.
 
 ### Срез: native Gemini/Copilot/Cursor setup status
@@ -1870,6 +1872,98 @@ native command admission/drain, согласованный masked/status read mo
 остальных credential consumers, включая другие CLI adapters/remote paths.
 Full credential isolation, status evidence policy, native key mutation checklist
 и этап 7 не объявляются завершёнными только по этому resolver checkpoint.
+
+### Срез: native confirmed setup key commands / API v9
+
+POST `/api/setup/store-api-key` и `/api/setup/delete-api-key` переведены на
+`SetupCredentialsService` / `ApplicationCredentialsService.change`. Setup handler
+bridge, старые store/delete handlers и helper записи `.env` удалены; исходники
+доступны в Git. В актуальном setup transport нет Express-handler forwarding и
+key mutations через process.env, process.cwd() или `.env` persistence.
+
+GET `/api/setup/credential-target?provider=...` — protocol-1 preview для anthropic,
+openai и anthropic_oauth_token. Он не читает ключи и не создаёт storage; target
+содержит application UUID/backend directory, provider и фактический private
+credentials.json path в DATA_DIR. Store/delete принимают только strict shared DTO
+с literal confirmed и исходным target. Store дополнительно требует валидный
+немаскированный secret; delete не принимает secret fields. Stale UUID/root/file
+отклоняются до writer. API header повышен до `9`; старый request body не поддержан.
+
+Web/Electron используют один HTTP transport. Публичные client method signatures
+storeApiKey(provider, key)/deleteApiKey(provider) сохранены, но реализация делает
+inspection, native confirmation и повторный preview до POST. Dialog показывает
+операцию, provider, UUID/root/private file, но не secret. Новые metadata не
+подставляются в старое approval. Старый backend без capability не получает POST.
+Response проверяется по target и operation; success означает committed configured
+state, а не подтверждённую upstream authentication. Cancel не пишет и не выдаёт
+success. Missing API и desktop mocks также больше не сообщают фиктивный save/delete.
+
+Command admission ограничен 16 pending mutations и 10 attempts/client/minute с
+bounded per-app map. Accepted commands передаются сериализованному writer; shutdown
+закрывает admission и drain-ит их. Writer активирует state после durable commit.
+Неизвестные persistence errors превращаются в статическое безопасное сообщение,
+не возвращают secret/path diagnostics и не считаются success. Общий filesystem
+shutdown deadline и межпроцессное владение DATA_DIR остаются отдельными gates.
+
+GET api-keys и Claude application-key hints читают тот же persisted resolver,
+поэтому clear bootstrap fallback учитывается после restart, без wizard cache.
+CLI file/activity heuristics в полном auth response пока сохранены для compatibility:
+это не новый live credential proof, их общая normalization ещё обязательна.
+Удаление не означает vendor logout/revocation, secure erase backups или изменение
+operator bootstrap config; dialog прямо предупреждает об этом. Credential policy
+остальных CLI adapters/remote execution и protected settings update routes ещё
+нужно согласовать до завершения всего этапа 7.
+
+Браузерная проверка выявила настоящий reload bug: settings delete controls зависели
+только от пустого local browser state, хотя key был сохранён backend. Теперь они
+учитывают server presence, refresh после delete и не требуют загрузки plaintext
+secret обратно в браузер. По тем же flags доступен explicit Test сохранённого key
+с пустым input, без передачи apiKey в verification body и с отдельным paid-query
+consent. UI storage/security notice описывает plaintext private backend file,
+не выдаёт его за browser-only storage или encrypted secret vault.
+
+Settings Save Anthropic/OpenAI также использует этот native command path, не
+выдаёт один setApiKeys в браузере за persistence. Пустой input после reload не
+удаляет backend key: для этого остаётся отдельная confirmed Delete операция.
+
+Проверки среза:
+
+- 12 command-service cases: старый/неподтверждённый body, stale target, secret-free
+  result, persistence failure, per-app rate/concurrency limits и shutdown drain.
+  6 shared DTO и 9 HTTP-client cases проверяют invalid/masked input, protocol gate,
+  cancel и отсутствие POST после смены approved identity/storage path.
+- Native HTTP двух apps выполняет реальные private-file writes, api-key/token
+  store/delete, restart и status read без настоящих upstream accounts. Проверены
+  400/409 до write, отсутствие secret в response, неизменность process.env и `.env`,
+  подавление bootstrap после restart и настоящий durable commit pending HTTP
+  command до завершения Nest shutdown (контролируемо задержан только write port).
+- Старые bridge spy assertions удалены вместе с самим bridge, не заменены успешным
+  production mock. Старый bridge-only unit suite заменён native service/HTTP tests.
+- 2 token-save hook cases: missing API и cancel/failure не вызывают local success.
+- `npm run test:server:unit`: 3483 passed, 40 существующих skips.
+- `npm run test:server:contract`: 272 passed.
+- `npm run test:packages`: 1404 passed.
+- Contracts/server/UI production и Electron main/preload builds, typecheck,
+  server/UI lint:errors и lockfile check успешны. Прежний chunk-size warning остаётся;
+  packaged Electron и Windows acceptance не заявляются.
+- Production lifecycle smoke после server build: SIGTERM/SIGINT exit 0.
+- Chromium с trace: 9 passed в повторном полном прогоне. Новый scenario включает
+  cancel/store, переход из setup в settings с reload, test backend key с пустым
+  input без secret в body, Settings Save replacement и confirmed delete. Browser
+  models/probes — offline fixtures; key commands/storage — настоящие native.
+- Первые прогоны выявили setup-precondition test issue и настоящий reload UI bug;
+  test state и production presence controls исправлены отдельно. Один общий прогон
+  поймал прежний intermittent loading timeout при переходе в Agent view (до chat
+  send); полный повтор пройден без skip/увеличения timeout. Loading flakiness не
+  объявляется исправленной этим key-command срезом и остаётся hardening evidence.
+- Выбранные real SSH CLI/SDK/Direct chat/restart: 3 passed, 34 filtered.
+- Docker acceptance с `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest`:
+  11 passed, 4 opt-in skipped; owned cleanup проверен.
+- Route/dependency/API-consumer inventories обновлены, все три checks актуальны;
+  форматирование и diff check успешны.
+  Setup auth/CSRF, общий credential-consumer policy, usage ownership, provider
+  capabilities/lifecycle и этапы 8–11 остаются открытыми; UUID/confirmation не заменяют
+  авторизацию и этот срез не завершает всю миграцию.
 
 ## 7.7. Agent routes
 

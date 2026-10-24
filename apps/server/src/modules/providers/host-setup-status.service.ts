@@ -4,10 +4,9 @@ import {
   InternalServerErrorException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { RUNTIME_CONFIG, type RuntimeConfig } from '../../core/config/index.js';
+import { ApplicationCredentialsService } from './application-credentials.service.js';
 import { SetupStatusRuntime } from '../../core/platform/setup-status.runtime.js';
 import { ProviderConnectionRepository } from './provider-connection.repository.js';
-import { SetupCredentialCache } from './setup-credential-cache.service.js';
 
 @Injectable()
 export class HostSetupStatusService {
@@ -15,8 +14,8 @@ export class HostSetupStatusService {
     @Inject(SetupStatusRuntime) private readonly runtime: SetupStatusRuntime,
     @Inject(ProviderConnectionRepository)
     private readonly connections: ProviderConnectionRepository,
-    @Inject(SetupCredentialCache) private readonly keys: SetupCredentialCache,
-    @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig
+    @Inject(ApplicationCredentialsService)
+    private readonly credentials: ApplicationCredentialsService
   ) {}
 
   platform() {
@@ -34,13 +33,13 @@ export class HostSetupStatusService {
     }
   }
 
-  apiKeys() {
+  async apiKeys() {
+    const presence = await this.credentials.presence();
     return {
       success: true,
-      hasAnthropicKey:
-        !!this.keys.get('anthropic') || this.environmentConfigured('ANTHROPIC_API_KEY'),
-      hasGoogleKey: !!this.keys.get('google'),
-      hasOpenaiKey: !!this.keys.get('openai') || this.environmentConfigured('OPENAI_API_KEY'),
+      hasAnthropicKey: presence.hasAnthropicKey,
+      hasGoogleKey: presence.hasGoogleKey,
+      hasOpenaiKey: presence.hasOpenaiKey,
     };
   }
 
@@ -79,9 +78,10 @@ export class HostSetupStatusService {
         hasRecentActivity: false,
       };
       if (!this.connections.isDisconnected('claude')) {
-        auth.hasStoredOAuthToken = !!this.keys.get('anthropic_oauth_token');
-        auth.hasStoredApiKey = !!this.keys.get('anthropic');
-        auth.hasEnvApiKey = this.environmentConfigured('ANTHROPIC_API_KEY');
+        const presence = await this.credentials.presence();
+        auth.hasStoredOAuthToken = presence.hasStoredAnthropicOAuthToken;
+        auth.hasStoredApiKey = presence.hasStoredAnthropicKey;
+        auth.hasEnvApiKey = presence.hasEnvAnthropicKey;
         const indicators = await this.runtime.claudeIndicators();
         if (indicators.hasStatsCacheWithActivity) {
           auth.hasRecentActivity = true;
@@ -143,12 +143,5 @@ export class HostSetupStatusService {
       success: false,
       error: `Failed to read ${target} status.`,
     });
-  }
-
-  private environmentConfigured(name: string): boolean {
-    return this.keys.isEnvironmentConfigured(
-      name,
-      this.config.providers.isEnvironmentVariableConfigured(name)
-    );
   }
 }

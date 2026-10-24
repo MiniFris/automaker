@@ -20,7 +20,8 @@ export function ApiKeysSection() {
   const [isDeletingAnthropicKey, setIsDeletingAnthropicKey] = useState(false);
   const [isDeletingOpenaiKey, setIsDeletingOpenaiKey] = useState(false);
 
-  const { providerConfigParams, handleSave, saved } = useApiKeyManagement();
+  const { providerConfigParams, handleSave, saved, apiKeyStatus, refreshApiKeyStatus } =
+    useApiKeyManagement();
 
   const providerConfigs = buildProviderConfigs(providerConfigParams);
 
@@ -37,6 +38,7 @@ export function ApiKeysSection() {
       const result = await api.setup.deleteApiKey('anthropic');
       if (result.success) {
         setApiKeys({ ...apiKeys, anthropic: '' });
+        await refreshApiKeyStatus();
         setClaudeAuthStatus({
           authenticated: false,
           method: 'none',
@@ -51,7 +53,7 @@ export function ApiKeysSection() {
     } finally {
       setIsDeletingAnthropicKey(false);
     }
-  }, [apiKeys, setApiKeys, claudeAuthStatus, setClaudeAuthStatus]);
+  }, [apiKeys, setApiKeys, claudeAuthStatus, setClaudeAuthStatus, refreshApiKeyStatus]);
 
   // Delete OpenAI API key
   const deleteOpenaiKey = useCallback(async () => {
@@ -66,6 +68,7 @@ export function ApiKeysSection() {
       const result = await api.setup.deleteApiKey('openai');
       if (result.success) {
         setApiKeys({ ...apiKeys, openai: '' });
+        await refreshApiKeyStatus();
         setCodexAuthStatus({
           authenticated: false,
           method: 'none',
@@ -79,7 +82,7 @@ export function ApiKeysSection() {
     } finally {
       setIsDeletingOpenaiKey(false);
     }
-  }, [apiKeys, setApiKeys, setCodexAuthStatus]);
+  }, [apiKeys, setApiKeys, setCodexAuthStatus, refreshApiKeyStatus]);
 
   return (
     <div
@@ -101,7 +104,7 @@ export function ApiKeysSection() {
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
           {translate(
-            'Configure your AI provider API keys. Keys are stored locally in your browser.'
+            'Configure your AI provider API keys. Saved keys are stored in the backend private credentials file.'
           )}
         </p>
       </div>
@@ -174,7 +177,7 @@ export function ApiKeysSection() {
             )}
           </Button>
 
-          {apiKeys.anthropic && (
+          {(apiKeys.anthropic || apiKeyStatus?.hasAnthropicKey) && (
             <Button
               onClick={deleteAnthropicKey}
               disabled={isDeletingAnthropicKey}
@@ -191,7 +194,7 @@ export function ApiKeysSection() {
             </Button>
           )}
 
-          {apiKeys.openai && (
+          {(apiKeys.openai || apiKeyStatus?.hasOpenaiKey) && (
             <Button
               onClick={deleteOpenaiKey}
               disabled={isDeletingOpenaiKey}

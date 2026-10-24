@@ -6,6 +6,14 @@
  */
 
 import { createLogger } from '@automaker/utils/logger';
+import { translate } from './i18n';
+import {
+  SetupCredentialProviderSchema,
+  SetupCredentialTargetResponseSchema,
+  SetupCredentialStoreRequestSchema,
+  SetupCredentialDeleteRequestSchema,
+  SetupCredentialMutationResponseSchema,
+} from '@automaker/contracts';
 import {
   GithubAuthenticationTargetResponseSchema,
   GithubAuthenticationRequestSchema,
@@ -816,6 +824,43 @@ interface EnhancePromptResult {
  * HTTP API Client that implements ElectronAPI interface
  */
 export class HttpApiClient implements ElectronAPI {
+  private async changeSetupCredential(
+    operation: 'store' | 'delete',
+    provider: string,
+    apiKey?: string
+  ) {
+    const { target } = await this.setup.getCredentialTarget(provider);
+    const request =
+      operation === 'store'
+        ? SetupCredentialStoreRequestSchema.parse({ confirmed: true, target, apiKey })
+        : SetupCredentialDeleteRequestSchema.parse({ confirmed: true, target });
+    if (
+      !window.confirm(
+        translate(
+          'Change application credentials?\nOperation: {operation}\nProvider: {provider}\nBackend: {directory}\nInstance: {instance}\nPrivate file: {file}\nDeletion disables bootstrap fallback for this application. CLI logins, bootstrap configuration and backups are not removed.',
+          {
+            operation,
+            provider,
+            directory: target.workingDirectory,
+            instance: target.instanceId,
+            file: target.credentialsPath,
+          }
+        )
+      )
+    )
+      return { success: false, error: translate('Credential change cancelled') };
+    const preview = await this.setup.getCredentialTarget(provider);
+    if (JSON.stringify(preview.target) !== JSON.stringify(target))
+      throw new Error('Credential target changed. Inspect and confirm it again.');
+    const result = SetupCredentialMutationResponseSchema.parse(
+      operation === 'store'
+        ? await this.post('/api/setup/store-api-key', request)
+        : await this.post('/api/setup/delete-api-key', request)
+    );
+    if (JSON.stringify(result.target) !== JSON.stringify(target) || result.operation !== operation)
+      throw new Error('Credential response does not match confirmation.');
+    return result;
+  }
   private serverUrl: string;
   private ws: WebSocket | null = null;
   private eventCallbacks: Map<EventType, Set<EventCallback>> = new Map();
@@ -1749,21 +1794,19 @@ export class HttpApiClient implements ElectronAPI {
       error?: string;
     }> => this.disconnectSetupProvider('claude', request),
 
-    storeApiKey: (
-      provider: string,
-      apiKey: string
-    ): Promise<{
-      success: boolean;
-      error?: string;
-    }> => this.post('/api/setup/store-api-key', { provider, apiKey }),
+    getCredentialTarget: async (provider: string) => {
+      const name = SetupCredentialProviderSchema.parse(provider);
+      const preview = SetupCredentialTargetResponseSchema.parse(
+        await this.get(`/api/setup/credential-target?provider=${name}`)
+      );
+      if (preview.target.provider !== name)
+        throw new Error('Credential target does not match provider.');
+      return preview;
+    },
+    storeApiKey: async (provider: string, apiKey: string) =>
+      this.changeSetupCredential('store', provider, apiKey),
 
-    deleteApiKey: (
-      provider: string
-    ): Promise<{
-      success: boolean;
-      error?: string;
-      message?: string;
-    }> => this.post('/api/setup/delete-api-key', { provider }),
+    deleteApiKey: async (provider: string) => this.changeSetupCredential('delete', provider),
 
     getApiKeys: (): Promise<{
       success: boolean;
