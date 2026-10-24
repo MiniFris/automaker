@@ -6,7 +6,6 @@ import {
 } from '../../core/errors/index.js';
 import { PROJECT_FILE_PORT, type ProjectFilePort } from './project-file.port.js';
 import { SecurityService } from '../../core/security/security.service.js';
-import { getAllowedRootDirectory } from '@automaker/platform';
 import os from 'node:os';
 import path from 'node:path';
 import type { BrowseProjectRequest, ResolveDirectoryRequest } from './files.schemas.js';
@@ -85,7 +84,7 @@ export class FilesQueryService {
 
   async browse(dirPath?: string): Promise<Record<string, unknown>> {
     const target = this.security.validateLocalPath(
-      dirPath ?? getAllowedRootDirectory() ?? os.homedir(),
+      dirPath ?? this.security.allowedRootDirectory ?? os.homedir(),
       'browse directories'
     );
     const parent = path.dirname(target);

@@ -1,5 +1,5 @@
 import { Global, Module } from '@nestjs/common';
-import * as secureFilesystem from '../../lib/secure-fs.js';
+import { secureFs } from '@automaker/platform';
 import { ProjectPathPipe } from './project-path.pipe.js';
 import { AllowedPathGuard } from './allowed-path.guard.js';
 import { SecurityService } from './security.service.js';
@@ -12,7 +12,14 @@ export const SECURE_FILESYSTEM = Symbol('SECURE_FILESYSTEM');
     SecurityService,
     AllowedPathGuard,
     ProjectPathPipe,
-    { provide: SECURE_FILESYSTEM, useValue: secureFilesystem },
+    {
+      provide: SECURE_FILESYSTEM,
+      inject: [SecurityService],
+      useFactory: (security: SecurityService) =>
+        secureFs.createSecureFs((candidate, options) =>
+          security.validateLocalPath(candidate, 'filesystem access', options?.followFinalSymlink)
+        ),
+    },
   ],
   exports: [SecurityService, AllowedPathGuard, ProjectPathPipe, SECURE_FILESYSTEM],
 })

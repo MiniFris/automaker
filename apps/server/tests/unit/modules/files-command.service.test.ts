@@ -4,6 +4,9 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { FilesCommandService } from '@/modules/files/files-command.service.js';
 import { LocalProjectFileAdapter } from '@/modules/files/local-project-file.adapter.js';
+import { SecurityService } from '@/core/security/index.js';
+import { RuntimePathsService, parseRuntimeConfig } from '@/core/config/index.js';
+import { secureFs } from '@automaker/platform';
 
 describe('FilesCommandService', () => {
   let temporary: string;
@@ -11,7 +14,13 @@ describe('FilesCommandService', () => {
 
   beforeEach(async () => {
     temporary = await mkdtemp(path.join(os.tmpdir(), 'nest-files-command-'));
-    service = new FilesCommandService(new LocalProjectFileAdapter());
+    const security = new SecurityService(
+      new RuntimePathsService(parseRuntimeConfig({ DATA_DIR: temporary }, temporary), temporary)
+    );
+    const filesystem = secureFs.createSecureFs((candidate, options) =>
+      security.validateLocalPath(candidate, 'filesystem test', options?.followFinalSymlink)
+    );
+    service = new FilesCommandService(new LocalProjectFileAdapter(filesystem, security));
   });
 
   afterEach(async () => {

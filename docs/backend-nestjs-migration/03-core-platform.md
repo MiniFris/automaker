@@ -41,15 +41,14 @@ Config validation не должна требовать credentials невыбр�
 - [x] Добавить traversal, symlink, Windows drive и UNC tests.
 - [x] Добавить audit logging для rejected destructive operations без утечки secrets.
 
-Уточнение completion audit: эти отметки фиксируют перенос wrappers, не доказательство
-per-application security isolation. SecurityService всё ещё вызывает platform
-`initAllowedPaths`/`validatePath` с global state, а legacy lifecycle повторно
-инициализирует его из process.env. Поэтому exit criterion «config, auth и security
-имеют один source of truth» пока не доказан для полного приложения. Native GitHub
-repository boundary из этапа 8 независимо использует RuntimePathsService, но не
-заменяет общий SecurityService/AllowedPathGuard/secure-fs. Удаление этого global
-security state и двухинстансные path-policy contracts остаются обязательными
-в рамках полного рефакторинга, см. этап 11.
+Уточнение completion audit: исходные отметки фиксировали перенос wrappers, не
+per-application security isolation. Следующий срез (ADR-041, описан ниже) переводит
+SecurityService/AllowedPathGuard и native SECURE_FILESYSTEM на owner config и
+проверяет два инстанса. Но legacy lifecycle ещё вызывает `initAllowedPaths`, а SDK
+helpers, settings atomic writer, download/prompt adapters и другие consumers ещё
+используют global secure-fs. Поэтому exit criterion «config, auth и security имеют
+один source of truth» пока не доказан для полного приложения. Общий пункт этапа 11
+остаётся открытым до удаления оставшихся consumers и ambient initialization.
 
 ## 3.4. Validation и contracts
 
@@ -234,3 +233,69 @@ settings/auth persistence formats и configured-key precedence не меняют
   Cursor status/permissions, Gemini/Copilot status, confirmed credentials и
   explicit legacy credential import. Paid upstream, live vendor authentication
   и packaged Electron этим offline fixture acceptance не проверялись.
+
+## Срез: native owner path policy и scoped filesystem
+
+SecurityService теперь получает RuntimePathsService, фиксирует canonical allowed/data
+roots и рабочую директорию приложения, не вызывает platform init/validate globals.
+Отсутствующий allowed root сохраняет unrestricted mode без stale policy другого
+инстанса. Relative paths используют application cwd. Не существующие leaf paths
+разрешаются через существующего parent, dangling symlinks отклоняются. Boundary
+checks учитывают separator: допустимое имя `..literal` не считается traversal.
+Отказы SecurityService не публикуют candidate/сырой filesystem error в audit или HTTP.
+
+`secureFs.createSecureFs` возвращает API с собственными validator, p-limit queue и
+throttle config. Старые exports сохраняются через отдельный legacy instance, без
+скрытой смены всех старых consumers. Native SECURE_FILESYSTEM создаётся DI factory
+для конкретного SecurityService; Workspace/Templates и LocalProjectFileAdapter
+используют этот instance. Files browse defaults больше не читают platform globals.
+GitHub repository boundary переиспользует ту же native policy, вместо собственного
+дублирующего snapshot roots.
+
+Filesystem callback проверяется и при admission, и непосредственно в IO closure
+на каждом retry. Это защищает проверенный queued-parent replacement case, но не
+устраняет OS-level TOCTOU между realpath и syscall. Для unlink/rm/lstat/rename
+проверяется canonical parent без follow последнего symlink: удаление ссылки не
+удаляет её цель, atomic replace не записывает в прежнюю цель ссылки. Copy/move
+проверяют source до удаления overwrite destination; missing source не уничтожает
+destination. Parent mkdir в LocalProjectFileAdapter тоже проходит через scoped FS.
+Typed DomainError больше не переименовывается в UNKNOWN_OUTCOME общим mapper.
+
+Новые native HTTP regressions сначала воспроизвели cross-owner read и symlink
+escape (3 failed). `native-path-policy.contract.test.ts` проверяет два приложения,
+прямой filesystem access без HTTP guard, browse default, relative paths, data
+exception и restricted/unrestricted coexistence. `native-path-policy.test.ts`
+проверяет 12 cases, включая реальные symlink entries, очередь с подменой parent,
+revoked policy на EMFILE retry, отдельные throttles и неразрушающий missing-source
+preflight. Все writes ограничены owned временными directories.
+
+Срез не закрывает общий exit criterion: SettingsFileRepository/atomicWriteJson,
+LocalDownloadService (включая owned archive scope), PromptEnhancementService,
+legacy SDK/workspace/project-git helpers и lifecycle init ещё подлежат переносу.
+Scoped queue пока не имеет cancellable/bounded shutdown owner и admission cap;
+общая файловая координация, backup recovery, arbitrary FS races и Windows native
+acceptance также остаются обязательными дальнейшими работами. Module-level legacy
+exports не удалены и не выдаются за native isolation всего backend.
+
+Проверки среза (host runner Node 22.22.3):
+
+- новые 12 native policy units и 3 native HTTP contracts прошли; финальные полные
+  server suites после последних source edits: 3710 unit passed, 40 skipped;
+  347 contract passed;
+- packages/UI unit suite для изменённого platform API: 1481 passed;
+- platform/server production build, server lint, UI typecheck/lint/production build
+  прошли; UI build не является packaged multi-OS acceptance;
+- Docker transport acceptance: 11 passed, 4 opt-in skipped; SSH feature suite:
+  14 passed, с offline provider fixtures. Transport paths в последней правке
+  file adapter не менялись; это не тест новых filesystem операций через remote UI;
+- все три inventories обновлены и проверены, lockfile check прошёл.
+- Production lifecycle smoke после последней сборки: SIGTERM/SIGINT exit 0;
+  Chromium после завершения Docker/SSH: 18 passed, workers=1, retries=0, trace on.
+  Это offline regression, не vendor auth/write acceptance; полный format check
+  и `git diff --check` прошли.
+
+Первый build обнаружил недоступный публичному declaration type ThrottleConfig:
+тип явно экспортирован, platform и server пересобраны. Ранний unit прогон,
+начатый до финального domain-mapper исправления, показал замену typed отказа на
+UNKNOWN_OUTCOME. После фикса и source freeze targeted и полные suites повторены
+успешно. Formatting нового unit file также исправлен. Timeouts/retries не увеличены.

@@ -873,3 +873,27 @@ Host/repository config-file includes, arbitrary metadata symlinks, filesystem TO
 blocking filesystem latency, legacy global security state and provider tool access
 are not certified by this policy. This is not a general filesystem sandbox or a
 completion decision for stage 8 or the overall migration.
+
+## ADR-041: scoped native filesystem and one owner path policy
+
+SecurityService captures its RuntimePathsService config and canonical roots rather
+than initializing or reading platform globals. Native SECURE_FILESYSTEM is created
+per app through secureFs.createSecureFs with that validator and independent throttle
+state/queue. GitHub repository boundary shares SecurityService instead of duplicating
+root snapshots; Files browse and local file operations use the same owner policy.
+The legacy platform API remains a separate default instance for not-yet-migrated
+consumers, not an implicit per-app default or AsyncLocalStorage override.
+
+Queued/retried IO revalidates paths before its filesystem operation. Entry-oriented
+unlink/rm/lstat/rename preserve final-symlink semantics while authorizing the parent;
+atomic write replaces a link rather than writing through it. Copy/move source
+preflight precedes overwrite removal. Typed domain refusals survive infrastructure
+mapping, and security audit/errors do not echo rejected private candidate paths.
+
+Owned native HTTP and real-filesystem units cover simultaneous restricted owners,
+unrestricted coexistence, DATA_DIR, relative paths, pointer retargeting, separate
+queues/config, symlink deletion/atomic replacement and policy revocation on retry.
+Legacy lifecycle initialization, settings/atomic writer, downloads/prompt reads and
+SDK/workspace/project-git imports still require migration. Bounded queue shutdown,
+admission control, cross-writer coordination, OS-level TOCTOU and multi-OS acceptance
+are not certified by this slice; the original broad security requirement stays open.

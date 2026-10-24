@@ -7,6 +7,7 @@ import path from 'node:path';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { GithubRepositoryBoundary } from '../../../src/modules/github/github-repository-boundary.js';
 import { RuntimePathsService, parseRuntimeConfig } from '../../../src/core/config/index.js';
+import { SecurityService } from '../../../src/core/security/security.service.js';
 const execute = promisify(execFile);
 const observer = vi.hoisted(() => ({ wait: vi.fn() }));
 vi.mock('../../../src/core/platform/linux-process-group.js', () => ({
@@ -26,7 +27,9 @@ describe.skipIf(process.platform !== 'linux')('owned GitHub command runtime', ()
     new NodeGithubCommandRuntime(
       environment,
       new GithubRepositoryBoundary(
-        new RuntimePathsService(parseRuntimeConfig(environment, fixture.root), fixture.root)
+        new SecurityService(
+          new RuntimePathsService(parseRuntimeConfig(environment, fixture.root), fixture.root)
+        )
       )
     );
   beforeEach(async () => {

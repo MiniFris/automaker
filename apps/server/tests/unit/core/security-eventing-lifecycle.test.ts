@@ -6,10 +6,19 @@ import { createEventEmitter } from '../../../src/lib/events.js';
 import { ApplicationEventBusAdapter } from '../../../src/core/eventing/index.js';
 import { SecurityService } from '../../../src/core/security/index.js';
 import { SupervisorCoordinator } from '../../../src/core/lifecycle/supervisor-coordinator.service.js';
+import { RuntimePathsService, parseRuntimeConfig } from '../../../src/core/config/index.js';
+
+const securityFor = (allowedRoot?: string) =>
+  new SecurityService(
+    new RuntimePathsService(
+      parseRuntimeConfig({ ALLOWED_ROOT_DIRECTORY: allowedRoot }, process.cwd()),
+      process.cwd()
+    )
+  );
 
 describe('core security, eventing and lifecycle', () => {
   it('handles POSIX, Windows drive and UNC path boundaries without treating remote paths as local', () => {
-    const security = new SecurityService();
+    const security = securityFor();
     expect(security.isWithin('/repo/sub/file', '/repo', 'posix')).toBe(true);
     expect(security.isWithin('/repo-other/file', '/repo', 'posix')).toBe(false);
     expect(security.isWithin('C:\\repo\\sub', 'C:\\repo', 'win32')).toBe(true);
@@ -20,19 +29,14 @@ describe('core security, eventing and lifecycle', () => {
   it('rejects a local symlink that escapes the allowed project root', async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'security-root-'));
     const outside = await mkdtemp(path.join(os.tmpdir(), 'security-outside-'));
-    const previousAllowedRoot = process.env.ALLOWED_ROOT_DIRECTORY;
     try {
       await symlink(outside, path.join(root, 'escape'));
-      process.env.ALLOWED_ROOT_DIRECTORY = root;
-      const security = new SecurityService();
+      const security = securityFor(root);
       expect(() => security.validateLocalPath(path.join(root, 'escape', 'file.txt'))).toThrow(
         'Path not allowed'
       );
     } finally {
-      if (previousAllowedRoot === undefined) delete process.env.ALLOWED_ROOT_DIRECTORY;
-      else process.env.ALLOWED_ROOT_DIRECTORY = previousAllowedRoot;
       await Promise.all([rm(root, { recursive: true }), rm(outside, { recursive: true })]);
-      new SecurityService();
     }
   });
 

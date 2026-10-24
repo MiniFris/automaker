@@ -6,20 +6,23 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { RuntimePathsService, parseRuntimeConfig } from '../../../src/core/config/index.js';
 import { GithubRepositoryBoundary } from '../../../src/modules/github/github-repository-boundary.js';
+import { SecurityService } from '../../../src/core/security/security.service.js';
 
 describe('application-owned GitHub repository boundary', () => {
   let root: string, allowed: string, data: string, outside: string;
   const boundary = (directory: string | undefined = allowed) =>
     new GithubRepositoryBoundary(
-      new RuntimePathsService(
-        parseRuntimeConfig(
-          {
-            DATA_DIR: data,
-            ALLOWED_ROOT_DIRECTORY: directory,
-          },
+      new SecurityService(
+        new RuntimePathsService(
+          parseRuntimeConfig(
+            {
+              DATA_DIR: data,
+              ALLOWED_ROOT_DIRECTORY: directory,
+            },
+            root
+          ),
           root
-        ),
-        root
+        )
       )
     );
   const directory = (candidate: string) => mkdir(candidate, { recursive: true });
@@ -40,7 +43,9 @@ describe('application-owned GitHub repository boundary', () => {
 
   it('retains explicit unrestricted behavior without requiring the candidate to exist', () => {
     const unrestricted = new GithubRepositoryBoundary(
-      new RuntimePathsService(parseRuntimeConfig({ DATA_DIR: data }, root), root)
+      new SecurityService(
+        new RuntimePathsService(parseRuntimeConfig({ DATA_DIR: data }, root), root)
+      )
     );
     expect(unrestricted.resolve(path.join(outside, 'not-created'))).toBeUndefined();
   });

@@ -109,6 +109,9 @@ API v13, wire contracts, persisted formats и execution bindings не меняю
       initAllowedPaths из lifecycle. Проверить два одновременных приложения с разными
       allowed/data roots, symlink/relative paths и снятие ограничений без stale state.
       Native GitHub repository boundary не заменяет этот общий exit criterion этапа 3.
+      Native guard/policy, SECURE_FILESYSTEM и Files adapter уже переведены в ADR-041;
+      остаются legacy init, SDK helpers, settings/atomic writer, download/prompt
+      adapters, bounded FS queue shutdown/admission и filesystem coordination.
 - [ ] Filesystem repositories.
 - [ ] Git local/remote adapters.
 - [ ] Process/PTY supervisor.

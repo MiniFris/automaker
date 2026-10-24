@@ -535,8 +535,9 @@ core.worktree pinning и сохранение repository config без изме�
 и [Git environment](https://git-scm.com/docs/git). Это repository-selection policy,
 не OS filesystem jail: trusted host/repository config includes, прочие Git metadata
 files и конкурентная замена файлов после проверки не изолируются этим provider.
-Legacy SecurityService/AllowedPathGuard и secure-fs global state этим срезом не
-переведены на per-app policy; issue-validation/provider tool access и legacy worktree
+На момент этого среза SecurityService/AllowedPathGuard и secure-fs global state не
+были переведены на per-app policy (последующий native срез — ADR-041, этап 3);
+issue-validation/provider tool access и legacy worktree
 helpers требуют собственного audit. Финальные stage 7–11 gates остаются открытыми.
 
 Проверки после последних source edits выполняются с Node 22.22.3 в PATH host runner:

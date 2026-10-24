@@ -8,7 +8,7 @@
   },
   "layerEdges": {
     "core -> core": 56,
-    "core -> lib": 5,
+    "core -> lib": 4,
     "core -> middleware": 1,
     "core -> services": 1,
     "legacy -> core": 3,
@@ -18,7 +18,7 @@
     "legacy -> services": 6,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 144,
+    "modules -> core": 145,
     "modules -> lib": 29,
     "modules -> modules": 347,
     "modules -> providers": 29,
@@ -284,10 +284,10 @@
     "@automaker/dependency-resolver": 1,
     "@automaker/git-utils": 12,
     "@automaker/model-resolver": 20,
-    "@automaker/platform": 74,
+    "@automaker/platform": 73,
     "@automaker/prompts": 3,
     "@automaker/types": 177,
-    "@automaker/utils": 166,
+    "@automaker/utils": 165,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
@@ -731,16 +731,12 @@
       "target": "apps/server/src/core/security/security.service.ts"
     },
     {
-      "source": "apps/server/src/core/security/security.module.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
+      "source": "apps/server/src/core/security/security.service.ts",
+      "target": "apps/server/src/core/config/index.ts"
     },
     {
       "source": "apps/server/src/core/security/security.service.ts",
       "target": "apps/server/src/core/errors/index.ts"
-    },
-    {
-      "source": "apps/server/src/core/security/security.service.ts",
-      "target": "apps/server/src/core/observability/request-context.ts"
     },
     {
       "source": "apps/server/src/core/validation/validation.module.ts",
@@ -1956,6 +1952,10 @@
     },
     {
       "source": "apps/server/src/modules/files/local-project-file.adapter.ts",
+      "target": "apps/server/src/core/security/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/files/local-project-file.adapter.ts",
       "target": "apps/server/src/lib/secure-fs.ts"
     },
     {
@@ -2124,11 +2124,11 @@
     },
     {
       "source": "apps/server/src/modules/github/github-repository-boundary.ts",
-      "target": "apps/server/src/core/config/index.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
       "source": "apps/server/src/modules/github/github-repository-boundary.ts",
-      "target": "apps/server/src/core/errors/domain-errors.ts"
+      "target": "apps/server/src/core/security/security.service.ts"
     },
     {
       "source": "apps/server/src/modules/github/github-review.port.ts",

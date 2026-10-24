@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import fs from 'node:fs';
 import path from 'node:path';
-import { RuntimePathsService } from '../../core/config/index.js';
+import { SecurityService } from '../../core/security/security.service.js';
 import { ForbiddenDomainError, UnavailableDomainError } from '../../core/errors/domain-errors.js';
 
 export interface GithubRepositoryContext {
@@ -11,35 +11,18 @@ export interface GithubRepositoryContext {
   workTree?: string;
 }
 
-const within = (candidate: string, root: string) => {
-  const relative = path.relative(root, candidate);
-  return relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
-};
 const missing = (error: unknown) => (error as NodeJS.ErrnoException)?.code === 'ENOENT';
 
 /** Per-application repository selection, not an OS/configuration-file sandbox. */
 @Injectable()
 export class GithubRepositoryBoundary {
-  private readonly roots?: readonly string[];
-  private readonly workingDirectory: string;
-  constructor(@Inject(RuntimePathsService) paths: RuntimePathsService) {
-    this.workingDirectory = paths.workingDirectory;
-    if (paths.allowedRootDirectory) {
-      try {
-        this.roots = [paths.allowedRootDirectory, paths.dataDirectory].map((root) =>
-          this.configuredRoot(root)
-        );
-      } catch {
-        throw new UnavailableDomainError('GitHub repository boundary could not be initialized.');
-      }
-    }
-  }
+  constructor(@Inject(SecurityService) private readonly security: SecurityService) {}
 
   /** undefined: unrestricted mode; null: no repository inside the allowed roots. */
   resolve(candidate: string): GithubRepositoryContext | null | undefined {
-    if (!this.roots) return undefined;
+    if (!this.security.allowedRootDirectory) return undefined;
     try {
-      const cwd = this.directory(path.resolve(this.workingDirectory, candidate));
+      const cwd = this.directory(path.resolve(this.security.workingDirectory, candidate));
       let current = cwd;
       for (let depth = 0; depth < 256; depth++) {
         const entry = path.join(current, '.git');
@@ -75,7 +58,7 @@ export class GithubRepositoryBoundary {
   }
 
   private allowed(candidate: string): boolean {
-    return this.roots!.some((root) => within(candidate, root));
+    return this.security.isAllowedCanonicalPath(candidate);
   }
   private authorized(candidate: string): string {
     if (!this.allowed(candidate))
@@ -124,21 +107,6 @@ export class GithubRepositoryBoundary {
       return target;
     } finally {
       fs.closeSync(descriptor);
-    }
-  }
-
-  private configuredRoot(candidate: string): string {
-    let current = path.resolve(candidate);
-    const suffix: string[] = [];
-    for (;;) {
-      try {
-        return path.resolve(fs.realpathSync.native(current), ...suffix);
-      } catch (error) {
-        const parent = path.dirname(current);
-        if (!missing(error) || parent === current) throw error;
-        suffix.unshift(path.basename(current));
-        current = parent;
-      }
     }
   }
 }

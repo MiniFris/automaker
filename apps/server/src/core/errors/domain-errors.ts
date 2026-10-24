@@ -66,6 +66,7 @@ export class UnknownOutcomeDomainError extends DomainError {
 }
 
 export function mapInfrastructureError(error: unknown): DomainError {
+  if (error instanceof DomainError) return error;
   const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
   const message = error instanceof Error ? error.message : String(error);
   if (code === 'ENOENT') return new NotFoundDomainError('Resource not found.');
