@@ -29,6 +29,7 @@ import { AgentStreamNormalizer } from '../../src/services/agent/agent-stream-nor
 import { AgentSessionLoader } from '../../src/services/agent/agent-session-loader.js';
 import { AgentConversationCoordinator } from '../../src/services/agent/agent-conversation-coordinator.js';
 import { AgentPromptQueue } from '../../src/services/agent/agent-prompt-queue.js';
+import { AgentQueueDeliveryStore } from '../../src/services/agent/agent-queue-delivery-store.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -124,6 +125,9 @@ describe('Nest shell and legacy bridge contract', () => {
         runtime.app.get(AgentExecutionCoordinator)
       );
       expect(second.app.get(AgentPromptBuilder)).not.toBe(runtime.app.get(AgentPromptBuilder));
+      expect(second.app.get(AgentQueueDeliveryStore)).not.toBe(
+        runtime.app.get(AgentQueueDeliveryStore)
+      );
       expect(second.app.get(AgentSessionLoader)).not.toBe(runtime.app.get(AgentSessionLoader));
       expect(second.app.get(AgentConversationCoordinator)).not.toBe(
         runtime.app.get(AgentConversationCoordinator)

@@ -18,6 +18,9 @@ export interface Message {
   images?: Array<{ data: string; mimeType: string; filename: string }>;
   timestamp: string;
   isError?: boolean;
+  deliveryId?: string;
+  queuedPromptId?: string;
+  deliveryStatus?: 'completed' | 'failed' | 'cancelled';
 }
 
 export interface QueuedPrompt {
@@ -28,6 +31,8 @@ export interface QueuedPrompt {
   providerId?: string;
   thinkingLevel?: ThinkingLevel;
   addedAt: string;
+  deliveryId?: string;
+  deliveryStatus?: 'interrupted';
 }
 
 export interface ActiveSession {

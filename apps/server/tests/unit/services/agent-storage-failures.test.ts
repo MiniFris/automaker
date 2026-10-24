@@ -189,6 +189,38 @@ describe('agent storage failure boundaries', () => {
     expect(await repository.loadMessages(sessionId)).toHaveLength(2);
   });
 
+  it('waits for error-stream cleanup before persisting or publishing its terminal failure', async () => {
+    let release!: () => void, entered!: () => void;
+    let cleaned = 0;
+    const cleaning = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    const cleanup = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    execute.mockImplementationOnce(async function* () {
+      try {
+        yield { type: 'error' as const, error: 'Fixture failure' };
+      } finally {
+        entered();
+        await cleanup;
+        cleaned++;
+      }
+    });
+    const sending = service.sendMessage({ sessionId, message: 'Await error cleanup' });
+    try {
+      await cleaning;
+      expect(events.some((event) => event.type === 'error')).toBe(false);
+      expect(await repository.loadMessages(sessionId)).toHaveLength(1);
+    } finally {
+      release();
+    }
+    expect(await sending).toMatchObject({ success: false });
+    expect(cleaned).toBe(1);
+    expect(events.at(-1)?.type).toBe('error');
+    expect(await repository.loadMessages(sessionId)).toHaveLength(2);
+  });
+
   it('serializes queue mutations and never publishes a failed add/remove/clear', async () => {
     await service.startConversation({ sessionId });
     const save = vi.spyOn(repository, 'saveQueue');

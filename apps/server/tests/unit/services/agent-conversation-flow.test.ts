@@ -9,6 +9,7 @@ import { AgentConversationCoordinator } from '../../../src/services/agent/agent-
 import { AgentPromptQueue } from '../../../src/services/agent/agent-prompt-queue.js';
 import { AgentExecutionCoordinator } from '../../../src/services/agent/agent-execution-coordinator.js';
 import { AgentEventPublisher } from '../../../src/services/agent/agent-event-publisher.js';
+import { AgentQueueDeliveryStore } from '../../../src/services/agent/agent-queue-delivery-store.js';
 import { AgentSessionStorageError } from '../../../src/services/agent/agent-session-storage.error.js';
 import {
   ConflictDomainError,
@@ -49,7 +50,8 @@ describe('conversation/queue application components', () => {
     repository = new AgentSessionRepository(directory);
     sessions = new AgentSessionRegistry();
     executions = new AgentExecutionCoordinator(1000);
-    loader = new AgentSessionLoader(repository, sessions, directory);
+    const deliveries = new AgentQueueDeliveryStore(directory, repository, sessions);
+    loader = new AgentSessionLoader(repository, sessions, directory, deliveries);
     const emitter = createEventEmitter();
     emitter.subscribe((type, payload) => {
       if (type === 'agent:stream') events.push(payload as Record<string, unknown>);
@@ -68,7 +70,8 @@ describe('conversation/queue application components', () => {
       loader,
       executions,
       conversations,
-      publisher
+      publisher,
+      deliveries
     );
     await repository.initialize();
     await repository.addMetadata({
@@ -113,10 +116,12 @@ describe('conversation/queue application components', () => {
       isRunning: false,
       promptQueue: [{ id: 'queued' }],
     });
+    const restartedSessions = new AgentSessionRegistry();
     const restarted = await new AgentSessionLoader(
       repository,
-      new AgentSessionRegistry(),
-      directory
+      restartedSessions,
+      directory,
+      new AgentQueueDeliveryStore(directory, repository, restartedSessions)
     ).ensure(id);
     expect(restarted?.sdkSessionId).toBe('saved-sdk');
     expect(restarted?.promptQueue).toEqual(first?.promptQueue);

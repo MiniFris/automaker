@@ -10,11 +10,17 @@ import {
 } from './agent-conversation-coordinator.js';
 import { AgentEventPublisher } from './agent-event-publisher.js';
 import type { QueuedPrompt } from './agent-session.types.js';
+import { AgentQueueDeliveryStore, type AgentQueueDelivery } from './agent-queue-delivery-store.js';
+import { AgentSessionStorageError } from './agent-session-storage.error.js';
 
 export type AgentQueuedInput = Pick<
   QueuedPrompt,
   'message' | 'imagePaths' | 'model' | 'providerId' | 'thinkingLevel'
 >;
+
+function succeeded(result: unknown): boolean {
+  return !!result && typeof result === 'object' && 'success' in result && result.success === true;
+}
 
 /** Serializes durable follow-up mutations and reserves execution before dequeueing. */
 export class AgentPromptQueue {
@@ -25,7 +31,8 @@ export class AgentPromptQueue {
     private readonly loader: AgentSessionLoader,
     private readonly executions: AgentExecutionCoordinator,
     private readonly conversations: AgentConversationCoordinator,
-    private readonly events: AgentEventPublisher
+    private readonly events: AgentEventPublisher,
+    private readonly deliveries: AgentQueueDeliveryStore
   ) {}
 
   async add(
@@ -35,6 +42,7 @@ export class AgentPromptQueue {
     this.executions.assertSessionOpen(id);
     return this.sessions.serializeQueue(id, async () => {
       this.executions.assertSessionOpen(id);
+      await this.deliveries.recover(id);
       const session = await this.loader.ensure(id);
       this.executions.assertSessionOpen(id);
       if (!session) return { success: false, error: 'Session not found' };
@@ -60,10 +68,13 @@ export class AgentPromptQueue {
   }
 
   async get(id: string): Promise<{ success: boolean; queue?: QueuedPrompt[]; error?: string }> {
-    const session = await this.loader.ensure(id);
-    return session
-      ? { success: true, queue: session.promptQueue }
-      : { success: false, error: 'Session not found' };
+    return this.sessions.serializeQueue(id, async () => {
+      await this.deliveries.recover(id);
+      const session = await this.loader.ensure(id);
+      return session
+        ? { success: true, queue: session.promptQueue }
+        : { success: false, error: 'Session not found' };
+    });
   }
 
   async remove(id: string, promptId: string) {
@@ -80,6 +91,7 @@ export class AgentPromptQueue {
     this.executions.assertSessionOpen(id);
     return this.sessions.serializeQueue(id, async () => {
       this.executions.assertSessionOpen(id);
+      await this.deliveries.recover(id);
       const session = await this.loader.ensure(id);
       this.executions.assertSessionOpen(id);
       if (!session) return { success: false, error: 'Session not found' };
@@ -95,15 +107,20 @@ export class AgentPromptQueue {
   async process<T>(id: string, execute: AgentMessageExecution<T>): Promise<void> {
     let next: QueuedPrompt | undefined;
     let admitted = false;
+    let delivery: AgentQueueDelivery | undefined;
     try {
       const execution = this.conversations.run(
         id,
         async (controller) => {
           next = await this.sessions.serializeQueue(id, async () => {
+            await this.deliveries.recover(id);
+            if (this.deliveries.isOwned(id)) return undefined;
             const session = this.sessions.get(id);
             if (!session || session.isRunning || !session.promptQueue.length) return undefined;
             controller.signal.throwIfAborted();
             const [first, ...remaining] = session.promptQueue;
+            if (first.deliveryStatus === 'interrupted') return undefined;
+            delivery = await this.deliveries.claim(id, first);
             await this.repository.saveQueue(id, remaining);
             session.promptQueue = remaining;
             this.events.publish(id, { type: 'queue_updated', queue: remaining });
@@ -120,22 +137,37 @@ export class AgentPromptQueue {
               }
             : undefined;
         },
-        execute
+        (input, controller) => execute(input, controller, delivery?.deliveryId, delivery?.prompt.id)
       );
       admitted = true;
-      await execution;
+      const result = await execution;
+      if (delivery) await this.deliveries.finish(delivery);
+      if (succeeded(result)) setImmediate(() => void this.process(id, execute));
     } catch (error) {
+      let reportedError = error;
       if (
         !admitted &&
         (error instanceof ConflictDomainError || error instanceof UnavailableDomainError)
       )
         return;
-      this.logger.error('Failed to process queued prompt:', error);
+      if (delivery && !(error instanceof AgentSessionStorageError)) {
+        try {
+          await this.deliveries.finish(delivery);
+        } catch (settlementError) {
+          reportedError = settlementError;
+        }
+      }
+      this.logger.error('Failed to process queued prompt:', reportedError);
       this.events.publish(id, {
         type: 'queue_error',
-        error: error instanceof Error ? error.message : 'Queued prompt execution failed.',
+        error:
+          reportedError instanceof Error
+            ? reportedError.message
+            : 'Queued prompt execution failed.',
         promptId: next?.id,
       });
+    } finally {
+      if (delivery) this.deliveries.release(delivery);
     }
   }
 }

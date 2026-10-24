@@ -13,6 +13,7 @@ import type { EventEmitter } from '../../src/lib/events.js';
 import { AgentSessionLoader } from '../../src/services/agent/agent-session-loader.js';
 import { AgentConversationCoordinator } from '../../src/services/agent/agent-conversation-coordinator.js';
 import { AgentPromptQueue } from '../../src/services/agent/agent-prompt-queue.js';
+import { AgentQueueDeliveryStore } from '../../src/services/agent/agent-queue-delivery-store.js';
 
 export function createTestAgentEvents(events: EventEmitter) {
   return new AgentEventPublisher(events);
@@ -37,10 +38,12 @@ export function createTestAgentState(
   const repository = overrides.repository ?? new AgentSessionRepository(dataDirectory);
   const sessions = overrides.sessions ?? new AgentSessionRegistry();
   const executions = overrides.executions ?? new AgentExecutionCoordinator();
+  const deliveries = new AgentQueueDeliveryStore(dataDirectory, repository, sessions);
   const loader = new AgentSessionLoader(
     repository,
     sessions,
-    overrides.workingDirectory ?? process.cwd()
+    overrides.workingDirectory ?? process.cwd(),
+    deliveries
   );
   const conversations = new AgentConversationCoordinator(
     executions,
@@ -59,7 +62,15 @@ export function createTestAgentState(
     new AgentStreamNormalizer(),
     loader,
     conversations,
-    new AgentPromptQueue(repository, sessions, loader, executions, conversations, events),
+    new AgentPromptQueue(
+      repository,
+      sessions,
+      loader,
+      executions,
+      conversations,
+      events,
+      deliveries
+    ),
     events,
   ] as const;
 }

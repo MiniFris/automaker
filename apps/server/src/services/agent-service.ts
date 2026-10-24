@@ -123,7 +123,9 @@ export class AgentService {
       thinkingLevel,
       reasoningEffort,
     }: AgentMessageInput,
-    controller: AbortController
+    controller: AbortController,
+    deliveryId?: string,
+    queuedPromptId?: string
   ) {
     const session = await this.ensureSession(sessionId, workingDirectory);
     controller.signal.throwIfAborted();
@@ -199,6 +201,8 @@ export class AgentService {
       content: message,
       images: images.length > 0 ? images : undefined,
       timestamp: new Date().toISOString(),
+      ...(deliveryId && { deliveryId }),
+      ...(queuedPromptId && { queuedPromptId }),
     };
 
     session.messages.push(userMessage);
@@ -324,6 +328,10 @@ export class AgentService {
             message: errorInfo.message,
           });
 
+          // A persisted terminal delivery must not precede generator cleanup.
+          await stream.return(undefined);
+          controller.signal.throwIfAborted();
+
           // Mark session as no longer running so the UI and queue stay in sync
           session.isRunning = false;
           session.abortController = null;
@@ -337,6 +345,7 @@ export class AgentService {
           };
 
           session.messages.push(errorMessage);
+          if (deliveryId) userMessage.deliveryStatus = 'failed';
           await this.saveSession(sessionId, session.messages);
           controller.signal.throwIfAborted();
 
@@ -362,6 +371,7 @@ export class AgentService {
         );
       }
       controller.signal.throwIfAborted();
+      if (deliveryId) userMessage.deliveryStatus = 'completed';
       await this.saveSession(sessionId, session.messages);
       controller.signal.throwIfAborted();
 
@@ -370,12 +380,13 @@ export class AgentService {
       if (normalized.completion) this.emitAgentEvent(sessionId, normalized.completion);
 
       // Process next item in queue after completion
-      setImmediate(
-        () =>
-          void this.queue.process(sessionId, (input, controller) =>
-            this.executeMessage(input, controller)
-          )
-      );
+      if (!deliveryId)
+        setImmediate(
+          () =>
+            void this.queue.process(sessionId, (input, controller, queuedDeliveryId, promptId) =>
+              this.executeMessage(input, controller, queuedDeliveryId, promptId)
+            )
+        );
 
       return {
         success: true,
@@ -397,6 +408,7 @@ export class AgentService {
         throw error;
       }
       if (controller.signal.aborted || isAbortError(error)) {
+        if (deliveryId) userMessage.deliveryStatus = 'cancelled';
         await this.saveSession(sessionId, session.messages);
         session.isRunning = false;
         session.abortController = null;
@@ -431,6 +443,7 @@ export class AgentService {
       };
 
       session.messages.push(errorMessage);
+      if (deliveryId) userMessage.deliveryStatus = 'failed';
       await this.saveSession(sessionId, session.messages);
       controller.signal.throwIfAborted();
 

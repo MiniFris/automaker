@@ -917,6 +917,7 @@ export interface ElectronAPI {
         model?: string;
         thinkingLevel?: string;
         addedAt: string;
+        deliveryStatus?: 'interrupted';
       }>;
       error?: string;
     }>;

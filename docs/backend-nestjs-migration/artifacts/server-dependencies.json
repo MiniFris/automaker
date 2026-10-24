@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 609,
-    "internalEdges": 1944,
+    "files": 610,
+    "internalEdges": 1955,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -26,7 +26,7 @@
     "modules -> modules": 246,
     "modules -> providers": 19,
     "modules -> routes": 62,
-    "modules -> services": 105,
+    "modules -> services": 106,
     "modules -> types": 2,
     "providers -> lib": 5,
     "providers -> modules": 1,
@@ -45,12 +45,12 @@
     "routes -> routes": 378,
     "routes -> services": 196,
     "routes -> types": 3,
-    "services -> core": 5,
-    "services -> lib": 74,
+    "services -> core": 6,
+    "services -> lib": 75,
     "services -> modules": 9,
     "services -> providers": 12,
     "services -> routes": 2,
-    "services -> services": 254,
+    "services -> services": 262,
     "services -> types": 2,
     "tests -> lib": 2
   },
@@ -315,7 +315,7 @@
     "@automaker/platform": 80,
     "@automaker/prompts": 3,
     "@automaker/types": 177,
-    "@automaker/utils": 173,
+    "@automaker/utils": 174,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
@@ -340,13 +340,13 @@
     "node-pty": 2,
     "node:async_hooks": 1,
     "node:child_process": 10,
-    "node:crypto": 26,
+    "node:crypto": 27,
     "node:fs": 6,
     "node:fs/promises": 14,
     "node:http": 7,
     "node:net": 2,
     "node:os": 6,
-    "node:path": 37,
+    "node:path": 38,
     "node:perf_hooks": 2,
     "node:stream": 5,
     "node:stream/web": 1,
@@ -1149,6 +1149,10 @@
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
       "target": "apps/server/src/services/agent/agent-query-options-builder.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-state.module.ts",
+      "target": "apps/server/src/services/agent/agent-queue-delivery-store.ts"
     },
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
@@ -6912,11 +6916,19 @@
     },
     {
       "source": "apps/server/src/services/agent/agent-prompt-queue.ts",
+      "target": "apps/server/src/services/agent/agent-queue-delivery-store.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-prompt-queue.ts",
       "target": "apps/server/src/services/agent/agent-session-loader.ts"
     },
     {
       "source": "apps/server/src/services/agent/agent-prompt-queue.ts",
       "target": "apps/server/src/services/agent/agent-session-registry.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-prompt-queue.ts",
+      "target": "apps/server/src/services/agent/agent-session-storage.error.ts"
     },
     {
       "source": "apps/server/src/services/agent/agent-prompt-queue.ts",
@@ -6963,12 +6975,44 @@
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
+      "source": "apps/server/src/services/agent/agent-queue-delivery-store.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-queue-delivery-store.ts",
+      "target": "apps/server/src/lib/secure-fs.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-queue-delivery-store.ts",
+      "target": "apps/server/src/services/agent/agent-session-id.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-queue-delivery-store.ts",
+      "target": "apps/server/src/services/agent/agent-session-registry.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-queue-delivery-store.ts",
+      "target": "apps/server/src/services/agent/agent-session-storage.error.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-queue-delivery-store.ts",
+      "target": "apps/server/src/services/agent/agent-session.repository.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-queue-delivery-store.ts",
+      "target": "apps/server/src/services/agent/agent-session.types.ts"
+    },
+    {
       "source": "apps/server/src/services/agent/agent-session-id.ts",
       "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
       "source": "apps/server/src/services/agent/agent-session-loader.ts",
       "target": "apps/server/src/lib/sdk-options.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-session-loader.ts",
+      "target": "apps/server/src/services/agent/agent-queue-delivery-store.ts"
     },
     {
       "source": "apps/server/src/services/agent/agent-session-loader.ts",

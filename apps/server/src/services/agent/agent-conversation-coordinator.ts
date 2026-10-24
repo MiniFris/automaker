@@ -8,7 +8,9 @@ import type { AgentMessageInput, Message } from './agent-session.types.js';
 
 export type AgentMessageExecution<T> = (
   input: AgentMessageInput,
-  controller: AbortController
+  controller: AbortController,
+  deliveryId?: string,
+  queuedPromptId?: string
 ) => Promise<T>;
 
 /** Conversation admission/cancellation; provider execution is an explicit application callback. */

@@ -336,9 +336,9 @@ coalesced hydration, restart/SDK identity, injected directory, failed read/write
 concurrent admission, delayed selection/cleanup, clear без потери queue, pinning,
 queue serialization, dequeue failure и shutdown во время hydration.
 
-Этот срез не закрывает crash recovery: между durable dequeue и записью первого
-user message ещё нужен execution/handoff journal. Автоматический replay при
-неизвестном результате не добавлен. Также остаются completion persistence/recovery,
+На этом срезе crash recovery ещё не был закрыт. Последующий queue delivery journal
+защищает handoff между dequeue и user message без автоматического replay.
+Также остаются общий execution journal для manual runs и completion persistence/recovery,
 полный adapter dispose/terminal contract и hard shutdown deadline этапа 10.
 
 Checkpoint среза:
@@ -354,6 +354,76 @@ Checkpoint среза:
   11 passed, 4 opt-in skipped, включая real chat/restart и cleanup owned resources.
 - Chromium send/stream/reload smoke: 1 passed.
 - `npm run test:packages`: 1181 passed; `npm run lint:lockfile`: успешно.
+
+### Срез: durable queue handoff и quarantine после сбоя
+
+`AgentQueueDeliveryStore` зарегистрирован отдельным Nest provider с собственным
+application-local owner map и сериализацией на session ID. Перед dequeue он
+атомарно записывает выбранный prompt, pinned model/provider и delivery UUID в
+`DATA_DIR/agent-queue-deliveries/<sessionId>.json` с mode `0600`. Старый settled
+backup не используется вместо повреждённого journal: такой read блокируется safe
+storage error, а не трактуется как отсутствие незавершённой работы.
+
+Для queued run `AgentService` сохраняет `deliveryId`, `queuedPromptId` и terminal
+`deliveryStatus` вместе с историей. Это позволяет распознать committed terminal
+history даже при аварии до settlement journal и не выполнять запрос снова.
+Terminal proof публикуется только после iterator cleanup; streamed provider error
+тоже дожидается cleanup до записи terminal failure. Последующие queued runs
+планируются owner-ом очереди после settlement, чтобы отложенная запись journal
+не обрывала цепочку follow-up или не запускала её повторно.
+
+Если terminal proof отсутствует, recovery возвращает исходный prompt в queue с
+`deliveryStatus: interrupted`, добавляет идемпотентный warning в history и очищает
+SDK resume ID. Приостановленный head блокирует auto-processing; удалить его или
+явно отправить новый запрос должен пользователь после проверки target effects.
+Recovery проверяется и для cached session. Старый queue backup не может снять
+quarantine или вернуть completed queued prompt в выполнение; явное удаление
+приостановленного prompt уважается. Отсутствие metadata не позволяет journal
+восстановить удалённую session.
+
+Consumed IDs и quarantine IDs сохраняются в journal независимо от message history
+и переносятся между deliveries. Поэтому очистка history и последующие queued runs
+не снимают защиту при восстановлении старого queue backup. Ledger пока не compact-ится
+и требует включения в retry-safe session-delete/tombstone cleanup.
+
+UI загружает server queue при открытии session, показывает локализованное
+предупреждение/Paused и обновляет очередь после queue error. Revision guard не
+даёт запоздалому hydration response перезаписать более новый stream update.
+Новые поля additive; HTTP endpoints и исходные IDs queued prompts сохранены.
+
+Проверки среза:
+
+- 18 delivery tests: claim-before-dequeue, quarantine/no replay, terminal proof,
+  stale/corrupt backups, partial recovery, claim/settlement failure и реальные
+  последовательные follow-up через `AgentService` без повторного model execution.
+- Дополнительная storage regression: error-stream cleanup завершается до
+  terminal persistence/publication.
+- Три child-process SIGKILL contracts: после claim, после dequeue, после terminal
+  history до journal settlement. Unknown runs не replay-ятся и теряют старый SDK
+  resume ID; completed run сохраняет ответ и SDK identity без повторного запуска.
+- `npm run test:server:unit`: 3093 passed, 40 skipped.
+- `npm run test:server:contract`: 246 passed.
+- `npm run test:packages`: 1185 passed, включая 4 новые UI recovery/hydration tests.
+- Server production build/lint, UI typecheck/lint и lockfile check: успешно.
+- Три inventory checks и production SIGTERM/SIGINT smoke: успешно.
+- Выбранные SSH Direct/CLI/SDK chat/restart сценарии: 3 passed, 34 отфильтрованы.
+- Docker acceptance: 11 passed, 4 opt-in skipped; cleanup owned resources успешен.
+- Chromium send/stream/reload smoke: passed. Один параллельный прогон остановился
+  на общем loading screen после reload с 5-секундным assertion timeout; повторный
+  отдельный прогон прошёл без изменения timeout или ослабления assertion.
+
+Границы: проверен сбой controller process, а не power-loss/fsync guarantee.
+Поддерживается один controller writer на DATA_DIR, не distributed coordination.
+Общий journal manual runs, transactional completion intent/recovery, cleanup
+journal/queue/backups при полном session delete и полный adapter lifecycle
+contract ещё не завершены. Этап 7 и вся миграция не объявляются завершёнными.
+
+Rollback gate: нельзя запускать старый backend, который игнорирует
+`deliveryStatus: interrupted`, против DATA_DIR с quarantined queue entries.
+Перед таким rollback необходим preflight и перенос quarantine в отдельное
+неисполняемое хранилище либо восстановление согласованного pre-migration snapshot.
+Проверка этого rollback сценария ещё обязательна на cutover-этапе; additive HTTP
+fields сами по себе не доказывают безопасный rollback формата очереди.
 
 ### Срез: persisted state и active registry
 
@@ -473,8 +543,9 @@ Unit/native HTTP tests покрывают concurrent preparation, delayed cleanu
 chunk, cancel→новый run, clear/delete, обе model mutation paths, timeout без замены
 старого run, interruption write failure и idempotent resource cleanup attempts.
 
-Остаются durable execution/queue recovery journal, полный provider dispose/terminal
-contract и удаление queue/backups вместе с session.
+Остаются общий durable execution/completion recovery journal, полный provider
+dispose/terminal contract и удаление queue/backups/journal вместе с session.
+Queue handoff уже защищён последующим delivery journal, описанным выше.
 Prompt/context, environment preparation, provider selection, stream normalization/
 publication и follow-up/cancel уже выделены последующими срезами, описанными выше.
 Общий deadline всей shutdown-последовательности, включая зависший

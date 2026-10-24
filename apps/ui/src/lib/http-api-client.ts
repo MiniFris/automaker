@@ -2814,6 +2814,7 @@ export class HttpApiClient implements ElectronAPI {
         model?: string;
         thinkingLevel?: string;
         addedAt: string;
+        deliveryStatus?: 'interrupted';
       }>;
       error?: string;
     }> => this.post('/api/agent/queue/list', { sessionId }),

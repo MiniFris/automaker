@@ -41,6 +41,8 @@ const providers = {
 function mockStoredFiles(metadata: Record<string, unknown> = {}, messages: unknown[] = []) {
   vi.mocked(fs.readFile).mockImplementation(async (file) => {
     const name = String(file);
+    if (name.includes('agent-queue-deliveries'))
+      throw Object.assign(new Error('Missing fixture delivery'), { code: 'ENOENT' });
     if (name.endsWith('sessions-metadata.json')) return JSON.stringify(metadata);
     if (name.endsWith('-queue.json')) return '[]';
     if (name.endsWith('.json')) return JSON.stringify(messages);
@@ -153,7 +155,11 @@ describe('agent-service.ts', () => {
       // First call reads metadata file and session file via ensureSession (2 calls)
       // Since no metadata or messages exist, a fresh session is created without loading queue state.
       // Second call should reuse in-memory session (no additional calls)
-      expect(fs.readFile).toHaveBeenCalledTimes(2);
+      expect(
+        vi
+          .mocked(fs.readFile)
+          .mock.calls.filter(([file]) => !String(file).includes('agent-queue-deliveries'))
+      ).toHaveLength(2);
     });
   });
 
@@ -743,7 +749,7 @@ describe('agent-service.ts', () => {
     });
 
     it('should set model for existing session', async () => {
-      vi.mocked(fs.readFile).mockResolvedValue('{"session-1": {"id": "session-1"}}');
+      mockStoredFiles({ 'session-1': { id: 'session-1' } });
       const result = await service.setSessionModel('session-1', 'claude-sonnet-4-6');
 
       expect(result).toBe(true);

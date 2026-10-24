@@ -16,6 +16,7 @@ import { RuntimePathsService } from '../../core/config/index.js';
 import { AgentSessionLoader } from '../../services/agent/agent-session-loader.js';
 import { AgentConversationCoordinator } from '../../services/agent/agent-conversation-coordinator.js';
 import { AgentPromptQueue } from '../../services/agent/agent-prompt-queue.js';
+import { AgentQueueDeliveryStore } from '../../services/agent/agent-queue-delivery-store.js';
 
 @Global()
 @Module({
@@ -24,13 +25,28 @@ import { AgentPromptQueue } from '../../services/agent/agent-prompt-queue.js';
     AgentPromptBuilder,
     AgentStreamNormalizer,
     {
+      provide: AgentQueueDeliveryStore,
+      inject: [RUNTIME_CONFIG, AgentSessionRepository, AgentSessionRegistry],
+      useFactory: (
+        config: RuntimeConfig,
+        repository: AgentSessionRepository,
+        sessions: AgentSessionRegistry
+      ) => new AgentQueueDeliveryStore(config.storage.dataDirectory, repository, sessions),
+    },
+    {
       provide: AgentSessionLoader,
-      inject: [AgentSessionRepository, AgentSessionRegistry, RuntimePathsService],
+      inject: [
+        AgentSessionRepository,
+        AgentSessionRegistry,
+        RuntimePathsService,
+        AgentQueueDeliveryStore,
+      ],
       useFactory: (
         repository: AgentSessionRepository,
         sessions: AgentSessionRegistry,
-        paths: RuntimePathsService
-      ) => new AgentSessionLoader(repository, sessions, paths.workingDirectory),
+        paths: RuntimePathsService,
+        deliveries: AgentQueueDeliveryStore
+      ) => new AgentSessionLoader(repository, sessions, paths.workingDirectory, deliveries),
     },
     {
       provide: AgentConversationCoordinator,
@@ -58,6 +74,7 @@ import { AgentPromptQueue } from '../../services/agent/agent-prompt-queue.js';
         AgentExecutionCoordinator,
         AgentConversationCoordinator,
         AgentEventPublisher,
+        AgentQueueDeliveryStore,
       ],
       useFactory: (
         repository: AgentSessionRepository,
@@ -65,8 +82,18 @@ import { AgentPromptQueue } from '../../services/agent/agent-prompt-queue.js';
         loader: AgentSessionLoader,
         executions: AgentExecutionCoordinator,
         conversations: AgentConversationCoordinator,
-        events: AgentEventPublisher
-      ) => new AgentPromptQueue(repository, sessions, loader, executions, conversations, events),
+        events: AgentEventPublisher,
+        deliveries: AgentQueueDeliveryStore
+      ) =>
+        new AgentPromptQueue(
+          repository,
+          sessions,
+          loader,
+          executions,
+          conversations,
+          events,
+          deliveries
+        ),
     },
     {
       provide: AgentEventPublisher,
@@ -110,6 +137,7 @@ import { AgentPromptQueue } from '../../services/agent/agent-prompt-queue.js';
     AgentSessionLoader,
     AgentConversationCoordinator,
     AgentPromptQueue,
+    AgentQueueDeliveryStore,
   ],
 })
 export class AgentStateModule {}
