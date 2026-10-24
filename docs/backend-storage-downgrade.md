@@ -47,6 +47,10 @@ npm run preflight:backend:downgrade -- \
   который не знает его семантики.
 - `agent-executions/<id>.json`: running, completing и settled records. Completing
   может содержать terminal intent, ещё не подтверждённый основной историей.
+- `.legacy-electron-import/intent.json`: `staging`/`publishing` блокируют старую
+  цель; неизвестный, повреждённый или отсутствующий в существующем reserved
+  каталоге intent даёт `unconfirmed`. Валидный `complete` пропускается для этого
+  marker; это не означает совместимость остальных форматов приложения.
 - Основные файлы, `.bakN` и writer `.tmp.<timestamp>.<8hex>` artifacts в этих
   каталогах и `agent-sessions`, включая вложенные writer suffixes. Quarantine
   поля очереди и delivery/run поля истории блокируют downgrade без отдельного

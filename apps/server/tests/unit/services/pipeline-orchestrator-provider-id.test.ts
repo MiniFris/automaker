@@ -159,6 +159,13 @@ describe('PipelineOrchestrator - providerId passthrough', () => {
     mockConcurrencyManager = {
       isCurrent: vi.fn().mockReturnValue(true),
       coordinator: {
+        bind: vi.fn(() => ({
+          assertCurrent: vi.fn(),
+          transition: vi.fn(),
+          mutate: async (write) => {
+            await write();
+          },
+        })),
         status: vi.fn(async (_manager, _run, _status, write) => {
           await write();
           return true;

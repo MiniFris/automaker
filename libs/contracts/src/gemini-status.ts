@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+export const GEMINI_CLI_SUPPORTED_VERSION = '0.65.0';
+export const GEMINI_CLI_INSTALL_COMMAND =
+  `npm install -g @google/gemini-cli@${GEMINI_CLI_SUPPORTED_VERSION}` as const;
+
 export const GeminiStatusAuthSchema = z
   .object({
     authenticated: z.literal(false),
@@ -21,7 +25,7 @@ export const GeminiSetupStatusSchema = z
     version: z.string().nullable(),
     path: z.string().nullable(),
     auth: GeminiStatusAuthSchema,
-    installCommand: z.literal('npm install -g @google/gemini-cli'),
+    installCommand: z.literal(GEMINI_CLI_INSTALL_COMMAND),
     loginCommand: z.literal('gemini'),
   })
   .strict();

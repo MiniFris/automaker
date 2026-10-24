@@ -1,0 +1,40 @@
+name: Backend Performance Budget
+
+on:
+  pull_request:
+  push:
+    branches: [main, master, refactor/backend-nestjs-migration]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-performance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  idle-api:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.3'
+          cache: npm
+      - name: Install locked dependencies and Node PTY
+        run: |
+          npm ci --ignore-scripts
+          npm rebuild node-pty
+      - name: Verify budget failure detection
+        run: npm run test:backend:performance-budget
+      - name: Build and measure isolated native API
+        run: npm run check:server:performance -- --output '${{ runner.temp }}/backend-performance.json'
+      - name: Retain measurements even when a budget fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-performance
+          path: ${{ runner.temp }}/backend-performance.json
+          if-no-files-found: ignore

@@ -24,13 +24,19 @@ Per-file `.bakN` rotation is explicitly distinguished from a whole DATA_DIR
 snapshot. External workspace/remote effects are not represented as reversible by
 restoring backend storage.
 
-Targeted offline command `npm run test:backend:downgrade`: **28 passed**, zero
+Targeted offline command `npm run test:backend:downgrade`: **36 passed**, zero
 skipped. Fixtures cover clean legacy storage, all marker phases, missing primary
 files with backup/temp markers, corrupt main files with clean backups, unknown
 versions, reserved/mismatched IDs, orphan quarantine/history fields, symlinks,
 argument handling and real CLI exit status/output. Byte hashes and file modes
 remain unchanged by inspection. A whole-snapshot restore equals the original
 manifest and passes; an overlay of the same snapshot remains blocked.
+
+The native legacy-profile importer introduces one additional known transaction
+marker: `.legacy-electron-import/intent.json`. The inspector now blocks valid
+staging/publishing phases, reports missing/corrupt/unknown intents as unconfirmed,
+and permits a valid complete phase only within this marker's scope. Eight added
+fixtures prove that behavior without exposing source path or payload contents.
 
 This closes the executable agent-storage preflight and owned-fixture restore
 portion. It does not claim universal old-version compatibility, live-profile

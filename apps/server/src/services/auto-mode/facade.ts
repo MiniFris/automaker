@@ -12,8 +12,6 @@
  */
 
 import path from 'path';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import type { Feature, PlanningMode, ThinkingLevel, ReasoningEffort } from '@automaker/types';
 import {
   DEFAULT_MAX_CONCURRENCY,
@@ -47,6 +45,8 @@ import { PlanApprovalService } from '../plan-approval-service.js';
 import { AutoLoopCoordinator, type AutoModeConfig } from '../auto-loop-coordinator.js';
 import { ExecutionService } from '../execution-service.js';
 import { FeatureWorkspaceService } from '../execution-environment/feature-workspace.js';
+import { LocalExecutionEnvironment } from '../execution-environment/local.js';
+import { ConflictDomainError } from '../../core/errors/domain-errors.js';
 import { RecoveryService } from '../recovery-service.js';
 import { PipelineOrchestrator } from '../pipeline-orchestrator.js';
 import { AgentExecutor } from '../agent-executor.js';
@@ -64,7 +64,6 @@ import type {
   OrphanedFeatureInfo,
 } from './types.js';
 
-const execAsync = promisify(exec);
 const logger = createLogger('AutoModeServiceFacade');
 
 /**
@@ -373,6 +372,9 @@ export class AutoModeServiceFacade {
 
         await agentExecutor.execute(
           {
+            runPort: opts?.runPort as
+              | import('../agent-executor-types.js').FeatureRunPort
+              | undefined,
             workDir,
             featureId,
             prompt,
@@ -714,9 +716,10 @@ export class AutoModeServiceFacade {
    */
   async stopFeature(featureId: string): Promise<boolean> {
     try {
-      // Cancel any pending plan approval for this feature
+      const stopped = await this.executionService.stopFeature(featureId);
+      // Persist interruption and close this lease before resolving its approval waiter.
       this.cancelPlanApproval(featureId);
-      return await this.executionService.stopFeature(featureId);
+      return stopped;
     } catch (error) {
       this.handleFacadeError(error, 'stopFeature', featureId);
       throw error;
@@ -836,124 +839,110 @@ export class AutoModeServiceFacade {
    * @param featureId - The feature ID to verify
    */
   async verifyFeature(featureId: string): Promise<boolean> {
-    const observedRun = this.concurrencyManager.getRunningFeature(featureId);
-    const feature = await this.featureStateManager.loadFeature(this.projectPath, featureId);
-    const remote =
-      feature && this.settingsService
-        ? await new FeatureWorkspaceService(this.settingsService).prepare(
-            this.projectPath,
-            feature,
-            new AbortController().signal,
-            false
-          )
-        : undefined;
-    let workDir = this.projectPath;
-
-    // Use worktreeResolver to find worktree path (consistent with commitFeature)
-    const branchName = feature?.branchName;
-    if (!remote && branchName) {
-      const resolved = await this.worktreeResolver.findWorktreeForBranch(
-        this.projectPath,
-        branchName
-      );
-      if (resolved) {
-        try {
-          await secureFs.access(resolved);
-          workDir = resolved;
-        } catch {
-          // Fall back to project path
+    if (this.concurrencyManager.isRunning(featureId))
+      throw new ConflictDomainError('Stop this feature before starting verification.');
+    const lease = await this.concurrencyManager
+      .acquireAsync({
+        featureId,
+        projectPath: this.projectPath,
+        isAutoMode: false,
+        retainUntilCleanup: true,
+      })
+      .catch((error) => {
+        if (error instanceof Error && error.message === 'already running')
+          throw new ConflictDomainError('Stop this feature before starting verification.');
+        throw error;
+      });
+    const port = this.concurrencyManager.coordinator.bind(this.concurrencyManager, lease);
+    const signal = lease.abortController.signal;
+    let cleanupUnconfirmed = false;
+    try {
+      port.transition('executing');
+      const feature = await this.featureStateManager.loadFeature(this.projectPath, featureId);
+      const remote =
+        feature && this.settingsService
+          ? await new FeatureWorkspaceService(this.settingsService).prepare(
+              this.projectPath,
+              feature,
+              signal,
+              false
+            )
+          : undefined;
+      port.assertCurrent();
+      signal.throwIfAborted();
+      let workDir = this.projectPath;
+      if (!remote && feature?.branchName) {
+        const resolved = await this.worktreeResolver.findWorktreeForBranch(
+          this.projectPath,
+          feature.branchName
+        );
+        if (resolved) {
+          try {
+            await secureFs.access(resolved);
+            workDir = resolved;
+          } catch {
+            /* Preserve project-directory fallback. */
+          }
         }
       }
-    }
-
-    const verificationChecks = [
-      { cmd: 'npm run lint', name: 'Lint' },
-      { cmd: 'npm run typecheck', name: 'Type check' },
-      { cmd: 'npm test', name: 'Tests' },
-      { cmd: 'npm run build', name: 'Build' },
-    ];
-
-    let allPassed = true;
-    const results: Array<{ check: string; passed: boolean; output?: string }> = [];
-    const verificationLease = remote
-      ? await this.concurrencyManager.acquireAsync({
-          featureId,
-          projectPath: this.projectPath,
-          isAutoMode: false,
-        })
-      : undefined;
-    if (verificationLease) {
-      verificationLease.remoteWorkspace = true;
-      verificationLease.worktreePath = remote!.environment.cwd;
-    }
-    try {
-      const verificationTimeout = modelTimeout(
+      port.assertCurrent();
+      signal.throwIfAborted();
+      if (!remote) this.directoryValidator(workDir);
+      const environment = remote?.environment ?? (await LocalExecutionEnvironment.create(workDir));
+      lease.remoteWorkspace = !!remote;
+      lease.worktreePath = environment.cwd;
+      lease.branchName = feature?.branchName ?? null;
+      port.transition('testing');
+      const timeout = modelTimeout(
         providerModelTimeouts(
           await this.settingsService?.getGlobalSettings(),
           getModelProvider(feature?.model)
         ),
         'verificationTimeoutMs'
       );
-      for (const check of verificationChecks) {
+      const checks = ['npm run lint', 'npm run typecheck', 'npm test', 'npm run build'];
+      let allPassed = true;
+      for (const command of checks) {
+        port.assertCurrent();
+        signal.throwIfAborted();
         try {
-          if (remote) {
-            const result = await remote.environment.exec(
-              check.cmd,
-              verificationLease!.abortController.signal,
-              {
-                timeoutMs: verificationTimeout,
-              }
-            );
-            results.push({
-              check: check.name,
-              passed: result.exitCode === 0,
-              output: result.output,
-            });
-            if (result.exitCode !== 0) {
-              allPassed = false;
-              break;
-            }
-          } else {
-            const { stdout, stderr } = await execAsync(check.cmd, {
-              cwd: workDir,
-              timeout: verificationTimeout,
-            });
-            results.push({ check: check.name, passed: true, output: stdout || stderr });
+          const result = await environment.exec(command, signal, {
+            timeoutMs: timeout,
+            maxOutputBytes: 1_048_576,
+            windowsShell: 'cmd',
+          });
+          port.assertCurrent();
+          if (result.exitCode !== 0) {
+            allPassed = false;
+            break;
           }
         } catch (error) {
-          if (remote) throw error; // Unknown remote outcomes must not be converted into a retryable test failure.
+          const code =
+            error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
+          if (/CLEANUP_FAILED|OUTCOME_UNKNOWN/.test(code)) {
+            cleanupUnconfirmed = true;
+            throw error;
+          }
+          if (remote) throw error;
           allPassed = false;
-          results.push({ check: check.name, passed: false, output: (error as Error).message });
           break;
         }
       }
-    } finally {
-      if (verificationLease)
-        this.concurrencyManager.release(featureId, { expected: verificationLease });
-    }
-
-    if (
-      observedRun?.isAutoMode &&
+      // Verification preserves persisted feature status; its own lease records the testing result.
+      if (!signal.aborted) port.transition(allPassed ? 'awaiting_review' : 'failed');
       this.concurrencyManager.coordinator.acceptCompletion(
         this.concurrencyManager,
-        observedRun,
+        lease,
         'verification-complete'
-      )
-    ) {
-      this.eventBus.emitAutoModeEvent('auto_mode_feature_complete', {
-        featureId,
-        featureName: feature?.title,
-        branchName: feature?.branchName ?? null,
-        executionMode: 'auto',
-        passes: allPassed,
-        message: allPassed
-          ? 'All verification checks passed'
-          : `Verification failed: ${results.find((r) => !r.passed)?.check || 'Unknown'}`,
-        projectPath: this.projectPath,
-      });
+      );
+      return allPassed;
+    } catch (error) {
+      const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
+      if (/CLEANUP_FAILED|OUTCOME_UNKNOWN/.test(code)) cleanupUnconfirmed = true;
+      throw error;
+    } finally {
+      if (!cleanupUnconfirmed) this.concurrencyManager.release(featureId, { expected: lease });
     }
-
-    return allPassed;
   }
 
   /**

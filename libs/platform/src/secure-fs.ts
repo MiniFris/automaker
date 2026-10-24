@@ -370,6 +370,16 @@ export function createSecureFs(
     );
   }
 
+  /** Atomic same-volume publication without replacing an existing destination. */
+  async function link(src: string, dest: string): Promise<void> {
+    const source = validatePath(src);
+    const destination = validatePath(dest, { followFinalSymlink: false });
+    return executeWithRetry(
+      () => fs.link(validatePath(source), validatePath(destination, { followFinalSymlink: false })),
+      'link'
+    );
+  }
+
   /**
    * Wrapper around fs.appendFile that validates path first
    */
@@ -757,6 +767,7 @@ export function createSecureFs(
     rm: owned(rm),
     unlink: owned(unlink),
     copyFile: owned(copyFile),
+    link: owned(link),
     appendFile: owned(appendFile),
     rename: owned(rename),
     lstat: owned(lstat),
@@ -800,6 +811,7 @@ export const {
   rm,
   unlink,
   copyFile,
+  link,
   appendFile,
   rename,
   lstat,

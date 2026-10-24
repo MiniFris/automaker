@@ -27,6 +27,8 @@ export type GetCurrentBranchFn = (projectPath: string) => Promise<string | null>
  * Represents a running feature execution with all tracking metadata
  */
 export interface RunningFeature {
+  /** Local verification also retains ownership until process-group cleanup is confirmed. */
+  retainUntilCleanup?: boolean;
   readonly incarnation: symbol;
   state: FeatureRunState;
   completedEvents: Set<string>;
@@ -51,6 +53,7 @@ export interface RunningFeature {
  * Parameters for acquiring a running feature slot
  */
 export interface AcquireParams {
+  retainUntilCleanup?: boolean;
   expected?: RunningFeature;
   featureId: string;
   projectPath: string;
@@ -113,6 +116,7 @@ export class ConcurrencyManager {
 
     const abortController = params.abortController ?? new AbortController();
     const entry: RunningFeature = {
+      retainUntilCleanup: params.retainUntilCleanup,
       incarnation: Symbol(params.featureId),
       state: 'queued',
       completedEvents: new Set(),

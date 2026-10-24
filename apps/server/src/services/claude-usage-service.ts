@@ -1,7 +1,7 @@
 import { spawn } from 'child_process';
 import * as os from 'os';
 import * as pty from 'node-pty';
-import { ClaudeUsage } from '../routes/claude/types.js';
+import type { ClaudeUsage } from '../types/claude-usage.js';
 import { createLogger } from '@automaker/utils';
 
 /**

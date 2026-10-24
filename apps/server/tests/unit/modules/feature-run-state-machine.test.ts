@@ -8,6 +8,25 @@ import {
 } from '../../../src/modules/orchestration/feature-run-state-machine.js';
 
 describe('feature run state machine', () => {
+  it('distinguishes plan approval, revisions, testing fixes and final review on one lease', () => {
+    const manager = new ConcurrencyManager();
+    const run = manager.acquire({
+      projectPath: '/project',
+      featureId: 'phases',
+      isAutoMode: false,
+    });
+    const port = manager.coordinator.bind(manager, run);
+    port.transition('planning');
+    port.transition('awaiting_plan_approval');
+    port.transition('planning');
+    port.transition('awaiting_plan_approval');
+    port.transition('executing');
+    port.transition('testing');
+    port.transition('executing');
+    port.transition('testing');
+    port.transition('awaiting_review');
+    expect(run.state).toBe('awaiting_review');
+  });
   it('accepts every documented transition and rejects terminal replay', () => {
     for (const [from, targets] of Object.entries(FEATURE_RUN_TRANSITIONS)) {
       for (const target of targets) {
@@ -20,7 +39,7 @@ describe('feature run state machine', () => {
 
   it('maps legacy public statuses without changing the UI contract', () => {
     expect(mapLegacyFeatureStatus('pending')).toBe('queued');
-    expect(mapLegacyFeatureStatus('waiting_approval')).toBe('awaiting_approval');
+    expect(mapLegacyFeatureStatus('waiting_approval')).toBe('awaiting_review');
     expect(mapLegacyFeatureStatus('pipeline_review')).toBe('executing');
     expect(mapLegacyFeatureStatus('verified')).toBe('completed');
     expect(mapLegacyFeatureStatus('unknown')).toBeUndefined();

@@ -2,29 +2,29 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 599,
-    "internalEdges": 1988,
+    "files": 604,
+    "internalEdges": 2011,
     "stronglyConnectedComponents": 2
   },
   "layerEdges": {
-    "core -> core": 60,
+    "core -> core": 64,
     "core -> lib": 6,
     "core -> middleware": 1,
     "core -> services": 9,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 157,
-    "modules -> lib": 30,
-    "modules -> modules": 357,
-    "modules -> providers": 30,
+    "modules -> core": 161,
+    "modules -> lib": 31,
+    "modules -> modules": 358,
+    "modules -> providers": 31,
     "modules -> routes": 9,
-    "modules -> services": 162,
+    "modules -> services": 163,
     "modules -> types": 2,
     "providers -> core": 1,
     "providers -> lib": 3,
     "providers -> modules": 1,
-    "providers -> providers": 90,
-    "providers -> services": 22,
+    "providers -> providers": 93,
+    "providers -> services": 24,
     "root -> core": 16,
     "root -> modules": 28,
     "root -> root": 2,
@@ -35,13 +35,12 @@
     "routes -> routes": 289,
     "routes -> services": 164,
     "routes -> types": 2,
-    "services -> core": 19,
+    "services -> core": 21,
     "services -> lib": 73,
-    "services -> modules": 14,
+    "services -> modules": 16,
     "services -> providers": 16,
-    "services -> routes": 1,
-    "services -> services": 294,
-    "services -> types": 2,
+    "services -> services": 296,
+    "services -> types": 3,
     "tests -> lib": 2
   },
   "cycles": [
@@ -109,7 +108,6 @@
       "apps/server/src/services/gemini-usage-service.ts",
       "apps/server/src/services/init-script-service.ts",
       "apps/server/src/services/pr-service.ts",
-      "apps/server/src/services/settings-service.ts",
       "apps/server/src/services/terminal-service.ts",
       "apps/server/src/services/test-runner-service.ts",
       "apps/server/src/services/zai-usage-service.ts"
@@ -176,7 +174,6 @@
       "apps/server/src/routes/worktree/routes/list-remotes.ts",
       "apps/server/src/routes/worktree/routes/list.ts",
       "apps/server/src/routes/worktree/routes/status.ts",
-      "apps/server/src/services/auto-mode/facade.ts",
       "apps/server/src/services/claude-usage-service.ts",
       "apps/server/src/services/codex-app-server-service.ts",
       "apps/server/src/services/dev-server-service.ts",
@@ -218,6 +215,7 @@
       "apps/server/src/modules/github/issue-validation-registry.service.ts",
       "apps/server/src/modules/providers/claude-verification.service.ts",
       "apps/server/src/modules/providers/codex-verification.service.ts",
+      "apps/server/src/modules/settings/legacy-profile-importer.ts",
       "apps/server/src/modules/terminal/terminal-access.service.ts",
       "apps/server/src/modules/terminal/websocket-transport.service.ts",
       "apps/server/src/providers/openai-compatible/agent-loop.ts",
@@ -276,25 +274,25 @@
   },
   "externalImports": {
     "@anthropic-ai/claude-agent-sdk": 3,
-    "@automaker/contracts": 28,
+    "@automaker/contracts": 29,
     "@automaker/dependency-resolver": 1,
     "@automaker/git-utils": 12,
     "@automaker/model-resolver": 20,
     "@automaker/platform": 72,
     "@automaker/prompts": 3,
     "@automaker/types": 178,
-    "@automaker/utils": 156,
+    "@automaker/utils": 157,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 187,
+    "@nestjs/common": 189,
     "@nestjs/core": 8,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
     "ajv": 4,
-    "child_process": 34,
+    "child_process": 33,
     "cookie": 1,
     "cookie-parser": 1,
     "cors": 1,
@@ -304,33 +302,33 @@
     "express": 184,
     "fflate": 1,
     "fs": 11,
-    "fs/promises": 13,
+    "fs/promises": 12,
     "net": 1,
     "node-pty": 2,
     "node:async_hooks": 1,
     "node:buffer": 1,
     "node:child_process": 13,
-    "node:crypto": 33,
+    "node:crypto": 35,
     "node:events": 1,
-    "node:fs": 9,
-    "node:fs/promises": 18,
+    "node:fs": 10,
+    "node:fs/promises": 19,
     "node:http": 7,
     "node:net": 3,
     "node:os": 11,
-    "node:path": 56,
+    "node:path": 59,
     "node:perf_hooks": 15,
     "node:stream": 6,
     "node:stream/web": 2,
     "node:string_decoder": 4,
     "node:timers/promises": 5,
     "node:url": 4,
-    "node:util": 12,
-    "os": 14,
+    "node:util": 13,
+    "os": 13,
     "path": 72,
     "reflect-metadata": 1,
     "ssh2": 3,
     "url": 1,
-    "util": 24,
+    "util": 23,
     "vitest": 1,
     "ws": 1,
     "yaml": 1,
@@ -579,6 +577,10 @@
     },
     {
       "source": "apps/server/src/core/config/runtime-config.module.ts",
+      "target": "apps/server/src/core/config/host-profile.config.ts"
+    },
+    {
+      "source": "apps/server/src/core/config/runtime-config.module.ts",
       "target": "apps/server/src/core/config/runtime-config.tokens.ts"
     },
     {
@@ -683,6 +685,10 @@
     },
     {
       "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
+      "target": "apps/server/src/core/platform/legacy-profile-import.error.ts"
+    },
+    {
+      "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
       "target": "apps/server/src/lib/events.ts"
     },
     {
@@ -748,6 +754,14 @@
     {
       "source": "apps/server/src/core/platform/codex-verification.runtime.ts",
       "target": "apps/server/src/core/platform/codex-credential.runtime.ts"
+    },
+    {
+      "source": "apps/server/src/core/platform/legacy-electron-profile.source.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/core/platform/legacy-profile-import.error.ts",
+      "target": "apps/server/src/core/errors/index.ts"
     },
     {
       "source": "apps/server/src/core/platform/setup-status.runtime.ts",
@@ -2511,6 +2525,10 @@
     },
     {
       "source": "apps/server/src/modules/orchestration/feature-run-coordinator.service.ts",
+      "target": "apps/server/src/services/agent-executor-types.ts"
+    },
+    {
+      "source": "apps/server/src/modules/orchestration/feature-run-coordinator.service.ts",
       "target": "apps/server/src/services/concurrency-manager.ts"
     },
     {
@@ -2978,6 +2996,10 @@
       "target": "apps/server/src/providers/base-provider.ts"
     },
     {
+      "source": "apps/server/src/modules/providers/provider-setup-status.service.ts",
+      "target": "apps/server/src/providers/gemini-tool-policy.ts"
+    },
+    {
       "source": "apps/server/src/modules/providers/provider-usage.controller.ts",
       "target": "apps/server/src/core/validation/zod-validation.pipe.ts"
     },
@@ -3382,6 +3404,22 @@
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
+      "source": "apps/server/src/modules/settings/legacy-profile-importer.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/settings/legacy-profile-importer.ts",
+      "target": "apps/server/src/core/platform/legacy-electron-profile.source.ts"
+    },
+    {
+      "source": "apps/server/src/modules/settings/legacy-profile-importer.ts",
+      "target": "apps/server/src/core/security/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/settings/legacy-profile-importer.ts",
+      "target": "apps/server/src/lib/secure-fs.ts"
+    },
+    {
       "source": "apps/server/src/modules/settings/settings-command.service.ts",
       "target": "apps/server/src/core/errors/index.ts"
     },
@@ -3475,6 +3513,10 @@
     },
     {
       "source": "apps/server/src/modules/settings/settings.module.ts",
+      "target": "apps/server/src/core/platform/legacy-electron-profile.source.ts"
+    },
+    {
+      "source": "apps/server/src/modules/settings/settings.module.ts",
       "target": "apps/server/src/core/security/index.ts"
     },
     {
@@ -3492,6 +3534,10 @@
     {
       "source": "apps/server/src/modules/settings/settings.module.ts",
       "target": "apps/server/src/modules/settings/execution-environment-settings.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/settings/settings.module.ts",
+      "target": "apps/server/src/modules/settings/legacy-profile-importer.ts"
     },
     {
       "source": "apps/server/src/modules/settings/settings.module.ts",
@@ -4007,6 +4053,10 @@
     },
     {
       "source": "apps/server/src/providers/gemini-provider.ts",
+      "target": "apps/server/src/providers/gemini-tool-policy.ts"
+    },
+    {
+      "source": "apps/server/src/providers/gemini-provider.ts",
       "target": "apps/server/src/providers/tool-normalization.ts"
     },
     {
@@ -4015,6 +4065,22 @@
     },
     {
       "source": "apps/server/src/providers/gemini-provider.ts",
+      "target": "apps/server/src/services/execution-environment/runtime.ts"
+    },
+    {
+      "source": "apps/server/src/providers/gemini-tool-policy.ts",
+      "target": "apps/server/src/providers/provider-execution-scope.ts"
+    },
+    {
+      "source": "apps/server/src/providers/gemini-tool-policy.ts",
+      "target": "apps/server/src/providers/types.ts"
+    },
+    {
+      "source": "apps/server/src/providers/gemini-tool-policy.ts",
+      "target": "apps/server/src/services/execution-environment/local.ts"
+    },
+    {
+      "source": "apps/server/src/providers/gemini-tool-policy.ts",
       "target": "apps/server/src/services/execution-environment/runtime.ts"
     },
     {
@@ -6607,6 +6673,10 @@
     },
     {
       "source": "apps/server/src/services/agent-executor-types.ts",
+      "target": "apps/server/src/modules/orchestration/feature-run-state-machine.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent-executor-types.ts",
       "target": "apps/server/src/providers/base-provider.ts"
     },
     {
@@ -7119,6 +7189,10 @@
     },
     {
       "source": "apps/server/src/services/auto-mode/facade.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/facade.ts",
       "target": "apps/server/src/lib/events.ts"
     },
     {
@@ -7160,6 +7234,10 @@
     {
       "source": "apps/server/src/services/auto-mode/facade.ts",
       "target": "apps/server/src/services/execution-environment/feature-workspace.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/facade.ts",
+      "target": "apps/server/src/services/execution-environment/local.ts"
     },
     {
       "source": "apps/server/src/services/auto-mode/facade.ts",
@@ -7339,7 +7417,7 @@
     },
     {
       "source": "apps/server/src/services/claude-usage-service.ts",
-      "target": "apps/server/src/routes/claude/types.ts"
+      "target": "apps/server/src/types/claude-usage.ts"
     },
     {
       "source": "apps/server/src/services/codex-app-server-service.ts",
@@ -7879,6 +7957,10 @@
     },
     {
       "source": "apps/server/src/services/execution-types.ts",
+      "target": "apps/server/src/services/agent-executor-types.ts"
+    },
+    {
+      "source": "apps/server/src/services/execution-types.ts",
       "target": "apps/server/src/services/concurrency-manager.ts"
     },
     {
@@ -8136,6 +8218,14 @@
     {
       "source": "apps/server/src/services/settings-mutation-queue.ts",
       "target": "apps/server/src/core/errors/index.ts"
+    },
+    {
+      "source": "apps/server/src/services/settings-service.ts",
+      "target": "apps/server/src/core/platform/legacy-profile-import.error.ts"
+    },
+    {
+      "source": "apps/server/src/services/settings-service.ts",
+      "target": "apps/server/src/modules/settings/legacy-profile-importer.ts"
     },
     {
       "source": "apps/server/src/services/settings-service.ts",

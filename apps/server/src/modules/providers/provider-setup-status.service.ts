@@ -7,6 +7,7 @@ import {
 import type { BaseProvider } from '../../providers/base-provider.js';
 import { ProviderConnectionRepository } from './provider-connection.repository.js';
 import { ProviderRegistry } from './provider-registry.service.js';
+import { GEMINI_INSTALL_COMMAND } from '../../providers/gemini-tool-policy.js';
 
 export type CliSetupProvider = 'gemini' | 'copilot' | 'cursor';
 
@@ -47,7 +48,7 @@ function hasSetupPort(provider: BaseProvider | null): provider is BaseProvider &
 }
 
 const commands = {
-  gemini: { installCommand: 'npm install -g @google/gemini-cli', loginCommand: 'gemini' },
+  gemini: { installCommand: GEMINI_INSTALL_COMMAND, loginCommand: 'gemini' },
   copilot: { installCommand: 'npm install -g @github/copilot', loginCommand: 'gh auth login' },
   cursor: {
     installCommand: 'curl https://cursor.com/install -fsS | bash',

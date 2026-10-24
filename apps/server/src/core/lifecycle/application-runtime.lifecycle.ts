@@ -22,6 +22,7 @@ import { TestRunnerService } from '../../services/test-runner-service.js';
 import { TerminalService } from '../../services/terminal-service.js';
 import { ManagedDevServerService } from '../../services/execution-environment/dev-server.js';
 import { ManagedTestRunnerService } from '../../services/execution-environment/test-runner.js';
+import { LegacyProfileImportError } from '../platform/legacy-profile-import.error.js';
 
 export const APPLICATION_STARTUP_TASKS = Symbol('APPLICATION_STARTUP_TASKS');
 const logger = createLogger('ApplicationRuntime');
@@ -78,15 +79,17 @@ export class ApplicationRuntimeLifecycle implements OnApplicationBootstrap, OnMo
     try {
       const result = await this.settings.migrateFromLegacyElectronPath();
       if (result.migrated) logger.info('Settings migrated from the previous Electron location.');
-      if (result.errors.length) logger.warn('Settings migration reported errors.');
-    } catch {
+      if (result.errors.length) throw new LegacyProfileImportError();
+    } catch (error) {
+      if (error instanceof LegacyProfileImportError) throw error;
       logger.warn('Failed to check for legacy settings migration.');
     }
     if (this.stopping) return;
     let settings: Awaited<ReturnType<SettingsService['getGlobalSettings']>> | undefined;
     try {
       settings = await this.settings.getGlobalSettings();
-    } catch {
+    } catch (error) {
+      if (error instanceof LegacyProfileImportError) throw error;
       logger.warn('Failed to load global settings, using defaults.');
     }
     if (this.stopping) return;

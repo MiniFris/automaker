@@ -11,8 +11,17 @@ import type {
   Credentials,
 } from '@automaker/types';
 import type { BaseProvider } from '../providers/base-provider.js';
+import type { FeatureRunState } from '../modules/orchestration/feature-run-state-machine.js';
+
+/** Internal incarnation capability; never stored or accepted through HTTP. */
+export interface FeatureRunPort {
+  assertCurrent(): void;
+  mutate(write: () => Promise<unknown>): Promise<void>;
+  transition(state: FeatureRunState): void;
+}
 
 export interface AgentExecutionOptions {
+  runPort?: FeatureRunPort;
   /** Internal per-run observer; never persisted or accepted from request bodies. */
   captureToolResult?: (id: string, content: string) => void;
   workDir: string;

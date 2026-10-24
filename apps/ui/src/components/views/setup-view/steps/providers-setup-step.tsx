@@ -1,4 +1,5 @@
 import { translate, useUiLocale } from '@/lib/i18n';
+import { GEMINI_CLI_INSTALL_COMMAND } from '@automaker/contracts';
 import { canAttemptCliProvider } from '@/lib/provider-readiness';
 import { PassiveAuthenticationNotice } from '@/components/shared/passive-authentication-notice';
 import { CursorSetupPanel } from '@/components/shared/cursor-setup-panel';
@@ -1085,7 +1086,7 @@ function GeminiContent() {
         {!geminiCliStatus?.installed && !isChecking && (
           <div className="space-y-3 rounded-lg border border-border p-4">
             <p>{translate('Install the Gemini CLI to use Google Gemini models.')}</p>
-            <code>{geminiCliStatus?.installCommand || 'npm install -g @google/gemini-cli'}</code>
+            <code>{geminiCliStatus?.installCommand || GEMINI_CLI_INSTALL_COMMAND}</code>
           </div>
         )}
         <div className="space-y-3 rounded-lg border border-border p-4">

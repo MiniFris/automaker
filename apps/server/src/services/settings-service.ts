@@ -13,9 +13,7 @@ import {
   SETUP_CREDENTIAL_ENV,
   type SetupCredentialProvider,
 } from '../providers/credential-policy.js';
-import os from 'os';
 import path from 'path';
-import fs from 'fs/promises';
 import { parseOpenAICompatibleEndpoints } from '../providers/openai-compatible/config.js';
 import { parseDirectAgentSettings } from '../providers/openai-compatible/execution.js';
 import {
@@ -66,6 +64,11 @@ import {
 } from '@automaker/types';
 import { SettingsFileRepository } from '../modules/settings/settings-file.repository.js';
 import { SettingsMutationQueue } from './settings-mutation-queue.js';
+import type {
+  LegacyProfileImporter,
+  LegacyProfileImportResult,
+} from '../modules/settings/legacy-profile-importer.js';
+import { LegacyProfileImportError } from '../core/platform/legacy-profile-import.error.js';
 
 const logger = createLogger('SettingsService');
 
@@ -85,6 +88,9 @@ const logger = createLogger('SettingsService');
 export class SettingsService {
   private readonly mutations = new SettingsMutationQueue();
   private dataDir: string;
+  private legacyInitialized = false;
+  private legacyRequested = false;
+  private legacyPending?: Promise<LegacyProfileImportResult>;
 
   getDataDirectory(): string {
     return this.dataDir;
@@ -97,9 +103,18 @@ export class SettingsService {
    */
   constructor(
     dataDir: string,
-    private readonly files: SettingsFileRepository = new SettingsFileRepository()
+    private readonly files: SettingsFileRepository = new SettingsFileRepository(),
+    private readonly legacyImport?: Pick<LegacyProfileImporter, 'migrate'>,
+    private readonly automaticLegacyImport = false
   ) {
     this.dataDir = dataDir;
+    if (legacyImport)
+      files.setInitializationBarrier(async () => {
+        if (this.legacyInitialized || (!this.automaticLegacyImport && !this.legacyRequested))
+          return;
+        const result = await this.migrateFromLegacyElectronPath();
+        if (result.errors.length) throw new LegacyProfileImportError();
+      });
   }
 
   beforeApplicationShutdown(): Promise<void> {
@@ -1348,202 +1363,27 @@ export class SettingsService {
     return this.dataDir;
   }
 
-  /**
-   * Get the legacy Electron userData directory path
-   *
-   * Returns the platform-specific path where Electron previously stored settings
-   * before the migration to shared data directories.
-   *
-   * @returns Absolute path to legacy userData directory
-   */
-  private getLegacyElectronUserDataPath(): string {
-    const homeDir = os.homedir();
-
-    switch (process.platform) {
-      case 'darwin':
-        // macOS: ~/Library/Application Support/Automaker
-        return path.join(homeDir, 'Library', 'Application Support', 'Automaker');
-      case 'win32':
-        // Windows: %APPDATA%\Automaker
-        return path.join(
-          process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming'),
-          'Automaker'
-        );
-      default:
-        // Linux and others: ~/.config/Automaker
-        return path.join(process.env.XDG_CONFIG_HOME || path.join(homeDir, '.config'), 'Automaker');
-    }
-  }
-
-  /**
-   * Migrate entire data directory from legacy Electron userData location to new shared data directory
-   *
-   * This handles the migration from when Electron stored data in the platform-specific
-   * userData directory (e.g., ~/.config/Automaker) to the new shared ./data directory.
-   *
-   * Migration only occurs if:
-   * 1. The new location does NOT have settings.json
-   * 2. The legacy location DOES have settings.json
-   *
-   * Migrates all files and directories including:
-   * - settings.json (global settings)
-   * - credentials.json (API keys)
-   * - sessions-metadata.json (chat session metadata)
-   * - agent-sessions/ (conversation histories)
-   * - Any other files in the data directory
-   *
-   * @returns Promise resolving to migration result
-   */
-  async migrateFromLegacyElectronPath(): Promise<{
-    migrated: boolean;
-    migratedFiles: string[];
-    legacyPath: string;
-    errors: string[];
-  }> {
-    const legacyPath = this.getLegacyElectronUserDataPath();
-    const migratedFiles: string[] = [];
-    const errors: string[] = [];
-
-    // Skip if legacy path is the same as current data dir (no migration needed)
-    if (path.resolve(legacyPath) === path.resolve(this.dataDir)) {
-      logger.debug('Legacy path same as current data dir, skipping migration');
-      return { migrated: false, migratedFiles, legacyPath, errors };
-    }
-
-    logger.info(`Checking for legacy data migration from: ${legacyPath}`);
-    logger.info(`Current data directory: ${this.dataDir}`);
-
-    // Check if new settings already exist
-    const newSettingsPath = getGlobalSettingsPath(this.dataDir);
-    let newSettingsExist = false;
-    try {
-      await fs.access(newSettingsPath);
-      newSettingsExist = true;
-    } catch {
-      // New settings don't exist, migration may be needed
-    }
-
-    if (newSettingsExist) {
-      logger.debug('Settings already exist in new location, skipping migration');
-      return { migrated: false, migratedFiles, legacyPath, errors };
-    }
-
-    // Check if legacy directory exists and has settings
-    const legacySettingsPath = path.join(legacyPath, 'settings.json');
-    let legacySettingsExist = false;
-    try {
-      await fs.access(legacySettingsPath);
-      legacySettingsExist = true;
-    } catch {
-      // Legacy settings don't exist
-    }
-
-    if (!legacySettingsExist) {
-      logger.debug('No legacy settings found, skipping migration');
-      return { migrated: false, migratedFiles, legacyPath, errors };
-    }
-
-    // Perform migration of specific application data files only
-    // (not Electron internal caches like Code Cache, GPU Cache, etc.)
-    logger.info('Found legacy data directory, migrating application data to new location...');
-
-    // Ensure new data directory exists
-    try {
-      await this.files.ensureDirectory(this.dataDir);
-    } catch (error) {
-      const msg = `Failed to create data directory: ${error}`;
-      logger.error(msg);
-      errors.push(msg);
-      return { migrated: false, migratedFiles, legacyPath, errors };
-    }
-
-    // Only migrate specific application data files/directories
-    const itemsToMigrate = [
-      'settings.json',
-      'credentials.json',
-      'sessions-metadata.json',
-      'agent-sessions',
-      '.api-key',
-      '.sessions',
-    ];
-
-    for (const item of itemsToMigrate) {
-      const srcPath = path.join(legacyPath, item);
-      const destPath = path.join(this.dataDir, item);
-
-      // Check if source exists
-      try {
-        await fs.access(srcPath);
-      } catch {
-        // Source doesn't exist, skip
-        continue;
+  /** Native composition supplies the narrow host importer; direct constructors never inspect HOME. */
+  migrateFromLegacyElectronPath(): Promise<LegacyProfileImportResult> {
+    this.legacyRequested = true;
+    if (!this.legacyImport)
+      return Promise.resolve({ migrated: false, migratedFiles: [], legacyPath: '', errors: [] });
+    if (this.legacyPending) return this.legacyPending;
+    const pending = Promise.resolve()
+      .then(() => this.legacyImport!.migrate())
+      .then((result) => {
+        if (!result.errors.length) this.legacyInitialized = true;
+        return result;
+      });
+    this.legacyPending = pending;
+    void pending.then(
+      () => {
+        if (this.legacyPending === pending) this.legacyPending = undefined;
+      },
+      () => {
+        if (this.legacyPending === pending) this.legacyPending = undefined;
       }
-
-      // Check if destination already exists
-      try {
-        await fs.access(destPath);
-        logger.debug(`Skipping ${item} - already exists in destination`);
-        continue;
-      } catch {
-        // Destination doesn't exist, proceed with copy
-      }
-
-      // Copy file or directory
-      try {
-        const stat = await fs.stat(srcPath);
-        if (stat.isDirectory()) {
-          await this.copyDirectory(srcPath, destPath);
-          migratedFiles.push(item + '/');
-          logger.info(`Migrated directory: ${item}/`);
-        } else {
-          const content = await fs.readFile(srcPath);
-          await fs.writeFile(destPath, content);
-          migratedFiles.push(item);
-          logger.info(`Migrated file: ${item}`);
-        }
-      } catch (error) {
-        const msg = `Failed to migrate ${item}: ${error}`;
-        logger.error(msg);
-        errors.push(msg);
-      }
-    }
-
-    if (migratedFiles.length > 0) {
-      logger.info(
-        `Migration complete. Migrated ${migratedFiles.length} item(s): ${migratedFiles.join(', ')}`
-      );
-      logger.info(`Legacy path: ${legacyPath}`);
-      logger.info(`New path: ${this.dataDir}`);
-    }
-
-    return {
-      migrated: migratedFiles.length > 0,
-      migratedFiles,
-      legacyPath,
-      errors,
-    };
-  }
-
-  /**
-   * Recursively copy a directory from source to destination
-   *
-   * @param srcDir - Source directory path
-   * @param destDir - Destination directory path
-   */
-  private async copyDirectory(srcDir: string, destDir: string): Promise<void> {
-    await fs.mkdir(destDir, { recursive: true });
-    const entries = await fs.readdir(srcDir, { withFileTypes: true });
-
-    for (const entry of entries) {
-      const srcPath = path.join(srcDir, entry.name);
-      const destPath = path.join(destDir, entry.name);
-
-      if (entry.isDirectory()) {
-        await this.copyDirectory(srcPath, destPath);
-      } else if (entry.isFile()) {
-        const content = await fs.readFile(srcPath);
-        await fs.writeFile(destPath, content);
-      }
-    }
+    );
+    return pending;
   }
 }

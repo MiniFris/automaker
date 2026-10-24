@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import type { AddressInfo } from 'node:net';
 import os from 'node:os';
@@ -7,6 +7,7 @@ import { expect, it, vi } from 'vitest';
 import type { ExecuteOptions } from '@automaker/types';
 import { createNestApplication } from '../../src/main.js';
 import { GeminiProvider } from '../../src/providers/gemini-provider.js';
+import { LocalExecutionEnvironment } from '../../src/services/execution-environment/local.js';
 import {
   issueEnvironment,
   type ExecutionEnvironment,
@@ -14,41 +15,65 @@ import {
 
 class OwnedGemini extends GeminiProvider {
   detections = 0;
-  constructor(private readonly binary: string) {
-    super();
+  constructor(
+    private readonly binary: string,
+    root: string
+  ) {
+    super({}, async () => ({ PATH: process.env.PATH, HOME: root, GEMINI_CLI_HOME: root }));
   }
   protected ensureCliDetected(): void {
     this.detections++;
     this.cliPath = this.binary;
   }
 }
-
 async function collect(provider: GeminiProvider, options: ExecuteOptions) {
   const messages = [];
   for await (const message of provider.executeQuery(options)) messages.push(message);
   return messages;
 }
+async function cliFixture(root: string) {
+  const binary = path.join(root, 'gemini');
+  await writeFile(
+    binary,
+    `#!${process.execPath}
+const fs=require('node:fs'); const args=process.argv.slice(2);
+if(args.includes('--version')){console.log('0.65.0');process.exit(0);}
+if(args.includes('--help')){console.log('--admin-policy --extensions --approval-mode');process.exit(0);}
+(async()=>{let prompt='';for await(const chunk of process.stdin)prompt+=chunk;
+const index=args.indexOf('--admin-policy'),policy=index<0?null:fs.readFileSync(args[index+1],'utf8');
+fs.writeFileSync('invocation.json',JSON.stringify({args,prompt,policy}));
+const send=e=>process.stdout.write(JSON.stringify(e)+'\\n');
+send({type:'init',session_id:'owned'});send({type:'message',role:'assistant',content:'Owned CLI answer'});
+if(prompt.includes('hold-fixture'))setInterval(()=>{},1000);else send({type:'result',status:'success'});
+})().catch(error=>{process.stderr.write(error.message);process.exitCode=1;});`,
+    { mode: 0o700 }
+  );
+  return binary;
+}
+function ownedSystemBoundary() {
+  const original = LocalExecutionEnvironment.prototype.listDirectory;
+  vi.spyOn(LocalExecutionEnvironment.prototype, 'listDirectory').mockImplementation(
+    function (directory, maximum, signal) {
+      if (
+        directory === '/etc/gemini-cli/policies' ||
+        directory === '/Library/Application Support/GeminiCli/policies'
+      )
+        return Promise.resolve({ entries: [], truncated: false });
+      return original.call(this, directory, maximum, signal);
+    }
+  );
+}
 
 it.each(['local', 'ssh'] as const)(
-  'rejects Gemini policy before any %s detection, write or dispatch and preserves unrestricted execution',
+  'preserves restricted Gemini chat and cleans policy files after %s completion/cancellation',
   async (type) => {
-    const directory = await mkdtemp(path.join(os.tmpdir(), 'automaker-gemini-policy-'));
-    const cwd = path.join(directory, 'project');
+    const root = await mkdtemp(path.join(os.tmpdir(), 'automaker-gemini-policy-'));
+    const cwd = path.join(root, "project, quoted' dir");
     await mkdir(cwd);
-    const binary = path.join(directory, 'gemini');
-    await writeFile(
-      binary,
-      `#!${process.execPath}
-const fs=require('node:fs');
-(async()=>{let prompt='';for await(const chunk of process.stdin)prompt+=chunk;
-fs.writeFileSync('invocation.json',JSON.stringify({args:process.argv.slice(2),prompt}));
-for(const event of [{type:'init',session_id:'owned-session'},{type:'message',role:'assistant',content:'Owned CLI answer'},{type:'result',status:'success'}])process.stdout.write(JSON.stringify(event)+'\\n');
-})().catch(error=>{process.stderr.write(error.message);process.exitCode=1;});
-`,
-      { mode: 0o700 }
-    );
-    const provider = new OwnedGemini(binary);
-    // An offline issued transport executes only the owned fixture, never SSH/vendor services.
+    const binary = await cliFixture(root),
+      provider = new OwnedGemini(binary, root);
+    ownedSystemBoundary();
+    const filesystem = await LocalExecutionEnvironment.create(cwd);
     const runProcess = vi.fn<NonNullable<ExecutionEnvironment['runProcess']>>(
       async (request, signal, output) => {
         expect(request.command).toBe('gemini');
@@ -58,10 +83,15 @@ for(const event of [{type:'init',session_id:'owned-session'},{type:'message',rol
             signal,
             stdio: ['pipe', 'pipe', 'pipe'],
           });
+          let failure: Error | undefined;
           child.stdout.on('data', (chunk) => output('stdout', chunk));
           child.stderr.on('data', (chunk) => output('stderr', chunk));
-          child.once('error', reject);
-          child.once('close', (exitCode) => resolve({ exitCode: exitCode ?? 1 }));
+          child.once('error', (error) => {
+            failure = error;
+          });
+          child.once('close', (code) =>
+            failure ? reject(failure) : resolve({ exitCode: code ?? 1 })
+          );
           child.stdin.end(request.stdin);
         });
       }
@@ -70,65 +100,88 @@ for(const event of [{type:'init',session_id:'owned-session'},{type:'message',rol
       type === 'ssh'
         ? issueEnvironment({
             type,
-            cwd,
             platform: process.platform,
+            cwd,
             runProcess,
+            listDirectory: filesystem.listDirectory.bind(filesystem),
+            mkdir: filesystem.mkdir.bind(filesystem),
+            writeFile: filesystem.writeFile.bind(filesystem),
+            remove: filesystem.remove.bind(filesystem),
           } as ExecutionEnvironment)
         : undefined;
     const options = {
-      prompt: 'Literal prompt',
+      prompt: 'Literal query',
       model: '2.5-flash',
       cwd,
       executionEnvironmentRuntime: runtime,
     };
     try {
+      await expect(collect(provider, { ...options, readOnly: true })).rejects.toMatchObject({
+        code: 'GEMINI_TOOL_POLICY_UNSUPPORTED',
+      });
+      expect(provider.detections).toBe(0);
+      expect(runProcess).not.toHaveBeenCalled();
+      expect(await readdir(cwd)).toEqual([]);
       for (const policy of [
-        { readOnly: true },
-        { allowedTools: [] },
-        { allowedTools: ['Read'] },
+        { allowedTools: ['Read', 'Task', 'Skill'] },
         { tools: [] },
-        { tools: ['Read'] },
+        { tools: ['Read'], allowedTools: [] },
       ]) {
-        await expect(collect(provider, { ...options, ...policy })).rejects.toMatchObject({
-          code: 'GEMINI_TOOL_POLICY_UNSUPPORTED',
-          status: 400,
-        });
-        expect(provider.detections).toBe(0);
-        expect(runProcess).not.toHaveBeenCalled();
-        expect(await readdir(cwd)).toEqual([]);
+        expect(await collect(provider, { ...options, ...policy })).toContainEqual(
+          expect.objectContaining({ type: 'result' })
+        );
+        const invocation = JSON.parse(await readFile(path.join(cwd, 'invocation.json'), 'utf8'));
+        expect(invocation.args[invocation.args.indexOf('--approval-mode') + 1]).toBe('default');
+        expect(invocation.args).not.toContain('yolo');
+        expect(invocation.args).toContain('--admin-policy');
+        expect(invocation.args[invocation.args.indexOf('--extensions') + 1]).toBe('none');
+        expect(invocation.policy).toContain('decision = "deny"');
+        expect(invocation.policy).not.toContain('activate_skill');
+        expect(invocation.policy).not.toContain('delegate_to_agent');
+        if (policy.allowedTools?.length) expect(invocation.policy).toContain('decision = "allow"');
+        else expect(invocation.policy).not.toContain('decision = "allow"');
+        const policyFile = invocation.args[invocation.args.indexOf('--admin-policy') + 1];
+        expect(policyFile).not.toContain(',');
+        await expect(stat(path.dirname(policyFile))).rejects.toMatchObject({ code: 'ENOENT' });
       }
-      const messages = await collect(provider, options);
-      expect(messages).toContainEqual(expect.objectContaining({ type: 'assistant' }));
-      expect(messages).toContainEqual(expect.objectContaining({ type: 'result' }));
-      const invocation = JSON.parse(await readFile(path.join(cwd, 'invocation.json'), 'utf8'));
-      expect(invocation.prompt).toBe('Literal prompt');
-      expect(invocation.args).toContain('yolo');
-      expect(invocation.args).not.toContain('--allowed-tools');
-      if (type === 'ssh') {
-        expect(provider.detections).toBe(0);
-        expect(runProcess).toHaveBeenCalledOnce();
-        expect(await readdir(cwd)).toEqual(['invocation.json']);
-      } else {
-        expect(provider.detections).toBeGreaterThan(0);
-        expect(await readdir(cwd)).toEqual(['.geminiignore', 'invocation.json']);
-      }
+      expect(await readdir(cwd)).not.toContain('.geminiignore');
+      const stream = provider.executeQuery({
+        ...options,
+        allowedTools: ['Read'],
+        prompt: 'hold-fixture',
+      });
+      expect((await stream.next()).value).toMatchObject({ type: 'assistant' });
+      await stream.return(undefined);
+      const canceled = JSON.parse(await readFile(path.join(cwd, 'invocation.json'), 'utf8'));
+      await expect(
+        stat(path.dirname(canceled.args[canceled.args.indexOf('--admin-policy') + 1]))
+      ).rejects.toMatchObject({ code: 'ENOENT' });
+      if (type === 'ssh') expect(provider.detections).toBe(0);
+      expect(await collect(provider, options)).toContainEqual(
+        expect.objectContaining({ type: 'result' })
+      );
+      const unrestricted = JSON.parse(await readFile(path.join(cwd, 'invocation.json'), 'utf8'));
+      expect(unrestricted.args).toContain('yolo');
+      expect(unrestricted.policy).toBeNull();
     } finally {
       await provider.dispose();
-      await rm(directory, { recursive: true, force: true });
+      vi.restoreAllMocks();
+      await rm(root, { recursive: true, force: true });
     }
   }
 );
 
-it('keeps native HTTP chat restrictions from the real query builder instead of dropping them for Gemini', async () => {
-  const directory = await mkdtemp(path.join(os.tmpdir(), 'automaker-gemini-policy-http-'));
-  const cwd = path.join(directory, 'project');
+it('executes the real native HTTP chat preset through the version-bound Gemini policy instead of discarding it', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'automaker-gemini-chat-'));
+  const cwd = path.join(root, 'project');
   await mkdir(cwd);
-  const provider = new OwnedGemini(path.join(directory, 'must-not-run'));
+  const provider = new OwnedGemini(await cliFixture(root), root);
+  ownedSystemBoundary();
   const runtime = await createNestApplication({
     host: '127.0.0.1',
     port: 0,
-    dataDir: path.join(directory, 'data'),
-    workingDirectory: directory,
+    dataDir: path.join(root, 'data'),
+    workingDirectory: root,
     runStartupTasks: false,
     enableShutdownHooks: false,
     providerRegistrations: [{ name: 'gemini', create: () => provider }],
@@ -154,20 +207,50 @@ it('keeps native HTTP chat restrictions from the real query builder instead of d
     });
     const sessionId = created.session.id;
     await post('agent/start', { sessionId });
-    expect(
-      await post('agent/send', { sessionId, message: 'Do not discard the chat tool policy' })
-    ).toMatchObject({ success: true });
+    await post('agent/send', { sessionId, message: 'Use the native chat policy' });
     await vi.waitFor(async () => {
       const history = await post('agent/history', { sessionId });
       expect(history.isRunning).toBe(false);
-      expect(JSON.stringify(history.messages)).toContain(
-        'cannot enforce the requested tool policy'
-      );
+      expect(JSON.stringify(history.messages)).toContain('Owned CLI answer');
     });
-    expect(provider.detections).toBe(0);
-    expect(await readdir(cwd)).not.toContain('.geminiignore');
+    const invocation = JSON.parse(await readFile(path.join(cwd, 'invocation.json'), 'utf8'));
+    expect(invocation.policy).toContain('run_shell_command');
+    expect(invocation.policy).toContain('mcpName = "*"');
+    expect(invocation.policy).not.toContain('activate_skill');
+    expect(invocation.args).not.toContain('yolo');
+    await expect(
+      stat(path.dirname(invocation.args[invocation.args.indexOf('--admin-policy') + 1]))
+    ).rejects.toMatchObject({ code: 'ENOENT' });
   } finally {
     await runtime.app.close();
-    await rm(directory, { recursive: true, force: true });
+    vi.restoreAllMocks();
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+it('keeps the Gemini execution owner blocked when policy cleanup cannot be confirmed', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'automaker-gemini-cleanup-'));
+  const cwd = path.join(root, 'project');
+  await mkdir(cwd);
+  const provider = new OwnedGemini(await cliFixture(root), root);
+  ownedSystemBoundary();
+  const remove = vi
+    .spyOn(LocalExecutionEnvironment.prototype, 'remove')
+    .mockRejectedValue(new Error('Fixture cleanup outcome unknown'));
+  try {
+    const options = { prompt: 'Chat', model: '2.5-flash', cwd, allowedTools: ['Read'] };
+    await expect(collect(provider, options)).rejects.toThrow('cleanup is unconfirmed');
+    await expect(collect(provider, options)).rejects.toThrow('not accepting');
+    await expect(provider.dispose()).rejects.toThrow('cleanup is unconfirmed');
+    expect(remove).toHaveBeenCalledOnce();
+  } finally {
+    await provider.dispose().catch(() => {});
+    const ownedDirectory = remove.mock.calls[0]?.[0];
+    if (ownedDirectory) {
+      expect(String(ownedDirectory)).toMatch(/^\/tmp\/automaker-gemini-policy-[a-f0-9-]+$/);
+      await rm(ownedDirectory, { recursive: true, force: true });
+    }
+    vi.restoreAllMocks();
+    await rm(root, { recursive: true, force: true });
   }
 });

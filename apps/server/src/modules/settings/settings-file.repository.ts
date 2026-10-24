@@ -9,6 +9,10 @@ const logger = createLogger('SettingsFileRepository');
 /** File boundary shared by global, project and credential settings stores. */
 @Injectable()
 export class SettingsFileRepository {
+  private initialize?: () => Promise<void>;
+  setInitializationBarrier(initialize: () => Promise<void>): void {
+    this.initialize = initialize;
+  }
   constructor(
     private readonly filesystem: typeof secureFs = secureFs,
     private readonly canonicalize: (candidate: string) => string = path.resolve,
@@ -20,10 +24,15 @@ export class SettingsFileRepository {
   }
 
   async ensureDirectory(candidate: string): Promise<void> {
-    await this.filesystem.mkdir(this.directory(candidate), { recursive: true });
+    await this.initialize?.();
+    await this.filesystem.mkdir(this.directory(candidate), {
+      recursive: true,
+      ...(this.scoped && { mode: 0o700 }),
+    });
   }
 
   async read<T>(filePath: string, defaultValue: T, strict = false): Promise<T> {
+    await this.initialize?.();
     try {
       const content = (await this.filesystem.readFile(filePath, 'utf-8')) as string;
       return JSON.parse(content) as T;
@@ -44,6 +53,7 @@ export class SettingsFileRepository {
   }
 
   async exists(filePath: string): Promise<boolean> {
+    await this.initialize?.();
     try {
       await this.filesystem.access(filePath);
       return true;
@@ -54,10 +64,11 @@ export class SettingsFileRepository {
   }
 
   async write(filePath: string, data: unknown, privateFile = false): Promise<void> {
+    await this.initialize?.();
     await atomicWriteJson(filePath, data, {
       backupCount: DEFAULT_BACKUP_COUNT,
       filesystem: this.filesystem,
-      ...(privateFile && { mode: 0o600 }),
+      ...((privateFile || this.scoped) && { mode: 0o600 }),
     });
   }
 }

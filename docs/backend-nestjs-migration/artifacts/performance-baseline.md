@@ -1,5 +1,8 @@
 # Legacy backend performance baseline
 
+Historical measurements follow. Current native idle budgets, CI commands and
+their scope are recorded in [the budget audit](performance-budget-and-boundaries-audit.md).
+
 Measured 2026-10-23 with Node `v22.22.2` on the migration workstation using
 `npm run baseline:server`. The command builds the production server, imports the
 legacy factory, starts it on an ephemeral loopback port without startup recovery,

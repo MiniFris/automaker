@@ -26,6 +26,39 @@ const prompt = (value) =>
   typeof value.message === 'string' &&
   typeof value.addedAt === 'string';
 const terminal = (value) => ['completed', 'failed', 'cancelled'].includes(value);
+const IMPORT_ITEMS = [
+  'settings.json',
+  'credentials.json',
+  'sessions-metadata.json',
+  'agent-sessions',
+  '.api-key',
+  '.sessions',
+];
+const importRelative = (value) =>
+  typeof value === 'string' &&
+  IMPORT_ITEMS.includes(value.split('/')[0]) &&
+  value.split('/').every((part) => !!part && part !== '.' && part !== '..' && !/[\\\0]/.test(part));
+function importIntentValid(value) {
+  return (
+    plainObject(value) &&
+    value.version === 1 &&
+    typeof value.source === 'string' &&
+    path.isAbsolute(value.source) &&
+    ['staging', 'publishing', 'complete'].includes(value.phase) &&
+    Array.isArray(value.directories) &&
+    value.directories.every(importRelative) &&
+    Array.isArray(value.files) &&
+    value.files.every(
+      (file) =>
+        plainObject(file) &&
+        importRelative(file.relative) &&
+        typeof file.hash === 'string' &&
+        /^[a-f0-9]{64}$/.test(file.hash)
+    ) &&
+    Array.isArray(value.skipped) &&
+    value.skipped.every((item) => IMPORT_ITEMS.includes(item))
+  );
+}
 
 function journalValid(kind, value, id) {
   if (
@@ -171,6 +204,21 @@ export async function inspectBackendDowngrade({ dataDirectory, target } = {}) {
   };
   const names = await directory('', true);
   if (!names) return report;
+  const imports = await directory('.legacy-electron-import');
+  if (imports) {
+    const file = '.legacy-electron-import/intent.json';
+    if (!imports.includes('intent.json'))
+      finding('MISSING_IMPORT_INTENT', file, 'legacy-import', true);
+    else {
+      const value = await json(file, 'legacy-import');
+      if (value !== undefined) {
+        if (!importIntentValid(value))
+          finding('UNKNOWN_IMPORT_INTENT', file, 'legacy-import', true);
+        else if (value.phase !== 'complete')
+          finding('PENDING_LEGACY_IMPORT', file, 'legacy-import', false, value.phase);
+      }
+    }
+  }
   for (const [subdirectory, kind] of [
     ['agent-session-deletions', 'deletion'],
     ['agent-queue-deliveries', 'delivery'],

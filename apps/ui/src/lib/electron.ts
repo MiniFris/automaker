@@ -1,4 +1,5 @@
 import { translate } from '@/lib/i18n';
+import { GEMINI_CLI_INSTALL_COMMAND } from '@automaker/contracts';
 import type { CursorSetupStatus } from '@automaker/contracts';
 import type {
   PendingPlanApprovalResponse,
@@ -2117,7 +2118,7 @@ function createMockSetupAPI(): SetupAPI {
           hasConfigFile: false,
           hasVertexConfig: false,
         },
-        installCommand: 'npm install -g @google/gemini-cli',
+        installCommand: GEMINI_CLI_INSTALL_COMMAND,
         loginCommand: 'gemini',
       };
     },

@@ -40,11 +40,14 @@ FROM base AS server-builder
 COPY apps/server/package*.json ./apps/server/
 
 # Install dependencies (--ignore-scripts to skip husky/prepare, then rebuild native modules)
-RUN npm ci --ignore-scripts && npm rebuild node-pty
+RUN --mount=type=cache,id=automaker-server-npm-node22,target=/root/.npm,sharing=locked \
+    npm ci --ignore-scripts && npm rebuild node-pty
 
 # Browser assets depend on the lockfile, not application source. Keep downloads
 # cached when only backend/libs/scripts change.
-RUN PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers ./node_modules/.bin/playwright install chromium
+RUN --mount=type=cache,id=automaker-server-playwright,target=/tmp/playwright-cache,sharing=locked \
+    PLAYWRIGHT_BROWSERS_PATH=/tmp/playwright-cache ./node_modules/.bin/playwright install chromium && \
+    mkdir -p /opt/playwright-browsers && cp -a /tmp/playwright-cache/. /opt/playwright-browsers/
 
 # Ensure nested workspace node_modules exists (npm may nest conflicting deps here; COPY below requires the path)
 RUN mkdir -p /app/apps/server/node_modules

@@ -1,5 +1,5 @@
 /**
- * Claude Usage types for CLI-based usage tracking
+ * Transport-independent Claude usage values for CLI-based tracking.
  */
 
 export type ClaudeUsage = {

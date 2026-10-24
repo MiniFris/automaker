@@ -85,6 +85,43 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  {
+    files: ['src/services/**/*.ts', 'src/providers/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/routes/**', 'routes/**', '**/*.controller.*'],
+              message: 'Services/providers depend on domain ports, not HTTP routes or controllers.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/**/*.controller.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            'child_process',
+            'node:child_process',
+            'fs',
+            'node:fs',
+            'fs/promises',
+            'node:fs/promises',
+          ],
+          patterns: [
+            { group: ['**/routes/**'], message: 'Controllers delegate IO to application ports.' },
+          ],
+        },
+      ],
+    },
+  },
   globalIgnores(['dist/**', 'node_modules/**']),
 ]);
 

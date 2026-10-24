@@ -27,6 +27,7 @@ export class ProjectRunContextRegistry {
   private stopping = false;
   private pendingCount = 0;
   private shutdown?: Promise<void>;
+  private cleanupFailed = false;
 
   constructor(@Inject(SecurityService) private readonly security?: SecurityService) {}
 
@@ -68,6 +69,30 @@ export class ProjectRunContextRegistry {
     this.pendingCount++;
   }
 
+  runAwaited<T>(projectPath: string, action: () => Promise<T>): Promise<T> {
+    if (this.pendingCount >= 256)
+      throw new UnavailableDomainError('Auto mode command queue is busy.');
+    const context = this.context(projectPath);
+    const task = Promise.resolve()
+      .then(() => {
+        if (this.stopping) throw new UnavailableDomainError('Auto mode is shutting down.');
+        return action();
+      })
+      .catch((error) => {
+        const code =
+          error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
+        if (/CLEANUP_FAILED|OUTCOME_UNKNOWN/.test(code)) this.cleanupFailed = true;
+        throw error;
+      })
+      .finally(() => {
+        context.pendingCommands.delete(task);
+        this.pendingCount--;
+      });
+    context.pendingCommands.add(task);
+    this.pendingCount++;
+    return task;
+  }
+
   interruptForShutdown(): void {
     this.stopAdmission();
     for (const context of this.contexts.values()) context.facade?.interruptForShutdown();
@@ -86,7 +111,8 @@ export class ProjectRunContextRegistry {
     const deadline = performance.now() + 5000;
     this.shutdown = Promise.race([
       Promise.allSettled(accepted).then(() => {
-        if (performance.now() >= deadline) throw new AutoModeCommandCleanupError();
+        if (performance.now() >= deadline || this.cleanupFailed)
+          throw new AutoModeCommandCleanupError();
       }),
       new Promise<never>((_resolve, reject) => {
         timer = setTimeout(() => reject(new AutoModeCommandCleanupError()), 5000);

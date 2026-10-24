@@ -16,7 +16,7 @@ const status = {
     hasConfigFile: true,
     hasVertexConfig: false,
   },
-  installCommand: 'npm install -g @google/gemini-cli',
+  installCommand: 'npm install -g @google/gemini-cli@0.65.0',
   loginCommand: 'gemini',
 };
 beforeEach(() => {

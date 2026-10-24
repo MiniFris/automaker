@@ -19,6 +19,7 @@ export const {
   rm,
   unlink,
   copyFile,
+  link,
   appendFile,
   rename,
   lstat,

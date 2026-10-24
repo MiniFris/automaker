@@ -1,5 +1,6 @@
 import {
   isCursorModel,
+  isGeminiModel,
   isRemoteCliModel,
   isRemoteSdkModel,
   isClaudeModel,
@@ -77,7 +78,7 @@ export async function prepareCliExecution(
   if (remote) {
     const sdk = isRemoteSdkModel(selection.model);
     const claude = sdk && isClaudeModel(selection.model);
-    if (options.tools?.length === 0 && !claude)
+    if (options.tools?.length === 0 && !claude && !isGeminiModel(selection.model))
       throw new ExecutionEnvironmentError(
         'REMOTE_PROVIDER_READ_ONLY_UNSUPPORTED',
         'Remote CLI tool-free execution is not enforced yet. Use Direct for tools: []. No CLI was started.'

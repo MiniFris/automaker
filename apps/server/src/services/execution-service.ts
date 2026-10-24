@@ -187,6 +187,10 @@ ${feature.spec}
       expected: options?._run,
     });
     const abortController = tempRunningFeature.abortController;
+    const runPort = this.concurrencyManager.coordinator.bind(
+      this.concurrencyManager,
+      tempRunningFeature
+    );
     const current = () => this.concurrencyManager.isCurrent(tempRunningFeature);
     const updateStatus = (status: string) =>
       this.concurrencyManager.coordinator.status(
@@ -356,6 +360,7 @@ ${feature.spec}
         typeof img === 'string' ? img : img.path
       );
       const model = resolveModelString(feature.model, DEFAULT_MODELS.claude);
+      runPort.assertCurrent();
       tempRunningFeature.model = model;
       tempRunningFeature.provider = this.providerRegistry.providerNameForModel(model);
 
@@ -370,6 +375,7 @@ ${feature.spec}
         {
           projectPath,
           planningMode: feature.planningMode,
+          runPort,
           boundTargetCwd: remote?.binding.cwd,
           requirePlanApproval: feature.requirePlanApproval,
           systemPrompt: combinedSystemPrompt || undefined,
@@ -439,6 +445,7 @@ Please continue from where you left off and complete all remaining tasks. Use th
           {
             projectPath,
             planningMode: 'skip',
+            runPort,
             boundTargetCwd: remote?.binding.cwd,
             requirePlanApproval: false,
             systemPrompt: combinedSystemPrompt || undefined,
@@ -711,7 +718,7 @@ Please continue from where you left off and complete all remaining tasks. Use th
     }
 
     running.abortController.abort();
-    if (!running.remoteWorkspace)
+    if (!running.remoteWorkspace && !running.retainUntilCleanup)
       this.releaseRunningFeature(featureId, { force: true, expected: running });
     return true;
   }

@@ -605,7 +605,7 @@
       "method": "GET",
       "path": "/api/health",
       "source": "apps/ui/src/lib/electron.ts",
-      "line": 1142
+      "line": 1143
     },
     {
       "method": "GET",
@@ -3029,7 +3029,7 @@
           "method": "GET",
           "path": "/api/health",
           "source": "apps/ui/src/lib/electron.ts",
-          "line": 1142
+          "line": 1143
         },
         {
           "method": "GET",

@@ -9,7 +9,8 @@
  * Based on https://github.com/google-gemini/gemini-cli
  */
 
-import { execSync } from 'child_process';
+import { execSync, execFile } from 'child_process';
+import { promisify } from 'node:util';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
@@ -28,6 +29,11 @@ import type { SubprocessOptions } from '@automaker/platform';
 import { remoteCliRuntime } from './environment-execution.js';
 import { normalizeTodos } from './tool-normalization.js';
 import { ExecutionEnvironmentError } from '../services/execution-environment/runtime.js';
+import {
+  GEMINI_INSTALL_COMMAND,
+  geminiPolicyTools,
+  prepareGeminiPolicy,
+} from './gemini-tool-policy.js';
 
 // Create logger for this module
 const logger = createLogger('GeminiProvider');
@@ -268,7 +274,9 @@ export class GeminiProvider extends CliProvider {
 
     // YOLO mode for automatic approval (required for non-interactive use)
     // Use explicit approval-mode for clearer semantics
-    cliArgs.push('--approval-mode', 'yolo');
+    const restricted = geminiPolicyTools(options) !== undefined;
+    cliArgs.push('--approval-mode', restricted ? 'default' : 'yolo');
+    if (restricted) cliArgs.push('--extensions', 'none');
 
     // Force headless (non-interactive) mode with --prompt flag.
     // The actual prompt content is passed via stdin (see buildSubprocessOptions()),
@@ -544,7 +552,7 @@ export class GeminiProvider extends CliProvider {
    * Override install instructions for Gemini-specific guidance
    */
   protected getInstallInstructions(): string {
-    return 'Install with: npm install -g @google/gemini-cli (or visit https://github.com/google-gemini/gemini-cli)';
+    return `Install with: ${GEMINI_INSTALL_COMMAND} (or visit https://github.com/google-gemini/gemini-cli)`;
   }
 
   /**
@@ -568,66 +576,89 @@ export class GeminiProvider extends CliProvider {
       );
     }
 
-    // Ensure .geminiignore exists in the working directory to prevent Gemini CLI
-    // from scanning .git and node_modules directories during startup. This reduces
-    // startup time significantly (reported: 35s → 11s) by skipping large directories
-    // that Gemini CLI would otherwise traverse for context discovery.
-    if (!runtime) await this.ensureGeminiIgnore(options.cwd || process.cwd());
-
-    // Embed system prompt into the user prompt so Gemini CLI receives
-    // project context (CLAUDE.md, CODE_QUALITY.md, etc.) that would
-    // otherwise be silently dropped since Gemini CLI has no --system-prompt flag.
-    const effectiveOptions = this.embedSystemPromptIntoPrompt(options);
-
-    // Build CLI args for headless execution.
-    const cliArgs = this.buildCliArgs(effectiveOptions);
-
-    const subprocessOptions = this.buildSubprocessOptions(effectiveOptions, cliArgs);
-
-    let sessionId: string | undefined;
-
-    logger.debug(`GeminiProvider.executeQuery called with model: "${options.model}"`);
-
+    if (
+      geminiPolicyTools(options) !== undefined &&
+      !runtime &&
+      (this.useWsl || this.detectedStrategy === 'npx' || process.platform === 'win32')
+    ) {
+      throw new ExecutionEnvironmentError(
+        'GEMINI_TOOL_POLICY_UNSUPPORTED',
+        'Gemini restricted execution requires a native version-bound CLI runtime.'
+      );
+    }
+    const policy = await prepareGeminiPolicy(options, runtime, (args) =>
+      this.probeToolPolicy(options, args)
+    );
     try {
-      for await (const rawEvent of this.streamProcess(options, subprocessOptions)) {
-        const event = rawEvent as GeminiStreamEvent;
+      // Ensure .geminiignore exists in the working directory to prevent Gemini CLI
+      // from scanning .git and node_modules directories during startup. This reduces
+      // startup time significantly (reported: 35s → 11s) by skipping large directories
+      // that Gemini CLI would otherwise traverse for context discovery.
+      if (!runtime && !policy) await this.ensureGeminiIgnore(options.cwd || process.cwd());
 
-        // Capture session ID from init event
-        if (event.type === 'init') {
-          const initEvent = event as GeminiInitEvent;
-          sessionId = initEvent.session_id;
-          logger.debug(`Session started: ${sessionId}, model: ${initEvent.model}`);
-        }
+      // Embed system prompt into the user prompt so Gemini CLI receives
+      // project context (CLAUDE.md, CODE_QUALITY.md, etc.) that would
+      // otherwise be silently dropped since Gemini CLI has no --system-prompt flag.
+      const effectiveOptions = this.embedSystemPromptIntoPrompt(options);
 
-        // Normalize and yield the event
-        const normalized = this.normalizeEvent(event);
-        if (normalized) {
-          if (!normalized.session_id && sessionId) {
-            normalized.session_id = sessionId;
+      // Build CLI args for headless execution.
+      const cliArgs = this.buildCliArgs(effectiveOptions);
+      if (policy) cliArgs.push('--admin-policy', policy.file);
+
+      // Explicit tools: [] has already been enforced by the per-run admin policy.
+      // The generic remote CLI guard must not replace that policy with a blanket rejection.
+      const subprocessOptions = this.buildSubprocessOptions(
+        policy ? { ...effectiveOptions, tools: undefined } : effectiveOptions,
+        cliArgs
+      );
+
+      let sessionId: string | undefined;
+
+      logger.debug(`GeminiProvider.executeQuery called with model: "${options.model}"`);
+
+      try {
+        for await (const rawEvent of this.streamProcess(options, subprocessOptions)) {
+          const event = rawEvent as GeminiStreamEvent;
+
+          // Capture session ID from init event
+          if (event.type === 'init') {
+            const initEvent = event as GeminiInitEvent;
+            sessionId = initEvent.session_id;
+            logger.debug(`Session started: ${sessionId}, model: ${initEvent.model}`);
           }
-          yield normalized;
-        }
-      }
-    } catch (error) {
-      if (isAbortError(error)) {
-        logger.debug('Query aborted');
-        return;
-      }
 
-      // Map CLI errors to GeminiError
-      if (error instanceof Error && 'stderr' in error) {
-        const errorInfo = this.mapError(
-          (error as { stderr?: string }).stderr || error.message,
-          (error as { exitCode?: number | null }).exitCode ?? null
-        );
-        throw this.createError(
-          errorInfo.code as GeminiErrorCode,
-          errorInfo.message,
-          errorInfo.recoverable,
-          errorInfo.suggestion
-        );
+          // Normalize and yield the event
+          const normalized = this.normalizeEvent(event);
+          if (normalized) {
+            if (!normalized.session_id && sessionId) {
+              normalized.session_id = sessionId;
+            }
+            yield normalized;
+          }
+        }
+      } catch (error) {
+        if (isAbortError(error)) {
+          logger.debug('Query aborted');
+          return;
+        }
+
+        // Map CLI errors to GeminiError
+        if (error instanceof Error && 'stderr' in error) {
+          const errorInfo = this.mapError(
+            (error as { stderr?: string }).stderr || error.message,
+            (error as { exitCode?: number | null }).exitCode ?? null
+          );
+          throw this.createError(
+            errorInfo.code as GeminiErrorCode,
+            errorInfo.message,
+            errorInfo.recoverable,
+            errorInfo.suggestion
+          );
+        }
+        throw error;
       }
-      throw error;
+    } finally {
+      await policy?.close();
     }
   }
 
@@ -806,13 +837,50 @@ export class GeminiProvider extends CliProvider {
   }
 
   private validateToolPolicy(options: ExecuteOptions): void {
-    // The installed CLI is not version-pinned. --allowed-tools controls approval,
-    // not availability; YOLO would override a restricted approval list. Neither
-    // that flag nor an unverified experimental plan mode can enforce our policy.
-    if (options.readOnly || options.allowedTools !== undefined || options.tools !== undefined) {
+    geminiPolicyTools(options);
+  }
+
+  private async probeToolPolicy(options: ExecuteOptions, args: string[]): Promise<string> {
+    const signal = options.abortController?.signal ?? new AbortController().signal;
+    try {
+      const subprocess = super.buildSubprocessOptions({ ...options, tools: undefined }, args);
+      const runtime = remoteCliRuntime(options);
+      if (!runtime) {
+        const result = await promisify(execFile)(subprocess.command, subprocess.args, {
+          cwd: options.cwd,
+          env: await this.readEnvironment(),
+          signal,
+          timeout: 5000,
+          maxBuffer: 65_536,
+          encoding: 'utf8',
+          windowsHide: true,
+        });
+        return result.stdout;
+      }
+      const abort = new AbortController();
+      let stdout = '',
+        bytes = 0;
+      const result = await runtime.runProcess!(
+        {
+          command: subprocess.command,
+          args: subprocess.args,
+          timeoutMs: 5000,
+          idleTimeoutMs: 5000,
+        },
+        AbortSignal.any([signal, abort.signal]),
+        (stream, data) => {
+          bytes += data.length;
+          if (bytes > 65_536) abort.abort();
+          else if (stream === 'stdout') stdout += data.toString('utf8');
+        }
+      );
+      if (result.exitCode !== 0 || bytes > 65_536) throw new Error('CLI probe failed.');
+      return stdout;
+    } catch {
+      signal.throwIfAborted();
       throw new ExecutionEnvironmentError(
         'GEMINI_TOOL_POLICY_UNSUPPORTED',
-        'Gemini CLI cannot enforce the requested tool policy. No process was started.'
+        'Gemini CLI version and policy capabilities could not be confirmed. No model query was started.'
       );
     }
   }

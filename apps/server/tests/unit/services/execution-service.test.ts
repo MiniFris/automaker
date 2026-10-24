@@ -178,6 +178,13 @@ describe('execution-service.ts', () => {
       acquireAsync: vi.fn((options) => Promise.resolve(mockConcurrencyManager.acquire(options))),
       isCurrent: vi.fn().mockReturnValue(true),
       coordinator: {
+        bind: vi.fn(() => ({
+          assertCurrent: vi.fn(),
+          transition: vi.fn(),
+          mutate: async (write) => {
+            await write();
+          },
+        })),
         mutate: vi.fn(async (_manager, _run, write) => {
           await write();
           return true;

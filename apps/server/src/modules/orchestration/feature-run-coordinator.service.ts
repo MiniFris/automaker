@@ -2,10 +2,34 @@ import { Injectable } from '@nestjs/common';
 import type { ConcurrencyManager, RunningFeature } from '../../services/concurrency-manager.js';
 import { ValidationDomainError } from '../../core/errors/index.js';
 import { canTransitionFeatureRun, type FeatureRunState } from './feature-run-state-machine.js';
+import type { FeatureRunPort } from '../../services/agent-executor-types.js';
 
 /** Stateless coordinator: ConcurrencyManager owns every run and its mutation lane. */
 @Injectable()
 export class FeatureRunCoordinator {
+  bind(manager: ConcurrencyManager, run: RunningFeature): FeatureRunPort {
+    const assertCurrent = () => {
+      if (!manager.isCurrent(run)) {
+        const error = new Error('Feature run was superseded');
+        error.name = 'AbortError';
+        throw error;
+      }
+    };
+    return {
+      assertCurrent,
+      mutate: async (write) => {
+        assertCurrent();
+        if (!(await this.mutate(manager, run, write))) assertCurrent();
+        assertCurrent();
+      },
+      transition: (state) => {
+        assertCurrent();
+        if (run.state === 'queued' && state !== 'queued')
+          this.transition(manager, run, 'preparing');
+        this.transition(manager, run, state);
+      },
+    };
+  }
   transition(manager: ConcurrencyManager, run: RunningFeature, state: FeatureRunState): boolean {
     if (!manager.isCurrent(run)) return false;
     if (!canTransitionFeatureRun(run.state, state))

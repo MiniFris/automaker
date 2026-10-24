@@ -3,7 +3,7 @@ export const FEATURE_RUN_STATES = [
   'queued',
   'preparing',
   'planning',
-  'awaiting_approval',
+  'awaiting_plan_approval',
   'executing',
   'testing',
   'awaiting_review',
@@ -22,9 +22,9 @@ export const FEATURE_RUN_TRANSITIONS: Readonly<
   backlog: ['queued'],
   queued: ['preparing', 'interrupted', 'failed'],
   preparing: ['planning', 'executing', 'interrupted', 'failed'],
-  planning: ['awaiting_approval', 'executing', 'interrupted', 'failed'],
-  awaiting_approval: ['executing', 'backlog', 'interrupted', 'failed'],
-  executing: ['testing', 'awaiting_review', 'completed', 'interrupted', 'failed'],
+  planning: ['awaiting_plan_approval', 'executing', 'interrupted', 'failed'],
+  awaiting_plan_approval: ['planning', 'executing', 'backlog', 'interrupted', 'failed'],
+  executing: ['planning', 'testing', 'awaiting_review', 'completed', 'interrupted', 'failed'],
   testing: ['executing', 'awaiting_review', 'completed', 'interrupted', 'failed'],
   awaiting_review: ['executing', 'testing', 'completed', 'interrupted', 'failed'],
   completed: [],
@@ -47,7 +47,7 @@ export function mapLegacyFeatureStatus(status: unknown): FeatureRunState | undef
   if (status === 'running' || status === 'in_progress' || status.startsWith('pipeline_')) {
     return 'executing';
   }
-  if (status === 'waiting_approval') return 'awaiting_approval';
+  if (status === 'waiting_approval') return 'awaiting_review';
   if (status === 'verified') return 'completed';
   if (status === 'merge_conflict') return 'failed';
   return undefined;

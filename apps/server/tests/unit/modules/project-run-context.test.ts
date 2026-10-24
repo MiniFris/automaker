@@ -10,6 +10,33 @@ function gate() {
   return { promise, release };
 }
 afterEach(() => vi.useRealTimers());
+it('drains awaited verification and preserves its result', async () => {
+  const registry = new ProjectRunContextRegistry();
+  const pending = gate();
+  const accepted = registry.runAwaited('/project', async () => {
+    await pending.promise;
+    return false;
+  });
+  await Promise.resolve();
+  const closing = registry.onModuleDestroy();
+  pending.release();
+  expect(await accepted).toBe(false);
+  await closing;
+});
+it('retains cleanup uncertainty as a failed cached close after the awaited request rejects', async () => {
+  const registry = new ProjectRunContextRegistry();
+  await expect(
+    registry.runAwaited('/project', async () => {
+      throw Object.assign(new Error('fixture'), { code: 'PROCESS_CLEANUP_FAILED' });
+    })
+  ).rejects.toMatchObject({ code: 'PROCESS_CLEANUP_FAILED' });
+  await expect(registry.onModuleDestroy()).rejects.toMatchObject({
+    code: 'AUTO_MODE_COMMAND_CLEANUP_FAILED',
+  });
+  await expect(registry.onModuleDestroy()).rejects.toMatchObject({
+    code: 'AUTO_MODE_COMMAND_CLEANUP_FAILED',
+  });
+});
 it('closes admission synchronously before persistence without aborting accepted work', async () => {
   const registry = new ProjectRunContextRegistry();
   const facade = { closeAdmission: vi.fn(), interruptForShutdown: vi.fn() };

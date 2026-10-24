@@ -1195,6 +1195,7 @@ describe('Nest shell and legacy bridge contract', () => {
   });
 
   it('cleans up a partially initialized Nest application when a blocking task fails', async () => {
+    const ownedProfile = await mkdtemp(path.join(os.tmpdir(), 'automaker-blocking-startup-'));
     const initialize = vi
       .spyOn(AgentService.prototype, 'initialize')
       .mockRejectedValueOnce(new Error('startup fixture failed'));
@@ -1205,11 +1206,24 @@ describe('Nest shell and legacy bridge contract', () => {
           port: 0,
           runStartupTasks: true,
           enableShutdownHooks: false,
+          workingDirectory: ownedProfile,
+          dataDir: path.join(ownedProfile, 'data'),
+          providerRegistrations: [],
+          environment: {
+            NODE_ENV: 'test',
+            HOME: ownedProfile,
+            USERPROFILE: ownedProfile,
+            XDG_CONFIG_HOME: path.join(ownedProfile, 'config'),
+            APPDATA: path.join(ownedProfile, 'appdata'),
+            AUTOMAKER_API_KEY: 'fixture',
+            ENABLE_REQUEST_LOGGING: 'false',
+          },
         })
       ).rejects.toThrow('startup fixture failed');
       expect(initialize).toHaveBeenCalledOnce();
     } finally {
       initialize.mockRestore();
+      await rm(ownedProfile, { recursive: true, force: true });
     }
   });
 });

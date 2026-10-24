@@ -71,7 +71,7 @@ describe('native provider setup status', () => {
         hasConfigFile: false,
         hasVertexConfig: false,
       },
-      installCommand: 'npm install -g @google/gemini-cli',
+      installCommand: 'npm install -g @google/gemini-cli@0.65.0',
       loginCommand: 'gemini',
     });
   });

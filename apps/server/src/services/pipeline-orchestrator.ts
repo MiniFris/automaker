@@ -209,6 +209,9 @@ export class PipelineOrchestrator {
         {
           projectPath,
           planningMode: 'skip',
+          runPort: run
+            ? this.concurrencyManager.coordinator.bind(this.concurrencyManager, run)
+            : undefined,
           boundTargetCwd: remote?.binding.cwd ?? ctx.boundTargetCwd,
           requirePlanApproval: false,
           previousContent: previousContext,
@@ -605,9 +608,14 @@ export class PipelineOrchestrator {
 
   /** Execute test step with agent fix loop (REQ-F07) */
   async executeTestStep(context: PipelineContext, testCommand: string): Promise<StepResult> {
+    const runPort = context.run
+      ? this.concurrencyManager.coordinator.bind(this.concurrencyManager, context.run)
+      : undefined;
+    runPort?.transition('testing');
     const { featureId, projectPath, workDir, abortController, maxTestAttempts } = context;
 
     for (let attempt = 1; attempt <= maxTestAttempts; attempt++) {
+      runPort?.transition('testing');
       if (abortController.signal.aborted)
         return { success: false, message: 'Test execution aborted' };
       logger.info(`Running tests for ${featureId} (attempt ${attempt}/${maxTestAttempts})`);
@@ -690,6 +698,7 @@ export class PipelineOrchestrator {
           {
             projectPath,
             planningMode: 'skip',
+            runPort,
             requirePlanApproval: false,
             useClaudeCodeSystemPrompt: context.useClaudeCodeSystemPrompt,
             autoLoadClaudeMd: context.autoLoadClaudeMd,

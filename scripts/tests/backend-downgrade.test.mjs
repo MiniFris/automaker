@@ -67,6 +67,57 @@ async function json(root, relative, value) {
 }
 const inspect = (dataDirectory) =>
   inspectBackendDowngrade({ dataDirectory, target: DOWNGRADE_TARGET });
+const importIntent = (phase) => ({
+  version: 1,
+  source: '/private/legacy-profile',
+  phase,
+  directories: ['agent-sessions'],
+  files: [{ relative: 'settings.json', hash: 'a'.repeat(64) }],
+  skipped: [],
+});
+
+for (const phase of ['staging', 'publishing'])
+  test(`blocks pending legacy import (${phase}) without exposing source`, async (t) => {
+    const root = await owned(t);
+    await json(root, '.legacy-electron-import/intent.json', importIntent(phase));
+    const before = await manifest(root),
+      report = await inspect(root);
+    assert.equal(report.status, 'blocked');
+    assert.equal(report.findings[0].code, 'PENDING_LEGACY_IMPORT');
+    assert.ok(!JSON.stringify(report).includes('/private/legacy-profile'));
+    assert.deepEqual(await manifest(root), before);
+  });
+test('allows a valid complete legacy import intent without asserting full binary compatibility', async (t) => {
+  const root = await owned(t);
+  await json(root, '.legacy-electron-import/intent.json', importIntent('complete'));
+  const before = await manifest(root),
+    report = await inspect(root);
+  assert.equal(report.status, 'passed');
+  assert.deepEqual(await manifest(root), before);
+});
+for (const [name, record] of [
+  ['unknown version', { ...importIntent('publishing'), version: 99 }],
+  [
+    'invalid manifest',
+    { ...importIntent('staging'), files: [{ relative: '../escape', hash: 'a'.repeat(64) }] },
+  ],
+  ['unknown phase', { ...importIntent('complete'), phase: 'unrecognized' }],
+  ['relative source', { ...importIntent('complete'), source: 'relative-profile' }],
+])
+  test(`treats ${name} legacy import intent as unconfirmed`, async (t) => {
+    const root = await owned(t);
+    await json(root, '.legacy-electron-import/intent.json', record);
+    assert.equal((await inspect(root)).status, 'unconfirmed');
+  });
+test('does not silently pass a legacy import folder with no readable intent', async (t) => {
+  const root = await owned(t);
+  await json(root, '.legacy-electron-import/payload/settings.json', {});
+  assert.equal((await inspect(root)).status, 'unconfirmed');
+  await writeFile(path.join(root, '.legacy-electron-import/intent.json'), 'private-corrupt-intent');
+  const report = await inspect(root);
+  assert.equal(report.status, 'unconfirmed');
+  assert.ok(!JSON.stringify(report).includes('private-corrupt-intent'));
+});
 async function manifest(root, relative = '') {
   const files = [];
   for (const name of (await readdir(path.join(root, relative))).sort()) {

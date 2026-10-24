@@ -10,6 +10,7 @@ import type { loadContextFiles } from '@automaker/utils';
 import type { PipelineContext } from './pipeline-orchestrator.js';
 import type { FeatureMemoryWriter } from './execution-environment/memory.js';
 import type { RunningFeature } from './concurrency-manager.js';
+import type { FeatureRunPort } from './agent-executor-types.js';
 
 // =============================================================================
 // ExecutionService Callback Types
@@ -40,6 +41,7 @@ export type RunAgentFn = (
     branchName?: string | null;
     /** Trusted immutable feature-workspace cwd, never accepted from HTTP input. */
     boundTargetCwd?: string;
+    runPort?: FeatureRunPort;
   }
 ) => Promise<void>;
 

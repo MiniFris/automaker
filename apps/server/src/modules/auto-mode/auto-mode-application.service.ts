@@ -126,7 +126,9 @@ export class AutoModeApplicationService {
   async verifyFeature(input: AutoModeFeatureRequest) {
     return {
       success: true,
-      passes: await this.autoMode.verifyFeature(input.projectPath, input.featureId),
+      passes: await this.contexts.runAwaited(input.projectPath, () =>
+        this.autoMode.verifyFeature(input.projectPath, input.featureId)
+      ),
     };
   }
   async contextExists(input: AutoModeFeatureRequest) {
