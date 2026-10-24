@@ -26,8 +26,8 @@ export class BackgroundIntegrationsLifecycle
   constructor(
     @Inject(APPLICATION_EVENTS) private readonly events: EventEmitter,
     @Inject(SettingsService) private readonly settings: SettingsService,
-    @Inject(LEGACY_SERVICES.eventHistory) private readonly history: EventHistoryService,
-    @Inject(LEGACY_SERVICES.featureLoader) private readonly features: FeatureLoader,
+    @Inject(EventHistoryService) private readonly history: EventHistoryService,
+    @Inject(FeatureLoader) private readonly features: FeatureLoader,
     @Inject(LEGACY_SERVICES.eventHook) private readonly hooks: EventHookService
   ) {}
 

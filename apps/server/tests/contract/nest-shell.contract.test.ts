@@ -76,13 +76,10 @@ describe('Nest shell and legacy bridge contract', () => {
   it('registers the existing stateful service instances without duplicates', () => {
     const services = runtime.legacy.services;
     const expected = {
-      featureLoader: services.featureLoader,
       autoMode: services.autoModeService,
       mcpTest: services.mcpTestService,
       ideation: services.ideationService,
       devServer: services.devServerService,
-      notification: services.notificationService,
-      eventHistory: services.eventHistoryService,
       testRunner: services.testRunnerService,
       terminal: services.terminalService,
       pipeline: services.pipelineService,

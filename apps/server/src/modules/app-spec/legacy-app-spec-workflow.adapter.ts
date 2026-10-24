@@ -1,5 +1,4 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import { APPLICATION_EVENTS } from '../../core/eventing/application-events.js';
 import type { EventEmitter } from '../../lib/events.js';
 import { generateFeaturesFromSpec } from '../../routes/app-spec/generate-features-from-spec.js';
@@ -15,7 +14,7 @@ export class LegacyAppSpecWorkflowAdapter implements AppSpecWorkflowPort {
   constructor(
     @Inject(APPLICATION_EVENTS) private readonly events: EventEmitter,
     @Inject(SettingsService) private readonly settings: SettingsService,
-    @Inject(LEGACY_SERVICES.notification) private readonly notifications: NotificationService,
+    @Inject(NotificationService) private readonly notifications: NotificationService,
     @Inject(ProviderRegistry) private readonly providers: ProviderRegistry
   ) {}
 

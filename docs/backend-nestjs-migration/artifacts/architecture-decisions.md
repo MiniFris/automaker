@@ -569,3 +569,26 @@ subscription disposal after closing one application. API v13, wire event payload
 settings/auth persisted formats and rate-limit behavior are unchanged. This does
 not prove multi-writer DATA_DIR safety, universal event cleanup, capability/status
 gates or completion of the remaining migration stages.
+
+## ADR-031: native project storage ownership and isolated fallback defaults
+
+FeatureStorageModule owns FeatureLoader without globally exporting feature
+application services. FileFeatureRepository adapts that same class-token service.
+NotificationsModule and EventHistoryModule own/export their storage services;
+notification construction binds the application's native APPLICATION_EVENTS.
+Transitional AutoMode/Ideation and native project/worktree/feature/integration
+consumers resolve the same instances. The three legacy tokens, factories,
+service-bag fields and bootstrap overrides are removed, without new aliases.
+
+Real filesystem regressions exposed shared mutable notifications/history fallback
+objects: writing one project's missing file polluted exported defaults and exposed
+records in other projects without files. Readers now clone fallback defaults for
+missing and malformed/unreadable files. Existing fallback semantics remain, but
+mutations cannot contaminate defaults. Historical files are not automatically
+purged; provenance cannot be reconstructed reliably by this ownership change.
+
+Contracts inspect real Nest wrapper/consumer identity, isolated projects/events,
+independent application shutdown and persistence/restart. Storage is still scoped
+to explicit project paths, not secretly partitioned by application DATA_DIR.
+No multi-writer guarantee, new failure policy, format/ID/event/API-v13 change or
+completion of the remaining migration stages is claimed.

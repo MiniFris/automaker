@@ -8,7 +8,7 @@ import type {
   ProjectStatus,
 } from '@automaker/types';
 import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
-import type { FeatureLoader } from '../../services/feature-loader.js';
+import { FeatureLoader } from '../../services/feature-loader.js';
 import type { AutoModeServiceCompat, RunningAgentInfo } from '../../services/auto-mode/index.js';
 import { NotificationService } from '../../services/notification-service.js';
 import { ProjectRegistry, type RegisteredProject } from './project-registry.service.js';
@@ -57,7 +57,7 @@ function lastActivity(features: Feature[]): string | undefined {
 export class ProjectOverviewService {
   constructor(
     @Inject(ProjectRegistry) private readonly registry: ProjectRegistry,
-    @Inject(LEGACY_SERVICES.featureLoader) private readonly features: FeatureLoader,
+    @Inject(FeatureLoader) private readonly features: FeatureLoader,
     @Inject(LEGACY_SERVICES.autoMode) private readonly autoMode: AutoModeServiceCompat,
     @Inject(NotificationService) private readonly notifications: NotificationService
   ) {}

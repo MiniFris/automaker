@@ -6,7 +6,6 @@ import { EVENT_BUS, type EventBus } from '../../core/eventing/index.js';
 import { NotFoundDomainError, ValidationDomainError } from '../../core/errors/index.js';
 import { execGitCommand } from '../../lib/git.js';
 import { deleteWorktreeMetadata } from '../../lib/worktree-metadata.js';
-import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import { FeatureExportService } from '../../services/feature-export-service.js';
 import { FeatureLoader } from '../../services/feature-loader.js';
 import { FEATURE_REPOSITORY, type FeatureRepository } from './feature.repository.js';
@@ -35,7 +34,7 @@ export class FeatureCommandService {
 
   constructor(
     @Inject(FEATURE_REPOSITORY) private readonly features: FeatureRepository,
-    @Inject(LEGACY_SERVICES.featureLoader) featureLoader: FeatureLoader,
+    @Inject(FeatureLoader) featureLoader: FeatureLoader,
     @Inject(EVENT_BUS) private readonly events: EventBus,
     @Inject(FeatureTransitionService) private readonly transitions: FeatureTransitionService,
     @Inject(ProjectFeatureSerializer) private readonly serializer: ProjectFeatureSerializer

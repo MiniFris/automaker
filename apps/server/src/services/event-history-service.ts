@@ -59,10 +59,10 @@ async function readJsonFile<T>(filePath: string, defaultValue: T): Promise<T> {
     return JSON.parse(content) as T;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      return defaultValue;
+      return globalThis.structuredClone(defaultValue);
     }
     logger.error(`Error reading ${filePath}:`, error);
-    return defaultValue;
+    return globalThis.structuredClone(defaultValue);
   }
 }
 

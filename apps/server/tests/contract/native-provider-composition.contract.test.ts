@@ -138,6 +138,9 @@ it.each([
   'settingsService',
   'events',
   'loginAttemptStore',
+  'featureLoader',
+  'notificationService',
+  'eventHistoryService',
 ])(
   'rejects retired legacy override %s before creating services or falling back to production adapters',
   async (key) => {

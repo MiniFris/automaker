@@ -7,7 +7,6 @@ import {
 } from '@automaker/types';
 import { createLogger } from '@automaker/utils';
 import { resolveModelString } from '@automaker/model-resolver';
-import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import { RuntimePathsService } from '../../core/config/index.js';
 import * as secureFs from '../../lib/secure-fs.js';
 import {
@@ -33,7 +32,7 @@ const logger = createLogger('PromptEnhancement');
 export class PromptEnhancementService {
   constructor(
     @Inject(SettingsService) private readonly settings: SettingsService,
-    @Inject(LEGACY_SERVICES.featureLoader) private readonly features: FeatureLoader,
+    @Inject(FeatureLoader) private readonly features: FeatureLoader,
     @Inject(PROMPT_QUERY) private readonly query: PromptQuery,
     @Inject(RuntimePathsService) private readonly paths: RuntimePathsService
   ) {}

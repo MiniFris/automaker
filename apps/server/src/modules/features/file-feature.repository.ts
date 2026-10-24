@@ -1,13 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import { FeatureLoader } from '../../services/feature-loader.js';
 import type { FeatureRepository } from './feature.repository.js';
 
 @Injectable()
-export class LegacyFeatureRepository implements FeatureRepository {
-  constructor(
-    @Inject(LEGACY_SERVICES.featureLoader) private readonly featureLoader: FeatureLoader
-  ) {}
+export class FileFeatureRepository implements FeatureRepository {
+  constructor(@Inject(FeatureLoader) private readonly featureLoader: FeatureLoader) {}
 
   list(projectPath: string) {
     return this.featureLoader.getAll(projectPath);

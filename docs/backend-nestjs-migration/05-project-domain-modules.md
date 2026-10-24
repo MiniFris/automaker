@@ -146,3 +146,66 @@ UI smoke и production server build. Следующий этап до успеш
 - `@automaker/contracts` содержит общие Zod schemas и API contract version header;
   server и UI используют один источник transport types.
 - Inventories routes/dependencies/API consumers регенерированы и проходят `--check`.
+
+## Дополнительный cutover: native project storage ownership
+
+`FeatureStorageModule` владеет одним `FeatureLoader` на application. Это отдельный
+global storage module: feature controllers/application services не становятся
+global. `FeaturesModule` использует `FileFeatureRepository` поверх этого native
+loader; прежнее имя `LegacyFeatureRepository` и зависимость от legacy token удалены.
+Projects, worktrees, prompt enhancement, feature commands/queries и integrations
+инжектируют тот же class token.
+
+`NotificationsModule` и `EventHistoryModule` теперь сами создают и экспортируют
+свои сервисы; экспортируемые storage services доступны transitional consumers
+через native DI. Notification factory получает `APPLICATION_EVENTS` своего
+application до выдачи сервиса потребителям. AutoMode, app-spec workflow и
+background integrations больше не используют legacy aliases для этих зависимостей.
+Три legacy tokens/factories/service-bag fields и bootstrap overrides удалены;
+retired override keys отклоняются до создания сервисов.
+
+При проверке изоляции обнаружена и воспроизведена утечка между проектами:
+notifications/history readers возвращали общие mutable defaults при отсутствии
+файла; запись добавляла в константу записи одного проекта, и новый проект без
+файла видел чужие notifications/event summaries. Оба новых regression tests
+первоначально упали на этом поведении. Fallback теперь возвращает отдельный
+`globalThis.structuredClone` defaults, в том числе при parse/read error; последующие mutations
+не меняют общие константы. Legacy fallback policy при повреждённом файле этим
+срезом не заменяется fail-closed policy. Ранее записанные файлы не очищаются:
+надёжно отличить исторически примешанные записи от пользовательских здесь нельзя.
+
+Новый native contract проверяет actual Nest wrapper cardinality, identity storage
+потребителей, raw/typed notification delivery только своему application, работу
+второго приложения после shutdown первого и сохранность feature/notification/event
+files после restart. Данные остаются project-scoped: два приложения, явно получившие
+один project path, читают те же файлы, а не скрытую DATA_DIR partition. Изоляция
+разных проектов не означает multi-writer coordination одного проекта.
+
+HTTP API остаётся v13; persisted formats, IDs и event payloads не меняются.
+Оставшаяся legacy composition, lifecycle orchestration, конкурентные записи,
+recovery/error hardening и остальные gates этапов 7–11 не объявляются завершёнными.
+
+Проверки среза:
+
+- Исходные два regression cases с реальными файлами воспроизвели обе утечки.
+  Финальный набор из 4 cases проверяет missing/malformed files, чистоту shared
+  defaults и изоляцию нескольких проектов/instances без сброса defaults в тесте.
+- Целевые native project/provider composition и Nest shell contracts: 34 passed.
+- `npm run test:server:unit`: 3577 passed, 40 skipped.
+- `npm run test:server:contract`: 301 passed; оба полных server-набора повторно
+  прошли после квалификации `structuredClone` через `globalThis`, потребовавшейся
+  для текущей ESLint globals configuration. Подавления правил не добавлялись.
+- `npm run test:packages`: 1473 passed.
+- Server/UI production build (включая Electron main/preload), server/UI lint,
+  UI typecheck, lockfile и три inventory checks: успешно.
+- Production SIGTERM/SIGINT lifecycle smoke: exit 0.
+- Docker acceptance с `automaker-nest-stage2-smoke:latest`: 11 passed,
+  4 opt-in skipped; cleanup owned containers/image/volume проверен.
+- Выбранные реальные SSH CLI/SDK/Direct chat/restart cases: 3 passed,
+  34 отфильтрованы.
+- Chromium после завершения Docker/SSH: 10 passed — добавление/редактирование
+  feature, Agent chat/Running Agents, Cursor status/permissions, Gemini/Copilot
+  status, confirmed credentials и explicit legacy credential import.
+- Финальные formatting/diff checks успешны. После форматирования нового native
+  contract его отдельный повтор также прошёл. Vendor execution использует offline
+  fixtures; paid/live authentication и packaged Electron этим срезом не проверялись.

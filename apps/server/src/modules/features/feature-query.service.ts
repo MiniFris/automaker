@@ -16,7 +16,7 @@ export class FeatureQueryService {
 
   constructor(
     @Inject(FEATURE_REPOSITORY) private readonly features: FeatureRepository,
-    @Inject(LEGACY_SERVICES.featureLoader) featureLoader: FeatureLoader,
+    @Inject(FeatureLoader) featureLoader: FeatureLoader,
     @Inject(LEGACY_SERVICES.autoMode) private readonly autoMode: AutoModeServiceCompat
   ) {
     this.exports = new FeatureExportService(featureLoader);

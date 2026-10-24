@@ -13,20 +13,16 @@ import { DevServerService } from '../services/dev-server-service.js';
 import { TestRunnerService } from '../services/test-runner-service.js';
 import { EventHookService } from '../services/event-hook-service.js';
 import { NotificationService } from '../services/notification-service.js';
-import { EventHistoryService } from '../services/event-history-service.js';
 import { ProviderRegistry } from '../modules/providers/provider-registry.service.js';
 import { ToolPolicyService } from '../modules/providers/tool-policy.service.js';
 import { LEGACY_SERVICES as tokens } from './legacy.tokens.js';
 
 /** Transitional token aliases; construction and dependency ordering belong to Nest. */
 export const APPLICATION_SERVICE_TOKENS = {
-  featureLoader: tokens.featureLoader,
   autoModeService: tokens.autoMode,
   mcpTestService: tokens.mcpTest,
   ideationService: tokens.ideation,
   devServerService: tokens.devServer,
-  notificationService: tokens.notification,
-  eventHistoryService: tokens.eventHistory,
   testRunnerService: tokens.testRunner,
   terminalService: tokens.terminal,
   pipelineService: tokens.pipeline,
@@ -53,20 +49,13 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
   }
 
   return [
-    service('featureLoader', [], () => new FeatureLoader()),
-    service('notificationService', [APPLICATION_EVENTS], (events: EventEmitter) => {
-      const notifications = new NotificationService();
-      notifications.setEventEmitter(events);
-      return notifications;
-    }),
-    service('eventHistoryService', [], () => new EventHistoryService()),
     service(
       'autoModeService',
       [
         APPLICATION_EVENTS,
         SettingsService,
-        tokens.featureLoader,
-        tokens.notification,
+        FeatureLoader,
+        NotificationService,
         ProviderRegistry,
         ToolPolicyService,
       ],
@@ -95,7 +84,7 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
     ),
     service(
       'ideationService',
-      [APPLICATION_EVENTS, SettingsService, tokens.featureLoader, ProviderRegistry],
+      [APPLICATION_EVENTS, SettingsService, FeatureLoader, ProviderRegistry],
       (
         events: EventEmitter,
         settings: SettingsService,

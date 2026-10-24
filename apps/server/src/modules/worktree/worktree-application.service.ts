@@ -4,7 +4,7 @@ import type { EventEmitter } from '../../lib/events.js';
 import { APPLICATION_EVENTS } from '../../core/eventing/application-events.js';
 import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import type { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
-import type { FeatureLoader } from '../../services/feature-loader.js';
+import { FeatureLoader } from '../../services/feature-loader.js';
 import { SettingsService } from '../../services/settings-service.js';
 import {
   ProjectGitService,
@@ -56,7 +56,7 @@ export class WorktreeApplicationService {
     @Inject(APPLICATION_EVENTS) private readonly events: EventEmitter,
     @Inject(LEGACY_SERVICES.autoMode) private readonly autoMode: AutoModeServiceCompat,
     @Inject(SettingsService) private readonly settings: SettingsService,
-    @Inject(LEGACY_SERVICES.featureLoader) private readonly features: FeatureLoader
+    @Inject(FeatureLoader) private readonly features: FeatureLoader
   ) {}
 
   async environment(input: WorktreeProjectRequest) {

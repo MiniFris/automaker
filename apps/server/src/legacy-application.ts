@@ -28,7 +28,6 @@ import {
   runWithCorrelationContext,
 } from './core/observability/request-context.js';
 import type { AgentService } from './services/agent-service.js';
-import type { FeatureLoader } from './services/feature-loader.js';
 import type { AutoModeServiceCompat } from './services/auto-mode/index.js';
 import type { TerminalService } from './services/terminal-service.js';
 import type { SettingsService } from './services/settings-service.js';
@@ -37,8 +36,6 @@ import type { PipelineService } from './services/pipeline-service.js';
 import type { IdeationService } from './services/ideation-service.js';
 import type { DevServerService } from './services/dev-server-service.js';
 import type { EventHookService } from './services/event-hook-service.js';
-import type { NotificationService } from './services/notification-service.js';
-import type { EventHistoryService } from './services/event-history-service.js';
 import type { TestRunnerService } from './services/test-runner-service.js';
 import { getManagedTestRunnerService } from './services/execution-environment/test-runner.js';
 import { getManagedDevServerService } from './services/execution-environment/dev-server.js';
@@ -173,13 +170,10 @@ ${pathsChecked
 }
 
 export interface LegacyServiceOverrides {
-  featureLoader: FeatureLoader;
   autoModeService: AutoModeServiceCompat;
   mcpTestService: MCPTestService;
   ideationService: IdeationService;
   devServerService: DevServerService;
-  notificationService: NotificationService;
-  eventHistoryService: EventHistoryService;
   testRunnerService: TestRunnerService;
   terminalService: TerminalService;
   pipelineService: PipelineService;

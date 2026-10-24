@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 607,
-    "internalEdges": 2005,
+    "files": 608,
+    "internalEdges": 1999,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -16,16 +16,16 @@
     "legacy -> lib": 2,
     "legacy -> modules": 2,
     "legacy -> root": 2,
-    "legacy -> services": 14,
+    "legacy -> services": 13,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 125,
-    "modules -> legacy": 21,
-    "modules -> lib": 24,
-    "modules -> modules": 293,
+    "modules -> core": 126,
+    "modules -> legacy": 15,
+    "modules -> lib": 25,
+    "modules -> modules": 294,
     "modules -> providers": 27,
     "modules -> routes": 32,
-    "modules -> services": 139,
+    "modules -> services": 140,
     "modules -> types": 2,
     "providers -> core": 1,
     "providers -> lib": 3,
@@ -37,7 +37,7 @@
     "root -> lib": 2,
     "root -> modules": 28,
     "root -> root": 4,
-    "root -> services": 15,
+    "root -> services": 12,
     "routes -> lib": 103,
     "routes -> middleware": 8,
     "routes -> modules": 8,
@@ -296,7 +296,7 @@
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 171,
+    "@nestjs/common": 172,
     "@nestjs/core": 7,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
@@ -779,10 +779,6 @@
     },
     {
       "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/services/event-history-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/event-hook-service.ts"
     },
     {
@@ -795,19 +791,11 @@
     },
     {
       "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/services/feature-loader.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/ideation-service.ts"
     },
     {
       "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/mcp-test-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/services/notification-service.ts"
     },
     {
       "source": "apps/server/src/legacy-application.ts",
@@ -856,10 +844,6 @@
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
       "target": "apps/server/src/services/dev-server-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/event-history-service.ts"
     },
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
@@ -1271,10 +1255,6 @@
     },
     {
       "source": "apps/server/src/modules/app-spec/legacy-app-spec-workflow.adapter.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
-    },
-    {
-      "source": "apps/server/src/modules/app-spec/legacy-app-spec-workflow.adapter.ts",
       "target": "apps/server/src/lib/events.ts"
     },
     {
@@ -1607,10 +1587,6 @@
     },
     {
       "source": "apps/server/src/modules/event-history/event-history.module.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
-    },
-    {
-      "source": "apps/server/src/modules/event-history/event-history.module.ts",
       "target": "apps/server/src/modules/event-history/event-history.controller.ts"
     },
     {
@@ -1715,10 +1691,6 @@
     },
     {
       "source": "apps/server/src/modules/features/feature-command.service.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
-    },
-    {
-      "source": "apps/server/src/modules/features/feature-command.service.ts",
       "target": "apps/server/src/lib/git.ts"
     },
     {
@@ -1775,6 +1747,10 @@
     },
     {
       "source": "apps/server/src/modules/features/feature-query.service.ts",
+      "target": "apps/server/src/services/feature-loader.ts"
+    },
+    {
+      "source": "apps/server/src/modules/features/feature-storage.module.ts",
       "target": "apps/server/src/services/feature-loader.ts"
     },
     {
@@ -1843,6 +1819,10 @@
     },
     {
       "source": "apps/server/src/modules/features/features.module.ts",
+      "target": "apps/server/src/modules/features/feature-storage.module.ts"
+    },
+    {
+      "source": "apps/server/src/modules/features/features.module.ts",
       "target": "apps/server/src/modules/features/feature-title.service.ts"
     },
     {
@@ -1859,22 +1839,18 @@
     },
     {
       "source": "apps/server/src/modules/features/features.module.ts",
-      "target": "apps/server/src/modules/features/legacy-feature.repository.ts"
+      "target": "apps/server/src/modules/features/file-feature.repository.ts"
     },
     {
       "source": "apps/server/src/modules/features/features.module.ts",
       "target": "apps/server/src/modules/features/project-feature-serializer.ts"
     },
     {
-      "source": "apps/server/src/modules/features/legacy-feature.repository.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
-    },
-    {
-      "source": "apps/server/src/modules/features/legacy-feature.repository.ts",
+      "source": "apps/server/src/modules/features/file-feature.repository.ts",
       "target": "apps/server/src/modules/features/feature.repository.ts"
     },
     {
-      "source": "apps/server/src/modules/features/legacy-feature.repository.ts",
+      "source": "apps/server/src/modules/features/file-feature.repository.ts",
       "target": "apps/server/src/services/feature-loader.ts"
     },
     {
@@ -2267,7 +2243,11 @@
     },
     {
       "source": "apps/server/src/modules/notifications/notifications.module.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
+      "target": "apps/server/src/core/eventing/application-events.ts"
+    },
+    {
+      "source": "apps/server/src/modules/notifications/notifications.module.ts",
+      "target": "apps/server/src/lib/events.ts"
     },
     {
       "source": "apps/server/src/modules/notifications/notifications.module.ts",
@@ -2464,10 +2444,6 @@
     {
       "source": "apps/server/src/modules/prompt-enhancement/prompt-enhancement.service.ts",
       "target": "apps/server/src/core/config/index.ts"
-    },
-    {
-      "source": "apps/server/src/modules/prompt-enhancement/prompt-enhancement.service.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
     },
     {
       "source": "apps/server/src/modules/prompt-enhancement/prompt-enhancement.service.ts",
