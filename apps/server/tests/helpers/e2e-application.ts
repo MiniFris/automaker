@@ -50,7 +50,10 @@ export async function createE2eApplication(
         AppModule.register(config, dataDirectory, {
           runStartupTasks: false,
           httpServer,
-          hostEnvironment: environment,
+          hostEnvironment: {
+            ...environment,
+            CURSOR_CONFIG_DIR: path.join(dataDirectory, 'host-cursor-profile'),
+          },
         }),
       ],
       providers: [

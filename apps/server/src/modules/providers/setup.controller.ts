@@ -14,6 +14,12 @@ import {
   CliConnectionProviderSchema,
   ProviderDisconnectRequestSchema,
   ProviderReconnectRequestSchema,
+  CursorProfileRequestSchema,
+  CursorCustomPermissionsRequestSchema,
+  CursorDeletePermissionsRequestSchema,
+  type CursorProfileRequest,
+  type CursorCustomPermissionsRequest,
+  type CursorDeletePermissionsRequest,
   type CliConnectionProvider,
   type ProviderDisconnectRequest,
   type ProviderReconnectRequest,
@@ -28,6 +34,7 @@ import { HostSetupStatusService } from './host-setup-status.service.js';
 import { ProviderConnectionCommandService } from './provider-connection-command.service.js';
 import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
 import { ProviderInstallGuidanceService } from './provider-install-guidance.service.js';
+import { CursorPermissionsService } from './cursor-permissions.service.js';
 
 @Public()
 @Controller('setup')
@@ -40,7 +47,8 @@ export class SetupController {
     @Inject(ProviderConnectionCommandService)
     private readonly connections: ProviderConnectionCommandService,
     @Inject(ProviderInstallGuidanceService)
-    private readonly installation: ProviderInstallGuidanceService
+    private readonly installation: ProviderInstallGuidanceService,
+    @Inject(CursorPermissionsService) private readonly permissions: CursorPermissionsService
   ) {}
 
   private run(name: SetupHandlerName, request: Request, response: Response) {
@@ -194,22 +202,33 @@ export class SetupController {
   @Post('cursor-config/models') setCursorModels(@Req() q: Request, @Res() s: Response) {
     return this.run('setCursorModels', q, s);
   }
-  @Get('cursor-permissions') cursorPermissions(@Req() q: Request, @Res() s: Response) {
-    return this.run('cursorPermissions', q, s);
-  }
-  @Post('cursor-permissions/profile') applyPermissionProfile(
-    @Req() q: Request,
-    @Res() s: Response
+  @Get('cursor-permissions/target') cursorPermissionsTarget(
+    @Query('scope') scope: string,
+    @Query('projectPath') projectPath?: string
   ) {
-    return this.run('applyPermissionProfile', q, s);
+    return this.permissions.target(scope, projectPath);
   }
-  @Post('cursor-permissions/custom') setCustomPermissions(@Req() q: Request, @Res() s: Response) {
-    return this.run('setCustomPermissions', q, s);
+  @Get('cursor-permissions') cursorPermissions(@Query('projectPath') projectPath?: string) {
+    return this.permissions.read(projectPath);
   }
-  @Delete('cursor-permissions') deleteProjectPermissions(@Req() q: Request, @Res() s: Response) {
-    return this.run('deleteProjectPermissions', q, s);
+  @Post('cursor-permissions/profile') @HttpCode(200) applyPermissionProfile(
+    @Body(new ZodValidationPipe(CursorProfileRequestSchema)) body: CursorProfileRequest
+  ) {
+    return this.permissions.apply(body);
   }
-  @Get('cursor-permissions/example') exampleCursorConfig(@Req() q: Request, @Res() s: Response) {
-    return this.run('exampleCursorConfig', q, s);
+  @Post('cursor-permissions/custom') @HttpCode(200) setCustomPermissions(
+    @Body(new ZodValidationPipe(CursorCustomPermissionsRequestSchema))
+    body: CursorCustomPermissionsRequest
+  ) {
+    return this.permissions.custom(body);
+  }
+  @Delete('cursor-permissions') deleteProjectPermissions(
+    @Body(new ZodValidationPipe(CursorDeletePermissionsRequestSchema))
+    body: CursorDeletePermissionsRequest
+  ) {
+    return this.permissions.delete(body);
+  }
+  @Get('cursor-permissions/example') exampleCursorConfig(@Query('profileId') profileId?: string) {
+    return this.permissions.example(profileId);
   }
 }

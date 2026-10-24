@@ -112,3 +112,21 @@ Disconnect/reconnect сериализуются по provider внутри appli
 отказ одной операции не блокирует очередь. Accepted jobs, включая queued hint
 reads, дожидаются завершения в before-shutdown phase до закрытия host runtime.
 Это не distributed lock, не общий shutdown deadline и не authentication policy.
+
+## ADR-011: API v4 confirmed host Cursor permission files
+
+Cursor permissions mutations требуют `confirmed: true` и конкретный host-file
+target с instance UUID, backend directory, scope и canonical config path.
+API header повышен до `4`; connection protocol остаётся `3`. Независимый read-only
+permissions preview имеет `protocolVersion: 1`. Client проверяет preview до любого
+POST/DELETE и не отправляет новые DTO старому backend, который игнорировал бы
+confirmation. Новый target требует нового approval.
+
+Global/profile/custom/delete реализованы native Nest service и repository,
+используют immutable bootstrap profile location, file-scoped FIFO и atomic rename.
+Custom/delete разрешены только для project target. Прочие JSON settings сохраняются,
+corrupt/symlink/hardlink config не перезаписывается. UI подтверждает реальный файл
+на backend host; эта операция не меняет SSH/Docker config и не перезапускает runs.
+Общий setup auth/CSRF hardening и перенос model config/keys/verify остаются отдельными
+задачами. Это не distributed lock и не гарантия против внешнего concurrent editor
+или hostile filesystem race.

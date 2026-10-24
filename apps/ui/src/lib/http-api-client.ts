@@ -8,6 +8,18 @@
 import { createLogger } from '@automaker/utils/logger';
 import { ProviderInstallGuidanceSchema, type ProviderInstallGuidance } from '@automaker/contracts';
 import {
+  CursorPermissionsTargetSchema,
+  CursorPermissionsTargetResponseSchema,
+  CursorPermissionsMutationResponseSchema,
+  CursorProfileRequestSchema,
+  CursorCustomPermissionsRequestSchema,
+  CursorDeletePermissionsRequestSchema,
+  type CursorPermissionsTarget,
+  type CursorProfileRequest,
+  type CursorCustomPermissionsRequest,
+  type CursorDeletePermissionsRequest,
+} from '@automaker/contracts';
+import {
   CliConnectionProviderSchema,
   ProviderConnectionTargetResponseSchema,
   ProviderDisconnectRequestSchema,
@@ -1063,6 +1075,24 @@ export class HttpApiClient implements ElectronAPI {
     return headers;
   }
 
+  private async preflightCursorPermissions(input: CursorPermissionsTarget) {
+    const target = CursorPermissionsTargetSchema.parse(input);
+    const preview = await this.setup.getCursorPermissionsTarget(
+      target.scope,
+      target.scope === 'project' ? target.projectPath : undefined
+    );
+    if (JSON.stringify(preview.target) !== JSON.stringify(target))
+      throw new Error('Cursor permissions target changed. Inspect and confirm it again.');
+    return target;
+  }
+
+  private parseCursorPermissionsMutation(value: unknown, target: CursorPermissionsTarget) {
+    const response = CursorPermissionsMutationResponseSchema.parse(value);
+    if (JSON.stringify(response.target) !== JSON.stringify(target))
+      throw new Error('Cursor permissions response target does not match confirmation.');
+    return response;
+  }
+
   private parseInstallGuidance(
     provider: 'claude' | 'codex',
     value: unknown
@@ -1841,6 +1871,8 @@ export class HttpApiClient implements ElectronAPI {
       effectivePermissions?: { allow: string[]; deny: string[] } | null;
       activeProfile?: 'strict' | 'development' | 'custom' | null;
       hasProjectConfig?: boolean;
+      globalTarget?: CursorPermissionsTarget;
+      projectTarget?: CursorPermissionsTarget;
       availableProfiles?: Array<{
         id: string;
         name: string;
@@ -1853,38 +1885,39 @@ export class HttpApiClient implements ElectronAPI {
         `/api/setup/cursor-permissions${projectPath ? `?projectPath=${encodeURIComponent(projectPath)}` : ''}`
       ),
 
-    applyCursorPermissionProfile: (
-      profileId: 'strict' | 'development',
-      scope: 'global' | 'project',
-      projectPath?: string
-    ): Promise<{
-      success: boolean;
-      message?: string;
-      scope?: string;
-      profileId?: string;
-      error?: string;
-    }> => this.post('/api/setup/cursor-permissions/profile', { profileId, scope, projectPath }),
-
-    setCursorCustomPermissions: (
-      projectPath: string,
-      permissions: { allow: string[]; deny: string[] }
-    ): Promise<{
-      success: boolean;
-      message?: string;
-      permissions?: { allow: string[]; deny: string[] };
-      error?: string;
-    }> => this.post('/api/setup/cursor-permissions/custom', { projectPath, permissions }),
-
-    deleteCursorProjectPermissions: (
-      projectPath: string
-    ): Promise<{
-      success: boolean;
-      message?: string;
-      error?: string;
-    }> =>
-      this.httpDelete(
-        `/api/setup/cursor-permissions?projectPath=${encodeURIComponent(projectPath)}`
+    getCursorPermissionsTarget: async (scope: 'global' | 'project', projectPath?: string) =>
+      CursorPermissionsTargetResponseSchema.parse(
+        await this.get(
+          `/api/setup/cursor-permissions/target?scope=${scope}${projectPath ? `&projectPath=${encodeURIComponent(projectPath)}` : ''}`
+        )
       ),
+
+    applyCursorPermissionProfile: async (input: CursorProfileRequest) => {
+      const request = CursorProfileRequestSchema.parse(input);
+      const target = await this.preflightCursorPermissions(request.target);
+      return this.parseCursorPermissionsMutation(
+        await this.post('/api/setup/cursor-permissions/profile', request),
+        target
+      );
+    },
+
+    setCursorCustomPermissions: async (input: CursorCustomPermissionsRequest) => {
+      const request = CursorCustomPermissionsRequestSchema.parse(input);
+      const target = await this.preflightCursorPermissions(request.target);
+      return this.parseCursorPermissionsMutation(
+        await this.post('/api/setup/cursor-permissions/custom', request),
+        target
+      );
+    },
+
+    deleteCursorProjectPermissions: async (input: CursorDeletePermissionsRequest) => {
+      const request = CursorDeletePermissionsRequestSchema.parse(input);
+      const target = await this.preflightCursorPermissions(request.target);
+      return this.parseCursorPermissionsMutation(
+        await this.httpDelete('/api/setup/cursor-permissions', request),
+        target
+      );
+    },
 
     getCursorExampleConfig: (
       profileId?: 'strict' | 'development'

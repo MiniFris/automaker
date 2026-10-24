@@ -871,7 +871,9 @@ filesystem I/O и ошибки Nest hooks, также требует hardening �
         changes, read-only protocol gate и отдельное credential evidence.
   - [x] Read-only install guidance Claude/Codex: native service, явное отсутствие
         установки, фактический application target и отсутствие ложного UI success.
-  - [ ] Key/config/verify mutations и единый setup target policy; настоящий host
+  - [x] Cursor permissions: native read/profile/custom/delete/example, host-file
+        target preview, confirmation, FIFO writes и UI dialog (API v4).
+  - [ ] Key/model-config/verify mutations и единый setup target policy; настоящий host
         installer, если потребуется, проектируется отдельно с confirmation.
 
 ### Срез: native Gemini/Copilot/Cursor setup status
@@ -1272,6 +1274,90 @@ status/usage, общий capability/tool policy и этапы 8–11 также 
   `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest`: 11 passed,
   4 opt-in skipped. AfterAll успешно проверил очистку owned containers/image/volume.
 
+### Срез: native confirmed Cursor permissions / API v4
+
+Пять Cursor permissions endpoints удалены из Express-handler bridge и перенесены
+в `CursorPermissionsService` / `CursorPermissionsRepository`: GET permissions,
+POST profile/custom, DELETE project permissions и GET example. Старые permission
+handler factories удалены из `cursor-config.ts`; model-config endpoints пока остаются
+в legacy bridge. Исходный код удалённых фабрик доступен в Git.
+
+GET `/api/setup/cursor-permissions/target?scope=global|project&projectPath=...`
+возвращает read-only preview с `protocolVersion: 1` и target вида
+`host-cursor-permissions`: provider, instance UUID, backend working directory,
+scope, canonical config path и project root для project scope. Global config root
+вычисляется из bootstrap `HOST_ENVIRONMENT` (`CURSOR_CONFIG_DIR`, Linux XDG override
+или host home), не из меняющегося `process.env` на каждом запросе. Global target
+намеренно является файлом профиля на хосте; это не SSH/Docker execution target.
+Project scope проверяется относительно application-owned allowed root с canonical
+resolution и не следует project `.cursor` symlink.
+
+Все три mutation требуют strict shared DTO с `confirmed: true` и исходным target;
+custom/delete допускают только project scope. Server повторно вычисляет target
+перед записью, stale instance/root/file отклоняется. Старое тело запроса без
+confirmation больше не принимается. API header повышен до `4`; connection protocol
+по-прежнему `3`. Client перед любой mutation повторно проверяет permissions preview
+protocol и совпадение target, не подставляет свежий target в старое approval и
+проверяет target ответа. Отсутствующий preview на старом backend означает отказ
+до POST/DELETE, а не только ошибку парсинга после потенциальной записи.
+
+Repository ограничивает чтение JSON 1 MiB, проверяет permissions arrays и обычный
+single-link файл, отклоняет повреждённый JSON, symlink/hardlink и небезопасный путь.
+Запись использует owned exclusive temporary file (0600) и rename в том же каталоге;
+temporary cleanup выполняется только для файла, успешно созданного этой операцией.
+Прочие поля global/project JSON сохраняются. DELETE удаляет только permissions:
+permissions-only файл удаляется, остальные настройки сохраняются. `hasProjectConfig`
+означает наличие permissions override, а не просто любого project JSON. Missing
+project при read допускает global fallback без создания директорий; write preview
+в отсутствующий project возвращает 404.
+
+Application-scoped FIFO сериализует все три mutation по config path; ошибка не
+отравляет очередь. Shutdown закрывает admission и дожидается принятых записей,
+включая queued writes. Нет distributed lock, сравнения ревизии с внешним редактором,
+гарантии power-loss durability или защиты от hostile filesystem TOCTOU. Общая
+auth/CSRF политика setup не менялась; UUID target не заменяет авторизацию.
+
+UI показывает scope, конкретный файл, backend root и UUID перед применением профиля,
+объясняет host-only действие и не пишет при Cancel. Повторные confirms блокируются;
+ошибка не вызывает автоматическую запись/retry. В location card показываются
+фактические backend paths, а не безусловный `~/.cursor`. Global changes инвалидируют
+весь permissions cache; project changes — cache подтверждённого project. E2E
+composition направляет global Cursor config только в owned temporary profile.
+
+Проверены service/repository, strict schemas, native HTTP в двух Nest apps,
+client отсутствие POST на старом protocol, stale-target/response mismatch,
+UI confirmation/cancel/error/unmount и cache invalidation. Браузерный regression
+выявил stale missing-project read; исправлен fallback, ограничение write preview
+не ослаблено. Остальные provider capabilities/tool policy, keys/model-config/verify,
+usage и этапы 8–11 остаются открытыми; срез не завершает этап 7.
+
+Результаты проверок:
+
+- 19 новых repository/service cases: immutable per-app locations, fallback,
+  preservation, strict confirmation, invalid JSON/size/path, symlink/hardlink,
+  FIFO/recovery/shutdown drain. 8 shared schema cases, 11 HTTP-client cases,
+  5 UI confirmation cases, 2 cache invalidation cases и native two-app HTTP contract.
+- `npm run test:server:unit`: 3338 passed, 40 skipped.
+- `npm run test:server:contract`: 264 passed.
+- `npm run test:packages`: 1295 passed.
+- Contracts/server production build, UI typecheck/lint, server lint, lockfile,
+  formatting и diff checks: успешно. Три inventory обновлены, checks успешны.
+- UI production и Electron main/preload build: успешно; прежний Vite chunk warning
+  остаётся. Packaged Electron и Windows acceptance этим не подтверждены.
+- Lifecycle smoke после завершения server build: SIGTERM/SIGINT exit 0.
+- Chromium: 5 passed (permissions preview/cancel/confirm/reload, connection cycle,
+  manual install guidance и два agent/Running Agents сценария). Global permission
+  fixture создан и удалён только внутри verified owned E2E root.
+- Один дополнительный полный browser run дал startup timeout setup-view на общем
+  `Loading` до вызова install endpoint (4 passed / 1 failed). Следующий полный
+  запуск с `--trace=on` дал 5 passed без изменений production auth или timeout.
+  Причина единичного startup timeout не доказана; стабильность cold startup
+  остаётся обязательной проверкой hardening, этот срез её не объявляет решённой.
+- Выбранные SSH CLI/SDK/Direct chat/restart: 3 passed, 34 отфильтрованы.
+- Полный Docker acceptance с локальным
+  `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest`: 11 passed,
+  4 opt-in skipped; проверка cleanup owned containers/image/volume успешна.
+
 ## 7.7. Agent routes
 
 - [x] Start/query/follow-up/cancel.
@@ -1357,7 +1443,7 @@ capability/dispose contract, tool policy и оставшиеся setup/usage mod
 
 ## Exit criteria
 
-- Versioned connection contract API v3 проверен совместно с Web/Electron HTTP clients:
+- Versioned connection contract (API v4, connection protocol 3) проверен совместно с Web/Electron HTTP clients:
   без confirmation — 400, при другом instance/provider/path — 409 до записи,
   фактический target возвращается в success response и показан в UI confirmation.
 - Client не отправляет connection POST на server без поддерживаемого read-only

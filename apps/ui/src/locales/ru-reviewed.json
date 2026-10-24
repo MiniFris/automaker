@@ -422,5 +422,12 @@
   "Run the command on the backend host, then refresh CLI status.": "Выполните команду на хосте бэкенда, затем обновите статус CLI.",
   "{value1} CLI installed and detected successfully": "CLI {value1} установлен и обнаружен",
   "CLI installation could not be confirmed": "Не удалось подтвердить установку CLI",
-  "Refresh CLI status after completing the installation.": "Обновите статус CLI после завершения установки."
+  "Refresh CLI status after completing the installation.": "Обновите статус CLI после завершения установки.",
+  "Failed to inspect Cursor permissions target": "Не удалось проверить целевой файл разрешений Cursor",
+  "Inspecting target...": "Проверка целевого файла...",
+  "Apply Cursor permission profile?": "Применить профиль разрешений Cursor?",
+  "This changes Cursor CLI permissions on the backend host, not on an SSH or Docker target. Existing runs are not restarted.": "Это изменит разрешения Cursor CLI на хосте бэкенда, а не в SSH- или Docker-окружении. Уже запущенные задачи не перезапускаются.",
+  "Confirm permission change": "Подтвердить изменение разрешений",
+  "Inspect target before changing permissions.": "Проверьте целевой файл перед изменением разрешений.",
+  "No project target selected.": "Целевой проект не выбран."
 }

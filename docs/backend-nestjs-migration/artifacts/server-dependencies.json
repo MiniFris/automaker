@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 595,
-    "internalEdges": 1965,
+    "files": 597,
+    "internalEdges": 1972,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -20,10 +20,10 @@
     "legacy -> services": 33,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 93,
+    "modules -> core": 96,
     "modules -> legacy": 29,
     "modules -> lib": 24,
-    "modules -> modules": 267,
+    "modules -> modules": 272,
     "modules -> providers": 24,
     "modules -> routes": 37,
     "modules -> services": 111,
@@ -44,7 +44,7 @@
     "routes -> modules": 13,
     "routes -> providers": 13,
     "routes -> routes": 348,
-    "routes -> services": 193,
+    "routes -> services": 192,
     "routes -> types": 3,
     "services -> core": 8,
     "services -> lib": 77,
@@ -288,20 +288,20 @@
   },
   "externalImports": {
     "@anthropic-ai/claude-agent-sdk": 3,
-    "@automaker/contracts": 17,
+    "@automaker/contracts": 19,
     "@automaker/dependency-resolver": 1,
     "@automaker/git-utils": 12,
     "@automaker/model-resolver": 20,
     "@automaker/platform": 79,
     "@automaker/prompts": 3,
-    "@automaker/types": 175,
+    "@automaker/types": 177,
     "@automaker/utils": 174,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 155,
+    "@nestjs/common": 157,
     "@nestjs/core": 7,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
@@ -320,13 +320,13 @@
     "node-pty": 2,
     "node:async_hooks": 1,
     "node:child_process": 11,
-    "node:crypto": 29,
-    "node:fs": 6,
-    "node:fs/promises": 15,
+    "node:crypto": 30,
+    "node:fs": 7,
+    "node:fs/promises": 16,
     "node:http": 7,
     "node:net": 2,
-    "node:os": 7,
-    "node:path": 42,
+    "node:os": 8,
+    "node:path": 43,
     "node:perf_hooks": 2,
     "node:stream": 5,
     "node:stream/web": 1,
@@ -2535,6 +2535,26 @@
       "target": "apps/server/src/providers/simple-query-service.ts"
     },
     {
+      "source": "apps/server/src/modules/providers/cursor-permissions.repository.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/cursor-permissions.repository.ts",
+      "target": "apps/server/src/core/errors/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/cursor-permissions.service.ts",
+      "target": "apps/server/src/core/errors/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/cursor-permissions.service.ts",
+      "target": "apps/server/src/modules/providers/cursor-permissions.repository.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/cursor-permissions.service.ts",
+      "target": "apps/server/src/modules/providers/provider-connection.repository.ts"
+    },
+    {
       "source": "apps/server/src/modules/providers/host-setup-status.service.ts",
       "target": "apps/server/src/core/config/index.ts"
     },
@@ -2724,6 +2744,14 @@
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/modules/providers/cursor-permissions.repository.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/modules/providers/cursor-permissions.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
       "target": "apps/server/src/modules/providers/host-setup-status.service.ts"
     },
     {
@@ -2813,6 +2841,10 @@
     {
       "source": "apps/server/src/modules/providers/setup.controller.ts",
       "target": "apps/server/src/core/validation/zod-validation.pipe.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "target": "apps/server/src/modules/providers/cursor-permissions.service.ts"
     },
     {
       "source": "apps/server/src/modules/providers/setup.controller.ts",
@@ -5753,10 +5785,6 @@
     {
       "source": "apps/server/src/routes/setup/routes/cursor-config.ts",
       "target": "apps/server/src/routes/setup/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/cursor-config.ts",
-      "target": "apps/server/src/services/cursor-config-service.ts"
     },
     {
       "source": "apps/server/src/routes/setup/routes/delete-api-key.ts",

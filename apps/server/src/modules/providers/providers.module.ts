@@ -13,6 +13,8 @@ import { HostSetupStatusService } from './host-setup-status.service.js';
 import { SetupCredentialCache } from './setup-credential-cache.service.js';
 import { ProviderConnectionCommandService } from './provider-connection-command.service.js';
 import { ProviderInstallGuidanceService } from './provider-install-guidance.service.js';
+import { CursorPermissionsRepository } from './cursor-permissions.repository.js';
+import { CursorPermissionsService } from './cursor-permissions.service.js';
 import {
   SetupStatusRuntime,
   NodeSetupStatusRuntime,
@@ -33,6 +35,8 @@ import {
     HostSetupStatusService,
     ProviderConnectionCommandService,
     ProviderInstallGuidanceService,
+    CursorPermissionsRepository,
+    CursorPermissionsService,
     { provide: SetupStatusRuntime, useClass: NodeSetupStatusRuntime },
   ],
   exports: [ProviderRegistry, ProviderConnectionRepository, ToolPolicyService],

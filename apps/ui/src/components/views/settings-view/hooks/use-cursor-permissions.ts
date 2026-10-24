@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useCursorPermissionsQuery, type CursorPermissionsData } from '@/hooks/queries';
 import { useApplyCursorProfile, useCopyCursorConfig } from '@/hooks/mutations';
+import type { CursorProfileRequest } from '@automaker/contracts';
 
 // Re-export for backward compatibility
 export type PermissionsData = CursorPermissionsData;
@@ -14,13 +15,13 @@ export function useCursorPermissions(projectPath?: string) {
 
   // React Query hooks
   const permissionsQuery = useCursorPermissionsQuery(projectPath);
-  const applyProfileMutation = useApplyCursorProfile(projectPath);
+  const applyProfileMutation = useApplyCursorProfile();
   const copyConfigMutation = useCopyCursorConfig();
 
   // Apply a permission profile
   const applyProfile = useCallback(
-    (profileId: 'strict' | 'development', scope: 'global' | 'project') => {
-      applyProfileMutation.mutate({ profileId, scope });
+    (request: CursorProfileRequest) => {
+      return applyProfileMutation.mutateAsync(request);
     },
     [applyProfileMutation]
   );

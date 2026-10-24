@@ -9,6 +9,8 @@ import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import type { CursorStatus } from '../hooks/use-cursor-status';
 import type { PermissionsData } from '../hooks/use-cursor-permissions';
+import type { CursorProfileRequest } from '@automaker/contracts';
+import { CursorPermissionProfileButton } from './cursor-permission-profile-button';
 
 interface CursorPermissionsSectionProps {
   status: CursorStatus | null;
@@ -17,7 +19,7 @@ interface CursorPermissionsSectionProps {
   isSavingPermissions: boolean;
   copiedConfig: boolean;
   currentProject?: { path: string } | null;
-  onApplyProfile: (profileId: 'strict' | 'development', scope: 'global' | 'project') => void;
+  onApplyProfile: (request: CursorProfileRequest) => Promise<unknown>;
   onCopyConfig: (profileId: 'strict' | 'development') => void;
   onLoadPermissions: () => void;
 }
@@ -167,31 +169,21 @@ export function CursorPermissionsSection({
                             </div>
                           </div>
                           <div className="flex flex-col gap-2">
-                            <Button
-                              size="sm"
-                              variant={
-                                permissions.activeProfile === profile.id ? 'secondary' : 'default'
-                              }
-                              disabled={
-                                isSavingPermissions || permissions.activeProfile === profile.id
-                              }
-                              onClick={() =>
-                                onApplyProfile(profile.id as 'strict' | 'development', 'global')
-                              }
-                            >
-                              {translate('Apply Globally')}
-                            </Button>
+                            <CursorPermissionProfileButton
+                              profileId={profile.id as 'strict' | 'development'}
+                              scope="global"
+                              disabled={isSavingPermissions}
+                              onApply={onApplyProfile}
+                            />
                             {currentProject && (
-                              <Button
-                                size="sm"
-                                variant="outline"
+                              <CursorPermissionProfileButton
+                                key={currentProject.path}
+                                profileId={profile.id as 'strict' | 'development'}
+                                scope="project"
+                                projectPath={currentProject.path}
                                 disabled={isSavingPermissions}
-                                onClick={() =>
-                                  onApplyProfile(profile.id as 'strict' | 'development', 'project')
-                                }
-                              >
-                                {translate('Apply to Project')}
-                              </Button>
+                                onApply={onApplyProfile}
+                              />
                             )}
                           </div>
                         </div>
@@ -208,7 +200,8 @@ export function CursorPermissionsSection({
                       <div>
                         <p className="text-sm font-medium">{translate('Global Config')}</p>
                         <p className="text-xs text-muted-foreground font-mono">
-                          {translate('~/.cursor/cli-config.json')}
+                          {permissions?.globalConfigPath ||
+                            translate('Inspect target before changing permissions.')}
                         </p>
                       </div>
                       <Button size="sm" variant="ghost" onClick={() => onCopyConfig('development')}>
@@ -222,7 +215,7 @@ export function CursorPermissionsSection({
                     <div className="border-t border-border/30 pt-2">
                       <p className="text-sm font-medium">{translate('Project Config')}</p>
                       <p className="text-xs text-muted-foreground font-mono">
-                        {translate('<project>/.cursor/cli.json')}
+                        {permissions?.projectConfigPath || translate('No project target selected.')}
                       </p>
                       {permissions?.hasProjectConfig && (
                         <Badge variant="secondary" className="mt-1 text-xs">

@@ -2,14 +2,9 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { Request, RequestHandler, Response } from 'express';
 
 import {
-  createApplyPermissionProfileHandler,
-  createDeleteProjectPermissionsHandler,
   createGetCursorConfigHandler,
-  createGetCursorPermissionsHandler,
-  createGetExampleConfigHandler,
   createSetCursorDefaultModelHandler,
   createSetCursorModelsHandler,
-  createSetCustomPermissionsHandler,
 } from '../../routes/setup/routes/cursor-config.js';
 import { createDeleteApiKeyHandler } from '../../routes/setup/routes/delete-api-key.js';
 import { createStoreApiKeyHandler } from '../../routes/setup/routes/store-api-key.js';
@@ -59,11 +54,6 @@ export class SetupHandlersService {
       cursorConfig: createGetCursorConfigHandler(),
       setCursorDefaultModel: createSetCursorDefaultModelHandler(),
       setCursorModels: createSetCursorModelsHandler(),
-      cursorPermissions: createGetCursorPermissionsHandler(),
-      applyPermissionProfile: createApplyPermissionProfileHandler(),
-      setCustomPermissions: createSetCustomPermissionsHandler(),
-      deleteProjectPermissions: createDeleteProjectPermissionsHandler(),
-      exampleCursorConfig: createGetExampleConfigHandler(),
     } satisfies Record<string, RequestHandler>;
   }
 }
