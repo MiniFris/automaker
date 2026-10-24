@@ -57,6 +57,34 @@ test('inspects, cancels and confirms app-scoped provider disconnect and restores
     await page.reload();
     await expect(page.getByText('Not Authenticated', { exact: true })).toBeVisible();
     await expect(disconnect).not.toBeVisible();
+    const reconnect = page.getByRole('button', { name: 'Reconnect to Automaker' });
+    await reconnect.click();
+    const reconnectDialog = page.getByRole('dialog', { name: 'Reconnect provider?' });
+    await expect(reconnectDialog.getByTestId('provider-reconnect-target')).toContainText(ownedRoot);
+    await expect(reconnectDialog.getByTestId('provider-reconnect-target')).toContainText(
+      target.instanceId
+    );
+    await reconnectDialog.getByRole('button', { name: 'Cancel' }).click();
+    await expect(page.getByText('Not Authenticated', { exact: true })).toBeVisible();
+    await reconnect.click();
+    await expect(reconnectDialog.getByTestId('provider-reconnect-target')).toContainText(ownedRoot);
+    const restored = page.waitForResponse(
+      (response) =>
+        response.url().endsWith('/api/setup/auth-cursor') && response.request().method() === 'POST'
+    );
+    await reconnectDialog.getByRole('button', { name: /^Reconnect/ }).click();
+    const reconnected = await restored;
+    expect(reconnected.status()).toBe(200);
+    expect(reconnected.request().postDataJSON()).toEqual({ confirmed: true, target });
+    expect(await reconnected.json()).toMatchObject({
+      success: true,
+      connected: true,
+      target,
+      credentialStatus: 'present-unverified',
+    });
+    await expect(disconnect).toBeVisible();
+    await page.reload();
+    await expect(disconnect).toBeVisible();
   } finally {
     if (attempted) {
       // Restore only this test's empty marker; never call a real CLI auth/logout.

@@ -9,6 +9,26 @@ import type { CliConnectionProvider } from '@automaker/contracts';
 
 let directory: string;
 let repository: ProviderConnectionRepository;
+const commandFixture = (repo: ProviderConnectionRepository) => {
+  const runtime = {
+    claudeIndicators: vi.fn().mockResolvedValue({ hasCredentialsFile: false }),
+    codexIndicators: vi
+      .fn()
+      .mockResolvedValue({ hasApiKey: false, hasAuthFile: false, hasOAuthToken: false }),
+    cursorCredentials: vi.fn().mockResolvedValue(false),
+  };
+  const configured = vi.fn().mockReturnValue(false);
+  return {
+    runtime,
+    configured,
+    service: new ProviderConnectionCommandService(
+      repo,
+      runtime as never,
+      { providers: { isEnvironmentVariableConfigured: configured } } as never
+    ),
+  };
+};
+const serviceFor = (repo: ProviderConnectionRepository) => commandFixture(repo).service;
 beforeEach(async () => {
   directory = await mkdtemp(path.join(os.tmpdir(), 'automaker-provider-connection-'));
   repository = ProviderConnectionRepository.forWorkingDirectory(directory);
@@ -38,7 +58,7 @@ describe('provider connection repository', () => {
     const restarted = ProviderConnectionRepository.forWorkingDirectory(directory);
     expect(restarted.target('claude').instanceId).not.toBe(target.instanceId);
     await expect(
-      new ProviderConnectionCommandService(restarted).disconnect('claude', {
+      serviceFor(restarted).disconnect('claude', {
         confirmed: true,
         target,
       })
@@ -138,7 +158,7 @@ describe('provider connection command', () => {
   it.each(['instanceId', 'provider', 'kind', 'workingDirectory'])(
     'refuses a mismatched confirmed target (%s) before persistence',
     async (field) => {
-      const service = new ProviderConnectionCommandService(repository);
+      const service = serviceFor(repository);
       const target = service.target('claude').target;
       const write = vi.spyOn(repository, 'disconnect');
       await expect(
@@ -153,7 +173,7 @@ describe('provider connection command', () => {
   );
 
   it('requires confirmation and returns the actual persisted target on success', async () => {
-    const service = new ProviderConnectionCommandService(repository);
+    const service = serviceFor(repository);
     const target = service.target('claude').target;
     await expect(
       service.disconnect('claude', { confirmed: false, target } as never)
@@ -173,7 +193,7 @@ describe('provider connection command', () => {
       finish = resolve;
     });
     vi.spyOn(repository, 'disconnect').mockReturnValue(pending);
-    const service = new ProviderConnectionCommandService(repository);
+    const service = serviceFor(repository);
     const target = service.target('claude').target;
     const write = service.disconnect('claude', { confirmed: true, target });
     let closed = false;

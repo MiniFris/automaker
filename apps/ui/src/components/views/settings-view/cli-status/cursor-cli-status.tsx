@@ -1,14 +1,11 @@
 import { translate, useUiLocale } from '@/lib/i18n';
-import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { SkeletonPulse } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import { CheckCircle2, AlertCircle, RefreshCw, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CursorIcon } from '@/components/ui/provider-icon';
-import { getElectronAPI } from '@/lib/electron';
-import { toast } from 'sonner';
-import { ProviderDisconnectButton } from './provider-disconnect-button';
+import { ProviderDisconnectButton, ProviderReconnectButton } from './provider-connection-button';
 
 interface CursorStatus {
   installed: boolean;
@@ -208,42 +205,6 @@ export function ModelConfigSkeleton() {
 
 export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStatusProps) {
   useUiLocale();
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
-
-  const handleSignIn = useCallback(async () => {
-    setIsAuthenticating(true);
-    try {
-      const api = getElectronAPI();
-      // Check if authCursor method exists on the API
-      const authCursor = (api?.setup as Record<string, unknown> | undefined)?.authCursor as
-        | (() => Promise<{ success: boolean; error?: string }>)
-        | undefined;
-      if (!authCursor) {
-        toast.error(translate('Authentication Failed'), {
-          description: translate('Cursor authentication is not available'),
-        });
-        return;
-      }
-      const result = await authCursor();
-
-      if (result.success) {
-        toast.success(translate('Signed In'), {
-          description: translate('Successfully authenticated Cursor CLI'),
-        });
-        onRefresh();
-      } else if (result.error) {
-        toast.error(translate('Authentication Failed'), {
-          description: result.error,
-        });
-      }
-    } catch (error) {
-      toast.error(translate('Authentication Failed'), {
-        description: error instanceof Error ? error.message : 'Unknown error',
-      });
-    } finally {
-      setIsAuthenticating(false);
-    }
-  }, [onRefresh]);
 
   if (!status) return <CursorCliStatusSkeleton />;
 
@@ -342,17 +303,11 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
                     {translate('Not Authenticated')}
                   </p>
                   <p className="text-xs text-amber-400/70 mt-1">
-                    {translate('Click Sign In below to get authentication instructions.')}
+                    {translate(
+                      'Reconnect to Automaker to use existing CLI credentials. CLI login is performed separately.'
+                    )}
                   </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSignIn}
-                    disabled={isAuthenticating}
-                    className="mt-3 h-8 text-xs"
-                  >
-                    {isAuthenticating ? translate('Requesting...') : translate('Sign In')}
-                  </Button>
+                  <ProviderReconnectButton provider="cursor" onRefresh={onRefresh} />
                 </div>
               </div>
             )}

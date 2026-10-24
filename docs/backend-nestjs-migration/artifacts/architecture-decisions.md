@@ -82,3 +82,33 @@ mandatory safety gate, shared schemas и обновление Web/Electron HTTP 
 Операция меняет только application marker, не удаляет credentials CLI и не
 останавливает уже принятые runs. Target UUID не является authentication/CSRF token;
 public setup access policy пока сохраняется, её hardening остаётся отдельным gate.
+
+## ADR-010: API v3 confirmed reconnect and read-only protocol gate
+
+Шесть `POST /api/setup/auth-*` — это reconnect application marker, а не запуск
+OAuth/CLI login. Они переводятся на native command и тот же строгий confirmed
+target contract. Empty body больше не принимается; `X-Automaker-API-Version`
+повышается до `3`, Web/Electron clients обновляются совместно. Disconnect из
+ADR-009 сохраняет mandatory confirmation и теперь также использует новый
+read-only client gate.
+
+Target preview содержит `protocolVersion: 3`. Это существенная safety capability:
+API v2 имел target preview и confirmed disconnect, но его старые auth handlers
+игнорировали body и использовали cwd. До любого connection POST client повторно
+читает preview, проверяет protocol version и совпадение с уже подтверждённым
+instance/provider/directory. Неподдерживаемый protocol или другой target запрещает
+POST. Новый target никогда не подставляется в старое approval автоматически.
+Server повторно проверяет target перед admission. Старый server не должен
+получать mutation лишь потому, что новый client отправил типизированный body.
+
+Reconnect снимает только обычный marker в injected application directory;
+отсутствующий marker — idempotent success, другие ошибки не скрываются. Прежние
+auth messages/flags сохраняются вместе с явным `credentialStatus`:
+`present-unverified`, `not-detected` или `not-inspected`. Это локальное evidence,
+не гарантия валидности account credentials. UI сообщает о подключении к Automaker,
+а не об успешном CLI login. Реальная verification остаётся отдельной операцией.
+
+Disconnect/reconnect сериализуются по provider внутри application instance;
+отказ одной операции не блокирует очередь. Accepted jobs, включая queued hint
+reads, дожидаются завершения в before-shutdown phase до закрытия host runtime.
+Это не distributed lock, не общий shutdown deadline и не authentication policy.

@@ -1,10 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { execFile } from 'node:child_process';
 import os from 'node:os';
+import { readFile } from 'node:fs/promises';
 import { getClaudeAuthIndicators, getClaudeCliPaths, systemPathAccess } from '@automaker/platform';
 import { NodeSetupStatusRuntime } from '../../../src/core/platform/setup-status.runtime.js';
 
 vi.mock('node:child_process', () => ({ execFile: vi.fn() }));
+vi.mock('node:fs/promises', async () => ({
+  ...(await vi.importActual<typeof import('node:fs/promises')>('node:fs/promises')),
+  readFile: vi.fn(),
+}));
 vi.mock('node:os', () => ({
   default: { platform: vi.fn(() => 'linux'), arch: () => 'arm64', homedir: () => '/fixture/home' },
 }));
@@ -13,6 +18,11 @@ vi.mock('@automaker/platform', () => ({
   getGitHubCliPaths: vi.fn(() => ['/fallback/gh']),
   systemPathAccess: vi.fn(async () => false),
   getClaudeAuthIndicators: vi.fn(async () => ({ hasCredentialsFile: false })),
+  getCodexAuthIndicators: vi.fn(async () => ({
+    hasApiKey: false,
+    hasAuthFile: false,
+    hasOAuthToken: false,
+  })),
 }));
 
 type Callback = (error: Error | null, stdout: string) => void;
@@ -32,6 +42,9 @@ const runtime = (
 ) => new NodeSetupStatusRuntime(environment, { workingDirectory: '/fixture/app' } as never);
 
 beforeEach(() => {
+  vi.mocked(readFile)
+    .mockReset()
+    .mockRejectedValue(Object.assign(new Error('missing'), { code: 'ENOENT' }));
   vi.clearAllMocks();
   vi.mocked(os.platform).mockReturnValue('linux');
   vi.mocked(systemPathAccess).mockResolvedValue(false);
@@ -42,6 +55,37 @@ beforeEach(() => {
 });
 
 describe('bounded host setup status runtime', () => {
+  it('reads Codex file evidence without executing a CLI', async () => {
+    expect(await runtime().codexIndicators()).toEqual({
+      hasApiKey: false,
+      hasAuthFile: false,
+      hasOAuthToken: false,
+    });
+    expect(execFile).not.toHaveBeenCalled();
+  });
+  it('recognizes only nonempty token strings in known Cursor credential paths', async () => {
+    vi.mocked(readFile)
+      .mockResolvedValueOnce('{"accessToken":true}')
+      .mockResolvedValueOnce('{"token":"fixture-token"}');
+    expect(await runtime().cursorCredentials()).toBe(true);
+    expect(readFile).toHaveBeenNthCalledWith(1, '/fixture/home/.cursor/credentials.json', 'utf8');
+    expect(readFile).toHaveBeenNthCalledWith(
+      2,
+      '/fixture/home/.config/cursor/credentials.json',
+      'utf8'
+    );
+    expect(execFile).not.toHaveBeenCalled();
+  });
+  it('does not invent credentials from missing or malformed Cursor JSON', async () => {
+    vi.mocked(readFile).mockResolvedValueOnce('malformed');
+    expect(await runtime().cursorCredentials()).toBe(false);
+  });
+  it('propagates unreadable Cursor evidence instead of treating it as absent', async () => {
+    vi.mocked(readFile).mockRejectedValueOnce(
+      Object.assign(new Error('denied'), { code: 'EACCES' })
+    );
+    await expect(runtime().cursorCredentials()).rejects.toMatchObject({ code: 'EACCES' });
+  });
   it('detects a CLI and executes the resolved binary with bounded, shell-free arguments', async () => {
     expect(await runtime().detect('claude')).toEqual({
       installed: true,

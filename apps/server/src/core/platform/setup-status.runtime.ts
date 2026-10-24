@@ -6,10 +6,13 @@ import {
 } from '@nestjs/common';
 import { execFile } from 'node:child_process';
 import os from 'node:os';
+import path from 'node:path';
+import { readFile } from 'node:fs/promises';
 import {
   getClaudeCliPaths,
   getGitHubCliPaths,
   getClaudeAuthIndicators,
+  getCodexAuthIndicators,
   systemPathAccess,
   type ClaudeAuthIndicators,
 } from '@automaker/platform';
@@ -36,6 +39,12 @@ export abstract class SetupStatusRuntime {
   abstract platformInfo(): { platform: string; arch: string; homeDir: string };
   abstract detect(name: 'claude' | 'gh'): Promise<HostCliInstallation>;
   abstract claudeIndicators(): Promise<ClaudeStatusIndicators>;
+  abstract codexIndicators(): Promise<{
+    hasApiKey: boolean;
+    hasAuthFile: boolean;
+    hasOAuthToken: boolean;
+  }>;
+  abstract cursorCredentials(): Promise<boolean>;
   abstract githubAuthentication(
     cliPath: string
   ): Promise<{ authenticated: boolean; user: string | null }>;
@@ -103,6 +112,45 @@ export class NodeSetupStatusRuntime extends SetupStatusRuntime implements OnAppl
 
   claudeIndicators(): Promise<ClaudeStatusIndicators> {
     return this.track(() => getClaudeAuthIndicators());
+  }
+
+  codexIndicators() {
+    return this.track(() => getCodexAuthIndicators());
+  }
+
+  cursorCredentials(): Promise<boolean> {
+    return this.track(async () => {
+      const home = os.homedir();
+      for (const file of [
+        path.join(home, '.cursor', 'credentials.json'),
+        path.join(home, '.config', 'cursor', 'credentials.json'),
+      ]) {
+        let text: string;
+        try {
+          text = await readFile(file, 'utf8');
+        } catch (error) {
+          if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT')
+            continue;
+          throw error;
+        }
+        let credentials: unknown;
+        try {
+          credentials = JSON.parse(text);
+        } catch {
+          continue;
+        }
+        if (credentials && typeof credentials === 'object') {
+          const record = credentials as Record<string, unknown>;
+          if (
+            [record.accessToken, record.token].some(
+              (value) => typeof value === 'string' && value.trim().length > 0
+            )
+          )
+            return true;
+        }
+      }
+      return false;
+    });
   }
 
   githubAuthentication(cliPath: string) {

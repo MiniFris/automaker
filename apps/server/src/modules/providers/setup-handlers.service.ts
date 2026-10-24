@@ -1,12 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Request, RequestHandler, Response } from 'express';
 
-import { createAuthClaudeHandler } from '../../routes/setup/routes/auth-claude.js';
-import { createAuthCodexHandler } from '../../routes/setup/routes/auth-codex.js';
-import { createAuthCopilotHandler } from '../../routes/setup/routes/auth-copilot.js';
-import { createAuthCursorHandler } from '../../routes/setup/routes/auth-cursor.js';
-import { createAuthGeminiHandler } from '../../routes/setup/routes/auth-gemini.js';
-import { createAuthOpencodeHandler } from '../../routes/setup/routes/auth-opencode.js';
 import {
   createApplyPermissionProfileHandler,
   createDeleteProjectPermissionsHandler,
@@ -61,17 +55,11 @@ export class SetupHandlersService {
   ) {
     return {
       installClaude: createInstallClaudeHandler(),
-      authClaude: createAuthClaudeHandler(),
       storeApiKey: createStoreApiKeyHandler(keys),
       deleteApiKey: createDeleteApiKeyHandler(keys),
       verifyClaudeAuth: createVerifyClaudeAuthHandler(settings, keys),
       verifyCodexAuth: createVerifyCodexAuthHandler(settings, providers, keys),
-      authCursor: createAuthCursorHandler(),
       installCodex: createInstallCodexHandler(),
-      authCodex: createAuthCodexHandler(),
-      authOpencode: createAuthOpencodeHandler(),
-      authGemini: createAuthGeminiHandler(),
-      authCopilot: createAuthCopilotHandler(),
       cursorConfig: createGetCursorConfigHandler(),
       setCursorDefaultModel: createSetCursorDefaultModelHandler(),
       setCursorModels: createSetCursorModelsHandler(),

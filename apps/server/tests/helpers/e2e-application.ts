@@ -111,6 +111,8 @@ export async function createE2eApplication(
           hasProjectsSessions: false,
           credentials: null,
         }),
+        codexIndicators: async () => ({ hasApiKey: false, hasAuthFile: true, hasOAuthToken: true }),
+        cursorCredentials: async () => true,
         githubAuthentication: async () => ({ authenticated: true, user: 'test-fixture' }),
       })
       .compile();

@@ -1,8 +1,15 @@
-import { Inject, Injectable, type OnApplicationShutdown } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  type OnApplicationShutdown,
+  type BeforeApplicationShutdown,
+} from '@nestjs/common';
 import type {
   CliConnectionProvider,
   ProviderDisconnectRequest,
   ProviderDisconnectResponse,
+  ProviderReconnectRequest,
+  ProviderReconnectResponse,
 } from '@automaker/contracts';
 import {
   ConflictDomainError,
@@ -10,6 +17,9 @@ import {
   ValidationDomainError,
 } from '../../core/errors/domain-errors.js';
 import { ProviderConnectionRepository } from './provider-connection.repository.js';
+import { PROVIDER_CONNECTION_PROTOCOL_VERSION } from '@automaker/contracts';
+import { SetupStatusRuntime } from '../../core/platform/setup-status.runtime.js';
+import { RUNTIME_CONFIG, type RuntimeConfig } from '../../core/config/index.js';
 
 const messages: Record<CliConnectionProvider, string> = {
   claude: 'Claude CLI is now disconnected from the app',
@@ -21,26 +31,115 @@ const messages: Record<CliConnectionProvider, string> = {
 };
 
 @Injectable()
-export class ProviderConnectionCommandService implements OnApplicationShutdown {
+export class ProviderConnectionCommandService
+  implements OnApplicationShutdown, BeforeApplicationShutdown
+{
   private readonly active = new Set<Promise<unknown>>();
+  private readonly queues = new Map<CliConnectionProvider, Promise<unknown>>();
   private closing: Promise<void> | undefined;
 
   constructor(
-    @Inject(ProviderConnectionRepository) private readonly repository: ProviderConnectionRepository
+    @Inject(ProviderConnectionRepository) private readonly repository: ProviderConnectionRepository,
+    @Inject(SetupStatusRuntime) private readonly runtime: SetupStatusRuntime,
+    @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig
   ) {}
 
   target(provider: CliConnectionProvider) {
     this.assertAccepting();
-    return { success: true as const, target: this.repository.target(provider) };
+    return {
+      success: true as const,
+      protocolVersion: PROVIDER_CONNECTION_PROTOCOL_VERSION,
+      target: this.repository.target(provider),
+    };
   }
 
   async disconnect(
     provider: CliConnectionProvider,
     request: ProviderDisconnectRequest
   ): Promise<ProviderDisconnectResponse> {
+    const target = this.confirm(provider, request);
+    return this.enqueue<ProviderDisconnectResponse>(provider, async () => {
+      await this.repository.disconnect(provider);
+      return { success: true, message: messages[provider], target, connected: false };
+    });
+  }
+
+  async reconnect(
+    provider: CliConnectionProvider,
+    request: ProviderReconnectRequest
+  ): Promise<ProviderReconnectResponse> {
+    const target = this.confirm(provider, request);
+    return this.enqueue<ProviderReconnectResponse>(provider, async () => {
+      let evidence: boolean | undefined;
+      try {
+        if (provider === 'claude') {
+          const indicators = await this.runtime.claudeIndicators();
+          evidence =
+            indicators.hasStatsCacheWithActivity ||
+            (indicators.hasSettingsFile && indicators.hasProjectsSessions) ||
+            indicators.hasCredentialsFile;
+        } else if (provider === 'codex') {
+          const indicators = await this.runtime.codexIndicators();
+          evidence = indicators.hasApiKey || indicators.hasAuthFile || indicators.hasOAuthToken;
+        } else if (provider === 'cursor') {
+          evidence =
+            this.config.providers.isEnvironmentVariableConfigured('CURSOR_API_KEY') ||
+            (await this.runtime.cursorCredentials());
+        } else if (provider === 'opencode') {
+          evidence = this.config.providers.isEnvironmentVariableConfigured('OPENCODE_API_KEY');
+        }
+      } catch {
+        throw new UnavailableDomainError(
+          'Provider credential evidence could not be read. No reconnect was performed.'
+        );
+      }
+      await this.repository.reconnect(provider);
+      const label = {
+        claude: 'Claude',
+        codex: 'Codex',
+        cursor: 'Cursor',
+        opencode: 'OpenCode',
+        gemini: 'Gemini',
+        copilot: 'Copilot',
+      }[provider];
+      const commands = {
+        claude: 'claude login',
+        codex: 'codex login',
+        cursor: 'cursor auth',
+        opencode: 'OpenCode',
+      };
+      const message =
+        provider === 'gemini' || provider === 'copilot'
+          ? `${label} CLI connected to app`
+          : evidence
+            ? `${label} CLI is now linked with the app`
+            : provider === 'opencode'
+              ? 'OpenCode CLI is now linked with the app. If prompted, please authenticate with OpenCode.'
+              : `${label} CLI is now linked with the app. If prompted, please authenticate with "${commands[provider]}" in your terminal.`;
+      return {
+        success: true,
+        connected: true,
+        target,
+        message,
+        credentialStatus:
+          evidence === undefined
+            ? 'not-inspected'
+            : evidence
+              ? 'present-unverified'
+              : 'not-detected',
+        ...(evidence === undefined
+          ? {}
+          : evidence
+            ? { wasAlreadyAuthenticated: true }
+            : { requiresManualAuth: true }),
+      };
+    });
+  }
+
+  private confirm(provider: CliConnectionProvider, request: ProviderDisconnectRequest) {
     this.assertAccepting();
     if (request.confirmed !== true)
-      throw new ValidationDomainError('Disconnect requires confirmation.');
+      throw new ValidationDomainError('Connection change requires confirmation.');
     const target = this.repository.target(provider);
     if (
       request.target.kind !== target.kind ||
@@ -52,13 +151,22 @@ export class ProviderConnectionCommandService implements OnApplicationShutdown {
         'Provider connection target changed. Inspect and confirm the target again.'
       );
     }
-    const pending = this.repository.disconnect(provider);
+    return target;
+  }
+
+  private async enqueue<T>(
+    provider: CliConnectionProvider,
+    operation: () => Promise<T>
+  ): Promise<T> {
+    const previous = this.queues.get(provider) ?? Promise.resolve();
+    const pending = previous.catch(() => undefined).then(operation);
+    this.queues.set(provider, pending);
     this.active.add(pending);
     try {
-      await pending;
-      return { success: true, message: messages[provider], target, connected: false };
+      return await pending;
     } finally {
       this.active.delete(pending);
+      if (this.queues.get(provider) === pending) this.queues.delete(provider);
     }
   }
 
@@ -70,5 +178,10 @@ export class ProviderConnectionCommandService implements OnApplicationShutdown {
   onApplicationShutdown(): Promise<void> {
     this.closing ??= Promise.allSettled([...this.active]).then(() => undefined);
     return this.closing;
+  }
+
+  beforeApplicationShutdown(): Promise<void> {
+    // Drain accepted hint reads before the host runtime closes its own admission.
+    return this.onApplicationShutdown();
   }
 }

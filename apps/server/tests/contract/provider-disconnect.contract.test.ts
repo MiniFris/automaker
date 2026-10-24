@@ -5,7 +5,11 @@ import type { AddressInfo } from 'node:net';
 import { expect, it, vi } from 'vitest';
 import { CliConnectionProviderSchema } from '@automaker/contracts';
 import { createNestApplication } from '../../src/main.js';
-import { SetupStatusRuntime } from '../../src/core/platform/setup-status.runtime.js';
+import {
+  SetupStatusRuntime,
+  NodeSetupStatusRuntime,
+} from '../../src/core/platform/setup-status.runtime.js';
+import { ProviderConnectionCommandService } from '../../src/modules/providers/provider-connection-command.service.js';
 import { ProviderConnectionRepository } from '../../src/modules/providers/provider-connection.repository.js';
 import { ProviderRegistry } from '../../src/modules/providers/provider-registry.service.js';
 import { MockProvider } from '../helpers/mock-provider.js';
@@ -13,6 +17,8 @@ import { MockProvider } from '../helpers/mock-provider.js';
 it('requires a confirmed instance/provider target and persists only the selected app disconnect for all six providers', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'automaker-disconnect-http-'));
   const runtimes: Awaited<ReturnType<typeof createNestApplication>>[] = [];
+  let release = () => {};
+  let closing: Promise<void> | undefined;
   const names = CliConnectionProviderSchema.options;
   const start = async (name: string) => {
     const workingDirectory = path.join(directory, name);
@@ -41,6 +47,19 @@ it('requires a confirmed instance/provider target and persists only the selected
       path: '/fixture/cli',
       method: 'path',
     });
+    vi.spyOn(runtime.app.get(SetupStatusRuntime), 'claudeIndicators').mockResolvedValue({
+      hasCredentialsFile: false,
+      hasSettingsFile: false,
+      hasStatsCacheWithActivity: true,
+      hasProjectsSessions: false,
+      credentials: null,
+    });
+    vi.spyOn(runtime.app.get(SetupStatusRuntime), 'codexIndicators').mockResolvedValue({
+      hasApiKey: false,
+      hasAuthFile: true,
+      hasOAuthToken: true,
+    });
+    vi.spyOn(runtime.app.get(SetupStatusRuntime), 'cursorCredentials').mockResolvedValue(true);
     await runtime.start();
     const { port } = runtime.app.getHttpServer().address() as AddressInfo;
     const request = async (route: string, body?: unknown) => {
@@ -113,7 +132,65 @@ it('requires a confirmed instance/provider target and persists only the selected
       code: 'ENOENT',
     });
     expect((await first.request('connection-target?provider=constructor')).status).toBe(400);
+    for (const provider of names) {
+      const preview = await first.request(`connection-target?provider=${provider}`);
+      expect(preview.body.protocolVersion).toBe(3);
+      const target = preview.body.target;
+      expect((await first.request(`auth-${provider}`, {})).status).toBe(400);
+      expect((await first.request(`auth-${provider}`, { confirmed: false, target })).status).toBe(
+        400
+      );
+      expect((await second.request(`auth-${provider}`, { confirmed: true, target })).status).toBe(
+        409
+      );
+      expect(() => first.registry.providerForModel(`${provider}-fixture`)).toThrow('disconnected');
+      const reconnected = await first.request(`auth-${provider}`, { confirmed: true, target });
+      expect(reconnected).toMatchObject({
+        status: 200,
+        body: { success: true, connected: true, target },
+      });
+      expect(await first.request(`auth-${provider}`, { confirmed: true, target })).toEqual(
+        reconnected
+      );
+      expect(first.registry.providerForModel(`${provider}-fixture`).getName()).toBe(provider);
+      expect((await first.request(`${provider}-status`)).body.auth.authenticated).toBe(true);
+    }
+    expect(await readdir(path.join(first.workingDirectory, '.automaker'))).toEqual([]);
+
+    const repository = first.runtime.app.get(ProviderConnectionRepository);
+    await repository.disconnect('cursor');
+    const service = first.runtime.app.get(ProviderConnectionCommandService);
+    const host = first.runtime.app.get<NodeSetupStatusRuntime>(SetupStatusRuntime);
+    const delayed = new Promise<boolean>((resolve) => {
+      release = () => resolve(true);
+    });
+    vi.mocked(host.cursorCredentials).mockClear().mockReturnValueOnce(delayed);
+    const target = service.target('cursor').target;
+    const read = service.reconnect('cursor', { confirmed: true, target });
+    const queued = service.disconnect('cursor', { confirmed: true, target });
+    await vi.waitFor(() => expect(host.cursorCredentials).toHaveBeenCalled());
+    const before = vi.spyOn(service, 'beforeApplicationShutdown');
+    const hostShutdown = vi.spyOn(host, 'onApplicationShutdown');
+    let closed = false;
+    closing = first.runtime.app.close().then(() => {
+      closed = true;
+    });
+    await vi.waitFor(() => expect(before).toHaveBeenCalledOnce());
+    expect(closed).toBe(false);
+    expect(hostShutdown).not.toHaveBeenCalled();
+    await expect(service.reconnect('cursor', { confirmed: true, target })).rejects.toMatchObject({
+      statusCode: 503,
+    });
+    release();
+    await read;
+    await queued;
+    await closing;
+    expect(hostShutdown).toHaveBeenCalledOnce();
+    expect(repository.isDisconnected('cursor')).toBe(true);
+    expect(second.registry.providerForModel('cursor-fixture').getName()).toBe('cursor');
   } finally {
+    release();
+    await closing;
     vi.restoreAllMocks();
     for (const runtime of runtimes) await runtime.app.close();
     await rm(directory, { recursive: true, force: true });

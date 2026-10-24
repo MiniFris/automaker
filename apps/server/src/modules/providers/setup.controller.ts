@@ -13,8 +13,10 @@ import {
 import {
   CliConnectionProviderSchema,
   ProviderDisconnectRequestSchema,
+  ProviderReconnectRequestSchema,
   type CliConnectionProvider,
   type ProviderDisconnectRequest,
+  type ProviderReconnectRequest,
 } from '@automaker/contracts';
 import type { Request, Response } from 'express';
 
@@ -51,8 +53,10 @@ export class SetupController {
   @Post('install-claude') installClaude(@Req() q: Request, @Res() s: Response) {
     return this.run('installClaude', q, s);
   }
-  @Post('auth-claude') authClaude(@Req() q: Request, @Res() s: Response) {
-    return this.run('authClaude', q, s);
+  @Post('auth-claude') @HttpCode(200) authClaude(
+    @Body(new ZodValidationPipe(ProviderReconnectRequestSchema)) body: ProviderReconnectRequest
+  ) {
+    return this.connections.reconnect('claude', body);
   }
   @Get('connection-target') connectionTarget(
     @Query('provider', new ZodValidationPipe(CliConnectionProviderSchema))
@@ -89,8 +93,10 @@ export class SetupController {
   @Get('cursor-status') cursorStatus() {
     return this.statuses.status('cursor');
   }
-  @Post('auth-cursor') authCursor(@Req() q: Request, @Res() s: Response) {
-    return this.run('authCursor', q, s);
+  @Post('auth-cursor') @HttpCode(200) authCursor(
+    @Body(new ZodValidationPipe(ProviderReconnectRequestSchema)) body: ProviderReconnectRequest
+  ) {
+    return this.connections.reconnect('cursor', body);
   }
   @Post('deauth-cursor') @HttpCode(200) deauthCursor(
     @Body(new ZodValidationPipe(ProviderDisconnectRequestSchema)) body: ProviderDisconnectRequest
@@ -103,8 +109,10 @@ export class SetupController {
   @Post('install-codex') installCodex(@Req() q: Request, @Res() s: Response) {
     return this.run('installCodex', q, s);
   }
-  @Post('auth-codex') authCodex(@Req() q: Request, @Res() s: Response) {
-    return this.run('authCodex', q, s);
+  @Post('auth-codex') @HttpCode(200) authCodex(
+    @Body(new ZodValidationPipe(ProviderReconnectRequestSchema)) body: ProviderReconnectRequest
+  ) {
+    return this.connections.reconnect('codex', body);
   }
   @Post('deauth-codex') @HttpCode(200) deauthCodex(
     @Body(new ZodValidationPipe(ProviderDisconnectRequestSchema)) body: ProviderDisconnectRequest
@@ -114,8 +122,10 @@ export class SetupController {
   @Get('opencode-status') opencodeStatus() {
     return this.statuses.installationStatus('opencode');
   }
-  @Post('auth-opencode') authOpencode(@Req() q: Request, @Res() s: Response) {
-    return this.run('authOpencode', q, s);
+  @Post('auth-opencode') @HttpCode(200) authOpencode(
+    @Body(new ZodValidationPipe(ProviderReconnectRequestSchema)) body: ProviderReconnectRequest
+  ) {
+    return this.connections.reconnect('opencode', body);
   }
   @Post('deauth-opencode') @HttpCode(200) deauthOpencode(
     @Body(new ZodValidationPipe(ProviderDisconnectRequestSchema)) body: ProviderDisconnectRequest
@@ -125,8 +135,10 @@ export class SetupController {
   @Get('gemini-status') geminiStatus() {
     return this.statuses.status('gemini');
   }
-  @Post('auth-gemini') authGemini(@Req() q: Request, @Res() s: Response) {
-    return this.run('authGemini', q, s);
+  @Post('auth-gemini') @HttpCode(200) authGemini(
+    @Body(new ZodValidationPipe(ProviderReconnectRequestSchema)) body: ProviderReconnectRequest
+  ) {
+    return this.connections.reconnect('gemini', body);
   }
   @Post('deauth-gemini') @HttpCode(200) deauthGemini(
     @Body(new ZodValidationPipe(ProviderDisconnectRequestSchema)) body: ProviderDisconnectRequest
@@ -136,8 +148,10 @@ export class SetupController {
   @Get('copilot-status') copilotStatus() {
     return this.statuses.status('copilot');
   }
-  @Post('auth-copilot') authCopilot(@Req() q: Request, @Res() s: Response) {
-    return this.run('authCopilot', q, s);
+  @Post('auth-copilot') @HttpCode(200) authCopilot(
+    @Body(new ZodValidationPipe(ProviderReconnectRequestSchema)) body: ProviderReconnectRequest
+  ) {
+    return this.connections.reconnect('copilot', body);
   }
   @Post('deauth-copilot') @HttpCode(200) deauthCopilot(
     @Body(new ZodValidationPipe(ProviderDisconnectRequestSchema)) body: ProviderDisconnectRequest

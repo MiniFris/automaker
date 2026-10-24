@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 603,
-    "internalEdges": 1978,
+    "files": 596,
+    "internalEdges": 1966,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -20,12 +20,12 @@
     "legacy -> services": 33,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 91,
+    "modules -> core": 93,
     "modules -> legacy": 29,
     "modules -> lib": 24,
     "modules -> modules": 264,
     "modules -> providers": 24,
-    "modules -> routes": 45,
+    "modules -> routes": 39,
     "modules -> services": 111,
     "modules -> types": 2,
     "providers -> core": 1,
@@ -43,14 +43,14 @@
     "routes -> middleware": 8,
     "routes -> modules": 13,
     "routes -> providers": 13,
-    "routes -> routes": 356,
-    "routes -> services": 194,
+    "routes -> routes": 350,
+    "routes -> services": 193,
     "routes -> types": 3,
     "services -> core": 8,
     "services -> lib": 77,
     "services -> modules": 9,
     "services -> providers": 15,
-    "services -> routes": 2,
+    "services -> routes": 1,
     "services -> services": 280,
     "services -> types": 2,
     "tests -> lib": 2
@@ -94,8 +94,6 @@
       "apps/server/src/routes/app-spec/common.ts",
       "apps/server/src/routes/fs/routes/resolve-directory.ts",
       "apps/server/src/routes/settings/openai-compatible.ts",
-      "apps/server/src/routes/setup/routes/auth-cursor.ts",
-      "apps/server/src/routes/setup/routes/auth-opencode.ts",
       "apps/server/src/routes/setup/routes/delete-api-key.ts",
       "apps/server/src/routes/setup/routes/store-api-key.ts",
       "apps/server/src/routes/setup/routes/verify-claude-auth.ts",
@@ -145,16 +143,10 @@
       "apps/server/src/providers/simple-query-service.ts",
       "apps/server/src/routes/fs/routes/resolve-directory.ts",
       "apps/server/src/routes/setup/common.ts",
-      "apps/server/src/routes/setup/routes/auth-claude.ts",
-      "apps/server/src/routes/setup/routes/auth-codex.ts",
-      "apps/server/src/routes/setup/routes/auth-cursor.ts",
-      "apps/server/src/routes/setup/routes/auth-gemini.ts",
-      "apps/server/src/routes/setup/routes/auth-opencode.ts",
       "apps/server/src/routes/setup/routes/delete-api-key.ts",
       "apps/server/src/routes/setup/routes/verify-codex-auth.ts",
       "apps/server/src/services/claude-usage-service.ts",
       "apps/server/src/services/codex-app-server-service.ts",
-      "apps/server/src/services/copilot-connection-service.ts",
       "apps/server/src/services/execution-environment/docker-worker.ts",
       "apps/server/src/services/execution-environment/feature-workspace.ts",
       "apps/server/src/services/execution-environment/managed-feature-workspace.ts",
@@ -296,14 +288,14 @@
   },
   "externalImports": {
     "@anthropic-ai/claude-agent-sdk": 3,
-    "@automaker/contracts": 15,
+    "@automaker/contracts": 16,
     "@automaker/dependency-resolver": 1,
     "@automaker/git-utils": 12,
     "@automaker/model-resolver": 20,
     "@automaker/platform": 79,
     "@automaker/prompts": 3,
     "@automaker/types": 175,
-    "@automaker/utils": 175,
+    "@automaker/utils": 174,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
@@ -321,28 +313,28 @@
     "crypto": 4,
     "dotenv": 1,
     "events": 1,
-    "express": 233,
-    "fs": 15,
-    "fs/promises": 15,
+    "express": 227,
+    "fs": 11,
+    "fs/promises": 13,
     "net": 1,
     "node-pty": 2,
     "node:async_hooks": 1,
     "node:child_process": 11,
     "node:crypto": 29,
     "node:fs": 6,
-    "node:fs/promises": 14,
+    "node:fs/promises": 15,
     "node:http": 7,
     "node:net": 2,
     "node:os": 7,
-    "node:path": 41,
+    "node:path": 42,
     "node:perf_hooks": 2,
     "node:stream": 5,
     "node:stream/web": 1,
     "node:string_decoder": 3,
     "node:timers/promises": 3,
     "node:util": 12,
-    "os": 15,
-    "path": 82,
+    "os": 14,
+    "path": 76,
     "readline": 1,
     "reflect-metadata": 1,
     "ssh2": 3,
@@ -2560,7 +2552,15 @@
     },
     {
       "source": "apps/server/src/modules/providers/provider-connection-command.service.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/provider-connection-command.service.ts",
       "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/provider-connection-command.service.ts",
+      "target": "apps/server/src/core/platform/setup-status.runtime.ts"
     },
     {
       "source": "apps/server/src/modules/providers/provider-connection-command.service.ts",
@@ -2773,30 +2773,6 @@
     {
       "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
       "target": "apps/server/src/modules/providers/setup-credential-cache.service.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/routes/setup/routes/auth-claude.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/routes/setup/routes/auth-codex.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/routes/setup/routes/auth-copilot.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/routes/setup/routes/auth-cursor.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/routes/setup/routes/auth-gemini.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/routes/setup/routes/auth-opencode.ts"
     },
     {
       "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
@@ -5767,34 +5743,6 @@
       "target": "apps/server/src/routes/common.ts"
     },
     {
-      "source": "apps/server/src/routes/setup/routes/auth-claude.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/auth-codex.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/auth-copilot.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/auth-copilot.ts",
-      "target": "apps/server/src/services/copilot-connection-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/auth-cursor.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/auth-gemini.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/auth-opencode.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
-    },
-    {
       "source": "apps/server/src/routes/setup/routes/cursor-config.ts",
       "target": "apps/server/src/providers/cursor-config-manager.ts"
     },
@@ -7405,10 +7353,6 @@
     {
       "source": "apps/server/src/services/commit-log-service.ts",
       "target": "apps/server/src/lib/git.ts"
-    },
-    {
-      "source": "apps/server/src/services/copilot-connection-service.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
     },
     {
       "source": "apps/server/src/services/dev-server-service.ts",

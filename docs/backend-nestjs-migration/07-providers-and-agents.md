@@ -867,7 +867,9 @@ filesystem I/O и ошибки Nest hooks, также требует hardening �
 - [ ] Setup mutation требует подтверждения и возвращает фактический target.
   - [x] Disconnect всех шести CLI providers: shared schema, явное подтверждение,
         instance/provider/path target и native application-scoped command.
-  - [ ] Остальные auth/install/key/config mutations и единый setup target policy.
+  - [x] Reconnect всех шести CLI providers: confirmed target, FIFO connection
+        changes, read-only protocol gate и отдельное credential evidence.
+  - [ ] Install/key/config/verify mutations и единый setup target policy.
 
 ### Срез: native Gemini/Copilot/Cursor setup status
 
@@ -1125,6 +1127,88 @@ Public setup policy, active-run cancellation policy, generic provider status,
 Этот срез не является live CLI login/logout или packaged Electron/Windows acceptance
 и не завершает этап 7 или всю миграцию.
 
+### Срез: native confirmed reconnect / API v3
+
+Шесть прежних `auth-*` handlers и оставшийся Copilot connection helper удалены;
+source versions доступны в Git. `SetupController` теперь направляет их в native
+`ProviderConnectionCommandService.reconnect`. Требуется shared
+`ProviderReconnectRequestSchema` с `confirmed: true` и точным target; success
+содержит `connected: true` и фактический target. Read-only preview также возвращает
+`protocolVersion: 3`. API contract version повышен до 3; compatibility decision,
+coordinated client rollout и исключение safety gate из compatibility-first
+sequencing описаны в ADR-010.
+
+Reconnect удаляет только известный обычный marker через repository в injected
+working directory. Missing state — idempotent success без создания directories;
+permission/type/symlink/unlink failure не превращается в connected success.
+Auth/account credentials не записываются и не удаляются. Локальные Claude/Codex
+indicators, Cursor credential-file evidence и configured environment hints вынесены
+за host runtime/config ports. Отклонённый evidence read сохраняет marker. Эти reads
+не запускают CLI login, не делают model query и не выполняют network verification.
+Gemini/Copilot сохраняют marker-only поведение без credential inspection.
+
+Success messages и `wasAlreadyAuthenticated` / `requiresManualAuth` сохраняются
+по прежним coarse heuristics. Чтобы не выдавать их за proof of authentication,
+новый обязательный `credentialStatus` различает `present-unverified`, `not-detected`
+и `not-inspected`. Underlying platform indicators остаются эвристиками и могут
+агрегировать inaccessible/absent files; это не завершение общего credential/profile
+runtime refactor. Cursor port признаёт только nonempty token strings, а ошибки
+доступа к файлу не подменяет отсутствием credentials.
+
+Connection commands имеют application-scoped FIFO по provider: поздний reconnect
+не обгоняет disconnect, поздний disconnect не теряется за evidence read. Разные
+providers не блокируют друг друга. Failure освобождает очередь для retry. В
+`BeforeApplicationShutdown` admission закрывается и все accepted jobs дожидаются
+завершения до `SetupStatusRuntime.onApplicationShutdown`; общий deadline и
+cross-process synchronization этим не вводятся.
+
+Web/Electron HTTP client перед обоими POST повторяет read-only preview, проверяет
+protocol 3 и точное совпадение user-approved target. Это предотвращает запись через
+API v1/v2 handlers, которые могли игнорировать новый body, и не позволяет незаметно
+переключить approval после restart. Compatibility methods `auth*` тоже требуют
+confirmed body; server response target проверяется через shared schemas.
+
+Claude/Codex/Cursor cards используют общий `ProviderConnectionButton` с отдельными
+disconnect/reconnect modes. Удалены дублирующиеся signin handlers и ложный toast
+«успешно авторизован»: UI сообщает о подключении к Automaker и, при необходимости,
+о самостоятельном CLI login. Есть target confirmation, cancel, duplicate-send
+guard, отдельный pending state и русская локализация. Браузерный smoke теперь
+проверяет disconnect/reload/reconnect/reload без реального CLI login.
+
+Проверки среза:
+
+- 24 новых reconnect repository/command cases: шесть providers, idempotency,
+  selected-marker-only deletion, symlinks, unlink/read errors, stale target,
+  evidence flags и оба порядка FIFO без блокировки другого provider.
+- 4 новых host runtime cases: Codex evidence, известные Cursor paths, malformed
+  tokens/JSON и отказ при unreadable evidence без CLI subprocess.
+- Native HTTP contract расширен до всех двенадцати connection mutations в двух
+  Nest apps. Отдельно проверен реальный Nest before-shutdown: delayed hint и
+  следующий queued disconnect завершаются до host runtime shutdown, новый job — 503.
+- 15 reconnect HTTP-client cases, 2 дополнительных disconnect protocol cases,
+  2 component cases и 2 shared contract cases. Смешанные API versions проверены
+  именно на отсутствие POST, не только на последующий отказ парсинга ответа.
+- `npm run test:server:unit`: 3318 passed, 40 skipped.
+- `npm run test:server:contract`: 262 passed.
+- `npm run test:packages`: 1248 passed.
+- Contracts/server production build, UI typecheck/lint, server lint, lockfile,
+  formatting/diff и generated inventories проверены.
+- UI production и Electron main/preload build успешны с прежним Vite chunk warning;
+  packaged Electron acceptance не заявляется.
+- Startup/shutdown smoke: SIGTERM/SIGINT exit 0.
+- Chromium chat/Running Agents и полный connection workflow: 3 passed.
+- Выбранные SSH CLI/SDK/Direct chat/restart: 3 passed, 34 отфильтрованы.
+- Полный Docker fixture acceptance с локальным
+  `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest`: 11 passed,
+  4 opt-in skipped; afterAll проверил cleanup owned containers/image/volume.
+
+Граница: install/key/config/verify implementations, expensive passive status,
+общий tool policy/capability/runtime contract и application shutdown deadline ещё
+требуют работы. Profile sources внутри legacy platform helpers, полноценная
+account authentication, Windows/packaged Electron acceptance этим срезом не закрыты.
+Public setup policy остаётся прежней; confirmation/instance UUID не заменяют auth
+и CSRF hardening. Этап 7 и вся миграция остаются незавершёнными.
+
 ## 7.7. Agent routes
 
 - [x] Start/query/follow-up/cancel.
@@ -1210,9 +1294,11 @@ capability/dispose contract, tool policy и оставшиеся setup/usage mod
 
 ## Exit criteria
 
-- Versioned disconnect contract API v2 проверен совместно с Web/Electron HTTP clients:
+- Versioned connection contract API v3 проверен совместно с Web/Electron HTTP clients:
   без confirmation — 400, при другом instance/provider/path — 409 до записи,
   фактический target возвращается в success response и показан в UI confirmation.
+- Client не отправляет connection POST на server без поддерживаемого read-only
+  protocol preview и не подставляет новый target в старое confirmation.
 - Provider registration полностью явная и управляется Nest DI.
 - Нет создания `SettingsService` внутри provider.
 - Agent routes удалены из legacy bridge.

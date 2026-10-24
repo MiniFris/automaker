@@ -76,6 +76,21 @@ export class ProviderConnectionRepository {
     return this.paths.resolveFromWorkingDirectory('.automaker');
   }
 
+  async reconnect(provider: CliConnectionProvider): Promise<void> {
+    const marker = this.marker(provider);
+    if (!marker) throw new UnavailableDomainError('Unknown provider connection.');
+    try {
+      this.assertDirectory(await fs.promises.lstat(this.directory()));
+      const file = path.join(this.directory(), marker);
+      this.assertMarker(await fs.promises.lstat(file));
+      await fs.promises.unlink(file);
+    } catch (error) {
+      // Only absent state means already connected; never hide permission/type errors.
+      if (this.isMissing(error)) return;
+      throw new UnavailableDomainError('Provider connection state could not be saved.');
+    }
+  }
+
   private marker(name: string): string | undefined {
     return Object.hasOwn(DISCONNECTED_MARKERS, name) ? DISCONNECTED_MARKERS[name] : undefined;
   }

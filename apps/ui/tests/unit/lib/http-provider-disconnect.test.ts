@@ -19,9 +19,10 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 it('inspects the target read-only before a confirmation can be constructed', async () => {
-  request.mockResolvedValue(reply({ success: true, target }));
+  request.mockResolvedValue(reply({ success: true, protocolVersion: 3, target }));
   expect(await client.setup.getProviderConnectionTarget('claude')).toEqual({
     success: true,
+    protocolVersion: 3,
     target,
   });
   expect(request.mock.calls[0][0]).toContain('/api/setup/connection-target?provider=claude');
@@ -37,12 +38,14 @@ it.each(['claude', 'codex', 'cursor', 'gemini', 'copilot', 'opencode'] as CliCon
   'sends explicit confirmation and the unmodified inspected %s target',
   async (provider) => {
     const selected = { ...target, provider };
-    request.mockResolvedValue(
-      reply({ success: true, connected: false, target: selected, message: 'done' })
-    );
+    request
+      .mockResolvedValueOnce(reply({ success: true, protocolVersion: 3, target: selected }))
+      .mockResolvedValueOnce(
+        reply({ success: true, connected: false, target: selected, message: 'done' })
+      );
     await client.setup.disconnectProvider(provider, { confirmed: true, target: selected });
-    expect(request.mock.calls[0][0]).toContain(`/api/setup/deauth-${provider}`);
-    expect(JSON.parse(request.mock.calls[0][1].body)).toEqual({
+    expect(request.mock.calls[1][0]).toContain(`/api/setup/deauth-${provider}`);
+    expect(JSON.parse(request.mock.calls[1][1].body)).toEqual({
       confirmed: true,
       target: selected,
     });
@@ -65,15 +68,31 @@ it('rejects a mismatched provider target before issuing a mutation', async () =>
 });
 
 it('does not accept a response for a different instance as successful confirmation', async () => {
-  request.mockResolvedValue(
-    reply({
-      success: true,
-      connected: false,
-      message: 'done',
-      target: { ...target, instanceId: '62f89322-63ec-40f7-90b1-ef76c55a47ee' },
-    })
-  );
+  request
+    .mockResolvedValueOnce(reply({ success: true, protocolVersion: 3, target }))
+    .mockResolvedValueOnce(
+      reply({
+        success: true,
+        connected: false,
+        message: 'done',
+        target: { ...target, instanceId: '62f89322-63ec-40f7-90b1-ef76c55a47ee' },
+      })
+    );
   await expect(
     client.setup.disconnectProvider('claude', { confirmed: true, target })
   ).rejects.toThrow('does not match');
 });
+
+it.each([undefined, 2])(
+  'does not POST disconnect to a server without supported protocol (%s)',
+  async (protocolVersion) => {
+    request.mockResolvedValue(
+      reply({ success: true, target, ...(protocolVersion && { protocolVersion }) })
+    );
+    await expect(
+      client.setup.disconnectProvider('claude', { confirmed: true, target })
+    ).rejects.toThrow();
+    expect(request).toHaveBeenCalledOnce();
+    expect(request.mock.calls[0][1].method).not.toBe('POST');
+  }
+);

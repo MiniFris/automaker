@@ -184,7 +184,7 @@ refactor/backend-nestjs-migration
 ## Общие правила выполнения
 
 - Не совмещать перенос route group с изменением его HTTP-контракта.
-  Явное исключение — versioned safety gate disconnect из этапа 7.6 / ADR-009:
+  Явное исключение — versioned safety gate connection changes из этапа 7.6 / ADR-009/010:
   обязательное подтверждение target вводится вместе с native command и обновлением
   всех HTTP clients, без совместимого обхода проверки для старого request body.
 - Не добавлять новые прямые зависимости на Express вне legacy bridge.

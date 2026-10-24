@@ -1,11 +1,16 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { ProviderDisconnectButton } from '@/components/views/settings-view/cli-status/provider-disconnect-button';
+import {
+  ProviderDisconnectButton,
+  ProviderReconnectButton,
+} from '@/components/views/settings-view/cli-status/provider-connection-button';
 import { setUiLocale } from '@/lib/i18n';
 
 const mocks = vi.hoisted(() => ({
   inspect: vi.fn(),
   disconnect: vi.fn(),
+  reconnect: vi.fn(),
+  info: vi.fn(),
   success: vi.fn(),
   error: vi.fn(),
 }));
@@ -14,10 +19,13 @@ vi.mock('@/lib/http-api-client', () => ({
     setup: {
       getProviderConnectionTarget: mocks.inspect,
       disconnectProvider: mocks.disconnect,
+      reconnectProvider: mocks.reconnect,
     },
   }),
 }));
-vi.mock('sonner', () => ({ toast: { success: mocks.success, error: mocks.error } }));
+vi.mock('sonner', () => ({
+  toast: { success: mocks.success, error: mocks.error, info: mocks.info },
+}));
 const target = {
   kind: 'host-application',
   provider: 'claude',
@@ -30,6 +38,12 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.inspect.mockResolvedValue({ success: true, target });
   mocks.disconnect.mockResolvedValue({ success: true, connected: false, target });
+  mocks.reconnect.mockResolvedValue({
+    success: true,
+    connected: true,
+    target,
+    credentialStatus: 'not-inspected',
+  });
 });
 afterEach(() => {
   cleanup();
@@ -52,6 +66,45 @@ it('only inspects the target until the user explicitly confirms', async () => {
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(mocks.disconnect).not.toHaveBeenCalled();
   expect(refresh).not.toHaveBeenCalled();
+});
+
+it('requires a separate reconnect confirmation and never claims that CLI login was performed', async () => {
+  mocks.reconnect.mockResolvedValue({
+    success: true,
+    connected: true,
+    target,
+    credentialStatus: 'not-detected',
+    requiresManualAuth: true,
+    message: 'Run claude login separately',
+  });
+  render(<ProviderReconnectButton provider="claude" onRefresh={refresh} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Reconnect to Automaker' }));
+  await screen.findByRole('dialog', { name: 'Reconnect provider?' });
+  expect(screen.getByTestId('provider-reconnect-target')).toHaveTextContent(
+    target.workingDirectory
+  );
+  expect(mocks.reconnect).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: /^Reconnect/ }));
+  await waitFor(() => expect(refresh).toHaveBeenCalledOnce());
+  expect(mocks.reconnect).toHaveBeenCalledWith('claude', { confirmed: true, target });
+  expect(mocks.info).toHaveBeenCalledWith(
+    'Connected to Automaker; CLI login may still be required.',
+    expect.any(Object)
+  );
+  expect(mocks.success).not.toHaveBeenCalled();
+  expect(mocks.disconnect).not.toHaveBeenCalled();
+});
+
+it('does not reconnect after cancellation or inspection error', async () => {
+  render(<ProviderReconnectButton provider="claude" onRefresh={refresh} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Reconnect to Automaker' }));
+  await screen.findByRole('dialog');
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  expect(mocks.reconnect).not.toHaveBeenCalled();
+  mocks.inspect.mockRejectedValueOnce(new Error('Inspection failed'));
+  fireEvent.click(screen.getByRole('button', { name: 'Reconnect to Automaker' }));
+  await waitFor(() => expect(mocks.error).toHaveBeenCalled());
+  expect(mocks.reconnect).not.toHaveBeenCalled();
 });
 
 it('localizes the confirmation and explains that CLI credentials and active runs are retained', async () => {

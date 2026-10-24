@@ -1,5 +1,9 @@
 import { translate } from '@/lib/i18n';
-import type { PendingPlanApprovalResponse, ProviderDisconnectRequest } from '@automaker/contracts';
+import type {
+  PendingPlanApprovalResponse,
+  ProviderDisconnectRequest,
+  ProviderReconnectRequest,
+} from '@automaker/contracts';
 // Type definitions for Electron IPC API
 import type { SessionListItem, Message } from '@/types/electron';
 import type {
@@ -1603,7 +1607,7 @@ interface SetupAPI {
     message?: string;
     error?: string;
   }>;
-  authClaude: () => Promise<{
+  authClaude: (request: ProviderReconnectRequest) => Promise<{
     success: boolean;
     token?: string;
     requiresManualAuth?: boolean;
@@ -1669,7 +1673,7 @@ interface SetupAPI {
     loginCommand?: string;
     error?: string;
   }>;
-  authCursor?: () => Promise<{
+  authCursor?: (request: ProviderReconnectRequest) => Promise<{
     success: boolean;
     token?: string;
     requiresManualAuth?: boolean;
@@ -1709,7 +1713,7 @@ interface SetupAPI {
     message?: string;
     error?: string;
   }>;
-  authCodex?: () => Promise<{
+  authCodex?: (request: ProviderReconnectRequest) => Promise<{
     success: boolean;
     token?: string;
     requiresManualAuth?: boolean;
@@ -1759,7 +1763,7 @@ interface SetupAPI {
     };
     error?: string;
   }>;
-  authOpencode?: () => Promise<{
+  authOpencode?: (request: ProviderReconnectRequest) => Promise<{
     success: boolean;
     token?: string;
     requiresManualAuth?: boolean;
@@ -1854,7 +1858,7 @@ interface SetupAPI {
     installCommand?: string;
     error?: string;
   }>;
-  authGemini?: () => Promise<{
+  authGemini?: (request: ProviderReconnectRequest) => Promise<{
     success: boolean;
     requiresManualAuth?: boolean;
     command?: string;
