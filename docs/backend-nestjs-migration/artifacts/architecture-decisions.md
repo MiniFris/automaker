@@ -854,3 +854,22 @@ Ancestor discovery, external gitfiles/common directories, config-file includes,
 concurrent filesystem replacement and per-application allowed-root enforcement
 require separate work. This decision does not certify those boundaries or close
 the broader orchestration migration.
+
+## ADR-040: authorize and pin restricted GitHub repository context per owner
+
+GithubModule owns a native GithubRepositoryBoundary based on its RuntimePathsService,
+not platform path globals or ambient environment. When allowed-root is configured,
+canonical allowed/data roots are captured once. Before every CLI admission, bounded
+filesystem discovery authorizes the cwd, gitfile administration and common directory.
+Authorized Git context is explicitly pinned in the child environment. No in-root
+repository means no CLI invocation; malformed metadata is unavailable, not absent.
+Policy refusal is synchronous and known not dispatched, preserving mutation outcome
+semantics. Without configured allowed-root the existing unrestricted mode remains.
+
+The policy preserves real in-root linked worktrees, bare repositories, nested paths
+and the DATA_DIR exception. Owned real-Git/native HTTP regressions demonstrate the
+previous external-parent/gitfile/cross-owner failures and the corrected boundaries.
+Host/repository config-file includes, arbitrary metadata symlinks, filesystem TOCTOU,
+blocking filesystem latency, legacy global security state and provider tool access
+are not certified by this policy. This is not a general filesystem sandbox or a
+completion decision for stage 8 or the overall migration.

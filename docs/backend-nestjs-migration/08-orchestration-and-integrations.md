@@ -493,6 +493,79 @@ SSH, Chromium и packaged multi-OS acceptance в этом срезе не пер
 результаты предыдущего среза не выдаются за новые. Полный stage checkpoint и
 поддерживаемый runtime остаются обязательными перед завершением этапа.
 
+### Срез: application-scoped Git repository boundary
+
+`GithubRepositoryBoundary` — единственный native provider внутри GithubModule,
+получающий RuntimePathsService конкретного приложения. При configured
+ALLOWED_ROOT_DIRECTORY canonical roots фиксируются при создании owner; DATA_DIR
+сохраняется как разрешённое исключение. Это не чтение process.env или legacy
+global platform path state. Relative project paths разрешаются относительно
+application workingDirectory, а не ambient process cwd.
+
+До CLI admission проверяется canonical cwd, поиск `.git` не выходит за разрешённые
+roots, gitfile и commondir targets проверяются после realpath. Проверяются также
+symlinks самих pointer files; malformed/missing metadata не становится доказательством
+отсутствия remote. Ancestor search ограничен 256 directories, regular pointer reads
+— 8 KiB с fstat и nonblocking open для отказа special files. Эти лимиты не являются
+гарантией latency для зависшего filesystem/NFS.
+
+После удаления inherited Git environment runtime устанавливает проверенные
+GIT_DIR/GIT_COMMON_DIR и worktree для каждого command. Это исключает повторный
+неограниченный поиск родительского repo самим CLI и перекрывает conflicting
+core.worktree для обычного working tree. Сохраняются nested projects, имена
+`..literal`, bare repositories, DATA_DIR repositories и linked worktrees, если их
+administrative/common directories тоже разрешены. Unrestricted configuration
+сохраняет прежний режим без allowed-root ограничения.
+
+Отсутствие repository внутри ограниченной области возвращает прежний negative
+check-remote result без запуска git/gh. External context даёт typed 403, malformed
+или unverifiable metadata — typed 503 без private paths. Отказ boundary синхронен
+и предшествует dispatch: в том числе отказ перед mutation не превращается в
+UNKNOWN_OUTCOME. Настоящие post-dispatch uncertainty и запрет replay сохранены.
+
+Три native HTTP regressions сначала воспроизвели parent discovery, внешний gitfile
+и cross-owner root-policy нарушение. Новый suite проверяет все шесть CLI-backed
+GitHub endpoints, два одновременных owner, настоящий linked worktree с успешной
+review mutation, внешний linked worktree/common-dir, bare repo и DATA_DIR exception.
+Unit tests покрывают canonical aliases и их retargeting, lexical-prefix rejection,
+relative paths, pointer size/format/FIFO, bounded discovery, synchronous refusal,
+core.worktree pinning и сохранение repository config без изменений.
+
+Форматы сверены с [Git repository layout](https://git-scm.com/docs/gitrepository-layout)
+и [Git environment](https://git-scm.com/docs/git). Это repository-selection policy,
+не OS filesystem jail: trusted host/repository config includes, прочие Git metadata
+files и конкурентная замена файлов после проверки не изолируются этим provider.
+Legacy SecurityService/AllowedPathGuard и secure-fs global state этим срезом не
+переведены на per-app policy; issue-validation/provider tool access и legacy worktree
+helpers требуют собственного audit. Финальные stage 7–11 gates остаются открытыми.
+
+Проверки после последних source edits выполняются с Node 22.22.3 в PATH host runner:
+
+- `npm run test:server:unit`: 3698 passed, 40 skipped;
+- `npm run test:server:contract`: 344 passed;
+- `npm run test:packages`: 1481 passed (включая UI unit regressions);
+- server production build/lint и UI typecheck/lint/production build прошли;
+- production lifecycle smoke: SIGTERM/SIGINT exit 0;
+- Docker acceptance с owned base image `automaker-nest-stage2-smoke:latest`:
+  11 passed, 4 opt-in skipped; SSH feature workflow: 14 passed. Эти transport suites
+  повторно выполнены после финального изменения synchronous no-repository refusal;
+- Chromium после завершения Docker/SSH: 18 passed, workers=1, retries=0. Это UI
+  regression с offline/provider fixtures, не live GitHub mutation acceptance;
+- все три generated inventories обновлены и проверены; lockfile и полный
+  `format:check` прошли.
+
+Новые native boundary contracts воспроизводятся командой
+`npm run test:contract --workspace=apps/server -- tests/contract/github-repository-boundary.contract.test.ts`.
+Финальные 9 cases входят в полный contract suite. Boundary unit file и новые
+runtime/mutation regressions входят в полный unit suite. Дополнительный случай
+фиксирует исчезновение repository до dispatch как known refusal, не unknown write.
+Timeouts/retries не увеличивались; source edits завершены до финальных server suites.
+
+Node 22.22.3 установлен как изолированный test tool через npm exec, без изменения
+project dependencies/lockfile или системного Node. Эти результаты заменяют
+ограничение предыдущего environment-среза только для повторённых здесь проверок,
+не доказывают packaged multi-OS acceptance или завершение этапов.
+
 ## 8.7. MCPModule
 
 - [ ] Перенести server config lookup в SettingsModule.

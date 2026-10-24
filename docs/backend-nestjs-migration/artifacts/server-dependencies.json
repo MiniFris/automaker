@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 618,
-    "internalEdges": 2027,
+    "files": 619,
+    "internalEdges": 2031,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -18,9 +18,9 @@
     "legacy -> services": 6,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 142,
+    "modules -> core": 144,
     "modules -> lib": 29,
-    "modules -> modules": 345,
+    "modules -> modules": 347,
     "modules -> providers": 29,
     "modules -> routes": 23,
     "modules -> services": 157,
@@ -293,7 +293,7 @@
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 184,
+    "@nestjs/common": 185,
     "@nestjs/core": 8,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
@@ -313,12 +313,12 @@
     "node:async_hooks": 1,
     "node:child_process": 14,
     "node:crypto": 30,
-    "node:fs": 9,
+    "node:fs": 10,
     "node:fs/promises": 18,
     "node:http": 7,
     "node:net": 2,
     "node:os": 12,
-    "node:path": 49,
+    "node:path": 50,
     "node:perf_hooks": 11,
     "node:stream": 5,
     "node:stream/web": 2,
@@ -2099,6 +2099,10 @@
       "target": "apps/server/src/core/platform/linux-process-group.ts"
     },
     {
+      "source": "apps/server/src/modules/github/github-command.runtime.ts",
+      "target": "apps/server/src/modules/github/github-repository-boundary.ts"
+    },
+    {
       "source": "apps/server/src/modules/github/github-discovery.service.ts",
       "target": "apps/server/src/core/errors/domain-errors.ts"
     },
@@ -2117,6 +2121,14 @@
     {
       "source": "apps/server/src/modules/github/github-json.ts",
       "target": "apps/server/src/modules/github/github-command.runtime.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github-repository-boundary.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github-repository-boundary.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
       "source": "apps/server/src/modules/github/github-review.port.ts",
@@ -2209,6 +2221,10 @@
     {
       "source": "apps/server/src/modules/github/github.module.ts",
       "target": "apps/server/src/modules/github/github-read.port.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github.module.ts",
+      "target": "apps/server/src/modules/github/github-repository-boundary.ts"
     },
     {
       "source": "apps/server/src/modules/github/github.module.ts",

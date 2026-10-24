@@ -4,6 +4,9 @@ import { NodeGithubCommandRuntime } from '../../../src/modules/github/github-com
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { GithubRepositoryBoundary } from '../../../src/modules/github/github-repository-boundary.js';
+import { RuntimePathsService, parseRuntimeConfig } from '../../../src/core/config/index.js';
 const execute = promisify(execFile);
 const observer = vi.hoisted(() => ({ wait: vi.fn() }));
 vi.mock('../../../src/core/platform/linux-process-group.js', () => ({
@@ -19,9 +22,16 @@ function deferred() {
 
 describe.skipIf(process.platform !== 'linux')('owned GitHub command runtime', () => {
   let fixture: Awaited<ReturnType<typeof githubReadFixture>>, runtime: NodeGithubCommandRuntime;
+  const createRuntime = (environment: NodeJS.ProcessEnv) =>
+    new NodeGithubCommandRuntime(
+      environment,
+      new GithubRepositoryBoundary(
+        new RuntimePathsService(parseRuntimeConfig(environment, fixture.root), fixture.root)
+      )
+    );
   beforeEach(async () => {
     fixture = await githubReadFixture();
-    runtime = new NodeGithubCommandRuntime(fixture.environment);
+    runtime = createRuntime(fixture.environment);
     observer.wait.mockResolvedValue(undefined);
   });
   afterEach(async () => {
@@ -34,6 +44,54 @@ describe.skipIf(process.platform !== 'linux')('owned GitHub command runtime', ()
     args: ['repo', 'view'],
     cwd,
     signal,
+  });
+
+  it('rejects forbidden Git and gh commands synchronously before dispatch, and distinguishes no in-root repository', async () => {
+    const allowed = path.join(fixture.root, 'allowed');
+    await mkdir(allowed);
+    await runtime.onModuleDestroy();
+    runtime = createRuntime({
+      ...fixture.environment,
+      DATA_DIR: path.join(allowed, 'data'),
+      ALLOWED_ROOT_DIRECTORY: allowed,
+    });
+    for (const program of ['git', 'gh'] as const) {
+      expect(() => runtime.run({ ...request(fixture.root), program })).toThrow(
+        expect.objectContaining({ errorCode: 'FORBIDDEN' })
+      );
+    }
+    expect(() => runtime.run(request(allowed))).toThrow(
+      expect.objectContaining({ kind: 'exit', absent: true })
+    );
+    await writeFile(path.join(allowed, '.git'), `gitdir: ${fixture.root}\n`);
+    expect(() => runtime.run(request(allowed))).toThrow(
+      expect.objectContaining({ errorCode: 'FORBIDDEN' })
+    );
+    await expect(fixture.calls()).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
+  it('pins the authorized worktree over a conflicting core.worktree without changing repository config', async () => {
+    const allowed = path.join(fixture.root, 'allowed');
+    const other = path.join(fixture.root, 'other');
+    await mkdir(other);
+    await execute('git', ['-c', 'init.templateDir=', 'init', '--quiet', allowed]);
+    await execute('git', ['-C', allowed, 'config', 'core.worktree', other]);
+    await runtime.onModuleDestroy();
+    runtime = createRuntime({
+      ...fixture.environment,
+      DATA_DIR: path.join(allowed, 'data'),
+      ALLOWED_ROOT_DIRECTORY: allowed,
+    });
+    const response = await runtime.run({
+      program: 'git',
+      args: ['rev-parse', '--show-toplevel'],
+      cwd: allowed,
+      signal: new AbortController().signal,
+    });
+    expect(response.stdout.trim()).toBe(allowed);
+    expect(
+      (await execute('git', ['-C', allowed, 'config', '--get', 'core.worktree'])).stdout.trim()
+    ).toBe(other);
   });
 
   it('reads the requested repository despite inherited repository and config overrides', async () => {
@@ -60,7 +118,7 @@ describe.skipIf(process.platform !== 'linux')('owned GitHub command runtime', ()
       GIT_CONFIG_KEY_0: 'remote.origin.url',
       GIT_CONFIG_VALUE_0: 'https://github.com/owned/injected.git',
     };
-    runtime = new NodeGithubCommandRuntime(inherited);
+    runtime = createRuntime(inherited);
     const response = await runtime.run({
       program: 'git',
       args: ['remote', 'get-url', 'origin'],
@@ -85,7 +143,7 @@ describe.skipIf(process.platform !== 'linux')('owned GitHub command runtime', ()
         'https://github.com/owned/requested.git',
       ]);
       await runtime.onModuleDestroy();
-      runtime = new NodeGithubCommandRuntime({
+      runtime = createRuntime({
         ...fixture.environment,
         ...(mode === 'pairs'
           ? {

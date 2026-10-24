@@ -41,6 +41,16 @@ Config validation не должна требовать credentials невыбр�
 - [x] Добавить traversal, symlink, Windows drive и UNC tests.
 - [x] Добавить audit logging для rejected destructive operations без утечки secrets.
 
+Уточнение completion audit: эти отметки фиксируют перенос wrappers, не доказательство
+per-application security isolation. SecurityService всё ещё вызывает platform
+`initAllowedPaths`/`validatePath` с global state, а legacy lifecycle повторно
+инициализирует его из process.env. Поэтому exit criterion «config, auth и security
+имеют один source of truth» пока не доказан для полного приложения. Native GitHub
+repository boundary из этапа 8 независимо использует RuntimePathsService, но не
+заменяет общий SecurityService/AllowedPathGuard/secure-fs. Удаление этого global
+security state и двухинстансные path-policy contracts остаются обязательными
+в рамках полного рефакторинга, см. этап 11.
+
 ## 3.4. Validation и contracts
 
 - [x] Подключить schema-based global validation.

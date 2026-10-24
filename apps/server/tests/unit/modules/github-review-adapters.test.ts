@@ -2,6 +2,7 @@ import { expect, it, vi } from 'vitest';
 import { GithubCliCommentsAdapter } from '../../../src/modules/github/github-cli-comments.adapter.js';
 import { GithubCliReviewMutationAdapter } from '../../../src/modules/github/github-cli-review-mutation.adapter.js';
 import { GithubCommandError } from '../../../src/modules/github/github-command.runtime.js';
+import { ForbiddenDomainError } from '../../../src/core/errors/domain-errors.js';
 const remote = {
   hasGitHubRemote: true,
   remoteUrl: null,
@@ -207,6 +208,31 @@ it.each(['exit', 'deadline', 'cancel', 'cleanup', 'limit'] as const)(
         active()
       )
     ).rejects.toMatchObject({ errorCode: 'UNKNOWN_OUTCOME' });
+    expect(run).toHaveBeenCalledTimes(2);
+  }
+);
+
+it.each([
+  new ForbiddenDomainError('GitHub repository context is outside the allowed directories.'),
+  new GithubCommandError('exit', false, true),
+])(
+  'preserves a synchronous repository boundary refusal after preflight as known not dispatched (%#)',
+  async (refusal) => {
+    const run = vi
+      .fn()
+      .mockResolvedValueOnce(reply(target()))
+      .mockImplementationOnce(() => {
+        throw refusal;
+      });
+    await expect(
+      new GithubCliReviewMutationAdapter({ run }).resolveThread(
+        '/project',
+        remote,
+        'PRRT_owned',
+        true,
+        active()
+      )
+    ).rejects.toBe(refusal);
     expect(run).toHaveBeenCalledTimes(2);
   }
 );

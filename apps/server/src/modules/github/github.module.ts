@@ -11,10 +11,12 @@ import { GithubCommentsReadPort, GithubReviewMutationPort } from './github-revie
 import { GithubCliCommentsAdapter } from './github-cli-comments.adapter.js';
 import { GithubCliReviewMutationAdapter } from './github-cli-review-mutation.adapter.js';
 import { GithubReviewService } from './github-review.service.js';
+import { GithubRepositoryBoundary } from './github-repository-boundary.js';
 
 @Module({
   controllers: [GithubController],
   providers: [
+    GithubRepositoryBoundary,
     NodeGithubCommandRuntime,
     { provide: GithubCommandRuntime, useExisting: NodeGithubCommandRuntime },
     GithubCliReadAdapter,

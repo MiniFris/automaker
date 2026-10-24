@@ -104,6 +104,11 @@ API v13, wire contracts, persisted formats и execution bindings не меняю
 
 ## 11.3. Infrastructure adapters
 
+- [ ] Перевести SecurityService/AllowedPathGuard и secure-fs с legacy platform
+      path globals на единый application-owned config/policy; удалить ambient
+      initAllowedPaths из lifecycle. Проверить два одновременных приложения с разными
+      allowed/data roots, symlink/relative paths и снятие ограничений без stale state.
+      Native GitHub repository boundary не заменяет этот общий exit criterion этапа 3.
 - [ ] Filesystem repositories.
 - [ ] Git local/remote adapters.
 - [ ] Process/PTY supervisor.

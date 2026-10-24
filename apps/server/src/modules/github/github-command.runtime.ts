@@ -6,6 +6,10 @@ import { performance } from 'node:perf_hooks';
 import { HOST_ENVIRONMENT } from '../../core/config/index.js';
 import { waitForLinuxProcessGroupExit } from '../../core/platform/linux-process-group.js';
 import { UnavailableDomainError } from '../../core/errors/domain-errors.js';
+import {
+  GithubRepositoryBoundary,
+  type GithubRepositoryContext,
+} from './github-repository-boundary.js';
 
 export type GithubCommandFailureKind =
   | 'spawn'
@@ -107,7 +111,10 @@ export class NodeGithubCommandRuntime extends GithubCommandRuntime implements On
   private shutdown?: Promise<void>;
   private cleanupFailed = false;
   private readonly unconfirmed = new Set<number>();
-  constructor(@Inject(HOST_ENVIRONMENT) private readonly environment: Readonly<NodeJS.ProcessEnv>) {
+  constructor(
+    @Inject(HOST_ENVIRONMENT) private readonly environment: Readonly<NodeJS.ProcessEnv>,
+    @Inject(GithubRepositoryBoundary) private readonly boundary: GithubRepositoryBoundary
+  ) {
     super();
   }
 
@@ -120,9 +127,13 @@ export class NodeGithubCommandRuntime extends GithubCommandRuntime implements On
     if (this.shutdown || this.cleanupFailed)
       throw new UnavailableDomainError('GitHub command runtime is not accepting requests.');
     if (this.active.size >= 16) throw new UnavailableDomainError('GitHub command runtime is busy.');
+    // Synchronous policy refusal precedes CLI dispatch (also for mutation callers).
+    const context = this.boundary.resolve(command.cwd);
+    if (context === null) throw new GithubCommandError('exit', false, true);
+    const request = { ...command, cwd: context?.cwd ?? command.cwd, args: [...command.args] };
     const controller = new AbortController();
     const task = Promise.resolve()
-      .then(() => this.execute(command, controller.signal))
+      .then(() => this.execute(request, controller.signal, context))
       .catch((error) => {
         if (error instanceof GithubCommandError && error.kind === 'cleanup')
           this.cleanupFailed = true;
@@ -133,10 +144,19 @@ export class NodeGithubCommandRuntime extends GithubCommandRuntime implements On
     return task;
   }
 
-  private execute(command: GithubCommand, ownerSignal: AbortSignal): Promise<{ stdout: string }> {
+  private execute(
+    command: GithubCommand,
+    ownerSignal: AbortSignal,
+    context?: GithubRepositoryContext
+  ): Promise<{ stdout: string }> {
     const signal = AbortSignal.any([command.signal, ownerSignal]);
     if (signal.aborted) return Promise.reject(new GithubCommandError('cancel'));
     const environment = githubCommandEnvironment(this.environment);
+    if (context) {
+      environment.GIT_DIR = context.gitDirectory;
+      environment.GIT_COMMON_DIR = context.commonDirectory;
+      if (context.workTree) environment.GIT_WORK_TREE = context.workTree;
+    }
     return new Promise((resolve, reject) => {
       const windows = process.platform === 'win32';
       const child = spawn(command.program, [...command.args], {
