@@ -2,26 +2,25 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 606,
-    "internalEdges": 1999,
+    "files": 607,
+    "internalEdges": 2005,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
-    "core -> core": 55,
-    "core -> legacy": 2,
+    "core -> core": 56,
     "core -> lib": 5,
     "core -> middleware": 1,
     "core -> services": 1,
-    "legacy -> core": 2,
+    "legacy -> core": 3,
     "legacy -> legacy": 3,
-    "legacy -> lib": 1,
+    "legacy -> lib": 2,
     "legacy -> modules": 2,
     "legacy -> root": 2,
-    "legacy -> services": 13,
+    "legacy -> services": 14,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 116,
-    "modules -> legacy": 25,
+    "modules -> core": 125,
+    "modules -> legacy": 21,
     "modules -> lib": 24,
     "modules -> modules": 293,
     "modules -> providers": 27,
@@ -33,7 +32,7 @@
     "providers -> modules": 1,
     "providers -> providers": 90,
     "providers -> services": 21,
-    "root -> core": 15,
+    "root -> core": 14,
     "root -> legacy": 2,
     "root -> lib": 2,
     "root -> modules": 28,
@@ -579,10 +578,6 @@
       "target": "apps/server/src/core/auth/login-attempt.store.ts"
     },
     {
-      "source": "apps/server/src/core/auth/auth.module.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
-    },
-    {
       "source": "apps/server/src/core/auth/auth.service.ts",
       "target": "apps/server/src/core/auth/auth-state.repository.ts"
     },
@@ -623,27 +618,27 @@
       "target": "apps/server/src/core/observability/request-context.ts"
     },
     {
-      "source": "apps/server/src/core/eventing/eventing.module.ts",
+      "source": "apps/server/src/core/eventing/application-event-bus.adapter.ts",
       "target": "apps/server/src/core/eventing/event-bus.ts"
     },
     {
-      "source": "apps/server/src/core/eventing/eventing.module.ts",
-      "target": "apps/server/src/core/eventing/legacy-event-bus.adapter.ts"
-    },
-    {
-      "source": "apps/server/src/core/eventing/eventing.module.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
-    },
-    {
-      "source": "apps/server/src/core/eventing/eventing.module.ts",
+      "source": "apps/server/src/core/eventing/application-event-bus.adapter.ts",
       "target": "apps/server/src/lib/events.ts"
     },
     {
-      "source": "apps/server/src/core/eventing/legacy-event-bus.adapter.ts",
+      "source": "apps/server/src/core/eventing/eventing.module.ts",
+      "target": "apps/server/src/core/eventing/application-event-bus.adapter.ts"
+    },
+    {
+      "source": "apps/server/src/core/eventing/eventing.module.ts",
+      "target": "apps/server/src/core/eventing/application-events.ts"
+    },
+    {
+      "source": "apps/server/src/core/eventing/eventing.module.ts",
       "target": "apps/server/src/core/eventing/event-bus.ts"
     },
     {
-      "source": "apps/server/src/core/eventing/legacy-event-bus.adapter.ts",
+      "source": "apps/server/src/core/eventing/eventing.module.ts",
       "target": "apps/server/src/lib/events.ts"
     },
     {
@@ -760,10 +755,6 @@
     },
     {
       "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/core/auth/login-attempt.store.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/core/observability/request-context.ts"
     },
     {
@@ -836,7 +827,7 @@
     },
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/core/auth/login-attempt.store.ts"
+      "target": "apps/server/src/core/eventing/application-events.ts"
     },
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
@@ -908,6 +899,10 @@
     },
     {
       "source": "apps/server/src/legacy/legacy.module.ts",
+      "target": "apps/server/src/core/eventing/application-events.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/legacy.module.ts",
       "target": "apps/server/src/core/lifecycle/readiness-state.service.ts"
     },
     {
@@ -924,7 +919,15 @@
     },
     {
       "source": "apps/server/src/legacy/legacy.module.ts",
+      "target": "apps/server/src/lib/events.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/legacy.module.ts",
       "target": "apps/server/src/services/agent-service.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/legacy.module.ts",
+      "target": "apps/server/src/services/settings-service.ts"
     },
     {
       "source": "apps/server/src/lib/atomic-write-text.ts",
@@ -1264,6 +1267,10 @@
     },
     {
       "source": "apps/server/src/modules/app-spec/legacy-app-spec-workflow.adapter.ts",
+      "target": "apps/server/src/core/eventing/application-events.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/legacy-app-spec-workflow.adapter.ts",
       "target": "apps/server/src/legacy/legacy.tokens.ts"
     },
     {
@@ -1476,7 +1483,7 @@
     },
     {
       "source": "apps/server/src/modules/backlog-plan/legacy-backlog-plan.adapter.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
+      "target": "apps/server/src/core/eventing/application-events.ts"
     },
     {
       "source": "apps/server/src/modules/backlog-plan/legacy-backlog-plan.adapter.ts",
@@ -2060,7 +2067,7 @@
     },
     {
       "source": "apps/server/src/modules/github/github-handlers.service.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
+      "target": "apps/server/src/core/eventing/application-events.ts"
     },
     {
       "source": "apps/server/src/modules/github/github-handlers.service.ts",
@@ -2125,6 +2132,10 @@
     {
       "source": "apps/server/src/modules/ideation/ideation-application.service.ts",
       "target": "apps/server/src/core/errors/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/ideation/ideation-application.service.ts",
+      "target": "apps/server/src/core/eventing/application-events.ts"
     },
     {
       "source": "apps/server/src/modules/ideation/ideation-application.service.ts",
@@ -2281,6 +2292,10 @@
     {
       "source": "apps/server/src/modules/notifications/notifications.service.ts",
       "target": "apps/server/src/services/notification-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/orchestration/background-integrations.lifecycle.ts",
+      "target": "apps/server/src/core/eventing/application-events.ts"
     },
     {
       "source": "apps/server/src/modules/orchestration/background-integrations.lifecycle.ts",
@@ -3248,7 +3263,7 @@
     },
     {
       "source": "apps/server/src/modules/settings/settings.module.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
+      "target": "apps/server/src/core/config/index.ts"
     },
     {
       "source": "apps/server/src/modules/settings/settings.module.ts",
@@ -3376,6 +3391,10 @@
     },
     {
       "source": "apps/server/src/modules/terminal/websocket-transport.service.ts",
+      "target": "apps/server/src/core/eventing/application-events.ts"
+    },
+    {
+      "source": "apps/server/src/modules/terminal/websocket-transport.service.ts",
       "target": "apps/server/src/core/observability/request-context.ts"
     },
     {
@@ -3428,7 +3447,7 @@
     },
     {
       "source": "apps/server/src/modules/worktree/worktree-application.service.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
+      "target": "apps/server/src/core/eventing/application-events.ts"
     },
     {
       "source": "apps/server/src/modules/worktree/worktree-application.service.ts",
@@ -3481,6 +3500,10 @@
     {
       "source": "apps/server/src/modules/worktree/worktree-process.service.ts",
       "target": "apps/server/src/core/errors/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/worktree/worktree-process.service.ts",
+      "target": "apps/server/src/core/eventing/application-events.ts"
     },
     {
       "source": "apps/server/src/modules/worktree/worktree-process.service.ts",

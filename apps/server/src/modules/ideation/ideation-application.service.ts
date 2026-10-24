@@ -1,7 +1,8 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { IdeaCategory } from '@automaker/types';
 import { NotFoundDomainError, ValidationDomainError } from '../../core/errors/index.js';
-import { LEGACY_EVENT_EMITTER, LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
+import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
+import { APPLICATION_EVENTS } from '../../core/eventing/application-events.js';
 import type { EventEmitter } from '../../lib/events.js';
 import type { IdeationService } from '../../services/ideation-service.js';
 import { FEATURE_REPOSITORY, type FeatureRepository } from '../features/feature.repository.js';
@@ -27,7 +28,7 @@ export class IdeationApplicationService {
 
   constructor(
     @Inject(LEGACY_SERVICES.ideation) private readonly ideation: IdeationService,
-    @Inject(LEGACY_EVENT_EMITTER) private readonly events: EventEmitter,
+    @Inject(APPLICATION_EVENTS) private readonly events: EventEmitter,
     @Inject(FEATURE_REPOSITORY) private readonly features: FeatureRepository,
     @Inject(ProjectFeatureSerializer) private readonly serializer: ProjectFeatureSerializer,
     @Inject(FeatureTransitionService) private readonly transitions: FeatureTransitionService

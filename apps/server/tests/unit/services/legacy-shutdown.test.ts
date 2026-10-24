@@ -27,9 +27,8 @@ it('attempts every owned cleanup after interruption/storage failures and never r
     httpServer: createServer(),
     runStartupTasks: false,
     agents: { initialize: vi.fn(), interruptActiveSessions: interrupt },
+    foundation: { events: createEventEmitter(), settings: {} as never },
     services: {
-      events: createEventEmitter(),
-      settingsService: {},
       autoModeService: {
         markAllRunningFeaturesInterrupted: features,
         interruptForShutdown: autoMode,

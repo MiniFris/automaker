@@ -1,9 +1,6 @@
-export const DATA_DIRECTORY = Symbol('DATA_DIRECTORY');
 export const LEGACY_APPLICATION = Symbol('LEGACY_APPLICATION');
-export const LEGACY_EVENT_EMITTER = Symbol('LEGACY_EVENT_EMITTER');
 
 export const LEGACY_SERVICES = {
-  settings: Symbol('LEGACY_SETTINGS_SERVICE'),
   featureLoader: Symbol('LEGACY_FEATURE_LOADER'),
   autoMode: Symbol('LEGACY_AUTO_MODE_SERVICE'),
   mcpTest: Symbol('LEGACY_MCP_TEST_SERVICE'),
@@ -15,5 +12,4 @@ export const LEGACY_SERVICES = {
   terminal: Symbol('LEGACY_TERMINAL_SERVICE'),
   pipeline: Symbol('LEGACY_PIPELINE_SERVICE'),
   eventHook: Symbol('LEGACY_EVENT_HOOK_SERVICE'),
-  loginAttemptStore: Symbol('LEGACY_LOGIN_ATTEMPT_STORE'),
 } as const;

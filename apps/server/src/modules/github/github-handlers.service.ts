@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Request, RequestHandler, Response } from 'express';
-import { LEGACY_EVENT_EMITTER } from '../../legacy/legacy.tokens.js';
+import { APPLICATION_EVENTS } from '../../core/eventing/application-events.js';
 import type { EventEmitter } from '../../lib/events.js';
 import { createCheckGitHubRemoteHandler } from '../../routes/github/routes/check-github-remote.js';
 import { createListCommentsHandler } from '../../routes/github/routes/list-comments.js';
@@ -30,7 +30,7 @@ export class GithubHandlersService {
   private readonly handlers: Record<string, RequestHandler>;
 
   constructor(
-    @Inject(LEGACY_EVENT_EMITTER) events: EventEmitter,
+    @Inject(APPLICATION_EVENTS) events: EventEmitter,
     @Inject(SettingsService) settings: SettingsService,
     @Inject(ProviderRegistry) providers: ProviderRegistry
   ) {

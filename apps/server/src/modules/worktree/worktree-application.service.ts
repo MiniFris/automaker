@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { getAutomakerDir } from '@automaker/platform';
 import type { EventEmitter } from '../../lib/events.js';
-import { LEGACY_EVENT_EMITTER } from '../../legacy/legacy.tokens.js';
+import { APPLICATION_EVENTS } from '../../core/eventing/application-events.js';
 import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import type { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
 import type { FeatureLoader } from '../../services/feature-loader.js';
@@ -53,7 +53,7 @@ import type {
 export class WorktreeApplicationService {
   constructor(
     @Inject(ProjectGitService) private readonly git: ProjectGitService,
-    @Inject(LEGACY_EVENT_EMITTER) private readonly events: EventEmitter,
+    @Inject(APPLICATION_EVENTS) private readonly events: EventEmitter,
     @Inject(LEGACY_SERVICES.autoMode) private readonly autoMode: AutoModeServiceCompat,
     @Inject(SettingsService) private readonly settings: SettingsService,
     @Inject(LEGACY_SERVICES.featureLoader) private readonly features: FeatureLoader

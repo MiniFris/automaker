@@ -545,3 +545,27 @@ test execution is selected through explicit registrations, not a facade replacem
 Composition contracts check actual Nest wrapper cardinality, consumer/dependency
 identity and two-application persistence isolation. This is an ownership change,
 not an API v13 or persisted-format change, and does not complete stages 7–11.
+
+## ADR-030: native settings, event transport and login-attempt ownership
+
+SettingsModule constructs SettingsService using RuntimePathsService and its own
+SettingsFileRepository provider. Production no longer implicitly constructs a
+second repository through the service's standalone constructor default.
+AuthModule constructs the per-application LoginAttemptStore with unchanged policy.
+EventingModule owns APPLICATION_EVENTS; EVENT_BUS adapts that same raw transport
+through ApplicationEventBusAdapter. Typed subscriptions retain their existing
+delivery/disposal behavior and never share an owner across applications.
+
+Legacy settings/login-attempt/event tokens, factories, service-bag fields and
+bootstrap overrides are removed. Retired overrides fail before service creation.
+Transitional consumers inject class/native event tokens. The existing legacy
+orchestrator receives explicit native foundation dependencies, not ownership or
+additional aliases; the runtime's legacy.events reference is the same emitter.
+Removing that orchestration bridge remains required later migration work.
+
+Native composition contracts inspect actual provider wrappers and dependency
+identity, application isolation, persistence/restart, raw/typed delivery and
+subscription disposal after closing one application. API v13, wire event payloads,
+settings/auth persisted formats and rate-limit behavior are unchanged. This does
+not prove multi-writer DATA_DIR safety, universal event cleanup, capability/status
+gates or completion of the remaining migration stages.

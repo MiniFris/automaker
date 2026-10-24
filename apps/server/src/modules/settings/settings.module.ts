@@ -1,6 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 
-import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
+import { RuntimePathsService } from '../../core/config/index.js';
 import { SettingsService } from '../../services/settings-service.js';
 import { SettingsFileRepository } from './settings-file.repository.js';
 import { SettingsController } from './settings.controller.js';
@@ -16,7 +16,12 @@ import { ExecutionEnvironmentSettingsService } from './execution-environment-set
 @Module({
   controllers: [SettingsController, ExecutionEnvironmentSettingsController],
   providers: [
-    { provide: SettingsService, useExisting: LEGACY_SERVICES.settings },
+    {
+      provide: SettingsService,
+      inject: [RuntimePathsService, SettingsFileRepository],
+      useFactory: (paths: RuntimePathsService, files: SettingsFileRepository) =>
+        new SettingsService(paths.dataDirectory, files),
+    },
     SettingsFileRepository,
     SettingsQueryService,
     SettingsCommandService,

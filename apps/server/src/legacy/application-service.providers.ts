@@ -1,5 +1,6 @@
 import type { InjectionToken, Provider } from '@nestjs/common';
-import { createEventEmitter, type EventEmitter } from '../lib/events.js';
+import type { EventEmitter } from '../lib/events.js';
+import { APPLICATION_EVENTS } from '../core/eventing/application-events.js';
 import type { LegacyApplicationOptions, LegacyServiceOverrides } from '../legacy-application.js';
 import { SettingsService } from '../services/settings-service.js';
 import { FeatureLoader } from '../services/feature-loader.js';
@@ -13,19 +14,12 @@ import { TestRunnerService } from '../services/test-runner-service.js';
 import { EventHookService } from '../services/event-hook-service.js';
 import { NotificationService } from '../services/notification-service.js';
 import { EventHistoryService } from '../services/event-history-service.js';
-import { LoginAttemptStore } from '../core/auth/login-attempt.store.js';
 import { ProviderRegistry } from '../modules/providers/provider-registry.service.js';
 import { ToolPolicyService } from '../modules/providers/tool-policy.service.js';
-import {
-  DATA_DIRECTORY,
-  LEGACY_EVENT_EMITTER,
-  LEGACY_SERVICES as tokens,
-} from './legacy.tokens.js';
+import { LEGACY_SERVICES as tokens } from './legacy.tokens.js';
 
 /** Transitional token aliases; construction and dependency ordering belong to Nest. */
 export const APPLICATION_SERVICE_TOKENS = {
-  events: LEGACY_EVENT_EMITTER,
-  settingsService: tokens.settings,
   featureLoader: tokens.featureLoader,
   autoModeService: tokens.autoMode,
   mcpTestService: tokens.mcpTest,
@@ -37,7 +31,6 @@ export const APPLICATION_SERVICE_TOKENS = {
   terminalService: tokens.terminal,
   pipelineService: tokens.pipeline,
   eventHookService: tokens.eventHook,
-  loginAttemptStore: tokens.loginAttemptStore,
 } satisfies Record<keyof LegacyServiceOverrides, symbol>;
 
 export function createApplicationServiceProviders(options: LegacyApplicationOptions): Provider[] {
@@ -60,10 +53,8 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
   }
 
   return [
-    service('events', [], createEventEmitter),
-    service('settingsService', [DATA_DIRECTORY], (dataDir: string) => new SettingsService(dataDir)),
     service('featureLoader', [], () => new FeatureLoader()),
-    service('notificationService', [LEGACY_EVENT_EMITTER], (events: EventEmitter) => {
+    service('notificationService', [APPLICATION_EVENTS], (events: EventEmitter) => {
       const notifications = new NotificationService();
       notifications.setEventEmitter(events);
       return notifications;
@@ -72,8 +63,8 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
     service(
       'autoModeService',
       [
-        LEGACY_EVENT_EMITTER,
-        tokens.settings,
+        APPLICATION_EVENTS,
+        SettingsService,
         tokens.featureLoader,
         tokens.notification,
         ProviderRegistry,
@@ -99,12 +90,12 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
     ),
     service(
       'mcpTestService',
-      [tokens.settings],
+      [SettingsService],
       (settings: SettingsService) => new MCPTestService(settings)
     ),
     service(
       'ideationService',
-      [LEGACY_EVENT_EMITTER, tokens.settings, tokens.featureLoader, ProviderRegistry],
+      [APPLICATION_EVENTS, SettingsService, tokens.featureLoader, ProviderRegistry],
       (
         events: EventEmitter,
         settings: SettingsService,
@@ -113,18 +104,17 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
       ) => new IdeationService(events, settings, features, providers)
     ),
     service('devServerService', [], () => new DevServerService()),
-    service('testRunnerService', [LEGACY_EVENT_EMITTER], (events: EventEmitter) => {
+    service('testRunnerService', [APPLICATION_EVENTS], (events: EventEmitter) => {
       const runner = new TestRunnerService();
       runner.setEventEmitter(events);
       return runner;
     }),
     service(
       'terminalService',
-      [tokens.settings],
+      [SettingsService],
       (settings: SettingsService) => new TerminalService(settings)
     ),
     service('pipelineService', [], () => new PipelineService()),
     service('eventHookService', [], () => new EventHookService()),
-    service('loginAttemptStore', [], () => new LoginAttemptStore()),
   ];
 }

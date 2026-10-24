@@ -169,3 +169,58 @@ native HTTP contract запускает два приложения с разн�
 Repository tests проверяют legacy format, concurrent writes, mode 0600 и восстановление
 после ошибки atomic rename. Два теста удалённых константных legacy helpers заменены
 тестами нового repository; 36 credential/cookie/session scenarios сохранены.
+
+## Дополнительный cutover: native foundation ownership
+
+`SettingsModule` теперь создаёт `SettingsService` через `RuntimePathsService` и
+тот же `SettingsFileRepository`, который экспортирует из DI. Раньше production
+фабрика в LegacyModule вызывала constructor с default repository, создавая второй
+экземпляр вне Nest. Native settings consumers и оставшиеся transitional services
+теперь используют один settings owner и один file boundary на application.
+
+`AuthModule` сам создаёт `LoginAttemptStore` с прежними defaults 5 attempts/60 s;
+legacy token, factory и override удалены. HTTP auth policy и rate-limit identity
+не меняются. Никакие attempts не разделяются между applications или restart.
+
+`EventingModule` создаёт raw transport под native token `APPLICATION_EVENTS`.
+`EVENT_BUS` использует `ApplicationEventBusAdapter` поверх этого же emitter.
+Legacy event token и `DATA_DIRECTORY` удалены; module consumers переключены
+на native token без изменения wire events и порядка callbacks. Shutdown typed
+bus снимает его подписки, не затрагивая event bus другого application.
+
+В legacy service bag/overrides больше нет settings, events или login attempts.
+Retired keys отклоняются до создания сервисов. Пока orchestration не перенесён,
+legacy lifecycle получает explicit foundation port к native settings/events,
+как уже получает узкий agent lifecycle port. `legacy.events` остаётся
+ссылкой на общий native transport для transitional runtime compatibility,
+но не является отдельной регистрацией/фабрикой. Удаление lifecycle bridge и
+оставшейся legacy composition остаётся обязательной работой, а не закрытым gate.
+
+Новый native composition contract проверяет реальные Nest wrapper cardinality,
+identity repository/consumers, два приложения с независимыми settings/attempts/events,
+raw↔typed event delivery, dispose subscriptions, работу второго приложения после
+закрытия первого и сохранность settings при restart. Нельзя выводить из этого
+среза поддержку нескольких writers одного DATA_DIR, общий filesystem sandbox,
+универсальную redaction или завершение этапов 7–11. HTTP API остаётся v13,
+settings/auth persistence formats и configured-key precedence не меняются.
+
+Проверки среза:
+
+- Целевые native foundation/provider/agent composition и Nest shell contracts:
+  32 passed; retired foundation override keys проверяются до создания сервисов.
+- `npm run test:server:unit`: 3573 passed, 40 skipped, включая typed/raw event
+  ordering, subscriber exception isolation и subscription disposal.
+- `npm run test:server:contract`: 297 passed, включая HTTP/WS auth/rate limit,
+  settings/credentials, recovery и native application isolation.
+- `npm run test:packages`: 1473 passed.
+- Server/UI production build (Electron main/preload включены), server/UI lint,
+  UI typecheck, lockfile, formatting/diff и три inventory checks: успешно.
+- Production lifecycle smoke: SIGTERM/SIGINT, exit 0.
+- Docker acceptance с `automaker-nest-stage2-smoke:latest`: 11 passed,
+  4 opt-in skipped; owned container/image/volume cleanup проверен.
+- Выбранные реальные SSH CLI/SDK/Direct chat/restart cases: 3 passed,
+  34 отфильтрованы.
+- Chromium после завершения Docker/SSH: 8 passed — Agent chat/Running Agents,
+  Cursor status/permissions, Gemini/Copilot status, confirmed credentials и
+  explicit legacy credential import. Paid upstream, live vendor authentication
+  и packaged Electron этим offline fixture acceptance не проверялись.

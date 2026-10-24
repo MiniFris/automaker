@@ -23,7 +23,6 @@ const LOG_LEVEL_MAP: Record<string, LogLevel> = {
   debug: LogLevel.DEBUG,
 };
 import { setRequestLoggingEnabled } from './lib/request-logging-state.js';
-import type { LoginAttemptStore } from './core/auth/login-attempt.store.js';
 import {
   createCorrelationId,
   runWithCorrelationContext,
@@ -174,8 +173,6 @@ ${pathsChecked
 }
 
 export interface LegacyServiceOverrides {
-  events: EventEmitter;
-  settingsService: SettingsService;
   featureLoader: FeatureLoader;
   autoModeService: AutoModeServiceCompat;
   mcpTestService: MCPTestService;
@@ -187,7 +184,6 @@ export interface LegacyServiceOverrides {
   terminalService: TerminalService;
   pipelineService: PipelineService;
   eventHookService: EventHookService;
-  loginAttemptStore: LoginAttemptStore;
 }
 
 export interface LegacyApplicationOptions {
@@ -216,19 +212,14 @@ export function createLegacyApplication(
     services: LegacyServiceOverrides;
     /** Transitional lifecycle bridge, not an owned/overridable legacy service. */
     agents: Pick<AgentService, 'initialize' | 'interruptActiveSessions'>;
+    foundation: { events: EventEmitter; settings: SettingsService };
   }
 ): LegacyApplication {
   const dataDir = options.dataDir ?? DATA_DIR;
   const server = options.httpServer;
   const services = options.services;
-  const {
-    events,
-    settingsService,
-    autoModeService,
-    devServerService,
-    testRunnerService,
-    terminalService,
-  } = services;
+  const { autoModeService, devServerService, testRunnerService, terminalService } = services;
+  const { events, settings: settingsService } = options.foundation;
 
   initAllowedPaths();
 

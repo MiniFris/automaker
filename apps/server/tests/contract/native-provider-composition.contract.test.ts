@@ -131,7 +131,14 @@ it('owns registry, connection repository and tool policy exactly once per Nest a
   }
 });
 
-it.each(['providerRegistry', 'providerConnections', 'agentService'])(
+it.each([
+  'providerRegistry',
+  'providerConnections',
+  'agentService',
+  'settingsService',
+  'events',
+  'loginAttemptStore',
+])(
   'rejects retired legacy override %s before creating services or falling back to production adapters',
   async (key) => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'automaker-retired-provider-override-'));

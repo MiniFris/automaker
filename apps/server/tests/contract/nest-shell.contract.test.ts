@@ -76,7 +76,6 @@ describe('Nest shell and legacy bridge contract', () => {
   it('registers the existing stateful service instances without duplicates', () => {
     const services = runtime.legacy.services;
     const expected = {
-      settings: services.settingsService,
       featureLoader: services.featureLoader,
       autoMode: services.autoModeService,
       mcpTest: services.mcpTestService,
@@ -88,13 +87,14 @@ describe('Nest shell and legacy bridge contract', () => {
       terminal: services.terminalService,
       pipeline: services.pipelineService,
       eventHook: services.eventHookService,
-      loginAttemptStore: services.loginAttemptStore,
     };
 
     for (const [name, token] of Object.entries(LEGACY_SERVICES)) {
       expect(runtime.app.get(token), name).toBe(expected[name as keyof typeof expected]);
     }
-    expect(runtime.app.get(SettingsService)).toBe(services.settingsService);
+    expect(services).not.toHaveProperty('settingsService');
+    expect(services).not.toHaveProperty('loginAttemptStore');
+    expect(services).not.toHaveProperty('events');
   });
 
   it('isolates stateful providers and shutdown between two Nest applications', async () => {

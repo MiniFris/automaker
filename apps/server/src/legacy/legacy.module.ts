@@ -15,12 +15,10 @@ import {
 } from '../legacy-application.js';
 import { ReadinessStateService } from '../core/lifecycle/readiness-state.service.js';
 import { AgentService } from '../services/agent-service.js';
-import {
-  DATA_DIRECTORY,
-  LEGACY_APPLICATION,
-  LEGACY_EVENT_EMITTER,
-  LEGACY_SERVICES,
-} from './legacy.tokens.js';
+import { SettingsService } from '../services/settings-service.js';
+import type { EventEmitter } from '../lib/events.js';
+import { APPLICATION_EVENTS } from '../core/eventing/application-events.js';
+import { LEGACY_APPLICATION, LEGACY_SERVICES } from './legacy.tokens.js';
 import {
   APPLICATION_SERVICE_TOKENS,
   createApplicationServiceProviders,
@@ -55,12 +53,21 @@ export class LegacyModule {
     return {
       module: LegacyModule,
       providers: [
-        { provide: DATA_DIRECTORY, useValue: dataDirectory },
         ...createApplicationServiceProviders(options),
         {
           provide: LEGACY_APPLICATION,
-          inject: [AgentService, ...Object.values(APPLICATION_SERVICE_TOKENS)],
-          useFactory: (agents: AgentService, ...instances: unknown[]) => {
+          inject: [
+            AgentService,
+            SettingsService,
+            APPLICATION_EVENTS,
+            ...Object.values(APPLICATION_SERVICE_TOKENS),
+          ],
+          useFactory: (
+            agents: AgentService,
+            settings: SettingsService,
+            events: EventEmitter,
+            ...instances: unknown[]
+          ) => {
             const services = Object.fromEntries(
               Object.keys(APPLICATION_SERVICE_TOKENS).map((key, index) => [key, instances[index]])
             ) as unknown as LegacyServiceOverrides;
@@ -69,17 +76,13 @@ export class LegacyModule {
               dataDir: dataDirectory,
               services,
               agents,
+              foundation: { settings, events },
             });
           },
         },
         LegacyLifecycle,
       ],
-      exports: [
-        DATA_DIRECTORY,
-        LEGACY_APPLICATION,
-        LEGACY_EVENT_EMITTER,
-        ...Object.values(LEGACY_SERVICES),
-      ],
+      exports: [LEGACY_APPLICATION, ...Object.values(LEGACY_SERVICES)],
     };
   }
 }

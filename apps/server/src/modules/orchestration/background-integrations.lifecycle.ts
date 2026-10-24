@@ -5,7 +5,8 @@ import {
   type OnApplicationShutdown,
 } from '@nestjs/common';
 import { createLogger } from '@automaker/utils';
-import { LEGACY_EVENT_EMITTER, LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
+import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
+import { APPLICATION_EVENTS } from '../../core/eventing/application-events.js';
 import type { EventEmitter } from '../../lib/events.js';
 import { cleanupStaleValidations } from '../../routes/github/routes/validation-common.js';
 import { EventHistoryService } from '../../services/event-history-service.js';
@@ -23,7 +24,7 @@ export class BackgroundIntegrationsLifecycle
   private cleanupInterval?: NodeJS.Timeout;
 
   constructor(
-    @Inject(LEGACY_EVENT_EMITTER) private readonly events: EventEmitter,
+    @Inject(APPLICATION_EVENTS) private readonly events: EventEmitter,
     @Inject(SettingsService) private readonly settings: SettingsService,
     @Inject(LEGACY_SERVICES.eventHistory) private readonly history: EventHistoryService,
     @Inject(LEGACY_SERVICES.featureLoader) private readonly features: FeatureLoader,

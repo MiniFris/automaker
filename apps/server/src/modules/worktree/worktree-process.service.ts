@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundDomainError, ValidationDomainError } from '../../core/errors/index.js';
-import { LEGACY_EVENT_EMITTER, LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
+import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
+import { APPLICATION_EVENTS } from '../../core/eventing/application-events.js';
 import type { EventEmitter } from '../../lib/events.js';
 import type { DevServerService } from '../../services/dev-server-service.js';
 import { getManagedDevServerService } from '../../services/execution-environment/dev-server.js';
@@ -25,7 +26,7 @@ export class WorktreeProcessService {
   constructor(
     @Inject(SettingsService) private readonly settings: SettingsService,
     @Inject(ProjectGitService) private readonly git: ProjectGitService,
-    @Inject(LEGACY_EVENT_EMITTER) events: EventEmitter,
+    @Inject(APPLICATION_EVENTS) events: EventEmitter,
     @Inject(LEGACY_SERVICES.devServer)
     private readonly localDev: DevServerService,
     @Inject(LEGACY_SERVICES.testRunner)

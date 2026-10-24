@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { createEventEmitter } from '../../../src/lib/events.js';
-import { LegacyEventBusAdapter } from '../../../src/core/eventing/legacy-event-bus.adapter.js';
+import { ApplicationEventBusAdapter } from '../../../src/core/eventing/application-event-bus.adapter.js';
 import { AgentEventPublisher } from '../../../src/services/agent/agent-event-publisher.js';
 
 describe('AgentEventPublisher application event bus compatibility', () => {
   it('publishes exactly one legacy envelope and one typed bus notification in order', () => {
     const legacy = createEventEmitter();
-    const bus = new LegacyEventBusAdapter(legacy);
+    const bus = new ApplicationEventBusAdapter(legacy);
     const publisher = new AgentEventPublisher(bus);
     const wire: unknown[] = [],
       typed: unknown[] = [];

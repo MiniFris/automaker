@@ -5,7 +5,6 @@ import { AuthService } from './auth.service.js';
 import { AuthStateRepository } from './auth-state.repository.js';
 import { LoginAttemptStore } from './login-attempt.store.js';
 import { AuthController } from './auth.controller.js';
-import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 
 @Global()
 @Module({
@@ -13,7 +12,7 @@ import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
   providers: [
     AuthStateRepository,
     AuthService,
-    { provide: LoginAttemptStore, useExisting: LEGACY_SERVICES.loginAttemptStore },
+    { provide: LoginAttemptStore, useFactory: () => new LoginAttemptStore() },
     { provide: APP_GUARD, useClass: AuthGuard },
   ],
   exports: [AuthService, LoginAttemptStore],

@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { createEventEmitter } from '../../../src/lib/events.js';
-import { LegacyEventBusAdapter } from '../../../src/core/eventing/index.js';
+import { ApplicationEventBusAdapter } from '../../../src/core/eventing/index.js';
 import { SecurityService } from '../../../src/core/security/index.js';
 import { SupervisorCoordinator } from '../../../src/core/lifecycle/supervisor-coordinator.service.js';
 
@@ -37,7 +37,7 @@ describe('core security, eventing and lifecycle', () => {
   });
 
   it('keeps event ordering, isolates subscriber errors and disposes subscriptions', () => {
-    const bus = new LegacyEventBusAdapter(createEventEmitter());
+    const bus = new ApplicationEventBusAdapter(createEventEmitter());
     const calls: string[] = [];
     bus.subscribe('feature:progress', () => calls.push('first'));
     bus.subscribe('feature:progress', () => {
