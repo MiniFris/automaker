@@ -255,8 +255,11 @@ export class CopilotProvider extends CliProvider {
   }
   private runtimeModels: CopilotRuntimeModel[] | null = null;
 
-  constructor(config: ProviderConfig = {}) {
-    super(config);
+  constructor(
+    config: ProviderConfig = {},
+    environment?: import('./cli-provider.js').CliEnvironmentReader
+  ) {
+    super(config, environment);
   }
 
   // ==========================================================================
@@ -575,6 +578,7 @@ export class CopilotProvider extends CliProvider {
       logLevel: 'warning',
       autoRestart: false,
       cwd: workingDirectory,
+      env: await this.readEnvironment(),
     });
 
     // Use an async queue to bridge callback-based SDK events to async generator

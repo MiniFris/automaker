@@ -272,8 +272,11 @@ export class CursorProvider extends CliProvider {
    */
   private static VERSIONS_DIR = path.join(os.homedir(), '.local/share/cursor-agent/versions');
 
-  constructor(config: ProviderConfig = {}) {
-    super(config);
+  constructor(
+    config: ProviderConfig = {},
+    environment?: import('./cli-provider.js').CliEnvironmentReader
+  ) {
+    super(config, environment);
   }
 
   // ==========================================================================

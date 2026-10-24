@@ -184,8 +184,11 @@ export class GeminiProvider extends CliProvider {
   protected featureCapabilities() {
     return { vision: false, tools: true, reasoning: false, mcp: false, remoteExecution: true };
   }
-  constructor(config: ProviderConfig = {}) {
-    super(config);
+  constructor(
+    config: ProviderConfig = {},
+    environment?: import('./cli-provider.js').CliEnvironmentReader
+  ) {
+    super(config, environment);
   }
 
   // ==========================================================================

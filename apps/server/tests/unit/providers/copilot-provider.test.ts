@@ -67,6 +67,23 @@ import { ProviderCleanupError } from '@/providers/provider-execution-scope.js';
 describe('copilot-provider.ts', () => {
   let provider: CopilotProvider;
 
+  it('passes a fresh application environment to each SDK client without global mutation', async () => {
+    let snapshot: Readonly<NodeJS.ProcessEnv> = Object.freeze({
+      GITHUB_TOKEN: 'app-token-fixture',
+    });
+    const environment = vi.fn(async () => snapshot);
+    const isolated = new CopilotProvider({}, environment);
+    const original = process.env.GITHUB_TOKEN;
+    await collectAsyncGenerator(isolated.executeQuery({ prompt: 'Fixture', cwd: '/fixture' }));
+    expect(vi.mocked(CopilotClient).mock.calls.at(-1)?.[0]?.env).toEqual(snapshot);
+    snapshot = Object.freeze({});
+    await collectAsyncGenerator(isolated.executeQuery({ prompt: 'Fixture', cwd: '/fixture' }));
+    expect(vi.mocked(CopilotClient).mock.calls.at(-1)?.[0]?.env).toEqual({});
+    expect(environment).toHaveBeenCalledTimes(2);
+    expect(process.env.GITHUB_TOKEN).toBe(original);
+    await isolated.dispose();
+  });
+
   function ownedClient(session: ReturnType<typeof createMockSession>) {
     const client = {
       start: vi.fn().mockResolvedValue(undefined),

@@ -286,8 +286,11 @@ export class OpencodeProvider extends CliProvider {
   /** Promise that resolves when current refresh completes */
   private refreshPromise: Promise<ModelDefinition[]> | null = null;
 
-  constructor(config: ProviderConfig = {}) {
-    super(config);
+  constructor(
+    config: ProviderConfig = {},
+    environment?: import('./cli-provider.js').CliEnvironmentReader
+  ) {
+    super(config, environment);
   }
 
   // ==========================================================================

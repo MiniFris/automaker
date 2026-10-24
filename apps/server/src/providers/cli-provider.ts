@@ -58,6 +58,8 @@ import { ExecutionEnvironmentError } from '../services/execution-environment/run
  */
 export type SpawnStrategy = 'wsl' | 'npx' | 'direct' | 'cmd';
 
+export type CliEnvironmentReader = () => Promise<Readonly<NodeJS.ProcessEnv>>;
+
 /**
  * Configuration for CLI tool spawning
  */
@@ -131,9 +133,16 @@ export abstract class CliProvider extends BaseProvider {
   // NPX args (used when strategy is 'npx')
   protected npxArgs: string[] = [];
 
-  constructor(config: ProviderConfig = {}) {
+  constructor(
+    config: ProviderConfig = {},
+    private readonly environmentReader: CliEnvironmentReader = async () => ({ ...process.env })
+  ) {
     super(config);
     // Detection happens lazily on first use
+  }
+
+  protected async readEnvironment(): Promise<NodeJS.ProcessEnv> {
+    return { ...(await this.environmentReader()) };
   }
 
   // ==========================================================================
@@ -466,13 +475,9 @@ export abstract class CliProvider extends BaseProvider {
 
     const cwd = options.cwd || process.cwd();
 
-    // Filter undefined values from process.env
+    // Only provider-specific overrides belong here. The application snapshot is
+    // resolved per execution in streamProcess, never stored on a shared adapter.
     const filteredEnv: Record<string, string> = {};
-    for (const [key, value] of Object.entries(process.env)) {
-      if (value !== undefined) {
-        filteredEnv[key] = value;
-      }
-    }
 
     // Calculate dynamic timeout based on reasoning effort.
     // This addresses GitHub issue #530 where reasoning models with 'xhigh' effort would timeout.
@@ -596,18 +601,30 @@ export abstract class CliProvider extends BaseProvider {
     }
   }
 
-  protected streamProcess(
+  protected async *streamProcess(
     options: ExecuteOptions,
     subprocess: SubprocessOptions
   ): AsyncGenerator<unknown> {
     const runtime = remoteCliRuntime(options);
-    return runtime
-      ? environmentJSONL(
-          runtime,
-          subprocess,
-          modelTimeout(options.modelTimeouts, 'remoteProcessTimeoutMs')
-        )
-      : spawnJSONLProcess(subprocess);
+    if (runtime) {
+      // Remote credentials belong to the target, not to the host application.
+      yield* environmentJSONL(
+        runtime,
+        subprocess,
+        modelTimeout(options.modelTimeouts, 'remoteProcessTimeoutMs')
+      );
+      return;
+    }
+    const environment = await this.readEnvironment();
+    const env: Record<string, string> = {};
+    for (const [key, value] of Object.entries(environment)) {
+      if (value !== undefined) env[key] = value;
+    }
+    yield* spawnJSONLProcess({
+      ...subprocess,
+      env: { ...env, ...subprocess.env },
+      inheritEnv: false,
+    });
   }
 
   /**

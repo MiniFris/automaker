@@ -2037,6 +2037,50 @@ registries; перенос их ownership остаётся задачей эта
 capability/dispose contract, tool policy и оставшиеся setup/usage modules ещё
 не закрыты. Этот checkpoint не завершает этап 7 или всю миграцию.
 
+## Application-owned environment для оставшихся локальных CLI (2026-10-24)
+
+Production factories Cursor, Gemini, OpenCode и Copilot теперь получают тот же
+application-scoped reader `ApplicationCredentialsService.environment()`, что Claude
+и Codex. Общий `CliProvider` разрешает новый снимок непосредственно перед локальным
+запуском, сохраняет provider-specific overrides и передаёт `inheritEnv: false`.
+Удалённые SSH/Docker paths не читают host application credentials и продолжают
+использовать credentials целевой среды. Общий экземпляр adapter не хранит снимок
+между запросами; изменение или удаление ключа действует на следующий запуск.
+
+Copilot SDK получает отдельный `env` при создании каждого client. В установленном
+`@github/copilot-sdk` 0.1.16 `options.env` заменяет, а не дополняет `process.env`
+(`dist/client.js`, constructor и startCLI). Новые тесты проверяют передачу через
+mock SDK; реальный платный Copilot upstream в этих проверках не вызывается.
+
+`cli-environment.test.ts` запускает настоящие Node subprocesses через общий путь
+Cursor/Gemini/OpenCode: две параллельные application contexts, отсутствие пропущенных
+host secrets, повторный запуск после удаления, immutable snapshots, provider
+overrides и fail-closed при ошибке reader. Отдельно проверяются все четыре
+production factories и issued remote runtime без чтения/передачи host environment.
+Это не проверка наличия или авторизации реальных vendor CLI.
+
+Проверки среза:
+
+- `npm run test:server:unit`: 3500 passed, 40 existing skipped, включая
+  16 environment/factory/remote checks и новый Copilot SDK environment case.
+- `npm run test:server:contract`: 272 passed.
+- `npm run test:packages`: 1404 passed.
+- Server production build, UI typecheck, server lint, lockfile, Prettier,
+  `git diff --check` и три inventory checks: успешно.
+- `node scripts/smoke-server-lifecycle.mjs`: SIGTERM/SIGINT exit 0.
+- Выбранные real-SSH Direct/CLI/SDK chat/restart cases: 3 passed,
+  34 отфильтрованы (`uses real chat|uses the real chat service|runs Direct chat/model tools`).
+- `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest npm run test:docker --workspace=apps/server`:
+  11 passed, 4 opt-in skipped; owned cleanup checks в afterAll успешны.
+- Chromium `tests/agent/start-new-chat-session.spec.ts --workers=1 --trace=on`:
+  2 passed, Running Agents stop и chat send/stream/reload. Upstream providers
+  в browser fixtures не вызываются; это Web workflow smoke, не live vendor proof.
+
+Граница: raw/manual constructors сохраняют совместимый default reader
+`process.env`. CLI discovery, status/auth heuristics, vendor login files и
+Windows/WSL forwarding ещё требуют отдельного аудита; этот срез не доказывает
+полной credential isolation этих путей и не завершает этап 7.
+
 ## Тесты
 
 - Registry priority/aliases/duplicate detection.

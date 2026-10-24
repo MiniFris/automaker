@@ -40,7 +40,7 @@ export function createProviderRegistrations(
       name: 'cursor',
       priority: 10,
       canHandleModel: isCursorModel,
-      create: () => new CursorProvider(),
+      create: () => new CursorProvider({}, environment),
     },
     {
       name: 'codex',
@@ -53,21 +53,21 @@ export function createProviderRegistrations(
       name: 'opencode',
       priority: 3,
       canHandleModel: isOpencodeModel,
-      create: () => new OpencodeProvider(),
+      create: () => new OpencodeProvider({}, environment),
     },
     {
       name: 'gemini',
       aliases: ['google'],
       priority: 4,
       canHandleModel: isGeminiModel,
-      create: () => new GeminiProvider(),
+      create: () => new GeminiProvider({}, environment),
     },
     {
       name: 'copilot',
       aliases: ['github-copilot', 'github'],
       priority: 6,
       canHandleModel: isCopilotModel,
-      create: () => new CopilotProvider(),
+      create: () => new CopilotProvider({}, environment),
     },
   ]);
 }
