@@ -10,6 +10,7 @@ import type { ClaudeAuthStatus } from '@/store/setup-store';
 import { AnthropicIcon } from '@/components/ui/provider-icon';
 import { getElectronAPI } from '@/lib/electron';
 import { toast } from 'sonner';
+import { ProviderDisconnectButton } from './provider-disconnect-button';
 
 interface CliStatusProps {
   status: CliStatus | null;
@@ -86,7 +87,6 @@ function ClaudeCliStatusSkeleton() {
 export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: CliStatusProps) {
   useUiLocale();
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [isDeauthenticating, setIsDeauthenticating] = useState(false);
 
   const handleSignIn = useCallback(async () => {
     setIsAuthenticating(true);
@@ -120,42 +120,6 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
       });
     } finally {
       setIsAuthenticating(false);
-    }
-  }, [onRefresh]);
-
-  const handleSignOut = useCallback(async () => {
-    setIsDeauthenticating(true);
-    try {
-      const api = getElectronAPI();
-      // Check if deauthClaude method exists on the API
-      const deauthClaude = (api.setup as Record<string, unknown> | undefined)?.deauthClaude as
-        | (() => Promise<{ success: boolean; error?: string }>)
-        | undefined;
-      if (!deauthClaude) {
-        toast.error(translate('Sign Out Failed'), {
-          description: translate('Claude sign out is not available'),
-        });
-        return;
-      }
-      const result = await deauthClaude();
-
-      if (result.success) {
-        toast.success(translate('Signed Out'), {
-          description: translate('Successfully signed out from Claude CLI'),
-        });
-        // Refresh status after successful logout
-        onRefresh();
-      } else if (result.error) {
-        toast.error(translate('Sign Out Failed'), {
-          description: result.error,
-        });
-      }
-    } catch (error) {
-      toast.error(translate('Sign Out Failed'), {
-        description: error instanceof Error ? error.message : 'Unknown error',
-      });
-    } finally {
-      setIsDeauthenticating(false);
     }
   }, [onRefresh]);
 
@@ -251,15 +215,7 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
                       <span className="font-mono">{getAuthMethodLabel(authStatus.method)}</span>
                     </p>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSignOut}
-                    disabled={isDeauthenticating}
-                    className="mt-3 h-8 text-xs"
-                  >
-                    {isDeauthenticating ? translate('Signing Out...') : translate('Sign Out')}
-                  </Button>
+                  <ProviderDisconnectButton provider="claude" onRefresh={onRefresh} />
                 </div>
               </div>
             ) : (

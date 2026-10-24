@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { CursorIcon } from '@/components/ui/provider-icon';
 import { getElectronAPI } from '@/lib/electron';
 import { toast } from 'sonner';
+import { ProviderDisconnectButton } from './provider-disconnect-button';
 
 interface CursorStatus {
   installed: boolean;
@@ -208,7 +209,6 @@ export function ModelConfigSkeleton() {
 export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStatusProps) {
   useUiLocale();
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [isDeauthenticating, setIsDeauthenticating] = useState(false);
 
   const handleSignIn = useCallback(async () => {
     setIsAuthenticating(true);
@@ -242,42 +242,6 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
       });
     } finally {
       setIsAuthenticating(false);
-    }
-  }, [onRefresh]);
-
-  const handleSignOut = useCallback(async () => {
-    setIsDeauthenticating(true);
-    try {
-      const api = getElectronAPI();
-      // Check if deauthCursor method exists on the API
-      const deauthCursor = (api?.setup as Record<string, unknown> | undefined)?.deauthCursor as
-        | (() => Promise<{ success: boolean; error?: string }>)
-        | undefined;
-      if (!deauthCursor) {
-        toast.error(translate('Sign Out Failed'), {
-          description: translate('Cursor sign out is not available'),
-        });
-        return;
-      }
-      const result = await deauthCursor();
-
-      if (result.success) {
-        toast.success(translate('Signed Out'), {
-          description: translate('Successfully signed out from Cursor CLI'),
-        });
-        // Refresh status after successful logout
-        onRefresh();
-      } else if (result.error) {
-        toast.error(translate('Sign Out Failed'), {
-          description: result.error,
-        });
-      }
-    } catch (error) {
-      toast.error(translate('Sign Out Failed'), {
-        description: error instanceof Error ? error.message : 'Unknown error',
-      });
-    } finally {
-      setIsDeauthenticating(false);
     }
   }, [onRefresh]);
 
@@ -365,15 +329,7 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
                       </span>
                     </p>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSignOut}
-                    disabled={isDeauthenticating}
-                    className="mt-3 h-8 text-xs"
-                  >
-                    {isDeauthenticating ? translate('Signing Out...') : translate('Sign Out')}
-                  </Button>
+                  <ProviderDisconnectButton provider="cursor" onRefresh={onRefresh} />
                 </div>
               </div>
             ) : (

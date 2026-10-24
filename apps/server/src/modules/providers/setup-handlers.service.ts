@@ -17,12 +17,6 @@ import {
   createSetCursorModelsHandler,
   createSetCustomPermissionsHandler,
 } from '../../routes/setup/routes/cursor-config.js';
-import { createDeauthClaudeHandler } from '../../routes/setup/routes/deauth-claude.js';
-import { createDeauthCodexHandler } from '../../routes/setup/routes/deauth-codex.js';
-import { createDeauthCopilotHandler } from '../../routes/setup/routes/deauth-copilot.js';
-import { createDeauthCursorHandler } from '../../routes/setup/routes/deauth-cursor.js';
-import { createDeauthGeminiHandler } from '../../routes/setup/routes/deauth-gemini.js';
-import { createDeauthOpencodeHandler } from '../../routes/setup/routes/deauth-opencode.js';
 import { createDeleteApiKeyHandler } from '../../routes/setup/routes/delete-api-key.js';
 import { createInstallClaudeHandler } from '../../routes/setup/routes/install-claude.js';
 import { createInstallCodexHandler } from '../../routes/setup/routes/install-codex.js';
@@ -68,22 +62,16 @@ export class SetupHandlersService {
     return {
       installClaude: createInstallClaudeHandler(),
       authClaude: createAuthClaudeHandler(),
-      deauthClaude: createDeauthClaudeHandler(),
       storeApiKey: createStoreApiKeyHandler(keys),
       deleteApiKey: createDeleteApiKeyHandler(keys),
       verifyClaudeAuth: createVerifyClaudeAuthHandler(settings, keys),
       verifyCodexAuth: createVerifyCodexAuthHandler(settings, providers, keys),
       authCursor: createAuthCursorHandler(),
-      deauthCursor: createDeauthCursorHandler(),
       installCodex: createInstallCodexHandler(),
       authCodex: createAuthCodexHandler(),
-      deauthCodex: createDeauthCodexHandler(),
       authOpencode: createAuthOpencodeHandler(),
-      deauthOpencode: createDeauthOpencodeHandler(),
       authGemini: createAuthGeminiHandler(),
-      deauthGemini: createDeauthGeminiHandler(),
       authCopilot: createAuthCopilotHandler(),
-      deauthCopilot: createDeauthCopilotHandler(),
       cursorConfig: createGetCursorConfigHandler(),
       setCursorDefaultModel: createSetCursorDefaultModelHandler(),
       setCursorModels: createSetCursorModelsHandler(),

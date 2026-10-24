@@ -42,39 +42,3 @@ export async function connectCopilot(projectRoot?: string): Promise<void> {
     logger.debug('Copilot already connected (no marker file found)');
   }
 }
-
-/**
- * Disconnect Copilot CLI from the app by creating the disconnected marker
- *
- * @param projectRoot - Optional project root directory (defaults to cwd)
- * @returns Promise that resolves when the disconnection is complete
- */
-export async function disconnectCopilot(projectRoot?: string): Promise<void> {
-  const root = projectRoot || process.cwd();
-  const automakerDir = path.join(root, '.automaker');
-  const markerPath = path.join(automakerDir, COPILOT_DISCONNECTED_MARKER_FILE);
-
-  // Ensure .automaker directory exists
-  await fs.mkdir(automakerDir, { recursive: true });
-
-  // Create the disconnection marker
-  await fs.writeFile(markerPath, 'Copilot CLI disconnected from app');
-  logger.info('Copilot CLI disconnected from app (marker created)');
-}
-
-/**
- * Check if Copilot CLI is connected (not disconnected)
- *
- * @param projectRoot - Optional project root directory (defaults to cwd)
- * @returns Promise that resolves to true if connected, false if disconnected
- */
-export async function isCopilotConnected(projectRoot?: string): Promise<boolean> {
-  const markerPath = getMarkerPath(projectRoot);
-
-  try {
-    await fs.access(markerPath);
-    return false; // Marker exists = disconnected
-  } catch {
-    return true; // Marker doesn't exist = connected
-  }
-}

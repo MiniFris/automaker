@@ -11,6 +11,7 @@ import { SetupHandlersService } from './setup-handlers.service.js';
 import { ToolPolicyService } from './tool-policy.service.js';
 import { HostSetupStatusService } from './host-setup-status.service.js';
 import { SetupCredentialCache } from './setup-credential-cache.service.js';
+import { ProviderConnectionCommandService } from './provider-connection-command.service.js';
 import {
   SetupStatusRuntime,
   NodeSetupStatusRuntime,
@@ -29,6 +30,7 @@ import {
     ToolPolicyService,
     SetupCredentialCache,
     HostSetupStatusService,
+    ProviderConnectionCommandService,
     { provide: SetupStatusRuntime, useClass: NodeSetupStatusRuntime },
   ],
   exports: [ProviderRegistry, ProviderConnectionRepository, ToolPolicyService],

@@ -56,3 +56,29 @@ backward-compatible.
 Пропуск обязательной проверки не означает успешного checkpoint.
 Если проверка упала, исправления коммитятся в ту же migration-ветку, после чего
 checkpoint этапа повторяется. Отдельный PR не нужен и не заменяет тестирование.
+
+## ADR-009: API v2 confirmed provider disconnect
+
+Требование этапа 7.6 о подтверждении setup mutation нельзя обеспечить прежним
+пустым body `POST /api/setup/deauth-*`. Для шести provider disconnect operations
+вводится versioned safety contract из `@automaker/contracts`; глобальный
+`X-Automaker-API-Version` повышается с `1` до `2`. Error envelope не меняется:
+правило ADR-004 сохраняется и для API v2.
+
+Перед записью client получает `GET /api/setup/connection-target?provider=...`,
+показывает пользователю host-application target и отправляет
+`{ confirmed: true, target }`. Target содержит provider, working directory и
+идентификатор текущего экземпляра repository/application. После restart или
+смены экземпляра нужно повторное inspect/confirmation. Без подтверждения — 400,
+несовпадающий target — 409, ошибка сохранения/недостоверный marker — 503; ни один
+из этих случаев не превращается в успешный disconnect другого target.
+
+Это ограниченное исключение из compatibility-first sequencing: native owner,
+mandatory safety gate, shared schemas и обновление Web/Electron HTTP clients
+вводятся одним согласованным срезом. Старые clients с пустым body больше не могут
+выполнить disconnect. UI/backend должны обновляться совместно; silent fallback,
+автоподстановка confirmation или старого body не допускаются.
+
+Операция меняет только application marker, не удаляет credentials CLI и не
+останавливает уже принятые runs. Target UUID не является authentication/CSRF token;
+public setup access policy пока сохраняется, её hardening остаётся отдельным gate.

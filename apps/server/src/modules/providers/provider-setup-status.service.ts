@@ -106,15 +106,26 @@ export class ProviderSetupStatusService {
       : 'npm install -g @openai/codex';
     const loginCommand = openCode ? 'opencode auth login' : 'codex login';
     try {
-      // Codex historically masks auth and avoids all provider probes when disconnected.
-      // OpenCode keeps its established status behavior; its adapter owns auth indicators.
-      if (!openCode && this.connections.isDisconnected(name)) {
+      // Application disconnect takes priority over host-level credential evidence.
+      if (this.connections.isDisconnected(name)) {
         return {
           success: true,
           installed: true,
           version: null,
           path: null,
-          auth: { authenticated: false, method: 'none', hasApiKey: false },
+          auth: {
+            authenticated: false,
+            method: 'none',
+            hasApiKey: false,
+            ...(openCode && { hasEnvApiKey: false, hasOAuthToken: false }),
+          },
+          ...(openCode && {
+            installCommands: {
+              macos: installCommand,
+              linux: installCommand,
+              npm: 'npm install -g opencode-ai',
+            },
+          }),
           installCommand,
           loginCommand,
         };

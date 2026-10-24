@@ -395,5 +395,13 @@
   "Closed issues": "Закрытые",
   "All issues": "Все",
   "Disable {name} pipeline step": "Отключить этап конвейера «{name}»",
-  "Enable {name} pipeline step": "Включить этап конвейера «{name}»"
+  "Enable {name} pipeline step": "Включить этап конвейера «{name}»",
+  "Disconnect failed": "Не удалось отключить",
+  "Disconnected from Automaker": "Отключено от Automaker",
+  "Inspecting target...": "Проверка назначения...",
+  "Disconnecting...": "Отключение...",
+  "Disconnect from Automaker": "Отключить от Automaker",
+  "Disconnect provider?": "Отключить провайдера?",
+  "Disconnect": "Отключить",
+  "This disconnects the provider from this Automaker application only. CLI credentials are not removed. Existing runs are not stopped.": "Провайдер будет отключён только от этого экземпляра Automaker. Учётные данные CLI не удаляются. Уже запущенные задачи не останавливаются."
 }

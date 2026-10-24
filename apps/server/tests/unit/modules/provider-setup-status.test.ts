@@ -36,6 +36,18 @@ function fixture(disconnected = false) {
 
 const names: CliSetupProvider[] = ['gemini', 'copilot', 'cursor'];
 describe('native provider setup status', () => {
+  it('masks OpenCode credentials when disconnected without probing the adapter', async () => {
+    const { service, providers, configured } = fixture(true);
+    configured.mockReturnValue(true);
+    expect((await service.installationStatus('opencode')).auth).toEqual({
+      authenticated: false,
+      method: 'none',
+      hasApiKey: false,
+      hasEnvApiKey: false,
+      hasOAuthToken: false,
+    });
+    expect(providers.byName).not.toHaveBeenCalled();
+  });
   it.each(names)(
     'uses the injected %s adapter and checks authentication exactly once',
     async (name) => {

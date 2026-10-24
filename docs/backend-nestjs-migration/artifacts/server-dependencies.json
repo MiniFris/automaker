@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 608,
-    "internalEdges": 1985,
+    "files": 603,
+    "internalEdges": 1978,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -20,12 +20,12 @@
     "legacy -> services": 33,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 88,
+    "modules -> core": 91,
     "modules -> legacy": 29,
     "modules -> lib": 24,
-    "modules -> modules": 261,
+    "modules -> modules": 264,
     "modules -> providers": 24,
-    "modules -> routes": 51,
+    "modules -> routes": 45,
     "modules -> services": 111,
     "modules -> types": 2,
     "providers -> core": 1,
@@ -43,8 +43,8 @@
     "routes -> middleware": 8,
     "routes -> modules": 13,
     "routes -> providers": 13,
-    "routes -> routes": 362,
-    "routes -> services": 195,
+    "routes -> routes": 356,
+    "routes -> services": 194,
     "routes -> types": 3,
     "services -> core": 8,
     "services -> lib": 77,
@@ -150,11 +150,6 @@
       "apps/server/src/routes/setup/routes/auth-cursor.ts",
       "apps/server/src/routes/setup/routes/auth-gemini.ts",
       "apps/server/src/routes/setup/routes/auth-opencode.ts",
-      "apps/server/src/routes/setup/routes/deauth-claude.ts",
-      "apps/server/src/routes/setup/routes/deauth-codex.ts",
-      "apps/server/src/routes/setup/routes/deauth-cursor.ts",
-      "apps/server/src/routes/setup/routes/deauth-gemini.ts",
-      "apps/server/src/routes/setup/routes/deauth-opencode.ts",
       "apps/server/src/routes/setup/routes/delete-api-key.ts",
       "apps/server/src/routes/setup/routes/verify-codex-auth.ts",
       "apps/server/src/services/claude-usage-service.ts",
@@ -301,7 +296,7 @@
   },
   "externalImports": {
     "@anthropic-ai/claude-agent-sdk": 3,
-    "@automaker/contracts": 12,
+    "@automaker/contracts": 15,
     "@automaker/dependency-resolver": 1,
     "@automaker/git-utils": 12,
     "@automaker/model-resolver": 20,
@@ -314,7 +309,7 @@
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 153,
+    "@nestjs/common": 154,
     "@nestjs/core": 7,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
@@ -326,14 +321,14 @@
     "crypto": 4,
     "dotenv": 1,
     "events": 1,
-    "express": 239,
-    "fs": 19,
-    "fs/promises": 16,
+    "express": 233,
+    "fs": 15,
+    "fs/promises": 15,
     "net": 1,
     "node-pty": 2,
     "node:async_hooks": 1,
     "node:child_process": 11,
-    "node:crypto": 28,
+    "node:crypto": 29,
     "node:fs": 6,
     "node:fs/promises": 14,
     "node:http": 7,
@@ -347,7 +342,7 @@
     "node:timers/promises": 3,
     "node:util": 12,
     "os": 15,
-    "path": 87,
+    "path": 82,
     "readline": 1,
     "reflect-metadata": 1,
     "ssh2": 3,
@@ -2564,8 +2559,20 @@
       "target": "apps/server/src/modules/providers/setup-credential-cache.service.ts"
     },
     {
+      "source": "apps/server/src/modules/providers/provider-connection-command.service.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/provider-connection-command.service.ts",
+      "target": "apps/server/src/modules/providers/provider-connection.repository.ts"
+    },
+    {
       "source": "apps/server/src/modules/providers/provider-connection.repository.ts",
       "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/provider-connection.repository.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
       "source": "apps/server/src/modules/providers/provider-model-catalog.service.ts",
@@ -2717,6 +2724,10 @@
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/modules/providers/provider-connection-command.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
       "target": "apps/server/src/modules/providers/provider-connection.repository.ts"
     },
     {
@@ -2793,30 +2804,6 @@
     },
     {
       "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/routes/setup/routes/deauth-claude.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/routes/setup/routes/deauth-codex.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/routes/setup/routes/deauth-copilot.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/routes/setup/routes/deauth-cursor.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/routes/setup/routes/deauth-gemini.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/routes/setup/routes/deauth-opencode.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
       "target": "apps/server/src/routes/setup/routes/delete-api-key.ts"
     },
     {
@@ -2849,7 +2836,15 @@
     },
     {
       "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "target": "apps/server/src/core/validation/zod-validation.pipe.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
       "target": "apps/server/src/modules/providers/host-setup-status.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "target": "apps/server/src/modules/providers/provider-connection-command.service.ts"
     },
     {
       "source": "apps/server/src/modules/providers/setup.controller.ts",
@@ -5810,34 +5805,6 @@
     {
       "source": "apps/server/src/routes/setup/routes/cursor-config.ts",
       "target": "apps/server/src/services/cursor-config-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/deauth-claude.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/deauth-codex.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/deauth-copilot.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/deauth-copilot.ts",
-      "target": "apps/server/src/services/copilot-connection-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/deauth-cursor.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/deauth-gemini.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/deauth-opencode.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
     },
     {
       "source": "apps/server/src/routes/setup/routes/delete-api-key.ts",

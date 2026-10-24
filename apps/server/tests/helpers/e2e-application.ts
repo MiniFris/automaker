@@ -13,6 +13,7 @@ import { parseRuntimeConfig } from '../../src/core/config/index.js';
 import { SharedHttpServerExpressAdapter } from '../../src/core/http/shared-http-server.adapter.js';
 import { LEGACY_SERVICES } from '../../src/legacy/legacy.tokens.js';
 import { ProviderRegistry } from '../../src/modules/providers/provider-registry.service.js';
+import { ProviderConnectionRepository } from '../../src/modules/providers/provider-connection.repository.js';
 import { createProviderRegistrations } from '../../src/modules/providers/provider-registrations.js';
 import { SetupHandlersService } from '../../src/modules/providers/setup-handlers.service.js';
 import { SetupCredentialCache } from '../../src/modules/providers/setup-credential-cache.service.js';
@@ -45,7 +46,8 @@ export async function createE2eApplication(
     const adapter = new SharedHttpServerExpressAdapter(expressApplication, httpServer);
     const module = await Test.createTestingModule({
       imports: [
-        AppModule.register(config, process.cwd(), {
+        // Native setup mutations must only write into this owned test profile.
+        AppModule.register(config, dataDirectory, {
           runStartupTasks: false,
           httpServer,
           hostEnvironment: environment,
@@ -57,8 +59,8 @@ export async function createE2eApplication(
     })
       .overrideProvider(LEGACY_SERVICES.providerRegistry)
       .useFactory({
-        inject: [SettingsService],
-        factory: (settings: SettingsService) =>
+        inject: [SettingsService, LEGACY_SERVICES.providerConnections],
+        factory: (settings: SettingsService, connections: ProviderConnectionRepository) =>
           new ProviderRegistry(
             createProviderRegistrations(settings).map((registration) => {
               // Preserve production metadata/aliases/priority, but never real execution.
@@ -70,7 +72,7 @@ export async function createE2eApplication(
                   new MockProvider(registration.name, models, '[test] hold Running Agents chat'),
               };
             }),
-            { isDisconnected: () => false } as never
+            connections
           ),
       })
       .overrideProvider(SetupHandlersService)

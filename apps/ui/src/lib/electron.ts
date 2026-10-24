@@ -1,5 +1,5 @@
 import { translate } from '@/lib/i18n';
-import type { PendingPlanApprovalResponse } from '@automaker/contracts';
+import type { PendingPlanApprovalResponse, ProviderDisconnectRequest } from '@automaker/contracts';
 // Type definitions for Electron IPC API
 import type { SessionListItem, Message } from '@/types/electron';
 import type {
@@ -1613,7 +1613,7 @@ interface SetupAPI {
     message?: string;
     output?: string;
   }>;
-  deauthClaude?: () => Promise<{
+  deauthClaude?: (request: ProviderDisconnectRequest) => Promise<{
     success: boolean;
     requiresManualDeauth?: boolean;
     command?: string;
@@ -1678,7 +1678,7 @@ interface SetupAPI {
     message?: string;
     output?: string;
   }>;
-  deauthCursor?: () => Promise<{
+  deauthCursor?: (request: ProviderDisconnectRequest) => Promise<{
     success: boolean;
     requiresManualDeauth?: boolean;
     command?: string;
@@ -1719,7 +1719,7 @@ interface SetupAPI {
     message?: string;
     output?: string;
   }>;
-  deauthCodex?: () => Promise<{
+  deauthCodex?: (request: ProviderDisconnectRequest) => Promise<{
     success: boolean;
     requiresManualDeauth?: boolean;
     command?: string;
@@ -1768,7 +1768,7 @@ interface SetupAPI {
     message?: string;
     output?: string;
   }>;
-  deauthOpencode?: () => Promise<{
+  deauthOpencode?: (request: ProviderDisconnectRequest) => Promise<{
     success: boolean;
     requiresManualDeauth?: boolean;
     command?: string;
@@ -1861,7 +1861,7 @@ interface SetupAPI {
     message?: string;
     error?: string;
   }>;
-  deauthGemini?: () => Promise<{
+  deauthGemini?: (request: ProviderDisconnectRequest) => Promise<{
     success: boolean;
     requiresManualDeauth?: boolean;
     command?: string;

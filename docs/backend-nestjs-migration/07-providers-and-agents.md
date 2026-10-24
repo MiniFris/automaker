@@ -865,6 +865,9 @@ filesystem I/O и ошибки Nest hooks, также требует hardening �
 - [x] Перенести model discovery/cache refresh.
 - [ ] Status не должен выполнять дорогую авторизацию без явного запроса.
 - [ ] Setup mutation требует подтверждения и возвращает фактический target.
+  - [x] Disconnect всех шести CLI providers: shared schema, явное подтверждение,
+        instance/provider/path target и native application-scoped command.
+  - [ ] Остальные auth/install/key/config mutations и единый setup target policy.
 
 ### Срез: native Gemini/Copilot/Cursor setup status
 
@@ -1040,6 +1043,88 @@ status ещё не реализован. Общий shutdown deadline, subproces
 live login, SSH/Docker и packaged Electron/Windows acceptance этот срез не закрывает.
 Этап 7 и вся миграция остаются незавершёнными.
 
+### Срез: confirmed native provider disconnect / API v2
+
+Шесть POST `deauth-{claude,codex,cursor,gemini,copilot,opencode}` переведены из
+Express-handler bridge в `ProviderConnectionCommandService`. Шесть прежних route
+implementations и неиспользуемые Copilot disconnect/read helpers удалены; версии
+доступны в Git. Remaining Copilot reconnect helper пока legacy и не считается
+перенесённым.
+
+`GET /api/setup/connection-target?provider=...` возвращает read-only target:
+`kind: host-application`, provider, working directory и instance UUID. Нужен
+строгий body `{ confirmed: true, target }`; wrong provider/path/instance получает
+409 до filesystem mutation. Restart создаёт новый instance UUID, поэтому старое
+подтверждение не переиспользуется. Empty/unconfirmed/ambiguous body получает 400.
+Успех сохраняет прежние `success`/`message`, добавляя `connected: false` и фактически
+использованный target. Admission закрывается при shutdown, начатые writes дожидаются
+завершения. Обоснование breaking request change и coordinated client upgrade —
+ADR-009; общий API contract version повышен до 2, error envelope сохранён.
+
+`ProviderConnectionRepository` теперь владеет и чтением, и записью markers в
+injected application working directory. Exclusive `wx` creation с mode 0600
+создаёт пустой marker: persisted state — его наличие, JSON payload не требуется.
+Повторные/concurrent disconnects идемпотентны и не перезаписывают прежний marker.
+Существующие обычные text/JSON markers продолжают читаться. Symlink/необычный тип
+marker или `.automaker`, а также недоступное состояние дают безопасный 503, а не
+fallback в connected state или запись через ссылку. Проверки не заявляют полной
+защиты от hostile filesystem TOCTOU или power-loss durability.
+
+OpenCode status исправлен отдельным safety behavior этого среза: application
+disconnect теперь маскирует host credential hints и не вызывает adapter probes,
+как уже делалось для Codex/Gemini/Copilot. Provider selection через registry
+отказывает после disconnect. Уже принятые executions не останавливаются; CLI
+credentials не удаляются — это явно объясняется в UI.
+
+Для существующих Claude/Codex/Cursor status cards введён общий confirmation button.
+Первый click только читает target и показывает directory/instance; Cancel не
+посылает mutation. Повторное открытие повторяет inspect. POST отправляется только
+после подтверждения, двойная отправка блокируется; success/refresh происходят после
+подтверждённого ответа. HTTP client проверяет shared request/response schemas и
+совпадение возвращённого target, включая compatibility methods `deauth*`; они
+также требуют body и не подставляют confirmation автоматически. Generic client
+поддерживает все шесть providers, bounded route set остаётся явным для inventory.
+
+E2E application теперь использует owned temporary data directory как working
+directory и настоящий connection repository с test-only model execution adapters.
+Native disconnect smoke не создаёт marker в repository/user profile и не
+маскируется fixture `isDisconnected: false`.
+
+Проверки среза:
+
+- 23 repository/command unit cases: все providers, instance restart, idempotency,
+  concurrent initial creation, legacy marker preservation, symlinks, safe errors,
+  wrong target, confirmation и shutdown drain; отдельный OpenCode status regression.
+- Shared schema: 11 cases для confirmation/target/response.
+- UI component: 7 cases, включая русскую локализацию; HTTP client: 15 cases, включая все шесть endpoints и
+  отказ compatibility methods без body.
+- Новый native HTTP contract: шесть operations в двух Nest apps, отсутствие
+  mutation при 400/409, persistence, disconnected status и registry refusal.
+- `npm run test:server:unit`: 3290 passed, 40 skipped.
+- `npm run test:server:contract`: 262 passed.
+- `npm run test:packages`: 1227 passed.
+- Contracts package/server production build, server/UI lint, UI typecheck,
+  lockfile и три generated inventory checks успешны.
+- UI production build и Electron main/preload собраны; Vite предупреждает о крупных
+  chunks. Это не packaged Electron acceptance.
+- Startup/shutdown smoke: SIGTERM/SIGINT exit 0.
+- Chromium: 3 passed — chat/Running Agents и новый inspect/cancel/confirm/reload
+  provider disconnect workflow. Перед POST проверяется owned temporary target;
+  тест удаляет только свой пустой marker в finally, не оставляя provider отключённым
+  для других сценариев. Сам E2E profile удаляется при shutdown.
+- Выбранные SSH CLI/SDK/Direct chat/restart cases: 3 passed, 34 отфильтрованы.
+- Полный Docker fixture acceptance с локальным
+  `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest`: 11 passed,
+  4 opt-in skipped. Проверки cleanup owned containers/image/volume в afterAll
+  успешно выполнены; user resources не удалялись.
+
+Граница: общий setup mutation gate остаётся незавершённым — auth/reconnect,
+install, key persistence и Cursor config пока требуют переноса/confirmation.
+Public setup policy, active-run cancellation policy, generic provider status,
+дорогие passive probes и единый application shutdown deadline также ещё в работе.
+Этот срез не является live CLI login/logout или packaged Electron/Windows acceptance
+и не завершает этап 7 или всю миграцию.
+
 ## 7.7. Agent routes
 
 - [x] Start/query/follow-up/cancel.
@@ -1125,6 +1210,9 @@ capability/dispose contract, tool policy и оставшиеся setup/usage mod
 
 ## Exit criteria
 
+- Versioned disconnect contract API v2 проверен совместно с Web/Electron HTTP clients:
+  без confirmation — 400, при другом instance/provider/path — 409 до записи,
+  фактический target возвращается в success response и показан в UI confirmation.
 - Provider registration полностью явная и управляется Nest DI.
 - Нет создания `SettingsService` внутри provider.
 - Agent routes удалены из legacy bridge.

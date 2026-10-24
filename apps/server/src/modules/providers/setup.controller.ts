@@ -1,4 +1,21 @@
-import { Controller, Delete, Get, HttpCode, Inject, Post, Query, Req, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Inject,
+  Post,
+  Query,
+  Req,
+  Res,
+} from '@nestjs/common';
+import {
+  CliConnectionProviderSchema,
+  ProviderDisconnectRequestSchema,
+  type CliConnectionProvider,
+  type ProviderDisconnectRequest,
+} from '@automaker/contracts';
 import type { Request, Response } from 'express';
 
 import { Public } from '../../core/auth/index.js';
@@ -6,6 +23,8 @@ import { SetupHandlersService, type SetupHandlerName } from './setup-handlers.se
 import { ProviderSetupStatusService } from './provider-setup-status.service.js';
 import { ProviderModelCatalogService } from './provider-model-catalog.service.js';
 import { HostSetupStatusService } from './host-setup-status.service.js';
+import { ProviderConnectionCommandService } from './provider-connection-command.service.js';
+import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
 
 @Public()
 @Controller('setup')
@@ -14,7 +33,9 @@ export class SetupController {
     @Inject(SetupHandlersService) private readonly handlers: SetupHandlersService,
     @Inject(ProviderSetupStatusService) private readonly statuses: ProviderSetupStatusService,
     @Inject(ProviderModelCatalogService) private readonly catalogs: ProviderModelCatalogService,
-    @Inject(HostSetupStatusService) private readonly hostStatus: HostSetupStatusService
+    @Inject(HostSetupStatusService) private readonly hostStatus: HostSetupStatusService,
+    @Inject(ProviderConnectionCommandService)
+    private readonly connections: ProviderConnectionCommandService
   ) {}
 
   private run(name: SetupHandlerName, request: Request, response: Response) {
@@ -33,8 +54,16 @@ export class SetupController {
   @Post('auth-claude') authClaude(@Req() q: Request, @Res() s: Response) {
     return this.run('authClaude', q, s);
   }
-  @Post('deauth-claude') deauthClaude(@Req() q: Request, @Res() s: Response) {
-    return this.run('deauthClaude', q, s);
+  @Get('connection-target') connectionTarget(
+    @Query('provider', new ZodValidationPipe(CliConnectionProviderSchema))
+    provider: CliConnectionProvider
+  ) {
+    return this.connections.target(provider);
+  }
+  @Post('deauth-claude') @HttpCode(200) deauthClaude(
+    @Body(new ZodValidationPipe(ProviderDisconnectRequestSchema)) body: ProviderDisconnectRequest
+  ) {
+    return this.connections.disconnect('claude', body);
   }
   @Post('store-api-key') storeApiKey(@Req() q: Request, @Res() s: Response) {
     return this.run('storeApiKey', q, s);
@@ -63,8 +92,10 @@ export class SetupController {
   @Post('auth-cursor') authCursor(@Req() q: Request, @Res() s: Response) {
     return this.run('authCursor', q, s);
   }
-  @Post('deauth-cursor') deauthCursor(@Req() q: Request, @Res() s: Response) {
-    return this.run('deauthCursor', q, s);
+  @Post('deauth-cursor') @HttpCode(200) deauthCursor(
+    @Body(new ZodValidationPipe(ProviderDisconnectRequestSchema)) body: ProviderDisconnectRequest
+  ) {
+    return this.connections.disconnect('cursor', body);
   }
   @Get('codex-status') codexStatus() {
     return this.statuses.installationStatus('codex');
@@ -75,8 +106,10 @@ export class SetupController {
   @Post('auth-codex') authCodex(@Req() q: Request, @Res() s: Response) {
     return this.run('authCodex', q, s);
   }
-  @Post('deauth-codex') deauthCodex(@Req() q: Request, @Res() s: Response) {
-    return this.run('deauthCodex', q, s);
+  @Post('deauth-codex') @HttpCode(200) deauthCodex(
+    @Body(new ZodValidationPipe(ProviderDisconnectRequestSchema)) body: ProviderDisconnectRequest
+  ) {
+    return this.connections.disconnect('codex', body);
   }
   @Get('opencode-status') opencodeStatus() {
     return this.statuses.installationStatus('opencode');
@@ -84,8 +117,10 @@ export class SetupController {
   @Post('auth-opencode') authOpencode(@Req() q: Request, @Res() s: Response) {
     return this.run('authOpencode', q, s);
   }
-  @Post('deauth-opencode') deauthOpencode(@Req() q: Request, @Res() s: Response) {
-    return this.run('deauthOpencode', q, s);
+  @Post('deauth-opencode') @HttpCode(200) deauthOpencode(
+    @Body(new ZodValidationPipe(ProviderDisconnectRequestSchema)) body: ProviderDisconnectRequest
+  ) {
+    return this.connections.disconnect('opencode', body);
   }
   @Get('gemini-status') geminiStatus() {
     return this.statuses.status('gemini');
@@ -93,8 +128,10 @@ export class SetupController {
   @Post('auth-gemini') authGemini(@Req() q: Request, @Res() s: Response) {
     return this.run('authGemini', q, s);
   }
-  @Post('deauth-gemini') deauthGemini(@Req() q: Request, @Res() s: Response) {
-    return this.run('deauthGemini', q, s);
+  @Post('deauth-gemini') @HttpCode(200) deauthGemini(
+    @Body(new ZodValidationPipe(ProviderDisconnectRequestSchema)) body: ProviderDisconnectRequest
+  ) {
+    return this.connections.disconnect('gemini', body);
   }
   @Get('copilot-status') copilotStatus() {
     return this.statuses.status('copilot');
@@ -102,8 +139,10 @@ export class SetupController {
   @Post('auth-copilot') authCopilot(@Req() q: Request, @Res() s: Response) {
     return this.run('authCopilot', q, s);
   }
-  @Post('deauth-copilot') deauthCopilot(@Req() q: Request, @Res() s: Response) {
-    return this.run('deauthCopilot', q, s);
+  @Post('deauth-copilot') @HttpCode(200) deauthCopilot(
+    @Body(new ZodValidationPipe(ProviderDisconnectRequestSchema)) body: ProviderDisconnectRequest
+  ) {
+    return this.connections.disconnect('copilot', body);
   }
   @Get('copilot/models') copilotModels(@Query('refresh') refresh: string | undefined) {
     return this.catalogs.models('copilot', refresh === 'true');

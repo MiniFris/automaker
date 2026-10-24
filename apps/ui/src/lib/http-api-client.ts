@@ -6,6 +6,14 @@
  */
 
 import { createLogger } from '@automaker/utils/logger';
+import {
+  CliConnectionProviderSchema,
+  ProviderConnectionTargetResponseSchema,
+  ProviderDisconnectRequestSchema,
+  ProviderDisconnectResponseSchema,
+  type CliConnectionProvider,
+  type ProviderDisconnectRequest,
+} from '@automaker/contracts';
 import type {
   BacklogApplyInput,
   BacklogGenerateInput,
@@ -1051,6 +1059,48 @@ export class HttpApiClient implements ElectronAPI {
     return headers;
   }
 
+  private async disconnectSetupProvider(
+    provider: CliConnectionProvider,
+    input: ProviderDisconnectRequest
+  ) {
+    CliConnectionProviderSchema.parse(provider);
+    const request = ProviderDisconnectRequestSchema.parse(input);
+    if (request.target.provider !== provider)
+      throw new Error('Provider connection target does not match provider.');
+    const response = ProviderDisconnectResponseSchema.parse(
+      await this.postProviderDisconnect(provider, request)
+    );
+    if (
+      response.target.instanceId !== request.target.instanceId ||
+      response.target.workingDirectory !== request.target.workingDirectory ||
+      response.target.provider !== provider
+    ) {
+      throw new Error('Provider disconnect response does not match the confirmed target.');
+    }
+    return response;
+  }
+
+  private postProviderDisconnect(
+    provider: CliConnectionProvider,
+    request: ProviderDisconnectRequest
+  ): Promise<unknown> {
+    // Keep the bounded route set explicit for API consumer inventory and review.
+    switch (provider) {
+      case 'claude':
+        return this.post('/api/setup/deauth-claude', request);
+      case 'codex':
+        return this.post('/api/setup/deauth-codex', request);
+      case 'cursor':
+        return this.post('/api/setup/deauth-cursor', request);
+      case 'gemini':
+        return this.post('/api/setup/deauth-gemini', request);
+      case 'copilot':
+        return this.post('/api/setup/deauth-copilot', request);
+      case 'opencode':
+        return this.post('/api/setup/deauth-opencode', request);
+    }
+  }
+
   private async post<T>(endpoint: string, body?: unknown, signal?: AbortSignal): Promise<T> {
     // Ensure API key is initialized before making request
     await waitForApiKeyInit();
@@ -1495,6 +1545,17 @@ export class HttpApiClient implements ElectronAPI {
 
   // Setup API
   setup = {
+    getProviderConnectionTarget: async (provider: CliConnectionProvider) => {
+      CliConnectionProviderSchema.parse(provider);
+      const response = ProviderConnectionTargetResponseSchema.parse(
+        await this.get(`/api/setup/connection-target?provider=${provider}`)
+      );
+      if (response.target.provider !== provider)
+        throw new Error('Provider connection target does not match provider.');
+      return response;
+    },
+    disconnectProvider: (provider: CliConnectionProvider, request: ProviderDisconnectRequest) =>
+      this.disconnectSetupProvider(provider, request),
     getClaudeStatus: (): Promise<{
       success: boolean;
       status?: string;
@@ -1534,13 +1595,15 @@ export class HttpApiClient implements ElectronAPI {
       output?: string;
     }> => this.post('/api/setup/auth-claude'),
 
-    deauthClaude: (): Promise<{
+    deauthClaude: (
+      request: ProviderDisconnectRequest
+    ): Promise<{
       success: boolean;
       requiresManualDeauth?: boolean;
       command?: string;
       message?: string;
       error?: string;
-    }> => this.post('/api/setup/deauth-claude'),
+    }> => this.disconnectSetupProvider('claude', request),
 
     storeApiKey: (
       provider: string,
@@ -1620,13 +1683,15 @@ export class HttpApiClient implements ElectronAPI {
       output?: string;
     }> => this.post('/api/setup/auth-cursor'),
 
-    deauthCursor: (): Promise<{
+    deauthCursor: (
+      request: ProviderDisconnectRequest
+    ): Promise<{
       success: boolean;
       requiresManualDeauth?: boolean;
       command?: string;
       message?: string;
       error?: string;
-    }> => this.post('/api/setup/deauth-cursor'),
+    }> => this.disconnectSetupProvider('cursor', request),
 
     authOpencode: (): Promise<{
       success: boolean;
@@ -1638,13 +1703,15 @@ export class HttpApiClient implements ElectronAPI {
       output?: string;
     }> => this.post('/api/setup/auth-opencode'),
 
-    deauthOpencode: (): Promise<{
+    deauthOpencode: (
+      request: ProviderDisconnectRequest
+    ): Promise<{
       success: boolean;
       requiresManualDeauth?: boolean;
       command?: string;
       message?: string;
       error?: string;
-    }> => this.post('/api/setup/deauth-opencode'),
+    }> => this.disconnectSetupProvider('opencode', request),
 
     getCursorConfig: (
       projectPath: string
@@ -1788,13 +1855,15 @@ export class HttpApiClient implements ElectronAPI {
       output?: string;
     }> => this.post('/api/setup/auth-codex'),
 
-    deauthCodex: (): Promise<{
+    deauthCodex: (
+      request: ProviderDisconnectRequest
+    ): Promise<{
       success: boolean;
       requiresManualDeauth?: boolean;
       command?: string;
       message?: string;
       error?: string;
-    }> => this.post('/api/setup/deauth-codex'),
+    }> => this.disconnectSetupProvider('codex', request),
 
     verifyCodexAuth: (
       authMethod: 'cli' | 'api_key',
@@ -1926,13 +1995,15 @@ export class HttpApiClient implements ElectronAPI {
       error?: string;
     }> => this.post('/api/setup/auth-gemini'),
 
-    deauthGemini: (): Promise<{
+    deauthGemini: (
+      request: ProviderDisconnectRequest
+    ): Promise<{
       success: boolean;
       requiresManualDeauth?: boolean;
       command?: string;
       message?: string;
       error?: string;
-    }> => this.post('/api/setup/deauth-gemini'),
+    }> => this.disconnectSetupProvider('gemini', request),
 
     // Copilot SDK methods
     getCopilotStatus: (): Promise<{
