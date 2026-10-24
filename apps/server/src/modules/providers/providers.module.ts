@@ -7,6 +7,10 @@ import { CodexModelCacheService } from '../../services/codex-model-cache-service
 import { GeminiUsageService } from '../../services/gemini-usage-service.js';
 import { ZaiUsageService } from '../../services/zai-usage-service.js';
 import { CodexModelWarmup, PROVIDER_STARTUP_TASKS } from './codex-model-warmup.service.js';
+import {
+  CodexUsageRuntime,
+  NodeCodexUsageRuntime,
+} from '../../core/platform/codex-usage.runtime.js';
 import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import { ProviderConnectionRepository } from './provider-connection.repository.js';
 import { ProviderRegistry } from './provider-registry.service.js';
@@ -60,11 +64,22 @@ import {
       useFactory: (credentials: ApplicationCredentialsService, paths: RuntimePathsService) =>
         new ClaudeUsageService(() => credentials.environment(), paths.workingDirectory),
     },
-    { provide: CodexAppServerService, useFactory: () => new CodexAppServerService() },
+    {
+      provide: CodexUsageRuntime,
+      inject: [ApplicationCredentialsService, RuntimePathsService],
+      useFactory: (credentials: ApplicationCredentialsService, paths: RuntimePathsService) =>
+        new NodeCodexUsageRuntime(() => credentials.environment(), paths.workingDirectory),
+    },
+    {
+      provide: CodexAppServerService,
+      inject: [CodexUsageRuntime],
+      useFactory: (runtime: CodexUsageRuntime) => new CodexAppServerService(runtime),
+    },
     {
       provide: CodexUsageService,
-      inject: [CodexAppServerService],
-      useFactory: (appServer: CodexAppServerService) => new CodexUsageService(appServer),
+      inject: [CodexAppServerService, CodexUsageRuntime],
+      useFactory: (appServer: CodexAppServerService, runtime: CodexUsageRuntime) =>
+        new CodexUsageService(appServer, runtime),
     },
     {
       provide: CodexModelCacheService,

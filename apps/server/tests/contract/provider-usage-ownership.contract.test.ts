@@ -4,6 +4,7 @@ import path from 'node:path';
 import { expect, it, vi } from 'vitest';
 import { Test } from '@nestjs/testing';
 import { ModulesContainer } from '@nestjs/core';
+import { CodexUsageRuntime } from '../../src/core/platform/codex-usage.runtime.js';
 import { createNestApplication } from '../../src/main.js';
 import { ClaudeUsageService } from '../../src/services/claude-usage-service.js';
 import { CodexAppServerService } from '../../src/services/codex-app-server-service.js';
@@ -47,6 +48,14 @@ it('owns usage instances, shared Codex dependency and disk caches outside the le
   try {
     const first = await start('one');
     const second = await start('two');
+    for (const fixture of [first, second]) {
+      vi.spyOn(fixture.runtime.app.get(CodexUsageRuntime), 'snapshot').mockResolvedValue({
+        environment: {},
+        workingDirectory: fixture.dataDir,
+        cliPath: '/offline-fixture/codex',
+        authFilePath: '/offline-fixture/auth.json',
+      });
+    }
     const tokens = [
       ClaudeUsageService,
       CodexAppServerService,

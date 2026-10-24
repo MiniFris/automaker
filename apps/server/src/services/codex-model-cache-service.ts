@@ -2,7 +2,10 @@ import path from 'path';
 import { secureFs } from '@automaker/platform';
 import { createLogger } from '@automaker/utils';
 import type { AppServerModel } from '@automaker/types';
-import type { CodexAppServerService } from './codex-app-server-service.js';
+import {
+  CodexAppServerCleanupError,
+  type CodexAppServerService,
+} from './codex-app-server-service.js';
 import type { OnApplicationShutdown } from '@nestjs/common';
 
 const logger = createLogger('CodexModelCache');
@@ -200,6 +203,7 @@ export class CodexModelCacheService implements OnApplicationShutdown {
 
       return models;
     } catch (error) {
+      if (error instanceof CodexAppServerCleanupError) throw error;
       logger.error('[doRefresh] Refresh failed:', error);
       return [];
     }

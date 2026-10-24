@@ -2470,6 +2470,85 @@ Nest factories передают context явно. API version остаётся 1
 границы и checkpoints — в срезе bootstrap recovery этапа 10. Это не claim, что
 устранены все возможные network failures, dev-server delays или все gates этапа 7.
 
+### Срез: Codex usage context и owned app-server cleanup
+
+Native Codex usage и app-server используют общий `CodexUsageRuntime`, создаваемый
+Nest из `ApplicationCredentialsService` и `RuntimePathsService`. Каждый RPC получает
+fresh immutable environment: managed OpenAI key и canonical CODEX_API_KEY следуют
+существующей durable credential policy; удаление подавляет bootstrap для следующего
+процесса, не меняя parent environment. CLI discovery не запускает команды: PATH,
+home-relative/system candidates, NVM/fnm/Volta/pnpm/Yarn и Windows context paths
+проверяются явно. Relative PATH/CODEX_HOME разрешаются от application cwd, не
+ambient cwd. Default auth path — HOME/USERPROFILE `.codex/auth.json`, explicit
+CODEX_HOME имеет приоритет. Auth read ограничен 1 MiB и regular file; handle
+закрывается и при ошибке. Legacy/manual defaults вынесены в отдельный compatibility
+helper, native factories их не используют.
+
+Протокол сохранён по [OpenAI Docs app-server](https://learn.chatgpt.com/docs/app-server):
+stdio JSONL, initialize → initialized → model/list либо account/read/rateLimits.
+Конфигурация state root сверена с [official environment reference](https://learn.chatgpt.com/docs/config-file/environment-variables).
+Это не новая версия CLI/SDK и не live-vendor acceptance. Поверхность этого owner
+не отправляет thread/turn/login/tool/approval commands; account/read по-прежнему
+передаёт refreshToken false. Это не обещание, что vendor process никогда не пишет
+собственные logs/cache или не выполняет startup behavior из своей config.
+
+RPC owner ограничивает admission четырьмя queries. Deadline включает discovery
+и protocol; cancellation предотвращает поздний spawn после отложенного snapshot.
+Native discovery проверяет AbortSignal между filesystem operations. JSONL decoder
+поддерживает split UTF-8; bounded input (1 MiB total, 131072 chars pending buffer,
+1000 messages) и malformed/server-request failures не отражают raw diagnostics.
+Child/stdin errors обработаны, stderr дренируется без сохранения или логирования.
+
+Result не возвращается до cleanup. POSIX child имеет собственную detached group;
+TERM эскалируется до KILL через 500 ms, cleanup ограничен 2 s с monotonic deadline.
+Linux ждёт child close и quiescence исходной owned group через общий procfs probe
+этапа 6. Probe failure/timeout не объявляется успешным RPC: статический
+`CodexAppServerCleanupError` закрывает admission owner. Usage и model cache не
+подменяют эту неопределённость auth-file/cache fallback. Before-shutdown закрывает
+admission, abort-ит accepted queries и дожидается cleanup до поздних cache/warmup
+shutdown hooks; повторный shutdown идемпотентен. Обычная unavailable/protocol
+ошибка с подтверждённым cleanup сохраняет старый null/fallback contract.
+
+Удалены raw JWT claim dump и произвольные account-type strings из fallback logs.
+Сам JWT fallback всё ещё показывает unverified local plan metadata, не является
+проверкой authentication или текущего subscription/usage. Этот debt не закрывается
+переездом auth path.
+
+Новые проверки включают 18 unit и 2 native contracts: delayed close, timeout,
+UTF-8 chunks, malformed/oversized/approval/early-exit, spawn failure, deferred
+discovery, admission limit, observer failure/timeout, запрет fallback при cleanup
+uncertainty и обычный same-group descendant. Два реальных Nest apps используют
+собственные offline CLI, credentials и CODEX_HOME; HTTP catalog проверяет fresh
+managed key/delete и буквальный cwd с кавычками/`$()`. CLI capture сохраняет hashes,
+не plaintext keys. Отдельный native test удерживает RPC и проверяет actual child
+exit после Nest close. Fixtures не загружают vendor SDK и не делают vendor calls.
+
+Проверки среза:
+
+- `npm run test:server:unit`: финальный полный запуск 3567 passed, 40 existing
+  skipped; 18 новых runtime/RPC/fallback tests.
+- `npm run test:server:contract`: финальный полный запуск 281 passed. Native
+  context/ownership tests повторены отдельно на финальном source.
+- `npm run test:packages`: 1457 passed.
+- Production server и UI/Electron main/preload builds, server lint, UI typecheck,
+  lockfile, formatting/diff и три inventory checks: успешно.
+- Последовательный server build → SIGTERM/SIGINT lifecycle smoke: exit 0.
+- Docker acceptance: 11 passed, 4 opt-in skipped; owned resources cleanup успешен.
+- Real SSH Direct/CLI/SDK chat/restart выборка: 3 passed, 34 отфильтрованы.
+- Chromium после завершения Docker/SSH: 4 passed, Agent/Running Agents, confirmed
+  setup credentials и explicit Codex verification; без browser retry/timeout changes.
+- Первое добавление native shutdown test ошибочно вложило его в другой test;
+  collection failure исправлен в harness, shutdown assertion сохранён. Первый lint
+  также потребовал отделить ambient compatibility default от core runtime и
+  выразить cleanup-error precedence без throw в finally. Финальные проверки зелёные.
+
+Граница: Windows cmd transport и macOS требуют своей acceptance; Linux group probe
+не доказывает containment намеренного setsid/group/privilege escape. Нельзя переносить
+эти доказательства на все Codex SDK/CLI execution paths, credential runtime или PTY.
+Consent на usage/model probes, vendor startup behavior, строгая response schema,
+динамическое vision metadata, passive status policy всех providers и общий deadline
+приложения остаются gates этапа 7. API version остаётся 12; этапы 7–11 не завершены.
+
 ## Тесты
 
 - Registry priority/aliases/duplicate detection.

@@ -451,3 +451,26 @@ tests actual production HTML/modules with a local 503→healthy asset fixture, n
 a vendor or real backend. It verifies that the guard precedes moved head entries
 and that storage survives the user-requested reload. This is early hardening
 evidence, not completion of stage 7/10 or packaged Electron/PWA acceptance.
+
+## ADR-026: Context-explicit Codex usage RPC and cleanup certainty
+
+Native Codex usage/discovery/app-server share a Nest-owned context port. Environment
+comes from the application credential policy, cwd from RuntimePaths; PATH/home/version
+manager discovery and CODEX_HOME auth-file resolution no longer read ambient host
+globals. Compatibility defaults remain only for manual constructors. Local auth reads
+are bounded and reject non-regular files; raw JWT claims are not logged.
+
+App-server owns accepted RPCs and children, closes admission before shutdown,
+cancels deferred discovery and drains spawned processes. RPC success requires child
+close; Linux additionally requires quiescence of the original detached process group.
+Bounded TERM→KILL cleanup failure poisons the owner and must not become successful
+usage/local-auth/model-cache fallback. A dedicated static error preserves this
+distinction without exposing vendor output. JSONL parsing/output bounds and rejected
+server tool/approval requests do not create an execution/approval path.
+
+The official stdio initialization/account/model protocol is preserved; no CLI/SDK
+version or API contract version is changed. Offline child/native-container tests
+prove environment/key/delete/path/shutdown behavior, not vendor authentication,
+subscription validity, universal sandboxing or cross-platform process-tree cleanup.
+Usage consent, vendor startup configuration, unverified local plan fallback and
+remaining provider/status/capability gates remain required before stage completion.
