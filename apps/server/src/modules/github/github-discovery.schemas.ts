@@ -1,5 +1,2 @@
-import { z } from 'zod';
-export const GithubProjectSchema = z.object({
-  projectPath: z.string().min(1, 'projectPath is required'),
-});
-export type GithubProjectRequest = z.infer<typeof GithubProjectSchema>;
+// Shared runtime validation; keep this path for existing server consumers.
+export * from '@automaker/contracts/domains/github-discovery';

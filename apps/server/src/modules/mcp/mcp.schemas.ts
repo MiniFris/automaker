@@ -1,7 +1,2 @@
-import { z } from 'zod';
-
-export const MCPServerRequestSchema = z.object({
-  serverId: z.string().min(1, 'serverId is required'),
-});
-
-export type MCPServerRequest = z.infer<typeof MCPServerRequestSchema>;
+// Shared runtime validation; keep this path for existing server consumers.
+export * from '@automaker/contracts/domains/mcp';

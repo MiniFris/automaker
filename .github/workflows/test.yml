@@ -29,6 +29,8 @@ jobs:
           npm run lint:server:errors
           npm run test:backend:architecture
           npm run test:backend:downgrade
+          npm run inventory:server:check
+          npm run check:backend:openapi
 
       - name: Run package tests
         run: npm run test:packages

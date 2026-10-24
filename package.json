@@ -68,6 +68,8 @@
     "inventory:server-deps:check": "node scripts/generate-server-dependency-inventory.mjs --check",
     "inventory:api-consumers": "node scripts/generate-server-api-consumer-inventory.mjs",
     "inventory:api-consumers:check": "node scripts/generate-server-api-consumer-inventory.mjs --check",
+    "generate:backend:openapi": "node scripts/generate-backend-openapi.mjs",
+    "check:backend:openapi": "node scripts/generate-backend-openapi.mjs --check && node --test scripts/tests/backend-openapi.test.mjs",
     "baseline:server": "npm run build:server && node scripts/measure-server-baseline.mjs",
     "check:server:performance": "npm run build:server && node scripts/measure-server-baseline.mjs --assert-budget",
     "test:backend:performance-budget": "node --test scripts/tests/server-performance-budget.test.mjs",
