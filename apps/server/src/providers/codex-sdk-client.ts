@@ -10,7 +10,6 @@ import { formatHistoryAsText, classifyError, getUserFriendlyErrorMessage } from 
 import { supportsReasoningEffort } from '@automaker/types';
 import type { ExecuteOptions, ProviderMessage } from './types.js';
 
-const OPENAI_API_KEY_ENV = 'OPENAI_API_KEY';
 const SDK_HISTORY_HEADER = 'Current request:\n';
 const DEFAULT_RESPONSE_TEXT = '';
 const SDK_ERROR_DETAILS_LABEL = 'Details:';
@@ -28,12 +27,9 @@ type PromptBlock = {
   };
 };
 
-function resolveApiKey(): string {
-  const apiKey = process.env[OPENAI_API_KEY_ENV];
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY is not set.');
-  }
-  return apiKey;
+export interface CodexSdkExecutionContext {
+  apiKey: string;
+  environment: Readonly<NodeJS.ProcessEnv>;
 }
 
 function normalizePromptBlocks(prompt: ExecuteOptions['prompt']): PromptBlock[] {
@@ -96,11 +92,19 @@ function buildSdkErrorMessage(rawMessage: string, userMessage: string): string {
  */
 export async function* executeCodexSdkQuery(
   options: ExecuteOptions,
-  systemPrompt: string | null
+  systemPrompt: string | null,
+  context: CodexSdkExecutionContext
 ): AsyncGenerator<ProviderMessage> {
   try {
-    const apiKey = resolveApiKey();
-    const codex = new Codex({ apiKey });
+    if (!context.apiKey) throw new Error('Codex SDK API key is not configured.');
+    const env: Record<string, string> = {};
+    for (const [name, value] of Object.entries(context.environment))
+      if (value !== undefined) env[name] = value;
+    // Explicit SDK env replaces ambient inheritance in the pinned SDK. Keep both
+    // key names coherent for the child and its tools without touching process.env.
+    env.OPENAI_API_KEY = context.apiKey;
+    env.CODEX_API_KEY = context.apiKey;
+    const codex = new Codex({ apiKey: context.apiKey, env });
 
     // Build thread options with model
     // The model must be passed to startThread/resumeThread so the SDK
@@ -141,15 +145,20 @@ export async function* executeCodexSdkQuery(
 
     const promptText = buildPromptText(options, systemPrompt);
 
-    // Build run options
-    const runOptions: {
-      signal?: AbortSignal;
-    } = {
-      signal: options.abortController?.signal,
-    };
-
-    // Run the query
-    const result = await thread.run(promptText, runOptions);
+    // Do not lend the long-lived caller signal to the SDK child. In SDK 0.98.0,
+    // a failed turn can return before child close after removing child listeners;
+    // aborting that original signal later can emit an unhandled AbortError.
+    const controller = new AbortController();
+    const parent = options.abortController?.signal;
+    const abort = () => controller.abort();
+    if (parent?.aborted) abort();
+    else parent?.addEventListener('abort', abort, { once: true });
+    let result: Awaited<ReturnType<typeof thread.run>>;
+    try {
+      result = await thread.run(promptText, { signal: controller.signal });
+    } finally {
+      parent?.removeEventListener('abort', abort);
+    }
 
     // Extract response text (from finalResponse property)
     const outputText = result.finalResponse ?? DEFAULT_RESPONSE_TEXT;

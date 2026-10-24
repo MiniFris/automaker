@@ -3,7 +3,7 @@
   "sourceRoot": "apps/server/src",
   "summary": {
     "files": 601,
-    "internalEdges": 1990,
+    "internalEdges": 1989,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -29,7 +29,7 @@
     "modules -> services": 112,
     "modules -> types": 2,
     "providers -> core": 1,
-    "providers -> lib": 5,
+    "providers -> lib": 4,
     "providers -> modules": 1,
     "providers -> providers": 90,
     "providers -> services": 21,
@@ -3622,10 +3622,6 @@
     {
       "source": "apps/server/src/providers/codex-models.ts",
       "target": "apps/server/src/providers/types.ts"
-    },
-    {
-      "source": "apps/server/src/providers/codex-provider.ts",
-      "target": "apps/server/src/lib/auth-utils.ts"
     },
     {
       "source": "apps/server/src/providers/codex-provider.ts",

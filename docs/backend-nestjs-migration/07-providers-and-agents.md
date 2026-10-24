@@ -1627,6 +1627,79 @@ Windows и remote verification parity не заявляются.
 
 Этап 7 и этапы 8–11 остаются открытыми.
 
+### Срез: per-query Codex credentials и environment transport
+
+Подготовка native key commands выявила действительную runtime-зависимость:
+обычный Codex SDK query получал managed key через `createTempEnvOverride`, который
+менял process.env на всё время исполнения и даже удержания первого yielded output.
+Параллельные запросы могли видеть чужой ключ; восстановление полного environment
+могло также откатить несвязанные изменения. Этот helper больше не используется и
+удалён, а не оставлен как способ активации ключей для нового command service.
+
+`CodexProvider` принимает необязательный environment context и снимает его копию
+до асинхронной query preparation. Выбранный credential передаётся в SDK helper
+явным `CodexSdkExecutionContext`; helper больше не читает ключ из process.env.
+SDK получает собственный `env` и согласованные OPENAI_API_KEY/CODEX_API_KEY.
+Таким образом managed keys параллельных SDK queries не требуют process-wide writes.
+Существующий порядок выбора environment/managed credentials и CLI-native auth
+в этом подготовительном срезе не меняется.
+
+В общем `spawnProcess`/`spawnJSONLProcess` добавлен opt-in `inheritEnv: false`:
+при нём используется только переданный environment. По умолчанию старое merge
+поведение сохранено. Codex CLI execution и login-status subprocess используют
+явный context без скрытого позднего наследования глобального environment. Обычный
+SDK transport также получает полный снимок, сохраняя прежние HOME/PATH/config/base
+URL переменные; это не allow-list секретов и не sandbox. CLI discovery/auth-file
+helpers и default composition ещё не объявляются полностью application-isolated.
+
+Реальный SDK 0.98.0 дополнительно выявил late-abort проблему: после turn.failed
+`Thread.run()` может вернуть error до actual child close, а его cleanup уже удаляет
+child listeners. Последующий abort исходного сигнала вызывал unhandled AbortError.
+Теперь SDK получает отдельный controller, связанный с caller только пока run pending;
+forwarding снимается до публикации output/error. Pending cancellation сохранена,
+поздняя отмена закрытого consumer не направляется уже завершённому SDK run.
+Это не доказательство reap дерева процессов или bounded SDK cleanup на всех OS.
+
+Использован OpenAI Docs: [Codex SDK](https://developers.openai.com/codex/sdk).
+Форма `apiKey`/`env` и замена ambient inheritance дополнительно проверены по
+установленному SDK 0.98.0 и настоящим child processes. Отдельный offline contract
+держит одновременно два SDK/CLI query до получения обоих запросов локальным HTTP
+сервером: Authorization headers различаются согласно context; чужие bootstrap
+значения заменены только в child env; process.env не меняется. После fixture error
+оба caller controllers отменяются без unhandled errors. Внешнего upstream нет.
+
+Проверки среза:
+
+- Codex provider suite: 32 passed, включая 5 новых cases: concurrent managed keys,
+  удержание первого output/early return без env override, pending cancellation,
+  snapshot до async preparation и CLI context без ambient merge. Оба key names
+  дочернего CLI согласуются с credential, выбранным execution plan.
+- Actual pinned SDK/CLI contract: два параллельных запроса только к локальному
+  fixture upstream и late abort после error, без настоящих credentials/charges.
+- 4 real-child platform cases: collect/JSONL transports, default inheritance
+  сохранено, opt-out действительно исключает ambient PATH из child environment.
+- `npm run test:server:unit`: 3439 passed, 40 существующих skips.
+- `npm run test:server:contract`: 270 passed; первоначальная версия real-SDK
+  contract выявила 2 unhandled AbortError. После исправления повторный полный
+  прогон проходит без этих ошибок; они не подавляются test runner listener-ом.
+- `npm run test:packages`: 1368 passed; platform и server production builds,
+  typecheck, UI/server lint:errors и lockfile check успешны.
+- UI production и Electron main/preload build успешны с прежним chunk-size warning;
+  packaged Electron и Windows acceptance этим не объявляются выполненными.
+- Production lifecycle smoke после server build: SIGTERM/SIGINT exit 0.
+- Chromium `--trace=on`: 7 passed; app-scoped setup consent и реальные chat
+  send/stream/stop/reload workflows. E2E model ports явно offline.
+- Выбранные real SSH CLI/SDK/Direct chat/restart scenarios: 3 passed, 34 filtered.
+- Docker acceptance с `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest`:
+  11 passed, 4 opt-in skipped; cleanup owned containers/image/volume проверен.
+- Dependency inventory обновлён; route/dependency/API-consumer inventory checks
+  подтверждают актуальность. Форматирование и diff check выполнены.
+
+Это необходимая runtime-часть переноса ключей, но не его завершение: setup
+store/delete всё ещё legacy и меняют environment/.env. Native persistence,
+durable bootstrap deletion policy, общий resolver для Claude/Codex/status/verify,
+confirmation target и protocol gate key writes ещё обязательны. Этап 7 открыт.
+
 ## 7.7. Agent routes
 
 - [x] Start/query/follow-up/cancel.

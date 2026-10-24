@@ -195,3 +195,20 @@ OpenAI Docs помог разделить transports:
 [Responses SSE](https://developers.openai.com/api/docs/guides/streaming-responses).
 Поддержка protocol конкретной pinned version дополнительно проверяется offline
 контрактами. Общий provider tool policy и setup auth/CSRF остаются открытыми gates.
+
+## ADR-015: Credentials передаются runtime, не активируются через process.env
+
+Native key persistence не должна зависеть от временного глобального environment
+override. Обычный Codex query принимает credential/environment context, снимает
+снимок до async preparation и передаёт выбранный ключ SDK явно. Неиспользуемый
+createTempEnvOverride удалён. Общий subprocess transport поддерживает opt-in
+inheritEnv false; Codex execution передаёт собственный снимок без ambient merge.
+Поведение прочих subprocess callers по умолчанию сохранено.
+
+Pending SDK run получает дочерний abort signal; связь с caller снимается после
+settlement до выдачи output/error. Это предотвращает late-abort unhandled error,
+воспроизведённый с реальным SDK 0.98.0, но не объявляет доказанным OS-level reap.
+Context не является sandbox или secret allow-list. Default composition, CLI
+discovery, native store/delete, durable deletion/precedence policy и общий
+credential resolver ещё требуют переноса; этот срез их не подменяет cache-only
+реализацией и не закрывает этап 7. Внешние API/capability versions не меняются.

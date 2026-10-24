@@ -10,6 +10,8 @@ export interface SubprocessOptions {
   args: string[];
   cwd: string;
   env?: Record<string, string>;
+  /** Set false to use only env, without falling back to process.env. Defaults to true. */
+  inheritEnv?: boolean;
   abortController?: AbortController;
   timeout?: number; // Milliseconds of no output before timeout
   /**
@@ -42,7 +44,7 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
   const { command, args, cwd, env, abortController, timeout = 30000, stdinData } = options;
 
   const processEnv = {
-    ...process.env,
+    ...(options.inheritEnv === false ? {} : process.env),
     ...env,
   };
 
@@ -313,7 +315,7 @@ export async function spawnProcess(options: SubprocessOptions): Promise<Subproce
   const { command, args, cwd, env, abortController, stdinData } = options;
 
   const processEnv = {
-    ...process.env,
+    ...(options.inheritEnv === false ? {} : process.env),
     ...env,
   };
 

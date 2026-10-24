@@ -48,7 +48,6 @@ import {
   getCodexTodoToolName,
 } from './codex-tool-mapping.js';
 import { SettingsService } from '../services/settings-service.js';
-import { createTempEnvOverride } from '../lib/auth-utils.js';
 import { checkSandboxCompatibility } from '../lib/sdk-options.js';
 import { CODEX_MODELS } from './codex-models.js';
 
@@ -145,30 +144,21 @@ type CodexExecutionPlan = {
   openAiApiKey?: string | null;
 };
 
-const ALLOWED_ENV_VARS = [
-  OPENAI_API_KEY_ENV,
-  'PATH',
-  'HOME',
-  'SHELL',
-  'TERM',
-  'USER',
-  'LANG',
-  'LC_ALL',
-];
-
-function buildEnv(): Record<string, string> {
+function buildEnv(environment: Readonly<NodeJS.ProcessEnv>): Record<string, string> {
   const env: Record<string, string> = {};
-  for (const key of ALLOWED_ENV_VARS) {
-    const value = process.env[key];
-    if (value) {
+  for (const [key, value] of Object.entries(environment)) {
+    if (value !== undefined) {
       env[key] = value;
     }
   }
   return env;
 }
 
-async function resolveOpenAiApiKey(settingsService?: SettingsService): Promise<string | null> {
-  const envKey = process.env[OPENAI_API_KEY_ENV];
+async function resolveOpenAiApiKey(
+  settingsService: SettingsService | undefined,
+  environment: Readonly<NodeJS.ProcessEnv>
+): Promise<string | null> {
+  const envKey = environment[OPENAI_API_KEY_ENV];
   if (envKey) {
     return envKey;
   }
@@ -204,11 +194,12 @@ function isSdkEligibleWithApiKey(options: ExecuteOptions): boolean {
 
 async function resolveCodexExecutionPlan(
   options: ExecuteOptions,
-  settingsService?: SettingsService
+  settingsService: SettingsService | undefined,
+  environment: Readonly<NodeJS.ProcessEnv>
 ): Promise<CodexExecutionPlan> {
   const cliPath = await findCodexCliPath();
   const authIndicators = await getCodexAuthIndicators();
-  const openAiApiKey = await resolveOpenAiApiKey(settingsService);
+  const openAiApiKey = await resolveOpenAiApiKey(settingsService, environment);
   const hasApiKey = Boolean(openAiApiKey);
   const cliAvailable = Boolean(cliPath);
   // CLI OAuth login takes priority: if the user has logged in via `codex login`,
@@ -725,7 +716,10 @@ export class CodexProvider extends BaseProvider {
   protected featureCapabilities() {
     return { vision: true, tools: true, reasoning: true, mcp: true, remoteExecution: true };
   }
-  constructor(private readonly settingsService?: SettingsService) {
+  constructor(
+    private readonly settingsService?: SettingsService,
+    private readonly environment: Readonly<NodeJS.ProcessEnv> = process.env
+  ) {
     super();
   }
 
@@ -743,6 +737,7 @@ export class CodexProvider extends BaseProvider {
     }
 
     try {
+      const environment = { ...this.environment };
       const mcpServers = options.mcpServers ?? {};
       const hasMcpServers = Object.keys(mcpServers).length > 0;
       const codexSettings = await loadCodexCliSettings(options.codexSettings, this.settingsService);
@@ -780,16 +775,16 @@ export class CodexProvider extends BaseProvider {
         ? systemPromptParts.join(SYSTEM_PROMPT_SEPARATOR)
         : null;
 
-      const executionPlan = await resolveCodexExecutionPlan(options, this.settingsService);
+      const executionPlan = await resolveCodexExecutionPlan(
+        options,
+        this.settingsService,
+        environment
+      );
       if (executionPlan.mode === CODEX_EXECUTION_MODE_SDK) {
-        const cleanupEnv = executionPlan.openAiApiKey
-          ? createTempEnvOverride({ [OPENAI_API_KEY_ENV]: executionPlan.openAiApiKey })
-          : null;
-        try {
-          yield* executeCodexSdkQuery(options, combinedSystemPrompt);
-        } finally {
-          cleanupEnv?.();
-        }
+        yield* executeCodexSdkQuery(options, combinedSystemPrompt, {
+          apiKey: executionPlan.openAiApiKey!,
+          environment,
+        });
         return;
       }
 
@@ -889,9 +884,10 @@ export class CodexProvider extends BaseProvider {
         '-', // Read prompt from stdin to avoid shell escaping issues
       ];
 
-      const envOverrides = buildEnv();
-      if (executionPlan.openAiApiKey && !envOverrides[OPENAI_API_KEY_ENV]) {
+      const envOverrides = buildEnv(environment);
+      if (executionPlan.openAiApiKey) {
         envOverrides[OPENAI_API_KEY_ENV] = executionPlan.openAiApiKey;
+        envOverrides.CODEX_API_KEY = executionPlan.openAiApiKey;
       }
 
       // Calculate dynamic timeout based on reasoning effort.
@@ -915,6 +911,7 @@ export class CodexProvider extends BaseProvider {
         args,
         cwd: options.cwd,
         env: envOverrides,
+        inheritEnv: false,
         abortController: options.abortController,
         timeout,
         stdinData: promptText, // Pass prompt via stdin
@@ -1121,7 +1118,7 @@ export class CodexProvider extends BaseProvider {
 
   async detectInstallation(): Promise<InstallationStatus> {
     const cliPath = await findCodexCliPath();
-    const hasApiKey = Boolean(await resolveOpenAiApiKey(this.settingsService));
+    const hasApiKey = Boolean(await resolveOpenAiApiKey(this.settingsService, this.environment));
     const installed = !!cliPath;
 
     let version = '';
@@ -1162,7 +1159,7 @@ export class CodexProvider extends BaseProvider {
    */
   async checkAuth(): Promise<CodexAuthStatus> {
     const cliPath = await findCodexCliPath();
-    const hasApiKey = Boolean(await resolveOpenAiApiKey(this.settingsService));
+    const hasApiKey = Boolean(await resolveOpenAiApiKey(this.settingsService, this.environment));
     const authIndicators = await getCodexAuthIndicators();
 
     // Check for API key in environment
@@ -1184,9 +1181,10 @@ export class CodexProvider extends BaseProvider {
           args: ['login', 'status'],
           cwd: process.cwd(),
           env: {
-            ...process.env,
+            ...buildEnv(this.environment),
             TERM: 'dumb',
           },
+          inheritEnv: false,
         });
 
         // Check both stdout and stderr - Codex CLI outputs to stderr

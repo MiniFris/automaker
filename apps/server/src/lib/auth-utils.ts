@@ -92,28 +92,6 @@ export function createSecureAuthEnv(
 }
 
 /**
- * Creates a temporary environment override for the current process
- * WARNING: This should only be used in isolated contexts and immediately cleaned up
- */
-export function createTempEnvOverride(authEnv: SecureAuthEnv): () => void {
-  const originalEnv = { ...process.env };
-
-  // Apply the auth environment
-  Object.assign(process.env, authEnv);
-
-  // Return cleanup function
-  return () => {
-    // Restore original environment
-    Object.keys(process.env).forEach((key) => {
-      if (!(key in originalEnv)) {
-        delete process.env[key];
-      }
-    });
-    Object.assign(process.env, originalEnv);
-  };
-}
-
-/**
  * Spawns a process with secure environment isolation
  */
 export function spawnSecureAuth(
