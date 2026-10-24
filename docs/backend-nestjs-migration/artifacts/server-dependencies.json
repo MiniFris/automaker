@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 614,
-    "internalEdges": 1986,
+    "files": 615,
+    "internalEdges": 1994,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -24,13 +24,14 @@
     "modules -> legacy": 29,
     "modules -> lib": 24,
     "modules -> modules": 248,
-    "modules -> providers": 19,
+    "modules -> providers": 20,
     "modules -> routes": 62,
     "modules -> services": 111,
     "modules -> types": 2,
+    "providers -> core": 1,
     "providers -> lib": 5,
     "providers -> modules": 1,
-    "providers -> providers": 87,
+    "providers -> providers": 90,
     "providers -> services": 21,
     "root -> core": 15,
     "root -> legacy": 2,
@@ -48,7 +49,7 @@
     "services -> core": 8,
     "services -> lib": 77,
     "services -> modules": 9,
-    "services -> providers": 12,
+    "services -> providers": 15,
     "services -> routes": 2,
     "services -> services": 280,
     "services -> types": 2,
@@ -252,6 +253,7 @@
       "apps/server/src/providers/openai-compatible/agent-loop.ts",
       "apps/server/src/providers/openai-compatible/shell-tool.ts",
       "apps/server/src/providers/openai-compatible/transport.ts",
+      "apps/server/src/providers/provider-execution-scope.ts",
       "apps/server/src/providers/remote-sdk-worker.ts",
       "apps/server/src/routes/backlog-plan/generate-plan.ts",
       "apps/server/src/routes/github/routes/list-comments.ts",
@@ -2600,6 +2602,10 @@
     },
     {
       "source": "apps/server/src/modules/providers/provider-registry.service.ts",
+      "target": "apps/server/src/providers/provider-execution-scope.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/provider-registry.service.ts",
       "target": "apps/server/src/providers/types.ts"
     },
     {
@@ -3416,6 +3422,10 @@
     },
     {
       "source": "apps/server/src/providers/base-provider.ts",
+      "target": "apps/server/src/providers/provider-execution-scope.ts"
+    },
+    {
+      "source": "apps/server/src/providers/base-provider.ts",
       "target": "apps/server/src/providers/types.ts"
     },
     {
@@ -3521,6 +3531,10 @@
     {
       "source": "apps/server/src/providers/copilot-provider.ts",
       "target": "apps/server/src/providers/environment-execution.ts"
+    },
+    {
+      "source": "apps/server/src/providers/copilot-provider.ts",
+      "target": "apps/server/src/providers/provider-execution-scope.ts"
     },
     {
       "source": "apps/server/src/providers/copilot-provider.ts",
@@ -3824,6 +3838,14 @@
     },
     {
       "source": "apps/server/src/providers/provider-contract.ts",
+      "target": "apps/server/src/providers/types.ts"
+    },
+    {
+      "source": "apps/server/src/providers/provider-execution-scope.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/providers/provider-execution-scope.ts",
       "target": "apps/server/src/providers/types.ts"
     },
     {
@@ -6788,6 +6810,10 @@
     },
     {
       "source": "apps/server/src/services/agent-service.ts",
+      "target": "apps/server/src/providers/provider-execution-scope.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent-service.ts",
       "target": "apps/server/src/services/agent/agent-conversation-coordinator.ts"
     },
     {
@@ -6853,6 +6879,10 @@
     {
       "source": "apps/server/src/services/agent-service.ts",
       "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-conversation-coordinator.ts",
+      "target": "apps/server/src/providers/provider-execution-scope.ts"
     },
     {
       "source": "apps/server/src/services/agent/agent-conversation-coordinator.ts",
@@ -6981,6 +7011,10 @@
     {
       "source": "apps/server/src/services/agent/agent-prompt-queue.ts",
       "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-prompt-queue.ts",
+      "target": "apps/server/src/providers/provider-execution-scope.ts"
     },
     {
       "source": "apps/server/src/services/agent/agent-prompt-queue.ts",

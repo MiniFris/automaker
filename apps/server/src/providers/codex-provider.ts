@@ -730,7 +730,7 @@ export class CodexProvider extends BaseProvider {
     return 'codex';
   }
 
-  async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+  protected async *execute(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
     // Validate that model doesn't have a provider prefix (except codex- which should already be stripped)
     // AgentService should strip prefixes before passing to providers
     validateBareModelId(options.model, 'CodexProvider', 'codex');

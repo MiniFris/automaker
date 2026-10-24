@@ -43,6 +43,7 @@ export type ProviderTerminalReason =
   | 'failed';
 
 export interface ProviderAdapter {
+  executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage>;
   getName(): string;
   detectInstallation(): Promise<InstallationStatus>;
   getAvailableModels(): ModelDefinition[];

@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import type { BaseProvider } from '../../src/providers/base-provider.js';
+import { MockProvider } from '../helpers/mock-provider.js';
 import type { ExecuteOptions } from '../../src/providers/types.js';
 import { createEventEmitter } from '../../src/lib/events.js';
 import { ProviderRegistry } from '../../src/modules/providers/provider-registry.service.js';
@@ -39,8 +39,13 @@ describe('spec to features provider workflow', () => {
           message: { role: 'assistant', content: [{ type: 'text', text }] },
         };
       });
+      class WorkflowProvider extends MockProvider {
+        protected execute(options: ExecuteOptions) {
+          return execute(options);
+        }
+      }
       const providers = new ProviderRegistry(
-        [{ name: 'claude', create: () => ({ executeQuery: execute }) as unknown as BaseProvider }],
+        [{ name: 'claude', create: () => new WorkflowProvider('claude') }],
         { isDisconnected: () => false } as never
       );
       const workflow = new LegacyAppSpecWorkflowAdapter(
@@ -69,9 +74,11 @@ describe('spec to features provider workflow', () => {
         );
         expect(execute).toHaveBeenCalledTimes(cancel ? 1 : 2);
         for (const query of queries) {
-          expect(query.abortController).toBe(controller);
+          expect(query.abortController).not.toBe(controller);
+          expect(query.abortController).toBeInstanceOf(AbortController);
           expect(query.readOnly).toBe(true);
         }
+        expect(controller.signal.aborted).toBe(cancel);
         const features = await new FeatureLoader().getAll(project);
         if (cancel) {
           expect(features).toEqual([]);

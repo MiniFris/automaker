@@ -533,19 +533,19 @@ export class OpencodeProvider extends CliProvider {
    * session_id from the fresh stream events, which it persists to metadata —
    * replacing the stale sdkSessionId and preventing repeated failures.
    */
-  async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+  protected async *execute(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
     // Remote sessions never replay automatically, even on a session-not-found-looking error.
     if (
       options.executionEnvironmentBinding?.type === 'ssh' ||
       options.executionEnvironmentBinding?.type === 'docker'
     ) {
-      yield* super.executeQuery(options);
+      yield* super.execute(options);
       return;
     }
     // When no sdkSessionId is set, there is nothing to "retry without" — just
     // stream normally and clean error messages as they pass through.
     if (!options.sdkSessionId) {
-      for await (const msg of super.executeQuery(options)) {
+      for await (const msg of super.execute(options)) {
         // Clean error messages so consumers don't get ANSI or double "Error:" prefix
         if (msg.type === 'error' && msg.error && typeof msg.error === 'string') {
           msg.error = OpencodeProvider.cleanErrorMessage(msg.error);
@@ -568,7 +568,7 @@ export class OpencodeProvider extends CliProvider {
     let seenHealthyMessage = false;
 
     try {
-      for await (const msg of super.executeQuery(options)) {
+      for await (const msg of super.execute(options)) {
         if (msg.type === 'error') {
           const errorText = msg.error || '';
           if (OpencodeProvider.isSessionNotFoundError(errorText)) {
@@ -628,7 +628,7 @@ export class OpencodeProvider extends CliProvider {
       // If the retry also fails, it's a genuine error (not session-related)
       // and should be surfaced as-is rather than masked with a misleading
       // "session could not be created" message.
-      for await (const retryMsg of super.executeQuery(retryOptions)) {
+      for await (const retryMsg of super.execute(retryOptions)) {
         if (retryMsg.type === 'error' && retryMsg.error && typeof retryMsg.error === 'string') {
           retryMsg.error = OpencodeProvider.cleanErrorMessage(retryMsg.error);
         }

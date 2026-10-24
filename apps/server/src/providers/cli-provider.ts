@@ -549,7 +549,7 @@ export abstract class CliProvider extends BaseProvider {
    *
    * Subclasses can override for custom behavior.
    */
-  async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+  protected async *execute(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
     const runtime = remoteCliRuntime(options);
     if (!runtime) this.ensureCliDetected();
 

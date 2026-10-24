@@ -31,6 +31,7 @@ import type {
 } from './agent/agent-session.types.js';
 import { validateWorkingDirectory } from '../lib/sdk-options.js';
 import type { SettingsService } from './settings-service.js';
+import { ProviderCleanupError } from '../providers/provider-execution-scope.js';
 
 export class AgentService {
   private reportedErrors = new WeakSet<object>();
@@ -395,7 +396,7 @@ export class AgentService {
         message: normalized.message,
       };
     } catch (error) {
-      if (error instanceof AgentSessionStorageError) {
+      if (error instanceof AgentSessionStorageError || error instanceof ProviderCleanupError) {
         if (!userMessageStored) {
           session.messages = session.messages.filter((message) => message.id !== userMessage.id);
           if (run) {
@@ -412,7 +413,7 @@ export class AgentService {
         this.emitAgentEvent(sessionId, {
           type: 'error',
           error: error.message,
-          errorType: 'persistence',
+          errorType: error instanceof ProviderCleanupError ? 'execution_cleanup' : 'persistence',
         });
         this.reportedErrors.add(error);
         throw error;

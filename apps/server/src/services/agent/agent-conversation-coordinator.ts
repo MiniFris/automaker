@@ -5,6 +5,7 @@ import { AgentExecutionCoordinator } from './agent-execution-coordinator.js';
 import { AgentEventPublisher } from './agent-event-publisher.js';
 import { AgentSessionStorageError } from './agent-session-storage.error.js';
 import type { AgentMessageInput, Message } from './agent-session.types.js';
+import { ProviderCleanupError } from '../../providers/provider-execution-scope.js';
 
 export type AgentMessageExecution<T> = (
   input: AgentMessageInput,
@@ -36,7 +37,11 @@ export class AgentConversationCoordinator {
         this.executions.markSelected(id, controller);
         return await execute(input, controller);
       } catch (error) {
-        if (controller.signal.aborted && !(error instanceof AgentSessionStorageError))
+        if (
+          controller.signal.aborted &&
+          !(error instanceof AgentSessionStorageError) &&
+          !(error instanceof ProviderCleanupError)
+        )
           return { success: false as const, aborted: true as const };
         throw error;
       } finally {

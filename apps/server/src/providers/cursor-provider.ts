@@ -839,7 +839,7 @@ export class CursorProvider extends CliProvider {
    * - Session ID tracking from system init events
    * - Text block deduplication (Cursor sends duplicate chunks)
    */
-  async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+  protected async *execute(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
     const runtime = remoteCliRuntime(options);
     if (!runtime) this.ensureCliDetected();
 

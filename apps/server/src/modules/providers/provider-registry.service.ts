@@ -1,10 +1,11 @@
-import { Inject, Injectable, type OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, type OnModuleInit, type OnApplicationShutdown } from '@nestjs/common';
 import type { ModelProvider } from '@automaker/types';
 import { isDirectModel } from '@automaker/types';
 
 import type { BaseProvider } from '../../providers/base-provider.js';
 import type { InstallationStatus, ModelDefinition } from '../../providers/types.js';
 import { ProviderConnectionRepository } from './provider-connection.repository.js';
+import { ProviderExecutionScope } from '../../providers/provider-execution-scope.js';
 
 export interface ProviderRegistration {
   readonly name: string;
@@ -17,9 +18,10 @@ export interface ProviderRegistration {
 export const PROVIDER_REGISTRATIONS = Symbol('PROVIDER_REGISTRATIONS');
 
 @Injectable()
-export class ProviderRegistry implements OnModuleInit {
+export class ProviderRegistry implements OnModuleInit, OnApplicationShutdown {
   private readonly registrations: ReadonlyMap<string, ProviderRegistration>;
   private readonly aliases: ReadonlyMap<string, string>;
+  private readonly executions = new ProviderExecutionScope();
 
   constructor(
     @Inject(PROVIDER_REGISTRATIONS) registrations: readonly ProviderRegistration[],
@@ -89,11 +91,18 @@ export class ProviderRegistry implements OnModuleInit {
   byName(name: string): BaseProvider | null {
     const normalized = name.toLowerCase();
     const owner = this.aliases.get(normalized) ?? normalized;
-    return this.registrations.get(owner)?.create() ?? null;
+    const provider = this.registrations.get(owner)?.create();
+    if (!provider) return null;
+    provider.attachExecutionScope(this.executions);
+    return provider;
   }
 
   all(): BaseProvider[] {
-    return [...this.registrations.values()].map((registration) => registration.create());
+    return [...this.registrations.keys()].map((name) => this.byName(name)!);
+  }
+
+  onApplicationShutdown(): Promise<void> {
+    return this.executions.dispose();
   }
 
   allModels(): ModelDefinition[] {

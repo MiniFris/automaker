@@ -1021,7 +1021,9 @@ describe('opencode-provider.ts', () => {
       );
 
       const call = vi.mocked(spawnJSONLProcess).mock.calls[0][0];
-      expect(call.abortController).toBe(abortController);
+      expect(call.abortController).not.toBe(abortController);
+      expect(call.abortController?.signal.aborted).toBe(false);
+      expect(abortController.signal.aborted).toBe(false);
     });
   });
 

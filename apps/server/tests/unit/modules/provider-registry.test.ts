@@ -6,6 +6,7 @@ import { ProviderRegistry } from '../../../src/modules/providers/provider-regist
 const provider = (name: string, supportsVision = false) =>
   ({
     getName: () => name,
+    attachExecutionScope: vi.fn(),
     detectInstallation: vi.fn().mockResolvedValue({ installed: true }),
     getAvailableModels: () => [
       { id: `${name}-model`, modelString: `${name}-model`, name, supportsVision },

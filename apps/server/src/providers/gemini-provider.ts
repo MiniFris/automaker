@@ -542,7 +542,7 @@ export class GeminiProvider extends CliProvider {
   /**
    * Execute a prompt using Gemini CLI with streaming
    */
-  async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+  protected async *execute(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
     const runtime = remoteCliRuntime(options);
     if (!runtime) this.ensureCliDetected();
 

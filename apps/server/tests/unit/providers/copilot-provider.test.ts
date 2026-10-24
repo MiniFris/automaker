@@ -17,6 +17,7 @@ function createMockSession(sessionId = 'test-session') {
       }
     }),
     destroy: vi.fn().mockResolvedValue(undefined),
+    abort: vi.fn().mockResolvedValue(undefined),
     on: vi.fn().mockImplementation((handler: (event: any) => void) => {
       eventHandler = handler;
     }),
@@ -27,7 +28,7 @@ function createMockSession(sessionId = 'test-session') {
 vi.mock('@github/copilot-sdk', () => ({
   CopilotClient: vi.fn().mockImplementation(() => ({
     start: vi.fn().mockResolvedValue(undefined),
-    stop: vi.fn().mockResolvedValue(undefined),
+    stop: vi.fn().mockResolvedValue([]),
     createSession: createSessionMock,
     resumeSession: resumeSessionMock,
   })),
@@ -61,16 +62,114 @@ vi.mock('fs/promises', () => ({
 // Import execSync after mocking
 import { execSync } from 'child_process';
 import * as fs from 'fs';
+import { ProviderCleanupError } from '@/providers/provider-execution-scope.js';
 
 describe('copilot-provider.ts', () => {
   let provider: CopilotProvider;
+
+  function ownedClient(session: ReturnType<typeof createMockSession>) {
+    const client = {
+      start: vi.fn().mockResolvedValue(undefined),
+      stop: vi.fn().mockImplementation(async () => {
+        try {
+          await session.destroy();
+          return [];
+        } catch (error) {
+          return [error];
+        }
+      }),
+      createSession: vi.fn().mockResolvedValue(session),
+    };
+    vi.mocked(CopilotClient).mockImplementationOnce(function () {
+      return client as any;
+    });
+    return client;
+  }
+
+  it('early return destroys the SDK session and stops its client exactly once', async () => {
+    const session = createMockSession();
+    const client = ownedClient(session);
+    const stream = provider.executeQuery({ prompt: 'Fixture', cwd: '/fixture' });
+    await stream.next();
+    await stream.return(undefined);
+    await provider.dispose();
+    expect(session.destroy).toHaveBeenCalledTimes(1);
+    expect(client.stop).toHaveBeenCalledTimes(1);
+  });
+
+  it('wakes an idle event bridge on abort and waits for destroy before completing disposal', async () => {
+    const session = createMockSession();
+    let listener!: (event: any) => void;
+    const unsubscribe = vi.fn();
+    session.on.mockImplementation((handler) => {
+      listener = handler;
+      return unsubscribe;
+    });
+    session.send.mockImplementation(async () => {
+      listener({ type: 'assistant.message', data: { content: 'Partial' } });
+    });
+    let release!: () => void;
+    session.destroy.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          release = resolve;
+        })
+    );
+    const client = ownedClient(session);
+    const parent = new AbortController();
+    const stream = provider.executeQuery({
+      prompt: 'Fixture',
+      cwd: '/fixture',
+      abortController: parent,
+    });
+    await stream.next();
+    const next = stream.next().catch((error) => error);
+    parent.abort();
+    await vi.waitFor(() => expect(session.destroy).toHaveBeenCalledTimes(1));
+    let disposed = false;
+    const disposing = provider.dispose().then(() => {
+      disposed = true;
+    });
+    expect(client.stop).toHaveBeenCalledTimes(1);
+    expect(session.abort).toHaveBeenCalledTimes(1);
+    await Promise.resolve();
+    expect(disposed).toBe(false);
+    release();
+    expect((await next).name).toBe('AbortError');
+    await disposing;
+    expect(client.stop).toHaveBeenCalledTimes(1);
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['destroy', 'stop-throw', 'stop-errors'] as const)(
+    'fails closed for %s cleanup failure and still attempts client.stop',
+    async (failure) => {
+      const session = createMockSession();
+      const client = ownedClient(session);
+      if (failure === 'destroy')
+        session.destroy.mockRejectedValueOnce(new Error('private cleanup detail'));
+      if (failure === 'stop-throw')
+        client.stop.mockRejectedValueOnce(new Error('private cleanup detail'));
+      if (failure === 'stop-errors')
+        client.stop.mockResolvedValueOnce([new Error('private cleanup detail')]);
+      await expect(
+        collectAsyncGenerator(provider.executeQuery({ prompt: 'Fixture', cwd: '/fixture' }))
+      ).rejects.toBeInstanceOf(ProviderCleanupError);
+      expect(client.stop).toHaveBeenCalledTimes(1);
+      expect(session.destroy).toHaveBeenCalledTimes(failure === 'destroy' ? 1 : 0);
+      await expect(provider.dispose()).rejects.not.toThrow('private cleanup detail');
+      await expect(
+        provider.executeQuery({ prompt: 'No replacement', cwd: '/fixture' }).next()
+      ).rejects.toThrow('not accepting');
+    }
+  );
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(CopilotClient).mockImplementation(function () {
       return {
         start: vi.fn().mockResolvedValue(undefined),
-        stop: vi.fn().mockResolvedValue(undefined),
+        stop: vi.fn().mockResolvedValue([]),
         createSession: createSessionMock,
         resumeSession: resumeSessionMock,
       } as any;

@@ -15,6 +15,7 @@ import type {
   ProviderAdapter,
   ProviderCapabilities,
 } from './provider-contract.js';
+import { ProviderExecutionScope, managedProviderStream } from './provider-execution-scope.js';
 
 /**
  * Base provider class that all provider implementations must extend
@@ -22,6 +23,8 @@ import type {
 export abstract class BaseProvider implements ProviderAdapter {
   protected config: ProviderConfig;
   protected name: string;
+  private readonly executions = new ProviderExecutionScope();
+  private executionOwner?: ProviderExecutionScope;
 
   constructor(config: ProviderConfig = {}) {
     this.config = config;
@@ -38,7 +41,27 @@ export abstract class BaseProvider implements ProviderAdapter {
    * @param options Execution options
    * @returns AsyncGenerator yielding provider messages
    */
-  abstract executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage>;
+  protected abstract execute(options: ExecuteOptions): AsyncGenerator<ProviderMessage>;
+
+  executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+    return managedProviderStream(
+      options,
+      (query) => this.execute(query),
+      this.executions,
+      this.executionOwner,
+      this.cancellationMessages()
+    );
+  }
+
+  protected cancellationMessages(): readonly ProviderMessage[] | undefined {
+    return undefined;
+  }
+
+  attachExecutionScope(owner: ProviderExecutionScope): void {
+    if (this.executionOwner && this.executionOwner !== owner)
+      throw new Error('A provider instance cannot be shared between application execution scopes.');
+    this.executionOwner = owner;
+  }
 
   /**
    * Detect if the provider is installed and configured
@@ -100,7 +123,9 @@ export abstract class BaseProvider implements ProviderAdapter {
     controller.abort();
   }
 
-  async dispose(): Promise<void> {}
+  dispose(): Promise<void> {
+    return this.executions.dispose();
+  }
 
   /**
    * Validate the provider configuration

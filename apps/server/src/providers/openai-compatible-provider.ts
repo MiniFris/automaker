@@ -53,11 +53,17 @@ function outputValidator(options: ExecuteOptions): ValidateFunction | undefined 
  * Legacy settings retain the restricted workspace / pinned Docker-shell backend.
  */
 export class OpenAICompatibleProvider extends BaseProvider {
+  protected cancellationMessages(): readonly ProviderMessage[] {
+    return [
+      { type: 'error', error: 'Request cancelled.' },
+      { type: 'result', subtype: 'error_during_execution', error: 'Request cancelled.' },
+    ];
+  }
   getName(): string {
     return 'openai-compatible';
   }
 
-  async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+  protected async *execute(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
     try {
       if (options.abortController?.signal.aborted)
         throw new OpenAICompatibleError('Request cancelled.');

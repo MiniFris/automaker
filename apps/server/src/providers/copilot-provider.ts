@@ -13,6 +13,7 @@
 import { execSync } from 'child_process';
 import { remoteCliRuntime } from './environment-execution.js';
 import { executeRemoteSdk } from './remote-sdk.js';
+import { ProviderCleanupError } from './provider-execution-scope.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
@@ -526,7 +527,7 @@ export class CopilotProvider extends CliProvider {
    * Creates a new CopilotClient for each execution with the correct working directory.
    * Streams tool execution events in real-time for UI display.
    */
-  async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+  protected async *execute(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
     if (remoteCliRuntime(options)) {
       yield* executeRemoteSdk('copilot', options, (event) => this.normalizeEvent(event));
       return;
@@ -596,11 +597,50 @@ export class CopilotProvider extends CliProvider {
       });
     };
 
-    // Declare session outside try so it's accessible in the catch block for cleanup.
     let session: CopilotSession | undefined;
+    let unsubscribe: (() => void) | undefined;
+    let closing = false;
+    const signal = options.abortController?.signal;
+    const abort = () => {
+      const finished = sessionComplete;
+      sessionComplete = true;
+      resolveWaiting?.();
+      resolveWaiting = null;
+      if (session && !finished) {
+        // Wake the event bridge immediately. Final destroy/stop, not this best-effort
+        // RPC, confirms that owned SDK resources have finished.
+        try {
+          void session.abort().catch(() => undefined);
+        } catch {
+          /* stop still runs */
+        }
+      }
+    };
+    const cleanup = async () => {
+      closing = true;
+      let failed = false;
+      try {
+        unsubscribe?.();
+      } catch {
+        failed = true;
+      }
+      try {
+        // The SDK stop contract owns destruction of every created/resumed session.
+        // Calling session.destroy() first would leave it in the client's map and
+        // make stop destroy the same session a second time.
+        const errors = await client.stop();
+        if (errors.length) failed = true;
+      } catch {
+        failed = true;
+      }
+      if (failed) throw new ProviderCleanupError();
+    };
+    signal?.addEventListener('abort', abort, { once: true });
 
     try {
+      signal?.throwIfAborted();
       await client.start();
+      signal?.throwIfAborted();
       logger.debug(`CopilotClient started with cwd: ${workingDirectory}`);
 
       const sessionOptions: CopilotSessionOptions = {
@@ -642,7 +682,9 @@ export class CopilotProvider extends CliProvider {
       logger.debug(`Session ${sessionResumed ? 'resumed' : 'created'}: ${sessionId}`);
 
       // Set up event handler to push events to queue
-      activeSession.on((event: SdkEvent) => {
+      signal?.throwIfAborted();
+      unsubscribe = activeSession.on((event: SdkEvent) => {
+        if (closing) return;
         logger.debug(`SDK event: ${event.type}`);
 
         if (event.type === 'session.idle') {
@@ -665,16 +707,16 @@ export class CopilotProvider extends CliProvider {
       // Process events as they arrive
       while (!sessionComplete || eventQueue.length > 0) {
         await waitForEvent();
+        signal?.throwIfAborted();
 
         // Check for errors first (before processing events to avoid race condition)
         if (sessionError) {
-          await activeSession.destroy();
-          await client.stop();
           throw sessionError;
         }
 
         // Process all queued events
         while (eventQueue.length > 0) {
+          signal?.throwIfAborted();
           const event = eventQueue.shift()!;
           const normalized = this.normalizeEvent(event);
           if (normalized) {
@@ -686,28 +728,7 @@ export class CopilotProvider extends CliProvider {
           }
         }
       }
-
-      // Cleanup
-      await activeSession.destroy();
-      await client.stop();
-      logger.debug('CopilotClient stopped successfully');
     } catch (error) {
-      // Ensure session is destroyed and client is stopped on error to prevent leaks.
-      // The session may have been created/resumed before the error occurred.
-      if (session) {
-        try {
-          await session.destroy();
-        } catch (sessionCleanupError) {
-          logger.debug(`Failed to destroy session during cleanup: ${sessionCleanupError}`);
-        }
-      }
-      try {
-        await client.stop();
-      } catch (cleanupError) {
-        // Log but don't throw cleanup errors - the original error is more important
-        logger.debug(`Failed to stop client during cleanup: ${cleanupError}`);
-      }
-
       if (isAbortError(error)) {
         logger.debug('Query aborted');
         return;
@@ -725,6 +746,9 @@ export class CopilotProvider extends CliProvider {
         );
       }
       throw error;
+    } finally {
+      signal?.removeEventListener('abort', abort);
+      await cleanup();
     }
   }
 

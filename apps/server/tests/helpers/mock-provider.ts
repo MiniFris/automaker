@@ -27,7 +27,7 @@ export class MockProvider extends BaseProvider {
     return this.providerName ?? 'mock';
   }
 
-  async *executeQuery(_options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+  protected async *execute(_options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
     const hold = this.holdPrompt !== undefined && _options.prompt === this.holdPrompt;
     const signal = _options.abortController?.signal;
     let release!: () => void;

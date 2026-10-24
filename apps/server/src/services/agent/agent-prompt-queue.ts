@@ -12,6 +12,7 @@ import { AgentEventPublisher } from './agent-event-publisher.js';
 import type { QueuedPrompt } from './agent-session.types.js';
 import { AgentQueueDeliveryStore, type AgentQueueDelivery } from './agent-queue-delivery-store.js';
 import { AgentSessionStorageError } from './agent-session-storage.error.js';
+import { ProviderCleanupError } from '../../providers/provider-execution-scope.js';
 
 export type AgentQueuedInput = Pick<
   QueuedPrompt,
@@ -152,7 +153,11 @@ export class AgentPromptQueue {
         (error instanceof ConflictDomainError || error instanceof UnavailableDomainError)
       )
         return;
-      if (delivery && !(error instanceof AgentSessionStorageError)) {
+      if (
+        delivery &&
+        !(error instanceof AgentSessionStorageError) &&
+        !(error instanceof ProviderCleanupError)
+      ) {
         try {
           await this.deliveries.finish(delivery);
         } catch (settlementError) {

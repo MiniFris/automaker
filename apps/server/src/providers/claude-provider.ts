@@ -192,7 +192,7 @@ export class ClaudeProvider extends BaseProvider {
   /**
    * Execute a query using Claude Agent SDK
    */
-  async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+  protected async *execute(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
     // Validate that model doesn't have a provider prefix
     // AgentService should strip prefixes before passing to providers
     // Claude doesn't use a provider prefix, so we don't need to specify an expected provider

@@ -32,13 +32,85 @@ AgentsModule
 
 ## 7.1. Provider interface
 
-- [ ] Зафиксировать общий interface: installation/auth status, models, capabilities,
+- [x] Зафиксировать общий interface: installation/auth status, models, capabilities,
       start, stream, follow-up, cancel и dispose.
 - [ ] Разделить provider capability и model capability.
 - [ ] Явно описать vision, tools, thinking/reasoning, MCP и remote execution.
 - [ ] Не считать неизвестную capability автоматически доступной.
 - [ ] Стандартизировать provider events до передачи в application event bus.
 - [ ] Нормализовать cancellation и terminal reasons.
+
+### Срез: managed provider execution scopes
+
+`ProviderAdapter` явно включает `executeQuery`. У всех семи production adapters
+public `executeQuery/start/followUp` проходят через общий `BaseProvider` template,
+а SDK/CLI implementation вынесена в protected `execute`. OpenCode retries вызывают
+protected CLI implementation, не создавая вложенные managed leases. Catalog,
+aliases и fresh-instance factory semantics registry сохранены.
+
+Каждый adapter владеет собственным `ProviderExecutionScope`; Nest `ProviderRegistry`
+передаёт общий application owner всем выдаваемым adapters. Registry хранит только
+живые/unconfirmed query leases, а не неограниченный список созданных idle instances.
+Один provider instance нельзя передать двум application scopes. Новая registry
+не получает controllers или active state другой Nest application.
+
+Запрос получает дочерний AbortController с односторонним forwarding родительской
+отмены. `return/throw` сначала abort-ят дочерний controller, затем закрывают iterator:
+иначе `return` мог ждать бесконечно за pending `next`. Родительский controller не
+отменяется при раннем закрытии stream, что сохраняет spec→features workflow.
+Abort reasons не передаются в SDK. Direct provider сохраняет прежние cancellation
+error/result packets; поздний content после отмены не публикуется.
+
+Lease снимается после iterator finalization. `dispose` закрывает admission,
+abort-ит все owned queries и ждёт cleanup с пятисекундным deadline. Повторный
+dispose идемпотентен. Timeout не объявляется успехом, unconfirmed lease не
+освобождается для замены; cleanup exception выдаёт безопасный
+`ProviderCleanupError` без сырых SDK details. Registry завершает эти leases через
+`OnApplicationShutdown`, после существующей before-shutdown последовательности.
+Сам `return` ждёт iterator cleanup; bounded cancellation chat jobs по-прежнему
+обеспечивает conversation coordinator, сохраняя lease при timeout.
+
+`AgentService` не пишет terminal execution intent при `ProviderCleanupError`,
+conversation cancellation не скрывает эту ошибку, queue не подтверждает consumption.
+Boundary test проверяет настоящий queued run: после cleanup failure journal остаётся
+running/claimed, recovery показывает paused/unknown, а replacement query не вызывает
+provider. Обычная API/model error с подтверждённым iterator closure не блокирует
+следующий query.
+
+Copilot local adapter дополнительно исправлен по контракту установленного SDK:
+abort будит callback/event bridge, event subscription снимается, cleanup выполняется
+в `finally`, включая ранний return. `client.stop()` владеет уничтожением sessions;
+отдельный предварительный `session.destroy()` не дублирует его работу. Non-empty
+массив ошибок resolved `stop()` больше не считается успешным cleanup. Fake SDK
+проверяет early return, отложенный destroy/stop, unsubscribe и три failure paths.
+
+Проверки среза:
+
+- 10 execution-scope tests и 2 AgentService/queue uncertainty boundary tests,
+  включая совпадающую по времени отмену родительского run.
+- 7 production adapters проверены на managed public entrypoint и отказ start/
+  follow-up после dispose без SDK/CLI execution.
+- Copilot suite: 49 passed, включая 5 новых lifecycle regressions.
+- `npm run test:server:unit`: 3150 passed, 40 skipped.
+- `npm run test:server:contract`: 258 passed. Новый native Nest contract доказывает,
+  что shutdown ждёт delayed cleanup registry-owned stream вне AgentService.
+- Spec→features contract использует настоящий managed BaseProvider и сохраняет
+  cancellation state родительского workflow между фазами.
+- `npm run test:packages`: 1194 passed; UI typecheck и lockfile check успешны.
+- Server production build/lint, formatting, diff и три inventory checks успешны.
+- Итоговый последовательный build → lint → lifecycle smoke: SIGTERM/SIGINT exit 0.
+  Один ранний параллельный smoke завершился до readiness во время clean-build;
+  последовательный повтор прошёл без изменения startup/shutdown deadlines.
+- Выбранные SSH CLI/SDK/Direct chat/restart: 3 passed, 34 отфильтрованы.
+- Docker acceptance: 11 passed, 4 opt-in skipped; cleanup owned resources успешен.
+- Chromium send/stream/reload и held-chat Running Agents: 2 passed.
+
+Граница: подтверждено завершение iterator/SDK cleanup API, не универсальная
+гарантия OS-level termination всех SDK subprocesses. Полная capability matrix,
+terminal reason normalization, transport-specific cancellation/process-exit
+contracts для каждого SDK/CLI и общий shutdown deadline приложения ещё требуют
+проверок. В частности, successful SDK stop API сам по себе не доказывает exit
+каждого внешнего процесса. Этап 7 и вся миграция остаются незавершёнными.
 
 ## 7.2. ProviderRegistry
 

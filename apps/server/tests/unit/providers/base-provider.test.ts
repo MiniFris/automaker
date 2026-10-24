@@ -15,7 +15,7 @@ class TestProvider extends BaseProvider {
     return 'test-provider';
   }
 
-  async *executeQuery(_options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+  protected async *execute(_options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
     yield { type: 'text', text: 'test response' };
   }
 
