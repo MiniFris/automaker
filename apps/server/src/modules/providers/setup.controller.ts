@@ -27,6 +27,7 @@ import { ProviderModelCatalogService } from './provider-model-catalog.service.js
 import { HostSetupStatusService } from './host-setup-status.service.js';
 import { ProviderConnectionCommandService } from './provider-connection-command.service.js';
 import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
+import { ProviderInstallGuidanceService } from './provider-install-guidance.service.js';
 
 @Public()
 @Controller('setup')
@@ -37,7 +38,9 @@ export class SetupController {
     @Inject(ProviderModelCatalogService) private readonly catalogs: ProviderModelCatalogService,
     @Inject(HostSetupStatusService) private readonly hostStatus: HostSetupStatusService,
     @Inject(ProviderConnectionCommandService)
-    private readonly connections: ProviderConnectionCommandService
+    private readonly connections: ProviderConnectionCommandService,
+    @Inject(ProviderInstallGuidanceService)
+    private readonly installation: ProviderInstallGuidanceService
   ) {}
 
   private run(name: SetupHandlerName, request: Request, response: Response) {
@@ -50,8 +53,8 @@ export class SetupController {
   @Get('claude-status') claudeStatus() {
     return this.hostStatus.claude();
   }
-  @Post('install-claude') installClaude(@Req() q: Request, @Res() s: Response) {
-    return this.run('installClaude', q, s);
+  @Post('install-claude') @HttpCode(200) installClaude() {
+    return this.installation.instructions('claude');
   }
   @Post('auth-claude') @HttpCode(200) authClaude(
     @Body(new ZodValidationPipe(ProviderReconnectRequestSchema)) body: ProviderReconnectRequest
@@ -106,8 +109,8 @@ export class SetupController {
   @Get('codex-status') codexStatus() {
     return this.statuses.installationStatus('codex');
   }
-  @Post('install-codex') installCodex(@Req() q: Request, @Res() s: Response) {
-    return this.run('installCodex', q, s);
+  @Post('install-codex') @HttpCode(200) installCodex() {
+    return this.installation.instructions('codex');
   }
   @Post('auth-codex') @HttpCode(200) authCodex(
     @Body(new ZodValidationPipe(ProviderReconnectRequestSchema)) body: ProviderReconnectRequest

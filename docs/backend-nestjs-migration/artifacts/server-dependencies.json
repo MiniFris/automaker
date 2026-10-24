@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 596,
-    "internalEdges": 1966,
+    "files": 595,
+    "internalEdges": 1965,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -23,9 +23,9 @@
     "modules -> core": 93,
     "modules -> legacy": 29,
     "modules -> lib": 24,
-    "modules -> modules": 264,
+    "modules -> modules": 267,
     "modules -> providers": 24,
-    "modules -> routes": 39,
+    "modules -> routes": 37,
     "modules -> services": 111,
     "modules -> types": 2,
     "providers -> core": 1,
@@ -43,7 +43,7 @@
     "routes -> middleware": 8,
     "routes -> modules": 13,
     "routes -> providers": 13,
-    "routes -> routes": 350,
+    "routes -> routes": 348,
     "routes -> services": 193,
     "routes -> types": 3,
     "services -> core": 8,
@@ -288,7 +288,7 @@
   },
   "externalImports": {
     "@anthropic-ai/claude-agent-sdk": 3,
-    "@automaker/contracts": 16,
+    "@automaker/contracts": 17,
     "@automaker/dependency-resolver": 1,
     "@automaker/git-utils": 12,
     "@automaker/model-resolver": 20,
@@ -301,7 +301,7 @@
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 154,
+    "@nestjs/common": 155,
     "@nestjs/core": 7,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
@@ -313,7 +313,7 @@
     "crypto": 4,
     "dotenv": 1,
     "events": 1,
-    "express": 227,
+    "express": 225,
     "fs": 11,
     "fs/promises": 13,
     "net": 1,
@@ -2575,6 +2575,10 @@
       "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
+      "source": "apps/server/src/modules/providers/provider-install-guidance.service.ts",
+      "target": "apps/server/src/modules/providers/provider-connection-command.service.ts"
+    },
+    {
       "source": "apps/server/src/modules/providers/provider-model-catalog.service.ts",
       "target": "apps/server/src/modules/providers/provider-registry.service.ts"
     },
@@ -2732,6 +2736,10 @@
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/modules/providers/provider-install-guidance.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
       "target": "apps/server/src/modules/providers/provider-model-catalog.service.ts"
     },
     {
@@ -2784,14 +2792,6 @@
     },
     {
       "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/routes/setup/routes/install-claude.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/routes/setup/routes/install-codex.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
       "target": "apps/server/src/routes/setup/routes/store-api-key.ts"
     },
     {
@@ -2821,6 +2821,10 @@
     {
       "source": "apps/server/src/modules/providers/setup.controller.ts",
       "target": "apps/server/src/modules/providers/provider-connection-command.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "target": "apps/server/src/modules/providers/provider-install-guidance.service.ts"
     },
     {
       "source": "apps/server/src/modules/providers/setup.controller.ts",
@@ -5757,14 +5761,6 @@
     {
       "source": "apps/server/src/routes/setup/routes/delete-api-key.ts",
       "target": "apps/server/src/modules/providers/setup-credential-cache.service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/install-claude.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/install-codex.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
     },
     {
       "source": "apps/server/src/routes/setup/routes/store-api-key.ts",

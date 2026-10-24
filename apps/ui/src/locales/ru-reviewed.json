@@ -412,5 +412,15 @@
   "Reconnect provider?": "Подключить провайдера?",
   "Reconnect": "Подключить",
   "This reconnects the provider to this Automaker application only. It does not run CLI login or verify credentials.": "Провайдер будет подключён только к этому экземпляру Automaker. Вход через CLI и проверка учётных данных не выполняются.",
-  "Reconnect to Automaker to use existing CLI credentials. CLI login is performed separately.": "Подключите провайдера к Automaker для использования имеющихся учётных данных CLI. Вход через CLI выполняется отдельно."
+  "Reconnect to Automaker to use existing CLI credentials. CLI login is performed separately.": "Подключите провайдера к Automaker для использования имеющихся учётных данных CLI. Вход через CLI выполняется отдельно.",
+  "Show installation instructions": "Показать инструкции по установке",
+  "Loading instructions...": "Загрузка инструкций...",
+  "No installer was run.": "Установщик не запускался.",
+  "Backend application: {value1}": "Приложение бэкенда: {value1}",
+  "Run the install command shown above on the backend host.": "Выполните указанную выше команду установки на хосте бэкенда.",
+  "Manual CLI installation required": "Требуется ручная установка CLI",
+  "Run the command on the backend host, then refresh CLI status.": "Выполните команду на хосте бэкенда, затем обновите статус CLI.",
+  "{value1} CLI installed and detected successfully": "CLI {value1} установлен и обнаружен",
+  "CLI installation could not be confirmed": "Не удалось подтвердить установку CLI",
+  "Refresh CLI status after completing the installation.": "Обновите статус CLI после завершения установки."
 }

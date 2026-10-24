@@ -75,7 +75,7 @@ function ClaudeContent() {
   const hasVerifiedRef = useRef(false);
 
   const installApi = useCallback(
-    () => getElectronAPI().setup?.installClaude() || Promise.reject(),
+    (signal?: AbortSignal) => getElectronAPI().setup?.installClaude(signal) || Promise.reject(),
     []
   );
   const getStoreState = useCallback(() => useSetupStore.getState().claudeCliStatus, []);
@@ -159,7 +159,7 @@ function ClaudeContent() {
 
   const onInstallSuccess = useCallback(() => {
     hasVerifiedRef.current = false;
-    checkStatus();
+    return checkStatus();
   }, [checkStatus]);
 
   const { isInstalling, installProgress, install } = useCliInstallation({
@@ -334,7 +334,9 @@ function ClaudeContent() {
                   </Button>
                 </div>
               </div>
-              {isInstalling && <TerminalOutput lines={installProgress.output} />}
+              {installProgress.output.length > 0 && (
+                <TerminalOutput lines={installProgress.output} />
+              )}
               <Button
                 onClick={install}
                 disabled={isInstalling}
@@ -343,12 +345,12 @@ function ClaudeContent() {
                 {isInstalling ? (
                   <>
                     <Spinner size="sm" variant="foreground" className="mr-2" />
-                    {translate('Installing...')}
+                    {translate('Loading instructions...')}
                   </>
                 ) : (
                   <>
                     <Download className="w-4 h-4 mr-2" />
-                    {translate('Auto Install')}
+                    {translate('Show installation instructions')}
                   </>
                 )}
               </Button>

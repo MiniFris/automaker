@@ -869,7 +869,10 @@ filesystem I/O и ошибки Nest hooks, также требует hardening �
         instance/provider/path target и native application-scoped command.
   - [x] Reconnect всех шести CLI providers: confirmed target, FIFO connection
         changes, read-only protocol gate и отдельное credential evidence.
-  - [ ] Install/key/config/verify mutations и единый setup target policy.
+  - [x] Read-only install guidance Claude/Codex: native service, явное отсутствие
+        установки, фактический application target и отсутствие ложного UI success.
+  - [ ] Key/config/verify mutations и единый setup target policy; настоящий host
+        installer, если потребуется, проектируется отдельно с confirmation.
 
 ### Срез: native Gemini/Copilot/Cursor setup status
 
@@ -1208,6 +1211,66 @@ guard, отдельный pending state и русская локализация
 account authentication, Windows/packaged Electron acceptance этим срезом не закрыты.
 Public setup policy остаётся прежней; confirmation/instance UUID не заменяют auth
 и CSRF hardening. Этап 7 и вся миграция остаются незавершёнными.
+
+### Срез: native manual installation guidance
+
+POST `/api/setup/install-claude` и `/api/setup/install-codex` перенесены из
+Express bridge в `ProviderInstallGuidanceService`. Старые handler-файлы удалены;
+они доступны в Git. Сохранены HTTP 200 и прежние значения `success/error/message`:
+Claude возвращает `success: false`, Codex — `success: true`. Ни одно из них не
+означает, что CLI установлен: обе реализации и раньше возвращали только инструкции.
+
+Shared `ProviderInstallGuidanceSchema` требует `requiresManualInstall: true`,
+`installationPerformed: false`, непустую команду и concrete application target.
+Сервис только читает identity из connection service: не запускает npm/CLI, не
+проверяет credentials, не меняет connection markers или environment. После закрытия
+admission новые запросы отклоняются. Target показывает экземпляр и working directory
+бэкенда, а не npm global prefix и не доказательство области установки.
+
+HTTP client проверяет schema и provider ответа и передаёт AbortSignal. Wizard
+показывает постоянные ручные инструкции и кнопку «Show installation instructions»
+вместо «Auto Install». Manual response, включая legacy Codex `success: true`, не
+вызывает installed-success toast и не меняет detected status. Для потенциального
+performed response успех требует одновременно явного `installationPerformed: true`
+и положительного detection после ожидаемого status refresh. Hook защищён от двойного
+запуска, поздних событий предыдущего запроса и update после unmount; подписки
+освобождаются при success/error/unmount, запрос отменяется при unmount. Добавлены
+русские строки. Remote SDK installer остаётся отдельным workflow без изменений.
+
+Версии API и connection protocol остаются 3: это read-only additive metadata, не
+новая mutation. Клиент отклоняет старый неоднозначный payload и не сообщает успех.
+Автоматическая установка, настоящий CLI login и проверка account auth этим срезом
+не реализуются. Key persistence, Cursor config/permissions и verify endpoints всё
+ещё требуют удаления legacy bridge и отдельной target/confirmation policy; passive
+status/usage, общий capability/tool policy и этапы 8–11 также остаются открытыми.
+
+Проверки среза:
+
+- Новый service test проверяет отсутствие записи в working directory и обращения
+  к runtime/secrets, а также запрет новых запросов после shutdown admission.
+- Native Nest HTTP contract проверяет обе команды, точные legacy success/error
+  semantics, application target и отсутствие вызова bridge/connection mutations.
+- 7 shared schema cases, 5 HTTP-client cases, 8 hook cases и card rendering case
+  проверяют metadata, cancellation, retry, cleanup, stale events и честный UI.
+- `npm run test:server:unit`: 3319 passed, 40 skipped.
+- `npm run test:server:contract`: 263 passed. Первый запуск нового теста выявил
+  отсутствие обязательного JSON Content-Type в fixture request; после исправления
+  полный набор повторён успешно, production JSON gate не ослаблен.
+- `npm run test:packages`: 1269 passed.
+- Contracts/server production build, UI typecheck/lint, server lint и lockfile:
+  успешно. Три generated inventories обновлены, их checks успешны.
+- UI production и Electron main/preload build успешны с прежним chunk warning;
+  это не packaged Electron acceptance.
+- Lifecycle smoke: SIGTERM/SIGINT exit 0. Formatting и `git diff --check` успешны.
+- Chromium wizard guidance и прежние chat/Running Agents/connection workflows:
+  4 passed. Новый сценарий получает инструкции от реального Nest endpoint; только
+  initial settings и missing-Claude status подменены в браузере. Начальный exact
+  text selector исправлен с учётом отображаемого `$`, затем повторён весь набор.
+- Выбранные SSH CLI/SDK/Direct chat/restart: 3 passed, 34 отфильтрованы.
+
+- Полный Docker fixture acceptance с
+  `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest`: 11 passed,
+  4 opt-in skipped. AfterAll успешно проверил очистку owned containers/image/volume.
 
 ## 7.7. Agent routes
 

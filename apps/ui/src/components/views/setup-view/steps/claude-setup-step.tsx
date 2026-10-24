@@ -78,7 +78,7 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
   );
 
   const installApi = useCallback(
-    () => getElectronAPI().setup?.installClaude() || Promise.reject(),
+    (signal?: AbortSignal) => getElectronAPI().setup?.installClaude(signal) || Promise.reject(),
     []
   );
 
@@ -93,7 +93,7 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
   });
 
   const onInstallSuccess = useCallback(() => {
-    checkStatus();
+    return checkStatus();
   }, [checkStatus]);
 
   const { isInstalling, installProgress, install } = useCliInstallation({
@@ -414,7 +414,9 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
                       </div>
                     </div>
 
-                    {isInstalling && <TerminalOutput lines={installProgress.output} />}
+                    {installProgress.output.length > 0 && (
+                      <TerminalOutput lines={installProgress.output} />
+                    )}
 
                     <Button
                       onClick={install}
@@ -425,12 +427,12 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
                       {isInstalling ? (
                         <>
                           <Spinner size="sm" variant="foreground" className="mr-2" />
-                          {translate('Installing...')}
+                          {translate('Loading instructions...')}
                         </>
                       ) : (
                         <>
                           <Download className="w-4 h-4 mr-2" />
-                          {translate('Auto Install')}
+                          {translate('Show installation instructions')}
                         </>
                       )}
                     </Button>

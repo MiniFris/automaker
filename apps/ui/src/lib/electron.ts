@@ -1602,7 +1602,7 @@ interface SetupAPI {
     };
     error?: string;
   }>;
-  installClaude: () => Promise<{
+  installClaude: (signal?: AbortSignal) => Promise<{
     success: boolean;
     message?: string;
     error?: string;
@@ -1708,7 +1708,7 @@ interface SetupAPI {
     };
     error?: string;
   }>;
-  installCodex?: () => Promise<{
+  installCodex?: (signal?: AbortSignal) => Promise<{
     success: boolean;
     message?: string;
     error?: string;

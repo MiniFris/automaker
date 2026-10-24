@@ -30,7 +30,7 @@ export function CodexSetupStep({ onNext, onBack, onSkip }: CodexSetupStepProps) 
   );
 
   const installApi = useCallback(
-    () => getElectronAPI().setup?.installCodex() || Promise.reject(),
+    (signal?: AbortSignal) => getElectronAPI().setup?.installCodex(signal) || Promise.reject(),
     []
   );
 

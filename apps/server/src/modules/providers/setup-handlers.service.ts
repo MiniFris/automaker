@@ -12,8 +12,6 @@ import {
   createSetCustomPermissionsHandler,
 } from '../../routes/setup/routes/cursor-config.js';
 import { createDeleteApiKeyHandler } from '../../routes/setup/routes/delete-api-key.js';
-import { createInstallClaudeHandler } from '../../routes/setup/routes/install-claude.js';
-import { createInstallCodexHandler } from '../../routes/setup/routes/install-codex.js';
 import { createStoreApiKeyHandler } from '../../routes/setup/routes/store-api-key.js';
 import { createVerifyClaudeAuthHandler } from '../../routes/setup/routes/verify-claude-auth.js';
 import { createVerifyCodexAuthHandler } from '../../routes/setup/routes/verify-codex-auth.js';
@@ -54,12 +52,10 @@ export class SetupHandlersService {
     keys: SetupCredentialCache
   ) {
     return {
-      installClaude: createInstallClaudeHandler(),
       storeApiKey: createStoreApiKeyHandler(keys),
       deleteApiKey: createDeleteApiKeyHandler(keys),
       verifyClaudeAuth: createVerifyClaudeAuthHandler(settings, keys),
       verifyCodexAuth: createVerifyCodexAuthHandler(settings, providers, keys),
-      installCodex: createInstallCodexHandler(),
       cursorConfig: createGetCursorConfigHandler(),
       setCursorDefaultModel: createSetCursorDefaultModelHandler(),
       setCursorModels: createSetCursorModelsHandler(),

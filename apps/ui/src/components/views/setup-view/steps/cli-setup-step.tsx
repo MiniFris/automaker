@@ -101,7 +101,7 @@ interface CliSetupConfig {
   buildApiKeyAuthStatus: (previous: CliSetupAuthStatus | null) => CliSetupAuthStatus;
   buildClearedAuthStatus: (previous: CliSetupAuthStatus | null) => CliSetupAuthStatus;
   statusApi: () => Promise<CliStatusApiResponse>;
-  installApi: () => Promise<InstallApiResponse>;
+  installApi: (signal?: AbortSignal) => Promise<InstallApiResponse>;
   verifyAuthApi: (
     method: 'cli' | 'api_key',
     apiKey?: string
@@ -149,7 +149,7 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
   const [isDeletingApiKey, setIsDeletingApiKey] = useState(false);
 
   const statusApi = useCallback(() => config.statusApi(), [config]);
-  const installApi = useCallback(() => config.installApi(), [config]);
+  const installApi = useCallback((signal?: AbortSignal) => config.installApi(signal), [config]);
 
   const { isChecking, checkStatus } = useCliStatus({
     cliType: config.cliType,
@@ -159,7 +159,7 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
   });
 
   const onInstallSuccess = useCallback(() => {
-    checkStatus();
+    return checkStatus();
   }, [checkStatus]);
 
   const { isInstalling, installProgress, install } = useCliInstallation({
@@ -441,7 +441,9 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
                       </div>
                     </div>
 
-                    {isInstalling && <TerminalOutput lines={installProgress.output} />}
+                    {installProgress.output.length > 0 && (
+                      <TerminalOutput lines={installProgress.output} />
+                    )}
 
                     <Button
                       onClick={install}
@@ -452,12 +454,12 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
                       {isInstalling ? (
                         <>
                           <Spinner size="sm" variant="foreground" className="mr-2" />
-                          {translate('Installing...')}
+                          {translate('Loading instructions...')}
                         </>
                       ) : (
                         <>
                           <Download className="w-4 h-4 mr-2" />
-                          {translate('Auto Install')}
+                          {translate('Show installation instructions')}
                         </>
                       )}
                     </Button>

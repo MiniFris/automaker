@@ -6,6 +6,7 @@
  */
 
 import { createLogger } from '@automaker/utils/logger';
+import { ProviderInstallGuidanceSchema, type ProviderInstallGuidance } from '@automaker/contracts';
 import {
   CliConnectionProviderSchema,
   ProviderConnectionTargetResponseSchema,
@@ -1062,6 +1063,16 @@ export class HttpApiClient implements ElectronAPI {
     return headers;
   }
 
+  private parseInstallGuidance(
+    provider: 'claude' | 'codex',
+    value: unknown
+  ): ProviderInstallGuidance {
+    const guidance = ProviderInstallGuidanceSchema.parse(value);
+    if (guidance.target.provider !== provider)
+      throw new Error('CLI installation guidance target does not match provider.');
+    return guidance;
+  }
+
   private async disconnectSetupProvider(
     provider: CliConnectionProvider,
     input: ProviderDisconnectRequest
@@ -1641,11 +1652,11 @@ export class HttpApiClient implements ElectronAPI {
       error?: string;
     }> => this.get('/api/setup/claude-status'),
 
-    installClaude: (): Promise<{
-      success: boolean;
-      message?: string;
-      error?: string;
-    }> => this.post('/api/setup/install-claude'),
+    installClaude: async (signal?: AbortSignal): Promise<ProviderInstallGuidance> =>
+      this.parseInstallGuidance(
+        'claude',
+        await this.post('/api/setup/install-claude', undefined, signal)
+      ),
 
     authClaude: (
       request: ProviderReconnectRequest
@@ -1907,11 +1918,11 @@ export class HttpApiClient implements ElectronAPI {
       error?: string;
     }> => this.get('/api/setup/codex-status'),
 
-    installCodex: (): Promise<{
-      success: boolean;
-      message?: string;
-      error?: string;
-    }> => this.post('/api/setup/install-codex'),
+    installCodex: async (signal?: AbortSignal): Promise<ProviderInstallGuidance> =>
+      this.parseInstallGuidance(
+        'codex',
+        await this.post('/api/setup/install-codex', undefined, signal)
+      ),
 
     authCodex: (
       request: ProviderReconnectRequest
