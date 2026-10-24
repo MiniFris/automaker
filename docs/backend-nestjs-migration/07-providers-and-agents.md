@@ -153,7 +153,7 @@ UI typecheck, все три inventory checks и production SIGTERM/SIGINT smoke.
 - [x] Отделить provider selection.
 - [x] Отделить execution environment preparation.
 - [x] Отделить stream normalization/event publication.
-- [ ] Отделить follow-up/cancel.
+- [x] Отделить follow-up/cancel.
 - [ ] Отделить completion persistence/recovery.
 - [ ] Сохранить session identifiers и UI event order.
 
@@ -256,8 +256,7 @@ Checkpoint среза:
 - Chromium send/stream/reload smoke: 1 passed.
 - `npm run test:packages`: 1181 passed; `npm run lint:lockfile`: успешно.
 
-Это не завершение этапа 7. Follow-up/cancel decomposition,
-durable completion/recovery и полный provider capability/lifecycle contract ещё
+Это не завершение этапа 7. Durable completion/recovery и полный provider capability/lifecycle contract ещё
 не закрыты; этапы 8–11 также не объявляются завершёнными по этому checkpoint.
 
 ### Срез: stream normalization и EventBus publication
@@ -306,6 +305,53 @@ iterator cleanup перед completion и cancellation во время metadata 
 - Docker acceptance с локальным base image `automaker-nest-stage2-smoke:latest`:
   11 passed, 4 opt-in skipped, включая real chat/restart, CLI/SDK и cleanup
   принадлежащих fixture контейнеров/образа/тома.
+- Chromium send/stream/reload smoke: 1 passed.
+- `npm run test:packages`: 1181 passed; `npm run lint:lockfile`: успешно.
+
+### Срез: session loading, follow-up queue и cancellation
+
+`AgentSessionLoader` отдельно восстанавливает сообщения, metadata, SDK resume ID
+и очередь через application-owned registry. Missing storage и storage failure
+не смешиваются. Fallback working directory приходит из `RuntimePathsService`;
+`AgentService` больше не читает `process.cwd()` даже при создании новой сессии.
+
+`AgentConversationCoordinator` владеет admission callback, отменой/cleanup,
+stop/clear и shutdown interruption. Lease остаётся у предыдущего run до завершения
+его callback/iterator cleanup; сохранённый SDK ID не сбрасывается обычным stop.
+Interruption по-прежнему записывается перед abort, а ошибка записи не отменяет
+обязательный abort/drain. `AgentService` сохраняет публичные compatibility методы.
+
+`AgentPromptQueue` владеет сериализацией add/remove/clear, pinning model/provider,
+durable queue writes, publication и выбором следующего follow-up. Execution lease
+резервируется до dequeue. После async hydration повторно проверяется admission:
+если начался shutdown или session mutation, новая queue mutation не записывается.
+Публичные queue/control методы сохраняют rejected-Promise semantics; только send
+admission conflict остаётся синхронным, как требует native HTTP 409 contract.
+
+Все три компонента зарегистрированы отдельными Nest factory providers. Two-app
+contract проверяет независимые экземпляры; тестовая композиция явно передаёт тот
+же event publisher, repository, registry и execution coordinator каждому owner.
+17 новых component tests дополняют existing native/service lifecycle regressions:
+coalesced hydration, restart/SDK identity, injected directory, failed read/write,
+concurrent admission, delayed selection/cleanup, clear без потери queue, pinning,
+queue serialization, dequeue failure и shutdown во время hydration.
+
+Этот срез не закрывает crash recovery: между durable dequeue и записью первого
+user message ещё нужен execution/handoff journal. Автоматический replay при
+неизвестном результате не добавлен. Также остаются completion persistence/recovery,
+полный adapter dispose/terminal contract и hard shutdown deadline этапа 10.
+
+Checkpoint среза:
+
+- `npm run test:server:unit`: 3074 passed, 40 skipped, включая 17 новых component tests.
+- `npm run test:server:contract`: 243 passed; native stop/lease и три
+  chat/restart варианта сохраняют IDs, event order и history.
+- Server production build/lint, UI typecheck, три inventory checks и production
+  SIGTERM/SIGINT lifecycle smoke: успешно.
+- Выбранные реальные SSH Direct/CLI/SDK chat/restart/default-change сценарии:
+  3 passed, 34 отфильтрованы.
+- Docker acceptance с локальным base image `automaker-nest-stage2-smoke:latest`:
+  11 passed, 4 opt-in skipped, включая real chat/restart и cleanup owned resources.
 - Chromium send/stream/reload smoke: 1 passed.
 - `npm run test:packages`: 1181 passed; `npm run lint:lockfile`: успешно.
 
@@ -429,8 +475,8 @@ chunk, cancel→новый run, clear/delete, обе model mutation paths, timeo
 
 Остаются durable execution/queue recovery journal, полный provider dispose/terminal
 contract и удаление queue/backups вместе с session.
-Prompt/context, environment preparation, provider selection и stream normalization/
-publication уже выделены последующими срезами, описанными выше.
+Prompt/context, environment preparation, provider selection, stream normalization/
+publication и follow-up/cancel уже выделены последующими срезами, описанными выше.
 Общий deadline всей shutdown-последовательности, включая зависший
 filesystem I/O и ошибки Nest hooks, также требует hardening этапа 10. Этап 7 не
 отмечается завершённым по одному успешному lease checkpoint.

@@ -553,8 +553,10 @@ describe.skipIf(process.platform !== 'linux')(
         });
         try {
           const service = new AgentService(
-            ...createTestAgentState(settings.getDataDirectory()),
-            createTestAgentEvents(createEventEmitter()),
+            ...createTestAgentState(
+              settings.getDataDirectory(),
+              createTestAgentEvents(createEventEmitter())
+            ),
             settings,
             ...createTestAgentProviders(createTestProviderRegistry(settings))
           );
@@ -594,8 +596,10 @@ describe.skipIf(process.platform !== 'linux')(
             executionEnvironment: { default: { mode: 'local' }, profiles: [] },
           });
           const restarted = new AgentService(
-            ...createTestAgentState(settings.getDataDirectory()),
-            createTestAgentEvents(createEventEmitter()),
+            ...createTestAgentState(
+              settings.getDataDirectory(),
+              createTestAgentEvents(createEventEmitter())
+            ),
             settings,
             ...createTestAgentProviders(createTestProviderRegistry(settings))
           );

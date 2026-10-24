@@ -61,8 +61,7 @@ describe('agent-service.ts', () => {
       Object.assign(new Error('Missing fixture file'), { code: 'ENOENT' })
     );
     service = new AgentService(
-      ...createTestAgentState('/test/data'),
-      createTestAgentEvents(mockEvents),
+      ...createTestAgentState('/test/data', createTestAgentEvents(mockEvents)),
       undefined,
       ...createTestAgentProviders(providers as unknown as ProviderRegistry)
     );
@@ -707,8 +706,7 @@ describe('agent-service.ts', () => {
 
       const { AgentService } = await import('@/services/agent-service.js');
       const testService = new AgentService(
-        ...createTestAgentState('/test/data'),
-        createTestAgentEvents(mockEvents),
+        ...createTestAgentState('/test/data', createTestAgentEvents(mockEvents)),
         undefined,
         ...createTestAgentProviders(providers as unknown as ProviderRegistry)
       );

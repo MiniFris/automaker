@@ -4,7 +4,6 @@
  */
 
 import path from 'path';
-import type { ThinkingLevel } from '@automaker/types';
 import { isAbortError, createLogger } from '@automaker/utils';
 import { AgentSessionRepository } from './agent/agent-session.repository.js';
 import { AgentSessionRegistry } from './agent/agent-session-registry.js';
@@ -19,11 +18,12 @@ import {
   normalizeAgentProviderError,
 } from './agent/agent-stream-normalizer.js';
 import { AgentEventPublisher } from './agent/agent-event-publisher.js';
-import { ConflictDomainError, UnavailableDomainError } from '../core/errors/domain-errors.js';
+import { AgentSessionLoader } from './agent/agent-session-loader.js';
+import { AgentConversationCoordinator } from './agent/agent-conversation-coordinator.js';
+import { AgentPromptQueue, type AgentQueuedInput } from './agent/agent-prompt-queue.js';
 import type {
   ActiveSession as Session,
   Message,
-  QueuedPrompt,
   SessionMetadata,
   AgentMessageInput,
 } from './agent/agent-session.types.js';
@@ -43,6 +43,9 @@ export class AgentService {
     private readonly prompts: AgentPromptBuilder,
     private readonly environments: AgentEnvironmentPreparer,
     private readonly streams: AgentStreamNormalizer,
+    private readonly loader: AgentSessionLoader,
+    private readonly conversations: AgentConversationCoordinator,
+    private readonly queue: AgentPromptQueue,
     events: AgentEventPublisher,
     settingsService: SettingsService | undefined,
     private readonly providers: AgentProviderSelector,
@@ -73,7 +76,7 @@ export class AgentService {
     let session = await this.ensureSession(sessionId, workingDirectory);
     if (!session) {
       // Session doesn't exist on disk either — create a fresh in-memory session.
-      const effectiveWorkingDirectory = workingDirectory || process.cwd();
+      const effectiveWorkingDirectory = workingDirectory || this.loader.workingDirectory;
       const resolvedWorkingDirectory = path.resolve(effectiveWorkingDirectory);
       validateWorkingDirectory(resolvedWorkingDirectory);
 
@@ -94,133 +97,19 @@ export class AgentService {
     };
   }
 
-  /**
-   * Ensure a session is loaded into memory.
-   *
-   * Sessions may exist on disk (in metadata and session files) but not be
-   * present in the in-memory Map — for example after a server restart, or
-   * when a client calls sendMessage before explicitly calling startConversation.
-   *
-   * This helper transparently loads the session from disk when it is missing
-   * from memory, eliminating "session not found" errors for sessions that
-   * were previously created but not yet initialized in memory.
-   *
-   * If both metadata and session files are missing, the session truly doesn't
-   * exist. A detailed diagnostic log is emitted so developers can track down
-   * how the invalid session ID was generated.
-   *
-   * @returns The in-memory Session object, or null if the session doesn't exist at all
-   */
-  private async ensureSession(
-    sessionId: string,
-    workingDirectory?: string
-  ): Promise<Session | null> {
-    return this.sessions.getOrLoad(sessionId, () =>
-      this.hydrateSession(sessionId, workingDirectory)
-    );
-  }
-
-  private async hydrateSession(
-    sessionId: string,
-    workingDirectory?: string
-  ): Promise<Session | null> {
-    // Try to load from disk — the session may have been created earlier
-    // (e.g. via createSession) but never initialized in memory.
-    let metadata: Record<string, SessionMetadata>;
-    let messages: Message[];
-    try {
-      [metadata, messages] = await Promise.all([this.loadMetadata(), this.loadSession(sessionId)]);
-    } catch (error) {
-      // Disk read failure should not be treated as "session not found" —
-      // it's an I/O problem. Propagate it; a fresh empty session would risk
-      // overwriting the existing persisted conversation.
-      this.logger.error(
-        `Failed to load session ${sessionId} from disk (I/O error — NOT a missing session):`,
-        error
-      );
-      throw error;
-    }
-
-    const sessionMetadata = metadata[sessionId];
-
-    // If there's no metadata AND no persisted messages, the session truly doesn't exist.
-    // Log diagnostic info to help track down how we ended up with an invalid session ID.
-    if (!sessionMetadata && messages.length === 0) {
-      this.logger.warn(
-        `Session "${sessionId}" not found: no metadata and no persisted messages. ` +
-          `This can happen when a session ID references a deleted/expired session, ` +
-          `or when the server restarted and the session was never persisted to disk. ` +
-          `Available session IDs in metadata: [${Object.keys(metadata).slice(0, 10).join(', ')}${Object.keys(metadata).length > 10 ? '...' : ''}]`
-      );
-      return null;
-    }
-
-    const effectiveWorkingDirectory =
-      workingDirectory || sessionMetadata?.workingDirectory || process.cwd();
-    const resolvedWorkingDirectory = path.resolve(effectiveWorkingDirectory);
-
-    // Validate that the working directory is allowed using centralized validation
-    try {
-      validateWorkingDirectory(resolvedWorkingDirectory);
-    } catch (validationError) {
-      this.logger.warn(
-        `Session "${sessionId}": working directory "${resolvedWorkingDirectory}" is not allowed — ` +
-          `returning null so callers treat it as a missing session. Error: ${(validationError as Error).message}`
-      );
-      return null;
-    }
-
-    // Load persisted queue
-    const promptQueue = await this.loadQueueState(sessionId);
-
-    const session: Session = {
-      messages,
-      isRunning: false,
-      abortController: null,
-      workingDirectory: resolvedWorkingDirectory,
-      projectPath: sessionMetadata?.projectPath ?? resolvedWorkingDirectory,
-      sdkSessionId: sessionMetadata?.sdkSessionId,
-      model: sessionMetadata?.model,
-      providerId: sessionMetadata?.providerId,
-      promptQueue,
-    };
-
-    this.logger.info(
-      `Auto-initialized session ${sessionId} from disk ` +
-        `(${messages.length} messages, sdkSessionId: ${sessionMetadata?.sdkSessionId ? 'present' : 'none'})`
-    );
-    return session;
+  private ensureSession(sessionId: string, workingDirectory?: string): Promise<Session | null> {
+    return this.loader.ensure(sessionId, workingDirectory);
   }
 
   /**
    * Send a message to the agent and stream responses
    */
   sendMessage(input: AgentMessageInput) {
-    return this.runSelectedMessage(input.sessionId, async () => input);
-  }
-
-  private runSelectedMessage(
-    sessionId: string,
-    selectInput: (controller: AbortController) => Promise<AgentMessageInput | undefined>
-  ) {
-    return this.executions.run(sessionId, async (controller) => {
-      try {
-        const input = await selectInput(controller);
-        if (!input) return { success: false as const };
-        controller.signal.throwIfAborted();
-        return await this.executeMessage(input, controller);
-      } catch (error) {
-        if (controller.signal.aborted && !(error instanceof AgentSessionStorageError))
-          return { success: false as const, aborted: true as const };
-        throw error;
-      } finally {
-        const session = this.sessions.get(sessionId);
-        if (session?.abortController === controller) {
-          session.isRunning = false;
-          session.abortController = null;
-        }
-      }
-    });
+    return this.conversations.run(
+      input.sessionId,
+      async () => input,
+      (selected, controller) => this.executeMessage(selected, controller)
+    );
   }
 
   private async executeMessage(
@@ -481,7 +370,12 @@ export class AgentService {
       if (normalized.completion) this.emitAgentEvent(sessionId, normalized.completion);
 
       // Process next item in queue after completion
-      setImmediate(() => this.processNextInQueue(sessionId));
+      setImmediate(
+        () =>
+          void this.queue.process(sessionId, (input, controller) =>
+            this.executeMessage(input, controller)
+          )
+      );
 
       return {
         success: true,
@@ -567,105 +461,14 @@ export class AgentService {
     };
   }
 
-  /**
-   * Stop current agent execution
-   */
   async stopExecution(sessionId: string) {
-    return this.executions.mutate(sessionId, async () => {
-      const session = await this.ensureSession(sessionId);
-      if (!session) {
-        return { success: false, error: 'Session not found' };
-      }
-
-      if (session.abortController) {
-        session.abortController.abort();
-        session.isRunning = false;
-        session.abortController = null;
-      }
-
-      return { success: true };
-    });
+    return this.conversations.stop(sessionId);
   }
-
   async interruptActiveSessions(reason: string): Promise<number> {
-    this.executions.stopAccepting();
-    const ids = new Set([
-      ...this.executions.ids(),
-      ...[...this.sessions.entries()].filter(([, session]) => session.isRunning).map(([id]) => id),
-    ]);
-    let interrupted = 0;
-    const results = await Promise.allSettled(
-      [...ids].map(async (sessionId) => {
-        const session = await this.ensureSession(sessionId);
-        if (!session) return;
-        const managed = this.executions.has(sessionId);
-        if (!managed && !session.isRunning) return;
-        const message: Message = {
-          id: this.generateId(),
-          role: 'assistant',
-          content: `Interrupted: ${reason}`,
-          timestamp: new Date().toISOString(),
-          isError: true,
-        };
-        session.messages.push(message);
-        await this.saveSession(sessionId, session.messages);
-        // A run may have completed while its interruption snapshot was writing.
-        if (managed && !this.executions.has(sessionId)) {
-          session.messages = session.messages.filter((item) => item.id !== message.id);
-          await this.saveSession(sessionId, session.messages);
-          return;
-        }
-        interrupted++;
-        this.emitAgentEvent(sessionId, {
-          type: 'error',
-          error: reason,
-          errorType: 'interruption',
-          message,
-        });
-      })
-    );
-    // Always request abort, even when persistence failed; never skip cleanup.
-    this.executions.abortAll();
-    for (const id of ids) this.sessions.get(id)?.abortController?.abort();
-    await this.executions.drain();
-    for (const id of ids) {
-      const session = this.sessions.get(id);
-      if (session) {
-        session.isRunning = false;
-        session.abortController = null;
-      }
-    }
-    const failed = results.find((result) => result.status === 'rejected');
-    if (failed?.status === 'rejected') throw failed.reason;
-    return interrupted;
+    return this.conversations.interrupt(reason);
   }
-
-  /**
-   * Clear conversation history
-   */
   async clearSession(sessionId: string) {
-    return this.executions.mutate(sessionId, () =>
-      this.sessions.serializeQueue(sessionId, () => this.clearSessionState(sessionId))
-    );
-  }
-
-  private async clearSessionState(sessionId: string) {
-    const session = await this.ensureSession(sessionId);
-    if (session) {
-      await this.saveSession(sessionId, []);
-      await this.clearSdkSessionId(sessionId);
-      session.messages = [];
-      session.isRunning = false;
-      session.sdkSessionId = undefined; // Clear stale provider session ID to prevent "Session not found" errors
-    }
-
-    // Clear the sdkSessionId from persisted metadata so it doesn't get
-    // reloaded by ensureSession() after a server restart.
-    // This prevents "Session not found" errors when the provider-side session
-    // no longer exists (e.g., OpenCode CLI sessions expire on disk).
-    if (!session) await this.clearSdkSessionId(sessionId);
-
-    return { success: true };
+    return this.conversations.clear(sessionId);
   }
 
   // Session management
@@ -714,7 +517,8 @@ export class AgentService {
     this.executions.assertAccepting();
     const sessionId = this.generateId();
     // Determine the effective working directory
-    const effectiveWorkingDirectory = workingDirectory || projectPath || process.cwd();
+    const effectiveWorkingDirectory =
+      workingDirectory || projectPath || this.loader.workingDirectory;
     const resolvedWorkingDirectory = path.resolve(effectiveWorkingDirectory);
 
     // Validate that the working directory is allowed using centralized validation
@@ -838,186 +642,17 @@ export class AgentService {
     await this.repository.clearSdkSessionId(sessionId);
   }
 
-  // Queue management methods
-
-  /**
-   * Add a prompt to the queue for later execution
-   */
-  async addToQueue(
-    sessionId: string,
-    prompt: {
-      message: string;
-      imagePaths?: string[];
-      model?: string;
-      providerId?: string;
-      thinkingLevel?: ThinkingLevel;
-    }
-  ): Promise<{ success: boolean; queuedPrompt?: QueuedPrompt; error?: string }> {
-    this.executions.assertSessionOpen(sessionId);
-    return this.sessions.serializeQueue(sessionId, async () => {
-      this.executions.assertSessionOpen(sessionId);
-      const session = await this.ensureSession(sessionId);
-      if (!session) {
-        return { success: false, error: 'Session not found' };
-      }
-
-      const queuedPrompt: QueuedPrompt = {
-        id: this.generateId(),
-        message: prompt.message,
-        imagePaths: prompt.imagePaths,
-        model: prompt.model ?? session.model,
-        providerId:
-          prompt.providerId ??
-          (prompt.model === undefined || prompt.model === session.model
-            ? session.providerId
-            : undefined),
-        thinkingLevel: prompt.thinkingLevel,
-        addedAt: new Date().toISOString(),
-      };
-
-      const queue = [...session.promptQueue, queuedPrompt];
-      await this.saveQueueState(sessionId, queue);
-      session.promptQueue = queue;
-
-      // Emit queue update event
-      this.emitAgentEvent(sessionId, {
-        type: 'queue_updated',
-        queue: session.promptQueue,
-      });
-
-      return { success: true, queuedPrompt };
-    });
+  async addToQueue(sessionId: string, prompt: AgentQueuedInput) {
+    return this.queue.add(sessionId, prompt);
   }
-
-  /**
-   * Get the current queue for a session
-   */
-  async getQueue(
-    sessionId: string
-  ): Promise<{ success: boolean; queue?: QueuedPrompt[]; error?: string }> {
-    const session = await this.ensureSession(sessionId);
-    if (!session) {
-      return { success: false, error: 'Session not found' };
-    }
-    return { success: true, queue: session.promptQueue };
+  async getQueue(sessionId: string) {
+    return this.queue.get(sessionId);
   }
-
-  /**
-   * Remove a specific prompt from the queue
-   */
-  async removeFromQueue(
-    sessionId: string,
-    promptId: string
-  ): Promise<{ success: boolean; error?: string }> {
-    this.executions.assertSessionOpen(sessionId);
-    return this.sessions.serializeQueue(sessionId, async () => {
-      this.executions.assertSessionOpen(sessionId);
-      const session = await this.ensureSession(sessionId);
-      if (!session) {
-        return { success: false, error: 'Session not found' };
-      }
-
-      const index = session.promptQueue.findIndex((p) => p.id === promptId);
-      if (index === -1) {
-        return { success: false, error: 'Prompt not found in queue' };
-      }
-
-      const queue = session.promptQueue.filter((_, position) => position !== index);
-      await this.saveQueueState(sessionId, queue);
-      session.promptQueue = queue;
-
-      this.emitAgentEvent(sessionId, {
-        type: 'queue_updated',
-        queue: session.promptQueue,
-      });
-
-      return { success: true };
-    });
+  async removeFromQueue(sessionId: string, promptId: string) {
+    return this.queue.remove(sessionId, promptId);
   }
-
-  /**
-   * Clear all prompts from the queue
-   */
-  async clearQueue(sessionId: string): Promise<{ success: boolean; error?: string }> {
-    this.executions.assertSessionOpen(sessionId);
-    return this.sessions.serializeQueue(sessionId, async () => {
-      this.executions.assertSessionOpen(sessionId);
-      const session = await this.ensureSession(sessionId);
-      if (!session) {
-        return { success: false, error: 'Session not found' };
-      }
-
-      await this.saveQueueState(sessionId, []);
-      session.promptQueue = [];
-
-      this.emitAgentEvent(sessionId, {
-        type: 'queue_updated',
-        queue: [],
-      });
-
-      return { success: true };
-    });
-  }
-
-  /**
-   * Save queue state to disk for persistence
-   */
-  private async saveQueueState(sessionId: string, queue: QueuedPrompt[]): Promise<void> {
-    await this.repository.saveQueue(sessionId, queue);
-  }
-
-  /**
-   * Load queue state from disk
-   */
-  private async loadQueueState(sessionId: string): Promise<QueuedPrompt[]> {
-    return this.repository.loadQueue(sessionId);
-  }
-
-  /**
-   * Process the next item in the queue (called after task completion)
-   */
-  private async processNextInQueue(sessionId: string): Promise<void> {
-    let nextPrompt: QueuedPrompt | undefined;
-    let admitted = false;
-    try {
-      // Claim execution before dequeueing; a manual send must not steal the run
-      // after its queued prompt has already been removed from durable storage.
-      const execution = this.runSelectedMessage(sessionId, async (controller) => {
-        nextPrompt = await this.sessions.serializeQueue(sessionId, async () => {
-          const session = this.sessions.get(sessionId);
-          if (!session || session.isRunning || !session.promptQueue.length) return undefined;
-          controller.signal.throwIfAborted();
-          const [next, ...remaining] = session.promptQueue;
-          await this.saveQueueState(sessionId, remaining);
-          session.promptQueue = remaining;
-          this.emitAgentEvent(sessionId, { type: 'queue_updated', queue: remaining });
-          return next;
-        });
-        if (!nextPrompt) return undefined;
-        return {
-          sessionId,
-          message: nextPrompt.message,
-          imagePaths: nextPrompt.imagePaths,
-          model: nextPrompt.model,
-          providerId: nextPrompt.providerId,
-          thinkingLevel: nextPrompt.thinkingLevel,
-        };
-      });
-      admitted = true;
-      await execution;
-    } catch (error) {
-      if (
-        !admitted &&
-        (error instanceof ConflictDomainError || error instanceof UnavailableDomainError)
-      )
-        return;
-      this.logger.error('Failed to process queued prompt:', error);
-      this.emitAgentEvent(sessionId, {
-        type: 'queue_error',
-        error: (error as Error).message,
-        promptId: nextPrompt?.id,
-      });
-    }
+  async clearQueue(sessionId: string) {
+    return this.queue.clear(sessionId);
   }
 
   /**

@@ -5,11 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgentService } from '../../../src/services/agent-service.js';
 import { AgentSessionRepository } from '../../../src/services/agent/agent-session.repository.js';
 import { AgentSessionRegistry } from '../../../src/services/agent/agent-session-registry.js';
-import { AgentExecutionCoordinator } from '../../../src/services/agent/agent-execution-coordinator.js';
-import { AgentPromptBuilder } from '../../../src/services/agent/agent-prompt-builder.js';
-import { AgentEnvironmentPreparer } from '../../../src/services/agent/agent-environment-preparer.js';
-import { createTestAgentProviders, createTestAgentEvents } from '../../helpers/agent-state.js';
-import { AgentStreamNormalizer } from '../../../src/services/agent/agent-stream-normalizer.js';
+import {
+  createTestAgentState,
+  createTestAgentProviders,
+  createTestAgentEvents,
+} from '../../helpers/agent-state.js';
 import { AgentSessionStorageError } from '../../../src/services/agent/agent-session-storage.error.js';
 import { ProviderRegistry } from '../../../src/modules/providers/provider-registry.service.js';
 import { createEventEmitter } from '../../../src/lib/events.js';
@@ -33,13 +33,10 @@ describe('agent storage failure boundaries', () => {
       if (type === 'agent:stream') events.push(payload as (typeof events)[number]);
     });
     service = new AgentService(
-      repository,
-      registry,
-      new AgentExecutionCoordinator(),
-      new AgentPromptBuilder(),
-      new AgentEnvironmentPreparer(new AgentPromptBuilder()),
-      new AgentStreamNormalizer(),
-      createTestAgentEvents(emitter),
+      ...createTestAgentState(directory, createTestAgentEvents(emitter), {
+        repository,
+        sessions: registry,
+      }),
       undefined,
       ...createTestAgentProviders(
         new ProviderRegistry([{ name: 'claude', create: () => new MockProvider('claude') }], {

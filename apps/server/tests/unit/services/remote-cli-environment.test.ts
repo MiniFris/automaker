@@ -169,8 +169,10 @@ const send=event=>process.stdout.write(JSON.stringify(event)+'\\n');
     );
     it('uses the real chat service without controller context and keeps the binding on restart/default change', async () => {
       const service = new AgentService(
-        ...createTestAgentState(settings.getDataDirectory()),
-        createTestAgentEvents(createEventEmitter()),
+        ...createTestAgentState(
+          settings.getDataDirectory(),
+          createTestAgentEvents(createEventEmitter())
+        ),
         settings,
         ...createTestAgentProviders(createTestProviderRegistry(settings))
       );
@@ -189,8 +191,10 @@ const send=event=>process.stdout.write(JSON.stringify(event)+'\\n');
         executionEnvironment: { default: { mode: 'local' }, profiles: [] },
       });
       const restarted = new AgentService(
-        ...createTestAgentState(settings.getDataDirectory()),
-        createTestAgentEvents(createEventEmitter()),
+        ...createTestAgentState(
+          settings.getDataDirectory(),
+          createTestAgentEvents(createEventEmitter())
+        ),
         settings,
         ...createTestAgentProviders(createTestProviderRegistry(settings))
       );

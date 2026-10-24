@@ -10,6 +10,9 @@ import type { ToolPolicyService } from '../../src/modules/providers/tool-policy.
 import { AgentStreamNormalizer } from '../../src/services/agent/agent-stream-normalizer.js';
 import { AgentEventPublisher } from '../../src/services/agent/agent-event-publisher.js';
 import type { EventEmitter } from '../../src/lib/events.js';
+import { AgentSessionLoader } from '../../src/services/agent/agent-session-loader.js';
+import { AgentConversationCoordinator } from '../../src/services/agent/agent-conversation-coordinator.js';
+import { AgentPromptQueue } from '../../src/services/agent/agent-prompt-queue.js';
 
 export function createTestAgentEvents(events: EventEmitter) {
   return new AgentEventPublisher(events);
@@ -21,14 +24,42 @@ export function createTestAgentProviders(registry: ProviderRegistry, policy?: To
 }
 
 /** Separate persisted state and active registry for each explicit test application. */
-export function createTestAgentState(dataDirectory: string) {
+export function createTestAgentState(
+  dataDirectory: string,
+  events: AgentEventPublisher,
+  overrides: {
+    repository?: AgentSessionRepository;
+    sessions?: AgentSessionRegistry;
+    executions?: AgentExecutionCoordinator;
+    workingDirectory?: string;
+  } = {}
+) {
+  const repository = overrides.repository ?? new AgentSessionRepository(dataDirectory);
+  const sessions = overrides.sessions ?? new AgentSessionRegistry();
+  const executions = overrides.executions ?? new AgentExecutionCoordinator();
+  const loader = new AgentSessionLoader(
+    repository,
+    sessions,
+    overrides.workingDirectory ?? process.cwd()
+  );
+  const conversations = new AgentConversationCoordinator(
+    executions,
+    sessions,
+    loader,
+    repository,
+    events
+  );
   const prompts = new AgentPromptBuilder();
   return [
-    new AgentSessionRepository(dataDirectory),
-    new AgentSessionRegistry(),
-    new AgentExecutionCoordinator(),
+    repository,
+    sessions,
+    executions,
     prompts,
     new AgentEnvironmentPreparer(prompts),
     new AgentStreamNormalizer(),
+    loader,
+    conversations,
+    new AgentPromptQueue(repository, sessions, loader, executions, conversations, events),
+    events,
   ] as const;
 }

@@ -6,10 +6,11 @@ import { AgentService } from '../../../src/services/agent-service.js';
 import { AgentSessionRepository } from '../../../src/services/agent/agent-session.repository.js';
 import { AgentSessionRegistry } from '../../../src/services/agent/agent-session-registry.js';
 import { AgentExecutionCoordinator } from '../../../src/services/agent/agent-execution-coordinator.js';
-import { AgentPromptBuilder } from '../../../src/services/agent/agent-prompt-builder.js';
-import { AgentEnvironmentPreparer } from '../../../src/services/agent/agent-environment-preparer.js';
-import { createTestAgentProviders, createTestAgentEvents } from '../../helpers/agent-state.js';
-import { AgentStreamNormalizer } from '../../../src/services/agent/agent-stream-normalizer.js';
+import {
+  createTestAgentState,
+  createTestAgentProviders,
+  createTestAgentEvents,
+} from '../../helpers/agent-state.js';
 import { AgentSessionStorageError } from '../../../src/services/agent/agent-session-storage.error.js';
 import {
   ConflictDomainError,
@@ -115,13 +116,11 @@ describe('AgentService execution ownership', () => {
     });
     provider.executeQuery = execute as typeof provider.executeQuery;
     service = new AgentService(
-      repository,
-      registry,
-      executions,
-      new AgentPromptBuilder(),
-      new AgentEnvironmentPreparer(new AgentPromptBuilder()),
-      new AgentStreamNormalizer(),
-      createTestAgentEvents(emitter),
+      ...createTestAgentState(directory, createTestAgentEvents(emitter), {
+        repository,
+        sessions: registry,
+        executions,
+      }),
       undefined,
       ...createTestAgentProviders(
         new ProviderRegistry([{ name: 'claude', create: () => provider }], {

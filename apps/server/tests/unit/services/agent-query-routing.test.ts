@@ -64,8 +64,10 @@ describe('chat routing with real settings and SDK option construction', () => {
       } as never);
       const create = () =>
         new AgentService(
-          ...createTestAgentState(settings.getDataDirectory()),
-          createTestAgentEvents(createEventEmitter()),
+          ...createTestAgentState(
+            settings.getDataDirectory(),
+            createTestAgentEvents(createEventEmitter())
+          ),
           settings,
           ...createTestAgentProviders(registry, new ToolPolicyService())
         );

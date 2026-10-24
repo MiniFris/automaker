@@ -12,6 +12,10 @@ import { ToolPolicyService } from '../providers/tool-policy.service.js';
 import { EVENT_BUS, type EventBus } from '../../core/eventing/event-bus.js';
 import { AgentEventPublisher } from '../../services/agent/agent-event-publisher.js';
 import { AgentStreamNormalizer } from '../../services/agent/agent-stream-normalizer.js';
+import { RuntimePathsService } from '../../core/config/index.js';
+import { AgentSessionLoader } from '../../services/agent/agent-session-loader.js';
+import { AgentConversationCoordinator } from '../../services/agent/agent-conversation-coordinator.js';
+import { AgentPromptQueue } from '../../services/agent/agent-prompt-queue.js';
 
 @Global()
 @Module({
@@ -19,6 +23,51 @@ import { AgentStreamNormalizer } from '../../services/agent/agent-stream-normali
     AgentSessionRegistry,
     AgentPromptBuilder,
     AgentStreamNormalizer,
+    {
+      provide: AgentSessionLoader,
+      inject: [AgentSessionRepository, AgentSessionRegistry, RuntimePathsService],
+      useFactory: (
+        repository: AgentSessionRepository,
+        sessions: AgentSessionRegistry,
+        paths: RuntimePathsService
+      ) => new AgentSessionLoader(repository, sessions, paths.workingDirectory),
+    },
+    {
+      provide: AgentConversationCoordinator,
+      inject: [
+        AgentExecutionCoordinator,
+        AgentSessionRegistry,
+        AgentSessionLoader,
+        AgentSessionRepository,
+        AgentEventPublisher,
+      ],
+      useFactory: (
+        executions: AgentExecutionCoordinator,
+        sessions: AgentSessionRegistry,
+        loader: AgentSessionLoader,
+        repository: AgentSessionRepository,
+        events: AgentEventPublisher
+      ) => new AgentConversationCoordinator(executions, sessions, loader, repository, events),
+    },
+    {
+      provide: AgentPromptQueue,
+      inject: [
+        AgentSessionRepository,
+        AgentSessionRegistry,
+        AgentSessionLoader,
+        AgentExecutionCoordinator,
+        AgentConversationCoordinator,
+        AgentEventPublisher,
+      ],
+      useFactory: (
+        repository: AgentSessionRepository,
+        sessions: AgentSessionRegistry,
+        loader: AgentSessionLoader,
+        executions: AgentExecutionCoordinator,
+        conversations: AgentConversationCoordinator,
+        events: AgentEventPublisher
+      ) => new AgentPromptQueue(repository, sessions, loader, executions, conversations, events),
+    },
     {
       provide: AgentEventPublisher,
       inject: [EVENT_BUS],
@@ -58,6 +107,9 @@ import { AgentStreamNormalizer } from '../../services/agent/agent-stream-normali
     AgentQueryOptionsBuilder,
     AgentEventPublisher,
     AgentStreamNormalizer,
+    AgentSessionLoader,
+    AgentConversationCoordinator,
+    AgentPromptQueue,
   ],
 })
 export class AgentStateModule {}

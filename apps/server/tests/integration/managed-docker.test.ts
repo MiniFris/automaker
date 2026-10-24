@@ -362,8 +362,7 @@ describe.skipIf(!base || process.platform !== 'linux')('real managed Docker Engi
       });
       const chat = () =>
         new AgentService(
-          ...createTestAgentState(settings.getDataDirectory()),
-          createTestAgentEvents(events),
+          ...createTestAgentState(settings.getDataDirectory(), createTestAgentEvents(events)),
           settings,
           ...createTestAgentProviders(createTestProviderRegistry(settings))
         );

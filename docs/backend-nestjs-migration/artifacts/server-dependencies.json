@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 606,
-    "internalEdges": 1916,
+    "files": 609,
+    "internalEdges": 1944,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -17,16 +17,16 @@
     "legacy -> lib": 1,
     "legacy -> modules": 4,
     "legacy -> root": 2,
-    "legacy -> services": 28,
+    "legacy -> services": 31,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 83,
+    "modules -> core": 84,
     "modules -> legacy": 29,
     "modules -> lib": 24,
     "modules -> modules": 246,
     "modules -> providers": 19,
     "modules -> routes": 62,
-    "modules -> services": 102,
+    "modules -> services": 105,
     "modules -> types": 2,
     "providers -> lib": 5,
     "providers -> modules": 1,
@@ -46,11 +46,11 @@
     "routes -> services": 196,
     "routes -> types": 3,
     "services -> core": 5,
-    "services -> lib": 73,
+    "services -> lib": 74,
     "services -> modules": 9,
     "services -> providers": 12,
     "services -> routes": 2,
-    "services -> services": 234,
+    "services -> services": 254,
     "services -> types": 2,
     "tests -> lib": 2
   },
@@ -164,7 +164,6 @@
       "apps/server/src/routes/setup/routes/delete-api-key.ts",
       "apps/server/src/routes/setup/routes/gemini-status.ts",
       "apps/server/src/routes/setup/routes/verify-codex-auth.ts",
-      "apps/server/src/services/agent-service.ts",
       "apps/server/src/services/claude-usage-service.ts",
       "apps/server/src/services/codex-app-server-service.ts",
       "apps/server/src/services/copilot-connection-service.ts",
@@ -315,8 +314,8 @@
     "@automaker/model-resolver": 20,
     "@automaker/platform": 80,
     "@automaker/prompts": 3,
-    "@automaker/types": 178,
-    "@automaker/utils": 171,
+    "@automaker/types": 177,
+    "@automaker/utils": 173,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
@@ -347,7 +346,7 @@
     "node:http": 7,
     "node:net": 2,
     "node:os": 6,
-    "node:path": 36,
+    "node:path": 37,
     "node:perf_hooks": 2,
     "node:stream": 5,
     "node:stream/web": 1,
@@ -913,6 +912,10 @@
     },
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/agent/agent-conversation-coordinator.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
       "target": "apps/server/src/services/agent/agent-environment-preparer.ts"
     },
     {
@@ -929,11 +932,19 @@
     },
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/agent/agent-prompt-queue.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
       "target": "apps/server/src/services/agent/agent-provider-selector.ts"
     },
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
       "target": "apps/server/src/services/agent/agent-query-options-builder.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/agent/agent-session-loader.ts"
     },
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
@@ -1093,6 +1104,10 @@
     },
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-state.module.ts",
       "target": "apps/server/src/core/eventing/event-bus.ts"
     },
     {
@@ -1102,6 +1117,10 @@
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
       "target": "apps/server/src/modules/providers/tool-policy.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-state.module.ts",
+      "target": "apps/server/src/services/agent/agent-conversation-coordinator.ts"
     },
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
@@ -1121,11 +1140,19 @@
     },
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
+      "target": "apps/server/src/services/agent/agent-prompt-queue.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-state.module.ts",
       "target": "apps/server/src/services/agent/agent-provider-selector.ts"
     },
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
       "target": "apps/server/src/services/agent/agent-query-options-builder.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-state.module.ts",
+      "target": "apps/server/src/services/agent/agent-session-loader.ts"
     },
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
@@ -6717,11 +6744,11 @@
     },
     {
       "source": "apps/server/src/services/agent-service.ts",
-      "target": "apps/server/src/core/errors/domain-errors.ts"
+      "target": "apps/server/src/lib/sdk-options.ts"
     },
     {
       "source": "apps/server/src/services/agent-service.ts",
-      "target": "apps/server/src/lib/sdk-options.ts"
+      "target": "apps/server/src/services/agent/agent-conversation-coordinator.ts"
     },
     {
       "source": "apps/server/src/services/agent-service.ts",
@@ -6741,11 +6768,19 @@
     },
     {
       "source": "apps/server/src/services/agent-service.ts",
+      "target": "apps/server/src/services/agent/agent-prompt-queue.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent-service.ts",
       "target": "apps/server/src/services/agent/agent-provider-selector.ts"
     },
     {
       "source": "apps/server/src/services/agent-service.ts",
       "target": "apps/server/src/services/agent/agent-query-options-builder.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent-service.ts",
+      "target": "apps/server/src/services/agent/agent-session-loader.ts"
     },
     {
       "source": "apps/server/src/services/agent-service.ts",
@@ -6770,6 +6805,34 @@
     {
       "source": "apps/server/src/services/agent-service.ts",
       "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-conversation-coordinator.ts",
+      "target": "apps/server/src/services/agent/agent-event-publisher.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-conversation-coordinator.ts",
+      "target": "apps/server/src/services/agent/agent-execution-coordinator.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-conversation-coordinator.ts",
+      "target": "apps/server/src/services/agent/agent-session-loader.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-conversation-coordinator.ts",
+      "target": "apps/server/src/services/agent/agent-session-registry.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-conversation-coordinator.ts",
+      "target": "apps/server/src/services/agent/agent-session-storage.error.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-conversation-coordinator.ts",
+      "target": "apps/server/src/services/agent/agent-session.repository.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-conversation-coordinator.ts",
+      "target": "apps/server/src/services/agent/agent-session.types.ts"
     },
     {
       "source": "apps/server/src/services/agent/agent-environment-preparer.ts",
@@ -6832,6 +6895,38 @@
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
+      "source": "apps/server/src/services/agent/agent-prompt-queue.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-prompt-queue.ts",
+      "target": "apps/server/src/services/agent/agent-conversation-coordinator.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-prompt-queue.ts",
+      "target": "apps/server/src/services/agent/agent-event-publisher.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-prompt-queue.ts",
+      "target": "apps/server/src/services/agent/agent-execution-coordinator.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-prompt-queue.ts",
+      "target": "apps/server/src/services/agent/agent-session-loader.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-prompt-queue.ts",
+      "target": "apps/server/src/services/agent/agent-session-registry.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-prompt-queue.ts",
+      "target": "apps/server/src/services/agent/agent-session.repository.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-prompt-queue.ts",
+      "target": "apps/server/src/services/agent/agent-session.types.ts"
+    },
+    {
       "source": "apps/server/src/services/agent/agent-provider-selector.ts",
       "target": "apps/server/src/lib/settings-helpers.ts"
     },
@@ -6870,6 +6965,22 @@
     {
       "source": "apps/server/src/services/agent/agent-session-id.ts",
       "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-session-loader.ts",
+      "target": "apps/server/src/lib/sdk-options.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-session-loader.ts",
+      "target": "apps/server/src/services/agent/agent-session-registry.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-session-loader.ts",
+      "target": "apps/server/src/services/agent/agent-session.repository.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-session-loader.ts",
+      "target": "apps/server/src/services/agent/agent-session.types.ts"
     },
     {
       "source": "apps/server/src/services/agent/agent-session-registry.ts",

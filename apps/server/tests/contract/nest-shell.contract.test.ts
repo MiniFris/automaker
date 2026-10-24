@@ -26,6 +26,9 @@ import { AgentProviderSelector } from '../../src/services/agent/agent-provider-s
 import { AgentQueryOptionsBuilder } from '../../src/services/agent/agent-query-options-builder.js';
 import { AgentEventPublisher } from '../../src/services/agent/agent-event-publisher.js';
 import { AgentStreamNormalizer } from '../../src/services/agent/agent-stream-normalizer.js';
+import { AgentSessionLoader } from '../../src/services/agent/agent-session-loader.js';
+import { AgentConversationCoordinator } from '../../src/services/agent/agent-conversation-coordinator.js';
+import { AgentPromptQueue } from '../../src/services/agent/agent-prompt-queue.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -121,6 +124,11 @@ describe('Nest shell and legacy bridge contract', () => {
         runtime.app.get(AgentExecutionCoordinator)
       );
       expect(second.app.get(AgentPromptBuilder)).not.toBe(runtime.app.get(AgentPromptBuilder));
+      expect(second.app.get(AgentSessionLoader)).not.toBe(runtime.app.get(AgentSessionLoader));
+      expect(second.app.get(AgentConversationCoordinator)).not.toBe(
+        runtime.app.get(AgentConversationCoordinator)
+      );
+      expect(second.app.get(AgentPromptQueue)).not.toBe(runtime.app.get(AgentPromptQueue));
       expect(second.app.get(AgentEventPublisher)).not.toBe(runtime.app.get(AgentEventPublisher));
       expect(second.app.get(AgentStreamNormalizer)).not.toBe(
         runtime.app.get(AgentStreamNormalizer)

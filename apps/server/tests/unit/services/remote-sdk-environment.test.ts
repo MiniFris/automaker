@@ -236,8 +236,10 @@ describe.skipIf(process.platform !== 'linux')('target-side SDK setup and executi
   it('uses real chat and preserves the SDK/runtime session across restart and default changes', async () => {
     await install('claude');
     const service = new AgentService(
-      ...createTestAgentState(settings.getDataDirectory()),
-      createTestAgentEvents(createEventEmitter()),
+      ...createTestAgentState(
+        settings.getDataDirectory(),
+        createTestAgentEvents(createEventEmitter())
+      ),
       settings,
       ...createTestAgentProviders(createTestProviderRegistry(settings))
     );
@@ -254,8 +256,10 @@ describe.skipIf(process.platform !== 'linux')('target-side SDK setup and executi
       executionEnvironment: { default: { mode: 'local' }, profiles: [] },
     });
     const restarted = new AgentService(
-      ...createTestAgentState(settings.getDataDirectory()),
-      createTestAgentEvents(createEventEmitter()),
+      ...createTestAgentState(
+        settings.getDataDirectory(),
+        createTestAgentEvents(createEventEmitter())
+      ),
       settings,
       ...createTestAgentProviders(createTestProviderRegistry(settings))
     );
