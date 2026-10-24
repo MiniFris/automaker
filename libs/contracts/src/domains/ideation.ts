@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+// Category membership and its historical error belong to the ideation service.
+export const IdeaPromptCategoryParameterSchema = z.string();
+
 export const IdeaCategorySchema = z.enum([
   'feature',
   'ux-ui',

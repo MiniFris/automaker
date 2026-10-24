@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 612,
-    "internalEdges": 2043,
+    "files": 613,
+    "internalEdges": 2051,
     "stronglyConnectedComponents": 2
   },
   "layerEdges": {
@@ -13,11 +13,11 @@
     "core -> services": 9,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 176,
+    "modules -> core": 177,
     "modules -> lib": 48,
     "modules -> modules": 385,
     "modules -> providers": 33,
-    "modules -> services": 174,
+    "modules -> services": 175,
     "modules -> types": 2,
     "providers -> core": 1,
     "providers -> lib": 3,
@@ -34,11 +34,11 @@
     "routes -> routes": 287,
     "routes -> services": 156,
     "routes -> types": 2,
-    "services -> core": 22,
+    "services -> core": 23,
     "services -> lib": 68,
     "services -> modules": 17,
     "services -> providers": 16,
-    "services -> services": 302,
+    "services -> services": 307,
     "services -> types": 3,
     "tests -> lib": 2
   },
@@ -252,6 +252,7 @@
       "apps/server/src/services/pipeline-config.repository.ts",
       "apps/server/src/services/pipeline-orchestrator.ts",
       "apps/server/src/services/plan-approval-service.ts",
+      "apps/server/src/services/recovery-service.ts",
       "apps/server/src/services/settings-mutation-queue.ts",
       "apps/server/src/services/terminal-service.ts",
       "apps/server/src/services/terminal-session-lifecycle.ts",
@@ -267,16 +268,18 @@
   },
   "externalImports": {
     "@anthropic-ai/claude-agent-sdk": 3,
-    "@automaker/contracts": 23,
+    "@automaker/contracts": 25,
     "@automaker/contracts/domains/auth": 1,
+    "@automaker/contracts/domains/ideation": 1,
+    "@automaker/contracts/domains/setup-query": 5,
     "@automaker/contracts/domains/terminal": 2,
     "@automaker/dependency-resolver": 1,
     "@automaker/git-utils": 12,
     "@automaker/model-resolver": 20,
     "@automaker/platform": 73,
     "@automaker/prompts": 3,
-    "@automaker/types": 180,
-    "@automaker/utils": 160,
+    "@automaker/types": 179,
+    "@automaker/utils": 161,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
@@ -327,7 +330,7 @@
     "vitest": 1,
     "ws": 1,
     "yaml": 1,
-    "zod": 6
+    "zod": 5
   },
   "edges": [
     {
@@ -964,6 +967,10 @@
     },
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
+      "target": "apps/server/src/core/security/security.module.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-state.module.ts",
       "target": "apps/server/src/core/security/security.service.ts"
     },
     {
@@ -1037,6 +1044,10 @@
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
       "target": "apps/server/src/services/agent/agent-session.repository.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-state.module.ts",
+      "target": "apps/server/src/services/agent/agent-storage-filesystem.ts"
     },
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
@@ -7011,8 +7022,8 @@
       "target": "apps/server/src/services/agent/agent-storage-artifacts.ts"
     },
     {
-      "source": "apps/server/src/services/agent/agent-prompt-builder.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
+      "source": "apps/server/src/services/agent/agent-execution-store.ts",
+      "target": "apps/server/src/services/agent/agent-storage-filesystem.ts"
     },
     {
       "source": "apps/server/src/services/agent/agent-prompt-builder.ts",
@@ -7025,6 +7036,10 @@
     {
       "source": "apps/server/src/services/agent/agent-prompt-builder.ts",
       "target": "apps/server/src/services/agent/agent-session.types.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-prompt-builder.ts",
+      "target": "apps/server/src/services/execution-filesystem.ts"
     },
     {
       "source": "apps/server/src/services/agent/agent-prompt-builder.ts",
@@ -7143,6 +7158,10 @@
       "target": "apps/server/src/services/agent/agent-storage-artifacts.ts"
     },
     {
+      "source": "apps/server/src/services/agent/agent-queue-delivery-store.ts",
+      "target": "apps/server/src/services/agent/agent-storage-filesystem.ts"
+    },
+    {
       "source": "apps/server/src/services/agent/agent-session-deletion.ts",
       "target": "apps/server/src/services/agent/agent-execution-coordinator.ts"
     },
@@ -7223,12 +7242,24 @@
       "target": "apps/server/src/services/agent/agent-storage-artifacts.ts"
     },
     {
+      "source": "apps/server/src/services/agent/agent-session.repository.ts",
+      "target": "apps/server/src/services/agent/agent-storage-filesystem.ts"
+    },
+    {
       "source": "apps/server/src/services/agent/agent-storage-artifacts.ts",
       "target": "apps/server/src/lib/secure-fs.ts"
     },
     {
       "source": "apps/server/src/services/agent/agent-storage-artifacts.ts",
       "target": "apps/server/src/services/agent/agent-session-storage.error.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-storage-artifacts.ts",
+      "target": "apps/server/src/services/agent/agent-storage-filesystem.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-storage-filesystem.ts",
+      "target": "apps/server/src/lib/secure-fs.ts"
     },
     {
       "source": "apps/server/src/services/agent/agent-stream-normalizer.ts",
@@ -8313,6 +8344,10 @@
     {
       "source": "apps/server/src/services/push-service.ts",
       "target": "apps/server/src/services/pull-service.ts"
+    },
+    {
+      "source": "apps/server/src/services/recovery-service.ts",
+      "target": "apps/server/src/core/errors/index.ts"
     },
     {
       "source": "apps/server/src/services/recovery-service.ts",

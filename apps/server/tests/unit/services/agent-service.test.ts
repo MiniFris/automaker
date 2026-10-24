@@ -11,6 +11,7 @@ import * as imageHandler from '@automaker/utils';
 import * as promptBuilder from '@automaker/utils';
 import * as contextLoader from '@automaker/utils';
 import { collectAsyncGenerator } from '../../utils/helpers.js';
+import * as testFilesystem from '../../../src/lib/secure-fs.js';
 
 // Create a shared mock logger instance for assertions using vi.hoisted
 const mockLogger = vi.hoisted(() => ({
@@ -378,35 +379,65 @@ describe('agent-service.ts', () => {
         imagePaths: ['/path/test.png'],
       });
 
-      expect(imageHandler.readImageAsBase64).toHaveBeenCalledWith('/path/test.png');
+      expect(imageHandler.readImageAsBase64).toHaveBeenCalledWith('/path/test.png', testFilesystem);
     });
 
-    it('should handle failed image loading gracefully', async () => {
+    it('rejects ambiguous image IO before building content or invoking the provider', async () => {
       const mockProvider = {
         getName: () => 'claude',
-        executeQuery: async function* () {
+        executeQuery: vi.fn(async function* () {
           yield {
             type: 'result',
             subtype: 'success',
           };
-        },
+        }),
       };
 
       vi.mocked(providers.providerForModel).mockReturnValue(mockProvider as any);
 
-      vi.mocked(imageHandler.readImageAsBase64).mockRejectedValue(new Error('Image not found'));
+      const failure = Object.assign(new Error('Image read failed'), { code: 'EIO' });
+      vi.mocked(imageHandler.readImageAsBase64).mockRejectedValue(failure);
 
       vi.mocked(promptBuilder.buildPromptWithImages).mockResolvedValue({
         content: 'Check image',
         hasImages: false,
       });
 
+      await expect(
+        service.sendMessage({
+          sessionId: 'session-1',
+          message: 'Check this',
+          imagePaths: ['/path/test.png'],
+        })
+      ).rejects.toBe(failure);
+
+      expect(mockLogger.error).toHaveBeenCalled();
+      expect(promptBuilder.buildPromptWithImages).not.toHaveBeenCalled();
+      expect(mockProvider.executeQuery).not.toHaveBeenCalled();
+    });
+
+    it('continues without a genuinely missing image and still invokes the provider', async () => {
+      const mockProvider = {
+        getName: () => 'claude',
+        executeQuery: vi.fn(async function* () {
+          yield { type: 'result', subtype: 'success' };
+        }),
+      };
+      vi.mocked(providers.providerForModel).mockReturnValue(mockProvider as any);
+      vi.mocked(imageHandler.readImageAsBase64).mockRejectedValue(
+        Object.assign(new Error('Missing image'), { code: 'ENOENT' })
+      );
+      vi.mocked(promptBuilder.buildPromptWithImages).mockResolvedValue({
+        content: 'Text without missing image',
+        hasImages: false,
+      });
       await service.sendMessage({
         sessionId: 'session-1',
-        message: 'Check this',
-        imagePaths: ['/path/test.png'],
+        message: 'Continue text',
+        imagePaths: ['/path/missing.png'],
       });
-
+      expect(promptBuilder.buildPromptWithImages).toHaveBeenCalledOnce();
+      expect(mockProvider.executeQuery).toHaveBeenCalledOnce();
       expect(mockLogger.error).toHaveBeenCalled();
     });
 

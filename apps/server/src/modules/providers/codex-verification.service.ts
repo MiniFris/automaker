@@ -1,3 +1,4 @@
+import { VerificationAuthMethodSchema } from '@automaker/contracts/domains/setup-query';
 import { Inject, Injectable, HttpException } from '@nestjs/common';
 import path from 'node:path';
 import os from 'node:os';
@@ -108,9 +109,10 @@ export class CodexVerificationService {
   }
   async target(authMethod: unknown) {
     this.accepting();
-    if (authMethod !== 'cli' && authMethod !== 'api_key')
+    const parsed = VerificationAuthMethodSchema.safeParse(authMethod);
+    if (!parsed.success)
       throw new ValidationDomainError('An explicit authentication method is required.');
-    const target = await this.resolve(authMethod, new AbortController());
+    const target = await this.resolve(parsed.data, new AbortController());
     this.accepting();
     return { success: true as const, protocolVersion: 1 as const, target };
   }

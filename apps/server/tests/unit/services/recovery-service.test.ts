@@ -22,7 +22,8 @@ import type { Feature } from '@automaker/types';
 const normalizePath = (p: string): string => path.normalize(p);
 
 // Mock dependencies
-vi.mock('@automaker/utils', () => ({
+vi.mock('@automaker/utils', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@automaker/utils')>()),
   createLogger: () => ({
     info: vi.fn(),
     warn: vi.fn(),
@@ -43,6 +44,8 @@ vi.mock('@automaker/platform', () => ({
 }));
 
 vi.mock('@/lib/secure-fs.js', () => ({
+  lstat: vi.fn().mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' })),
+  rename: vi.fn().mockResolvedValue(undefined),
   mkdir: vi.fn().mockResolvedValue(undefined),
   access: vi.fn().mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' })),
   readFile: vi.fn().mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' })),
@@ -141,7 +144,12 @@ describe('recovery-service.ts', () => {
       mockConcurrencyManager as any,
       mockSettingsService,
       mockExecuteFeature,
-      mockLoadFeature,
+      (project, id, strict) =>
+        strict
+          ? utils
+              .readJsonWithRecovery(`${project}/.automaker/features/${id}/feature.json`, null)
+              .then((result) => result.data)
+          : mockLoadFeature(project, id),
       mockDetectPipelineStatus,
       mockResumePipeline,
       mockIsFeatureRunning,
@@ -152,7 +160,51 @@ describe('recovery-service.ts', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.resetAllMocks();
+  });
+
+  it('bounds accepted state IO and drains it before rejecting further admission', async () => {
+    let release!: (value: string) => void;
+    const pending = new Promise<string>((resolve) => {
+      release = resolve;
+    });
+    vi.mocked(secureFs.readFile)
+      .mockResolvedValue('{}')
+      .mockImplementationOnce(() => pending);
+    const accepted = Array.from({ length: 256 }, () => service.loadExecutionState('/test/project'));
+    await expect(service.loadExecutionState('/test/project')).rejects.toMatchObject({
+      statusCode: 503,
+    });
+    let closed = false;
+    const closing = service.close().then(() => {
+      closed = true;
+    });
+    await expect(service.loadExecutionState('/test/project')).rejects.toMatchObject({
+      statusCode: 503,
+    });
+    expect(closed).toBe(false);
+    release('{}');
+    await Promise.all(accepted);
+    await closing;
+  });
+
+  it('reports an unconfirmed state drain at the finite shutdown deadline', async () => {
+    vi.useFakeTimers();
+    let release!: (value: string) => void;
+    vi.mocked(secureFs.readFile).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        })
+    );
+    const reading = service.loadExecutionState('/test/project');
+    await Promise.resolve();
+    const closing = expect(service.close()).rejects.toThrow('cleanup could not be confirmed');
+    await vi.advanceTimersByTimeAsync(5000);
+    await closing;
+    release('{}');
+    await reading;
   });
 
   describe('DEFAULT_EXECUTION_STATE', () => {
@@ -180,7 +232,7 @@ describe('recovery-service.ts', () => {
       await service.saveExecutionStateForProject('/test/project', 'feature-branch', 3);
 
       expect(secureFs.writeFile).toHaveBeenCalledWith(
-        '/test/project/.automaker/execution-state.json',
+        expect.stringMatching(/^\/test\/project\/\.automaker\/execution-state\.json\.write\./),
         expect.any(String),
         'utf-8'
       );

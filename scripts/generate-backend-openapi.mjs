@@ -199,7 +199,9 @@ async function operation(endpoint) {
         parameters.push({
           name: field,
           in: location,
-          required: location === 'path' || !parameter.questionToken,
+          required:
+            location === 'path' ||
+            (!parameter.questionToken && !(schema && optionalInputs.get(schema.$ref))),
           schema: schema ?? { type: 'string' },
         });
       } else if (schema) {

@@ -1,5 +1,6 @@
 export * from './common.js';
 export * from './health.js';
+export * from './session-responses.js';
 export * from './metrics.js';
 export * from './project-domain.js';
 export * from './api-metadata.js';

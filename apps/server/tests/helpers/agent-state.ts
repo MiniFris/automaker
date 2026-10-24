@@ -16,6 +16,7 @@ import { AgentPromptQueue } from '../../src/services/agent/agent-prompt-queue.js
 import { AgentQueueDeliveryStore } from '../../src/services/agent/agent-queue-delivery-store.js';
 import { AgentSessionDeletion } from '../../src/services/agent/agent-session-deletion.js';
 import { AgentExecutionStore } from '../../src/services/agent/agent-execution-store.js';
+import * as testFilesystem from '../../src/lib/secure-fs.js';
 
 export function createTestAgentEvents(events: EventEmitter) {
   return new AgentEventPublisher(events);
@@ -56,7 +57,7 @@ export function createTestAgentState(
     repository,
     events
   );
-  const prompts = new AgentPromptBuilder();
+  const prompts = new AgentPromptBuilder(testFilesystem);
   return [
     repository,
     sessions,

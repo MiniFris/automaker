@@ -15,46 +15,82 @@ Nest `WsAdapter`, но `/api/terminal/ws` имеет собственные со
 Решение принимается отдельным ADR после прототипа и contract tests. Framework purity
 не является причиной ломать совместимость.
 
+## Текущий статус checklist
+
+Отмеченные пункты ниже подтверждены native source и contracts, а не только наличием
+плана. Владение и проверки сопоставлены в
+[audit этапа 9](artifacts/stage-9-completion-audit.md); более поздние результаты
+[artifact checkpoint](artifacts/state-execution-contract-checkpoint.md) подтверждают
+реальные Local/Docker/SSH и Linux packaged Electron проверки. Исторический срез
+2026-10-24 в конце документа сохраняет результаты того запуска. Результаты wave 8 фиксируются основным агентом отдельно и не подменяют
+эти результаты artifact acceptance.
+
+Этап целиком не закрыт: подтверждение explicit stop/unknown и native filesystem
+boundary terminal остаются открытыми. Старые замечания audit о сохранённом
+`getTerminalService` больше не описывают текущий source: getter удалён; боевой
+lifecycle bridge также удалён, см.
+[native cutover](artifacts/native-cutover-checkpoint.md).
+
 ## 9.1. Общий WebSocket infrastructure
 
-- [ ] Получать underlying HTTP server после Nest initialization.
-- [ ] Создать единый upgrade router по pathname.
-- [ ] Выполнять connection-level auth до передачи socket handler.
-- [ ] Ограничить handshake/query/header sizes.
-- [ ] Добавить connection ids и correlation logging.
-- [ ] Централизовать ping/pong, idle timeout и close codes.
-- [ ] Реализовать bounded send queue/backpressure policy.
-- [ ] Закрывать upgrades во время shutdown.
+- [x] Получать underlying HTTP server после Nest initialization.
+- [x] Создать единый upgrade router по pathname.
+- [x] Выполнять connection-level auth до передачи socket handler.
+- [x] Ограничить handshake/query/header sizes.
+- [x] Добавить connection ids и correlation logging.
+- [x] Централизовать ping/pong, idle timeout и close codes.
+- [x] Реализовать bounded send queue/backpressure policy.
+- [x] Закрывать upgrades во время shutdown.
 
 ## 9.2. Events gateway
 
-- [ ] Подписываться на typed EventBus.
-- [ ] Сохранить текущий JSON event envelope и ordering.
-- [ ] Изолировать slow/broken client.
-- [ ] Отписывать socket при close/error.
-- [ ] Проверить multiple clients и reconnect.
-- [ ] Не хранить неограниченную replay history в gateway.
-- [ ] Event replay использовать через EventHistoryModule.
+- [x] Подписываться на typed EventBus.
+- [x] Сохранить текущий JSON event envelope и ordering.
+- [x] Изолировать slow/broken client.
+- [x] Отписывать socket при close/error.
+- [x] Проверить multiple clients и reconnect.
+- [x] Не хранить неограниченную replay history в gateway.
+- [x] Event replay использовать через EventHistoryModule.
 
 ## 9.3. TerminalModule
 
-- [ ] Превратить `TerminalService` singleton factory в Nest provider.
-- [ ] Разделить REST session management, PTY supervisor и WS transport.
-- [ ] Сохранить session limits и password/token checks.
-- [ ] Сохранить input/resize/ping message formats.
-- [ ] Поддержать несколько connections к одной session.
-- [ ] Очистить connection metadata после реального session exit.
-- [ ] Сохранить reconnect без повторного startup command.
-- [ ] Сохранить target metadata и immutable execution binding.
-- [ ] Не создавать environment при обычном просмотре terminal layout.
+- [x] Превратить `TerminalService` singleton factory в Nest provider.
+- [x] Разделить REST session management, PTY supervisor и WS transport.
+- [x] Сохранить session limits и password/token checks.
+- [x] Сохранить input/resize/ping message formats.
+- [x] Поддержать несколько connections к одной session.
+- [x] Очистить connection metadata после реального session exit.
+- [x] Сохранить reconnect без повторного startup command.
+- [x] Сохранить target metadata и immutable execution binding.
+- [x] Не создавать environment при обычном просмотре terminal layout.
 
 ## 9.4. Managed remote terminal
 
-- [ ] Local PTY и Docker/SSH framed transport реализуют единый port.
-- [ ] Heartbeat loss не считается подтверждённым завершением remote process.
-- [ ] Backend restart не replay startup command.
-- [ ] Close browser tab не обязательно завершает shared terminal session.
+- [x] Local PTY и Docker/SSH framed transport реализуют единый port.
+- [x] Heartbeat loss не считается подтверждённым завершением remote process.
+- [x] Backend restart не replay startup command.
+- [x] Close browser tab не обязательно завершает shared terminal session.
 - [ ] Explicit delete/stop подтверждает cleanup либо возвращает unknown state.
+      Сейчас DELETE подтверждает только приём запроса; см. открытый пункт ниже.
+
+### Открытые terminal runtime boundaries
+
+- [ ] Довести explicit stop до подтверждённого cleanup либо явного unknown результата
+      в HTTP и UI. `apps/server/src/modules/terminal/terminal.controller.ts`
+      (`deleteSession`) возвращает 200 после boolean `killSession`, а
+      `apps/server/src/services/terminal-service.ts` (`killSession`) запускает
+      `lifecycle.close()` без ожидания и удерживает identity при ошибке.
+      `getAllSessions` не сообщает closing/unknown; UI
+      `apps/ui/src/components/views/terminal-view.tsx` удаляет layout даже при
+      HTTP/network failure. Существующие GET 503 и WS 4005 защищают от recreate,
+      но не подтверждают успешную остановку. Изменение должно сохранить различие
+      между принятым stop и реально завершённой PTY.
+- [ ] Передать native TerminalService явные application-owned filesystem/path/home
+      ports. `terminal-runtime.module.ts` пока передаёт только SettingsService и
+      maxSessions, а `terminal-service.ts:resolveWorkingDirectory` использует
+      `os.homedir()` и default `../lib/secure-fs.js.stat`. Это не тот экземпляр
+      `SECURE_FILESYSTEM`/SecurityService, который принадлежит конкретной Nest app.
+      PTY ownership и bounded cleanup уже реализованы; они не доказывают scoped IO.
 
 ## 9.5. Shutdown
 
@@ -66,6 +102,13 @@ Nest `WsAdapter`, но `/api/terminal/ws` имеет собственные со
 4. Закрыть/остановить owned sessions по текущей policy.
 5. Дождаться bounded cleanup.
 6. Закрыть WS servers и underlying HTTP server.
+
+Реализация: `WebSocketTransportService.onModuleDestroy` закрывает admission/input,
+отправляет close 1012 и ограничивает WS drain; application lifecycle отдельно ждёт
+TerminalService.cleanup, а shared HTTP adapter подтверждает закрытие собственных
+sockets. `terminal-drain`, `terminal-closing-admission`, `shutdown-failure-signal`
+contracts и `shared-http-server-adapter` units проверяют actual/failed cleanup и
+последующие hooks. Transport close не считается отменой незавершённой FS операции.
 
 ## Тесты
 

@@ -1,4 +1,4 @@
-import { Global, Module } from '@nestjs/common';
+import { Global, Inject, Module } from '@nestjs/common';
 import { RUNTIME_CONFIG, type RuntimeConfig } from '../../core/config/index.js';
 import { AgentSessionRepository } from '../../services/agent/agent-session.repository.js';
 import { AgentSessionRegistry } from '../../services/agent/agent-session-registry.js';
@@ -22,13 +22,21 @@ import { AgentExecutionStore } from '../../services/agent/agent-execution-store.
 import { AgentService } from '../../services/agent-service.js';
 import { agentServiceProvider } from './agent-service.provider.js';
 import { SecurityService } from '../../core/security/security.service.js';
+import { SECURE_FILESYSTEM } from '../../core/security/security.module.js';
+import type { AgentStorageFilesystem } from '../../services/agent/agent-storage-filesystem.js';
 
 @Global()
 @Module({
   providers: [
     agentServiceProvider,
     AgentSessionRegistry,
-    AgentPromptBuilder,
+    {
+      provide: AgentPromptBuilder,
+      inject: [SECURE_FILESYSTEM],
+      useFactory: (
+        filesystem: import('../../services/execution-filesystem.js').ExecutionFilesystem
+      ) => new AgentPromptBuilder(filesystem),
+    },
     AgentStreamNormalizer,
     {
       provide: AgentExecutionStore,
@@ -37,13 +45,22 @@ import { SecurityService } from '../../core/security/security.service.js';
         AgentSessionRepository,
         AgentSessionRegistry,
         AgentQueueDeliveryStore,
+        SECURE_FILESYSTEM,
       ],
       useFactory: (
         config: RuntimeConfig,
         repository: AgentSessionRepository,
         sessions: AgentSessionRegistry,
-        deliveries: AgentQueueDeliveryStore
-      ) => new AgentExecutionStore(config.storage.dataDirectory, repository, sessions, deliveries),
+        deliveries: AgentQueueDeliveryStore,
+        filesystem: AgentStorageFilesystem
+      ) =>
+        new AgentExecutionStore(
+          config.storage.dataDirectory,
+          repository,
+          sessions,
+          deliveries,
+          filesystem
+        ),
     },
     {
       provide: AgentSessionDeletion,
@@ -64,12 +81,14 @@ import { SecurityService } from '../../core/security/security.service.js';
     },
     {
       provide: AgentQueueDeliveryStore,
-      inject: [RUNTIME_CONFIG, AgentSessionRepository, AgentSessionRegistry],
+      inject: [RUNTIME_CONFIG, AgentSessionRepository, AgentSessionRegistry, SECURE_FILESYSTEM],
       useFactory: (
         config: RuntimeConfig,
         repository: AgentSessionRepository,
-        sessions: AgentSessionRegistry
-      ) => new AgentQueueDeliveryStore(config.storage.dataDirectory, repository, sessions),
+        sessions: AgentSessionRegistry,
+        filesystem: AgentStorageFilesystem
+      ) =>
+        new AgentQueueDeliveryStore(config.storage.dataDirectory, repository, sessions, filesystem),
     },
     {
       provide: AgentSessionLoader,
@@ -174,9 +193,9 @@ import { SecurityService } from '../../core/security/security.service.js';
     { provide: AgentExecutionCoordinator, useFactory: () => new AgentExecutionCoordinator() },
     {
       provide: AgentSessionRepository,
-      inject: [RUNTIME_CONFIG],
-      useFactory: (config: RuntimeConfig) =>
-        new AgentSessionRepository(config.storage.dataDirectory),
+      inject: [RUNTIME_CONFIG, SECURE_FILESYSTEM],
+      useFactory: (config: RuntimeConfig, filesystem: AgentStorageFilesystem) =>
+        new AgentSessionRepository(config.storage.dataDirectory, filesystem),
     },
   ],
   exports: [
@@ -198,4 +217,17 @@ import { SecurityService } from '../../core/security/security.service.js';
     AgentQueueDeliveryStore,
   ],
 })
-export class AgentStateModule {}
+export class AgentStateModule {
+  constructor(
+    @Inject(AgentExecutionStore) private readonly runs: AgentExecutionStore,
+    @Inject(AgentQueueDeliveryStore) private readonly deliveries: AgentQueueDeliveryStore,
+    @Inject(AgentSessionRepository) private readonly repository: AgentSessionRepository
+  ) {}
+
+  async beforeApplicationShutdown(): Promise<void> {
+    // Execution settlement may enqueue delivery/repository writes. Keep downstream stores open.
+    await this.runs.onApplicationShutdown();
+    await this.deliveries.onApplicationShutdown();
+    await this.repository.drain();
+  }
+}

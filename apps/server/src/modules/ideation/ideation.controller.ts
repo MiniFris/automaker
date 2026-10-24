@@ -1,3 +1,4 @@
+import { IdeaPromptCategoryParameterSchema } from '@automaker/contracts/domains/ideation';
 import { Body, Controller, Get, HttpCode, Inject, Param, Post, UseGuards } from '@nestjs/common';
 import { AllowedPathFields, AllowedPathGuard } from '../../core/security/index.js';
 import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
@@ -105,7 +106,9 @@ export class IdeationController {
   @Get('prompts') prompts() {
     return this.ideation.prompts();
   }
-  @Get('prompts/:category') promptsByCategory(@Param('category') category: string) {
+  @Get('prompts/:category') promptsByCategory(
+    @Param('category', new ZodValidationPipe(IdeaPromptCategoryParameterSchema)) category: string
+  ) {
     return this.ideation.promptsByCategory(category);
   }
   @Post('suggestions/generate')

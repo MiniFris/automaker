@@ -8,7 +8,8 @@ application/infra границ этапа 11. Результаты возобн�
 Следующий проверенный срез: [verification, legacy import, Gemini и performance](artifacts/verification-import-gemini-performance-checkpoint.md).
 Текущий checkpoint: [planning, ideation и singleton retirement](artifacts/planning-ideation-singletons-checkpoint.md).
 Следующий checkpoint: [feature storage, metrics и production artifact](artifacts/feature-storage-metrics-artifact-checkpoint.md).
-Последний checkpoint: [state transactions, execution filesystem и core contracts](artifacts/state-execution-contract-checkpoint.md).
+Предыдущий checkpoint: [state transactions, execution filesystem и core contracts](artifacts/state-execution-contract-checkpoint.md).
+Последний checkpoint: [agent storage, recovery и session contracts](artifacts/agent-storage-recovery-session-checkpoint.md).
 Полная миграция ещё не завершена; checklist и результаты проверок ведутся
 в документах соответствующих этапов.
 

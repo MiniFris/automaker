@@ -1,89 +1,80 @@
 # Stage 10 cutover/production audit
 
-Read-only audit of the original `10-cutover-and-hardening.md`, against current source
-and existing recorded evidence. No build, network, Docker, SSH, browser or benchmark
-was launched for this audit. Root's combined checkpoint and Linux packaged run are
-separate, still-to-be-recorded evidence. Historical snapshots are not current results.
+Reconciled against current source and recorded checkpoints during wave 8. This documentation update starts no build, test, benchmark,
+container or GUI. Recorded artifact runs below belong to their named checkpoints;
+they are not new measurements of the frozen wave 8 source. Stage 10 as a whole is
+not declared complete.
 
-## Implementation and evidence map
+## Gates with existing evidence
 
-| Original area                                | What currently exists                                                                                                                                                                                                                          | Remaining / qualification                                                                                                                                                                                                                                                                                                                     |
-| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 10.1 all HTTP owners / old entrypoint        | Existing generated inventory lists 317 Nest owners; `main.ts` is the production entry, Docker CMD and Electron paths target main; server clean-build removes old dist.                                                                         | Root must regenerate/check inventory after this combined batch. Source/compiled old index were absent during inspection.                                                                                                                                                                                                                      |
-| 10.1 legacy middleware / wrapper composition | Nest directly owns providers, agents, settings, project stores, terminal and orchestration. Old legacy service bag/factory provider file is retired.                                                                                           | Live `LegacyModule`/`createLegacyApplication` startup/shutdown bridge remains. Removing old router middleware is not proof this bridge disappeared.                                                                                                                                                                                           |
-| 10.1 route factories / singleton getters     | Nine unused terminal route/common files retired in stage 9; several other route groups already retired.                                                                                                                                        | Many legacy route factories remain. `getTerminalService` still has a legacy settings-route/test-shim caller. Other getter/registry cleanup remains in stage 11.                                                                                                                                                                               |
-| 10.1 temporary flags / deleted-import checks | Existing ownership inventory checks and server build detect concrete missing imports.                                                                                                                                                          | No blanket proof that all temporary ownership descriptors/flags are gone; that original item remains open.                                                                                                                                                                                                                                    |
-| 10.2 dependency rules                        | ESLint rejects direct env/cwd reads in `src/core`/`src/modules` except config parsing. Source inspection found no explicit `Scope.REQUEST`/REQUEST injection.                                                                                  | This is narrower than all requested rules: services/providers, public module exports, Nest-free domain/application, singleton instances and controller shell/cycle enforcement are not comprehensively guarded.                                                                                                                               |
-| 10.3 config/probes/cookies                   | Typed runtime config validation, protected/public health routes, CORS allowlist/local-origin handling, JSON content-type/50 MiB body limit, production secure/lax cookies and preview guards exist.                                            | Deployment/proxy behavior and private-network matrix need explicit evidence; do not enable trust-all proxy settings to make a check pass.                                                                                                                                                                                                     |
-| 10.3 limits / shutdown                       | Dedicated download bounds exist; WS limits/admission and owned socket drain are implemented in stage 9; production signal smoke and active-resource contracts exist.                                                                           | Download archive ownership/scoped FS still needs migration. Docker-stop and active workload cleanup require their corresponding target evidence, not only idle health.                                                                                                                                                                        |
-| 10.4 performance comparison                  | `measure-server-baseline.mjs` measures import/init/health latency/RSS/shutdown and exits naturally. Historical baseline records 154 MiB legacy vs 192.2 MiB native RSS, different startup phases explicitly separated.                         | Not a fresh result or an approved regression budget. No benchmark threshold assertions/CI benchmark job found; large lists, sustained streams and repeated FD/process workloads are not proved by 100 health requests.                                                                                                                        |
-| 10.5 security review                         | Auth, typed path policy, token reuse/expiry, managed execution ownership, secret/error redaction and native WS boundaries have specific contracts.                                                                                             | Individual green contracts are not blanket sign-off for all auth inheritance, SSRF, shell paths, CSRF, metadata/DTO/log leakage or file races. Remaining native/legacy FS and SDK consumers are explicitly recorded elsewhere.                                                                                                                |
-| 10.6 Standalone/Web                          | Server production build, native lifecycle smoke and real UI regression commands exist; server packaging prepares a production-dependency bundle.                                                                                               | Fresh combined runs and actual production-dependency artifact boot are required before claiming this matrix complete. A build alone does not prove setup/project/agent/terminal workflows.                                                                                                                                                    |
-| 10.6 Docker                                  | Production Dockerfile targets `dist/main.js`, owns a non-root app user and healthcheck. Managed target integration tests exercise actual Docker execution.                                                                                     | Managed execution image tests do not prove clean production image install, existing-volume upgrade, permissions or container stop. Audit found missing contracts workspace manifest before npm ci; root has now added it and removed duplicate spec-parser COPY. Actual clean build/run remains separate evidence.                            |
-| 10.6 Electron                                | `prepare-server.mjs` installs server dependencies with `--omit=dev`, copies workspace builds, replaces symlinks and supplies main entry. afterPack rebuilds server natives. Current root change excludes developer `.env` from extraResources. | New `smoke-packaged-linux.mjs` verifies actual packaged identity, isolated profile, dynamic backend URL, 200 readiness/401 protected route, real packaged node-pty and backend disappearance after close. Script presence is not a successful run; root must record build/run result.                                                         |
-| 10.7 storage/rollback                        | Durable queue deliveries, deletion tombstones and execution intents are implemented with forward recovery contracts; backups/storage format decisions are documented.                                                                          | Standalone explicit-target downgrade guard and 28 offline cases now verify marker refusal and a whole-snapshot restore into a fresh profile; see [cutover audit](downgrade-preflight-audit.md). This does not claim compatibility of an actual previous binary or completed staging rollback. Safety markers are never automatically deleted. |
-| 10.8 docs                                    | Migration, contracts, config decisions, protocol and execution-environment references exist.                                                                                                                                                   | Some inventory/baseline documents intentionally describe stage 0/history. Current operations docs must distinguish those snapshots from actual main entry/lifecycle/packaging and provide a tested rollback procedure.                                                                                                                        |
+| Original area                                     | Current implementation and evidence                                                                                                                                                                                                                                                                                                                                                                                                      | Scope of the conclusion                                                                                                                                                                                                               |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 10.1 native composition / entrypoint              | `LegacyModule`, `LEGACY_APPLICATION` and `createLegacyApplication` were deleted. `apps/server/src/main.ts`, `app.module.ts` and `core/lifecycle/application-runtime.lifecycle.ts` compose and clean up injected owners. [Native cutover](native-cutover-checkpoint.md) and [lifecycle audit](native-lifecycle-cutover-audit.md) record two-app isolation, startup barriers, tracked resume, interruption and attempt-all shutdown tests. | The live legacy bridge is gone. Earlier audit statements that it remains live are superseded. Factory providers constructing native services are not legacy instance wrappers.                                                        |
+| 10.1 emitted production artifact                  | `apps/server/scripts/check-build.mjs` requires `main.js` and rejects emitted `routes/` and `legacy/`; clean production builds and artifact startup passed in [artifact checkpoint](state-execution-contract-checkpoint.md).                                                                                                                                                                                                              | Test characterization route source may remain without being production composition. The source removal checklist is still distinct.                                                                                                   |
+| 10.2 initial architecture guards                  | `apps/server/eslint.config.mjs` rejects service/provider imports of routes/controllers, core/module imports of routes, module ambient env/cwd and direct controller filesystem/process imports. Architecture fixture checks passed in the artifact checkpoint.                                                                                                                                                                           | These static guards do not prove every public-export, framework-free domain, computed import or module-cycle rule.                                                                                                                    |
+| 10.3 config / HTTP / probes                       | `core/config/runtime-config.ts`, `core/http/platform-middleware.ts`, auth and health owners implement typed config, existing CORS/local-origin handling, JSON/content-type/body limits, cookies and liveness/readiness. `nest-shell.contract.test.ts`, auth/security contracts and actual production artifact smokes record behavior.                                                                                                    | Existing behavior is implemented and tested; this is not a deployment-wide proxy/CORS/security sign-off.                                                                                                                              |
+| 10.3 resources / shutdown                         | `core/lifecycle/application-shutdown.ts`, `core/http/shared-http-server.adapter.ts` and terminal lifecycle retain failed cleanup, bound transport shutdown and run later hooks. Active PTY and failed-cleanup contracts exist. Download uses native scoped streams; see [download/prompt audit](download-prompt-filesystem-audit.md).                                                                                                    | Closing transport does not cancel or confirm a pending syscall. Unknown resource cleanup remains failure.                                                                                                                             |
+| 10.4 idle performance / CI budgets                | `scripts/measure-server-baseline.mjs`, budget tests and `.github/workflows/backend-performance.yml` implement thresholds with a real negative-budget check; [budget audit](performance-budget-and-boundaries-audit.md). The artifact checkpoint records idle p95 1.70 ms, RSS 204201984 bytes and no unexpected resources after close.                                                                                                   | These are coarse local idle checks, not sustained workload or production SLO acceptance. Workflow presence is not a claimed remote CI run.                                                                                            |
+| 10.6 production Docker                            | `scripts/smoke-production-docker.mjs` ran against the owned wave 7 image: JSON readiness/auth, feature CRUD and denied-root handling, actual ZIP extraction, metrics, no dev toolchain/routes/legacy and SIGTERM exit 0. The owned container was removed.                                                                                                                                                                                | Actual clean production image boot/stop is proved for that artifact. It does not by itself prove old-volume upgrade or every permission scenario.                                                                                     |
+| 10.6 packaged Linux Electron                      | `scripts/smoke-packaged-electron.mjs` ran under Xvfb outside the workspace with private HOME/config/userData/key. Actual packaged identity, renderer/preload, JSON health/auth, compiled artifact, HTTP/WS PTY output/exit 0, session disappearance, backend closure and owned profile removal passed.                                                                                                                                   | This is an actual Linux packaged run, not only UI build output. The earlier dynamic-port/HTML-readiness defect was fixed; port exclusion and own-startup JSON handshake have focused tests. It does not prove Windows/macOS behavior. |
+| 10.6 managed target behavior                      | The [artifact checkpoint](state-execution-contract-checkpoint.md) records 32 real SSH cases and all 15 distinct Docker cases, including PTY, manual cleanup, preview and pinned SDK installation/version commands.                                                                                                                                                                                                                       | No paid model or vendor authentication calls were made. Managed target acceptance and production backend image acceptance are separate results.                                                                                       |
+| 10.7 executable downgrade guard / fixture restore | `scripts/check-backend-downgrade.mjs`, [guard audit](downgrade-preflight-audit.md) and [operations procedure](../../backend-storage-downgrade.md) cover explicit target, read-only marker/quarantine checks and whole-snapshot restore into a fresh sibling. Pending native import intents are covered.                                                                                                                                  | The executable guard and owned fixture restore portion is implemented. It is not a promise that an actual selected old binary can read upgraded storage.                                                                              |
+| Native legacy profile import                      | [Import audit](legacy-profile-import-audit.md) and [verification/import checkpoint](verification-import-gemini-performance-checkpoint.md) record snapshot-configured source access, scoped destination, no-overwrite publication, staged recovery and startup failure barrier.                                                                                                                                                           | Earlier audit statements that native settings migration still directly uses ambient env/raw filesystem are superseded. Other consumers still need their own scoped boundaries.                                                        |
 
-## Conditional acceptance versus unconditional claims
+The recorded wave 7 artifact checkpoint includes 3835 server units (40 existing
+skips), 437 contracts, 1535 package/UI cases and 18 Chromium cases, with production
+builds and inventory/lock/format checks. Those counts identify that historical
+checkpoint; wave 8 results are recorded separately by the owning checkpoint.
 
-- The original Electron requirement says packaged macOS/Windows/Linux **where
-  runners are available**. Linux is available here and is the immediate actual
-  packaged gate; absent local macOS/Windows runners are not fabricated failures or
-  a demand to provision machines without authorization. Existing release CI builds
-  those platforms, but a build matrix is not an executed renderer/PTY smoke result.
-- Optional live-provider/vendor acceptance is not converted into mandatory paid
-  API calls. Offline contracts must state their scope; no account-authentication
-  claim is inferred from installed CLI/SDK detection.
-- Canary/prerelease/production rollout and monitoring are operational stages.
-  This audit does not authorize publishing a public release, pushing another branch,
-  changing a production installation or using real user credentials/data.
-- Keep the original performance, rollback and applicable package gates visible.
-  Do not close them solely because route ownership is Nest or unit counts increased.
+## Concrete remaining runtime and source work
 
-## Concrete next evidence/actions, without adding new requirements
+- Terminal explicit stop still acknowledges acceptance rather than confirming
+  cleanup or reporting uncertainty end-to-end. In
+  `apps/server/src/modules/terminal/terminal.controller.ts:deleteSession`, boolean
+  `killSession` yields 200. `services/terminal-service.ts:killSession` starts
+  `lifecycle.close()` without awaiting it, logs failure and retains identity.
+  `getAllSessions` has no closing/unknown field. In
+  `apps/ui/src/components/views/terminal-view.tsx`, kill removes the layout even
+  after HTTP/network failure. Existing session GET 503 and WS 4005 correctly prevent
+  recreation, but do not close this original stage-9 requirement.
+- Native TerminalService still needs an application-owned path/filesystem/home
+  boundary. `modules/terminal/terminal-runtime.module.ts` injects SettingsService
+  and maxSessions; `services/terminal-service.ts:resolveWorkingDirectory` uses
+  `os.homedir()` and the module-global `../lib/secure-fs.js.stat`. Native PTY process
+  ownership does not establish scoped filesystem ownership.
+- Other actual global/default IO consumers remain outside the scoped native
+  owners already migrated. Their concrete call chains must be migrated separately;
+  passing source exclusion or idle tests does not replace that work.
+- Legacy route factories remain in `apps/server/src/routes` for source/test
+  characterization. The remaining `getManagedDevServerService` and
+  `getManagedTestRunnerService` exports in `services/execution-environment` are
+  WeakMaps keyed by SettingsService, called from old route adapters. They are not
+  native module owners. `getTerminalService` is no longer present; the earlier
+  claim of a remaining settings caller was historical and is superseded.
+- Deleting source-only compatibility factories/getters, accounting for temporary
+  flags, and completing public-module/cycle/framework-free dependency rules remain
+  source/architecture gates. There is no new evidence of a live legacy bridge.
 
-1. Run root's actual Linux packaged artifact smoke after network-mutating tests,
-   record its real result and fix only observed packaging issues.
-2. Verify the corrected production Docker workspace/build path independently of
-   managed-worker transport tests; document existing-volume upgrade and stop scope.
-3. Run a fresh comparable benchmark when the runner is idle, then establish the
-   originally requested budgets/CI regression checks rather than relabeling old RSS.
-4. Use the implemented explicit-target downgrade guard and full-snapshot procedure;
-   validate the selected previous artifact on staging before promising its rollback.
-5. Finish live legacy bridge/getter/factory and remaining native FS/SDK isolation
-   work; add the missing dependency rules and align current operations documentation.
+## Remaining evidence and operational boundaries
 
-This audit is not a declaration of complete stage 10 or an expansion into optional
-hardening. It separates existing implementation, available tests, pending actual
-acceptance and conditional/operator-only work in the original plan.
+- Large feature-list workloads, sustained events/terminal/provider streams and
+  repeated workflow FD/child-process checks still need the original workload
+  evidence. Deterministic backpressure tests and idle resource counts prove their
+  own bounded behavior, not an unmeasured stress run.
+- Auth inheritance, SSRF, shell boundaries, DTO/log secret leakage, proxy/cookie
+  deployment combinations and path races need their concrete review/test scope;
+  individual green contracts are not blanket security approval.
+- Production image clean boot/stop and managed Docker cases do not certify an
+  existing-data-volume upgrade or a particular previous artifact's rollback.
+  Old-binary staging, canary, prerelease/release and monitoring remain operational
+  gates. This work does not authorize publishing or operating on real user data.
+- Packaged Windows/macOS acceptance is conditional on available runners, as the
+  original plan states. Missing local runners and optional vendor credentials do
+  not create unconditional new paid/live acceptance requirements.
+- Operations documentation must distinguish current lifecycle/config/contracts
+  from historical inventories and include tested commands and rollback limits.
+  Existing API, observability and storage procedures provide part of that evidence;
+  the full documentation checklist is not declared complete.
 
-## Observed packaged startup regression and targeted correction
-
-The actual Linux artifact smoke exposed overlapping port selection: with 3007 and
-3008 occupied, both unbound backend and static selections chose 3009. Static HTML
-then satisfied the old HTTP-200-only backend check. This was a readiness false
-positive, not evidence of an authentication bypass.
-
-Static port selection now excludes the selected backend port before either binds.
-The startup probe requires bounded JSON health. External-server mode uses public
-`/api/health` without an API key. Embedded mode authenticates detailed health and
-checks a fresh launch UUID response header plus the expected data directory; it
-also verifies the spawned child has not exited. A previous child's late event
-cannot clear a newer child reference. The UUID is snapshot-scoped, format-checked,
-and returned only by protected detailed health; its JSON body is unchanged. This
-is a startup handshake, not continuous runtime takeover protection.
-
-Targeted evidence: UI port/probe tests **12 passed**, native startup-header contracts
-**3 passed**, UI and server TypeScript checks passed. These cover occupied defaults,
-HTML/invalid JSON, another launch using the same API key, wrong data directory,
-oversized/never-ending health, public no-key access and unauthorized/invalid-nonce
-header suppression.
-
-Root then rebuilt the actual Linux package and ran it outside the workspace with an
-isolated HOME: renderer mounted, readiness 200, unauthorized detailed health 401,
-bundled node-pty process exit 0, backend closed after application close. Production
-Docker build/smoke also passed before this final startup-header addition: readiness
-200, unauthorized detailed health 401, no TypeScript runtime dependency, SIGTERM 0.
-Current combined evidence and remaining qualifications are recorded in the
-[resumed checkpoint](resumed-goal-checkpoint.md); the earlier audit table describes
-what was known before these runs and does not supersede that evidence.
+The original stage-10 checklist should be updated from these bounded conclusions,
+not closed wholesale because route ownership is native or test counts grew.

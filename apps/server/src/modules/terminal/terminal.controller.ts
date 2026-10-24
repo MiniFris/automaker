@@ -1,4 +1,5 @@
 import {
+  TerminalAuthenticationSchema,
   TerminalCreateSessionSchema,
   TerminalResizeSchema,
   TerminalSessionIdSchema,
@@ -50,7 +51,10 @@ export class TerminalController {
 
   @Post('auth')
   @HttpCode(200)
-  authenticate(@Body() body: { password?: unknown }, @Res() response: Response) {
+  authenticate(
+    @Body(new ZodValidationPipe(TerminalAuthenticationSchema)) body: { password?: unknown },
+    @Res() response: Response
+  ) {
     const result = this.access.authenticate(body?.password);
     response.status(result.status).json(result.body);
   }

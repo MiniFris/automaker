@@ -2,6 +2,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { atomicWriteJson } from '@automaker/utils';
 import * as secureFs from '../../lib/secure-fs.js';
+import type { AgentStorageFilesystem } from './agent-storage-filesystem.js';
 import { ConflictDomainError } from '../../core/errors/domain-errors.js';
 import { assertCanonicalAgentSessionId } from './agent-session-id.js';
 import { AgentSessionStorageError } from './agent-session-storage.error.js';
@@ -45,7 +46,8 @@ export class AgentExecutionStore {
     dataDirectory: string,
     private readonly repository: AgentSessionRepository,
     private readonly sessions: AgentSessionRegistry,
-    private readonly deliveries: AgentQueueDeliveryStore
+    private readonly deliveries: AgentQueueDeliveryStore,
+    private readonly filesystem: AgentStorageFilesystem = secureFs
   ) {
     this.directory = path.join(dataDirectory, 'agent-executions');
   }
@@ -181,7 +183,7 @@ export class AgentExecutionStore {
       if (!(await this.repository.deletionState(id)))
         throw new ConflictDomainError('Session deletion was not admitted.');
       this.owners.delete(id);
-      await removeAgentStorageArtifacts(this.directory, `${id}.json`);
+      await removeAgentStorageArtifacts(this.directory, `${id}.json`, this.filesystem);
     });
   }
 
@@ -211,7 +213,7 @@ export class AgentExecutionStore {
   private async read(id: string): Promise<AgentExecutionRecord | undefined> {
     let raw: string;
     try {
-      raw = String(await secureFs.readFile(this.file(id), 'utf8'));
+      raw = String(await this.filesystem.readFile(this.file(id), 'utf8'));
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
       throw new AgentSessionStorageError('read');
@@ -263,7 +265,10 @@ export class AgentExecutionStore {
   private async write(run: AgentExecutionRecord): Promise<void> {
     await this.repository.assertAvailable(run.sessionId);
     try {
-      await atomicWriteJson(this.file(run.sessionId), run, { mode: 0o600 });
+      await atomicWriteJson(this.file(run.sessionId), run, {
+        mode: 0o600,
+        filesystem: this.filesystem,
+      });
     } catch {
       throw new AgentSessionStorageError('write');
     }

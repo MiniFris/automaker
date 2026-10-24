@@ -1,12 +1,14 @@
 import path from 'node:path';
 import * as secureFs from '../../lib/secure-fs.js';
 import { AgentSessionStorageError } from './agent-session-storage.error.js';
+import type { AgentStorageFilesystem } from './agent-storage-filesystem.js';
 
 /** Only files produced by our atomic writer; never broad prefix/glob or recursive removal. */
 export async function agentStorageArtifacts(
   directory: string,
   basename: string,
-  includeMain = true
+  includeMain = true,
+  filesystem: Pick<AgentStorageFilesystem, 'readdir'> = secureFs
 ): Promise<string[]> {
   const escaped = basename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   // Scrubbing a backup or a previous temp is itself atomic; a crash can leave
@@ -14,7 +16,7 @@ export async function agentStorageArtifacts(
   const owned = new RegExp(`^${escaped}(?:\\.bak[1-9][0-9]*)?(?:\\.tmp\\.[0-9]+\\.[a-f0-9]{8})*$`);
   let names: string[];
   try {
-    names = await secureFs.readdir(directory);
+    names = await filesystem.readdir(directory);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
     throw new AgentSessionStorageError('read');
@@ -27,11 +29,12 @@ export async function agentStorageArtifacts(
 
 export async function removeAgentStorageArtifacts(
   directory: string,
-  basename: string
+  basename: string,
+  filesystem: Pick<AgentStorageFilesystem, 'readdir' | 'unlink'> = secureFs
 ): Promise<void> {
-  for (const file of await agentStorageArtifacts(directory, basename)) {
+  for (const file of await agentStorageArtifacts(directory, basename, true, filesystem)) {
     try {
-      await secureFs.unlink(file);
+      await filesystem.unlink(file);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT')
         throw new AgentSessionStorageError('write');

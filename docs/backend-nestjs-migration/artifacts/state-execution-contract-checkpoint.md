@@ -95,8 +95,10 @@ The complete goal remains active. The shared artifact currently has 318 operatio
 responses; this is explicit progress, not complete shared contract coverage. Error
 schemas and binary/stream contracts retain their separate requirements.
 
-Other actual global IO consumers, including PlanApprovalService and non-auto-mode
-services, still need explicit native boundaries. Full workflow/execution tracing,
+Correction from the subsequent source audit: PlanApprovalService already delegates
+to the scoped FeatureStateManager and has no independent filesystem access. Other
+actual global IO consumers in non-auto-mode services still need explicit native
+boundaries. Full workflow/execution tracing,
 queue/process telemetry, workload performance scenarios, remaining service/state
 decomposition and operational/platform gates remain governed by the original plan.
 Linux artifacts and local target acceptance do not prove native Windows/macOS or

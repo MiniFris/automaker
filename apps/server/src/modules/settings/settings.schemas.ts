@@ -1,5 +1,4 @@
-import { z } from 'zod';
-import { MODEL_TIMEOUT_PROVIDERS } from '@automaker/types';
+export { ModelTimeoutProviderSchema } from '@automaker/contracts/domains/settings';
 
 export {
   ProjectSettingsReadSchema,
@@ -17,7 +16,3 @@ export type {
   ProjectSettingsUpdate,
   LocalStorageMigrationRequest,
 } from '@automaker/contracts';
-
-// The provider list is owned by @automaker/types; the request envelope itself
-// remains shared in @automaker/contracts.
-export const ModelTimeoutProviderSchema = z.enum(MODEL_TIMEOUT_PROVIDERS);

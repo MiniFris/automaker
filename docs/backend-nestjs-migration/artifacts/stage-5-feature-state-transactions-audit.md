@@ -31,6 +31,6 @@ tests подтверждают concurrent mixed writes и 12 plan revisions бе
 
 Run-incarnation capability остаётся внешним coordinator guard: FSM/loader не
 вводят второй execution registry. Cross-process updates одного project всё ещё
-не distributed transaction. Global filesystem consumers вне FSM (например,
-PlanApprovalService/recovery state) этим bounded срезом не переносились.
+не distributed transaction. Filesystem consumers вне FSM этим bounded срезом
+не переносились; это граница того snapshot, а не актуальный remaining inventory.
 Полные suites/network/GUI этим агентом не запускались.

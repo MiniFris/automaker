@@ -3,6 +3,7 @@ import * as utils from '@automaker/utils';
 import * as settings from '../../../src/lib/settings-helpers.js';
 import { AgentPromptBuilder } from '../../../src/services/agent/agent-prompt-builder.js';
 import type { Message } from '../../../src/services/agent/agent-session.types.js';
+import * as filesystem from '../../../src/lib/secure-fs.js';
 
 vi.mock('@automaker/utils', async () => {
   const actual = await vi.importActual<typeof import('@automaker/utils')>('@automaker/utils');
@@ -21,7 +22,7 @@ const context = {
   ],
   formattedPrompt: 'CLAUDE_ONLY\nQUALITY_ONLY',
 };
-const builder = new AgentPromptBuilder();
+const builder = new AgentPromptBuilder(filesystem);
 const input = () => ({
   workingDirectory: '/project',
   message: 'x'.repeat(240),
@@ -49,6 +50,7 @@ describe('AgentPromptBuilder', () => {
     expect(utils.loadContextFiles).toHaveBeenCalledWith(
       expect.objectContaining({
         projectPath: '/project',
+        fsModule: filesystem,
         taskContext: { title: 'x'.repeat(200), description: 'x'.repeat(240) },
       })
     );
@@ -122,13 +124,16 @@ describe('AgentPromptBuilder', () => {
     expect(JSON.stringify(messages)).toBe(snapshot);
   });
 
-  it('preserves attachment metadata and skips unreadable images', async () => {
+  it('preserves attachment metadata and fails closed on unreadable images', async () => {
     vi.mocked(utils.readImageAsBase64)
       .mockResolvedValueOnce({ base64: 'YQ==', mimeType: 'image/png', filename: 'image.png' })
       .mockRejectedValueOnce(new Error('Fixture unreadable image'));
-    expect(
-      await builder.readImages(['good.png', 'missing.png'], new AbortController().signal)
-    ).toEqual([{ data: 'YQ==', mimeType: 'image/png', filename: 'image.png' }]);
+    expect(await builder.readImages(['good.png'], new AbortController().signal)).toEqual([
+      { data: 'YQ==', mimeType: 'image/png', filename: 'image.png' },
+    ]);
+    await expect(builder.readImages(['missing.png'], new AbortController().signal)).rejects.toThrow(
+      'Fixture unreadable image'
+    );
   });
 
   it('does not read later attachments after cancellation during image loading', async () => {
@@ -143,6 +148,13 @@ describe('AgentPromptBuilder', () => {
     expect(utils.readImageAsBase64).toHaveBeenCalledTimes(1);
   });
 
+  it('preserves best-effort handling only for genuinely missing images', async () => {
+    vi.mocked(utils.readImageAsBase64).mockRejectedValueOnce(
+      Object.assign(new Error('Missing image'), { code: 'ENOENT' })
+    );
+    expect(await builder.readImages(['missing.png'], new AbortController().signal)).toEqual([]);
+  });
+
   it('builds provider content with image paths but no controller workDir override', async () => {
     vi.mocked(utils.buildPromptWithImages).mockResolvedValueOnce({
       content: 'PROMPT_CONTENT',
@@ -154,7 +166,8 @@ describe('AgentPromptBuilder', () => {
       'Message',
       ['image.png'],
       undefined,
-      true
+      true,
+      filesystem
     );
   });
 

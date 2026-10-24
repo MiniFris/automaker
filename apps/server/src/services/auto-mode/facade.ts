@@ -593,7 +593,7 @@ export class AutoModeServiceFacade {
       // Callbacks
       (pPath, featureId, useWorktrees, isAutoMode, providedWorktreePath, opts) =>
         getFacade().executeFeature(featureId, useWorktrees, isAutoMode, providedWorktreePath, opts),
-      (pPath, featureId) => featureStateManager.loadFeature(pPath, featureId),
+      (pPath, featureId, strict) => featureLoader.get(pPath, featureId, { strict }),
       (pPath, featureId, status) =>
         pipelineOrchestrator.detectPipelineStatus(pPath, featureId, status),
       (pPath, feature, useWorktrees, pipelineInfo, expected) =>
@@ -1294,6 +1294,10 @@ export class AutoModeServiceFacade {
   closeAdmission(): void {
     this.stopping = true;
     this.concurrencyManager.stopAdmission();
+  }
+
+  drainRecoveryState(): Promise<void> {
+    return this.recoveryService.close();
   }
 
   interruptForShutdown(): void {

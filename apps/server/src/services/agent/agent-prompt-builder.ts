@@ -5,7 +5,7 @@ import {
   loadContextFiles,
   createLogger,
 } from '@automaker/utils';
-import * as secureFs from '../../lib/secure-fs.js';
+import type { ExecutionFilesystem } from '../execution-filesystem.js';
 import { filterClaudeMdFromContext, getPromptCustomization } from '../../lib/settings-helpers.js';
 import type { ExecuteOptions } from '../../providers/types.js';
 import type { SettingsService } from '../settings-service.js';
@@ -15,6 +15,7 @@ const logger = createLogger('AgentPromptBuilder');
 
 /** Owns prompt text/attachments, never provider choice or execution bindings. */
 export class AgentPromptBuilder {
+  constructor(private readonly filesystem: ExecutionFilesystem) {}
   async readImages(
     paths: readonly string[] | undefined,
     signal: AbortSignal
@@ -24,11 +25,12 @@ export class AgentPromptBuilder {
     for (const file of paths ?? []) {
       signal.throwIfAborted();
       try {
-        const image = await readImageAsBase64(file);
+        const image = await readImageAsBase64(file, this.filesystem);
         images.push({ data: image.base64, mimeType: image.mimeType, filename: image.filename });
       } catch (error) {
         if (signal.aborted) throw error;
         logger.error(`Failed to load image ${file}:`, error);
+        if ((error as NodeJS.ErrnoException)?.code !== 'ENOENT') throw error;
       }
       signal.throwIfAborted();
     }
@@ -50,7 +52,7 @@ export class AgentPromptBuilder {
       ? undefined
       : await loadContextFiles({
           projectPath: input.workingDirectory,
-          fsModule: secureFs as Parameters<typeof loadContextFiles>[0]['fsModule'],
+          fsModule: this.filesystem as Parameters<typeof loadContextFiles>[0]['fsModule'],
           taskContext: { title: input.message.substring(0, 200), description: input.message },
         });
     input.signal.throwIfAborted();
@@ -82,7 +84,13 @@ export class AgentPromptBuilder {
     signal: AbortSignal
   ): Promise<ExecuteOptions['prompt']> {
     signal.throwIfAborted();
-    const { content } = await buildPromptWithImages(message, imagePaths, undefined, true);
+    const { content } = await buildPromptWithImages(
+      message,
+      imagePaths,
+      undefined,
+      true,
+      this.filesystem
+    );
     signal.throwIfAborted();
     return content;
   }

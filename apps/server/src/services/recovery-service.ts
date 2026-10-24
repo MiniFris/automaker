@@ -5,12 +5,7 @@
 import path from 'path';
 import type { Feature, FeatureStatusWithPipeline } from '@automaker/types';
 import { DEFAULT_MAX_CONCURRENCY, isDirectModel } from '@automaker/types';
-import {
-  createLogger,
-  readJsonWithRecovery,
-  logRecoveryWarning,
-  DEFAULT_BACKUP_COUNT,
-} from '@automaker/utils';
+import { atomicWriteJson, createLogger } from '@automaker/utils';
 import { getFeatureDir, getFeaturesDir, getExecutionStatePath } from '@automaker/platform';
 import type { ExecutionFilesystem } from './execution-filesystem.js';
 import { getPromptCustomization } from '../lib/settings-helpers.js';
@@ -18,6 +13,7 @@ import type { TypedEventBus } from './typed-event-bus.js';
 import type { ConcurrencyManager, RunningFeature } from './concurrency-manager.js';
 import type { SettingsService } from './settings-service.js';
 import type { PipelineStatusInfo } from './pipeline-orchestrator.js';
+import { UnavailableDomainError } from '../core/errors/index.js';
 
 const logger = createLogger('RecoveryService');
 const missing = (error: unknown) => (error as NodeJS.ErrnoException)?.code === 'ENOENT';
@@ -59,7 +55,11 @@ export type ExecuteFeatureFn = (
   providedWorktreePath?: string,
   options?: { continuationPrompt?: string; _calledInternally?: boolean; _run?: RunningFeature }
 ) => Promise<void>;
-export type LoadFeatureFn = (projectPath: string, featureId: string) => Promise<Feature | null>;
+export type LoadFeatureFn = (
+  projectPath: string,
+  featureId: string,
+  strict?: boolean
+) => Promise<Feature | null>;
 export type DetectPipelineStatusFn = (
   projectPath: string,
   featureId: string,
@@ -83,6 +83,47 @@ export type AcquireRunningFeatureFn = (options: {
 export type ReleaseRunningFeatureFn = (featureId: string, expected?: RunningFeature) => void;
 
 export class RecoveryService {
+  private readonly stateTails = new Map<string, Promise<void>>();
+  private statePending = 0;
+  private closing?: Promise<void>;
+
+  private stateOperation<T>(project: string, operation: () => Promise<T>): Promise<T> {
+    if (this.closing)
+      return Promise.reject(new UnavailableDomainError('Recovery storage is shutting down.'));
+    if (this.statePending >= 256)
+      return Promise.reject(new UnavailableDomainError('Recovery storage is busy.'));
+    const key = path.resolve(getExecutionStatePath(project));
+    const previous = this.stateTails.get(key) ?? Promise.resolve();
+    this.statePending++;
+    const result = previous.then(operation);
+    const settled = result.then(
+      () => undefined,
+      () => undefined
+    );
+    this.stateTails.set(key, settled);
+    void settled.then(() => {
+      this.statePending--;
+      if (this.stateTails.get(key) === settled) this.stateTails.delete(key);
+    });
+    return result;
+  }
+
+  close(): Promise<void> {
+    if (this.closing) return this.closing;
+    let timer: NodeJS.Timeout;
+    this.closing = Promise.race([
+      Promise.all([...this.stateTails.values()]).then(() => undefined),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () =>
+            reject(new UnavailableDomainError('Recovery storage cleanup could not be confirmed.')),
+          5000
+        );
+      }),
+    ]).finally(() => clearTimeout(timer));
+    return this.closing;
+  }
+
   constructor(
     private eventBus: TypedEventBus,
     private concurrencyManager: ConcurrencyManager,
@@ -103,8 +144,7 @@ export class RecoveryService {
     branchName: string | null,
     maxConcurrency: number
   ): Promise<void> {
-    try {
-      await this.filesystem.mkdir(path.join(projectPath, '.automaker'), { recursive: true });
+    return this.stateOperation(projectPath, async () => {
       const runningFeatureIds = this.concurrencyManager
         .getAllRunning()
         .filter((f) => f.projectPath === projectPath)
@@ -118,14 +158,11 @@ export class RecoveryService {
         runningFeatureIds,
         savedAt: new Date().toISOString(),
       };
-      await this.filesystem.writeFile(
-        getExecutionStatePath(projectPath),
-        JSON.stringify(state, null, 2),
-        'utf-8'
-      );
-    } catch (error) {
-      if (!missing(error)) throw error;
-    }
+      await atomicWriteJson(getExecutionStatePath(projectPath), state, {
+        filesystem: this.filesystem,
+        recoverableTemporaryFiles: false,
+      });
+    });
   }
 
   async saveExecutionState(
@@ -133,68 +170,71 @@ export class RecoveryService {
     autoLoopWasRunning = false,
     maxConcurrency = DEFAULT_MAX_CONCURRENCY
   ): Promise<void> {
-    try {
-      await this.filesystem.mkdir(path.join(projectPath, '.automaker'), { recursive: true });
+    return this.stateOperation(projectPath, async () => {
       const state: ExecutionState = {
         version: 1,
         autoLoopWasRunning,
         maxConcurrency,
         projectPath,
         branchName: null,
-        runningFeatureIds: this.concurrencyManager.getAllRunning().map((rf) => rf.featureId),
+        runningFeatureIds: this.concurrencyManager
+          .getAllRunning()
+          .filter((rf) => rf.projectPath === projectPath)
+          .map((rf) => rf.featureId),
         savedAt: new Date().toISOString(),
       };
-      await this.filesystem.writeFile(
-        getExecutionStatePath(projectPath),
-        JSON.stringify(state, null, 2),
-        'utf-8'
-      );
-    } catch (error) {
-      if (!missing(error)) throw error;
-    }
+      await atomicWriteJson(getExecutionStatePath(projectPath), state, {
+        filesystem: this.filesystem,
+        recoverableTemporaryFiles: false,
+      });
+    });
   }
 
   async loadExecutionState(projectPath: string, strictRecovery = false): Promise<ExecutionState> {
-    try {
-      const content = (await this.filesystem.readFile(
-        getExecutionStatePath(projectPath),
-        'utf-8'
-      )) as string;
-      const state: unknown = JSON.parse(content);
-      if (strictRecovery) {
-        const value = state as Partial<ExecutionState> | null;
-        if (
-          !value ||
-          typeof value !== 'object' ||
-          value.version !== 1 ||
-          typeof value.autoLoopWasRunning !== 'boolean' ||
-          !Number.isInteger(value.maxConcurrency) ||
-          value.maxConcurrency! < 1 ||
-          value.projectPath !== projectPath ||
-          !(value.branchName === null || typeof value.branchName === 'string') ||
-          !Array.isArray(value.runningFeatureIds) ||
-          !value.runningFeatureIds.every((id) => typeof id === 'string' && id.length > 0) ||
-          typeof value.savedAt !== 'string'
-        ) {
-          throw new Error(
-            'Unsupported execution state; automatic recovery requires a valid version 1 state'
-          );
+    return this.stateOperation(projectPath, async () => {
+      try {
+        const content = (await this.filesystem.readFile(
+          getExecutionStatePath(projectPath),
+          'utf-8'
+        )) as string;
+        const state: unknown = JSON.parse(content);
+        if (strictRecovery) {
+          const value = state as Partial<ExecutionState> | null;
+          if (
+            !value ||
+            typeof value !== 'object' ||
+            value.version !== 1 ||
+            typeof value.autoLoopWasRunning !== 'boolean' ||
+            !Number.isInteger(value.maxConcurrency) ||
+            value.maxConcurrency! < 1 ||
+            value.projectPath !== projectPath ||
+            !(value.branchName === null || typeof value.branchName === 'string') ||
+            !Array.isArray(value.runningFeatureIds) ||
+            !value.runningFeatureIds.every((id) => typeof id === 'string' && id.length > 0) ||
+            typeof value.savedAt !== 'string'
+          ) {
+            throw new Error(
+              'Unsupported execution state; automatic recovery requires a valid version 1 state'
+            );
+          }
         }
+        return state as ExecutionState;
+      } catch (error) {
+        if (missing(error) || (!strictRecovery && error instanceof SyntaxError))
+          return DEFAULT_EXECUTION_STATE;
+        throw error;
       }
-      return state as ExecutionState;
-    } catch (error) {
-      if (missing(error) || (!strictRecovery && error instanceof SyntaxError))
-        return DEFAULT_EXECUTION_STATE;
-      throw error;
-    }
+    });
   }
 
   async clearExecutionState(projectPath: string, _branchName: string | null = null): Promise<void> {
-    try {
-      await this.filesystem.unlink(getExecutionStatePath(projectPath));
-    } catch (error) {
-      if (!missing(error)) throw error;
-    }
+    return this.stateOperation(projectPath, async () => {
+      try {
+        await this.filesystem.unlink(getExecutionStatePath(projectPath));
+      } catch (error) {
+        if (!missing(error)) throw error;
+      }
+    });
   }
 
   async contextExists(projectPath: string, featureId: string): Promise<boolean> {
@@ -311,18 +351,8 @@ export class RecoveryService {
       const featuresWithoutContext: Feature[] = [];
       for (const entry of entries) {
         if (entry.isDirectory()) {
-          const result = await readJsonWithRecovery<Feature | null>(
-            path.join(featuresDir, entry.name, 'feature.json'),
-            null,
-            {
-              maxBackups: DEFAULT_BACKUP_COUNT,
-              autoRestore: true,
-              filesystem: this.filesystem,
-              strictErrors: true,
-            }
-          );
-          logRecoveryWarning(result, `Feature ${entry.name}`, logger);
-          const feature = result.data;
+          // Native loader owns backup restoration and serializes it with feature mutations.
+          const feature = await this.loadFeatureFn(projectPath, entry.name, true);
           if (!feature) continue;
           // No automatic replay of an ambiguous direct run. Single-feature manual
           // resume remains available; crash-safe run/tool journaling is stage 6.

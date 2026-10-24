@@ -47,11 +47,11 @@ test('shared input schemas describe actual strict request fields and constraints
   assert.equal(resize.properties.files.maxItems, 1000);
 });
 
-test('unknown responses and inline input validators remain explicitly incomplete', () => {
-  const operation = document.paths['/api/terminal/auth'].post;
+test('unknown responses and raw request access remain explicitly incomplete', () => {
+  const operation = document.paths['/api/setup/verify-claude-auth'].post;
   assert.equal(operation['x-request-contract'], 'incomplete');
   assert.equal(operation['x-response-contract'], 'unverified');
-  assert.ok(operation['x-unresolved-inputs'].some((input) => input.in === 'body'));
+  assert.ok(operation['x-unresolved-inputs'].some((input) => input.in === 'request'));
   assert.equal(
     document['x-coverage'].unverifiedResponses + document['x-coverage'].sharedRuntimeResponses,
     inventory.endpoints.length
@@ -95,4 +95,29 @@ test('includes shared success responses for header-only passthrough without inve
     );
     assert.equal(operation.responses.default.content, undefined);
   }
+});
+
+test('marks optional query wire values optional and retains domain guards as separate validation', () => {
+  const operation = document.paths['/api/setup/copilot/models'].get;
+  const refresh = operation.parameters.find((parameter) => parameter.name === 'refresh');
+  assert.equal(refresh.required, false);
+  const schema = document.components.schemas[refresh.schema.$ref.split('/').at(-1)];
+  assert.ok(schema.anyOf.some((option) => option.type === 'array'));
+  assert.equal(operation['x-request-contract'], 'shared-or-no-input');
+});
+
+test('publishes session and project runtime response schemas with typed nested records', () => {
+  for (const [path, method] of [
+    ['/api/sessions', 'get'],
+    ['/api/sessions', 'post'],
+    ['/api/sessions/{sessionId}', 'get'],
+    ['/api/projects/overview', 'get'],
+  ]) {
+    const operation = document.paths[path][method];
+    assert.equal(operation['x-response-contract'], 'shared-runtime');
+    assert.ok(operation.responses['200'].content['application/json'].schema.$ref);
+  }
+  const overview = document.components.schemas['shared.ProjectsOverviewResponseSchema.Response'];
+  assert.equal(overview.properties.projects.items.properties.healthStatus.type, 'string');
+  assert.ok(overview.properties.aggregate.required.includes('featureCounts'));
 });

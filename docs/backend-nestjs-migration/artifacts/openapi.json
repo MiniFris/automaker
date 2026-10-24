@@ -7,10 +7,10 @@
   },
   "x-coverage": {
     "operations": 318,
-    "sharedOrNoInput": 281,
-    "incompleteInput": 37,
-    "sharedRuntimeResponses": 10,
-    "unverifiedResponses": 308
+    "sharedOrNoInput": 296,
+    "incompleteInput": 22,
+    "sharedRuntimeResponses": 18,
+    "unverifiedResponses": 300
   },
   "paths": {
     "/api/agent/clear": {
@@ -1107,7 +1107,7 @@
         "tags": [
           "claude"
         ],
-        "x-source": "apps/server/src/modules/providers/provider-usage.controller.ts:17",
+        "x-source": "apps/server/src/modules/providers/provider-usage.controller.ts:18",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -1124,23 +1124,17 @@
         "tags": [
           "codex"
         ],
-        "x-source": "apps/server/src/modules/providers/provider-usage.controller.ts:27",
+        "x-source": "apps/server/src/modules/providers/provider-usage.controller.ts:28",
         "x-access": "protected",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "query",
-            "name": "refresh"
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
         "parameters": [
           {
             "name": "refresh",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/setup-query.ProviderRefreshQuerySchema"
             }
           }
         ],
@@ -1157,7 +1151,7 @@
         "tags": [
           "codex"
         ],
-        "x-source": "apps/server/src/modules/providers/provider-usage.controller.ts:22",
+        "x-source": "apps/server/src/modules/providers/provider-usage.controller.ts:23",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -2461,7 +2455,7 @@
         "tags": [
           "gemini"
         ],
-        "x-source": "apps/server/src/modules/providers/provider-usage.controller.ts:40",
+        "x-source": "apps/server/src/modules/providers/provider-usage.controller.ts:42",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -2478,7 +2472,7 @@
         "tags": [
           "gemini"
         ],
-        "x-source": "apps/server/src/modules/providers/provider-usage.controller.ts:35",
+        "x-source": "apps/server/src/modules/providers/provider-usage.controller.ts:37",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -3155,7 +3149,7 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:98",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:99",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -3185,7 +3179,7 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:86",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:87",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -3215,7 +3209,7 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:80",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:81",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -3245,7 +3239,7 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:92",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:93",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -3275,7 +3269,7 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:55",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:56",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -3305,7 +3299,7 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:73",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:74",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -3335,7 +3329,7 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:61",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:62",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -3365,7 +3359,7 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:49",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:50",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -3395,7 +3389,7 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:67",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:68",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -3425,15 +3419,9 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:108",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:109",
         "x-access": "protected",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "path",
-            "name": "category"
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
         "parameters": [
           {
@@ -3441,7 +3429,7 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/ideation.IdeaPromptCategoryParameterSchema"
             }
           }
         ],
@@ -3461,7 +3449,7 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:105",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:106",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -3481,7 +3469,7 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:42",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:43",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -3511,7 +3499,7 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:32",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:33",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -3541,7 +3529,7 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:26",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:27",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -3571,7 +3559,7 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:37",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:38",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -3601,7 +3589,7 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:111",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:114",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -4058,13 +4046,20 @@
         "tags": [
           "projects"
         ],
-        "x-source": "apps/server/src/modules/projects/projects.controller.ts:8",
+        "x-source": "apps/server/src/modules/projects/projects.controller.ts:9",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/shared.ProjectsOverviewResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -4098,10 +4093,10 @@
         "tags": [
           "sessions"
         ],
-        "x-source": "apps/server/src/modules/sessions/sessions.controller.ts:56",
+        "x-source": "apps/server/src/modules/sessions/sessions.controller.ts:65",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "parameters": [
           {
             "name": "sessionId",
@@ -4117,7 +4112,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/shared.SessionMutationResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -4131,10 +4133,10 @@
         "tags": [
           "sessions"
         ],
-        "x-source": "apps/server/src/modules/sessions/sessions.controller.ts:62",
+        "x-source": "apps/server/src/modules/sessions/sessions.controller.ts:71",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "parameters": [
           {
             "name": "sessionId",
@@ -4150,7 +4152,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/shared.SessionMutationResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -4164,10 +4173,10 @@
         "tags": [
           "sessions"
         ],
-        "x-source": "apps/server/src/modules/sessions/sessions.controller.ts:68",
+        "x-source": "apps/server/src/modules/sessions/sessions.controller.ts:79",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "parameters": [
           {
             "name": "sessionId",
@@ -4183,7 +4192,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/shared.SessionMutationResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -4195,10 +4211,10 @@
         "tags": [
           "sessions"
         ],
-        "x-source": "apps/server/src/modules/sessions/sessions.controller.ts:43",
+        "x-source": "apps/server/src/modules/sessions/sessions.controller.ts:52",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "parameters": [
           {
             "name": "sessionId",
@@ -4214,7 +4230,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/shared.SessionReadResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -4226,10 +4249,10 @@
         "tags": [
           "sessions"
         ],
-        "x-source": "apps/server/src/modules/sessions/sessions.controller.ts:48",
+        "x-source": "apps/server/src/modules/sessions/sessions.controller.ts:57",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "parameters": [
           {
             "name": "sessionId",
@@ -4255,7 +4278,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/shared.SessionMetadataEnvelopeSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -4269,10 +4299,10 @@
         "tags": [
           "sessions"
         ],
-        "x-source": "apps/server/src/modules/sessions/sessions.controller.ts:32",
+        "x-source": "apps/server/src/modules/sessions/sessions.controller.ts:39",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "parameters": [
           {
             "name": "includeArchived",
@@ -4290,7 +4320,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/shared.SessionListResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -4302,10 +4339,10 @@
         "tags": [
           "sessions"
         ],
-        "x-source": "apps/server/src/modules/sessions/sessions.controller.ts:37",
+        "x-source": "apps/server/src/modules/sessions/sessions.controller.ts:46",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -4318,7 +4355,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/shared.SessionCreateResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -5113,14 +5157,7 @@
         ],
         "x-source": "apps/server/src/modules/settings/settings.controller.ts:82",
         "x-access": "protected",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "path",
-            "name": "provider",
-            "schema": "ModelTimeoutProviderSchema"
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
         "parameters": [
           {
@@ -5128,7 +5165,7 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/settings.ModelTimeoutProviderSchema"
             }
           }
         ],
@@ -5148,14 +5185,7 @@
         ],
         "x-source": "apps/server/src/modules/settings/settings.controller.ts:131",
         "x-access": "protected",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "path",
-            "name": "provider",
-            "schema": "ModelTimeoutProviderSchema"
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
         "parameters": [
           {
@@ -5163,7 +5193,7 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/settings.ModelTimeoutProviderSchema"
             }
           }
         ],
@@ -5495,7 +5525,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:113",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:119",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -5515,7 +5545,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:72",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:76",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -5545,7 +5575,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:179",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:185",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -5575,7 +5605,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:218",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:224",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -5605,7 +5635,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:163",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:169",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -5635,7 +5665,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:205",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:211",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -5665,7 +5695,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:192",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:198",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -5695,7 +5725,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:66",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:70",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -5715,23 +5745,17 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:119",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:125",
         "x-access": "public-before-global-auth",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "query",
-            "name": "authMethod"
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
         "parameters": [
           {
             "name": "authMethod",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/setup-query.SetupQueryValueSchema"
             }
           }
         ],
@@ -5751,7 +5775,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:173",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:179",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -5771,23 +5795,17 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:130",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:136",
         "x-access": "public-before-global-auth",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "query",
-            "name": "authMethod"
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
         "parameters": [
           {
             "name": "authMethod",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/setup-query.SetupQueryValueSchema"
             }
           }
         ],
@@ -5807,7 +5825,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:77",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:81",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -5837,7 +5855,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:215",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:221",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -5857,7 +5875,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:234",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:243",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -5877,7 +5895,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:231",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:240",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -5897,23 +5915,17 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:228",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:234",
         "x-access": "public-before-global-auth",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "query",
-            "name": "refresh"
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
         "parameters": [
           {
             "name": "refresh",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/setup-query.ProviderRefreshQuerySchema"
             }
           }
         ],
@@ -5933,23 +5945,17 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:88",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:92",
         "x-access": "public-before-global-auth",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "query",
-            "name": "provider"
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
         "parameters": [
           {
             "name": "provider",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/setup-query.SetupQueryValueSchema"
             }
           }
         ],
@@ -5969,7 +5975,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:255",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:271",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -5999,7 +6005,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:260",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:276",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -6029,23 +6035,17 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:249",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:261",
         "x-access": "public-before-global-auth",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "query",
-            "name": "projectPath"
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
         "parameters": [
           {
             "name": "projectPath",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/setup-query.SetupQueryValueSchema"
             }
           }
         ],
@@ -6065,23 +6065,17 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:252",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:266",
         "x-access": "public-before-global-auth",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "query",
-            "name": "projectPath"
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
         "parameters": [
           {
             "name": "projectPath",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/setup-query.SetupQueryValueSchema"
             }
           }
         ],
@@ -6101,7 +6095,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:279",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:297",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -6131,15 +6125,9 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:291",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:309",
         "x-access": "public-before-global-auth",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "query",
-            "name": "profileId"
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
         "parameters": [
           {
@@ -6147,7 +6135,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/setup-query.SetupQueryValueSchema"
             }
           }
         ],
@@ -6167,7 +6155,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:274",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:292",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -6197,27 +6185,17 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:265",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:281",
         "x-access": "public-before-global-auth",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "query",
-            "name": "scope"
-          },
-          {
-            "in": "query",
-            "name": "projectPath"
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
         "parameters": [
           {
             "name": "scope",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/setup-query.SetupQueryValueSchema"
             }
           },
           {
@@ -6225,7 +6203,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/setup-query.SetupQueryValueSchema"
             }
           }
         ],
@@ -6245,7 +6223,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:285",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:303",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -6273,15 +6251,9 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:271",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:287",
         "x-access": "public-before-global-auth",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "query",
-            "name": "projectPath"
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
         "parameters": [
           {
@@ -6289,7 +6261,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/setup-query.SetupQueryValueSchema"
             }
           }
         ],
@@ -6309,7 +6281,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:160",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:166",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -6329,7 +6301,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:83",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:87",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -6359,7 +6331,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:184",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:190",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -6389,7 +6361,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:223",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:229",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -6419,7 +6391,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:168",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:174",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -6449,7 +6421,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:210",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:216",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -6479,7 +6451,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:197",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:203",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -6509,7 +6481,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:102",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:108",
         "x-access": "public-before-global-auth",
         "x-request-contract": "incomplete",
         "x-unresolved-inputs": [
@@ -6545,7 +6517,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:202",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:208",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -6565,7 +6537,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:144",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:150",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -6585,7 +6557,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:147",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:153",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -6605,7 +6577,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:69",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:73",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -6625,7 +6597,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:176",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:182",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -6645,7 +6617,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:189",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:195",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -6665,7 +6637,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:246",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:258",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -6685,7 +6657,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:240",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:252",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -6705,23 +6677,17 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:237",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:246",
         "x-access": "public-before-global-auth",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "query",
-            "name": "refresh"
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
         "parameters": [
           {
             "name": "refresh",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/setup-query.ProviderRefreshQuerySchema"
             }
           }
         ],
@@ -6741,7 +6707,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:243",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:255",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -6761,7 +6727,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:116",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:122",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -6781,7 +6747,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:91",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:97",
         "x-access": "public-before-global-auth",
         "x-request-contract": "incomplete",
         "x-unresolved-inputs": [
@@ -6817,7 +6783,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:124",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:130",
         "x-access": "public-before-global-auth",
         "x-request-contract": "incomplete",
         "x-unresolved-inputs": [
@@ -6853,7 +6819,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:135",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:141",
         "x-access": "public-before-global-auth",
         "x-request-contract": "incomplete",
         "x-unresolved-inputs": [
@@ -6889,7 +6855,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:150",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:156",
         "x-access": "public-before-global-auth",
         "x-request-contract": "incomplete",
         "x-unresolved-inputs": [
@@ -7137,20 +7103,17 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:51",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:52",
         "x-access": "protected",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "body"
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
         "requestBody": {
-          "required": true,
+          "required": false,
           "content": {
             "application/json": {
-              "schema": {}
+              "schema": {
+                "$ref": "#/components/schemas/terminal.TerminalAuthenticationSchema"
+              }
             }
           }
         },
@@ -7167,7 +7130,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:58",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:62",
         "x-access": "protected",
         "x-request-contract": "incomplete",
         "x-unresolved-inputs": [
@@ -7193,7 +7156,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:176",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:180",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -7230,7 +7193,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:163",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:167",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -7255,7 +7218,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:75",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:79",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -7282,7 +7245,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:69",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:73",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -7300,7 +7263,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:108",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:112",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -7327,7 +7290,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:198",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:202",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -7345,7 +7308,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:210",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:214",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -7372,7 +7335,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:39",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:40",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -9034,7 +8997,7 @@
         "tags": [
           "zai"
         ],
-        "x-source": "apps/server/src/modules/providers/provider-usage.controller.ts:45",
+        "x-source": "apps/server/src/modules/providers/provider-usage.controller.ts:47",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -9061,7 +9024,7 @@
         "tags": [
           "zai"
         ],
-        "x-source": "apps/server/src/modules/providers/provider-usage.controller.ts:68",
+        "x-source": "apps/server/src/modules/providers/provider-usage.controller.ts:70",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -9078,7 +9041,7 @@
         "tags": [
           "zai"
         ],
-        "x-source": "apps/server/src/modules/providers/provider-usage.controller.ts:63",
+        "x-source": "apps/server/src/modules/providers/provider-usage.controller.ts:65",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -9095,7 +9058,7 @@
         "tags": [
           "zai"
         ],
-        "x-source": "apps/server/src/modules/providers/provider-usage.controller.ts:54",
+        "x-source": "apps/server/src/modules/providers/provider-usage.controller.ts:56",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "unverified",
@@ -10408,6 +10371,10 @@
         ],
         "additionalProperties": false
       },
+      "ideation.IdeaPromptCategoryParameterSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "string"
+      },
       "ideation.IdeaUpdateSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -11100,6 +11067,47 @@
           "apiKey"
         ],
         "additionalProperties": false
+      },
+      "settings.ModelTimeoutProviderSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "string",
+        "enum": [
+          "openai-compatible",
+          "claude",
+          "codex",
+          "cursor",
+          "opencode",
+          "gemini",
+          "copilot"
+        ]
+      },
+      "setup-query.ProviderRefreshQuerySchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "setup-query.SetupQueryValueSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        ]
       },
       "shared.AppSpecCreateSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -13004,6 +13012,308 @@
         ],
         "additionalProperties": false
       },
+      "shared.ProjectsOverviewResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "projectId": {
+                  "type": "string"
+                },
+                "projectName": {
+                  "type": "string"
+                },
+                "projectPath": {
+                  "type": "string"
+                },
+                "healthStatus": {
+                  "type": "string",
+                  "enum": [
+                    "error",
+                    "active",
+                    "waiting",
+                    "completed",
+                    "idle"
+                  ]
+                },
+                "featureCounts": {
+                  "type": "object",
+                  "properties": {
+                    "pending": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "running": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "completed": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "failed": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "verified": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "pending",
+                    "running",
+                    "completed",
+                    "failed",
+                    "verified"
+                  ],
+                  "additionalProperties": {}
+                },
+                "totalFeatures": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "lastActivityAt": {
+                  "type": "string"
+                },
+                "isAutoModeRunning": {
+                  "type": "boolean"
+                },
+                "activeBranch": {
+                  "type": "string"
+                },
+                "unreadNotificationCount": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "projectId",
+                "projectName",
+                "projectPath",
+                "healthStatus",
+                "featureCounts",
+                "totalFeatures",
+                "isAutoModeRunning",
+                "unreadNotificationCount"
+              ],
+              "additionalProperties": {}
+            }
+          },
+          "aggregate": {
+            "type": "object",
+            "properties": {
+              "projectCounts": {
+                "type": "object",
+                "properties": {
+                  "total": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "active": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "idle": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "waiting": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "withErrors": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "allCompleted": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "total",
+                  "active",
+                  "idle",
+                  "waiting",
+                  "withErrors",
+                  "allCompleted"
+                ],
+                "additionalProperties": {}
+              },
+              "featureCounts": {
+                "type": "object",
+                "properties": {
+                  "pending": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "running": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "completed": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "failed": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "verified": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "total": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "pending",
+                  "running",
+                  "completed",
+                  "failed",
+                  "verified",
+                  "total"
+                ],
+                "additionalProperties": {}
+              },
+              "totalUnreadNotifications": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "projectsWithAutoModeRunning": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "computedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "projectCounts",
+              "featureCounts",
+              "totalUnreadNotifications",
+              "projectsWithAutoModeRunning",
+              "computedAt"
+            ],
+            "additionalProperties": {}
+          },
+          "recentActivity": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "projectId": {
+                  "type": "string"
+                },
+                "projectName": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "feature_created",
+                    "feature_started",
+                    "feature_completed",
+                    "feature_failed",
+                    "feature_verified",
+                    "auto_mode_started",
+                    "auto_mode_stopped",
+                    "ideation_session_started",
+                    "ideation_session_ended",
+                    "idea_created",
+                    "idea_converted",
+                    "notification_created",
+                    "project_opened"
+                  ]
+                },
+                "description": {
+                  "type": "string"
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "info",
+                    "success",
+                    "warning",
+                    "error"
+                  ]
+                },
+                "timestamp": {
+                  "type": "string"
+                },
+                "featureId": {
+                  "type": "string"
+                },
+                "featureTitle": {
+                  "type": "string"
+                },
+                "sessionId": {
+                  "type": "string"
+                },
+                "ideaId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "projectId",
+                "projectName",
+                "type",
+                "description",
+                "severity",
+                "timestamp"
+              ],
+              "additionalProperties": {}
+            }
+          },
+          "generatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "success",
+          "projects",
+          "aggregate",
+          "recentActivity",
+          "generatedAt"
+        ],
+        "additionalProperties": {}
+      },
       "shared.ProviderDisconnectRequestSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -13126,6 +13436,394 @@
         ],
         "additionalProperties": false
       },
+      "shared.SessionCreateResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "session": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "projectPath": {
+                "type": "string"
+              },
+              "workingDirectory": {
+                "type": "string"
+              },
+              "createdAt": {
+                "type": "string"
+              },
+              "updatedAt": {
+                "type": "string"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "model": {
+                "type": "string"
+              },
+              "providerId": {
+                "type": "string"
+              },
+              "sdkSessionId": {
+                "type": "string"
+              },
+              "executionEnvironment": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "number",
+                    "const": 1
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "legacy",
+                      "local",
+                      "docker",
+                      "ssh"
+                    ]
+                  },
+                  "projectPath": {
+                    "type": "string"
+                  },
+                  "cwd": {
+                    "type": "string"
+                  },
+                  "createdAt": {
+                    "type": "string"
+                  },
+                  "serverIdentity": {
+                    "type": "string"
+                  },
+                  "selection": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "mode": {
+                            "type": "string",
+                            "enum": [
+                              "local",
+                              "auto"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "mode"
+                        ],
+                        "additionalProperties": {}
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "mode": {
+                            "type": "string",
+                            "const": "profile"
+                          },
+                          "profileId": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "mode",
+                          "profileId"
+                        ],
+                        "additionalProperties": {}
+                      }
+                    ]
+                  },
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "global",
+                      "project"
+                    ]
+                  },
+                  "runtimeCwd": {
+                    "type": "string"
+                  },
+                  "docker": {
+                    "type": "object",
+                    "properties": {
+                      "owner": {
+                        "type": "string"
+                      },
+                      "engineId": {
+                        "type": "string"
+                      },
+                      "context": {
+                        "type": "string"
+                      },
+                      "containerId": {
+                        "type": "string"
+                      },
+                      "imageId": {
+                        "type": "string"
+                      },
+                      "projectPath": {
+                        "type": "string"
+                      },
+                      "user": {
+                        "type": "string"
+                      },
+                      "mount": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "bind",
+                              "volume"
+                            ]
+                          },
+                          "source": {
+                            "type": "string"
+                          },
+                          "subpath": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "source"
+                        ],
+                        "additionalProperties": {}
+                      }
+                    },
+                    "required": [
+                      "owner",
+                      "engineId",
+                      "containerId",
+                      "imageId",
+                      "projectPath",
+                      "user",
+                      "mount"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  "ssh": {
+                    "type": "object",
+                    "properties": {
+                      "version": {
+                        "type": "number",
+                        "const": 1
+                      },
+                      "ready": {
+                        "type": "boolean"
+                      },
+                      "preparationPath": {
+                        "type": "string"
+                      },
+                      "owner": {
+                        "type": "string"
+                      },
+                      "profile": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string",
+                            "const": "ssh"
+                          },
+                          "host": {
+                            "type": "string"
+                          },
+                          "port": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "username": {
+                            "type": "string"
+                          },
+                          "basePath": {
+                            "type": "string"
+                          },
+                          "credentialId": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "type",
+                          "host",
+                          "port",
+                          "username",
+                          "basePath"
+                        ],
+                        "additionalProperties": {}
+                      },
+                      "fingerprint": {
+                        "type": "string"
+                      },
+                      "identity": {
+                        "type": "string"
+                      },
+                      "projectPath": {
+                        "type": "string"
+                      },
+                      "remotePath": {
+                        "type": "string"
+                      },
+                      "workerPath": {
+                        "type": "string"
+                      },
+                      "workerHash": {
+                        "type": "string"
+                      },
+                      "cancelPath": {
+                        "type": "string"
+                      },
+                      "cancelHash": {
+                        "type": "string"
+                      },
+                      "jobsDirectory": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "version",
+                      "ready",
+                      "owner",
+                      "profile",
+                      "fingerprint",
+                      "identity",
+                      "projectPath",
+                      "remotePath",
+                      "workerPath",
+                      "workerHash",
+                      "cancelPath",
+                      "cancelHash",
+                      "jobsDirectory"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  "sshWorkspace": {
+                    "type": "object",
+                    "properties": {
+                      "version": {
+                        "type": "number",
+                        "const": 1
+                      },
+                      "branch": {
+                        "type": "string"
+                      },
+                      "baseBranch": {
+                        "type": "string"
+                      },
+                      "baseCommit": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "version",
+                      "branch",
+                      "baseBranch",
+                      "baseCommit"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  "featureWorkspace": {
+                    "type": "object",
+                    "properties": {
+                      "version": {
+                        "type": "number",
+                        "const": 1
+                      },
+                      "branch": {
+                        "type": "string"
+                      },
+                      "baseBranch": {
+                        "type": "string"
+                      },
+                      "baseCommit": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "version",
+                      "branch",
+                      "baseBranch",
+                      "baseCommit"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  "featurePreparation": {
+                    "type": "object",
+                    "properties": {
+                      "targetBranch": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "additionalProperties": {}
+                  },
+                  "fallbackReason": {
+                    "type": "string",
+                    "const": "docker-preflight-unavailable"
+                  }
+                },
+                "required": [
+                  "version",
+                  "id",
+                  "type",
+                  "projectPath",
+                  "cwd",
+                  "createdAt",
+                  "serverIdentity",
+                  "selection",
+                  "source"
+                ],
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "workingDirectory",
+              "createdAt",
+              "updatedAt"
+            ],
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "success",
+          "session"
+        ],
+        "additionalProperties": {}
+      },
       "shared.SessionCreateSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -13176,6 +13874,800 @@
         },
         "additionalProperties": false
       },
+      "shared.SessionListResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "sessions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "projectPath": {
+                  "type": "string"
+                },
+                "workingDirectory": {
+                  "type": "string"
+                },
+                "model": {
+                  "type": "string"
+                },
+                "providerId": {
+                  "type": "string"
+                },
+                "executionEnvironment": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "number",
+                      "const": 1
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "legacy",
+                        "local",
+                        "docker",
+                        "ssh"
+                      ]
+                    },
+                    "projectPath": {
+                      "type": "string"
+                    },
+                    "cwd": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "serverIdentity": {
+                      "type": "string"
+                    },
+                    "selection": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "mode": {
+                              "type": "string",
+                              "enum": [
+                                "local",
+                                "auto"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "mode"
+                          ],
+                          "additionalProperties": {}
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "mode": {
+                              "type": "string",
+                              "const": "profile"
+                            },
+                            "profileId": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "mode",
+                            "profileId"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      ]
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "global",
+                        "project"
+                      ]
+                    },
+                    "runtimeCwd": {
+                      "type": "string"
+                    },
+                    "docker": {
+                      "type": "object",
+                      "properties": {
+                        "owner": {
+                          "type": "string"
+                        },
+                        "engineId": {
+                          "type": "string"
+                        },
+                        "context": {
+                          "type": "string"
+                        },
+                        "containerId": {
+                          "type": "string"
+                        },
+                        "imageId": {
+                          "type": "string"
+                        },
+                        "projectPath": {
+                          "type": "string"
+                        },
+                        "user": {
+                          "type": "string"
+                        },
+                        "mount": {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "bind",
+                                "volume"
+                              ]
+                            },
+                            "source": {
+                              "type": "string"
+                            },
+                            "subpath": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "source"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "owner",
+                        "engineId",
+                        "containerId",
+                        "imageId",
+                        "projectPath",
+                        "user",
+                        "mount"
+                      ],
+                      "additionalProperties": {}
+                    },
+                    "ssh": {
+                      "type": "object",
+                      "properties": {
+                        "version": {
+                          "type": "number",
+                          "const": 1
+                        },
+                        "ready": {
+                          "type": "boolean"
+                        },
+                        "preparationPath": {
+                          "type": "string"
+                        },
+                        "owner": {
+                          "type": "string"
+                        },
+                        "profile": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "type": {
+                              "type": "string",
+                              "const": "ssh"
+                            },
+                            "host": {
+                              "type": "string"
+                            },
+                            "port": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "username": {
+                              "type": "string"
+                            },
+                            "basePath": {
+                              "type": "string"
+                            },
+                            "credentialId": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "type",
+                            "host",
+                            "port",
+                            "username",
+                            "basePath"
+                          ],
+                          "additionalProperties": {}
+                        },
+                        "fingerprint": {
+                          "type": "string"
+                        },
+                        "identity": {
+                          "type": "string"
+                        },
+                        "projectPath": {
+                          "type": "string"
+                        },
+                        "remotePath": {
+                          "type": "string"
+                        },
+                        "workerPath": {
+                          "type": "string"
+                        },
+                        "workerHash": {
+                          "type": "string"
+                        },
+                        "cancelPath": {
+                          "type": "string"
+                        },
+                        "cancelHash": {
+                          "type": "string"
+                        },
+                        "jobsDirectory": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "version",
+                        "ready",
+                        "owner",
+                        "profile",
+                        "fingerprint",
+                        "identity",
+                        "projectPath",
+                        "remotePath",
+                        "workerPath",
+                        "workerHash",
+                        "cancelPath",
+                        "cancelHash",
+                        "jobsDirectory"
+                      ],
+                      "additionalProperties": {}
+                    },
+                    "sshWorkspace": {
+                      "type": "object",
+                      "properties": {
+                        "version": {
+                          "type": "number",
+                          "const": 1
+                        },
+                        "branch": {
+                          "type": "string"
+                        },
+                        "baseBranch": {
+                          "type": "string"
+                        },
+                        "baseCommit": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "version",
+                        "branch",
+                        "baseBranch",
+                        "baseCommit"
+                      ],
+                      "additionalProperties": {}
+                    },
+                    "featureWorkspace": {
+                      "type": "object",
+                      "properties": {
+                        "version": {
+                          "type": "number",
+                          "const": 1
+                        },
+                        "branch": {
+                          "type": "string"
+                        },
+                        "baseBranch": {
+                          "type": "string"
+                        },
+                        "baseCommit": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "version",
+                        "branch",
+                        "baseBranch",
+                        "baseCommit"
+                      ],
+                      "additionalProperties": {}
+                    },
+                    "featurePreparation": {
+                      "type": "object",
+                      "properties": {
+                        "targetBranch": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "additionalProperties": {}
+                    },
+                    "fallbackReason": {
+                      "type": "string",
+                      "const": "docker-preflight-unavailable"
+                    }
+                  },
+                  "required": [
+                    "version",
+                    "id",
+                    "type",
+                    "projectPath",
+                    "cwd",
+                    "createdAt",
+                    "serverIdentity",
+                    "selection",
+                    "source"
+                  ],
+                  "additionalProperties": {}
+                },
+                "createdAt": {
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "type": "string"
+                },
+                "isArchived": {
+                  "type": "boolean"
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "messageCount": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "preview": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "isArchived",
+                "tags",
+                "messageCount",
+                "preview"
+              ],
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "success",
+          "sessions"
+        ],
+        "additionalProperties": {}
+      },
+      "shared.SessionMetadataEnvelopeSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "session": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "projectPath": {
+                "type": "string"
+              },
+              "workingDirectory": {
+                "type": "string"
+              },
+              "createdAt": {
+                "type": "string"
+              },
+              "updatedAt": {
+                "type": "string"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "model": {
+                "type": "string"
+              },
+              "providerId": {
+                "type": "string"
+              },
+              "sdkSessionId": {
+                "type": "string"
+              },
+              "executionEnvironment": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "number",
+                    "const": 1
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "legacy",
+                      "local",
+                      "docker",
+                      "ssh"
+                    ]
+                  },
+                  "projectPath": {
+                    "type": "string"
+                  },
+                  "cwd": {
+                    "type": "string"
+                  },
+                  "createdAt": {
+                    "type": "string"
+                  },
+                  "serverIdentity": {
+                    "type": "string"
+                  },
+                  "selection": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "mode": {
+                            "type": "string",
+                            "enum": [
+                              "local",
+                              "auto"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "mode"
+                        ],
+                        "additionalProperties": {}
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "mode": {
+                            "type": "string",
+                            "const": "profile"
+                          },
+                          "profileId": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "mode",
+                          "profileId"
+                        ],
+                        "additionalProperties": {}
+                      }
+                    ]
+                  },
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "global",
+                      "project"
+                    ]
+                  },
+                  "runtimeCwd": {
+                    "type": "string"
+                  },
+                  "docker": {
+                    "type": "object",
+                    "properties": {
+                      "owner": {
+                        "type": "string"
+                      },
+                      "engineId": {
+                        "type": "string"
+                      },
+                      "context": {
+                        "type": "string"
+                      },
+                      "containerId": {
+                        "type": "string"
+                      },
+                      "imageId": {
+                        "type": "string"
+                      },
+                      "projectPath": {
+                        "type": "string"
+                      },
+                      "user": {
+                        "type": "string"
+                      },
+                      "mount": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "bind",
+                              "volume"
+                            ]
+                          },
+                          "source": {
+                            "type": "string"
+                          },
+                          "subpath": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "source"
+                        ],
+                        "additionalProperties": {}
+                      }
+                    },
+                    "required": [
+                      "owner",
+                      "engineId",
+                      "containerId",
+                      "imageId",
+                      "projectPath",
+                      "user",
+                      "mount"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  "ssh": {
+                    "type": "object",
+                    "properties": {
+                      "version": {
+                        "type": "number",
+                        "const": 1
+                      },
+                      "ready": {
+                        "type": "boolean"
+                      },
+                      "preparationPath": {
+                        "type": "string"
+                      },
+                      "owner": {
+                        "type": "string"
+                      },
+                      "profile": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string",
+                            "const": "ssh"
+                          },
+                          "host": {
+                            "type": "string"
+                          },
+                          "port": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "username": {
+                            "type": "string"
+                          },
+                          "basePath": {
+                            "type": "string"
+                          },
+                          "credentialId": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "type",
+                          "host",
+                          "port",
+                          "username",
+                          "basePath"
+                        ],
+                        "additionalProperties": {}
+                      },
+                      "fingerprint": {
+                        "type": "string"
+                      },
+                      "identity": {
+                        "type": "string"
+                      },
+                      "projectPath": {
+                        "type": "string"
+                      },
+                      "remotePath": {
+                        "type": "string"
+                      },
+                      "workerPath": {
+                        "type": "string"
+                      },
+                      "workerHash": {
+                        "type": "string"
+                      },
+                      "cancelPath": {
+                        "type": "string"
+                      },
+                      "cancelHash": {
+                        "type": "string"
+                      },
+                      "jobsDirectory": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "version",
+                      "ready",
+                      "owner",
+                      "profile",
+                      "fingerprint",
+                      "identity",
+                      "projectPath",
+                      "remotePath",
+                      "workerPath",
+                      "workerHash",
+                      "cancelPath",
+                      "cancelHash",
+                      "jobsDirectory"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  "sshWorkspace": {
+                    "type": "object",
+                    "properties": {
+                      "version": {
+                        "type": "number",
+                        "const": 1
+                      },
+                      "branch": {
+                        "type": "string"
+                      },
+                      "baseBranch": {
+                        "type": "string"
+                      },
+                      "baseCommit": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "version",
+                      "branch",
+                      "baseBranch",
+                      "baseCommit"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  "featureWorkspace": {
+                    "type": "object",
+                    "properties": {
+                      "version": {
+                        "type": "number",
+                        "const": 1
+                      },
+                      "branch": {
+                        "type": "string"
+                      },
+                      "baseBranch": {
+                        "type": "string"
+                      },
+                      "baseCommit": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "version",
+                      "branch",
+                      "baseBranch",
+                      "baseCommit"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  "featurePreparation": {
+                    "type": "object",
+                    "properties": {
+                      "targetBranch": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "additionalProperties": {}
+                  },
+                  "fallbackReason": {
+                    "type": "string",
+                    "const": "docker-preflight-unavailable"
+                  }
+                },
+                "required": [
+                  "version",
+                  "id",
+                  "type",
+                  "projectPath",
+                  "cwd",
+                  "createdAt",
+                  "serverIdentity",
+                  "selection",
+                  "source"
+                ],
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "success",
+          "session"
+        ],
+        "additionalProperties": {}
+      },
+      "shared.SessionMutationResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "additionalProperties": {}
+      },
       "shared.SessionParamsSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -13191,6 +14683,475 @@
           "sessionId"
         ],
         "additionalProperties": false
+      },
+      "shared.SessionReadResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "session": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "projectPath": {
+                "type": "string"
+              },
+              "workingDirectory": {
+                "type": "string"
+              },
+              "createdAt": {
+                "type": "string"
+              },
+              "updatedAt": {
+                "type": "string"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "model": {
+                "type": "string"
+              },
+              "providerId": {
+                "type": "string"
+              },
+              "sdkSessionId": {
+                "type": "string"
+              },
+              "executionEnvironment": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "number",
+                    "const": 1
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "legacy",
+                      "local",
+                      "docker",
+                      "ssh"
+                    ]
+                  },
+                  "projectPath": {
+                    "type": "string"
+                  },
+                  "cwd": {
+                    "type": "string"
+                  },
+                  "createdAt": {
+                    "type": "string"
+                  },
+                  "serverIdentity": {
+                    "type": "string"
+                  },
+                  "selection": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "mode": {
+                            "type": "string",
+                            "enum": [
+                              "local",
+                              "auto"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "mode"
+                        ],
+                        "additionalProperties": {}
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "mode": {
+                            "type": "string",
+                            "const": "profile"
+                          },
+                          "profileId": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "mode",
+                          "profileId"
+                        ],
+                        "additionalProperties": {}
+                      }
+                    ]
+                  },
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "global",
+                      "project"
+                    ]
+                  },
+                  "runtimeCwd": {
+                    "type": "string"
+                  },
+                  "docker": {
+                    "type": "object",
+                    "properties": {
+                      "owner": {
+                        "type": "string"
+                      },
+                      "engineId": {
+                        "type": "string"
+                      },
+                      "context": {
+                        "type": "string"
+                      },
+                      "containerId": {
+                        "type": "string"
+                      },
+                      "imageId": {
+                        "type": "string"
+                      },
+                      "projectPath": {
+                        "type": "string"
+                      },
+                      "user": {
+                        "type": "string"
+                      },
+                      "mount": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "bind",
+                              "volume"
+                            ]
+                          },
+                          "source": {
+                            "type": "string"
+                          },
+                          "subpath": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "source"
+                        ],
+                        "additionalProperties": {}
+                      }
+                    },
+                    "required": [
+                      "owner",
+                      "engineId",
+                      "containerId",
+                      "imageId",
+                      "projectPath",
+                      "user",
+                      "mount"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  "ssh": {
+                    "type": "object",
+                    "properties": {
+                      "version": {
+                        "type": "number",
+                        "const": 1
+                      },
+                      "ready": {
+                        "type": "boolean"
+                      },
+                      "preparationPath": {
+                        "type": "string"
+                      },
+                      "owner": {
+                        "type": "string"
+                      },
+                      "profile": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string",
+                            "const": "ssh"
+                          },
+                          "host": {
+                            "type": "string"
+                          },
+                          "port": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "username": {
+                            "type": "string"
+                          },
+                          "basePath": {
+                            "type": "string"
+                          },
+                          "credentialId": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "type",
+                          "host",
+                          "port",
+                          "username",
+                          "basePath"
+                        ],
+                        "additionalProperties": {}
+                      },
+                      "fingerprint": {
+                        "type": "string"
+                      },
+                      "identity": {
+                        "type": "string"
+                      },
+                      "projectPath": {
+                        "type": "string"
+                      },
+                      "remotePath": {
+                        "type": "string"
+                      },
+                      "workerPath": {
+                        "type": "string"
+                      },
+                      "workerHash": {
+                        "type": "string"
+                      },
+                      "cancelPath": {
+                        "type": "string"
+                      },
+                      "cancelHash": {
+                        "type": "string"
+                      },
+                      "jobsDirectory": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "version",
+                      "ready",
+                      "owner",
+                      "profile",
+                      "fingerprint",
+                      "identity",
+                      "projectPath",
+                      "remotePath",
+                      "workerPath",
+                      "workerHash",
+                      "cancelPath",
+                      "cancelHash",
+                      "jobsDirectory"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  "sshWorkspace": {
+                    "type": "object",
+                    "properties": {
+                      "version": {
+                        "type": "number",
+                        "const": 1
+                      },
+                      "branch": {
+                        "type": "string"
+                      },
+                      "baseBranch": {
+                        "type": "string"
+                      },
+                      "baseCommit": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "version",
+                      "branch",
+                      "baseBranch",
+                      "baseCommit"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  "featureWorkspace": {
+                    "type": "object",
+                    "properties": {
+                      "version": {
+                        "type": "number",
+                        "const": 1
+                      },
+                      "branch": {
+                        "type": "string"
+                      },
+                      "baseBranch": {
+                        "type": "string"
+                      },
+                      "baseCommit": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "version",
+                      "branch",
+                      "baseBranch",
+                      "baseCommit"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  "featurePreparation": {
+                    "type": "object",
+                    "properties": {
+                      "targetBranch": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "additionalProperties": {}
+                  },
+                  "fallbackReason": {
+                    "type": "string",
+                    "const": "docker-preflight-unavailable"
+                  }
+                },
+                "required": [
+                  "version",
+                  "id",
+                  "type",
+                  "projectPath",
+                  "cwd",
+                  "createdAt",
+                  "serverIdentity",
+                  "selection",
+                  "source"
+                ],
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "additionalProperties": {}
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "assistant"
+                  ]
+                },
+                "content": {
+                  "type": "string"
+                },
+                "timestamp": {
+                  "type": "string"
+                },
+                "images": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "string"
+                      },
+                      "mimeType": {
+                        "type": "string"
+                      },
+                      "filename": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "data",
+                      "mimeType",
+                      "filename"
+                    ],
+                    "additionalProperties": {}
+                  }
+                },
+                "isError": {
+                  "type": "boolean"
+                },
+                "deliveryId": {
+                  "type": "string"
+                },
+                "queuedPromptId": {
+                  "type": "string"
+                },
+                "deliveryStatus": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "failed",
+                    "cancelled",
+                    "interrupted"
+                  ]
+                },
+                "runId": {
+                  "type": "string"
+                },
+                "executionStatus": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "failed",
+                    "cancelled",
+                    "interrupted"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "role",
+                "content",
+                "timestamp"
+              ],
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "success",
+          "session",
+          "messages"
+        ],
+        "additionalProperties": {}
       },
       "shared.SessionUpdateSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -13362,6 +15323,29 @@
           "parentDir"
         ],
         "additionalProperties": false
+      },
+      "terminal.TerminalAuthenticationSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "anyOf": [
+          {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "password": {}
+                },
+                "additionalProperties": {}
+              },
+              {
+                "type": "array",
+                "items": {}
+              }
+            ]
+          },
+          {
+            "type": "null"
+          }
+        ]
       },
       "terminal.TerminalCreateSessionSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",

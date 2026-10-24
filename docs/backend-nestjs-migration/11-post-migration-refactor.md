@@ -117,8 +117,12 @@ API v13, wire contracts, persisted formats и execution bindings не меняю
       [filesystem audit](artifacts/filesystem-lifecycle-audit.md),
       [lifecycle cutover](artifacts/native-lifecycle-cutover-audit.md),
       [settings audit](artifacts/settings-filesystem-audit.md).
-      Download/prompt, legacy Electron import и остальные unscoped consumers /
-      coordination остаются открытыми; общий checkbox пока не закрывается.
+      Download/prompt и legacy Electron import затем получили scoped ports;
+      agent stores/recovery — ordered drain и atomic state transactions.
+      См. [agent/recovery checkpoint](artifacts/agent-storage-recovery-session-checkpoint.md).
+      Остальные unscoped consumers (notification/history, auth storage, provider
+      cache, validation storage) и coordination ещё требуют переноса;
+      общий checkbox пока не закрывается.
 - [ ] Filesystem repositories.
 - [ ] Git local/remote adapters.
 - [ ] Process/PTY supervisor.
@@ -136,10 +140,11 @@ Application services тестируются на in-memory/fake ports; adapter c
       в typed factories; root сохраняет auth/fetch/WS ownership и Electron/filesystem
       compatibility bridges. См. [domain audit](artifacts/shared-inputs-openapi-client-audit.md)
       и [setup extraction](artifacts/setup-client-extraction-audit.md).
-- [x] Добавить generated/verified OpenAPI artifact. Проверяются все 317 native
-      operations и ссылки на shared inputs; 42 incomplete inputs и все unverified
-      responses явно отмечены. Это не закрывает отдельный пункт полной coverage.
-      См. [audit](artifacts/shared-inputs-openapi-client-audit.md).
+- [x] Добавить generated/verified OpenAPI artifact. Проверяются все 318 native
+      operations и ссылки на shared inputs; 22 incomplete inputs, 18 runtime
+      success response schemas и 300 unverified responses явно отмечены.
+      Это не закрывает отдельный пункт полной coverage.
+      См. [актуальный checkpoint](artifacts/agent-storage-recovery-session-checkpoint.md).
 - [x] Ввести deprecation policy и API versioning до intentional breaking changes.
       [API policy](../backend-api-contracts.md) сохраняет текущую v13 и требует
       явного решения о версии/переходе до нарушения совместимости.

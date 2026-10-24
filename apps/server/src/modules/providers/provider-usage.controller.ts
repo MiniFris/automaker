@@ -1,3 +1,4 @@
+import { ProviderRefreshQuerySchema } from '@automaker/contracts/domains/setup-query';
 import { Body, Controller, Get, HttpCode, Inject, Post, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
 
@@ -26,7 +27,8 @@ export class ProviderUsageController {
 
   @Get('codex/models')
   codexModels(
-    @Query('refresh') refresh: string | undefined,
+    @Query('refresh', new ZodValidationPipe(ProviderRefreshQuerySchema))
+    refresh: string | string[] | undefined,
     @Res({ passthrough: true }) response: Response
   ) {
     return this.respond(response, this.usage.codexModelCatalog(refresh === 'true'));

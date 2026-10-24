@@ -110,7 +110,10 @@ export class ProjectRunContextRegistry {
     let timer: NodeJS.Timeout | undefined;
     const deadline = performance.now() + 5000;
     this.shutdown = Promise.race([
-      Promise.allSettled(accepted).then(() => {
+      Promise.allSettled(accepted).then(async () => {
+        await Promise.all(
+          [...this.contexts.values()].map((context) => context.facade?.drainRecoveryState())
+        );
         if (performance.now() >= deadline || this.cleanupFailed)
           throw new AutoModeCommandCleanupError();
       }),

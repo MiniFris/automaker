@@ -39,7 +39,11 @@ it('retains cleanup uncertainty as a failed cached close after the awaited reque
 });
 it('closes admission synchronously before persistence without aborting accepted work', async () => {
   const registry = new ProjectRunContextRegistry();
-  const facade = { closeAdmission: vi.fn(), interruptForShutdown: vi.fn() };
+  const facade = {
+    closeAdmission: vi.fn(),
+    interruptForShutdown: vi.fn(),
+    drainRecoveryState: vi.fn().mockResolvedValue(undefined),
+  };
   registry.getOrCreate('/project', () => facade as never);
   registry.stopAdmission();
   expect(facade.closeAdmission).toHaveBeenCalledOnce();

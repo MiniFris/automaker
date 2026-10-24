@@ -37,11 +37,86 @@ export type ModelTimeoutUpdate = z.infer<typeof ModelTimeoutUpdateSchema>;
 export type ProjectSettingsUpdate = z.infer<typeof ProjectSettingsUpdateSchema>;
 export type LocalStorageMigrationRequest = z.infer<typeof LocalStorageMigrationRequestSchema>;
 
+const OverviewFeatureCountsSchema = z
+  .object({
+    pending: z.number().int().nonnegative(),
+    running: z.number().int().nonnegative(),
+    completed: z.number().int().nonnegative(),
+    failed: z.number().int().nonnegative(),
+    verified: z.number().int().nonnegative(),
+  })
+  .passthrough();
 export const ProjectsOverviewResponseSchema = z
   .object({
     success: z.literal(true),
-    projects: z.array(z.record(z.string(), z.unknown())),
-    aggregate: z.record(z.string(), z.unknown()),
+    projects: z.array(
+      z
+        .object({
+          projectId: z.string(),
+          projectName: z.string(),
+          projectPath: z.string(),
+          healthStatus: z.enum(['error', 'active', 'waiting', 'completed', 'idle']),
+          featureCounts: OverviewFeatureCountsSchema,
+          totalFeatures: z.number().int().nonnegative(),
+          lastActivityAt: z.string().optional(),
+          isAutoModeRunning: z.boolean(),
+          activeBranch: z.string().optional(),
+          unreadNotificationCount: z.number().int().nonnegative(),
+        })
+        .passthrough()
+    ),
+    aggregate: z
+      .object({
+        projectCounts: z
+          .object({
+            total: z.number().int().nonnegative(),
+            active: z.number().int().nonnegative(),
+            idle: z.number().int().nonnegative(),
+            waiting: z.number().int().nonnegative(),
+            withErrors: z.number().int().nonnegative(),
+            allCompleted: z.number().int().nonnegative(),
+          })
+          .passthrough(),
+        featureCounts: OverviewFeatureCountsSchema.extend({
+          total: z.number().int().nonnegative(),
+        }),
+        totalUnreadNotifications: z.number().int().nonnegative(),
+        projectsWithAutoModeRunning: z.number().int().nonnegative(),
+        computedAt: z.string(),
+      })
+      .passthrough(),
+    recentActivity: z.array(
+      z
+        .object({
+          id: z.string(),
+          projectId: z.string(),
+          projectName: z.string(),
+          type: z.enum([
+            'feature_created',
+            'feature_started',
+            'feature_completed',
+            'feature_failed',
+            'feature_verified',
+            'auto_mode_started',
+            'auto_mode_stopped',
+            'ideation_session_started',
+            'ideation_session_ended',
+            'idea_created',
+            'idea_converted',
+            'notification_created',
+            'project_opened',
+          ]),
+          description: z.string(),
+          severity: z.enum(['info', 'success', 'warning', 'error']),
+          timestamp: z.string(),
+          featureId: z.string().optional(),
+          featureTitle: z.string().optional(),
+          sessionId: z.string().optional(),
+          ideaId: z.string().optional(),
+        })
+        .passthrough()
+    ),
+    generatedAt: z.string(),
   })
   .passthrough();
 export type ProjectsOverviewResponse = z.infer<typeof ProjectsOverviewResponseSchema>;

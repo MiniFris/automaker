@@ -1,3 +1,4 @@
+import { VerificationAuthMethodSchema } from '@automaker/contracts/domains/setup-query';
 import { Inject, Injectable, HttpException } from '@nestjs/common';
 import { URL } from 'node:url';
 import {
@@ -77,12 +78,13 @@ export class ClaudeVerificationService {
   }
   target(authMethod: unknown) {
     this.accepting();
-    if (authMethod !== 'cli' && authMethod !== 'api_key')
+    const parsed = VerificationAuthMethodSchema.safeParse(authMethod);
+    if (!parsed.success)
       throw new ValidationDomainError('An explicit authentication method is required.');
     return {
       success: true as const,
       protocolVersion: 1 as const,
-      target: this.resolve(authMethod),
+      target: this.resolve(parsed.data),
     };
   }
   async verify(

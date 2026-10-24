@@ -5,7 +5,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgentSessionRepository } from '../../../src/services/agent/agent-session.repository.js';
 import { AgentSessionRegistry } from '../../../src/services/agent/agent-session-registry.js';
 import { AgentSessionStorageError } from '../../../src/services/agent/agent-session-storage.error.js';
-import * as secureFs from '../../../src/lib/secure-fs.js';
 import { secureFs as platformFs } from '@automaker/platform';
 import type {
   ActiveSession,
@@ -81,7 +80,7 @@ describe('AgentSessionRepository', () => {
   let directory: string, repository: AgentSessionRepository;
   beforeEach(async () => {
     directory = await mkdtemp(path.join(os.tmpdir(), 'automaker-agent-state-'));
-    repository = new AgentSessionRepository(directory);
+    repository = new AgentSessionRepository(directory, platformFs);
     await repository.initialize();
   });
   afterEach(async () => {
@@ -92,7 +91,7 @@ describe('AgentSessionRepository', () => {
 
   it('propagates read I/O errors without consulting a backup or returning empty state', async () => {
     const read = vi
-      .spyOn(secureFs, 'readFile')
+      .spyOn(platformFs, 'readFile')
       .mockRejectedValueOnce(Object.assign(new Error('private path'), { code: 'EACCES' }));
     await expect(repository.loadMetadata()).rejects.toBeInstanceOf(AgentSessionStorageError);
     expect(read).toHaveBeenCalledTimes(1);

@@ -3,6 +3,7 @@ import type { ExecuteOptions, ExecutionEnvironmentBinding } from '@automaker/typ
 import type { SettingsService } from '../../../src/services/settings-service.js';
 import { AgentEnvironmentPreparer } from '../../../src/services/agent/agent-environment-preparer.js';
 import { AgentPromptBuilder } from '../../../src/services/agent/agent-prompt-builder.js';
+import * as filesystem from '../../../src/lib/secure-fs.js';
 
 const mocks = vi.hoisted(() => ({
   remote: vi.fn(),
@@ -58,7 +59,7 @@ function input() {
     onBinding: vi.fn().mockResolvedValue(undefined),
   };
 }
-const preparer = new AgentEnvironmentPreparer(new AgentPromptBuilder());
+const preparer = new AgentEnvironmentPreparer(new AgentPromptBuilder(filesystem));
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.remote.mockResolvedValue(true);

@@ -1,3 +1,7 @@
+import {
+  ProviderRefreshQuerySchema,
+  SetupQueryValueSchema,
+} from '@automaker/contracts/domains/setup-query';
 import { Body, Controller, Delete, Get, HttpCode, Inject, Post, Query, Req } from '@nestjs/common';
 import {
   CliConnectionProviderSchema,
@@ -85,7 +89,9 @@ export class SetupController {
   ) {
     return this.connections.disconnect('claude', body);
   }
-  @Get('credential-target') credentialTarget(@Query('provider') provider: string) {
+  @Get('credential-target') credentialTarget(
+    @Query('provider', new ZodValidationPipe(SetupQueryValueSchema)) provider: string
+  ) {
     return this.credentials.target(provider);
   }
   @Post('store-api-key') @HttpCode(200) storeApiKey(
@@ -117,7 +123,7 @@ export class SetupController {
     return this.hostStatus.platform();
   }
   @Get('claude-verification-target') claudeVerificationTarget(
-    @Query('authMethod') authMethod: string
+    @Query('authMethod', new ZodValidationPipe(SetupQueryValueSchema)) authMethod: string
   ) {
     return this.verification.target(authMethod);
   }
@@ -128,7 +134,7 @@ export class SetupController {
     return this.verification.verify(body, request.ip || request.socket.remoteAddress || 'unknown');
   }
   @Get('codex-verification-target') codexVerificationTarget(
-    @Query('authMethod') authMethod: string
+    @Query('authMethod', new ZodValidationPipe(SetupQueryValueSchema)) authMethod: string
   ) {
     return this.codexVerification.target(authMethod);
   }
@@ -225,7 +231,10 @@ export class SetupController {
   ) {
     return this.connections.disconnect('copilot', body);
   }
-  @Get('copilot/models') copilotModels(@Query('refresh') refresh: string | undefined) {
+  @Get('copilot/models') copilotModels(
+    @Query('refresh', new ZodValidationPipe(ProviderRefreshQuerySchema))
+    refresh: string | string[] | undefined
+  ) {
     return this.catalogs.models('copilot', refresh === 'true');
   }
   @Post('copilot/models/refresh') @HttpCode(200) refreshCopilotModels() {
@@ -234,7 +243,10 @@ export class SetupController {
   @Post('copilot/cache/clear') @HttpCode(200) clearCopilotCache() {
     return this.catalogs.clear('copilot');
   }
-  @Get('opencode/models') opencodeModels(@Query('refresh') refresh: string | undefined) {
+  @Get('opencode/models') opencodeModels(
+    @Query('refresh', new ZodValidationPipe(ProviderRefreshQuerySchema))
+    refresh: string | string[] | undefined
+  ) {
     return this.catalogs.models('opencode', refresh === 'true');
   }
   @Post('opencode/models/refresh') @HttpCode(200) refreshOpencodeModels() {
@@ -246,10 +258,14 @@ export class SetupController {
   @Post('opencode/cache/clear') @HttpCode(200) clearOpencodeCache() {
     return this.catalogs.clear('opencode');
   }
-  @Get('cursor-config/target') cursorConfigTarget(@Query('projectPath') projectPath: string) {
+  @Get('cursor-config/target') cursorConfigTarget(
+    @Query('projectPath', new ZodValidationPipe(SetupQueryValueSchema)) projectPath: string
+  ) {
     return this.modelConfig.target(projectPath);
   }
-  @Get('cursor-config') cursorConfig(@Query('projectPath') projectPath: string) {
+  @Get('cursor-config') cursorConfig(
+    @Query('projectPath', new ZodValidationPipe(SetupQueryValueSchema)) projectPath: string
+  ) {
     return this.modelConfig.read(projectPath);
   }
   @Post('cursor-config/default-model') @HttpCode(200) setCursorDefaultModel(
@@ -263,12 +279,14 @@ export class SetupController {
     return this.modelConfig.setEnabledModels(body);
   }
   @Get('cursor-permissions/target') cursorPermissionsTarget(
-    @Query('scope') scope: string,
-    @Query('projectPath') projectPath?: string
+    @Query('scope', new ZodValidationPipe(SetupQueryValueSchema)) scope: string,
+    @Query('projectPath', new ZodValidationPipe(SetupQueryValueSchema)) projectPath?: string
   ) {
     return this.permissions.target(scope, projectPath);
   }
-  @Get('cursor-permissions') cursorPermissions(@Query('projectPath') projectPath?: string) {
+  @Get('cursor-permissions') cursorPermissions(
+    @Query('projectPath', new ZodValidationPipe(SetupQueryValueSchema)) projectPath?: string
+  ) {
     return this.permissions.read(projectPath);
   }
   @Post('cursor-permissions/profile') @HttpCode(200) applyPermissionProfile(
@@ -288,7 +306,9 @@ export class SetupController {
   ) {
     return this.permissions.delete(body);
   }
-  @Get('cursor-permissions/example') exampleCursorConfig(@Query('profileId') profileId?: string) {
+  @Get('cursor-permissions/example') exampleCursorConfig(
+    @Query('profileId', new ZodValidationPipe(SetupQueryValueSchema)) profileId?: string
+  ) {
     return this.permissions.example(profileId);
   }
 }

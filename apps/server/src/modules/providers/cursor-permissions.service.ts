@@ -1,3 +1,7 @@
+import {
+  CursorPermissionsScopeSchema,
+  CursorPermissionProfileIdSchema,
+} from '@automaker/contracts/domains/setup-query';
 import { Inject, Injectable } from '@nestjs/common';
 import {
   CursorCustomPermissionsRequestSchema,
@@ -46,14 +50,14 @@ export class CursorPermissionsService {
   }
   async target(scope: unknown, projectPath?: string) {
     this.accepting();
-    if (scope !== 'global' && scope !== 'project')
-      throw new ValidationDomainError('Scope must be global or project.');
+    const parsed = CursorPermissionsScopeSchema.safeParse(scope);
+    if (!parsed.success) throw new ValidationDomainError('Scope must be global or project.');
     if (scope === 'global' && projectPath !== undefined)
       throw new ValidationDomainError('Global scope must not include projectPath.');
     return {
       success: true as const,
       protocolVersion: 1 as const,
-      target: await this.resolve(scope, projectPath),
+      target: await this.resolve(parsed.data, projectPath),
     };
   }
   private async confirmed(target: CursorPermissionsTarget): Promise<CursorPermissionsTarget> {
@@ -174,7 +178,7 @@ export class CursorPermissionsService {
   }
   example(profileId: unknown = 'development') {
     this.accepting();
-    if (profileId !== 'strict' && profileId !== 'development')
+    if (!CursorPermissionProfileIdSchema.safeParse(profileId).success)
       throw new ValidationDomainError('Unknown Cursor permission profile.');
     const profile = CURSOR_PERMISSION_PROFILES.find((entry) => entry.id === profileId)!;
     return {

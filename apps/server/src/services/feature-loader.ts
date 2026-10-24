@@ -432,10 +432,14 @@ export class FeatureLoader {
    * Get a single feature by ID
    * Uses automatic recovery from backups if the main file is corrupted
    */
-  async get(projectPath: string, featureId: string): Promise<Feature | null> {
+  async get(
+    projectPath: string,
+    featureId: string,
+    options?: { strict?: boolean }
+  ): Promise<Feature | null> {
     if (!this.runtime) return this.getLegacy(projectPath, featureId);
     return this.run(this.getFeatureJsonPath(projectPath, featureId), () =>
-      this.readFeature(projectPath, featureId, false)
+      this.readFeature(projectPath, featureId, options?.strict ?? false)
     );
   }
 

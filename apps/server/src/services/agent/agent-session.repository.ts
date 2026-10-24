@@ -7,6 +7,7 @@ import { AgentSessionStorageError } from './agent-session-storage.error.js';
 import { assertCanonicalAgentSessionId } from './agent-session-id.js';
 import { ConflictDomainError } from '../../core/errors/domain-errors.js';
 import { agentStorageArtifacts, removeAgentStorageArtifacts } from './agent-storage-artifacts.js';
+import type { AgentStorageFilesystem } from './agent-storage-filesystem.js';
 
 export interface AgentSessionDeletionState {
   version: 1;
@@ -52,14 +53,17 @@ export class AgentSessionRepository {
   private readonly deletionDirectory: string;
   private deletionIndex?: Promise<Map<string, AgentSessionDeletionState>>;
 
-  constructor(dataDirectory: string) {
+  constructor(
+    dataDirectory: string,
+    private readonly filesystem: AgentStorageFilesystem = secureFs
+  ) {
     this.stateDirectory = path.join(dataDirectory, 'agent-sessions');
     this.metadataFile = path.join(dataDirectory, 'sessions-metadata.json');
     this.deletionDirectory = path.join(dataDirectory, 'agent-session-deletions');
   }
 
   initialize(): Promise<unknown> {
-    return secureFs.mkdir(this.stateDirectory, { recursive: true });
+    return this.filesystem.mkdir(this.stateDirectory, { recursive: true });
   }
 
   async loadMessages(id: string): Promise<Message[]> {
@@ -182,7 +186,7 @@ export class AgentSessionRepository {
       throw new ConflictDomainError('Session deletion was not admitted.');
     for (const file of [this.sessionFile(id), this.queueFile(id)])
       await this.enqueue(file, () =>
-        removeAgentStorageArtifacts(this.stateDirectory, path.basename(file))
+        removeAgentStorageArtifacts(this.stateDirectory, path.basename(file), this.filesystem)
       );
   }
 
@@ -191,11 +195,12 @@ export class AgentSessionRepository {
       for (const file of await agentStorageArtifacts(
         path.dirname(this.metadataFile),
         path.basename(this.metadataFile),
-        false
+        false,
+        this.filesystem
       )) {
         let data: unknown;
         try {
-          data = JSON.parse(String(await secureFs.readFile(file, 'utf8')));
+          data = JSON.parse(String(await this.filesystem.readFile(file, 'utf8')));
         } catch {
           throw new AgentSessionStorageError('read');
         }
@@ -203,7 +208,7 @@ export class AgentSessionRepository {
         const masked = await this.maskDeleted(data as Record<string, SessionMetadata>);
         if (JSON.stringify(masked) === JSON.stringify(data)) continue;
         try {
-          await atomicWriteJson(file, masked, { mode: 0o600 });
+          await atomicWriteJson(file, masked, { mode: 0o600, filesystem: this.filesystem });
         } catch {
           throw new AgentSessionStorageError('write');
         }
@@ -215,7 +220,7 @@ export class AgentSessionRepository {
     const file = this.sessionFile(id);
     await this.enqueue(file, async () => {
       try {
-        await secureFs.unlink(file);
+        await this.filesystem.unlink(file);
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
       }
@@ -232,7 +237,7 @@ export class AgentSessionRepository {
   private async read<T>(file: string, fallback: T, kind: StoreKind): Promise<T> {
     let content: string;
     try {
-      content = String(await secureFs.readFile(file, 'utf8'));
+      content = String(await this.filesystem.readFile(file, 'utf8'));
     } catch (error) {
       // Absence is authoritative (including after deletion). Never resurrect a
       // missing main file from an older backup or an uncommitted temp file.
@@ -248,7 +253,7 @@ export class AgentSessionRepository {
     for (let index = 1; index <= DEFAULT_BACKUP_COUNT; index++) {
       let backup: string;
       try {
-        backup = String(await secureFs.readFile(`${file}.bak${index}`, 'utf8'));
+        backup = String(await this.filesystem.readFile(`${file}.bak${index}`, 'utf8'));
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code === 'ENOENT') continue;
         throw new AgentSessionStorageError('read');
@@ -279,7 +284,10 @@ export class AgentSessionRepository {
   }
   private async writeNow(file: string, value: unknown): Promise<void> {
     try {
-      await atomicWriteJson(file, value, { backupCount: DEFAULT_BACKUP_COUNT });
+      await atomicWriteJson(file, value, {
+        backupCount: DEFAULT_BACKUP_COUNT,
+        filesystem: this.filesystem,
+      });
     } catch {
       throw new AgentSessionStorageError('write');
     }
@@ -314,7 +322,7 @@ export class AgentSessionRepository {
   private async loadDeletions(): Promise<Map<string, AgentSessionDeletionState>> {
     let files: string[];
     try {
-      files = await secureFs.readdir(this.deletionDirectory);
+      files = await this.filesystem.readdir(this.deletionDirectory);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return new Map();
       throw new AgentSessionStorageError('read');
@@ -325,7 +333,7 @@ export class AgentSessionRepository {
       try {
         assertCanonicalAgentSessionId(id);
         const state = JSON.parse(
-          String(await secureFs.readFile(this.deletionFile(id), 'utf8'))
+          String(await this.filesystem.readFile(this.deletionFile(id), 'utf8'))
         ) as AgentSessionDeletionState;
         if (
           state?.version !== 1 ||
@@ -343,8 +351,11 @@ export class AgentSessionRepository {
   }
   private async writeDeletion(state: AgentSessionDeletionState): Promise<void> {
     try {
-      await secureFs.mkdir(this.deletionDirectory, { recursive: true, mode: 0o700 });
-      await atomicWriteJson(this.deletionFile(state.sessionId), state, { mode: 0o600 });
+      await this.filesystem.mkdir(this.deletionDirectory, { recursive: true, mode: 0o700 });
+      await atomicWriteJson(this.deletionFile(state.sessionId), state, {
+        mode: 0o600,
+        filesystem: this.filesystem,
+      });
     } catch {
       throw new AgentSessionStorageError('write');
     }

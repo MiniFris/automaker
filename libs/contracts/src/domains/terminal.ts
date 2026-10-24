@@ -5,6 +5,13 @@ export const TERMINAL_MIN_MAX_SESSIONS = 1;
 export const TERMINAL_MAX_MAX_SESSIONS = 1000;
 export const TerminalSessionIdSchema = z.string();
 
+// Authentication is conditional on server configuration; the service owns the
+// password check, including its existing disabled/passwordless responses.
+export const TerminalAuthenticationSchema = z
+  .looseObject({ password: z.unknown().optional() })
+  .or(z.array(z.unknown()))
+  .nullish();
+
 const TerminalColumnsSchema = z.number().int().min(1).max(1000);
 const TerminalRowsSchema = z.number().int().min(1).max(500);
 
