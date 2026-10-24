@@ -1,12 +1,6 @@
-import {
-  Inject,
-  Injectable,
-  type OnApplicationBootstrap,
-  type OnApplicationShutdown,
-} from '@nestjs/common';
+import { Inject, Injectable, type OnModuleInit, type OnModuleDestroy } from '@nestjs/common';
 import { createLogger } from '@automaker/utils';
-import { APPLICATION_EVENTS } from '../../core/eventing/application-events.js';
-import type { EventEmitter } from '../../lib/events.js';
+import { EVENT_BUS, type EventBus } from '../../core/eventing/event-bus.js';
 import { cleanupStaleValidations } from '../../routes/github/routes/validation-common.js';
 import { EventHistoryService } from '../../services/event-history-service.js';
 import { EventHookService } from '../../services/event-hook-service.js';
@@ -17,20 +11,18 @@ const logger = createLogger('BackgroundIntegrations');
 const VALIDATION_CLEANUP_INTERVAL_MS = 60 * 60 * 1000;
 
 @Injectable()
-export class BackgroundIntegrationsLifecycle
-  implements OnApplicationBootstrap, OnApplicationShutdown
-{
+export class BackgroundIntegrationsLifecycle implements OnModuleInit, OnModuleDestroy {
   private cleanupInterval?: NodeJS.Timeout;
 
   constructor(
-    @Inject(APPLICATION_EVENTS) private readonly events: EventEmitter,
+    @Inject(EVENT_BUS) private readonly events: EventBus,
     @Inject(SettingsService) private readonly settings: SettingsService,
     @Inject(EventHistoryService) private readonly history: EventHistoryService,
     @Inject(FeatureLoader) private readonly features: FeatureLoader,
     @Inject(EventHookService) private readonly hooks: EventHookService
   ) {}
 
-  onApplicationBootstrap(): void {
+  onModuleInit(): void {
     this.hooks.initialize(this.events, this.settings, this.history, this.features);
     this.cleanupInterval = setInterval(() => {
       const cleaned = cleanupStaleValidations();
@@ -39,9 +31,9 @@ export class BackgroundIntegrationsLifecycle
     this.cleanupInterval.unref();
   }
 
-  onApplicationShutdown(): void {
-    this.hooks.destroy();
+  async onModuleDestroy(): Promise<void> {
     if (this.cleanupInterval) clearInterval(this.cleanupInterval);
     this.cleanupInterval = undefined;
+    await this.hooks.destroy();
   }
 }

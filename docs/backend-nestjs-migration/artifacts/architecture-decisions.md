@@ -687,3 +687,42 @@ This does not certify deliberately escaped process sessions, signalling discover
 job groups, external environment ownership, unsupported-platform process trees,
 simultaneous multiple signal-enabled applications per process or completion of
 remaining stage 7–11 requirements. Full evidence and limits are recorded in stage 9.
+
+## ADR-035: typed event hook subscriptions and cancellable owned task drain
+
+BackgroundIntegrationsLifecycle initializes hooks through the native EVENT_BUS in
+onModuleInit and awaits their destruction in onModuleDestroy, before later provider
+cleanup. Three explicitly typed subscriptions replace the raw transport callback.
+Closing one subscriber never disposes the shared bus. Reinitialization is rejected.
+The application event map describes hook payloads and removes feature-command
+emission casts without changing wire payloads, API v13 or persisted configuration.
+
+Hook delivery remains non-blocking for the producer, but accepted async tasks have
+an owner. Nested status handlers are awaited. Shutdown closes admission, drops
+unstarted queued tasks, cancels active actions, clears dedup timers and drains
+started reads/writes within 25 s. Late reads cannot launch new hook side effects.
+The cached close result rejects on unconfirmed cleanup or deadline; it is not made
+successful by a later storage completion. Completion/status suppression is scoped
+by project path and feature ID, not by a process-global feature ID alone.
+
+Host shell actions use the existing LocalExecutionEnvironment process supervisor,
+retaining the previous cwd and Unix shell semantics. Explicit legacy Windows shell
+selection preserves Node exec's ComSpec/cmd switches, verbatim command quoting and
+custom non-cmd shell behavior. Other local-environment callers keep their default
+PowerShell invocation. Commands and their output are not logged by hook dispatch.
+Pinned remote preparation/commands share the owner's AbortSignal, without fallback
+to host or command replay. Unknown remote/process cleanup cannot be hidden by
+ordinary hook-error isolation and fails checked Nest close after later owners run.
+
+HTTP actions combine shutdown cancellation and operation timeout, clear deadlines
+on both success and failure, and cancel unused response bodies. Ntfy accepts an
+optional caller cancellation signal, preserving independent callers. Ordinary
+delivery/command failure remains isolated from feature outcome. This does not
+claim complete notification diagnostic/body-bound hardening or desktop/audio parity.
+
+Native contracts observe actual loopback HTTP/ntfy cancellation, independent app
+owners, a real TERM-resistant shell/child and failed cleanup with later provider
+attempts. Unit fixtures cover timer/deadline/nested-task/error/dedup behavior and
+Windows argument construction. They do not certify real Windows/macOS packaging,
+process escape containment, exactly-once/event-loop guarantees, all remote failure
+paths or completion of the remaining migration stages. Evidence is in stage 8.

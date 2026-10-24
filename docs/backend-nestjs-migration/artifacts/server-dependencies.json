@@ -19,7 +19,7 @@
     "lib -> lib": 3,
     "lib -> services": 1,
     "modules -> core": 130,
-    "modules -> lib": 28,
+    "modules -> lib": 27,
     "modules -> modules": 300,
     "modules -> providers": 27,
     "modules -> routes": 32,
@@ -43,12 +43,12 @@
     "routes -> routes": 344,
     "routes -> services": 189,
     "routes -> types": 2,
-    "services -> core": 14,
-    "services -> lib": 77,
+    "services -> core": 15,
+    "services -> lib": 76,
     "services -> modules": 9,
     "services -> providers": 16,
     "services -> routes": 1,
-    "services -> services": 285,
+    "services -> services": 286,
     "services -> types": 2,
     "tests -> lib": 2
   },
@@ -137,6 +137,7 @@
       "apps/server/src/routes/fs/routes/resolve-directory.ts",
       "apps/server/src/services/claude-usage-service.ts",
       "apps/server/src/services/codex-usage-compat.ts",
+      "apps/server/src/services/event-hook-service.ts",
       "apps/server/src/services/execution-environment/docker-worker.ts",
       "apps/server/src/services/execution-environment/feature-workspace.ts",
       "apps/server/src/services/execution-environment/managed-feature-workspace.ts",
@@ -188,7 +189,6 @@
       "apps/server/src/services/claude-usage-service.ts",
       "apps/server/src/services/codex-app-server-service.ts",
       "apps/server/src/services/dev-server-service.ts",
-      "apps/server/src/services/event-hook-service.ts",
       "apps/server/src/services/execution-environment/docker-command.ts",
       "apps/server/src/services/execution-environment/docker-diagnostics.ts",
       "apps/server/src/services/execution-environment/docker-worker.ts",
@@ -302,7 +302,7 @@
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
     "ajv": 4,
-    "child_process": 40,
+    "child_process": 39,
     "cookie": 1,
     "cookie-parser": 1,
     "cors": 1,
@@ -323,7 +323,7 @@
     "node:net": 2,
     "node:os": 11,
     "node:path": 48,
-    "node:perf_hooks": 6,
+    "node:perf_hooks": 7,
     "node:stream": 5,
     "node:stream/web": 2,
     "node:string_decoder": 4,
@@ -335,7 +335,7 @@
     "reflect-metadata": 1,
     "ssh2": 3,
     "url": 1,
-    "util": 26,
+    "util": 25,
     "vitest": 1,
     "ws": 1,
     "yaml": 1,
@@ -2276,11 +2276,7 @@
     },
     {
       "source": "apps/server/src/modules/orchestration/background-integrations.lifecycle.ts",
-      "target": "apps/server/src/core/eventing/application-events.ts"
-    },
-    {
-      "source": "apps/server/src/modules/orchestration/background-integrations.lifecycle.ts",
-      "target": "apps/server/src/lib/events.ts"
+      "target": "apps/server/src/core/eventing/event-bus.ts"
     },
     {
       "source": "apps/server/src/modules/orchestration/background-integrations.lifecycle.ts",
@@ -7480,7 +7476,7 @@
     },
     {
       "source": "apps/server/src/services/event-hook-service.ts",
-      "target": "apps/server/src/lib/events.ts"
+      "target": "apps/server/src/core/eventing/event-bus.ts"
     },
     {
       "source": "apps/server/src/services/event-hook-service.ts",
@@ -7493,6 +7489,10 @@
     {
       "source": "apps/server/src/services/event-hook-service.ts",
       "target": "apps/server/src/services/execution-environment/feature-workspace.ts"
+    },
+    {
+      "source": "apps/server/src/services/event-hook-service.ts",
+      "target": "apps/server/src/services/execution-environment/local.ts"
     },
     {
       "source": "apps/server/src/services/event-hook-service.ts",

@@ -15,10 +15,9 @@
  * - auto_mode_error: Auto mode encountered a critical error
  */
 
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import { createLogger } from '@automaker/utils';
-import type { EventEmitter } from '../lib/events.js';
+import { performance } from 'node:perf_hooks';
+import type { EventBus, ApplicationEventMap } from '../core/eventing/event-bus.js';
 import type { SettingsService } from './settings-service.js';
 import type { EventHistoryService } from './event-history-service.js';
 import type { FeatureLoader } from './feature-loader.js';
@@ -37,8 +36,8 @@ import {
   featureRunKey,
 } from './execution-environment/feature-workspace.js';
 import { ExecutionEnvironmentError } from './execution-environment/runtime.js';
+import { LocalExecutionEnvironment } from './execution-environment/local.js';
 
-const execAsync = promisify(exec);
 const logger = createLogger('EventHooks');
 
 /** Default timeout for shell commands (30 seconds) */
@@ -53,28 +52,12 @@ type HookContext = EventHookContext;
 /**
  * Auto-mode event payload structure
  */
-interface AutoModeEventPayload {
-  type?: string;
-  featureId?: string;
-  featureName?: string;
-  passes?: boolean;
-  executionMode?: 'auto' | 'manual';
-  message?: string;
-  error?: string;
-  errorType?: string;
-  projectPath?: string;
-  /** Status field present when type === 'feature_status_changed' */
-  status?: string;
-}
+type AutoModeEventPayload = ApplicationEventMap['auto-mode:event'];
 
 /**
  * Feature created event payload structure
  */
-interface FeatureCreatedPayload {
-  featureId: string;
-  featureName?: string;
-  projectPath: string;
-}
+type FeatureCreatedPayload = ApplicationEventMap['feature:created'];
 
 /**
  * Feature status changed event payload structure
@@ -101,13 +84,13 @@ function isFeatureStatusChangedPayload(
 /**
  * Feature completed event payload structure
  */
-interface FeatureCompletedPayload {
-  featureId: string;
-  featureName?: string;
-  projectPath: string;
-  passes?: boolean;
-  message?: string;
-  executionMode?: 'auto' | 'manual';
+type FeatureCompletedPayload = ApplicationEventMap['feature:completed'];
+
+export class EventHookCleanupError extends Error {
+  readonly code = 'EVENT_HOOK_CLEANUP_FAILED';
+  constructor() {
+    super('Event hook cleanup could not be confirmed.');
+  }
 }
 
 /**
@@ -122,14 +105,20 @@ export class EventHookService {
   /** Feature status that indicates agent work passed automated verification */
   private static readonly STATUS_VERIFIED = 'verified';
 
-  private emitter: EventEmitter | null = null;
+  private events: EventBus | null = null;
   private settingsService: SettingsService | null = null;
   private eventHistoryService: EventHistoryService | null = null;
   private featureLoader: FeatureLoader | null = null;
-  private unsubscribe: (() => void) | null = null;
+  private readonly unsubscribers: Array<() => void> = [];
+  private readonly pending = new Set<Promise<void>>();
+  private readonly cancellation = new AbortController();
+  private initialized = false;
+  private stopping = true;
+  private shutdown?: Promise<void>;
+  private cleanupFailed = false;
 
   /**
-   * Track feature IDs that have already had hooks fired via auto_mode_feature_complete
+   * Track project/feature keys that already had hooks fired via auto_mode_feature_complete
    * to prevent double-firing when feature_status_changed also fires for the same feature.
    * Entries are automatically cleaned up after 30 seconds.
    */
@@ -137,34 +126,43 @@ export class EventHookService {
 
   /**
    * Timer IDs for pending cleanup of recentlyHandledFeatures entries,
-   * keyed by featureId. Stored so they can be cancelled in destroy().
+   * keyed by project/feature. Stored so they can be cancelled in destroy().
    */
   private recentlyHandledTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   /**
-   * Initialize the service with event emitter, settings service, event history service, and feature loader
+   * Initialize once with the application EventBus and native storage services.
    */
   initialize(
-    emitter: EventEmitter,
+    events: EventBus,
     settingsService: SettingsService,
     eventHistoryService?: EventHistoryService,
     featureLoader?: FeatureLoader
   ): void {
-    this.emitter = emitter;
+    if (this.initialized || this.shutdown)
+      throw new Error('Event hooks already initialized or stopped.');
+    this.initialized = true;
+    this.stopping = false;
+    this.events = events;
     this.settingsService = settingsService;
     this.eventHistoryService = eventHistoryService || null;
     this.featureLoader = featureLoader || null;
 
-    // Subscribe to events
-    this.unsubscribe = emitter.subscribe((type, payload) => {
-      if (type === 'auto-mode:event') {
-        this.handleAutoModeEvent(payload as AutoModeEventPayload);
-      } else if (type === 'feature:created') {
-        this.handleFeatureCreatedEvent(payload as FeatureCreatedPayload);
-      } else if (type === 'feature:completed') {
-        this.handleFeatureCompletedEvent(payload as FeatureCompletedPayload);
-      }
-    });
+    this.unsubscribers.push(
+      events.subscribe('auto-mode:event', (payload) =>
+        this.accept(() => this.handleAutoModeEvent(payload))
+      )
+    );
+    this.unsubscribers.push(
+      events.subscribe('feature:created', (payload) =>
+        this.accept(() => this.handleFeatureCreatedEvent(payload))
+      )
+    );
+    this.unsubscribers.push(
+      events.subscribe('feature:completed', (payload) =>
+        this.accept(() => this.handleFeatureCompletedEvent(payload))
+      )
+    );
 
     logger.info('Event hook service initialized');
   }
@@ -172,21 +170,51 @@ export class EventHookService {
   /**
    * Cleanup subscriptions
    */
-  destroy(): void {
-    if (this.unsubscribe) {
-      this.unsubscribe();
-      this.unsubscribe = null;
+  destroy(): Promise<void> {
+    if (this.shutdown) return this.shutdown;
+    this.stopping = true;
+    for (const unsubscribe of this.unsubscribers.splice(0)) {
+      try {
+        unsubscribe();
+      } catch {
+        this.cleanupFailed = true;
+      }
     }
+    this.cancellation.abort();
     // Cancel all pending cleanup timers to avoid cross-session mutations
     for (const timerId of this.recentlyHandledTimers.values()) {
       clearTimeout(timerId);
     }
     this.recentlyHandledTimers.clear();
     this.recentlyHandledFeatures.clear();
-    this.emitter = null;
-    this.settingsService = null;
-    this.eventHistoryService = null;
-    this.featureLoader = null;
+    const deadline = performance.now() + 25_000;
+    let timer: NodeJS.Timeout | undefined;
+    this.shutdown = Promise.race([
+      Promise.allSettled([...this.pending]).then(() => {
+        if (this.cleanupFailed || performance.now() >= deadline) throw new EventHookCleanupError();
+      }),
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => reject(new EventHookCleanupError()), 25_000);
+      }),
+    ]).finally(() => {
+      clearTimeout(timer);
+      this.events = null;
+      this.settingsService = null;
+      this.eventHistoryService = null;
+      this.featureLoader = null;
+    });
+    return this.shutdown;
+  }
+
+  private accept(operation: () => Promise<void>): void {
+    if (this.stopping) return;
+    const task = Promise.resolve()
+      .then(() => {
+        if (!this.stopping) return operation();
+      })
+      .catch(() => logger.error('Event hook processing failed.'))
+      .finally(() => this.pending.delete(task));
+    this.pending.add(task);
   }
 
   /**
@@ -206,7 +234,7 @@ export class EventHookService {
         trigger = payload.passes ? 'feature_success' : 'feature_error';
         // Track this feature so feature_status_changed doesn't double-fire hooks
         if (payload.featureId) {
-          this.markFeatureHandled(payload.featureId);
+          this.markFeatureHandled(payload.featureId, payload.projectPath);
         }
         break;
       case 'auto_mode_error':
@@ -214,7 +242,7 @@ export class EventHookService {
         trigger = payload.featureId ? 'feature_error' : 'auto_mode_error';
         // Track this feature so feature_status_changed doesn't double-fire hooks
         if (payload.featureId) {
-          this.markFeatureHandled(payload.featureId);
+          this.markFeatureHandled(payload.featureId, payload.projectPath);
         }
         break;
       case 'auto_mode_idle':
@@ -222,7 +250,7 @@ export class EventHookService {
         break;
       case 'feature_status_changed':
         if (isFeatureStatusChangedPayload(payload)) {
-          this.handleFeatureStatusChanged(payload);
+          await this.handleFeatureStatusChanged(payload);
         }
         return;
       default:
@@ -271,7 +299,7 @@ export class EventHookService {
     if (!payload.featureId || !payload.projectPath) return;
 
     // Mark as handled to prevent duplicate firing if feature_status_changed also fires
-    this.markFeatureHandled(payload.featureId);
+    this.markFeatureHandled(payload.featureId, payload.projectPath);
 
     const passes = payload.passes ?? true;
     const trigger: EventHookTrigger = passes ? 'feature_success' : 'feature_error';
@@ -308,6 +336,7 @@ export class EventHookService {
    * Handle feature:created events and trigger matching hooks
    */
   private async handleFeatureCreatedEvent(payload: FeatureCreatedPayload): Promise<void> {
+    if (!payload.featureId || !payload.projectPath) return;
     const context: HookContext = {
       featureId: payload.featureId,
       featureName: payload.featureName,
@@ -329,7 +358,7 @@ export class EventHookService {
    */
   private async handleFeatureStatusChanged(payload: FeatureStatusChangedPayload): Promise<void> {
     // Skip if this feature was already handled via auto_mode_feature_complete
-    if (this.recentlyHandledFeatures.has(payload.featureId)) {
+    if (this.recentlyHandledFeatures.has(this.featureKey(payload.featureId, payload.projectPath))) {
       return;
     }
 
@@ -374,18 +403,24 @@ export class EventHookService {
    * Mark a feature as recently handled to prevent double-firing hooks.
    * Entries are cleaned up after 30 seconds.
    */
-  private markFeatureHandled(featureId: string): void {
+  private featureKey(featureId: string, projectPath?: string): string {
+    return JSON.stringify([projectPath ?? null, featureId]);
+  }
+
+  private markFeatureHandled(featureId: string, projectPath?: string): void {
+    if (this.stopping) return;
+    const key = this.featureKey(featureId, projectPath);
     // Cancel any existing timer for this feature before setting a new one
-    const existing = this.recentlyHandledTimers.get(featureId);
+    const existing = this.recentlyHandledTimers.get(key);
     if (existing !== undefined) {
       clearTimeout(existing);
     }
-    this.recentlyHandledFeatures.add(featureId);
+    this.recentlyHandledFeatures.add(key);
     const timerId = setTimeout(() => {
-      this.recentlyHandledFeatures.delete(featureId);
-      this.recentlyHandledTimers.delete(featureId);
+      this.recentlyHandledFeatures.delete(key);
+      this.recentlyHandledTimers.delete(key);
     }, 30000);
-    this.recentlyHandledTimers.set(featureId, timerId);
+    this.recentlyHandledTimers.set(key, timerId);
   }
 
   /**
@@ -396,6 +431,7 @@ export class EventHookService {
     context: HookContext,
     additionalData?: { passes?: boolean }
   ): Promise<void> {
+    if (this.stopping) return;
     // Store event to history (even if no hooks match)
     if (this.eventHistoryService && context.projectPath) {
       try {
@@ -408,18 +444,19 @@ export class EventHookService {
           errorType: context.errorType,
           passes: additionalData?.passes,
         });
-      } catch (error) {
-        logger.error('Failed to store event to history:', error);
+      } catch {
+        logger.error('Failed to store event to history.');
       }
     }
 
-    if (!this.settingsService) {
+    if (this.stopping || !this.settingsService) {
       logger.warn('Settings service not available');
       return;
     }
 
     try {
       const settings = await this.settingsService.getGlobalSettings();
+      if (this.stopping) return;
       const hooks = settings.eventHooks || [];
 
       // Filter to enabled hooks matching this trigger
@@ -433,8 +470,8 @@ export class EventHookService {
 
       // Execute hooks in parallel (don't wait for one to finish before starting next)
       await Promise.allSettled(matchingHooks.map((hook) => this.executeHook(hook, context)));
-    } catch (error) {
-      logger.error('Error executing hooks:', error);
+    } catch {
+      logger.error('Error executing hooks.');
     }
   }
 
@@ -442,6 +479,7 @@ export class EventHookService {
    * Execute a single hook
    */
   private async executeHook(hook: EventHook, context: HookContext): Promise<void> {
+    if (this.stopping) return;
     const hookName = hook.name || hook.id;
 
     try {
@@ -453,7 +491,14 @@ export class EventHookService {
         await this.executeNtfyHook(hook.action, context, hookName);
       }
     } catch (error) {
-      logger.error(`Hook "${hookName}" failed:`, error);
+      if (
+        error instanceof ExecutionEnvironmentError &&
+        ['PROCESS_CLEANUP_FAILED', 'SSH_CLEANUP_UNVERIFIED', 'SSH_OUTCOME_UNKNOWN'].includes(
+          error.code
+        )
+      )
+        this.cleanupFailed = true;
+      logger.error(`Hook "${hookName}" failed.`);
     }
   }
 
@@ -465,6 +510,7 @@ export class EventHookService {
     context: HookContext,
     hookName: string
   ): Promise<void> {
+    this.cancellation.signal.throwIfAborted();
     const timeout = action.timeout || DEFAULT_SHELL_TIMEOUT;
     if (this.settingsService && context.projectPath) {
       const store = new EnvironmentBindingStore(this.settingsService);
@@ -483,7 +529,7 @@ export class EventHookService {
             model: 'direct-internal',
             branchName: (pinned.sshWorkspace ?? pinned.featureWorkspace)?.baseBranch,
           },
-          new AbortController().signal,
+          this.cancellation.signal,
           false
         );
         if (!remote)
@@ -495,7 +541,8 @@ export class EventHookService {
           ...context,
           projectPath: remote.environment.cwd,
         });
-        const result = await remote.environment.exec(command, new AbortController().signal, {
+        this.cancellation.signal.throwIfAborted();
+        const result = await remote.environment.exec(command, this.cancellation.signal, {
           timeoutMs: Math.min(timeout, 600000),
           maxOutputBytes: 12000,
         });
@@ -520,28 +567,16 @@ export class EventHookService {
     }
     const command = this.substituteVariables(action.command, context);
 
-    logger.info(`Executing shell hook "${hookName}": ${command}`);
-
-    try {
-      const { stdout, stderr } = await execAsync(command, {
-        timeout,
-        maxBuffer: 1024 * 1024, // 1MB buffer
-      });
-
-      if (stdout) {
-        logger.debug(`Hook "${hookName}" stdout: ${stdout.trim()}`);
-      }
-      if (stderr) {
-        logger.warn(`Hook "${hookName}" stderr: ${stderr.trim()}`);
-      }
-
-      logger.info(`Shell hook "${hookName}" completed successfully`);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ETIMEDOUT') {
-        logger.error(`Shell hook "${hookName}" timed out after ${timeout}ms`);
-      }
-      throw error;
-    }
+    logger.info(`Executing shell hook "${hookName}"`);
+    // Preserve the previous host cwd, but use the shared owned process supervisor.
+    const local = await LocalExecutionEnvironment.create(process.cwd());
+    const result = await local.exec(command, this.cancellation.signal, {
+      timeoutMs: timeout,
+      maxOutputBytes: 1024 * 1024,
+      windowsShell: 'cmd',
+    });
+    if (result.exitCode !== 0) throw new Error('Shell hook failed.');
+    logger.info(`Shell hook "${hookName}" completed successfully`);
   }
 
   /**
@@ -582,20 +617,20 @@ export class EventHookService {
       });
     }
 
-    logger.info(`Executing HTTP hook "${hookName}": ${method} ${url}`);
+    logger.info(`Executing HTTP hook "${hookName}"`);
 
+    this.cancellation.signal.throwIfAborted();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), DEFAULT_HTTP_TIMEOUT);
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), DEFAULT_HTTP_TIMEOUT);
-
       const response = await fetch(url, {
         method,
         headers,
         body: method !== 'GET' ? body : undefined,
-        signal: controller.signal,
+        signal: AbortSignal.any([controller.signal, this.cancellation.signal]),
       });
 
-      clearTimeout(timeoutId);
+      await response.body?.cancel();
 
       if (!response.ok) {
         logger.warn(`HTTP hook "${hookName}" received status ${response.status}`);
@@ -607,6 +642,8 @@ export class EventHookService {
         logger.error(`HTTP hook "${hookName}" timed out after ${DEFAULT_HTTP_TIMEOUT}ms`);
       }
       throw error;
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 
@@ -625,6 +662,7 @@ export class EventHookService {
 
     // Get the endpoint configuration
     const settings = await this.settingsService.getGlobalSettings();
+    this.cancellation.signal.throwIfAborted();
     const endpoints = settings.ntfyEndpoints || [];
     const endpoint = endpoints.find((e) => e.id === action.endpointId);
 
@@ -680,7 +718,8 @@ export class EventHookService {
         clickUrl,
         priority: action.priority,
       },
-      ntfyContext
+      ntfyContext,
+      this.cancellation.signal
     );
 
     if (!result.success) {

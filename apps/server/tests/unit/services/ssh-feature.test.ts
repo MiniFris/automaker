@@ -19,6 +19,7 @@ import { FeatureLoader } from '@/services/feature-loader.js';
 import { pipelineService } from '@/services/pipeline-service.js';
 import { createEventEmitter } from '@/lib/events.js';
 import { EventHookService } from '@/services/event-hook-service.js';
+import { ApplicationEventBusAdapter } from '@/core/eventing/application-event-bus.adapter.js';
 import { PipelineOrchestrator } from '@/services/pipeline-orchestrator.js';
 import { TypedEventBus } from '@/services/typed-event-bus.js';
 import { sshPeer, testSSHKey } from '../../helpers/ssh-peer.js';
@@ -570,7 +571,7 @@ describe.skipIf(process.platform !== 'linux')(
       async () => {
         const run = (await service.prepare(project, feature, active()))!;
         const hooks = new EventHookService();
-        hooks.initialize(createEventEmitter(), settings);
+        hooks.initialize(new ApplicationEventBusAdapter(createEventEmitter()), settings);
         const invoke = (id?: string) =>
           (
             hooks as unknown as {
@@ -595,7 +596,7 @@ describe.skipIf(process.platform !== 'linux')(
           await expect(invoke('unbound')).rejects.toThrow('Managed shell hooks require');
           await expect(fs.stat(path.join(project, 'hook-result'))).rejects.toThrow();
         } finally {
-          hooks.destroy();
+          await hooks.destroy();
         }
       }
     );

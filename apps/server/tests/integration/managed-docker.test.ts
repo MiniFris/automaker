@@ -37,6 +37,7 @@ import { WorktreeResolver } from '@/services/worktree-resolver.js';
 import { PipelineOrchestrator } from '@/services/pipeline-orchestrator.js';
 import { TypedEventBus } from '@/services/typed-event-bus.js';
 import { EventHookService } from '@/services/event-hook-service.js';
+import { ApplicationEventBusAdapter } from '@/core/eventing/application-event-bus.adapter.js';
 import { createEventEmitter } from '@/lib/events.js';
 import { ProjectGitService } from '@/services/execution-environment/project-git.js';
 import { ManagedTerminalPty } from '@/services/execution-environment/terminal.js';
@@ -633,7 +634,7 @@ process.stdout.write(JSON.stringify({type:'result',subtype:'success'})+'\\n');
     vi.stubEnv('AUTOMAKER_MOCK_AGENT', 'false');
     vi.stubEnv('AUTOMAKER_API_KEY', 'controller-only');
     const hooks = new EventHookService();
-    hooks.initialize(events, settings);
+    hooks.initialize(new ApplicationEventBusAdapter(events), settings);
     try {
       await facade.executeFeature(feature.id, true, false);
       expect((await loader.get(featureProject, feature.id))!.status).toBe('waiting_approval');
@@ -865,7 +866,7 @@ process.stdout.write(JSON.stringify({type:'result',subtype:'success'})+'\\n');
         await new Promise<void>((resolve) => endpoint.close(() => resolve()));
       }
     } finally {
-      hooks.destroy();
+      await hooks.destroy();
       localWorktrees.mockRestore();
       vi.unstubAllEnvs();
     }

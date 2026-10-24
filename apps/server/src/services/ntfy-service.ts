@@ -41,7 +41,8 @@ export class NtfyService {
       clickUrl?: string;
       priority?: 1 | 2 | 3 | 4 | 5;
     },
-    context: NtfyContext
+    context: NtfyContext,
+    signal?: AbortSignal
   ): Promise<{ success: boolean; error?: string }> {
     if (!endpoint.enabled) {
       logger.warn(`Ntfy endpoint "${endpoint.name}" is disabled, skipping notification`);
@@ -104,11 +105,12 @@ export class NtfyService {
     const timeoutId = setTimeout(() => controller.abort(), DEFAULT_NTFY_TIMEOUT);
 
     try {
+      signal?.throwIfAborted();
       const response = await fetch(url, {
         method: 'POST',
         headers,
         body,
-        signal: controller.signal,
+        signal: signal ? AbortSignal.any([controller.signal, signal]) : controller.signal,
       });
 
       if (!response.ok) {
@@ -120,9 +122,11 @@ export class NtfyService {
         };
       }
 
+      await response.body?.cancel();
       logger.info(`Ntfy notification sent successfully to ${endpoint.name}`);
       return { success: true };
     } catch (error) {
+      if (signal?.aborted) return { success: false, error: 'Request cancelled' };
       if ((error as Error).name === 'AbortError') {
         logger.error(`Ntfy notification timed out after ${DEFAULT_NTFY_TIMEOUT}ms`);
         return { success: false, error: 'Request timed out' };

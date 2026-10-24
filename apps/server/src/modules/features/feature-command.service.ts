@@ -53,7 +53,7 @@ export class FeatureCommandService {
         featureId: created.id,
         projectPath: input.projectPath,
         featureName: created.title || 'Untitled Feature',
-      } as never);
+      });
       return { success: true as const, feature: created };
     });
   }
@@ -81,7 +81,7 @@ export class FeatureCommandService {
           message:
             status === 'verified' ? 'Feature verified manually' : 'Feature completed manually',
           executionMode: 'manual',
-        } as never);
+        });
         await this.features.syncToAppSpec(input.projectPath, updated).catch(() => false);
       }
       return { success: true as const, feature: updated };

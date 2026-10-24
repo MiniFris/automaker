@@ -1,8 +1,28 @@
 import type { EventType } from '@automaker/types';
 
 export interface ApplicationEventMap extends Record<EventType, unknown> {
+  'auto-mode:event': {
+    type?: string;
+    featureId?: string;
+    featureName?: string;
+    passes?: boolean;
+    executionMode?: 'auto' | 'manual';
+    message?: string;
+    error?: string;
+    errorType?: string;
+    projectPath?: string;
+    status?: string;
+  };
   'feature:progress': { featureId: string; progress?: number; message?: string };
-  'feature:created': { featureId: string; projectPath?: string };
+  'feature:created': { featureId: string; featureName?: string; projectPath?: string };
+  'feature:completed': {
+    featureId: string;
+    featureName?: string;
+    projectPath: string;
+    passes?: boolean;
+    message?: string;
+    executionMode?: 'auto' | 'manual';
+  };
   'notification:created': { id: string; [key: string]: unknown };
   'dev-server:output': { [key: string]: unknown };
   'test-runner:output': { [key: string]: unknown };

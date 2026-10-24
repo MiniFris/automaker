@@ -14,6 +14,32 @@ import {
 
 const writes = new Map<string, Promise<void>>();
 
+/** Preserve legacy node:child_process.exec cmd semantics only for explicit callers. */
+export function localShellInvocation(
+  command: string,
+  platform: NodeJS.Platform,
+  windowsShell?: 'cmd',
+  comspec = process.env.comspec ?? process.env.ComSpec
+): { command: string; args: string[]; windowsVerbatimArguments?: boolean } {
+  if (platform !== 'win32') return { command: '/bin/sh', args: ['-c', command] };
+  if (windowsShell === 'cmd') {
+    const shell = comspec || 'cmd.exe';
+    return /^(?:.*\\)?cmd(?:\.exe)?$/i.test(shell)
+      ? { command: shell, args: ['/d', '/s', '/c', `"${command}"`], windowsVerbatimArguments: true }
+      : { command: shell, args: ['-c', command] };
+  }
+  return {
+    command: 'powershell.exe',
+    args: [
+      '-NoLogo',
+      '-NoProfile',
+      '-NonInteractive',
+      '-Command',
+      '[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new(); ' + command,
+    ],
+  };
+}
+
 /** Not a sandbox. Explicit consent grants the normal filesystem/process rights of Automaker. */
 export class LocalExecutionEnvironment implements ExecutionEnvironment {
   readonly type = 'local' as const;
@@ -183,30 +209,27 @@ export class LocalExecutionEnvironment implements ExecutionEnvironment {
   async exec(
     command: string,
     signal: AbortSignal,
-    options: { cwd?: string; timeoutMs?: number; maxOutputBytes?: number } = {}
+    options: {
+      cwd?: string;
+      timeoutMs?: number;
+      maxOutputBytes?: number;
+      windowsShell?: 'cmd';
+    } = {}
   ): Promise<EnvironmentCommandResult> {
     signal.throwIfAborted();
     const deadline = AbortSignal.timeout(options.timeoutMs ?? 180_000);
     const combined = AbortSignal.any([signal, deadline]);
     const cwd = options.cwd ? this.resolve(options.cwd) : this.cwd;
     const windows = process.platform === 'win32';
-    const executable = windows ? 'powershell.exe' : '/bin/sh';
-    const args = windows
-      ? [
-          '-NoLogo',
-          '-NoProfile',
-          '-NonInteractive',
-          '-Command',
-          '[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new(); ' + command,
-        ]
-      : ['-c', command];
+    const invocation = localShellInvocation(command, process.platform, options.windowsShell);
     const maximum = Math.min(options.maxOutputBytes ?? 12_000, 1_048_576);
     return new Promise((resolve, reject) => {
-      const child = spawn(executable, args, {
+      const child = spawn(invocation.command, invocation.args, {
         cwd,
         env: { ...process.env },
         detached: !windows,
         windowsHide: true,
+        windowsVerbatimArguments: invocation.windowsVerbatimArguments,
         stdio: ['ignore', 'pipe', 'pipe'],
       });
       const chunks: Buffer[] = [];

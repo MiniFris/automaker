@@ -41,6 +41,8 @@ in-flight hook shell/HTTP drain, typed EventBus subscriptions, validation regist
 и остальные orchestration gates остаются открытыми. Pipeline storage serialization,
 ошибки чтения и multi-writer coordination этим clone fix не закрыты. HTTP API v13,
 wire payloads, IDs, persisted formats и execution binding semantics не меняются.
+Подписки и in-flight hook drain из этого списка реализованы дальнейшим срезом
+ниже; остальные ограничения этого ownership checkpoint сохраняются.
 
 Проверки среза (не финальный checkpoint этапа 8):
 
@@ -179,11 +181,102 @@ operation deadline очищаются в `finally`, active clients закрыв�
 
 ## 8.8. Hooks и notifications
 
-- [ ] Event hooks подписываются через EventBus при module init.
-- [ ] Отписываются и очищают timers при shutdown.
+- [x] Event hooks подписываются через EventBus при module init.
+- [x] Отписываются и очищают timers при shutdown.
 - [ ] Защитить от event loops и повторной обработки feature.
 - [ ] Notification channels не блокируют основной workflow.
 - [ ] Ntfy/desktop/audio failures не меняют результат feature run.
+
+### Срез 2026-10-24: typed hook subscriptions и owned task drain
+
+BackgroundIntegrationsLifecycle получает native `EVENT_BUS`, регистрирует три
+типизированные подписки в `onModuleInit` и выполняет async `destroy()` hooks в
+`onModuleDestroy`, до поздней provider/resource cleanup. Global EventBus не
+уничтожается отдельным subscriber: close одной app не останавливает другую app.
+Инициализация повторно или после остановки запрещена, вместо дублирования подписок.
+
+ApplicationEventMap описывает используемые hook payloads; создание/завершение
+features в FeatureCommandService больше не требует `as never` для отправки событий.
+Raw application event transport сохраняет прежние wire envelopes и API v13.
+
+EventHookService учитывает принятые async tasks, включая вложенную обработку
+`feature_status_changed`, которая раньше запускалась без await. Shutdown сразу
+закрывает admission, отписывается, отменяет активные действия и очищает dedup timers;
+уже запущенные storage/feature reads дожидаются завершения, но после остановки
+новые side effects не запускаются. Ещё не начатые queued event tasks пропускаются.
+Дедупликация completion/status использует пару project path + feature ID: одноимённый
+feature в другом проекте не подавляется чужим событием.
+
+Drain имеет 25 s deadline и кэширует результат. Зависшее неотменяемое storage чтение/
+запись означает статическую `EVENT_HOOK_CLEANUP_FAILED`, а не ложный успех. Позднее
+завершение такой операции не запускает новый hook и не меняет уже выданный результат
+close. Завершённые задачи удаляются из pending registry.
+
+Shell hooks на host используют LocalExecutionEnvironment и его process supervisor
+вместо отдельного promisified `exec`: сохраняются host cwd, command substitution и
+общая ограниченная величина output; command/stdout/stderr не логируются сырыми.
+Unix использует прежний `/bin/sh`; для Windows hooks явно выбрана прежняя Node exec
+ComSpec/cmd invocation, включая quoting/verbatim args и custom non-cmd ComSpec.
+Default PowerShell invocation других LocalExecutionEnvironment consumers не меняется.
+Windows argument fixtures сверены с установленной реализацией Node child_process;
+это не заменяет реального Windows acceptance. TERM-resistant Linux fixture
+доказывает остановку root и child после native app.close, но не containment
+намеренного process-group/session escape.
+
+Pinned Docker/SSH hooks передают общий owner AbortSignal в workspace preparation
+и command execution. Потеря канала/неподтверждённая очистка не replay-ит команду:
+`PROCESS_CLEANUP_FAILED`, `SSH_CLEANUP_UNVERIFIED`, `SSH_OUTCOME_UNKNOWN` сохраняют
+failed cleanup outcome, даже если обычная ошибка hook изолирована от feature run.
+Через checked Nest shutdown (ADR-034) такая ошибка отклоняет app.close, не пропуская
+последующие provider owners. Ошибка обычной команды не делает cleanup ошибочным.
+
+HTTP action объединяет owner cancellation с operation timeout, всегда очищает
+таймер в finally и освобождает неиспользуемый response body. NtfyService принимает
+необязательный caller signal, отменяет fetch/body вместе с hook owner, не меняя
+поведение остальных callers. Ошибка доставки не становится ошибкой feature.
+Это не универсальная переработка ntfy diagnostics, body limits или всех каналов
+desktop/audio: эти проверки и event-loop/exactly-once semantics ещё обязательны.
+
+Новые доказательства:
+
+- `event-hook-lifecycle.test.ts`: init/close idempotence, собственные подписки,
+  ожидание nested handler/history, поздний lookup, HTTP error timer cleanup и abort,
+  unknown command cleanup против ordinary command failure, bounded storage drain
+  и project-scoped duplicate suppression;
+- `local-shell-invocation.test.ts`: Windows cmd/custom ComSpec и неизменный default
+  PowerShell/Unix shell без настоящего Windows процесса;
+- `event-hook-drain.contract.test.ts`: две native Nest apps с реальными owned
+  loopback HTTP/ntfy requests, actual shell/child и uncertain cleanup propagation
+  с проверкой попытки последующего provider cleanup;
+- существующий native integrations composition contract проверяет identity того же
+  `EVENT_BUS`, отдельный owner каждой app, реальную инициализацию/остановку и restart.
+
+Это промежуточный срез этапа 8. Он не закрывает Auto Mode state-machine, ideation
+decomposition/drain, pipeline storage serialization, validation registry, GitHub
+ports, MCP HTTP/SSE и остальные gates этапов 7–11. Real remote cancellation при
+потере transport, process escape и все платформы не объявляются доказанными одним
+host/loopback contract.
+
+Проверки среза (не финальный checkpoint этапа 8):
+
+- целевые hooks/ntfy units: 96 passed; supervisor/shell-invocation targets:
+  35 passed;
+- финальный `npm run test:server:unit`: 3612 passed, 40 skipped;
+- финальный `npm run test:server:contract`: 319 passed;
+- `npm run test:packages`: 1473 passed;
+- native hook-drain/composition contracts: 5 passed;
+- Docker suite с owned base image `automaker-nest-stage2-smoke:latest`: 11 passed,
+  4 opt-in skipped; real SSH feature suite: 14 passed. Они проверены после перехода
+  hooks на typed lifecycle; последующее выделение Windows invocation дополнительно
+  покрыто финальными unit/contract suites. Vendor/model endpoints здесь — offline
+  fixtures, не paid/live acceptance;
+- production server build/lint, UI typecheck/lint/build и lockfile check прошли;
+- SIGTERM/SIGINT lifecycle smoke: exit 0;
+- Chromium regression: 17 passed, без test retries; hooks settings, feature
+  create/edit, provider statuses, credentials/consent и held agent chat;
+- все три inventories обновлены и прошли `:check`; полный `format:check` и
+  `git diff --check` успешны. Первоначальный format check обнаружил formatting нового
+  contract file; повтор после форматирования прошёл.
 
 ## Тесты
 

@@ -17,6 +17,7 @@ import { PipelineApplicationService } from '../../src/modules/pipeline/pipeline-
 import { IdeationApplicationService } from '../../src/modules/ideation/ideation-application.service.js';
 import { BackgroundIntegrationsLifecycle } from '../../src/modules/orchestration/background-integrations.lifecycle.js';
 import { APPLICATION_EVENTS } from '../../src/core/eventing/application-events.js';
+import { EVENT_BUS } from '../../src/core/eventing/event-bus.js';
 
 it('owns integration services once per application and preserves native dependency identity, hook lifecycle and project persistence', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'automaker-native-integrations-'));
@@ -63,7 +64,7 @@ it('owns integration services once per application and preserves native dependen
       expect(inspect(ideation).featureLoader).toBe(runtime.app.get(FeatureLoader));
       expect(inspect(ideation).providerRegistry).toBe(runtime.app.get(ProviderRegistry));
       expect(inspect(ideation).events).toBe(runtime.app.get(APPLICATION_EVENTS));
-      expect(inspect(hooks).emitter).toBe(runtime.app.get(APPLICATION_EVENTS));
+      expect(inspect(hooks).events).toBe(runtime.app.get(EVENT_BUS));
       expect(inspect(hooks).eventHistoryService).toBe(runtime.app.get(EventHistoryService));
       expect(inspect(hooks).featureLoader).toBe(runtime.app.get(FeatureLoader));
     }
@@ -83,10 +84,8 @@ it('owns integration services once per application and preserves native dependen
     });
     expect(await second.app.get(IdeationService).getIdeas(two)).toEqual([]);
     await first.app.close();
-    expect(inspect(first.app.get(EventHookService)).emitter).toBeNull();
-    expect(inspect(second.app.get(EventHookService)).emitter).toBe(
-      second.app.get(APPLICATION_EVENTS)
-    );
+    expect(inspect(first.app.get(EventHookService)).events).toBeNull();
+    expect(inspect(second.app.get(EventHookService)).events).toBe(second.app.get(EVENT_BUS));
     const another = await second.app.get(IdeationService).createIdea(two, {
       title: 'Still live',
       description: 'Owned fixture',
