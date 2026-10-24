@@ -141,10 +141,16 @@ export class AgentPromptQueue {
       );
       admitted = true;
       const result = await execution;
+      if (await this.repository.deletionState(id)) return;
       if (delivery) await this.deliveries.finish(delivery);
       if (succeeded(result)) setImmediate(() => void this.process(id, execute));
     } catch (error) {
       let reportedError = error;
+      try {
+        if (await this.repository.deletionState(id)) return;
+      } catch (deletionError) {
+        reportedError = deletionError;
+      }
       if (
         !admitted &&
         (error instanceof ConflictDomainError || error instanceof UnavailableDomainError)

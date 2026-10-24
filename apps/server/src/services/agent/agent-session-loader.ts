@@ -17,6 +17,10 @@ export class AgentSessionLoader {
   ) {}
 
   async ensure(id: string, workingDirectory?: string): Promise<ActiveSession | null> {
+    if (await this.repository.deletionState(id)) {
+      this.sessions.delete(id);
+      return null;
+    }
     await this.deliveries.recover(id);
     return this.sessions.getOrLoad(id, () => this.hydrate(id, workingDirectory));
   }

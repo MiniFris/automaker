@@ -14,6 +14,7 @@ import { AgentSessionLoader } from '../../src/services/agent/agent-session-loade
 import { AgentConversationCoordinator } from '../../src/services/agent/agent-conversation-coordinator.js';
 import { AgentPromptQueue } from '../../src/services/agent/agent-prompt-queue.js';
 import { AgentQueueDeliveryStore } from '../../src/services/agent/agent-queue-delivery-store.js';
+import { AgentSessionDeletion } from '../../src/services/agent/agent-session-deletion.js';
 
 export function createTestAgentEvents(events: EventEmitter) {
   return new AgentEventPublisher(events);
@@ -71,6 +72,7 @@ export function createTestAgentState(
       events,
       deliveries
     ),
+    new AgentSessionDeletion(repository, sessions, executions, deliveries),
     events,
   ] as const;
 }

@@ -384,7 +384,8 @@ quarantine или вернуть completed queued prompt в выполнение
 Consumed IDs и quarantine IDs сохраняются в journal независимо от message history
 и переносятся между deliveries. Поэтому очистка history и последующие queued runs
 не снимают защиту при восстановлении старого queue backup. Ledger пока не compact-ится
-и требует включения в retry-safe session-delete/tombstone cleanup.
+и на этом срезе ещё требует включения в retry-safe session-delete/tombstone cleanup
+(закрыто следующим срезом ниже).
 
 UI загружает server queue при открытии session, показывает локализованное
 предупреждение/Paused и обновляет очередь после queue error. Revision guard не
@@ -424,6 +425,65 @@ Rollback gate: нельзя запускать старый backend, котор�
 неисполняемое хранилище либо восстановление согласованного pre-migration snapshot.
 Проверка этого rollback сценария ещё обязательна на cutover-этапе; additive HTTP
 fields сами по себе не доказывают безопасный rollback формата очереди.
+
+### Срез: retry-safe session deletion
+
+`AgentSessionDeletion` — отдельный application-scoped Nest provider. DELETE
+резервирует execution/queue barriers, дожидается остановки provider и атомарно
+сохраняет `DATA_DIR/agent-session-deletions/<sessionId>.json` до удаления данных.
+Маркер содержит только version, session ID, phase и timestamps; файл имеет mode
+`0600`, каталог — `0700` при создании. Сначала фиксируется `deleting`, после
+успешной очистки — `deleted`. Старый marker backup не используется для recovery.
+
+После фиксации intent ID скрыт из metadata/list/history/queue, cached hydration
+инвалидируется, новые writes и `agent/start` с этим ID отклоняются. Удаляются
+messages, queue и delivery journal вместе с принадлежащими writer backups/temps.
+Учитываются также temps атомарного scrubbing backup и вложенные temps после сбоя.
+Чужие файлы с похожим префиксом не удаляются. Shared metadata snapshots очищаются
+от tombstoned rows без удаления данных остальных сессий.
+
+Частичный cleanup возвращает безопасный 503 и оставляет `deleting`. Повторный
+DELETE, в том числе после перезапуска и уже удалённой metadata, продолжает очистку.
+После завершения повторный DELETE сохраняет прежний 404/not-found контракт.
+Уже начатые file/journal writes дожидаются settlement до успешного cleanup;
+поздний delivery finish не может создать journal заново. Queue worker не публикует
+ложный queue error для уже удалённой сессии.
+
+Повреждённый tombstone блокирует чтение, а не трактуется как отсутствие.
+Повреждённый shared snapshot оставляет cleanup незавершённым и требует исправления
+этого snapshot перед повтором; весь файл с чужими recovery data не удаляется.
+Tombstones сохраняются и после завершения, без автоматического GC или повторного
+использования ID. Индекс рассчитан на один controller writer на DATA_DIR.
+
+Проверки: 9 real-filesystem unit tests покрывают точную область cleanup, private
+mode, сбои intent/unlink/metadata/completion, restart/retry, delayed writer,
+stale/corrupt snapshots и запрет late delivery/reuse. Три child-process SIGKILL
+contracts прерывают настоящий deletion coordinator после intent, после artifact
+cleanup и перед terminal marker. Native Nest HTTP contract проверяет
+DELETE 503 → GET 404/list без ID → start 409 → retry DELETE 200 → repeat DELETE 404,
+а также сохранность другой сессии. Two-app contract подтверждает независимые
+экземпляры deletion provider.
+
+Checkpoint среза:
+
+- `npm run test:server:unit`: 3102 passed, 40 skipped.
+- `npm run test:server:contract`: 250 passed.
+- `npm run test:packages`: 1185 passed.
+- Server production build/lint, UI typecheck/lint, lockfile и formatting/diff checks.
+- Три generated inventory checks.
+- `node scripts/smoke-server-lifecycle.mjs`: SIGTERM/SIGINT exit 0.
+- SSH Direct/CLI/SDK chat/restart: 3 passed, 34 отфильтрованы; команда выбора
+  сценариев та же, что в предыдущем срезе.
+- `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest npm run
+  test:docker --workspace=apps/server`: 11 passed, 4 opt-in skipped.
+- Chromium `start-new-chat-session.spec.ts`: 1 passed (send/stream/reload).
+
+Rollback gate распространяется и на tombstones: старый backend, игнорирующий
+deletion markers, не должен запускаться против DATA_DIR с незавершённой очисткой
+или snapshots, способными восстановить удалённую сессию. Нужен проверенный
+preflight/downgrade путь либо согласованный pre-migration snapshot. Этот gate
+ещё не реализован; общий manual-run/completion recovery и полный provider adapter
+contract также остаются незавершёнными. Этап 7 не закрывается этим срезом.
 
 ### Срез: persisted state и active registry
 

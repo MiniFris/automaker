@@ -21,6 +21,7 @@ import { AgentEventPublisher } from './agent/agent-event-publisher.js';
 import { AgentSessionLoader } from './agent/agent-session-loader.js';
 import { AgentConversationCoordinator } from './agent/agent-conversation-coordinator.js';
 import { AgentPromptQueue, type AgentQueuedInput } from './agent/agent-prompt-queue.js';
+import { AgentSessionDeletion } from './agent/agent-session-deletion.js';
 import type {
   ActiveSession as Session,
   Message,
@@ -46,6 +47,7 @@ export class AgentService {
     private readonly loader: AgentSessionLoader,
     private readonly conversations: AgentConversationCoordinator,
     private readonly queue: AgentPromptQueue,
+    private readonly deletion: AgentSessionDeletion,
     events: AgentEventPublisher,
     settingsService: SettingsService | undefined,
     private readonly providers: AgentProviderSelector,
@@ -74,6 +76,8 @@ export class AgentService {
     // For startConversation, we always want to create a session even if
     // metadata doesn't exist yet (new session), so we fall back to creating one.
     let session = await this.ensureSession(sessionId, workingDirectory);
+    await this.repository.assertAvailable(sessionId);
+    this.executions.assertSessionOpen(sessionId);
     if (!session) {
       // Session doesn't exist on disk either — create a fresh in-memory session.
       const effectiveWorkingDirectory = workingDirectory || this.loader.workingDirectory;
@@ -582,6 +586,9 @@ export class AgentService {
     sessionId: string,
     updates: Partial<SessionMetadata>
   ): Promise<SessionMetadata | null> {
+    // Persisted deletion is still "not found" for metadata HTTP mutations.
+    // The repository independently fences a write racing with a new deletion.
+    if (await this.repository.deletionState(sessionId)) return null;
     return this.repository.updateMetadata(sessionId, updates);
   }
 
@@ -628,19 +635,7 @@ export class AgentService {
   }
 
   async deleteSession(sessionId: string): Promise<boolean> {
-    return this.executions.mutate(sessionId, () =>
-      this.sessions.serializeQueue(sessionId, () => this.deleteSessionState(sessionId))
-    );
-  }
-
-  private async deleteSessionState(sessionId: string): Promise<boolean> {
-    if (!(await this.repository.deleteMetadata(sessionId))) return false;
-    await this.repository.deleteMessages(sessionId);
-
-    // Clear from memory
-    this.sessions.delete(sessionId);
-
-    return true;
+    return this.deletion.remove(sessionId);
   }
 
   /**

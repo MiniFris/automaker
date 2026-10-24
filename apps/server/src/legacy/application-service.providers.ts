@@ -15,6 +15,7 @@ import { AgentStreamNormalizer } from '../services/agent/agent-stream-normalizer
 import { AgentSessionLoader } from '../services/agent/agent-session-loader.js';
 import { AgentConversationCoordinator } from '../services/agent/agent-conversation-coordinator.js';
 import { AgentPromptQueue } from '../services/agent/agent-prompt-queue.js';
+import { AgentSessionDeletion } from '../services/agent/agent-session-deletion.js';
 import { FeatureLoader } from '../services/feature-loader.js';
 import { AutoModeServiceCompat } from '../services/auto-mode/index.js';
 import { TerminalService } from '../services/terminal-service.js';
@@ -111,6 +112,7 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
         AgentSessionLoader,
         AgentConversationCoordinator,
         AgentPromptQueue,
+        AgentSessionDeletion,
         AgentEventPublisher,
         tokens.settings,
         AgentProviderSelector,
@@ -126,6 +128,7 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
         loader: AgentSessionLoader,
         conversations: AgentConversationCoordinator,
         queue: AgentPromptQueue,
+        deletion: AgentSessionDeletion,
         events: AgentEventPublisher,
         settings: SettingsService,
         providers: AgentProviderSelector,
@@ -141,6 +144,7 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
           loader,
           conversations,
           queue,
+          deletion,
           events,
           settings,
           providers,

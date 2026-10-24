@@ -121,6 +121,13 @@ service tokens и lifecycle adapter ещё требуют переноса.
 Storage migrations должны быть backward-readable либо сопровождаться backup и
 отдельным downgrade warning. Nest cutover сам по себе не требует изменения storage.
 
+- [ ] Реализовать и проверить downgrade preflight для interrupted queue deliveries
+      и `agent-session-deletions` tombstones. Backend, игнорирующий эти markers,
+      нельзя запускать против несовместимого DATA_DIR: незавершённый cleanup или
+      stale backups не должны воскресить удалённые сессии, а quarantined prompts
+      не должны попасть в автоматическое выполнение. Проверить отказ небезопасного
+      запуска и согласованный snapshot/явное преобразование перед downgrade.
+
 ## 10.8. Документация
 
 - [ ] README commands и prerequisites.

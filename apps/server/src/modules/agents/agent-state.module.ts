@@ -17,6 +17,7 @@ import { AgentSessionLoader } from '../../services/agent/agent-session-loader.js
 import { AgentConversationCoordinator } from '../../services/agent/agent-conversation-coordinator.js';
 import { AgentPromptQueue } from '../../services/agent/agent-prompt-queue.js';
 import { AgentQueueDeliveryStore } from '../../services/agent/agent-queue-delivery-store.js';
+import { AgentSessionDeletion } from '../../services/agent/agent-session-deletion.js';
 
 @Global()
 @Module({
@@ -24,6 +25,21 @@ import { AgentQueueDeliveryStore } from '../../services/agent/agent-queue-delive
     AgentSessionRegistry,
     AgentPromptBuilder,
     AgentStreamNormalizer,
+    {
+      provide: AgentSessionDeletion,
+      inject: [
+        AgentSessionRepository,
+        AgentSessionRegistry,
+        AgentExecutionCoordinator,
+        AgentQueueDeliveryStore,
+      ],
+      useFactory: (
+        repository: AgentSessionRepository,
+        sessions: AgentSessionRegistry,
+        executions: AgentExecutionCoordinator,
+        deliveries: AgentQueueDeliveryStore
+      ) => new AgentSessionDeletion(repository, sessions, executions, deliveries),
+    },
     {
       provide: AgentQueueDeliveryStore,
       inject: [RUNTIME_CONFIG, AgentSessionRepository, AgentSessionRegistry],
@@ -125,6 +141,7 @@ import { AgentQueueDeliveryStore } from '../../services/agent/agent-queue-delive
     },
   ],
   exports: [
+    AgentSessionDeletion,
     AgentSessionRegistry,
     AgentSessionRepository,
     AgentExecutionCoordinator,

@@ -8,6 +8,7 @@ import { AgentSessionStorageError } from './agent-session-storage.error.js';
 import { AgentSessionRepository } from './agent-session.repository.js';
 import { AgentSessionRegistry } from './agent-session-registry.js';
 import type { QueuedPrompt } from './agent-session.types.js';
+import { removeAgentStorageArtifacts } from './agent-storage-artifacts.js';
 
 export interface AgentQueueDelivery {
   version: 1;
@@ -39,6 +40,7 @@ export class AgentQueueDeliveryStore {
     assertCanonicalAgentSessionId(id);
     const snapshot = globalThis.structuredClone(prompt);
     return this.serialize(id, async () => {
+      await this.repository.assertAvailable(id);
       const previous = await this.read(id);
       if (this.owners.has(id) || previous?.phase === 'claimed')
         throw new ConflictDomainError(
@@ -92,10 +94,21 @@ export class AgentQueueDeliveryStore {
     return this.owners.has(id);
   }
 
+  purge(id: string): Promise<void> {
+    assertCanonicalAgentSessionId(id);
+    return this.serialize(id, async () => {
+      if (!(await this.repository.deletionState(id)))
+        throw new ConflictDomainError('Session deletion was not admitted.');
+      this.owners.delete(id);
+      await removeAgentStorageArtifacts(this.directory, `${id}.json`);
+    });
+  }
+
   /** Call under the queue mutation lock, or during coalesced cold hydration. */
   recover(id: string): Promise<boolean> {
     assertCanonicalAgentSessionId(id);
     return this.serialize(id, async () => {
+      if (await this.repository.deletionState(id)) return false;
       if (this.owners.has(id)) return false;
       const delivery = await this.read(id);
       if (!delivery) return false;
@@ -273,6 +286,7 @@ export class AgentQueueDeliveryStore {
     }
   }
   private async write(delivery: AgentQueueDelivery): Promise<void> {
+    await this.repository.assertAvailable(delivery.sessionId);
     try {
       // No backup rollback: an older "settled" entry must not hide a newer in-flight claim.
       await atomicWriteJson(this.file(delivery.sessionId), delivery, { mode: 0o600 });

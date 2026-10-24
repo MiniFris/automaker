@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 610,
-    "internalEdges": 1955,
+    "files": 612,
+    "internalEdges": 1967,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -17,7 +17,7 @@
     "legacy -> lib": 1,
     "legacy -> modules": 4,
     "legacy -> root": 2,
-    "legacy -> services": 31,
+    "legacy -> services": 32,
     "lib -> lib": 3,
     "lib -> services": 1,
     "modules -> core": 84,
@@ -26,7 +26,7 @@
     "modules -> modules": 246,
     "modules -> providers": 19,
     "modules -> routes": 62,
-    "modules -> services": 106,
+    "modules -> services": 107,
     "modules -> types": 2,
     "providers -> lib": 5,
     "providers -> modules": 1,
@@ -45,12 +45,12 @@
     "routes -> routes": 378,
     "routes -> services": 196,
     "routes -> types": 3,
-    "services -> core": 6,
-    "services -> lib": 75,
+    "services -> core": 7,
+    "services -> lib": 76,
     "services -> modules": 9,
     "services -> providers": 12,
     "services -> routes": 2,
-    "services -> services": 262,
+    "services -> services": 270,
     "services -> types": 2,
     "tests -> lib": 2
   },
@@ -346,7 +346,7 @@
     "node:http": 7,
     "node:net": 2,
     "node:os": 6,
-    "node:path": 38,
+    "node:path": 39,
     "node:perf_hooks": 2,
     "node:stream": 5,
     "node:stream/web": 1,
@@ -944,6 +944,10 @@
     },
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/agent/agent-session-deletion.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
       "target": "apps/server/src/services/agent/agent-session-loader.ts"
     },
     {
@@ -1153,6 +1157,10 @@
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
       "target": "apps/server/src/services/agent/agent-queue-delivery-store.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-state.module.ts",
+      "target": "apps/server/src/services/agent/agent-session-deletion.ts"
     },
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
@@ -6784,6 +6792,10 @@
     },
     {
       "source": "apps/server/src/services/agent-service.ts",
+      "target": "apps/server/src/services/agent/agent-session-deletion.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent-service.ts",
       "target": "apps/server/src/services/agent/agent-session-loader.ts"
     },
     {
@@ -7003,6 +7015,26 @@
       "target": "apps/server/src/services/agent/agent-session.types.ts"
     },
     {
+      "source": "apps/server/src/services/agent/agent-queue-delivery-store.ts",
+      "target": "apps/server/src/services/agent/agent-storage-artifacts.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-session-deletion.ts",
+      "target": "apps/server/src/services/agent/agent-execution-coordinator.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-session-deletion.ts",
+      "target": "apps/server/src/services/agent/agent-queue-delivery-store.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-session-deletion.ts",
+      "target": "apps/server/src/services/agent/agent-session-registry.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-session-deletion.ts",
+      "target": "apps/server/src/services/agent/agent-session.repository.ts"
+    },
+    {
       "source": "apps/server/src/services/agent/agent-session-id.ts",
       "target": "apps/server/src/core/errors/domain-errors.ts"
     },
@@ -7036,6 +7068,10 @@
     },
     {
       "source": "apps/server/src/services/agent/agent-session.repository.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-session.repository.ts",
       "target": "apps/server/src/lib/secure-fs.ts"
     },
     {
@@ -7049,6 +7085,18 @@
     {
       "source": "apps/server/src/services/agent/agent-session.repository.ts",
       "target": "apps/server/src/services/agent/agent-session.types.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-session.repository.ts",
+      "target": "apps/server/src/services/agent/agent-storage-artifacts.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-storage-artifacts.ts",
+      "target": "apps/server/src/lib/secure-fs.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-storage-artifacts.ts",
+      "target": "apps/server/src/services/agent/agent-session-storage.error.ts"
     },
     {
       "source": "apps/server/src/services/agent/agent-stream-normalizer.ts",

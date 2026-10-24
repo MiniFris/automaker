@@ -59,6 +59,9 @@ describe('agent-service.ts', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(fs.readdir).mockRejectedValue(
+      Object.assign(new Error('Missing fixture directory'), { code: 'ENOENT' })
+    );
     vi.mocked(fs.readFile).mockRejectedValue(
       Object.assign(new Error('Missing fixture file'), { code: 'ENOENT' })
     );
