@@ -7,7 +7,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import { createLogger } from '@automaker/utils';
 
 import { AppModule } from './app.module.js';
-import { parseRuntimeConfig } from './core/config/index.js';
+import { assertNoLegacyServiceOverrides, parseRuntimeConfig } from './core/config/index.js';
 import type { LegacyApplication, LegacyApplicationOptions } from './legacy-application.js';
 import { LEGACY_APPLICATION } from './legacy/legacy.tokens.js';
 import { NestLogger } from './nest-logger.js';
@@ -20,7 +20,7 @@ const DEFAULT_PORT = 3008;
 
 export interface NestApplicationFactoryOptions extends Pick<
   LegacyApplicationOptions,
-  'dataDir' | 'services' | 'runStartupTasks'
+  'dataDir' | 'runStartupTasks'
 > {
   host?: string;
   port?: number;
@@ -42,6 +42,7 @@ export interface AutomakerNestApplication {
 export async function createNestApplication(
   options: NestApplicationFactoryOptions = {}
 ): Promise<AutomakerNestApplication> {
+  assertNoLegacyServiceOverrides(options);
   const environment = { ...(options.environment ?? process.env) };
   if (options.host !== undefined) environment.HOST = options.host;
   if (options.port !== undefined) environment.PORT = String(options.port);
@@ -56,7 +57,6 @@ export async function createNestApplication(
   const app = await NestFactory.create<NestExpressApplication>(
     AppModule.register(config, workingDirectory, {
       runStartupTasks: options.runStartupTasks ?? true,
-      services: options.services,
       providerRegistrations: options.providerRegistrations,
       hostEnvironment: environment,
       httpServer,

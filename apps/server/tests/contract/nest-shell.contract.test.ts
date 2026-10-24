@@ -14,7 +14,11 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 import WebSocket from 'ws';
 
 import { createNestApplication } from '../../src/main.js';
-import { LEGACY_APPLICATION, LEGACY_SERVICES } from '../../src/legacy/legacy.tokens.js';
+import { LEGACY_APPLICATION } from '../../src/legacy/legacy.tokens.js';
+import { AutoModeServiceCompat } from '../../src/services/auto-mode/index.js';
+import { DevServerService } from '../../src/services/dev-server-service.js';
+import { TestRunnerService } from '../../src/services/test-runner-service.js';
+import { TerminalService } from '../../src/services/terminal-service.js';
 import { SettingsService } from '../../src/services/settings-service.js';
 import { MCPTestService } from '../../src/services/mcp-test-service.js';
 import { AgentService } from '../../src/services/agent-service.js';
@@ -75,20 +79,15 @@ describe('Nest shell and legacy bridge contract', () => {
   });
 
   it('registers the existing stateful service instances without duplicates', () => {
-    const services = runtime.legacy.services;
-    const expected = {
-      autoMode: services.autoModeService,
-      devServer: services.devServerService,
-      testRunner: services.testRunnerService,
-      terminal: services.terminalService,
-    };
-
-    for (const [name, token] of Object.entries(LEGACY_SERVICES)) {
-      expect(runtime.app.get(token), name).toBe(expected[name as keyof typeof expected]);
+    expect(runtime.legacy).not.toHaveProperty('services');
+    for (const token of [
+      AutoModeServiceCompat,
+      DevServerService,
+      TestRunnerService,
+      TerminalService,
+    ]) {
+      expect(runtime.app.get(token)).toBeInstanceOf(token);
     }
-    expect(services).not.toHaveProperty('settingsService');
-    expect(services).not.toHaveProperty('loginAttemptStore');
-    expect(services).not.toHaveProperty('events');
   });
 
   it('isolates stateful providers and shutdown between two Nest applications', async () => {
@@ -100,8 +99,13 @@ describe('Nest shell and legacy bridge contract', () => {
     });
     try {
       expect(second.app.get(ProviderRegistry)).not.toBe(runtime.app.get(ProviderRegistry));
-      for (const [name, token] of Object.entries(LEGACY_SERVICES)) {
-        expect(second.app.get(token), name).not.toBe(runtime.app.get(token));
+      for (const token of [
+        AutoModeServiceCompat,
+        DevServerService,
+        TestRunnerService,
+        TerminalService,
+      ]) {
+        expect(second.app.get(token)).not.toBe(runtime.app.get(token));
       }
       expect(second.app.get(AgentSessionRegistry)).not.toBe(runtime.app.get(AgentSessionRegistry));
       expect(second.app.get(AgentSessionRepository)).not.toBe(
@@ -134,7 +138,7 @@ describe('Nest shell and legacy bridge contract', () => {
       expect(second.app.get(AgentEnvironmentPreparer)).not.toBe(
         runtime.app.get(AgentEnvironmentPreparer)
       );
-      const firstCleanup = vi.spyOn(runtime.legacy.services.devServerService, 'stopAll');
+      const firstCleanup = vi.spyOn(runtime.app.get(DevServerService), 'stopAll');
       try {
         await second.app.close();
         expect(firstCleanup).not.toHaveBeenCalled();
@@ -277,7 +281,7 @@ describe('Nest shell and legacy bridge contract', () => {
       planContent: 'Current plan',
     };
     const lookup = vi
-      .spyOn(runtime.legacy.services.autoModeService, 'getPendingPlanApproval')
+      .spyOn(runtime.app.get(AutoModeServiceCompat), 'getPendingPlanApproval')
       .mockResolvedValue(ticket);
     const body = { projectPath: '/tmp', featureId: 'approval-contract-feature' };
     try {
@@ -335,7 +339,7 @@ describe('Nest shell and legacy bridge contract', () => {
       planVersion: 2,
     };
     const resolve = vi
-      .spyOn(runtime.legacy.services.autoModeService, 'resolvePlanApproval')
+      .spyOn(runtime.app.get(AutoModeServiceCompat), 'resolvePlanApproval')
       .mockResolvedValue({ success: true });
     try {
       const malformed = await fetch(endpoint, {
@@ -459,7 +463,7 @@ describe('Nest shell and legacy bridge contract', () => {
 
   it('preserves terminal input, resize, ping and multi-viewer reconnect semantics', async () => {
     const address = runtime.legacy.server.address() as AddressInfo;
-    const terminal = runtime.legacy.services.terminalService;
+    const terminal = runtime.app.get(TerminalService);
     const pty = { write: vi.fn(), resize: vi.fn(), kill: vi.fn() };
     const session = {
       id: 'terminal-contract-session',

@@ -1,9 +1,6 @@
 import { createServer } from 'node:http';
 import { expect, it, vi } from 'vitest';
-import {
-  createLegacyApplication,
-  type LegacyServiceOverrides,
-} from '../../../src/legacy-application.js';
+import { createLegacyApplication } from '../../../src/legacy-application.js';
 import { createEventEmitter } from '../../../src/lib/events.js';
 
 const managed = vi.hoisted(() => ({ tests: vi.fn(), preview: vi.fn() }));
@@ -28,15 +25,17 @@ it('attempts every owned cleanup after interruption/storage failures and never r
     runStartupTasks: false,
     agents: { initialize: vi.fn(), interruptActiveSessions: interrupt },
     foundation: { events: createEventEmitter(), settings: {} as never },
-    services: {
-      autoModeService: {
+    resources: {
+      autoMode: {
+        reconcileFeatureStates: vi.fn(),
+        resumeInterruptedFeatures: vi.fn(),
         markAllRunningFeaturesInterrupted: features,
         interruptForShutdown: autoMode,
       },
-      terminalService: { cleanup: terminal },
-      testRunnerService: { cleanup: tests },
-      devServerService: { stopAll: preview },
-    } as unknown as LegacyServiceOverrides,
+      terminal: { cleanup: terminal },
+      testRunner: { cleanup: tests },
+      devServer: { initialize: vi.fn(), stopAll: preview },
+    },
   });
   const first = runtime.shutdown('fixture');
   expect(runtime.shutdown('duplicate')).toBe(first);

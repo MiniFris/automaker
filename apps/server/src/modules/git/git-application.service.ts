@@ -1,6 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
-import type { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
+import { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
 import {
   ProjectGitService,
   gitWriteActions,
@@ -18,7 +17,7 @@ import type {
 export class GitApplicationService {
   constructor(
     @Inject(ProjectGitService) private readonly git: ProjectGitService,
-    @Inject(LEGACY_SERVICES.autoMode) private readonly autoMode: AutoModeServiceCompat
+    @Inject(AutoModeServiceCompat) private readonly autoMode: AutoModeServiceCompat
   ) {}
 
   diffs(input: GitProjectRequest, signal: AbortSignal) {

@@ -1,11 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
+import { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
 import { FeatureLoader } from '../../services/feature-loader.js';
 import {
   FeatureExportService,
   type BulkExportOptions,
 } from '../../services/feature-export-service.js';
-import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import { NotFoundDomainError, ValidationDomainError } from '../../core/errors/index.js';
 import { FEATURE_REPOSITORY, type FeatureRepository } from './feature.repository.js';
 import type { FeatureConflictCheckRequest, FeatureExportRequest } from './feature.schemas.js';
@@ -17,7 +16,7 @@ export class FeatureQueryService {
   constructor(
     @Inject(FEATURE_REPOSITORY) private readonly features: FeatureRepository,
     @Inject(FeatureLoader) featureLoader: FeatureLoader,
-    @Inject(LEGACY_SERVICES.autoMode) private readonly autoMode: AutoModeServiceCompat
+    @Inject(AutoModeServiceCompat) private readonly autoMode: AutoModeServiceCompat
   ) {
     this.exports = new FeatureExportService(featureLoader);
   }

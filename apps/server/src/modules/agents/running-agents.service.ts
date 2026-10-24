@@ -1,16 +1,15 @@
 import path from 'node:path';
 import { Inject, Injectable } from '@nestjs/common';
 
-import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import { getAllRunningGenerations } from '../../routes/app-spec/common.js';
 import { getBacklogPlanStatus, getRunningDetails } from '../../routes/backlog-plan/common.js';
-import type { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
+import { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
 import { ChatExecutionReadModel } from './chat-execution-read-model.js';
 
 @Injectable()
 export class RunningAgentsService {
   constructor(
-    @Inject(LEGACY_SERVICES.autoMode) private readonly autoMode: AutoModeServiceCompat,
+    @Inject(AutoModeServiceCompat) private readonly autoMode: AutoModeServiceCompat,
     @Inject(ChatExecutionReadModel) private readonly chats: ChatExecutionReadModel
   ) {}
 

@@ -165,11 +165,17 @@ ${pathsChecked
 `);
 }
 
-export interface LegacyServiceOverrides {
-  autoModeService: AutoModeServiceCompat;
-  devServerService: DevServerService;
-  testRunnerService: TestRunnerService;
-  terminalService: TerminalService;
+export interface LegacyLifecycleResources {
+  autoMode: Pick<
+    AutoModeServiceCompat,
+    | 'reconcileFeatureStates'
+    | 'resumeInterruptedFeatures'
+    | 'markAllRunningFeaturesInterrupted'
+    | 'interruptForShutdown'
+  >;
+  devServer: Pick<DevServerService, 'initialize' | 'stopAll'>;
+  testRunner: Pick<TestRunnerService, 'cleanup'>;
+  terminal: Pick<TerminalService, 'cleanup'>;
 }
 
 export interface LegacyApplicationOptions {
@@ -177,7 +183,6 @@ export interface LegacyApplicationOptions {
   runStartupTasks?: boolean;
   httpServer: Server;
   workingDirectory?: string;
-  services?: Partial<LegacyServiceOverrides>;
 }
 
 export interface LegacyShutdownOptions {
@@ -187,15 +192,14 @@ export interface LegacyShutdownOptions {
 export interface LegacyApplication {
   server: Server;
   events: EventEmitter;
-  services: LegacyServiceOverrides;
   initialize(): Promise<void>;
   shutdown(signal?: string, options?: LegacyShutdownOptions): Promise<void>;
   installExceptionHandlers(): void;
 }
 
 export function createLegacyApplication(
-  options: Omit<LegacyApplicationOptions, 'services'> & {
-    services: LegacyServiceOverrides;
+  options: LegacyApplicationOptions & {
+    resources: LegacyLifecycleResources;
     /** Transitional lifecycle bridge, not an owned/overridable legacy service. */
     agents: Pick<AgentService, 'initialize' | 'interruptActiveSessions'>;
     foundation: { events: EventEmitter; settings: SettingsService };
@@ -203,8 +207,12 @@ export function createLegacyApplication(
 ): LegacyApplication {
   const dataDir = options.dataDir ?? DATA_DIR;
   const server = options.httpServer;
-  const services = options.services;
-  const { autoModeService, devServerService, testRunnerService, terminalService } = services;
+  const {
+    autoMode: autoModeService,
+    devServer: devServerService,
+    testRunner: testRunnerService,
+    terminal: terminalService,
+  } = options.resources;
   const { events, settings: settingsService } = options.foundation;
 
   initAllowedPaths();
@@ -436,7 +444,6 @@ export function createLegacyApplication(
   return {
     server,
     events,
-    services,
     async initialize() {
       if (options.runStartupTasks) await runStartupTasks();
     },

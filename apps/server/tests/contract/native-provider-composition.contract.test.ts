@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { ModulesContainer } from '@nestjs/core';
 import { expect, it, vi } from 'vitest';
-import { createNestApplication } from '../../src/main.js';
+import { createNestApplication, type NestApplicationFactoryOptions } from '../../src/main.js';
 import {
   ProviderRegistry,
   PROVIDER_REGISTRATIONS,
@@ -11,7 +11,7 @@ import {
 import { ProviderConnectionRepository } from '../../src/modules/providers/provider-connection.repository.js';
 import { ToolPolicyService } from '../../src/modules/providers/tool-policy.service.js';
 import { AgentProviderSelector } from '../../src/services/agent/agent-provider-selector.js';
-import { LEGACY_SERVICES } from '../../src/legacy/legacy.tokens.js';
+import { AutoModeServiceCompat } from '../../src/services/auto-mode/index.js';
 import { MockProvider } from '../helpers/mock-provider.js';
 import { IdeationService } from '../../src/services/ideation-service.js';
 
@@ -75,11 +75,10 @@ it('owns registry, connection repository and tool policy exactly once per Nest a
       }
     }
     for (const runtime of apps) {
-      expect(runtime.legacy.services).not.toHaveProperty('providerRegistry');
-      expect(runtime.legacy.services).not.toHaveProperty('providerConnections');
+      expect(runtime.legacy).not.toHaveProperty('services');
       const registry = runtime.app.get(ProviderRegistry),
         policy = runtime.app.get(ToolPolicyService);
-      const auto = runtime.app.get(LEGACY_SERVICES.autoMode) as {
+      const auto = runtime.app.get(AutoModeServiceCompat) as unknown as {
         facadeOptions: { providerRegistry: unknown; toolPolicy: unknown };
       };
       const ideation = runtime.app.get(IdeationService) as unknown as { providerRegistry: unknown };
@@ -146,6 +145,10 @@ it.each([
   'ideationService',
   'pipelineService',
   'eventHookService',
+  'autoModeService',
+  'terminalService',
+  'testRunnerService',
+  'devServerService',
 ])(
   'rejects retired legacy override %s before creating services or falling back to production adapters',
   async (key) => {
@@ -157,10 +160,10 @@ it.each([
           dataDir: directory,
           runStartupTasks: false,
           enableShutdownHooks: false,
-          services: { [key]: {} } as never,
-        })
+          services: { [key]: {} },
+        } as unknown as NestApplicationFactoryOptions)
       ).rejects.toThrow(
-        'Unknown legacy service override. Configure native services through their owning modules.'
+        'Legacy service overrides are not supported. Configure native services through their owning modules.'
       );
       expect(await readdir(directory)).toEqual([]);
     } finally {

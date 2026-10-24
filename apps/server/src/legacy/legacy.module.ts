@@ -11,18 +11,18 @@ import {
   createLegacyApplication,
   type LegacyApplication,
   type LegacyApplicationOptions,
-  type LegacyServiceOverrides,
 } from '../legacy-application.js';
 import { ReadinessStateService } from '../core/lifecycle/readiness-state.service.js';
 import { AgentService } from '../services/agent-service.js';
 import { SettingsService } from '../services/settings-service.js';
 import type { EventEmitter } from '../lib/events.js';
 import { APPLICATION_EVENTS } from '../core/eventing/application-events.js';
-import { LEGACY_APPLICATION, LEGACY_SERVICES } from './legacy.tokens.js';
-import {
-  APPLICATION_SERVICE_TOKENS,
-  createApplicationServiceProviders,
-} from './application-service.providers.js';
+import { LEGACY_APPLICATION } from './legacy.tokens.js';
+import { assertNoLegacyServiceOverrides } from '../core/config/bootstrap-options.js';
+import { AutoModeServiceCompat } from '../services/auto-mode/index.js';
+import { DevServerService } from '../services/dev-server-service.js';
+import { TestRunnerService } from '../services/test-runner-service.js';
+import { TerminalService } from '../services/terminal-service.js';
 
 @Injectable()
 class LegacyLifecycle implements OnApplicationBootstrap, BeforeApplicationShutdown {
@@ -50,31 +50,34 @@ class LegacyLifecycle implements OnApplicationBootstrap, BeforeApplicationShutdo
 @Global()
 export class LegacyModule {
   static register(options: LegacyApplicationOptions, dataDirectory: string): DynamicModule {
+    assertNoLegacyServiceOverrides(options);
     return {
       module: LegacyModule,
       providers: [
-        ...createApplicationServiceProviders(options),
         {
           provide: LEGACY_APPLICATION,
           inject: [
             AgentService,
             SettingsService,
             APPLICATION_EVENTS,
-            ...Object.values(APPLICATION_SERVICE_TOKENS),
+            AutoModeServiceCompat,
+            DevServerService,
+            TestRunnerService,
+            TerminalService,
           ],
           useFactory: (
             agents: AgentService,
             settings: SettingsService,
             events: EventEmitter,
-            ...instances: unknown[]
+            autoMode: AutoModeServiceCompat,
+            devServer: DevServerService,
+            testRunner: TestRunnerService,
+            terminal: TerminalService
           ) => {
-            const services = Object.fromEntries(
-              Object.keys(APPLICATION_SERVICE_TOKENS).map((key, index) => [key, instances[index]])
-            ) as unknown as LegacyServiceOverrides;
             return createLegacyApplication({
               ...options,
               dataDir: dataDirectory,
-              services,
+              resources: { autoMode, devServer, testRunner, terminal },
               agents,
               foundation: { settings, events },
             });
@@ -82,7 +85,7 @@ export class LegacyModule {
         },
         LegacyLifecycle,
       ],
-      exports: [LEGACY_APPLICATION, ...Object.values(LEGACY_SERVICES)],
+      exports: [LEGACY_APPLICATION],
     };
   }
 }

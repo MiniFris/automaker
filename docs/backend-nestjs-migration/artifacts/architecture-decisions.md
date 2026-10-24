@@ -617,3 +617,30 @@ or persisted format/ID/API-v13 change is attempted.
 This does not complete ideation decomposition/drain, hook in-flight task drain,
 typed event subscriptions, MCP operation separation or HTTP/SSE acceptance,
 pipeline storage serialization, validation ownership or remaining stage 7–11 gates.
+
+## ADR-033: retire the legacy service bag and bootstrap override seam
+
+AutoModeModule owns AutoModeServiceCompat through a typed factory. Small global
+TerminalRuntimeModule and LocalProcessRuntimeModule own terminal/dev/test runtimes
+without making terminal controllers/guards global. Consumers inject native class
+tokens. The legacy service factories file, token map, override interface and
+returned service bag are deleted, not replaced with compatibility aliases.
+
+The remaining legacy lifecycle adapter receives narrow native resource ports;
+it does not construct services. Startup reconciliation and the ordered interruption/
+resource/provider cleanup sequence are preserved and observed through real Nest
+app.close() with native instances. The separate error-path unit still proves
+remaining cleanup attempts run after interruption/storage failures.
+
+The removed services option is absent from typed bootstrap/module registration.
+JavaScript callers with any own/inherited services container, including undefined,
+empty objects or accessors, fail before resource construction without invoking
+getters. Native registrations/testing-module overrides remain explicit seams.
+Terminal construction takes the validated per-app runtime maxSessions instead of
+re-reading ambient process.env; two-application contracts prove independent limits.
+
+This removes legacy DI composition, not the lifecycle descriptor, AutoMode facade,
+remaining route helpers or execution registries. Idle cleanup ordering does not
+prove active PTY/process-tree drain or all terminal environment ownership. API v13,
+wire/persisted formats and execution bindings remain unchanged; stages 7–11 are
+not declared complete.

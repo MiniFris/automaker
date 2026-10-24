@@ -13,7 +13,6 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { AllowedPathFields, AllowedPathGuard } from '../../core/security/index.js';
-import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import { ExecutionEnvironmentError } from '../../services/execution-environment/runtime.js';
 import {
   MAX_MAX_SESSIONS,
@@ -25,7 +24,7 @@ import { TerminalAccessGuard, TerminalAccessService } from './terminal-access.se
 @Controller('terminal')
 export class TerminalController {
   constructor(
-    @Inject(LEGACY_SERVICES.terminal) private readonly terminal: TerminalService,
+    @Inject(TerminalService) private readonly terminal: TerminalService,
     @Inject(TerminalAccessService) private readonly access: TerminalAccessService
   ) {}
 

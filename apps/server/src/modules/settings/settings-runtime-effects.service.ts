@@ -3,7 +3,6 @@ import { createLogger, LogLevel, setLogLevel } from '@automaker/utils';
 
 import { setRequestLoggingEnabled } from '../../lib/request-logging-state.js';
 import { TerminalService } from '../../services/terminal-service.js';
-import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import { SettingsService } from '../../services/settings-service.js';
 import { SettingsDomainEvents, type GlobalSettingsUpdatedEvent } from './settings-domain-events.js';
 
@@ -22,7 +21,7 @@ export class SettingsRuntimeEffectsService implements OnModuleInit, OnModuleDest
   constructor(
     @Inject(SettingsDomainEvents) private readonly events: SettingsDomainEvents,
     @Inject(SettingsService) private readonly settings: SettingsService,
-    @Inject(LEGACY_SERVICES.terminal) private readonly terminal: TerminalService
+    @Inject(TerminalService) private readonly terminal: TerminalService
   ) {}
 
   onModuleInit(): void {

@@ -13,7 +13,7 @@ import { NotificationsApplicationService } from '../../src/modules/notifications
 import { EventHistoryApplicationService } from '../../src/modules/event-history/event-history.service.js';
 import { BackgroundIntegrationsLifecycle } from '../../src/modules/orchestration/background-integrations.lifecycle.js';
 import { ProjectOverviewService } from '../../src/modules/projects/project-overview.service.js';
-import { LEGACY_SERVICES } from '../../src/legacy/legacy.tokens.js';
+import { AutoModeServiceCompat } from '../../src/services/auto-mode/index.js';
 import { EVENT_BUS, type EventBus } from '../../src/core/eventing/event-bus.js';
 
 it('owns native project storage services once, shares consumer identity, preserves files and isolates notifications/events between applications and projects', async () => {
@@ -51,8 +51,7 @@ it('owns native project storage services once, shares consumer identity, preserv
       }
     }
     for (const runtime of apps) {
-      for (const retired of ['featureLoader', 'notificationService', 'eventHistoryService'])
-        expect(runtime.legacy.services).not.toHaveProperty(retired);
+      expect(runtime.legacy).not.toHaveProperty('services');
       const features = runtime.app.get(FeatureLoader),
         notifications = runtime.app.get(NotificationService),
         history = runtime.app.get(EventHistoryService);
@@ -69,7 +68,7 @@ it('owns native project storage services once, shares consumer identity, preserv
       expect(background.features).toBe(features);
       expect(overview.features).toBe(features);
       expect(overview.notifications).toBe(notifications);
-      const auto = inspect(inspect(runtime.app.get(LEGACY_SERVICES.autoMode)).facadeOptions);
+      const auto = inspect(inspect(runtime.app.get(AutoModeServiceCompat)).facadeOptions);
       expect(auto.featureLoader).toBe(features);
       expect(auto.notificationService).toBe(notifications);
     }

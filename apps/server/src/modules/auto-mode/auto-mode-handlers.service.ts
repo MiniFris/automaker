@@ -1,6 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Request, RequestHandler, Response } from 'express';
-import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import { createAnalyzeProjectHandler } from '../../routes/auto-mode/routes/analyze-project.js';
 import { createCommitFeatureHandler } from '../../routes/auto-mode/routes/commit-feature.js';
 import { createContextExistsHandler } from '../../routes/auto-mode/routes/context-exists.js';
@@ -15,7 +14,7 @@ import { createStatusHandler } from '../../routes/auto-mode/routes/status.js';
 import { createStopFeatureHandler } from '../../routes/auto-mode/routes/stop-feature.js';
 import { createStopHandler } from '../../routes/auto-mode/routes/stop.js';
 import { createVerifyFeatureHandler } from '../../routes/auto-mode/routes/verify-feature.js';
-import type { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
+import { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
 
 export type AutoModeHandlerName = keyof ReturnType<AutoModeHandlersService['createHandlers']>;
 
@@ -24,7 +23,7 @@ export type AutoModeHandlerName = keyof ReturnType<AutoModeHandlersService['crea
 export class AutoModeHandlersService {
   private readonly handlers: Record<string, RequestHandler>;
 
-  constructor(@Inject(LEGACY_SERVICES.autoMode) autoMode: AutoModeServiceCompat) {
+  constructor(@Inject(AutoModeServiceCompat) autoMode: AutoModeServiceCompat) {
     this.handlers = this.createHandlers(autoMode);
   }
 

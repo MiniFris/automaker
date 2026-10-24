@@ -2,7 +2,12 @@ import { DynamicModule, Inject, MiddlewareConsumer, Module, RequestMethod } from
 
 import type { LegacyApplicationOptions } from './legacy-application.js';
 import { AuthModule } from './core/auth/index.js';
-import { RUNTIME_CONFIG, RuntimeConfigModule, type RuntimeConfig } from './core/config/index.js';
+import {
+  RUNTIME_CONFIG,
+  RuntimeConfigModule,
+  type RuntimeConfig,
+  assertNoLegacyServiceOverrides,
+} from './core/config/index.js';
 import { ErrorsModule } from './core/errors/index.js';
 import { EventingModule } from './core/eventing/index.js';
 import { HealthModule } from './core/health/health.module.js';
@@ -48,14 +53,12 @@ export class AppModule {
   static register(
     config: RuntimeConfig,
     workingDirectory: string,
-    serviceOptions: Pick<
-      LegacyApplicationOptions,
-      'runStartupTasks' | 'services' | 'httpServer'
-    > & {
+    serviceOptions: Pick<LegacyApplicationOptions, 'runStartupTasks' | 'httpServer'> & {
       hostEnvironment?: NodeJS.ProcessEnv;
       providerRegistrations?: readonly ProviderRegistration[];
     }
   ): DynamicModule {
+    assertNoLegacyServiceOverrides(serviceOptions);
     const { hostEnvironment, providerRegistrations, ...legacyOptions } = serviceOptions;
     return {
       module: AppModule,

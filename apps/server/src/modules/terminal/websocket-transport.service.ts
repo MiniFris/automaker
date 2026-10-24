@@ -11,7 +11,6 @@ import { WebSocket, WebSocketServer } from 'ws';
 import { createLogger } from '@automaker/utils';
 import { AuthService } from '../../core/auth/auth.service.js';
 import { createCorrelationId } from '../../core/observability/request-context.js';
-import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import { APPLICATION_EVENTS } from '../../core/eventing/application-events.js';
 import type { EventEmitter } from '../../lib/events.js';
 import { isPreviewApiRequest } from '../../services/execution-environment/preview-policy.js';
@@ -41,7 +40,7 @@ export class WebSocketTransportService implements OnApplicationBootstrap, OnAppl
     @Inject(AuthService) private readonly auth: AuthService,
     @Inject(TerminalAccessService) private readonly terminalAccess: TerminalAccessService,
     @Inject(APPLICATION_EVENTS) private readonly events: EventEmitter,
-    @Inject(LEGACY_SERVICES.terminal) private readonly terminal: TerminalService
+    @Inject(TerminalService) private readonly terminal: TerminalService
   ) {
     this.heartbeat.unref();
     this.unsubscribeTerminalExit = this.terminal.onExit((sessionId) => {

@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 608,
-    "internalEdges": 1997,
+    "files": 611,
+    "internalEdges": 1996,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -12,20 +12,18 @@
     "core -> middleware": 1,
     "core -> services": 1,
     "legacy -> core": 3,
-    "legacy -> legacy": 3,
-    "legacy -> lib": 2,
-    "legacy -> modules": 2,
-    "legacy -> root": 2,
-    "legacy -> services": 9,
+    "legacy -> legacy": 1,
+    "legacy -> lib": 1,
+    "legacy -> root": 1,
+    "legacy -> services": 6,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 127,
-    "modules -> legacy": 11,
-    "modules -> lib": 26,
-    "modules -> modules": 295,
+    "modules -> core": 130,
+    "modules -> lib": 28,
+    "modules -> modules": 300,
     "modules -> providers": 27,
     "modules -> routes": 32,
-    "modules -> services": 147,
+    "modules -> services": 156,
     "modules -> types": 2,
     "providers -> core": 1,
     "providers -> lib": 3,
@@ -296,7 +294,7 @@
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 172,
+    "@nestjs/common": 174,
     "@nestjs/core": 7,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
@@ -798,56 +796,8 @@
       "target": "apps/server/src/services/test-runner-service.ts"
     },
     {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/core/eventing/application-events.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/legacy-application.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/modules/providers/tool-policy.service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/dev-server-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/feature-loader.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/notification-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/terminal-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/test-runner-service.ts"
+      "source": "apps/server/src/legacy/legacy.module.ts",
+      "target": "apps/server/src/core/config/bootstrap-options.ts"
     },
     {
       "source": "apps/server/src/legacy/legacy.module.ts",
@@ -863,10 +813,6 @@
     },
     {
       "source": "apps/server/src/legacy/legacy.module.ts",
-      "target": "apps/server/src/legacy/application-service.providers.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/legacy.module.ts",
       "target": "apps/server/src/legacy/legacy.tokens.ts"
     },
     {
@@ -879,7 +825,23 @@
     },
     {
       "source": "apps/server/src/legacy/legacy.module.ts",
+      "target": "apps/server/src/services/auto-mode/index.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/legacy.module.ts",
+      "target": "apps/server/src/services/dev-server-service.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/legacy.module.ts",
       "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/legacy.module.ts",
+      "target": "apps/server/src/services/terminal-service.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/legacy.module.ts",
+      "target": "apps/server/src/services/test-runner-service.ts"
     },
     {
       "source": "apps/server/src/lib/atomic-write-text.ts",
@@ -1139,10 +1101,6 @@
     },
     {
       "source": "apps/server/src/modules/agents/running-agents.service.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
-    },
-    {
-      "source": "apps/server/src/modules/agents/running-agents.service.ts",
       "target": "apps/server/src/modules/agents/chat-execution-read-model.ts"
     },
     {
@@ -1255,10 +1213,6 @@
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode-handlers.service.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
-    },
-    {
-      "source": "apps/server/src/modules/auto-mode/auto-mode-handlers.service.ts",
       "target": "apps/server/src/routes/auto-mode/routes/analyze-project.ts"
     },
     {
@@ -1331,10 +1285,6 @@
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
-    },
-    {
-      "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
       "target": "apps/server/src/modules/auto-mode/auto-mode-handlers.service.ts"
     },
     {
@@ -1348,6 +1298,46 @@
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
       "target": "apps/server/src/modules/auto-mode/auto-mode.controller.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
+      "target": "apps/server/src/modules/auto-mode/auto-mode.provider.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
+      "target": "apps/server/src/services/auto-mode/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
+      "target": "apps/server/src/core/eventing/application-events.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
+      "target": "apps/server/src/lib/events.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
+      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
+      "target": "apps/server/src/modules/providers/tool-policy.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
+      "target": "apps/server/src/services/auto-mode/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
+      "target": "apps/server/src/services/feature-loader.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
+      "target": "apps/server/src/services/notification-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
+      "target": "apps/server/src/services/settings-service.ts"
     },
     {
       "source": "apps/server/src/modules/backlog-plan/backlog-plan-application.service.ts",
@@ -1643,11 +1633,31 @@
     },
     {
       "source": "apps/server/src/modules/execution/execution.module.ts",
+      "target": "apps/server/src/modules/execution/local-process-runtime.module.ts"
+    },
+    {
+      "source": "apps/server/src/modules/execution/execution.module.ts",
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
       "source": "apps/server/src/modules/execution/execution.port.ts",
       "target": "apps/server/src/services/execution-environment/runtime.ts"
+    },
+    {
+      "source": "apps/server/src/modules/execution/local-process-runtime.module.ts",
+      "target": "apps/server/src/core/eventing/application-events.ts"
+    },
+    {
+      "source": "apps/server/src/modules/execution/local-process-runtime.module.ts",
+      "target": "apps/server/src/lib/events.ts"
+    },
+    {
+      "source": "apps/server/src/modules/execution/local-process-runtime.module.ts",
+      "target": "apps/server/src/services/dev-server-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/execution/local-process-runtime.module.ts",
+      "target": "apps/server/src/services/test-runner-service.ts"
     },
     {
       "source": "apps/server/src/modules/features/feature-command.service.ts",
@@ -1692,10 +1702,6 @@
     {
       "source": "apps/server/src/modules/features/feature-query.service.ts",
       "target": "apps/server/src/core/errors/index.ts"
-    },
-    {
-      "source": "apps/server/src/modules/features/feature-query.service.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
     },
     {
       "source": "apps/server/src/modules/features/feature-query.service.ts",
@@ -1952,10 +1958,6 @@
     {
       "source": "apps/server/src/modules/files/local-project-file.adapter.ts",
       "target": "apps/server/src/modules/files/project-file.port.ts"
-    },
-    {
-      "source": "apps/server/src/modules/git/git-application.service.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
     },
     {
       "source": "apps/server/src/modules/git/git-application.service.ts",
@@ -2348,10 +2350,6 @@
     {
       "source": "apps/server/src/modules/pipeline/pipeline.module.ts",
       "target": "apps/server/src/services/pipeline-service.ts"
-    },
-    {
-      "source": "apps/server/src/modules/projects/project-overview.service.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
     },
     {
       "source": "apps/server/src/modules/projects/project-overview.service.ts",
@@ -3191,10 +3189,6 @@
     },
     {
       "source": "apps/server/src/modules/settings/settings-runtime-effects.service.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
-    },
-    {
-      "source": "apps/server/src/modules/settings/settings-runtime-effects.service.ts",
       "target": "apps/server/src/lib/request-logging-state.ts"
     },
     {
@@ -3322,12 +3316,20 @@
       "target": "apps/server/src/core/config/index.ts"
     },
     {
-      "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "target": "apps/server/src/core/security/index.ts"
+      "source": "apps/server/src/modules/terminal/terminal-runtime.module.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/terminal/terminal-runtime.module.ts",
+      "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/terminal/terminal-runtime.module.ts",
+      "target": "apps/server/src/services/terminal-service.ts"
     },
     {
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
+      "target": "apps/server/src/core/security/index.ts"
     },
     {
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
@@ -3344,6 +3346,10 @@
     {
       "source": "apps/server/src/modules/terminal/terminal.module.ts",
       "target": "apps/server/src/modules/terminal/terminal-access.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/terminal/terminal.module.ts",
+      "target": "apps/server/src/modules/terminal/terminal-runtime.module.ts"
     },
     {
       "source": "apps/server/src/modules/terminal/terminal.module.ts",
@@ -3364,10 +3370,6 @@
     {
       "source": "apps/server/src/modules/terminal/websocket-transport.service.ts",
       "target": "apps/server/src/core/observability/request-context.ts"
-    },
-    {
-      "source": "apps/server/src/modules/terminal/websocket-transport.service.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
     },
     {
       "source": "apps/server/src/modules/terminal/websocket-transport.service.ts",
@@ -3416,10 +3418,6 @@
     {
       "source": "apps/server/src/modules/worktree/worktree-application.service.ts",
       "target": "apps/server/src/core/eventing/application-events.ts"
-    },
-    {
-      "source": "apps/server/src/modules/worktree/worktree-application.service.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
     },
     {
       "source": "apps/server/src/modules/worktree/worktree-application.service.ts",
@@ -3472,10 +3470,6 @@
     {
       "source": "apps/server/src/modules/worktree/worktree-process.service.ts",
       "target": "apps/server/src/core/eventing/application-events.ts"
-    },
-    {
-      "source": "apps/server/src/modules/worktree/worktree-process.service.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
     },
     {
       "source": "apps/server/src/modules/worktree/worktree-process.service.ts",

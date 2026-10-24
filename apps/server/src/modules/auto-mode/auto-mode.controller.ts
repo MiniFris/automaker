@@ -8,8 +8,7 @@ import {
 import type { Request, Response } from 'express';
 import { AllowedPathFields, AllowedPathGuard } from '../../core/security/index.js';
 import { AutoModeHandlersService, type AutoModeHandlerName } from './auto-mode-handlers.service.js';
-import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
-import type { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
+import { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
 import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
 import { ConflictDomainError } from '../../core/errors/index.js';
 
@@ -18,7 +17,7 @@ import { ConflictDomainError } from '../../core/errors/index.js';
 export class AutoModeController {
   constructor(
     @Inject(AutoModeHandlersService) private readonly handlers: AutoModeHandlersService,
-    @Inject(LEGACY_SERVICES.autoMode) private readonly autoMode: AutoModeServiceCompat
+    @Inject(AutoModeServiceCompat) private readonly autoMode: AutoModeServiceCompat
   ) {}
 
   private run(name: AutoModeHandlerName, request: Request, response: Response) {

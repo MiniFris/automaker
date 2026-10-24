@@ -7,9 +7,11 @@ import {
 } from './execution.adapters.js';
 import { EXECUTION_ADAPTERS } from './execution.port.js';
 import { ExecutionRegistry } from './execution-registry.service.js';
+import { LocalProcessRuntimeModule } from './local-process-runtime.module.js';
 
 @Global()
 @Module({
+  imports: [LocalProcessRuntimeModule],
   providers: [
     { provide: 'EXECUTION_SETTINGS', useExisting: SettingsService },
     LocalExecutionAdapter,

@@ -52,8 +52,7 @@ it('owns settings, auth attempts and event transport natively once per applicati
       }
     }
     for (const runtime of apps) {
-      for (const retired of ['settingsService', 'events', 'loginAttemptStore'])
-        expect(runtime.legacy.services).not.toHaveProperty(retired);
+      expect(runtime.legacy).not.toHaveProperty('services');
       const settings = runtime.app.get(SettingsService);
       expect((settings as unknown as { files: unknown }).files).toBe(
         runtime.app.get(SettingsFileRepository)

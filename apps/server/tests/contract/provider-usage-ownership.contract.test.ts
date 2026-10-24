@@ -74,16 +74,7 @@ it('owns usage instances, shared Codex dependency and disk caches outside the le
         expect(instances[0].instance).toBe(fixture.runtime.app.get(token));
       }
     }
-    for (const name of [
-      'claudeUsageService',
-      'codexAppServerService',
-      'codexModelCacheService',
-      'codexUsageService',
-      'zaiUsageService',
-      'geminiUsageService',
-    ]) {
-      expect(first.runtime.legacy.services).not.toHaveProperty(name);
-    }
+    expect(first.runtime.legacy).not.toHaveProperty('services');
     const firstAppServer = first.runtime.app.get(CodexAppServerService);
     const secondAppServer = second.runtime.app.get(CodexAppServerService);
     const firstAvailable = vi.spyOn(firstAppServer, 'isAvailable').mockResolvedValue(true);
