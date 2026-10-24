@@ -18,7 +18,7 @@ describe('project domain transport contracts', () => {
   );
 
   it('publishes an explicit API contract version', () => {
-    expect(API_CONTRACT_VERSION).toBe('12');
+    expect(API_CONTRACT_VERSION).toBe('13');
   });
 
   it('applies defaults from the same schemas consumed by the server', () => {

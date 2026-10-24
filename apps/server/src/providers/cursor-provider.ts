@@ -30,7 +30,6 @@ import type {
   ContentBlock,
 } from './types.js';
 import { validateBareModelId } from '@automaker/types';
-import { validateApiKey } from '../lib/auth-utils.js';
 import { getEffectivePermissions, detectProfile } from '../services/cursor-config-service.js';
 import {
   type CursorStreamEvent,
@@ -1109,6 +1108,7 @@ export class CursorProvider extends CliProvider {
         encoding: 'utf8',
         timeout: 5000,
         stdio: 'pipe',
+        env: await this.readEnvironment(),
       }).trim();
       return result;
     } catch {
@@ -1120,93 +1120,38 @@ export class CursorProvider extends CliProvider {
    * Check authentication status
    */
   async checkAuth(): Promise<CursorAuthStatus> {
-    this.ensureCliDetected();
-    if (!this.cliPath) {
-      return { authenticated: false, method: 'none' };
-    }
-
-    // Check for API key in environment with validation
-    if (process.env.CURSOR_API_KEY) {
-      const validation = validateApiKey(process.env.CURSOR_API_KEY, 'cursor');
-      if (!validation.isValid) {
-        logger.warn('Cursor API key validation failed:', validation.error);
-        return { authenticated: false, method: 'api_key', error: validation.error };
-      }
-      return { authenticated: true, method: 'api_key' };
-    }
-
-    // For WSL mode, check credentials inside WSL
-    if (this.useWsl && this.wslCliPath) {
-      const wslOpts = { timeout: 5000, distribution: this.wslDistribution };
-
-      // Check for credentials file inside WSL
-      const wslCredPaths = [
-        '$HOME/.cursor/credentials.json',
-        '$HOME/.config/cursor/credentials.json',
-      ];
-
-      for (const credPath of wslCredPaths) {
-        const content = execInWsl(`sh -c "cat ${credPath} 2>/dev/null || echo ''"`, wslOpts);
-        if (content && content.trim()) {
-          try {
-            const creds = JSON.parse(content);
-            if (creds.accessToken || creds.token) {
-              return { authenticated: true, method: 'login', hasCredentialsFile: true };
-            }
-          } catch {
-            // Invalid credentials file
-          }
-        }
-      }
-
-      // Try running --version to check if CLI works
-      const versionResult = execInWsl(`${this.wslCliPath} --version`, {
-        timeout: 10000,
-        distribution: this.wslDistribution,
-      });
-      if (versionResult) {
-        return { authenticated: true, method: 'login' };
-      }
-
-      return { authenticated: false, method: 'none' };
-    }
-
-    // Native mode (Linux/macOS) - check local credentials
-    const credentialPaths = [
-      path.join(os.homedir(), '.cursor', 'credentials.json'),
-      path.join(os.homedir(), '.config', 'cursor', 'credentials.json'),
-    ];
-
-    for (const credPath of credentialPaths) {
-      if (fs.existsSync(credPath)) {
-        try {
-          const content = fs.readFileSync(credPath, 'utf8');
-          const creds = JSON.parse(content);
-          if (creds.accessToken || creds.token) {
-            return { authenticated: true, method: 'login', hasCredentialsFile: true };
-          }
-        } catch {
-          // Invalid credentials file
-        }
+    const environment = await this.readEnvironment();
+    const hasEnvApiKey = !!environment.CURSOR_API_KEY?.trim();
+    const home = environment.HOME || environment.USERPROFILE || os.homedir();
+    const credentialPaths = environment.CURSOR_CONFIG_DIR
+      ? [path.join(environment.CURSOR_CONFIG_DIR, 'credentials.json')]
+      : [
+          path.join(home, '.cursor', 'credentials.json'),
+          path.join(
+            environment.XDG_CONFIG_HOME || path.join(home, '.config'),
+            'cursor',
+            'credentials.json'
+          ),
+        ];
+    let hasCredentialsFile = false;
+    let error: string | undefined;
+    for (const file of credentialPaths) {
+      try {
+        hasCredentialsFile ||= (await fs.promises.stat(file)).isFile();
+      } catch (failure) {
+        if ((failure as NodeJS.ErrnoException).code !== 'ENOENT')
+          error = 'Local configuration could not be inspected.';
       }
     }
-
-    // Try running a simple command to check auth
-    try {
-      execSync(`"${this.cliPath}" --version`, {
-        encoding: 'utf8',
-        timeout: 10000,
-        env: { ...process.env },
-      });
-      return { authenticated: true, method: 'login' };
-    } catch (error: unknown) {
-      const execError = error as { stderr?: string };
-      if (execError.stderr?.includes('not authenticated') || execError.stderr?.includes('log in')) {
-        return { authenticated: false, method: 'none' };
-      }
-    }
-
-    return { authenticated: false, method: 'none' };
+    return {
+      authenticated: false,
+      authenticationChecked: false,
+      scope: 'host',
+      method: hasEnvApiKey ? 'api_key' : 'none',
+      hasEnvApiKey,
+      hasCredentialsFile,
+      ...(error && { error }),
+    };
   }
 
   /**
@@ -1228,7 +1173,7 @@ export class CursorProvider extends CliProvider {
       version: version || undefined,
       path: displayPath,
       method: this.useWsl ? 'wsl' : 'cli',
-      hasApiKey: !!process.env.CURSOR_API_KEY,
+      hasApiKey: !!auth.hasEnvApiKey,
       authenticated: auth.authenticated,
     };
   }

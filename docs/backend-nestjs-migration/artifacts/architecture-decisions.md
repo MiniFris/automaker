@@ -474,3 +474,30 @@ prove environment/key/delete/path/shutdown behavior, not vendor authentication,
 subscription validity, universal sandboxing or cross-platform process-tree cleanup.
 Usage consent, vendor startup configuration, unverified local plan fallback and
 remaining provider/status/capability gates remain required before stage completion.
+
+## ADR-027: API v13 passive Cursor status, separate connection and authentication
+
+Cursor GET status no longer treats `--version`, a key, a credential file or a legacy
+adapter claim as successful authentication. Passive auth inspection reads only
+application environment and file metadata; it does not launch discovery/auth/WSL
+commands or parse credential contents. Its explicit scope is host, not remote/WSL.
+Installation/version remain separate probes, with their remaining ambient discovery
+limitations recorded in stage 7.
+
+The strict shared schema fixes authenticated/authenticationChecked to false and
+exposes only key/file booleans plus a static inspection error. The root connection
+marker controls application disconnect/reconnect independently. HTTP/Electron
+clients reject old/private/verified auth responses; server/client cut over together
+with API header 13. Existing CLI command names and connection confirmation protocol
+are not silently changed.
+
+One shared setup panel replaces both login-polling implementations. Copy is only
+copy; refresh is passive; settings and provider summary never claim verified login.
+The model-selection availability notice uses installation and an explicit connection
+marker rather than equating unverified auth with missing CLI. Queries, permissions
+mutations, vendor login and account verification remain separate user actions.
+
+Unit/native HTTP/browser contracts cover false-positive prevention, isolated app
+profiles, safe metadata errors, strict transport, clipboard/no polling and confirmed
+connection changes. This does not add a Cursor verifier/key manager or certify all
+discovery/WSL/version/cancellation paths and does not complete stage 7.

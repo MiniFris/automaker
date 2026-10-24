@@ -1,4 +1,7 @@
 {
+  "Cursor CLI installation or Automaker connection is unavailable. Configure it in Settings → AI Providers.": "Установка Cursor CLI или подключение к Automaker недоступны. Настройте их в Настройки → ИИ-провайдеры.",
+  "CLI installation and authentication are separate checks.": "Установка CLI и проверка авторизации — разные проверки.",
+  "Failed to read Cursor status.": "Не удалось получить статус Cursor.",
   "Legacy browser credential import": "Импорт старых ключей из браузера",
   "Inspect old browser keys, then confirm each import for this backend. An import may replace a backend key; it does not verify authentication. The original browser backup is not changed.": "Проверьте старые ключи браузера, затем подтвердите импорт каждого ключа в этот бэкенд. Импорт может заменить ключ бэкенда, но не проверяет авторизацию. Исходная резервная копия браузера не изменяется.",
   "Inspect legacy browser keys": "Проверить старые ключи браузера",

@@ -9,6 +9,7 @@ import { createLogger } from '@automaker/utils/logger';
 import { translate } from './i18n';
 import { GeminiSetupStatusSchema, type GeminiSetupStatus } from '@automaker/contracts';
 import { CopilotSetupStatusSchema, type CopilotSetupStatus } from '@automaker/contracts';
+import { CursorSetupStatusSchema, type CursorSetupStatus } from '@automaker/contracts';
 import {
   SetupCredentialProviderSchema,
   SetupCredentialTargetResponseSchema,
@@ -1877,19 +1878,11 @@ export class HttpApiClient implements ElectronAPI {
     },
 
     // Cursor CLI methods
-    getCursorStatus: (): Promise<{
-      success: boolean;
-      installed?: boolean;
-      version?: string | null;
-      path?: string | null;
-      auth?: {
-        authenticated: boolean;
-        method: string;
-      };
-      installCommand?: string;
-      loginCommand?: string;
-      error?: string;
-    }> => this.get('/api/setup/cursor-status'),
+    getCursorStatus: async (): Promise<CursorSetupStatus> => {
+      const result = CursorSetupStatusSchema.safeParse(await this.get('/api/setup/cursor-status'));
+      if (!result.success) throw new Error('Cursor status protocol is unavailable.');
+      return result.data;
+    },
 
     authCursor: (
       request: ProviderReconnectRequest

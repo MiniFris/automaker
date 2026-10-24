@@ -26,10 +26,15 @@ export interface GhCliStatus {
 // Cursor CLI Status
 export interface CursorCliStatus {
   installed: boolean;
+  connected?: boolean;
   version?: string | null;
   path?: string | null;
   auth?: {
     authenticated: boolean;
+    authenticationChecked?: boolean;
+    scope?: 'host';
+    hasEnvApiKey?: boolean;
+    hasCredentialsFile?: boolean;
     method: string;
   };
   installCommand?: string;

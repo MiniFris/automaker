@@ -22,6 +22,7 @@ import { CodexVerificationRuntime } from '../../src/core/platform/codex-verifica
 import { SettingsService } from '../../src/services/settings-service.js';
 import { ApplicationCredentialsService } from '../../src/modules/providers/application-credentials.service.js';
 import { GeminiProvider } from '../../src/providers/gemini-provider.js';
+import { CursorProvider } from '../../src/providers/cursor-provider.js';
 import { MockProvider } from './mock-provider.js';
 
 /** Test-only composition: production bootstrap has no environment-controlled mocks. */
@@ -58,6 +59,7 @@ export async function createE2eApplication(
             GOOGLE_APPLICATION_CREDENTIALS: undefined,
             GOOGLE_CLOUD_PROJECT: undefined,
             CURSOR_CONFIG_DIR: path.join(dataDirectory, 'host-cursor-profile'),
+            CURSOR_API_KEY: undefined,
             ANTHROPIC_BASE_URL: 'https://claude-verification.fixture.invalid',
           },
         }),
@@ -91,6 +93,9 @@ export async function createE2eApplication(
                     models,
                     '[test] hold Running Agents chat'
                   );
+                  if (registration.name === 'cursor')
+                    provider.checkAuth = () =>
+                      new CursorProvider({}, () => credentials.environment()).checkAuth();
                   // Real passive Google-key policy/status, but never a vendor CLI/query.
                   // Keep file hints inside the owned test profile, not the operator's home.
                   if (registration.name === 'gemini')

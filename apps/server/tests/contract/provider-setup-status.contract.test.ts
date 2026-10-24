@@ -53,10 +53,7 @@ it('serves native setup status through injected adapters and isolates disconnect
     const first = await start('first');
     const second = await start('second');
     for (const name of names) {
-      const auth =
-        name !== 'cursor'
-          ? { authenticated: false, authenticationChecked: false, method: 'none' }
-          : { authenticated: true, method: 'test-fixture' };
+      const auth = { authenticated: false, authenticationChecked: false, method: 'none' };
       expect(await first.status(name)).toMatchObject({
         code: 200,
         body: {

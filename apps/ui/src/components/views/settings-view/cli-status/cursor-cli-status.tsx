@@ -5,12 +5,16 @@ import { Spinner } from '@/components/ui/spinner';
 import { CheckCircle2, AlertCircle, RefreshCw, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CursorIcon } from '@/components/ui/provider-icon';
+import { PassiveAuthenticationNotice } from '@/components/shared/passive-authentication-notice';
 import { ProviderDisconnectButton, ProviderReconnectButton } from './provider-connection-button';
 
 interface CursorStatus {
   installed: boolean;
   version?: string;
   authenticated: boolean;
+  connected?: boolean;
+  hasEnvApiKey?: boolean;
+  hasCredentialsFile?: boolean;
   method?: string;
 }
 
@@ -270,46 +274,14 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
               </div>
             </div>
 
-            {/* Authentication Status */}
-            {status.authenticated ? (
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center border border-emerald-500/20 shrink-0">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-emerald-400">
-                    {translate('Authenticated')}
-                  </p>
-                  <div className="text-xs text-emerald-400/70 mt-1.5">
-                    <p>
-                      {translate('Method:')}{' '}
-                      <span className="font-mono">
-                        {status.method === 'api_key'
-                          ? translate('API Key')
-                          : translate('Browser Login')}
-                      </span>
-                    </p>
-                  </div>
-                  <ProviderDisconnectButton provider="cursor" onRefresh={onRefresh} />
-                </div>
-              </div>
+            <PassiveAuthenticationNotice
+              hasCredentialsHint={status.hasEnvApiKey}
+              hasConfigFile={status.hasCredentialsFile}
+            />
+            {status.connected === false ? (
+              <ProviderReconnectButton provider="cursor" onRefresh={onRefresh} />
             ) : (
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center border border-amber-500/20 shrink-0 mt-0.5">
-                  <XCircle className="w-5 h-5 text-amber-500" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-amber-400">
-                    {translate('Not Authenticated')}
-                  </p>
-                  <p className="text-xs text-amber-400/70 mt-1">
-                    {translate(
-                      'Reconnect to Automaker to use existing CLI credentials. CLI login is performed separately.'
-                    )}
-                  </p>
-                  <ProviderReconnectButton provider="cursor" onRefresh={onRefresh} />
-                </div>
-              </div>
+              <ProviderDisconnectButton provider="cursor" onRefresh={onRefresh} />
             )}
           </div>
         ) : (

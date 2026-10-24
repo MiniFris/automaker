@@ -861,9 +861,15 @@ filesystem I/O и ошибки Nest hooks, также требует hardening �
 ## 7.6. Models/setup/usage routes
 
 - [ ] Перенести provider status и setup endpoints, отложенные на этапе 4.
-- [ ] Перенести Claude/Codex/Gemini/ZAI usage endpoints.
+- [x] Перенести Claude/Codex/Gemini/ZAI usage endpoints: `ProviderUsageController`
+      и native usage factories; HTTP cutover не закрывает оставшиеся consent,
+      adapter redaction и platform cleanup gates.
 - [x] Перенести model discovery/cache refresh.
 - [ ] Status не должен выполнять дорогую авторизацию без явного запроса.
+  - [x] Cursor setup status: passive host key/file hints, без token reads,
+        auth/version fallback и WSL auth probes; separate connection marker (API v13).
+  - [x] Gemini/Copilot setup status: passive application hints, без auth commands
+        и без продвижения file/token presence в verified authentication (API v11/v10).
   - [x] GitHub setup status: пассивный GET без API/auth probes, отдельный confirmed
         native check с hostname/CLI/host target, protocol gate и явным UI действием (API v8).
 - [ ] Setup mutation требует подтверждения и возвращает фактический target.
@@ -2548,6 +2554,80 @@ exit после Nest close. Fixtures не загружают vendor SDK и не 
 Consent на usage/model probes, vendor startup behavior, строгая response schema,
 динамическое vision metadata, passive status policy всех providers и общий deadline
 приложения остаются gates этапа 7. API version остаётся 12; этапы 7–11 не завершены.
+
+### Срез: API v13 passive Cursor status и единый setup UI
+
+Удалён ложный Cursor auth fallback: успешный `--version` больше не означает login,
+а наличие CURSOR_API_KEY или credentials file не становится verified account.
+`checkAuth()` не вызывает discovery, native/WSL auth commands или version и не
+читает содержимое credential files. Он читает fresh application environment и
+только stat известных host paths: explicit CURSOR_CONFIG_DIR, либо HOME/USERPROFILE
+`.cursor` и XDG_CONFIG_HOME/default `.config/cursor`. Файл должен быть regular;
+не-ENOENT metadata error выдаётся статической строкой без path/token details.
+Отдельный native version probe теперь получает application environment.
+
+Shared strict `CursorSetupStatusSchema` требует `auth.authenticated: false`,
+`authenticationChecked: false`, `scope: host`, booleans hasEnvApiKey и
+hasCredentialsFile, method api_key/none. Legacy adapter true/login/identity не
+продвигаются native normalizer в auth proof. Root connected — только Automaker
+connection marker. Disconnect скрывает hints и не вызывает checkAuth, но сохраняет
+Cursor installation probe; это не logout и не отзыв vendor credentials.
+HTTP/Electron clients валидируют schema и отвергают old/private/verified claims.
+Общий API header повышен до `13`; server и client должны обновляться совместно.
+
+Settings всегда показывает «Authentication not checked», а Disconnect/Reconnect
+следуют marker, не auth boolean. Два старых setup implementations заменены общим
+`CursorSetupPanel`: Copy login command копирует команду, не запускает CLI, auth
+POST или polling. Refresh читает passive status, ошибок чтения не выдаёт за
+отсутствующую installation. Global setup store сохраняет passive fields/marker,
+provider summary не показывает Cursor как verified. Board model-selection notice
+использует installed + explicit connected; unknown/false marker считается
+недоступным transport context, но отсутствие authentication proof не выдаётся
+за доказательство неработающего CLI. Исполнение query остаётся отдельным действием.
+
+Это соответствует разделению version и auth status в
+[Cursor authentication docs](https://prod.cursor.com/docs/cli/reference/authentication)
+и [installation verification](https://prod.cursor.com/docs/cli/installation). Новый
+vendor auth verifier этим срезом не реализован. Сохранены существующие
+cursor-agent/IDE command names; это не переход на новую версию/alias vendor CLI.
+Текущие vendor docs показывают `agent`; его discovery/alias compatibility нужно
+проверить отдельно, а не считать доказанным этим status-only срезом.
+
+Проверки включают 6 новых provider unit (no token reads, no commands, WSL flag,
+directory/error cases, fail-closed reader, version env), strict HTTP client tests,
+UI settings/shared setup и model-notice tests. Native HTTP contract использует два
+реальных приложения и real credential readers/files; только installation/version
+заменены fixtures. Проверены независимые hints, отсутствие private contents и
+disconnect/reconnect. E2E composition использует реальный passive Cursor reader
+на собственном profile, без bootstrap CURSOR_API_KEY оператора. Chromium проверяет
+setup/settings, содержимое clipboard, отсутствие GET polling при продвижении
+browser clock, refresh и confirmed disconnect/reconnect без auth success.
+
+Проверки среза:
+
+- `npm run test:server:unit`: 3573 passed, 40 existing skipped.
+- `npm run test:server:contract`: финальный полный запуск 282 passed; новый native
+  two-app contract и сохранённые connection/permissions/credential contracts.
+- `npm run test:packages`: финальный полный запуск 1473 passed; 16 новых UI/client/
+  model-notice tests и 6 новых provider tests покрывают новый passive contract.
+- Shared types/contracts, server и UI/Electron main/preload builds, UI typecheck,
+  server/UI lint, lockfile, formatting/diff и три inventory checks: успешно.
+- Последовательный server build → SIGTERM/SIGINT lifecycle smoke: exit 0.
+- Docker acceptance: 11 passed, 4 opt-in skipped; cleanup owned resources успешен.
+- Real SSH Direct/CLI/SDK chat/restart выборка: 3 passed, 34 отфильтрованы.
+- Chromium после завершения Docker/SSH: 4 passed; финальный повтор включает
+  clipboard verification и clock-driven проверку отсутствия Cursor status polling.
+- Первый typecheck нашёл obsolete result.error branch после strict success schema;
+  он удалён, protocol errors теперь приходят из parser. Первые contracts нашли
+  два старых ожидания Cursor=true от fixture; они заменены assertions passive
+  normalization, connection isolation и их проверки сохранены.
+
+Граница: installation discovery ещё содержит ambient paths и WSL/version command
+branches; host hints не описывают auth profile внутри WSL или remote environment.
+Cursor key storage/deletion и explicit account verifier не добавлены. Остальные
+providers ещё требуют status/evidence audit; public setup auth/CSRF, version-output
+redaction, tool policy, универсальный process cleanup и остальные gates этапов
+7–11 остаются открытыми.
 
 ## Тесты
 

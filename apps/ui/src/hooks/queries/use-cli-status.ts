@@ -115,9 +115,6 @@ export function useCursorCliStatus() {
         throw new Error('Cursor CLI status API not available');
       }
       const result = await api.setup.getCursorStatus();
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch Cursor CLI status');
-      }
       return result;
     },
     staleTime: STALE_TIMES.CLI_STATUS,

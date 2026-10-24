@@ -1,4 +1,5 @@
 import { translate } from '@/lib/i18n';
+import type { CursorSetupStatus } from '@automaker/contracts';
 import type {
   PendingPlanApprovalResponse,
   ProviderDisconnectRequest,
@@ -1652,19 +1653,7 @@ interface SetupAPI {
     error?: string;
   }>;
   // Cursor CLI methods
-  getCursorStatus?: () => Promise<{
-    success: boolean;
-    installed?: boolean;
-    version?: string | null;
-    path?: string | null;
-    auth?: {
-      authenticated: boolean;
-      method: string;
-    };
-    installCommand?: string;
-    loginCommand?: string;
-    error?: string;
-  }>;
+  getCursorStatus?: () => Promise<CursorSetupStatus>;
   authCursor?: (request: ProviderReconnectRequest) => Promise<{
     success: boolean;
     token?: string;
@@ -1960,9 +1949,19 @@ function createMockSetupAPI(): SetupAPI {
       return {
         success: true,
         installed: false,
+        connected: true,
         version: null,
         path: null,
-        auth: { authenticated: false, method: 'none' },
+        auth: {
+          authenticated: false,
+          authenticationChecked: false,
+          scope: 'host',
+          method: 'none',
+          hasEnvApiKey: false,
+          hasCredentialsFile: false,
+        },
+        installCommand: 'curl https://cursor.com/install -fsS | bash',
+        loginCommand: 'cursor-agent login',
       };
     },
 

@@ -57,14 +57,11 @@ describe('native provider setup status', () => {
         installed: true,
         version: '1.2.3',
         path: '/fixture/cli',
-        auth:
-          name === 'cursor'
-            ? { authenticated: true, method: 'oauth' }
-            : {
-                authenticated: false,
-                authenticationChecked: false,
-                method: name === 'gemini' ? 'api_key' : 'none',
-              },
+        auth: {
+          authenticated: false,
+          authenticationChecked: false,
+          method: name !== 'copilot' ? 'api_key' : 'none',
+        },
       });
       expect(connections.isDisconnected).toHaveBeenCalledWith(name);
       expect(providers.byName).toHaveBeenCalledWith(name);
@@ -108,9 +105,16 @@ describe('native provider setup status', () => {
     });
   });
 
-  it('preserves the narrow Cursor auth response', async () => {
+  it('normalizes legacy Cursor claims to passive host hints without identity', async () => {
     const { service } = fixture();
-    expect((await service.status('cursor')).auth).toEqual({ authenticated: true, method: 'oauth' });
+    expect((await service.status('cursor')).auth).toEqual({
+      authenticated: false,
+      authenticationChecked: false,
+      scope: 'host',
+      method: 'api_key',
+      hasEnvApiKey: true,
+      hasCredentialsFile: false,
+    });
   });
 
   it.each(['gemini', 'copilot'] as const)(

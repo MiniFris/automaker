@@ -28,7 +28,7 @@ export function CursorSettingsTab() {
   } = useAppStore();
 
   // Custom hooks for data fetching
-  const { status, isLoading, loadData } = useCursorStatus();
+  const { status, isLoading, loadData, error } = useCursorStatus();
   const {
     permissions,
     isLoadingPermissions,
@@ -82,6 +82,7 @@ export function CursorSettingsTab() {
       <ProviderModelTimeoutSettings provider="cursor" />
 
       {/* CLI Status */}
+      {error && <p role="alert">{translate('Failed to read Cursor status.')}</p>}
       <CursorCliStatus status={status} isChecking={isLoading} onRefresh={loadData} />
 
       {/* CLI Permissions Section */}

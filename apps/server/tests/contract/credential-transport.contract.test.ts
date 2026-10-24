@@ -38,7 +38,7 @@ it('rejects bulk private-record writes and settings-import key resurrection whil
         },
         ...(body !== undefined && { body: JSON.stringify(body) }),
       });
-      expect(response.headers.get('X-Automaker-API-Version')).toBe('12');
+      expect(response.headers.get('X-Automaker-API-Version')).toBe('13');
       return { status: response.status, body: await response.json() };
     };
     const credentials = app.app.get(ApplicationCredentialsService);

@@ -1,5 +1,9 @@
 import { Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { CopilotSetupStatusSchema, GeminiSetupStatusSchema } from '@automaker/contracts';
+import {
+  CopilotSetupStatusSchema,
+  GeminiSetupStatusSchema,
+  CursorSetupStatusSchema,
+} from '@automaker/contracts';
 import type { BaseProvider } from '../../providers/base-provider.js';
 import { RUNTIME_CONFIG, type RuntimeConfig } from '../../core/config/index.js';
 import { ProviderConnectionRepository } from './provider-connection.repository.js';
@@ -11,6 +15,7 @@ interface CliAuthenticationStatus {
   authenticated: boolean;
   hasEnvToken?: boolean;
   hasConfigFile?: boolean;
+  hasCredentialsFile?: boolean;
   hasVertexConfig?: boolean;
   method: string;
   hasApiKey?: boolean;
@@ -89,7 +94,7 @@ export class ProviderSetupStatusService {
       ]);
       const result = {
         success: true,
-        ...(name !== 'cursor' && { connected: !disconnected }),
+        connected: !disconnected,
         installed,
         version: version || null,
         path: installed ? provider.getCliPath() : null,
@@ -98,7 +103,7 @@ export class ProviderSetupStatusService {
       };
       if (name === 'copilot') return CopilotSetupStatusSchema.parse(result);
       if (name === 'gemini') return GeminiSetupStatusSchema.parse(result);
-      return result;
+      return CursorSetupStatusSchema.parse(result);
     } catch {
       // CLI errors can contain credentials, environment dumps or command output.
       throw new InternalServerErrorException({
@@ -195,8 +200,17 @@ export class ProviderSetupStatusService {
           auth.error && { error: 'Local configuration could not be inspected.' }),
       };
     }
-    const identity = { authenticated: auth.authenticated, method: auth.method };
-    if (name === 'cursor') return identity;
+    if (name === 'cursor')
+      return {
+        authenticated: false,
+        authenticationChecked: false,
+        scope: 'host',
+        method: !disconnected && auth.hasEnvApiKey ? 'api_key' : 'none',
+        hasEnvApiKey: !disconnected && !!auth.hasEnvApiKey,
+        hasCredentialsFile: !disconnected && !!auth.hasCredentialsFile,
+        ...(!disconnected &&
+          auth.error && { error: 'Local configuration could not be inspected.' }),
+      };
     return {
       authenticated: false,
       authenticationChecked: false,

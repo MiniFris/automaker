@@ -1,5 +1,6 @@
 import { translate, useUiLocale } from '@/lib/i18n';
 import { PassiveAuthenticationNotice } from '@/components/shared/passive-authentication-notice';
+import { CursorSetupPanel } from '@/components/shared/cursor-setup-panel';
 import { GeminiCredentialsForm } from '@/components/shared/gemini-credentials-form';
 import { getHttpApiClient } from '@/lib/http-api-client';
 import { verifyClaudeWithConsent } from '@/lib/claude-verification-consent';
@@ -482,241 +483,7 @@ function ClaudeContent() {
 // Cursor Content
 // ============================================================================
 function CursorContent() {
-  useUiLocale();
-  const { cursorCliStatus, setCursorCliStatus } = useSetupStore();
-  const [isChecking, setIsChecking] = useState(false);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  const checkStatus = useCallback(async () => {
-    setIsChecking(true);
-    try {
-      const api = getElectronAPI();
-      if (!api.setup?.getCursorStatus) return;
-      const result = await api.setup.getCursorStatus();
-      if (result.success) {
-        setCursorCliStatus({
-          installed: result.installed ?? false,
-          version: result.version,
-          path: result.path,
-          auth: result.auth,
-          installCommand: result.installCommand,
-          loginCommand: result.loginCommand,
-        });
-        if (result.auth?.authenticated) {
-          toast.success(translate('Cursor CLI is ready!'));
-        }
-      }
-    } catch {
-      // Ignore errors
-    } finally {
-      setIsChecking(false);
-    }
-  }, [setCursorCliStatus]);
-
-  useEffect(() => {
-    checkStatus();
-    return () => {
-      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-    };
-  }, [checkStatus]);
-
-  const copyCommand = (command: string) => {
-    navigator.clipboard.writeText(command);
-    toast.success(translate('Command copied to clipboard'));
-  };
-
-  const handleLogin = async () => {
-    setIsLoggingIn(true);
-    try {
-      const loginCommand = cursorCliStatus?.loginCommand || 'cursor-agent login';
-      await navigator.clipboard.writeText(loginCommand);
-      toast.info(translate('Login command copied! Paste in terminal to authenticate.'));
-
-      let attempts = 0;
-      pollIntervalRef.current = setInterval(async () => {
-        attempts++;
-        try {
-          const api = getElectronAPI();
-          if (!api.setup?.getCursorStatus) return;
-          const result = await api.setup.getCursorStatus();
-          if (result.auth?.authenticated) {
-            if (pollIntervalRef.current) {
-              clearInterval(pollIntervalRef.current);
-              pollIntervalRef.current = null;
-            }
-            setCursorCliStatus({
-              ...cursorCliStatus,
-              installed: result.installed ?? true,
-              version: result.version,
-              path: result.path,
-              auth: result.auth,
-            });
-            setIsLoggingIn(false);
-            toast.success(translate('Successfully logged in to Cursor!'));
-          }
-        } catch {
-          // Ignore
-        }
-        if (attempts >= 60) {
-          if (pollIntervalRef.current) {
-            clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-          }
-          setIsLoggingIn(false);
-          toast.error(translate('Login timed out. Please try again.'));
-        }
-      }, 2000);
-    } catch {
-      toast.error(translate('Failed to start login process'));
-      setIsLoggingIn(false);
-    }
-  };
-
-  const isReady = cursorCliStatus?.installed && cursorCliStatus?.auth?.authenticated;
-
-  return (
-    <Card className="bg-card border-border">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <CursorIcon className="w-5 h-5" />
-            {translate('Cursor CLI Status')}
-          </CardTitle>
-          <Button variant="ghost" size="sm" onClick={checkStatus} disabled={isChecking}>
-            {isChecking ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
-          </Button>
-        </div>
-        <CardDescription>
-          {cursorCliStatus?.installed
-            ? cursorCliStatus.auth?.authenticated
-              ? translate('Authenticated{value1}', {
-                  value1: cursorCliStatus.version ? ` (v${cursorCliStatus.version})` : '',
-                })
-              : translate('Installed but not authenticated')
-            : translate('Not installed on your system')}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {isReady && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-              <div>
-                <p className="font-medium text-foreground">{translate('CLI Installed')}</p>
-                <p className="text-sm text-muted-foreground">
-                  {cursorCliStatus?.version &&
-                    translate('Version: {value1}', { value1: cursorCliStatus.version })}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-              <p className="font-medium text-foreground">{translate('Authenticated')}</p>
-            </div>
-          </div>
-        )}
-
-        {!cursorCliStatus?.installed && !isChecking && (
-          <div className="space-y-4">
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30 border border-border">
-              <XCircle className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-medium text-foreground">{translate('Cursor CLI not found')}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {translate('Install Cursor IDE to use Cursor AI agent.')}
-                </p>
-              </div>
-            </div>
-            <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
-              <p className="font-medium text-foreground text-sm">{translate('Install Cursor:')}</p>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground overflow-x-auto">
-                  {cursorCliStatus?.installCommand || 'npm install -g @anthropic/cursor-agent'}
-                </code>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() =>
-                    copyCommand(
-                      cursorCliStatus?.installCommand || 'npm install -g @anthropic/cursor-agent'
-                    )
-                  }
-                >
-                  <Copy className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {cursorCliStatus?.installed && !cursorCliStatus?.auth?.authenticated && !isChecking && (
-          <div className="space-y-4">
-            {/* Show CLI installed toast */}
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-              <div>
-                <p className="font-medium text-foreground">{translate('CLI Installed')}</p>
-                <p className="text-sm text-muted-foreground">
-                  {cursorCliStatus?.version &&
-                    translate('Version: {value1}', { value1: cursorCliStatus.version })}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
-              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-medium text-foreground">
-                  {translate('Cursor CLI not authenticated')}
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {translate('Run the login command to authenticate.')}
-                </p>
-              </div>
-            </div>
-            <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
-              <div className="flex items-center gap-2">
-                <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
-                  {cursorCliStatus?.loginCommand || 'cursor-agent login'}
-                </code>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => copyCommand(cursorCliStatus?.loginCommand || 'cursor-agent login')}
-                >
-                  <Copy className="w-4 h-4" />
-                </Button>
-              </div>
-              <Button
-                onClick={handleLogin}
-                disabled={isLoggingIn}
-                className="w-full bg-brand-500 hover:bg-brand-600 text-white"
-              >
-                {isLoggingIn ? (
-                  <>
-                    <Spinner size="sm" variant="foreground" className="mr-2" />
-                    {translate('Waiting for login...')}
-                  </>
-                ) : (
-                  translate('Copy Command & Wait for Login')
-                )}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {isChecking && (
-          <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
-            <Spinner size="md" />
-            <p className="font-medium text-foreground">
-              {translate('Checking Cursor CLI status...')}
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
+  return <CursorSetupPanel />;
 }
 
 // ============================================================================
@@ -1662,6 +1429,7 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
         if (result.success) {
           setCursorCliStatus({
             installed: result.installed ?? false,
+            connected: result.connected,
             version: result.version,
             path: result.path,
             auth: result.auth,
@@ -1806,7 +1574,8 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
       claudeAuthStatus?.method === 'api_key_env');
 
   const isCursorInstalled = cursorCliStatus?.installed === true;
-  const isCursorAuthenticated = cursorCliStatus?.auth?.authenticated === true;
+  // Passive host hints never establish account authentication.
+  const isCursorAuthenticated = false;
 
   const isCodexInstalled = codexCliStatus?.installed === true;
   const isCodexAuthenticated = codexAuthStatus?.authenticated === true;
@@ -1861,7 +1630,7 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
       id: 'cursor' as const,
       label: translate('Cursor'),
       icon: CursorIcon,
-      status: getProviderStatus(isCursorInstalled, isCursorAuthenticated),
+      status: isCursorInstalled ? ('unverified' as const) : ('not_installed' as const),
       color: 'text-blue-500',
     },
     {

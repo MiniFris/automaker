@@ -3,7 +3,7 @@
   "sourceRoot": "apps/server/src",
   "summary": {
     "files": 605,
-    "internalEdges": 2001,
+    "internalEdges": 2000,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -29,7 +29,7 @@
     "modules -> services": 121,
     "modules -> types": 2,
     "providers -> core": 1,
-    "providers -> lib": 4,
+    "providers -> lib": 3,
     "providers -> modules": 1,
     "providers -> providers": 90,
     "providers -> services": 21,
@@ -3733,10 +3733,6 @@
     {
       "source": "apps/server/src/providers/copilot-provider.ts",
       "target": "apps/server/src/providers/types.ts"
-    },
-    {
-      "source": "apps/server/src/providers/cursor-provider.ts",
-      "target": "apps/server/src/lib/auth-utils.ts"
     },
     {
       "source": "apps/server/src/providers/cursor-provider.ts",
