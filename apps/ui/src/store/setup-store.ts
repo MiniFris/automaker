@@ -16,6 +16,7 @@ export interface CliStatus {
 export interface GhCliStatus {
   installed: boolean;
   authenticated: boolean;
+  authenticationChecked?: boolean;
   version: string | null;
   path: string | null;
   user: string | null;

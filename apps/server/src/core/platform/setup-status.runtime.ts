@@ -157,19 +157,12 @@ export class NodeSetupStatusRuntime extends SetupStatusRuntime implements OnAppl
     return this.track(async () => {
       try {
         const user = (await this.run(cliPath, ['api', 'user', '--jq', '.login'])).trim();
-        if (user) return { authenticated: true, user };
+        if (/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(user) && user !== 'null')
+          return { authenticated: true, user };
       } catch {
-        /* GH_TOKEN may still be usable when the API request fails. */
+        /* Do not infer authentication from local hints or a second auth command. */
       }
-      try {
-        const output = await this.run(cliPath, ['auth', 'status']);
-        const user =
-          output.match(/Logged in to [^\s]+ account ([^\s]+)/i) ||
-          output.match(/Logged in to [^\s]+ as ([^\s]+)/i);
-        return { authenticated: true, user: user?.[1] ?? null };
-      } catch {
-        return { authenticated: false, user: null };
-      }
+      return { authenticated: false, user: null };
     });
   }
 

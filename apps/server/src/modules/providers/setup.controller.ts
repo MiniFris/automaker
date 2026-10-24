@@ -28,6 +28,8 @@ import {
   type ClaudeVerificationRequest,
   CodexVerificationRequestSchema,
   type CodexVerificationRequest,
+  GithubAuthenticationRequestSchema,
+  type GithubAuthenticationRequest,
   type CliConnectionProvider,
   type ProviderDisconnectRequest,
   type ProviderReconnectRequest,
@@ -46,6 +48,7 @@ import { CursorPermissionsService } from './cursor-permissions.service.js';
 import { CursorModelConfigService } from './cursor-model-config.service.js';
 import { ClaudeVerificationService } from './claude-verification.service.js';
 import { CodexVerificationService } from './codex-verification.service.js';
+import { GithubAuthenticationService } from './github-authentication.service.js';
 
 @Public()
 @Controller('setup')
@@ -62,7 +65,9 @@ export class SetupController {
     @Inject(CursorPermissionsService) private readonly permissions: CursorPermissionsService,
     @Inject(CursorModelConfigService) private readonly modelConfig: CursorModelConfigService,
     @Inject(ClaudeVerificationService) private readonly verification: ClaudeVerificationService,
-    @Inject(CodexVerificationService) private readonly codexVerification: CodexVerificationService
+    @Inject(CodexVerificationService) private readonly codexVerification: CodexVerificationService,
+    @Inject(GithubAuthenticationService)
+    private readonly githubAuthentication: GithubAuthenticationService
   ) {}
 
   private run(name: SetupHandlerName, request: Request, response: Response) {
@@ -133,6 +138,19 @@ export class SetupController {
   }
   @Get('gh-status') ghStatus() {
     return this.hostStatus.github();
+  }
+  @Get('github-authentication-target') githubAuthenticationTarget() {
+    return this.githubAuthentication.target();
+  }
+  @Post('verify-github-auth') @HttpCode(200) verifyGithubAuth(
+    @Body(new ZodValidationPipe(GithubAuthenticationRequestSchema))
+    body: GithubAuthenticationRequest,
+    @Req() request: Request
+  ) {
+    return this.githubAuthentication.verify(
+      body,
+      request.ip || request.socket.remoteAddress || 'unknown'
+    );
   }
   @Get('cursor-status') cursorStatus() {
     return this.statuses.status('cursor');

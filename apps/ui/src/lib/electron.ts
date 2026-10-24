@@ -1653,6 +1653,7 @@ interface SetupAPI {
     success: boolean;
     installed: boolean;
     authenticated: boolean;
+    authenticationChecked?: boolean;
     version: string | null;
     path: string | null;
     user: string | null;
@@ -1995,6 +1996,7 @@ function createMockSetupAPI(): SetupAPI {
         success: true,
         installed: false,
         authenticated: false,
+        authenticationChecked: false,
         version: null,
         path: null,
         user: null,

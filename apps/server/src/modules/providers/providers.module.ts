@@ -19,6 +19,7 @@ import { HostSetupJsonFiles } from './host-setup-json-files.js';
 import { CursorModelConfigService } from './cursor-model-config.service.js';
 import { ClaudeVerificationService } from './claude-verification.service.js';
 import { CodexVerificationService } from './codex-verification.service.js';
+import { GithubAuthenticationService } from './github-authentication.service.js';
 import {
   CodexVerificationRuntime,
   NodeCodexVerificationRuntime,
@@ -59,6 +60,7 @@ import {
     CursorModelConfigService,
     ClaudeVerificationService,
     CodexVerificationService,
+    GithubAuthenticationService,
     { provide: CodexCredentialRuntime, useClass: NodeCodexCredentialRuntime },
     { provide: CODEX_CREDENTIAL_PROCESS, useValue: spawnCodexCredentialProcess },
     { provide: CodexVerificationRuntime, useClass: NodeCodexVerificationRuntime },

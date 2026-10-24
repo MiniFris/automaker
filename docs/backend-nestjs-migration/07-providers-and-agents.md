@@ -864,6 +864,8 @@ filesystem I/O и ошибки Nest hooks, также требует hardening �
 - [ ] Перенести Claude/Codex/Gemini/ZAI usage endpoints.
 - [x] Перенести model discovery/cache refresh.
 - [ ] Status не должен выполнять дорогую авторизацию без явного запроса.
+  - [x] GitHub setup status: пассивный GET без API/auth probes, отдельный confirmed
+        native check с hostname/CLI/host target, protocol gate и явным UI действием (API v8).
 - [ ] Setup mutation требует подтверждения и возвращает фактический target.
   - [x] Disconnect всех шести CLI providers: shared schema, явное подтверждение,
         instance/provider/path target и native application-scoped command.
@@ -1699,6 +1701,85 @@ forwarding снимается до публикации output/error. Pending ca
 store/delete всё ещё legacy и меняют environment/.env. Native persistence,
 durable bootstrap deletion policy, общий resolver для Claude/Codex/status/verify,
 confirmation target и protocol gate key writes ещё обязательны. Этап 7 открыт.
+
+### Срез: passive GitHub setup status и explicit authentication / API v8
+
+GET `/api/setup/gh-status` больше не запускает `gh api user` или `gh auth status`.
+Он выполняет только installation/path/version lookup и возвращает
+`authenticationChecked: false`, `authenticated: false`, `user: null`. Это unknown
+credential evidence, не logout и не доказательство невалидности аккаунта. UI
+показывает «Аутентификация не проверена», а mount и refresh не выполняют auth probe.
+Refresh сбрасывает прежний verification result, не подтверждая его по старому cache.
+
+Native `GithubAuthenticationService` предоставляет GET
+`/api/setup/github-authentication-target` с protocol 1 и POST
+`/api/setup/verify-github-auth` со strict shared `{ confirmed: true, target }`.
+Target включает application UUID/backend directory, resolved CLI path и GH_HOST
+(по умолчанию github.com); CLI absence отражается null path. Application identity
+выделена отдельным read-only методом repository, без использования чужого provider
+connection marker. POST заново сверяет target перед network check; stale
+instance/root/path/hostname отклоняются до auth call. API header повышен до `8`;
+новый client не делает POST backend без protocol-1 preview и не заменяет approval.
+
+Explicit check выполняет одну `gh api user --jq .login` через host runtime с
+immutable environment и backend cwd. Success требует успешного command и
+непустого ограниченного account login. Пустой/malformed/null output, network или
+auth failure не становятся authenticated; UI пишет «Аутентификация не подтверждена»,
+не объявляя сетевую ошибку logout. Raw errors/diagnostics и tokens не выдаются.
+Резервный `gh auth status` удалён: его exit 0 без проверенного user больше не
+объявляется успешной аутентификацией. Login/logout/switch/refresh команды не запускаются.
+Внутренний token refresh самого vendor CLI не объявляется исключённым; consent
+предупреждает о сетевом обращении и возможном refresh credentials.
+
+Решение сверено с [GitHub CLI api](https://cli.github.com/manual/gh_api) и
+[auth status](https://cli.github.com/manual/gh_auth_status). Актуальная документация
+отдельно предупреждает об автоматическом refresh и особенностях JSON exit codes;
+это не основание предполагать наличие новых flags в любой установленной версии.
+Новые version-specific flags не требуются. В tests используется owned executable
+fixture, не пользовательский GH_TOKEN или реальный GitHub account.
+
+Admission ограничен четырьмя concurrent checks и пятью attempts/client/minute
+с bounded per-app map. Before-shutdown закрывает admission и drain-ит принятые
+операции; runtime track сохраняет владение реальным child до callback. Существующие
+10 s execFile timeout и 128 KiB maxBuffer сохранены. Это не общий shutdown deadline,
+не гарантия SIGKILL/process-tree reap, не sandbox и не remote verification parity.
+Public setup auth/CSRF hardening остаётся отдельным открытым gate; UUID не является
+авторизацией. Hostname/path/UUID approval не доказывает неизменность бинарника или
+идентичность CLI account между preview и check.
+
+Проверки среза:
+
+- 17 command-service cases: strict input, stale UUID/root/path/hostname, no CLI,
+  invalid account evidence, safe unexpected errors, per-app limits и shutdown drain.
+- 43 host-status/runtime cases: installed/missing GET не вызывает auth, один API
+  query без fallback, safe failures и сохранённое lifecycle владение.
+- 7 shared schema, 9 HTTP-client и 3 consent cases: confirmation/capability gate,
+  отсутствие POST старому backend или после смены target, cancel/inspection failure.
+  В первом package run обнаружен ошибочный return mock-функции из нового beforeEach:
+  runner принимал её за cleanup; fixture исправлена блоком без return, повторный
+  полный прогон успешен без ослабления production gate.
+- Native HTTP двух apps использует owned executable CLI fixtures. Отдельный
+  файловый counter доказывает отсутствие API command после GET. Confirmed POST,
+  400/409, immutable host environment, account attribution и real Nest close с
+  pending child проверены. Tests не обращаются к реальному GitHub.
+- `npm run test:server:unit`: 3456 passed, 40 существующих skips.
+- `npm run test:server:contract`: 270 passed; повторён после усиления CLI counter.
+- `npm run test:packages`: 1387 passed.
+- Contracts/server production builds, UI typecheck/lint, server lint и lockfile
+  check успешны. UI production и Electron main/preload builds успешны с прежним
+  chunk-size warning; packaged Electron/Windows acceptance не заявляются.
+- Production lifecycle smoke после server build: SIGTERM/SIGINT exit 0.
+- Chromium `--trace=on`: 8 passed; дополнительно повторён GitHub scenario с двумя
+  installation refresh и проверкой сброса verification result без лишнего POST.
+- Выбранные real SSH CLI/SDK/Direct chat/restart: 3 passed, 34 filtered.
+- Docker acceptance с `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest`:
+  11 passed, 4 opt-in skipped; owned containers/image/volume cleanup проверен.
+- Route/dependency/API-consumer inventories regenerated после форматирования,
+  все три inventory:\*:check успешны; format и diff checks выполнены.
+
+Native key
+persistence/activation, usage ownership и оставшиеся capability/lifecycle пункты
+этапа 7 всё ещё обязательны. Этапы 8–11 не объявляются завершёнными.
 
 ## 7.7. Agent routes
 

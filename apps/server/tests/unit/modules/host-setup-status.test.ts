@@ -236,6 +236,7 @@ describe('native host setup status', () => {
     expect(await service.github()).toEqual({
       success: true,
       installed: false,
+      authenticationChecked: false,
       authenticated: false,
       version: null,
       path: null,
@@ -259,12 +260,13 @@ describe('native host setup status', () => {
     expect(await service.github()).toEqual({
       success: true,
       installed: true,
-      authenticated: true,
-      user: 'fixture',
+      authenticationChecked: false,
+      authenticated: false,
+      user: null,
       version: expected,
       path: '/fixture/gh',
     });
-    expect(runtime.githubAuthentication).toHaveBeenCalledWith('/fixture/gh');
+    expect(runtime.githubAuthentication).not.toHaveBeenCalled();
   });
 
   it.each(['claude', 'github'] as const)(

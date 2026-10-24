@@ -6,6 +6,12 @@
  */
 
 import { createLogger } from '@automaker/utils/logger';
+import {
+  GithubAuthenticationTargetResponseSchema,
+  GithubAuthenticationRequestSchema,
+  GithubAuthenticationResponseSchema,
+  type GithubAuthenticationRequest,
+} from '@automaker/contracts';
 import { ProviderInstallGuidanceSchema, type ProviderInstallGuidance } from '@automaker/contracts';
 import {
   CodexVerificationTargetResponseSchema,
@@ -1801,11 +1807,29 @@ export class HttpApiClient implements ElectronAPI {
       success: boolean;
       installed: boolean;
       authenticated: boolean;
+      authenticationChecked?: boolean;
       version: string | null;
       path: string | null;
       user: string | null;
       error?: string;
     }> => this.get('/api/setup/gh-status'),
+
+    getGithubAuthenticationTarget: async () =>
+      GithubAuthenticationTargetResponseSchema.parse(
+        await this.get('/api/setup/github-authentication-target')
+      ),
+    verifyGithubAuth: async (input: GithubAuthenticationRequest) => {
+      const request = GithubAuthenticationRequestSchema.parse(input);
+      const preview = await this.setup.getGithubAuthenticationTarget();
+      if (JSON.stringify(preview.target) !== JSON.stringify(request.target))
+        throw new Error('GitHub target changed. Inspect and confirm it again.');
+      const response = GithubAuthenticationResponseSchema.parse(
+        await this.post('/api/setup/verify-github-auth', request)
+      );
+      if (JSON.stringify(response.target) !== JSON.stringify(request.target))
+        throw new Error('GitHub response target does not match confirmation.');
+      return response;
+    },
 
     // Cursor CLI methods
     getCursorStatus: (): Promise<{

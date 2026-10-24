@@ -1,4 +1,11 @@
 {
+  "Refresh GitHub installation status": "Обновить статус установки GitHub CLI",
+  "Authentication not checked": "Аутентификация не проверена",
+  "Authentication not verified": "Аутентификация не подтверждена",
+  "GitHub authentication could not be verified": "Не удалось подтвердить аутентификацию GitHub",
+  "GitHub authentication check failed": "Не удалось проверить аутентификацию GitHub",
+  "Check GitHub authentication": "Проверить аутентификацию GitHub",
+  "Check GitHub authentication? This contacts GitHub using this backend CLI. The CLI may refresh credentials.\nHost: {host}\nCLI: {cli}\nBackend: {directory}\nInstance: {instance}": "Проверить аутентификацию GitHub? Запрос будет выполнен через CLI этого сервера. CLI может обновить credentials.\nХост: {host}\nCLI: {cli}\nСервер: {directory}\nЭкземпляр: {instance}",
   "Open Chat": "Открыть чат",
   "Failed to fetch running agents": "Не удалось получить список работающих агентов",
   "Agents will appear here while working on features or chat sessions. Start a feature from the Kanban board or send a message in Agent.": "Здесь отображаются агенты, работающие над задачами или в чатах. Запустите задачу на Kanban-доске или отправьте сообщение в разделе «Агент».",

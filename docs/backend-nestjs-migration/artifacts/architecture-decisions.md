@@ -212,3 +212,18 @@ Context не является sandbox или secret allow-list. Default composit
 discovery, native store/delete, durable deletion/precedence policy и общий
 credential resolver ещё требуют переноса; этот срез их не подменяет cache-only
 реализацией и не закрывает этап 7. Внешние API/capability versions не меняются.
+
+## ADR-016: API v8 passive GitHub status и explicit host authentication
+
+Installation/status GET не проверяет credentials по сети. GitHub status возвращает
+authenticationChecked false; unknown не считается logout или successful auth.
+Явная проверка — отдельный confirmed POST с protocol-1 preview host UUID/root,
+CLI path и hostname. Client проверяет capability до POST и не подменяет target;
+API header повышен до `8`. Mounted/refreshed UI не вызывает auth probe.
+
+Успех требует account login от одной успешной `gh api user --jq .login` команды,
+а не локального credential hint или fallback exit 0. `gh auth status` fallback
+удалён. Raw diagnostics не раскрываются. Per-app rate/concurrency admission и
+shutdown drain владеют checks; общий shutdown deadline, public setup access policy
+и гарантии OS-level reap этим не закрываются. Внутренний vendor credential refresh
+возможен и указан в confirmation; самостоятельные login/logout/switch не выполняются.

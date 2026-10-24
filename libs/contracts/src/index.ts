@@ -10,3 +10,4 @@ export * from './cursor-permissions.js';
 export * from './cursor-model-config.js';
 export * from './claude-verification.js';
 export * from './codex-verification.js';
+export * from './github-authentication.js';

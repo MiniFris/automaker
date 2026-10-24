@@ -47,14 +47,13 @@ export class HostSetupStatusService {
   async github() {
     try {
       const cli = await this.runtime.detect('gh');
-      const auth = cli.installed
-        ? await this.runtime.githubAuthentication(cli.path)
-        : { authenticated: false, user: null };
       const versionMatch = cli.version.match(/gh version ([\d.]+)/);
       return {
         success: true,
         installed: cli.installed,
-        ...auth,
+        authenticationChecked: false,
+        authenticated: false,
+        user: null,
         version: cli.version ? (versionMatch?.[1] ?? cli.version.split('\n')[0]) : null,
         path: cli.path || null,
       };

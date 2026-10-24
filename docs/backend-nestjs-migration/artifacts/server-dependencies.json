@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 601,
-    "internalEdges": 1989,
+    "files": 602,
+    "internalEdges": 1995,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -20,10 +20,10 @@
     "legacy -> services": 33,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 109,
+    "modules -> core": 112,
     "modules -> legacy": 29,
     "modules -> lib": 24,
-    "modules -> modules": 285,
+    "modules -> modules": 288,
     "modules -> providers": 24,
     "modules -> routes": 34,
     "modules -> services": 112,
@@ -288,7 +288,7 @@
   },
   "externalImports": {
     "@anthropic-ai/claude-agent-sdk": 3,
-    "@automaker/contracts": 22,
+    "@automaker/contracts": 23,
     "@automaker/dependency-resolver": 1,
     "@automaker/git-utils": 12,
     "@automaker/model-resolver": 20,
@@ -301,7 +301,7 @@
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 164,
+    "@nestjs/common": 165,
     "@nestjs/core": 7,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
@@ -2636,6 +2636,22 @@
       "target": "apps/server/src/modules/providers/provider-connection.repository.ts"
     },
     {
+      "source": "apps/server/src/modules/providers/github-authentication.service.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/github-authentication.service.ts",
+      "target": "apps/server/src/core/errors/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/github-authentication.service.ts",
+      "target": "apps/server/src/core/platform/setup-status.runtime.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/github-authentication.service.ts",
+      "target": "apps/server/src/modules/providers/provider-connection.repository.ts"
+    },
+    {
       "source": "apps/server/src/modules/providers/host-setup-json-files.ts",
       "target": "apps/server/src/core/config/index.ts"
     },
@@ -2865,6 +2881,10 @@
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/modules/providers/github-authentication.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
       "target": "apps/server/src/modules/providers/host-setup-json-files.ts"
     },
     {
@@ -2954,6 +2974,10 @@
     {
       "source": "apps/server/src/modules/providers/setup.controller.ts",
       "target": "apps/server/src/modules/providers/cursor-permissions.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "target": "apps/server/src/modules/providers/github-authentication.service.ts"
     },
     {
       "source": "apps/server/src/modules/providers/setup.controller.ts",

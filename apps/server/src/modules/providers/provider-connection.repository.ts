@@ -44,8 +44,14 @@ export class ProviderConnectionRepository {
     if (!this.marker(provider)) throw new UnavailableDomainError('Unknown provider connection.');
     return {
       kind: 'host-application',
-      instanceId: this.instanceId,
+      ...this.hostIdentity(),
       provider,
+    };
+  }
+
+  hostIdentity() {
+    return {
+      instanceId: this.instanceId,
       workingDirectory: this.paths.resolveFromWorkingDirectory(),
     };
   }

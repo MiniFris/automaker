@@ -9,6 +9,7 @@ import {
   SetupStatusRuntime,
 } from '../../src/core/platform/setup-status.runtime.js';
 import { SetupCredentialCache } from '../../src/modules/providers/setup-credential-cache.service.js';
+import { GithubAuthenticationService } from '../../src/modules/providers/github-authentication.service.js';
 
 it.skipIf(process.platform === 'win32')(
   'serves native host status using owned CLI fixtures and immutable per-app environments',
@@ -32,6 +33,7 @@ it.skipIf(process.platform === 'win32')(
             `if(process.argv[2]==='--version')process.stdout.write(${JSON.stringify(command === 'gh' ? 'gh version ' : 'Claude ')}+process.env.STATUS_TEST_VERSION);\n` +
             `else if(process.argv[2]==='api'){\n` +
             `const fs=require('node:fs');\n` +
+            `fs.appendFileSync(process.env.STATUS_TEST_API_COUNT,'1');\n` +
             `if(!fs.existsSync(process.env.STATUS_TEST_GATE))process.stdout.write(process.env.STATUS_TEST_USER);\n` +
             `else{fs.writeFileSync(process.env.STATUS_TEST_STARTED,'');\n` +
             `const timer=setInterval(()=>{if(fs.existsSync(process.env.STATUS_TEST_RELEASE)){clearInterval(timer);process.stdout.write(process.env.STATUS_TEST_USER);}},10);}\n}\n`
@@ -49,6 +51,7 @@ it.skipIf(process.platform === 'win32')(
         STATUS_TEST_GATE: path.join(workingDirectory, 'probe-gate'),
         STATUS_TEST_STARTED: path.join(workingDirectory, 'probe-started'),
         STATUS_TEST_RELEASE: path.join(workingDirectory, 'probe-release'),
+        STATUS_TEST_API_COUNT: path.join(workingDirectory, 'api-count'),
         ...(apiKey && { ANTHROPIC_API_KEY: 'private-fixture-anthropic-key' }),
       };
       const runtime = await createNestApplication({
@@ -71,9 +74,13 @@ it.skipIf(process.platform === 'win32')(
       });
       await runtime.start();
       const { port } = runtime.app.getHttpServer().address() as AddressInfo;
-      const request = async (route: string) => {
-        const response = await fetch(`http://127.0.0.1:${port}/api/setup/${route}`);
-        expect(response.status).toBe(200);
+      const request = async (route: string, body?: unknown, expected = 200) => {
+        const response = await fetch(`http://127.0.0.1:${port}/api/setup/${route}`, {
+          method: body === undefined ? 'GET' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          ...(body !== undefined && { body: JSON.stringify(body) }),
+        });
+        expect(response.status).toBe(expected);
         return response.json();
       };
       environment.STATUS_TEST_USER = 'mutated-after-bootstrap';
@@ -89,14 +96,23 @@ it.skipIf(process.platform === 'win32')(
         ['second', second],
       ] as const) {
         const gh = await state.request('gh-status');
+        await expect(access(path.join(state.workingDirectory, 'api-count'))).rejects.toMatchObject({
+          code: 'ENOENT',
+        });
         expect(gh).toEqual({
           success: true,
           installed: true,
-          authenticated: true,
-          user: name,
+          authenticationChecked: false,
+          authenticated: false,
+          user: null,
           version: '2.40.1',
           path: path.join(state.workingDirectory, 'bin', 'gh'),
         });
+        const target = (await state.request('github-authentication-target')).target;
+        await state.request('verify-github-auth', { confirmed: false, target }, 400);
+        expect(
+          await state.request('verify-github-auth', { confirmed: true, target })
+        ).toMatchObject({ authenticationChecked: true, authenticated: true, user: name, target });
         expect(await state.request('claude-status')).toMatchObject({
           success: true,
           installed: true,
@@ -144,22 +160,25 @@ it.skipIf(process.platform === 'win32')(
 
       const host = first.runtime.app.get<NodeSetupStatusRuntime>(SetupStatusRuntime);
       await writeFile(path.join(first.workingDirectory, 'probe-gate'), '');
-      const probe = host.githubAuthentication(path.join(first.workingDirectory, 'bin', 'gh'));
+      const target = (await first.request('github-authentication-target')).target;
+      await second.request('verify-github-auth', { confirmed: true, target }, 409);
+      const probe = first.request('verify-github-auth', { confirmed: true, target });
       // Synchronize on the real fixture child, not a timer or an intent flag.
       await vi.waitFor(() => access(path.join(first.workingDirectory, 'probe-started')));
-      const shutdown = vi.spyOn(host, 'onApplicationShutdown');
+      const service = first.runtime.app.get(GithubAuthenticationService);
+      const shutdown = vi.spyOn(service, 'beforeApplicationShutdown');
       let closed = false;
       closing = first.runtime.app.close().then(() => {
         closed = true;
       });
       await vi.waitFor(() => expect(shutdown).toHaveBeenCalledOnce());
       expect(closed).toBe(false);
-      expect(() => host.detect('gh')).toThrow();
+      await expect(service.target()).rejects.toThrow();
       await writeFile(releasePath, '');
-      expect(await probe).toEqual({ authenticated: true, user: 'first' });
+      expect(await probe).toMatchObject({ authenticated: true, user: 'first' });
       await closing;
       expect(closed).toBe(true);
-      expect((await second.request('gh-status')).user).toBe('second');
+      expect((await second.request('gh-status')).authenticationChecked).toBe(false);
     } finally {
       if (releasePath) await writeFile(releasePath, '');
       await closing;

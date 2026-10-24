@@ -206,7 +206,7 @@ describe('bounded host setup status runtime', () => {
   });
 
   it.each(['', 'failure'])(
-    'falls back from an empty/failed API response to auth status (%s)',
+    'does not infer authentication after an empty/failed API response (%s)',
     async (api) => {
       respond((_command, args, done) =>
         args[0] === 'api'
@@ -214,10 +214,10 @@ describe('bounded host setup status runtime', () => {
           : done(null, 'Logged in to github.com account fixture-user')
       );
       expect(await runtime().githubAuthentication('/fixture/gh')).toEqual({
-        authenticated: true,
-        user: 'fixture-user',
+        authenticated: false,
+        user: null,
       });
-      expect(execFile).toHaveBeenCalledTimes(2);
+      expect(execFile).toHaveBeenCalledTimes(1);
     }
   );
 

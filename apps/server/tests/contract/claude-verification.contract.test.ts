@@ -51,7 +51,7 @@ it('serves native consent-gated verification with app-specific environment and n
         headers: { 'Content-Type': 'application/json' },
         ...(body !== undefined && { body: JSON.stringify(body) }),
       });
-      expect(response.headers.get(API_CONTRACT_VERSION_HEADER)).toBe('7');
+      expect(response.headers.get(API_CONTRACT_VERSION_HEADER)).toBe('8');
       return { status: response.status, body: await response.json() };
     };
     return { runtime, root, request, run, bridge };
