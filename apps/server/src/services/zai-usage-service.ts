@@ -141,6 +141,11 @@ interface VerifyResult {
 export class ZaiUsageService {
   private apiToken: string | null = null;
   private apiHost: string = 'https://api.z.ai';
+  private readonly environment: Readonly<NodeJS.ProcessEnv>;
+
+  constructor(environment: Readonly<NodeJS.ProcessEnv> = process.env) {
+    this.environment = Object.freeze({ ...environment });
+  }
 
   /**
    * Set the API token for authentication
@@ -155,7 +160,7 @@ export class ZaiUsageService {
    */
   getApiToken(): string | null {
     // Priority: 1. Instance token, 2. Environment variable
-    return this.apiToken || process.env.Z_AI_API_KEY || null;
+    return this.apiToken || this.environment.Z_AI_API_KEY || null;
   }
 
   /**
@@ -170,9 +175,9 @@ export class ZaiUsageService {
    * Get the API host
    */
   getApiHost(): string {
-    // Priority: 1. Instance host, 2. Z_AI_API_HOST env, 3. Default
-    if (process.env.Z_AI_API_HOST) {
-      const envHost = process.env.Z_AI_API_HOST.trim();
+    // Preserve the existing operator environment override before the instance/default host.
+    if (this.environment.Z_AI_API_HOST) {
+      const envHost = this.environment.Z_AI_API_HOST.trim();
       return envHost.startsWith('http') ? envHost : `https://${envHost}`;
     }
     return this.apiHost;
@@ -246,7 +251,7 @@ export class ZaiUsageService {
     }
 
     const quotaUrl =
-      process.env.Z_AI_QUOTA_URL || `${this.getApiHost()}/api/monitor/usage/quota/limit`;
+      this.environment.Z_AI_QUOTA_URL || `${this.getApiHost()}/api/monitor/usage/quota/limit`;
 
     logger.info(`[verify] Testing API key against: ${quotaUrl}`);
 
@@ -345,7 +350,7 @@ export class ZaiUsageService {
     }
 
     const quotaUrl =
-      process.env.Z_AI_QUOTA_URL || `${this.getApiHost()}/api/monitor/usage/quota/limit`;
+      this.environment.Z_AI_QUOTA_URL || `${this.getApiHost()}/api/monitor/usage/quota/limit`;
 
     logger.info(`[fetchUsageData] Fetching from: ${quotaUrl}`);
 

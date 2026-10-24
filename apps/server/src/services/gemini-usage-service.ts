@@ -125,10 +125,17 @@ export class GeminiUsageService {
   private credentialsPath: string;
   /** The actual path from which credentials were loaded (for write-back) */
   private loadedCredentialsPath: string | null = null;
+  private readonly environment: Readonly<NodeJS.ProcessEnv>;
+  private readonly homeDirectory: string;
 
-  constructor() {
+  constructor(
+    environment: Readonly<NodeJS.ProcessEnv> = process.env,
+    private readonly workingDirectory: string = process.cwd()
+  ) {
+    this.environment = Object.freeze({ ...environment });
+    this.homeDirectory = this.environment.HOME || this.environment.USERPROFILE || os.homedir();
     // Default credentials path for Gemini CLI
-    this.credentialsPath = path.join(os.homedir(), '.gemini', 'oauth_creds.json');
+    this.credentialsPath = path.join(this.homeDirectory, '.gemini', 'oauth_creds.json');
   }
 
   /**
@@ -386,7 +393,7 @@ export class GeminiUsageService {
     // Build unique possible paths (deduplicate)
     const rawPaths = [
       this.credentialsPath,
-      path.join(os.homedir(), '.config', 'gemini', 'oauth_creds.json'),
+      path.join(this.homeDirectory, '.config', 'gemini', 'oauth_creds.json'),
     ];
     const possiblePaths = [...new Set(rawPaths)];
 
@@ -433,6 +440,8 @@ export class GeminiUsageService {
     const whichCmd = process.platform === 'win32' ? 'where' : 'which';
     try {
       const whichResult = execFileSync(whichCmd, ['gemini'], {
+        env: { ...this.environment },
+        cwd: this.workingDirectory,
         encoding: 'utf8',
         timeout: 5000,
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -449,18 +458,18 @@ export class GeminiUsageService {
     // Check common installation paths
     const possiblePaths = [
       // npm global installs
-      path.join(os.homedir(), '.npm-global', 'bin', 'gemini'),
+      path.join(this.homeDirectory, '.npm-global', 'bin', 'gemini'),
       '/usr/local/bin/gemini',
       '/usr/bin/gemini',
       // Homebrew
       '/opt/homebrew/bin/gemini',
       '/usr/local/opt/gemini/bin/gemini',
       // nvm/fnm node installs
-      path.join(os.homedir(), '.nvm', 'versions', 'node'),
-      path.join(os.homedir(), '.fnm', 'node-versions'),
+      path.join(this.homeDirectory, '.nvm', 'versions', 'node'),
+      path.join(this.homeDirectory, '.fnm', 'node-versions'),
       // Windows
-      path.join(os.homedir(), 'AppData', 'Roaming', 'npm', 'gemini.cmd'),
-      path.join(os.homedir(), 'AppData', 'Roaming', 'npm', 'gemini'),
+      path.join(this.homeDirectory, 'AppData', 'Roaming', 'npm', 'gemini.cmd'),
+      path.join(this.homeDirectory, 'AppData', 'Roaming', 'npm', 'gemini'),
     ];
 
     for (const p of possiblePaths) {
@@ -610,7 +619,13 @@ export class GeminiUsageService {
         const searchResult = execFileSync(
           'find',
           [searchBase, '-name', 'oauth2.js', '-path', '*gemini*', '-path', '*code_assist*'],
-          { encoding: 'utf8', timeout: 5000, stdio: ['pipe', 'pipe', 'pipe'] }
+          {
+            encoding: 'utf8',
+            timeout: 5000,
+            stdio: ['pipe', 'pipe', 'pipe'],
+            env: { ...this.environment },
+            cwd: this.workingDirectory,
+          }
         )
           .trim()
           .split('\n')[0]; // Take first result

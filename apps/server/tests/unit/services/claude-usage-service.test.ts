@@ -56,7 +56,14 @@ describe('claude-usage-service.ts', () => {
       const result = await service.isAvailable();
 
       expect(result).toBe(true);
-      expect(spawn).toHaveBeenCalledWith('which', ['claude']);
+      expect(spawn).toHaveBeenCalledWith(
+        'which',
+        ['claude'],
+        expect.objectContaining({
+          env: expect.any(Object),
+          cwd: process.cwd(),
+        })
+      );
     });
 
     it('should return false when Claude CLI is not available', async () => {
@@ -102,7 +109,14 @@ describe('claude-usage-service.ts', () => {
 
       await ptyService.isAvailable();
 
-      expect(spawn).toHaveBeenCalledWith('where', ['claude']);
+      expect(spawn).toHaveBeenCalledWith(
+        'where',
+        ['claude'],
+        expect.objectContaining({
+          env: expect.any(Object),
+          cwd: process.cwd(),
+        })
+      );
     });
   });
 
@@ -554,6 +568,7 @@ Resets in 2h
       vi.mocked(pty.spawn).mockReturnValue(mockPty as any);
 
       const promise = ptyService.fetchUsageData();
+      await Promise.resolve();
 
       // Simulate data
       dataCallback!(mockOutput);
@@ -596,6 +611,7 @@ Resets in 2h
       vi.mocked(pty.spawn).mockReturnValue(mockPty as any);
 
       const promise = ptyService.fetchUsageData();
+      await Promise.resolve();
 
       // Simulate seeing usage data
       dataCallback!(mockOutput);
@@ -630,6 +646,7 @@ Resets in 2h
       vi.mocked(pty.spawn).mockReturnValue(mockPty as any);
 
       const promise = ptyService.fetchUsageData();
+      await Promise.resolve();
 
       // Send data containing the authentication error pattern the service looks for
       dataCallback!('"type":"authentication_error"');
@@ -656,6 +673,7 @@ Resets in 2h
       vi.mocked(pty.spawn).mockReturnValue(mockPty as any);
 
       const promise = ptyService.fetchUsageData();
+      await Promise.resolve();
 
       // Advance time past timeout (45 seconds)
       vi.advanceTimersByTime(46000);
@@ -686,6 +704,7 @@ Resets in 2h
       vi.mocked(pty.spawn).mockReturnValue(mockPty as any);
 
       const promise = ptyService.fetchUsageData();
+      await Promise.resolve();
 
       // Simulate receiving usage data
       dataCallback!('Current session\n65% left\nResets in 2h');
@@ -721,6 +740,7 @@ Resets in 2h
       vi.mocked(pty.spawn).mockReturnValue(mockPty as any);
 
       ptyService.fetchUsageData();
+      await Promise.resolve();
 
       // Simulate seeing usage data
       dataCallback!('Current session\n65% left');

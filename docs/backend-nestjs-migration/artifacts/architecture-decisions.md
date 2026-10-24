@@ -405,3 +405,26 @@ existing usage responses не меняются. Native construction не док�
 всех ambient credentials/discovery paths или OS-level завершение CLI children.
 Consent, status/auth evidence, model capabilities и безопасные adapter errors
 остаются отдельными незавершёнными gates этапа 7.
+
+## ADR-024: Usage environment belongs to the application, not the host process
+
+Native Claude usage/discovery получает fresh environment из application credentials
+reader для каждого запуска. Это распространяет durable managed-key selection и
+bootstrap suppression на usage PTY, а не только на provider queries. Reader failure
+не разрешает запуск с ambient credentials. Working directory берётся из RuntimePaths.
+На POSIX CLI запускается прямым argv без shell interpolation пути; existing Windows
+cmd transport требует своей platform acceptance.
+
+Gemini usage привязывает credential paths, CLI discovery env/cwd и home-relative
+candidates к snapshot конкретного приложения. z.ai bootstrap token/host/quota URL
+также фиксируются из `HOST_ENVIRONMENT`; обе реализации клонируют входной объект.
+Raw constructors сохраняют compatibility defaults, но native factories больше не
+полагаются на них. Два Nest apps и настоящий offline PTY проверяют isolation,
+managed key/delete и literal path arguments; owned HTTP fixture проверяет z.ai
+authorization без vendor probes. Test diagnostics не сохраняют raw child keys.
+
+Это не изменение API version или разрешение скрытых запросов. Codex usage context,
+consent, z.ai credential mutation policy, Gemini OAuth refresh/write-back policy,
+trust prompts и OS-level shutdown adapters остаются отдельными gates. Environment
+snapshot сам по себе не доказывает корректную authentication, capabilities или
+универсальное завершение subprocess tree.

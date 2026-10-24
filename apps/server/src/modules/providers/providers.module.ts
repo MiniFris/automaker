@@ -1,5 +1,5 @@
 import { type DynamicModule, Global, Module } from '@nestjs/common';
-import { RuntimePathsService } from '../../core/config/index.js';
+import { HOST_ENVIRONMENT, RuntimePathsService } from '../../core/config/index.js';
 import { ClaudeUsageService } from '../../services/claude-usage-service.js';
 import { CodexUsageService } from '../../services/codex-usage-service.js';
 import { CodexAppServerService } from '../../services/codex-app-server-service.js';
@@ -54,7 +54,12 @@ import {
   providers: [
     { provide: ProviderConnectionRepository, useExisting: LEGACY_SERVICES.providerConnections },
     { provide: ProviderRegistry, useExisting: LEGACY_SERVICES.providerRegistry },
-    { provide: ClaudeUsageService, useFactory: () => new ClaudeUsageService() },
+    {
+      provide: ClaudeUsageService,
+      inject: [ApplicationCredentialsService, RuntimePathsService],
+      useFactory: (credentials: ApplicationCredentialsService, paths: RuntimePathsService) =>
+        new ClaudeUsageService(() => credentials.environment(), paths.workingDirectory),
+    },
     { provide: CodexAppServerService, useFactory: () => new CodexAppServerService() },
     {
       provide: CodexUsageService,
@@ -67,8 +72,17 @@ import {
       useFactory: (paths: RuntimePathsService, appServer: CodexAppServerService) =>
         new CodexModelCacheService(paths.dataDirectory, appServer),
     },
-    { provide: GeminiUsageService, useFactory: () => new GeminiUsageService() },
-    { provide: ZaiUsageService, useFactory: () => new ZaiUsageService() },
+    {
+      provide: GeminiUsageService,
+      inject: [HOST_ENVIRONMENT, RuntimePathsService],
+      useFactory: (environment: Readonly<NodeJS.ProcessEnv>, paths: RuntimePathsService) =>
+        new GeminiUsageService(environment, paths.workingDirectory),
+    },
+    {
+      provide: ZaiUsageService,
+      inject: [HOST_ENVIRONMENT],
+      useFactory: (environment: Readonly<NodeJS.ProcessEnv>) => new ZaiUsageService(environment),
+    },
     CodexModelWarmup,
     ProviderUsageService,
     ProviderSetupStatusService,

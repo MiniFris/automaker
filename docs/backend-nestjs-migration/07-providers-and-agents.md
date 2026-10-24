@@ -2400,6 +2400,68 @@ heuristics, error mapping и model metadata (включая старое пре�
 работы. Await cache promise не доказывает exit внешнего процесса. Этап 7 и этапы
 8–11 не объявляются завершёнными этим срезом; публичный API остаётся версии 12.
 
+### Срез: application-owned usage environment и POSIX PTY argv
+
+Native factories usage-сервисов больше не используют ambient constructors для
+Claude/Gemini/z.ai. Claude discovery, PTY и старый неиспользуемый expect helper
+получают новый snapshot из `ApplicationCredentialsService` перед каждым запуском.
+Сохранённый managed API key отключает competing OAuth через существующую policy;
+после native удаления API/OAuth следующий процесс не получает suppressed bootstrap
+values. Ошибка чтения credentials не запускает CLI с host fallback. Child получает
+явные environment и application working directory; parent `process.env` не меняется.
+
+На POSIX PTY запускает `claude` напрямую с argv `['--add-dir', workingDirectory]`,
+без `/bin/sh -c`. Кавычки, `$()` и прочие символы в пути остаются данными. Windows
+cmd/winpty path сохранён и не объявляется сертифицированным Linux acceptance.
+Неиспользуемый Electron environment heuristic удалён; public PTY path, parser,
+таймауты и существующий Windows fallback сохраняются.
+
+Gemini usage получает immutable `HOST_ENVIRONMENT` и application cwd. Его OAuth
+paths и home-relative binary candidates используют HOME, затем USERPROFILE, затем
+OS homedir только при отсутствии обоих. `which`/`where` и secondary `find` получают
+тот же snapshot, а не ambient child inheritance. z.ai instance получает собственный
+snapshot bootstrap key, host и quota URL; environment другого приложения и поздняя
+мутация объекта caller не меняют его. Existing instance-token/host precedence не
+меняется этим срезом.
+
+Добавлены 6 unit и 2 native contracts. Два реальных приложения используют разные
+HOME и z.ai endpoints; локальный HTTP server проверяет usage/verify authorization.
+Network guard запрещает выход этих fixtures за owned loopback origins. Реальный
+Linux PTY запускает offline Node CLI из собственного PATH, проверяет managed key,
+deletion, независимость второй инстанции и буквальное argv/cwd с `$()`/кавычками.
+Child сохраняет только hashes fake credentials; assertions не печатают raw operator
+environment или неизвестный Authorization при регрессии. Остальные unit проверяют
+snapshot immutability, USERPROFILE fallback, explicit omission и fail-closed reader.
+
+Проверки среза:
+
+- `npm run test:server:unit`: финальный полный запуск 3549 passed, 40 existing
+  skipped. После portable path assertions повтор целевых suites: 47 passed,
+  1 existing skipped.
+- `npm run test:server:contract`: финальный полный запуск 279 passed; native usage
+  tests включают реальный PTY child и локальные HTTP requests, без vendor calls.
+- `npm run test:packages`: 1449 passed.
+- Production server и UI/Electron main/preload builds, server lint, UI typecheck,
+  lockfile, formatting, diff и три inventory checks: успешно.
+- SIGTERM/SIGINT lifecycle smoke: exit 0.
+- Docker acceptance: 11 passed, 4 opt-in skipped; owned resources удалены suite.
+- Real SSH Direct/CLI/SDK chat/restart выборка: 3 passed, 34 отфильтрованы.
+- Chromium Agent/Running Agents/Gemini: повтор без изменений 3 passed. Первый
+  запуск: 2 passed и timeout Agent view до создания чата. Snapshot показывает HTML
+  `Loading…`; trace содержит незавершённые загрузки JS-модулей и Gemini status.
+  `/tmp/automaker-usage-env-chat-loading-trace.zip` сохранён вне repository.
+  Причина не доказана; этот срез не объявляется исправлением loading instability
+  и не меняет browser deadlines/retry settings.
+
+Граница: Codex usage/app-server ещё требуют собственного environment/discovery
+переноса. Gemini usage по-прежнему реализует старый OAuth refresh/write-back и TTL,
+а не native Google API-key verifier. z.ai configure/delete policy, consent на
+usage/network probes, upstream redaction, PTY trust auto-approval и подтверждённый
+process-tree exit не закрываются environment seam. Legacy/manual constructor
+defaults всё ещё разрешают `process.env` для compatibility callers; production
+Nest factories передают context явно. API version остаётся 12; этапы 7–11 не
+объявляются завершёнными.
+
 ## Тесты
 
 - Registry priority/aliases/duplicate detection.
