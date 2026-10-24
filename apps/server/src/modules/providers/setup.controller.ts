@@ -3,11 +3,15 @@ import type { Request, Response } from 'express';
 
 import { Public } from '../../core/auth/index.js';
 import { SetupHandlersService, type SetupHandlerName } from './setup-handlers.service.js';
+import { ProviderSetupStatusService } from './provider-setup-status.service.js';
 
 @Public()
 @Controller('setup')
 export class SetupController {
-  constructor(@Inject(SetupHandlersService) private readonly handlers: SetupHandlersService) {}
+  constructor(
+    @Inject(SetupHandlersService) private readonly handlers: SetupHandlersService,
+    @Inject(ProviderSetupStatusService) private readonly statuses: ProviderSetupStatusService
+  ) {}
 
   private run(name: SetupHandlerName, request: Request, response: Response) {
     // Express handlers historically defaulted to 200; Nest POST defaults to 201.
@@ -49,8 +53,8 @@ export class SetupController {
   @Get('gh-status') ghStatus(@Req() q: Request, @Res() s: Response) {
     return this.run('ghStatus', q, s);
   }
-  @Get('cursor-status') cursorStatus(@Req() q: Request, @Res() s: Response) {
-    return this.run('cursorStatus', q, s);
+  @Get('cursor-status') cursorStatus() {
+    return this.statuses.status('cursor');
   }
   @Post('auth-cursor') authCursor(@Req() q: Request, @Res() s: Response) {
     return this.run('authCursor', q, s);
@@ -79,8 +83,8 @@ export class SetupController {
   @Post('deauth-opencode') deauthOpencode(@Req() q: Request, @Res() s: Response) {
     return this.run('deauthOpencode', q, s);
   }
-  @Get('gemini-status') geminiStatus(@Req() q: Request, @Res() s: Response) {
-    return this.run('geminiStatus', q, s);
+  @Get('gemini-status') geminiStatus() {
+    return this.statuses.status('gemini');
   }
   @Post('auth-gemini') authGemini(@Req() q: Request, @Res() s: Response) {
     return this.run('authGemini', q, s);
@@ -88,8 +92,8 @@ export class SetupController {
   @Post('deauth-gemini') deauthGemini(@Req() q: Request, @Res() s: Response) {
     return this.run('deauthGemini', q, s);
   }
-  @Get('copilot-status') copilotStatus(@Req() q: Request, @Res() s: Response) {
-    return this.run('copilotStatus', q, s);
+  @Get('copilot-status') copilotStatus() {
+    return this.statuses.status('copilot');
   }
   @Post('auth-copilot') authCopilot(@Req() q: Request, @Res() s: Response) {
     return this.run('authCopilot', q, s);

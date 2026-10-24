@@ -119,15 +119,15 @@ catalog/probe calls и не выводит grants из legacy `supportsFeature` 
 хотя бы одной богатой модели. Не объявленные feature flags закрыты по умолчанию.
 Text/stream/follow-up/cancellation описывают общий managed stream contract.
 
-| Adapter | Vision path | Tools path | Reasoning controls | MCP path | Remote execution path |
-| --- | --- | --- | --- | --- | --- |
-| Claude | да | да | да | да | да |
-| Codex | да, CLI | да | да | да, CLI | да |
-| Cursor | нет | да | нет | нет | да |
-| Gemini | нет | да | нет | нет | да |
-| Copilot | нет | да | нет | нет | да |
-| OpenCode | нет | да | нет | нет | да |
-| OpenAI-compatible | нет | да | нет | нет | да |
+| Adapter           | Vision path | Tools path | Reasoning controls | MCP path | Remote execution path |
+| ----------------- | ----------- | ---------- | ------------------ | -------- | --------------------- |
+| Claude            | да          | да         | да                 | да       | да                    |
+| Codex             | да, CLI     | да         | да                 | да, CLI  | да                    |
+| Cursor            | нет         | да         | нет                | нет      | да                    |
+| Gemini            | нет         | да         | нет                | нет      | да                    |
+| Copilot           | нет         | да         | нет                | нет      | да                    |
+| OpenCode          | нет         | да         | нет                | нет      | да                    |
+| OpenAI-compatible | нет         | да         | нет                | нет      | да                    |
 
 Таблица указывает наличие реализованного пути, а не поддержку каждой возможности
 во всех SDK/CLI modes или execution environments. Например, возможности Codex CLI
@@ -623,7 +623,7 @@ Checkpoint среза:
 - SSH Direct/CLI/SDK chat/restart: 3 passed, 34 отфильтрованы; команда выбора
   сценариев та же, что в предыдущем срезе.
 - `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest npm run
-  test:docker --workspace=apps/server`: 11 passed, 4 opt-in skipped.
+test:docker --workspace=apps/server`: 11 passed, 4 opt-in skipped.
 - Chromium `start-new-chat-session.spec.ts`: 1 passed (send/stream/reload).
 
 Rollback gate распространяется и на tombstones: старый backend, игнорирующий
@@ -865,6 +865,48 @@ filesystem I/O и ошибки Nest hooks, также требует hardening �
 - [ ] Перенести model discovery/cache refresh.
 - [ ] Status не должен выполнять дорогую авторизацию без явного запроса.
 - [ ] Setup mutation требует подтверждения и возвращает фактический target.
+
+### Срез: native Gemini/Copilot/Cursor setup status
+
+GET `/api/setup/gemini-status`, `/api/setup/copilot-status` и
+`/api/setup/cursor-status` переведены с Express-handler bridge на native методы
+`SetupController` и application-scoped `ProviderSetupStatusService`. Сервис получает
+`ProviderRegistry` и `ProviderConnectionRepository` через Nest DI; конкретные
+provider classes, `process.cwd()` и marker paths в HTTP/application layer больше
+не используются. CLI setup port проверяется явно: отсутствующий или несовместимый
+адаптер даёт безопасный 500, а не fallback на другой provider.
+
+Сохранены public access policy, успешные HTTP payloads, install/login commands и
+различия disconnected responses: Gemini/Copilot не создают адаптер, Cursor сообщает
+installation/version, но не проверяет auth. Изменения connection marker видны уже
+следующему запросу, без stale cache. Вместо `detectInstallation()` с последующим
+повторным `checkAuth()` выполняется одна auth-проверка на запрос. Сырые исключения
+и `auth.error` адаптера заменяются безопасными сообщениями, чтобы не возвращать
+credentials/CLI output в API. Три прежних route implementation удалены.
+
+Проверки среза:
+
+- 19 новых unit cases: injected adapter, однократный auth, payload metadata,
+  missing installation, disconnect/reconnect, отсутствие credential probes при
+  disconnect, missing/incompatible port и безопасные ошибки.
+- Новый HTTP contract использует настоящий Nest application и внедрённые test
+  adapters: три public endpoints, два одновременно работающих приложения с разными
+  working directories, независимые markers, reconnect и error response.
+- `npm run test:server:unit`: 3195 passed, 40 skipped.
+- `npm run test:server:contract`: 259 passed.
+- `npm run test:packages`: 1194 passed.
+- Server production build/lint, UI typecheck/lint и lockfile check успешны.
+- Route/dependency inventories обновлены; все три inventory checks успешны.
+- Startup/shutdown smoke: SIGTERM/SIGINT exit 0.
+- Chromium chat/Running Agents smoke: 2 passed.
+
+Граница: это не завершение пункта 7.6 или этапа 7. Оставшиеся setup/status routes,
+model discovery/cache и native ownership usage implementations ещё требуют переноса.
+CLI detection/version/auth внутри самих adapters пока используют прежние runtime
+источники и subprocess helpers. В частности, Copilot `checkAuth()` может запускать
+дорогой `gh auth status`; требование дешёвого passive status без явного auth request
+ещё не выполнено. Live provider login, SSH/Docker и packaged Electron acceptance
+этот срез не проверяет и не объявляет пройденными.
 
 ## 7.7. Agent routes
 

@@ -71,6 +71,22 @@ export class MockProvider extends BaseProvider {
     };
   }
 
+  async isInstalled(): Promise<boolean> {
+    return true;
+  }
+
+  async getVersion(): Promise<string | null> {
+    return 'test-fixture';
+  }
+
+  getCliPath(): string | null {
+    return '/test-only/cli';
+  }
+
+  async checkAuth() {
+    return { authenticated: true, method: 'test-fixture' };
+  }
+
   getAvailableModels(): ModelDefinition[] {
     return (
       this.models ?? [

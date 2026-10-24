@@ -4,6 +4,7 @@ import { ProviderConnectionRepository } from './provider-connection.repository.j
 import { ProviderRegistry } from './provider-registry.service.js';
 import { ProviderUsageController } from './provider-usage.controller.js';
 import { ProviderUsageService } from './provider-usage.service.js';
+import { ProviderSetupStatusService } from './provider-setup-status.service.js';
 import { SetupController } from './setup.controller.js';
 import { SetupHandlersService } from './setup-handlers.service.js';
 import { ToolPolicyService } from './tool-policy.service.js';
@@ -15,6 +16,7 @@ import { ToolPolicyService } from './tool-policy.service.js';
     { provide: ProviderConnectionRepository, useExisting: LEGACY_SERVICES.providerConnections },
     { provide: ProviderRegistry, useExisting: LEGACY_SERVICES.providerRegistry },
     ProviderUsageService,
+    ProviderSetupStatusService,
     SetupHandlersService,
     ToolPolicyService,
   ],

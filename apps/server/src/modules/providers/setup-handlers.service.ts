@@ -15,7 +15,6 @@ import {
   createGetCopilotModelsHandler,
   createRefreshCopilotModelsHandler,
 } from '../../routes/setup/routes/copilot-models.js';
-import { createCopilotStatusHandler } from '../../routes/setup/routes/copilot-status.js';
 import {
   createApplyPermissionProfileHandler,
   createDeleteProjectPermissionsHandler,
@@ -26,7 +25,6 @@ import {
   createSetCursorModelsHandler,
   createSetCustomPermissionsHandler,
 } from '../../routes/setup/routes/cursor-config.js';
-import { createCursorStatusHandler } from '../../routes/setup/routes/cursor-status.js';
 import { createDeauthClaudeHandler } from '../../routes/setup/routes/deauth-claude.js';
 import { createDeauthCodexHandler } from '../../routes/setup/routes/deauth-codex.js';
 import { createDeauthCopilotHandler } from '../../routes/setup/routes/deauth-copilot.js';
@@ -34,7 +32,6 @@ import { createDeauthCursorHandler } from '../../routes/setup/routes/deauth-curs
 import { createDeauthGeminiHandler } from '../../routes/setup/routes/deauth-gemini.js';
 import { createDeauthOpencodeHandler } from '../../routes/setup/routes/deauth-opencode.js';
 import { createDeleteApiKeyHandler } from '../../routes/setup/routes/delete-api-key.js';
-import { createGeminiStatusHandler } from '../../routes/setup/routes/gemini-status.js';
 import { createGhStatusHandler } from '../../routes/setup/routes/gh-status.js';
 import { createInstallClaudeHandler } from '../../routes/setup/routes/install-claude.js';
 import { createInstallCodexHandler } from '../../routes/setup/routes/install-codex.js';
@@ -91,7 +88,6 @@ export class SetupHandlersService {
       verifyClaudeAuth: createVerifyClaudeAuthHandler(settings),
       verifyCodexAuth: createVerifyCodexAuthHandler(settings, providers),
       ghStatus: createGhStatusHandler(),
-      cursorStatus: createCursorStatusHandler(),
       authCursor: createAuthCursorHandler(),
       deauthCursor: createDeauthCursorHandler(),
       codexStatus: createCodexStatusHandler(settings),
@@ -101,10 +97,8 @@ export class SetupHandlersService {
       opencodeStatus: createOpencodeStatusHandler(),
       authOpencode: createAuthOpencodeHandler(),
       deauthOpencode: createDeauthOpencodeHandler(),
-      geminiStatus: createGeminiStatusHandler(),
       authGemini: createAuthGeminiHandler(),
       deauthGemini: createDeauthGeminiHandler(),
-      copilotStatus: createCopilotStatusHandler(),
       authCopilot: createAuthCopilotHandler(),
       deauthCopilot: createDeauthCopilotHandler(),
       copilotModels: createGetCopilotModelsHandler(),
