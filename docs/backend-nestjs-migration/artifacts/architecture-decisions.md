@@ -384,3 +384,24 @@ Internal typed storage primitive остаётся для endpoint-specific Direc
 commands и fixtures; это не разрешение на произвольную HTTP запись private record.
 Их дальнейшие ownership/consent gates, public setup auth/CSRF, encryption/secure
 erase и unsafe downgrade preflight этим срезом не объявляются завершёнными.
+
+## ADR-023: Native usage service ownership и tracked model-cache lifecycle
+
+Usage services Claude/Codex/Gemini/z.ai, Codex app-server и Codex model cache
+принадлежат `ProvidersModule`. Legacy symbols и override fields для них удаляются,
+без обратных aliases в compatibility composition. Codex usage/cache получают один
+app-server через Nest; путь cache file определяется application RuntimePaths.
+Global module регистрируется только в composition root, без параллельного static
+import из ModelsModule. Tests считают реальные class-token registrations.
+
+Optional warmup остаётся background task, но имеет Nest lifecycle owner, соблюдает
+`runStartupTasks` и ожидается при shutdown. Cache отдельно закрывает admission и
+дожидается всех принятых операций, включая deferred invocation и file writes.
+Internal nested calls не проходят повторную admission проверку: shutdown не должен
+превращать принятую операцию в отказ только из-за её async scheduling.
+
+Это не новый публичный протокол: API version остаётся 12, disk cache format и
+existing usage responses не меняются. Native construction не доказывает изоляцию
+всех ambient credentials/discovery paths или OS-level завершение CLI children.
+Consent, status/auth evidence, model capabilities и безопасные adapter errors
+остаются отдельными незавершёнными gates этапа 7.

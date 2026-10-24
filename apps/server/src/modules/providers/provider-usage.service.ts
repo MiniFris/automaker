@@ -2,13 +2,12 @@ import { Inject, Injectable, type OnModuleInit } from '@nestjs/common';
 import { createLogger } from '@automaker/utils';
 
 import { RUNTIME_CONFIG, type RuntimeConfig } from '../../core/config/index.js';
-import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import { SettingsService } from '../../services/settings-service.js';
-import type { ClaudeUsageService } from '../../services/claude-usage-service.js';
-import type { CodexModelCacheService } from '../../services/codex-model-cache-service.js';
-import type { CodexUsageService } from '../../services/codex-usage-service.js';
-import type { GeminiUsageService } from '../../services/gemini-usage-service.js';
-import type { ZaiUsageService } from '../../services/zai-usage-service.js';
+import { ClaudeUsageService } from '../../services/claude-usage-service.js';
+import { CodexModelCacheService } from '../../services/codex-model-cache-service.js';
+import { CodexUsageService } from '../../services/codex-usage-service.js';
+import { GeminiUsageService } from '../../services/gemini-usage-service.js';
+import { ZaiUsageService } from '../../services/zai-usage-service.js';
 import { ProviderRegistry } from './provider-registry.service.js';
 import type { ZaiConfigureRequest, ZaiVerifyRequest } from './provider-usage.schemas.js';
 
@@ -23,11 +22,11 @@ const message = (error: unknown) => (error instanceof Error ? error.message : 'U
 @Injectable()
 export class ProviderUsageService implements OnModuleInit {
   constructor(
-    @Inject(LEGACY_SERVICES.claudeUsage) private readonly claude: ClaudeUsageService,
-    @Inject(LEGACY_SERVICES.codexUsage) private readonly codex: CodexUsageService,
-    @Inject(LEGACY_SERVICES.codexModelCache) private readonly codexModels: CodexModelCacheService,
-    @Inject(LEGACY_SERVICES.geminiUsage) private readonly gemini: GeminiUsageService,
-    @Inject(LEGACY_SERVICES.zaiUsage) private readonly zai: ZaiUsageService,
+    @Inject(ClaudeUsageService) private readonly claude: ClaudeUsageService,
+    @Inject(CodexUsageService) private readonly codex: CodexUsageService,
+    @Inject(CodexModelCacheService) private readonly codexModels: CodexModelCacheService,
+    @Inject(GeminiUsageService) private readonly gemini: GeminiUsageService,
+    @Inject(ZaiUsageService) private readonly zai: ZaiUsageService,
     @Inject(SettingsService) private readonly settings: SettingsService,
     @Inject(ProviderRegistry) private readonly providers: ProviderRegistry,
     @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig

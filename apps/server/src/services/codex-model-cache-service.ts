@@ -3,6 +3,7 @@ import { secureFs } from '@automaker/platform';
 import { createLogger } from '@automaker/utils';
 import type { AppServerModel } from '@automaker/types';
 import type { CodexAppServerService } from './codex-app-server-service.js';
+import type { OnApplicationShutdown } from '@nestjs/common';
 
 const logger = createLogger('CodexModelCache');
 
@@ -37,14 +38,16 @@ interface CodexModelCache {
  * - 1-hour TTL (configurable)
  * - Atomic file writes (temp file + rename)
  * - Thread-safe (deduplicates concurrent refresh requests)
- * - Auto-bootstrap on service creation
+ * - Optional background warmup owned by the Nest provider lifecycle
  * - Graceful fallback (returns empty array on errors)
  */
-export class CodexModelCacheService {
+export class CodexModelCacheService implements OnApplicationShutdown {
   private cacheFilePath: string;
   private ttl: number;
   private appServerService: CodexAppServerService;
   private inFlightRefresh: Promise<CodexModel[]> | null = null;
+  private readonly active = new Set<Promise<unknown>>();
+  private closing: Promise<void> | undefined;
 
   constructor(
     dataDir: string,
@@ -62,10 +65,14 @@ export class CodexModelCacheService {
    * @param forceRefresh - If true, bypass cache and fetch fresh data
    * @returns Array of Codex models (empty array if unavailable)
    */
-  async getModels(forceRefresh = false): Promise<CodexModel[]> {
+  getModels(forceRefresh = false): Promise<CodexModel[]> {
+    return this.track(() => this.getModelsInternal(forceRefresh));
+  }
+
+  private async getModelsInternal(forceRefresh: boolean): Promise<CodexModel[]> {
     // If force refresh, skip cache
     if (forceRefresh) {
-      return this.refreshModels();
+      return this.refreshModelsInternal();
     }
 
     // Try to load from cache
@@ -83,7 +90,7 @@ export class CodexModelCacheService {
     }
 
     // Cache is stale or missing, refresh
-    return this.refreshModels();
+    return this.refreshModelsInternal();
   }
 
   /**
@@ -92,16 +99,16 @@ export class CodexModelCacheService {
    * @param forceRefresh - If true, bypass cache and fetch fresh data
    * @returns Object containing models and cache timestamp
    */
-  async getModelsWithMetadata(
-    forceRefresh = false
-  ): Promise<{ models: CodexModel[]; cachedAt: number }> {
-    const models = await this.getModels(forceRefresh);
+  getModelsWithMetadata(forceRefresh = false): Promise<{ models: CodexModel[]; cachedAt: number }> {
+    return this.track(async () => {
+      const models = await this.getModelsInternal(forceRefresh);
 
-    // Try to get the actual cache timestamp
-    const cached = await this.loadFromCache();
-    const cachedAt = cached?.cachedAt ?? Date.now();
+      // Try to get the actual cache timestamp
+      const cached = await this.loadFromCache();
+      const cachedAt = cached?.cachedAt ?? Date.now();
 
-    return { models, cachedAt };
+      return { models, cachedAt };
+    });
   }
 
   /**
@@ -109,7 +116,11 @@ export class CodexModelCacheService {
    *
    * Thread-safe: Deduplicates concurrent refresh requests
    */
-  async refreshModels(): Promise<CodexModel[]> {
+  refreshModels(): Promise<CodexModel[]> {
+    return this.track(() => this.refreshModelsInternal());
+  }
+
+  private async refreshModelsInternal(): Promise<CodexModel[]> {
     // Deduplicate concurrent refresh requests
     if (this.inFlightRefresh) {
       return this.inFlightRefresh;
@@ -129,7 +140,11 @@ export class CodexModelCacheService {
   /**
    * Clear the cache file
    */
-  async clearCache(): Promise<void> {
+  clearCache(): Promise<void> {
+    return this.track(() => this.clearCacheInternal());
+  }
+
+  private async clearCacheInternal(): Promise<void> {
     logger.info('[clearCache] Clearing cache...');
 
     try {
@@ -140,6 +155,22 @@ export class CodexModelCacheService {
         logger.error('[clearCache] Failed to clear cache:', error);
       }
     }
+  }
+
+  onApplicationShutdown(): Promise<void> {
+    this.closing ??= Promise.allSettled([...this.active]).then(() => undefined);
+    return this.closing;
+  }
+
+  private track<T>(operation: () => Promise<T>): Promise<T> {
+    if (this.closing) return Promise.reject(new Error('Codex model cache is shutting down.'));
+    const pending = Promise.resolve().then(operation);
+    this.active.add(pending);
+    void pending.then(
+      () => this.active.delete(pending),
+      () => this.active.delete(pending)
+    );
+    return pending;
   }
 
   /**

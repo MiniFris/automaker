@@ -73,7 +73,7 @@ export class AppModule {
         SecurityModule,
         ValidationModule,
         SettingsModule,
-        ProvidersModule,
+        ProvidersModule.register(serviceOptions.runStartupTasks ?? true),
         AgentsModule,
         PipelineModule,
         MCPModule,

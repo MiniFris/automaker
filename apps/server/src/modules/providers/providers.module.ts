@@ -1,4 +1,12 @@
-import { Global, Module } from '@nestjs/common';
+import { type DynamicModule, Global, Module } from '@nestjs/common';
+import { RuntimePathsService } from '../../core/config/index.js';
+import { ClaudeUsageService } from '../../services/claude-usage-service.js';
+import { CodexUsageService } from '../../services/codex-usage-service.js';
+import { CodexAppServerService } from '../../services/codex-app-server-service.js';
+import { CodexModelCacheService } from '../../services/codex-model-cache-service.js';
+import { GeminiUsageService } from '../../services/gemini-usage-service.js';
+import { ZaiUsageService } from '../../services/zai-usage-service.js';
+import { CodexModelWarmup, PROVIDER_STARTUP_TASKS } from './codex-model-warmup.service.js';
 import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import { ProviderConnectionRepository } from './provider-connection.repository.js';
 import { ProviderRegistry } from './provider-registry.service.js';
@@ -46,6 +54,22 @@ import {
   providers: [
     { provide: ProviderConnectionRepository, useExisting: LEGACY_SERVICES.providerConnections },
     { provide: ProviderRegistry, useExisting: LEGACY_SERVICES.providerRegistry },
+    { provide: ClaudeUsageService, useFactory: () => new ClaudeUsageService() },
+    { provide: CodexAppServerService, useFactory: () => new CodexAppServerService() },
+    {
+      provide: CodexUsageService,
+      inject: [CodexAppServerService],
+      useFactory: (appServer: CodexAppServerService) => new CodexUsageService(appServer),
+    },
+    {
+      provide: CodexModelCacheService,
+      inject: [RuntimePathsService, CodexAppServerService],
+      useFactory: (paths: RuntimePathsService, appServer: CodexAppServerService) =>
+        new CodexModelCacheService(paths.dataDirectory, appServer),
+    },
+    { provide: GeminiUsageService, useFactory: () => new GeminiUsageService() },
+    { provide: ZaiUsageService, useFactory: () => new ZaiUsageService() },
+    CodexModelWarmup,
     ProviderUsageService,
     ProviderSetupStatusService,
     ProviderModelCatalogService,
@@ -76,4 +100,11 @@ import {
     ApplicationCredentialsService,
   ],
 })
-export class ProvidersModule {}
+export class ProvidersModule {
+  static register(runStartupTasks: boolean): DynamicModule {
+    return {
+      module: ProvidersModule,
+      providers: [{ provide: PROVIDER_STARTUP_TASKS, useValue: runStartupTasks }],
+    };
+  }
+}

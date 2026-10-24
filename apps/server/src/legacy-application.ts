@@ -35,12 +35,6 @@ import type { FeatureLoader } from './services/feature-loader.js';
 import type { AutoModeServiceCompat } from './services/auto-mode/index.js';
 import type { TerminalService } from './services/terminal-service.js';
 import type { SettingsService } from './services/settings-service.js';
-import type { ClaudeUsageService } from './services/claude-usage-service.js';
-import type { CodexUsageService } from './services/codex-usage-service.js';
-import type { CodexAppServerService } from './services/codex-app-server-service.js';
-import type { CodexModelCacheService } from './services/codex-model-cache-service.js';
-import type { ZaiUsageService } from './services/zai-usage-service.js';
-import type { GeminiUsageService } from './services/gemini-usage-service.js';
 import type { MCPTestService } from './services/mcp-test-service.js';
 import type { PipelineService } from './services/pipeline-service.js';
 import type { IdeationService } from './services/ideation-service.js';
@@ -187,12 +181,6 @@ export interface LegacyServiceOverrides {
   agentService: AgentService;
   featureLoader: FeatureLoader;
   autoModeService: AutoModeServiceCompat;
-  claudeUsageService: ClaudeUsageService;
-  codexAppServerService: CodexAppServerService;
-  codexModelCacheService: CodexModelCacheService;
-  codexUsageService: CodexUsageService;
-  zaiUsageService: ZaiUsageService;
-  geminiUsageService: GeminiUsageService;
   mcpTestService: MCPTestService;
   ideationService: IdeationService;
   devServerService: DevServerService;
@@ -239,7 +227,6 @@ export function createLegacyApplication(
     settingsService,
     agentService,
     autoModeService,
-    codexModelCacheService,
     devServerService,
     testRunnerService,
     terminalService,
@@ -333,11 +320,6 @@ export function createLegacyApplication(
         logger.warn('[STARTUP] Failed to reconcile feature states:', err);
       }
     }
-
-    // Bootstrap Codex model cache in background (don't block server startup)
-    void codexModelCacheService.getModels().catch((err) => {
-      logger.error('Failed to bootstrap Codex model cache:', err);
-    });
   }
 
   const STARTUP_TASK_TIMEOUT_MS = 120_000;

@@ -20,12 +20,6 @@ import { AgentExecutionStore } from '../services/agent/agent-execution-store.js'
 import { FeatureLoader } from '../services/feature-loader.js';
 import { AutoModeServiceCompat } from '../services/auto-mode/index.js';
 import { TerminalService } from '../services/terminal-service.js';
-import { ClaudeUsageService } from '../services/claude-usage-service.js';
-import { CodexUsageService } from '../services/codex-usage-service.js';
-import { CodexAppServerService } from '../services/codex-app-server-service.js';
-import { CodexModelCacheService } from '../services/codex-model-cache-service.js';
-import { ZaiUsageService } from '../services/zai-usage-service.js';
-import { GeminiUsageService } from '../services/gemini-usage-service.js';
 import { MCPTestService } from '../services/mcp-test-service.js';
 import { PipelineService } from '../services/pipeline-service.js';
 import { IdeationService } from '../services/ideation-service.js';
@@ -54,12 +48,6 @@ export const APPLICATION_SERVICE_TOKENS = {
   agentService: tokens.agent,
   featureLoader: tokens.featureLoader,
   autoModeService: tokens.autoMode,
-  claudeUsageService: tokens.claudeUsage,
-  codexAppServerService: tokens.codexAppServer,
-  codexModelCacheService: tokens.codexModelCache,
-  codexUsageService: tokens.codexUsage,
-  zaiUsageService: tokens.zaiUsage,
-  geminiUsageService: tokens.geminiUsage,
   mcpTestService: tokens.mcpTest,
   ideationService: tokens.ideation,
   devServerService: tokens.devServer,
@@ -198,20 +186,6 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
           policy
         )
     ),
-    service('claudeUsageService', [], () => new ClaudeUsageService()),
-    service('codexAppServerService', [], () => new CodexAppServerService()),
-    service(
-      'codexModelCacheService',
-      [DATA_DIRECTORY, tokens.codexAppServer],
-      (dataDir: string, codex: CodexAppServerService) => new CodexModelCacheService(dataDir, codex)
-    ),
-    service(
-      'codexUsageService',
-      [tokens.codexAppServer],
-      (codex: CodexAppServerService) => new CodexUsageService(codex)
-    ),
-    service('zaiUsageService', [], () => new ZaiUsageService()),
-    service('geminiUsageService', [], () => new GeminiUsageService()),
     service(
       'mcpTestService',
       [tokens.settings],

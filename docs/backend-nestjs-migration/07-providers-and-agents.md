@@ -2333,6 +2333,73 @@ cancel, confirm, отсутствие plaintext в DOM и неизменност
 profiles, z.ai/Direct ownership, public setup auth/CSRF или downgrade/secure erase.
 Этап 7 и миграция остаются незавершёнными по этим и остальным gates.
 
+### Срез: native usage composition и lifecycle Codex model cache
+
+Шесть stateful services — `ClaudeUsageService`, `CodexAppServerService`,
+`CodexUsageService`, `CodexModelCacheService`, `GeminiUsageService` и
+`ZaiUsageService` — теперь создаются фабриками `ProvidersModule`. Их legacy tokens,
+поля `LegacyServiceOverrides`, ручные legacy factories и зависимости application
+facade от этих tokens удалены, а не заменены aliases. Usage facade получает
+class-token dependencies. Codex usage и model cache используют один app-server
+instance в пределах приложения; `DATA_DIR` кэша берётся из `RuntimePathsService`.
+
+`ProvidersModule.register(runStartupTasks)` регистрируется один раз в composition
+root. Повторный статический import из `ModelsModule` удалён: model consumers
+получают экспортированный registry через существующий global module. Contract
+проверяет ровно одну регистрацию каждого из шести class tokens в контейнере,
+разные instances между двумя приложениями и отсутствие старых полей в legacy
+service bag.
+
+Прежний optional background warmup вынесен из legacy startup в
+`CodexModelWarmup`. Он не блокирует bootstrap, не запускается при
+`runStartupTasks: false`, запускается не более одного раза и дожидается своего
+promise при shutdown. Ошибка warmup логируется статическим сообщением без raw
+adapter details. Сам model cache отслеживает принятые get/metadata/refresh/clear
+операции; его shutdown закрывает admission и ждёт завершения этих операций,
+включая disk I/O. Уже принятая операция не отклоняется повторной внутренней
+проверкой admission. Refresh deduplication и прежний disk format сохранены.
+
+Новые tests проверяют delayed warmup, synchronous/rejected adapter errors,
+disabled startup, повторные hooks, shutdown сразу после admission и отказ новых
+операций. Native container contract с настоящим кэшем удерживает model response
+и доказывает, что Nest shutdown не завершается до записи cache file. Отдельный
+two-application/restart contract проверяет изоляцию файлов, instance token z.ai,
+public usage facade, общую Codex dependency и чтение persisted cache после restart
+без CLI probe. Vendor CLI/network в этих tests заменены явными offline fixtures.
+
+Проверки среза:
+
+- `npm run test:server:unit`: 3543 passed, 40 existing skipped; 7 новых lifecycle
+  unit tests.
+- `npm run test:server:contract`: финальный полный запуск 277 passed; 2 новых
+  contracts на native ownership/restart и ожидание warmup/file write.
+- `npm run test:packages`: 1449 passed.
+- Server production build/lint и SIGTERM/SIGINT lifecycle smoke: успешно, exit 0.
+- Web UI/Electron main/preload build, UI typecheck, lockfile, formatting, diff и
+  три inventory checks: успешно.
+- Real SSH Direct/CLI/SDK chat/restart выборка: 3 passed, 34 отфильтрованы.
+- Docker acceptance с локальным `automaker-nest-stage2-smoke:latest`: 11 passed,
+  4 opt-in skipped; suite проверяет cleanup собственных ресурсов.
+- Chromium Agent/Running Agents: повтор без изменений 2 passed. В первом запуске
+  второй сценарий остановился на HTML `Loading…` до появления agent view и до
+  создания чата, а не на проверке восстановления истории. Trace сохранён вне
+  repository: `/tmp/automaker-usage-owner-chat-reload-trace.zip`. Причина loading
+  остаётся открытой; успешный повтор не объявляется её исправлением.
+- Первые container checks выявили повторную static/dynamic module registration;
+  import исправлен, добавлен assertion ровно одной регистрации. Новый lifecycle
+  test первоначально ошибочно ожидал одновременный вызов обоих shutdown hooks:
+  Nest завершает зависимый warmup перед cache hook. Тест проверяет фактический
+  порядок; drain assertion и production deadlines не ослаблялись.
+
+Граница: native ownership не означает завершённый аудит usage adapters.
+Claude/Codex/Gemini usage ещё используют ambient CLI discovery, environment/auth
+file paths; z.ai fallback ещё читает `process.env`. Сохранены legacy usage/auth
+heuristics, error mapping и model metadata (включая старое предположение о vision
+в динамическом Codex cache). Политика consent для usage/network refresh, redaction
+всех adapter errors и actual child-process termination app-server ещё требуют
+работы. Await cache promise не доказывает exit внешнего процесса. Этап 7 и этапы
+8–11 не объявляются завершёнными этим срезом; публичный API остаётся версии 12.
+
 ## Тесты
 
 - Registry priority/aliases/duplicate detection.

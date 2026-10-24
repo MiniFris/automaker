@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 602,
-    "internalEdges": 1999,
+    "files": 603,
+    "internalEdges": 1994,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -17,16 +17,16 @@
     "legacy -> lib": 1,
     "legacy -> modules": 5,
     "legacy -> root": 2,
-    "legacy -> services": 33,
+    "legacy -> services": 27,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 114,
-    "modules -> legacy": 29,
+    "modules -> core": 115,
+    "modules -> legacy": 28,
     "modules -> lib": 24,
     "modules -> modules": 291,
     "modules -> providers": 27,
     "modules -> routes": 32,
-    "modules -> services": 114,
+    "modules -> services": 121,
     "modules -> types": 2,
     "providers -> core": 1,
     "providers -> lib": 4,
@@ -38,7 +38,7 @@
     "root -> lib": 2,
     "root -> modules": 28,
     "root -> root": 4,
-    "root -> services": 21,
+    "root -> services": 15,
     "routes -> lib": 103,
     "routes -> middleware": 8,
     "routes -> modules": 8,
@@ -289,13 +289,13 @@
     "@automaker/platform": 75,
     "@automaker/prompts": 3,
     "@automaker/types": 178,
-    "@automaker/utils": 169,
+    "@automaker/utils": 170,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 167,
+    "@nestjs/common": 169,
     "@nestjs/core": 7,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
@@ -787,22 +787,6 @@
     },
     {
       "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/services/claude-usage-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/services/codex-app-server-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/services/codex-model-cache-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/services/codex-usage-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/dev-server-service.ts"
     },
     {
@@ -824,10 +808,6 @@
     {
       "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/feature-loader.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/services/gemini-usage-service.ts"
     },
     {
       "source": "apps/server/src/legacy-application.ts",
@@ -856,10 +836,6 @@
     {
       "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/test-runner-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/services/zai-usage-service.ts"
     },
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
@@ -967,22 +943,6 @@
     },
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/claude-usage-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/codex-app-server-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/codex-model-cache-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/codex-usage-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
       "target": "apps/server/src/services/dev-server-service.ts"
     },
     {
@@ -996,10 +956,6 @@
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
       "target": "apps/server/src/services/feature-loader.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/gemini-usage-service.ts"
     },
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
@@ -1028,10 +984,6 @@
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
       "target": "apps/server/src/services/test-runner-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/zai-usage-service.ts"
     },
     {
       "source": "apps/server/src/legacy/legacy.module.ts",
@@ -2290,10 +2242,6 @@
       "target": "apps/server/src/modules/models/models.controller.ts"
     },
     {
-      "source": "apps/server/src/modules/models/models.module.ts",
-      "target": "apps/server/src/modules/providers/providers.module.ts"
-    },
-    {
       "source": "apps/server/src/modules/notifications/notifications.controller.ts",
       "target": "apps/server/src/core/security/index.ts"
     },
@@ -2594,6 +2542,10 @@
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
+      "source": "apps/server/src/modules/providers/codex-model-warmup.service.ts",
+      "target": "apps/server/src/services/codex-model-cache-service.ts"
+    },
+    {
       "source": "apps/server/src/modules/providers/codex-verification.service.ts",
       "target": "apps/server/src/core/config/index.ts"
     },
@@ -2827,10 +2779,6 @@
     },
     {
       "source": "apps/server/src/modules/providers/provider-usage.service.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/provider-usage.service.ts",
       "target": "apps/server/src/modules/providers/provider-registry.service.ts"
     },
     {
@@ -2863,6 +2811,10 @@
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
       "target": "apps/server/src/core/platform/claude-verification.runtime.ts"
     },
     {
@@ -2888,6 +2840,10 @@
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
       "target": "apps/server/src/modules/providers/claude-verification.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/modules/providers/codex-model-warmup.service.ts"
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
@@ -2964,6 +2920,30 @@
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
       "target": "apps/server/src/modules/providers/tool-policy.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/services/claude-usage-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/services/codex-app-server-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/services/codex-model-cache-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/services/codex-usage-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/services/gemini-usage-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/services/zai-usage-service.ts"
     },
     {
       "source": "apps/server/src/modules/providers/setup-credentials.service.ts",
