@@ -6,14 +6,15 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { getElectronAPI, type RunningAgent } from '@/lib/electron';
 import { queryKeys } from '@/lib/query-keys';
 import { STALE_TIMES } from '@/lib/query-client';
-import { createSmartPollingInterval } from '@/hooks/use-event-recency';
 
 const RUNNING_AGENTS_REFETCH_ON_FOCUS = false;
 const RUNNING_AGENTS_REFETCH_ON_RECONNECT = false;
-const RUNNING_AGENTS_POLLING_INTERVAL = 30000;
+const RUNNING_AGENTS_POLLING_INTERVAL = 5000;
 
 interface RunningAgentsResult {
   agents: RunningAgent[];
@@ -32,6 +33,23 @@ interface RunningAgentsResult {
  * ```
  */
 export function useRunningAgents() {
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    const api = getElectronAPI();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const unsubscribe = api.agent?.onStream((event: unknown) => {
+      const type = (event as { type?: string }).type;
+      if (!['started', 'complete', 'error'].includes(type ?? '')) return;
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.runningAgents.all() });
+      }, 300);
+    });
+    return () => {
+      clearTimeout(timer);
+      unsubscribe?.();
+    };
+  }, [queryClient]);
   return useQuery({
     queryKey: queryKeys.runningAgents.all(),
     queryFn: async (): Promise<RunningAgentsResult> => {
@@ -45,11 +63,13 @@ export function useRunningAgents() {
       }
       return {
         agents: result.runningAgents ?? [],
-        count: result.totalCount ?? 0,
+        count: result.totalCount ?? result.runningAgents?.length ?? 0,
       };
     },
     staleTime: STALE_TIMES.RUNNING_AGENTS,
-    refetchInterval: createSmartPollingInterval(RUNNING_AGENTS_POLLING_INTERVAL),
+    // Stop can finish without a terminal stream frame; unrelated WS activity must
+    // not suppress the fallback that removes completed/cancelled chat leases.
+    refetchInterval: RUNNING_AGENTS_POLLING_INTERVAL,
     refetchOnWindowFocus: RUNNING_AGENTS_REFETCH_ON_FOCUS,
     refetchOnReconnect: RUNNING_AGENTS_REFETCH_ON_RECONNECT,
   });

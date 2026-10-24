@@ -722,10 +722,73 @@ filesystem I/O и ошибки Nest hooks, также требует hardening �
 
 - [x] Start/query/follow-up/cancel.
 - [x] Session list/history интеграция.
-- [ ] Running agents read model.
+- [x] Running agents read model.
 - [x] Streaming через EventBus compatibility layer.
 - [x] Request завершение не отменяет долгоживущий agent job.
 - [ ] Shutdown отмечает jobs interrupted до закрытия provider processes.
+
+### Срез: Running Agents и chat execution leases
+
+`ChatExecutionReadModel` — отдельный application-scoped Nest provider. Он добавляет
+chat-записи в native `GET /api/running-agents`, сохраняя прежние feature/backlog/spec
+rows и их относительный порядок. Additive fields: `kind: chat`, `sessionId`,
+`workingDirectory`; совместимый `featureId` имеет вид `chat:<sessionId>`.
+В список не попадают prompts, history, images, credentials и SDK resume IDs.
+
+Активность определяется выбранным input и живым `AgentExecutionCoordinator` lease,
+а не ранним сбросом `session.isRunning`. Chat виден во время preparation, streaming,
+cancel cleanup и terminal persistence до settlement lease. Не выбранный no-op
+queue lease не отображается. После metadata I/O выполняется повторная проверка
+активных leases, чтобы завершившийся run не остался из-за старого snapshot.
+При отсутствии живых chats storage не читается; GET не выполняет hydration,
+recovery, provider probes или target commands. Persisted/interrupted sessions
+после restart не выдаются за работающие jobs.
+
+UI различает chat и feature: Stop использует `agent.stop(sessionId)`, Open Chat
+выбирает проект, рабочий каталог и сохранённую session selection перед переходом
+в Agent view. Feature stop/log actions не изменены. Если проект удалён из local
+UI store, chat всё ещё можно остановить; невозможный переход отключён.
+Ошибка stop показывается явно и не превращается в успешное удаление карточки.
+Ошибка read model также не показывает ложное «нет работающих агентов».
+
+Sidebar и Running Agents используют общий query-cache. Stream lifecycle events
+debounce-ят invalidation на 300 ms; независимый пятисекундный polling обновляет
+lease status, даже если stop не отправил terminal frame или другой WS traffic
+подавил бы smart polling. Поддержан старый API без optional `totalCount`.
+Новые UI labels имеют русский перевод.
+
+Проверки: 6 read-model unit tests; mixed feature/backlog/spec/chat aggregation;
+native HTTP cancellation с отложенным provider cleanup; UI stop/open/worktree/
+failure/legacy-feature tests; fake-timer polling и subscription cleanup.
+Chromium использует отдельный test-only hold scenario в E2E composition: реальный
+chat остаётся активным при навигации, появляется в Running Agents, открывается и
+останавливается через native API. Production providers и config не получают
+test flags или prompt-dependent поведения.
+
+Checkpoint среза:
+
+- `npm run test:server:unit`: 3126 passed, 40 skipped; дополнительный повтор
+  read-model/aggregation tests после обновления mixed rows: 7 passed.
+- `npm run test:server:contract`: 257 passed.
+- `npm run test:packages`: 1194 passed, включая 6 card/action/error tests и
+  3 polling/cache compatibility tests.
+- Server production build/lint, UI typecheck/lint, lockfile, formatting и
+  `git diff --check`: успешно.
+- `npm run build --workspace=apps/ui`: Web UI и Electron main/preload собраны;
+  Vite сообщает о крупных chunks. Это не packaged Electron acceptance.
+- Три generated inventory checks: успешно.
+- `node scripts/smoke-server-lifecycle.mjs`: SIGTERM/SIGINT exit 0.
+- Выбранные SSH Direct/CLI/SDK chat/restart: 3 passed, 34 отфильтрованы.
+- Полный Docker acceptance с локальным
+  `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest`: 11 passed,
+  4 opt-in skipped; cleanup owned resources успешен.
+- Chromium `start-new-chat-session.spec.ts`: 2 passed, held-chat Running Agents
+  workflow и обычный send/stream/reload.
+
+Граница среза: legacy backlog/spec aggregation пока импортирует route-owned
+registries; перенос их ownership остаётся задачей этапа 8. Общий provider
+capability/dispose contract, tool policy и оставшиеся setup/usage modules ещё
+не закрыты. Этот checkpoint не завершает этап 7 или всю миграцию.
 
 ## Тесты
 

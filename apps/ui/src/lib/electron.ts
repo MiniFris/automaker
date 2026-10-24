@@ -237,6 +237,9 @@ import { getHttpApiClient, getServerUrlSync } from './http-api-client';
 
 // Running Agent type
 export interface RunningAgent {
+  kind?: 'chat';
+  sessionId?: string;
+  workingDirectory?: string;
   featureId: string;
   projectPath: string;
   projectName: string;

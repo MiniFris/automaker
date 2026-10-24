@@ -33,13 +33,21 @@ describe('RunningAgentsService', () => {
     setBacklogRunning(true);
     setSpecRunning('/workspace/spec', true, new AbortController(), 'sync');
 
-    await expect(new RunningAgentsService(autoMode as never).list()).resolves.toMatchObject({
+    await expect(
+      new RunningAgentsService(
+        autoMode as never,
+        {
+          list: async () => [{ kind: 'chat', featureId: 'chat:session', sessionId: 'session' }],
+        } as never
+      ).list()
+    ).resolves.toMatchObject({
       success: true,
-      totalCount: 3,
+      totalCount: 4,
       runningAgents: [
         { featureId: 'feature' },
         { featureId: 'backlog-plan:/workspace/backlog', title: 'Backlog plan' },
         { featureId: 'spec-generation:/workspace/spec', title: 'Syncing spec with code' },
+        { kind: 'chat', featureId: 'chat:session', sessionId: 'session' },
       ],
     });
   });

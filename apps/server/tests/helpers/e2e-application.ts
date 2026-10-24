@@ -56,7 +56,11 @@ export async function createE2eApplication(
               // Preserve production metadata/aliases/priority, but never real execution.
               // Catalog access is offline; the production registrations unit test guards it.
               const models = registration.create().getAvailableModels();
-              return { ...registration, create: () => new MockProvider(registration.name, models) };
+              return {
+                ...registration,
+                create: () =>
+                  new MockProvider(registration.name, models, '[test] hold Running Agents chat'),
+              };
             }),
             { isDisconnected: () => false } as never
           ),

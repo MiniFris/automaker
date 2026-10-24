@@ -5,10 +5,14 @@ import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import { getAllRunningGenerations } from '../../routes/app-spec/common.js';
 import { getBacklogPlanStatus, getRunningDetails } from '../../routes/backlog-plan/common.js';
 import type { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
+import { ChatExecutionReadModel } from './chat-execution-read-model.js';
 
 @Injectable()
 export class RunningAgentsService {
-  constructor(@Inject(LEGACY_SERVICES.autoMode) private readonly autoMode: AutoModeServiceCompat) {}
+  constructor(
+    @Inject(LEGACY_SERVICES.autoMode) private readonly autoMode: AutoModeServiceCompat,
+    @Inject(ChatExecutionReadModel) private readonly chats: ChatExecutionReadModel
+  ) {}
 
   async list(): Promise<Record<string, unknown>> {
     const runningAgents = [...(await this.autoMode.getRunningAgents())];
@@ -39,6 +43,7 @@ export class RunningAgentsService {
         description: copy[1],
       });
     }
-    return { success: true, runningAgents, totalCount: runningAgents.length };
+    const combined = [...runningAgents, ...(await this.chats.list())];
+    return { success: true, runningAgents: combined, totalCount: combined.length };
   }
 }

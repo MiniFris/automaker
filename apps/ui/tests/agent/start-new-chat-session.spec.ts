@@ -59,6 +59,47 @@ test.describe('Agent Chat Session', () => {
     cleanupTempDir(TEST_TEMP_DIR);
   });
 
+  test('lists, opens and stops a real held chat from Running Agents', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await setupRealProject(page, projectPath, projectName, { setAsCurrent: true });
+    await authenticateForTests(page);
+    await page.goto('/');
+    await waitForNetworkIdle(page);
+    await navigateToAgent(page);
+    const creation = page.waitForResponse(
+      (response) =>
+        response.url().endsWith('/api/sessions') && response.request().method() === 'POST'
+    );
+    await clickNewSessionButton(page);
+    const { session } = await (await creation).json();
+    try {
+      await page.getByTestId('agent-input').fill('[test] hold Running Agents chat');
+      await page.getByTestId('send-message').click();
+      await expect(page.getByTestId('message-list')).toContainText(
+        'Mock agent output for testing.'
+      );
+      await page.goto('/running-agents');
+      await expect(page.getByRole('button', { name: 'Open Chat', exact: true })).toBeVisible();
+      await page.getByRole('button', { name: 'Open Chat', exact: true }).click();
+      await expect(page.getByTestId('message-list')).toContainText(
+        '[test] hold Running Agents chat'
+      );
+      await page.goto('/running-agents');
+      const stop = page.waitForResponse(
+        (response) =>
+          response.url().endsWith('/api/agent/stop') && response.request().method() === 'POST'
+      );
+      await page.getByRole('button', { name: 'Stop', exact: true }).click();
+      expect((await stop).status()).toBe(200);
+      await expect(page.getByRole('button', { name: 'Open Chat', exact: true })).toHaveCount(0);
+    } finally {
+      const response = await page.request.post('/api/agent/stop', {
+        data: { sessionId: session.id },
+      });
+      expect(response.status()).toBe(200);
+    }
+  });
+
   test('should start a chat, receive streamed output and restore history after reload', async ({
     page,
   }) => {

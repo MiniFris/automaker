@@ -1,4 +1,7 @@
 {
+  "Open Chat": "Открыть чат",
+  "Failed to fetch running agents": "Не удалось получить список работающих агентов",
+  "Agents will appear here while working on features or chat sessions. Start a feature from the Kanban board or send a message in Agent.": "Здесь отображаются агенты, работающие над задачами или в чатах. Запустите задачу на Kanban-доске или отправьте сообщение в разделе «Агент».",
   "Failed to load queued prompts": "Не удалось загрузить очередь запросов",
   "A queued request was interrupted. Its outcome may be unknown. Automatic queue processing is paused; inspect history and target changes before removing or resubmitting it.": "Запрос из очереди был прерван. Результат его выполнения может быть неизвестен. Автоматическая обработка очереди приостановлена: проверьте историю и изменения в среде выполнения, прежде чем удалять запрос или отправлять его повторно.",
   "Language": "Язык",

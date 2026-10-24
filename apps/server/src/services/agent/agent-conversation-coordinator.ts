@@ -33,6 +33,7 @@ export class AgentConversationCoordinator {
         const input = await select(controller);
         if (!input) return { success: false as const };
         controller.signal.throwIfAborted();
+        this.executions.markSelected(id, controller);
         return await execute(input, controller);
       } catch (error) {
         if (controller.signal.aborted && !(error instanceof AgentSessionStorageError))

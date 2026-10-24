@@ -4,6 +4,7 @@ import { assertCanonicalAgentSessionId } from './agent-session-id.js';
 interface Execution {
   controller: AbortController;
   task: Promise<unknown>;
+  selected: boolean;
 }
 
 /** Reserves ownership before any await; cancellation never releases an unsettled run. */
@@ -30,7 +31,11 @@ export class AgentExecutionCoordinator {
       throw new ConflictDomainError(
         'Agent is already processing a message or changing session state.'
       );
-    const execution: Execution = { controller: new AbortController(), task: Promise.resolve() };
+    const execution: Execution = {
+      controller: new AbortController(),
+      task: Promise.resolve(),
+      selected: false,
+    };
     const task = Promise.resolve()
       .then(() => operation(execution.controller))
       .finally(() => {
@@ -65,6 +70,13 @@ export class AgentExecutionCoordinator {
 
   stopAccepting(): void {
     this.accepting = false;
+  }
+  markSelected(id: string, controller: AbortController): void {
+    const execution = this.executions.get(id);
+    if (execution?.controller === controller) execution.selected = true;
+  }
+  runningIds(): readonly string[] {
+    return [...this.executions].filter(([, execution]) => execution.selected).map(([id]) => id);
   }
   abortAll(): void {
     for (const execution of this.executions.values()) execution.controller.abort();

@@ -17,7 +17,8 @@ const MOCK_TEXT = 'Mock agent output for testing.';
 export class MockProvider extends BaseProvider {
   constructor(
     private readonly providerName = 'mock',
-    private readonly models?: ModelDefinition[]
+    private readonly models?: ModelDefinition[],
+    private readonly holdPrompt?: string
   ) {
     super();
   }
@@ -27,17 +28,35 @@ export class MockProvider extends BaseProvider {
   }
 
   async *executeQuery(_options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
-    yield {
-      type: 'assistant',
-      message: {
-        role: 'assistant',
-        content: [{ type: 'text', text: MOCK_TEXT }],
-      },
-    };
-    yield {
-      type: 'result',
-      subtype: 'success',
-    };
+    const hold = this.holdPrompt !== undefined && _options.prompt === this.holdPrompt;
+    const signal = _options.abortController?.signal;
+    let release!: () => void;
+    const stopped = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    if (hold) {
+      if (signal?.aborted) release();
+      else signal?.addEventListener('abort', release, { once: true });
+    }
+    try {
+      yield {
+        type: 'assistant',
+        message: {
+          role: 'assistant',
+          content: [{ type: 'text', text: MOCK_TEXT }],
+        },
+      };
+      if (hold) {
+        await stopped;
+        return;
+      }
+      yield {
+        type: 'result',
+        subtype: 'success',
+      };
+    } finally {
+      if (hold) signal?.removeEventListener('abort', release);
+    }
   }
 
   async detectInstallation(): Promise<InstallationStatus> {
