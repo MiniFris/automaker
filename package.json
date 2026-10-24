@@ -49,6 +49,7 @@
     "test:headed": "npm run test:headed --workspace=apps/ui",
     "test:ui": "npm run test --workspace=apps/ui -- --ui",
     "test:packages": "vitest run --project='!server'",
+    "test:ui:bootstrap": "npm run build --workspace=apps/ui && node apps/ui/scripts/smoke-bootstrap-recovery.mjs",
     "test:server": "npm run test:server:unit && npm run test:server:contract",
     "test:server:unit": "npm run test:unit --workspace=apps/server",
     "test:server:contract": "npm run test:contract --workspace=apps/server",

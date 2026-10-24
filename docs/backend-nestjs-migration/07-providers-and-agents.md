@@ -2462,6 +2462,14 @@ defaults всё ещё разрешают `process.env` для compatibility cal
 Nest factories передают context явно. API version остаётся 12; этапы 7–11 не
 объявляются завершёнными.
 
+### Follow-up browser acceptance: failed bootstrap modules
+
+Сохранённый `Loading…` trace разобран: в нём есть `net::ERR_NETWORK_CHANGED`
+при JS loading. Отсутствовавший до React bootstrap error path исправлен и проверен
+детерминированными module abort tests и production artifact smoke. Подробности,
+границы и checkpoints — в срезе bootstrap recovery этапа 10. Это не claim, что
+устранены все возможные network failures, dev-server delays или все gates этапа 7.
+
 ## Тесты
 
 - Registry priority/aliases/duplicate detection.

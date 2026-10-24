@@ -2,6 +2,65 @@
 <html lang="en" suppressHydrationWarning>
   <head>
     <meta charset="UTF-8" />
+    <!-- Install before the bundled entry: dependency fetches can fail before React starts. -->
+    <script id="app-bootstrap-guard">
+      (function () {
+        var failureSeen = false;
+        function showFailure() {
+          var shell = document.querySelector('#app > .app-shell');
+          if (!shell) return; // React already owns the page.
+          var error = shell.querySelector('.app-shell-error');
+          var spinner = shell.querySelector('.app-shell-spinner');
+          if (!error || !spinner) return;
+          var locale = null;
+          try {
+            locale = localStorage.getItem('automaker-ui-locale');
+          } catch (_) {}
+          var russian =
+            locale === 'ru' ||
+            (locale !== 'en' && navigator.language.toLowerCase().indexOf('ru') === 0);
+          error.querySelector('h1').textContent = russian
+            ? 'Не удалось загрузить Automaker'
+            : 'Unable to load Automaker';
+          error.querySelector('p').textContent = russian
+            ? 'Не удалось загрузить файл приложения. Проверьте соединение и попробуйте снова.'
+            : 'An application file could not be loaded. Check your connection and try again.';
+          var button = error.querySelector('button');
+          button.textContent = russian ? 'Перезагрузить' : 'Reload';
+          button.addEventListener(
+            'click',
+            function () {
+              window.location.reload();
+            },
+            { once: true }
+          );
+          spinner.hidden = true;
+          error.hidden = false;
+        }
+        window.addEventListener(
+          'error',
+          function (event) {
+            var target = event.target;
+            if (
+              failureSeen ||
+              !target ||
+              target.tagName !== 'SCRIPT' ||
+              target.type !== 'module' ||
+              !target.src
+            )
+              return;
+            failureSeen = true;
+            // The module tag may be in <head> in production and fail before <body> exists.
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', showFailure, { once: true });
+            } else {
+              showFailure();
+            }
+          },
+          true
+        );
+      })();
+    </script>
     <title>Automaker - Autonomous AI Development Studio</title>
     <meta name="description" content="Build software autonomously with AI agents" />
     <meta
@@ -90,6 +149,27 @@
         height: 56px;
         opacity: 0.9;
       }
+      .app-shell-error {
+        max-width: 28rem;
+        padding: 0 24px;
+        color: #a1a1aa;
+        text-align: center;
+        font:
+          14px/1.5 system-ui,
+          sans-serif;
+      }
+      .app-shell-error h1 {
+        color: inherit;
+        font-size: 18px;
+      }
+      .app-shell-error button {
+        border: 1px solid currentColor;
+        border-radius: 6px;
+        padding: 8px 16px;
+        color: inherit;
+        background: transparent;
+        cursor: pointer;
+      }
       /* Default (dark): light spinner + logo strokes */
       .app-shell-spinner {
         width: 20px;
@@ -112,6 +192,9 @@
         border-color: rgba(0, 0, 0, 0.08);
         border-top-color: rgba(0, 0, 0, 0.4);
       }
+      html[data-theme-type='light'] .app-shell-error {
+        color: #52525b;
+      }
       html[data-theme-type='light'] .app-shell-logo-stroke {
         stroke: rgba(0, 0, 0, 0.55);
       }
@@ -123,6 +206,9 @@
         html:not([class]) .app-shell-spinner {
           border-color: rgba(0, 0, 0, 0.08);
           border-top-color: rgba(0, 0, 0, 0.4);
+        }
+        html:not([class]) .app-shell-error {
+          color: #52525b;
         }
         html:not([class]) .app-shell-logo-stroke {
           stroke: rgba(0, 0, 0, 0.55);
@@ -233,6 +319,11 @@
           </g>
         </svg>
         <div class="app-shell-spinner" role="status" aria-label="Loading…"></div>
+        <div class="app-shell-error" role="alert" hidden>
+          <h1></h1>
+          <p></p>
+          <button type="button"></button>
+        </div>
       </div>
     </div>
     <script type="module" src="/src/renderer.tsx"></script>

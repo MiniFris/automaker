@@ -170,6 +170,15 @@ refactor/backend-nestjs-migration
 6. Web smoke; начиная с изменения packaging — Docker и Electron smoke.
 7. Обновление route inventory, migration checklist и известных ограничений.
 
+На одном host сначала завершать Docker и другие acceptance, создающие/удаляющие
+сетевые interfaces, и только затем запускать Chromium. В предыдущих параллельных
+запусках зафиксирован `net::ERR_NETWORK_CHANGED` при загрузке UI modules; сам
+источник конкретного OS notification ещё не доказан. Это правило изоляции runner,
+не основание скрывать ошибку или увеличивать browser timeout/retries. Независимые
+unit/build проверки можно выполнять параллельно. Для production HTML/module
+recovery предусмотрен `npm run test:ui:bootstrap`; его fixture не использует
+реальный backend или vendor services. Детали — в срезе bootstrap recovery этапа 10.
+
 Это правило распространяется на все этапы 0–11, включая подготовку и финальный
 рефакторинг. В документе этапа фиксируются команды проверок, результаты и причины
 пропусков. Пропущенная обязательная проверка не считается успешно пройденной.

@@ -142,6 +142,72 @@ Storage migrations должны быть backward-readable либо сопров
 - [ ] Electron/Docker packaging.
 - [ ] Troubleshooting и rollback.
 
+## Срез hardening: recovery при ошибке загрузки UI до React bootstrap
+
+Во время acceptance этапа 7 повторялся HTML `Loading…` до открытия Agent view.
+Разбор `/tmp/automaker-usage-env-chat-loading-trace.zip` выявил конкретные console
+errors `net::ERR_NETWORK_CHANGED`, а не только незавершённые network snapshots.
+При abort module graph браузер оставлял исходный HTML spinner: React и его error
+boundary ещё не успевали запуститься. Новый regression test сначала воспроизвёл
+бесконечный spinner на старой версии; trace —
+`/tmp/automaker-bootstrap-before-trace.zip`.
+
+Chromium действительно может сбрасывать connections при IP-address change:
+[primary implementation change](https://chromium.googlesource.com/chromium/src/+/5713c0915ae0910437e2071c7862eb2009246615%5E%21/).
+Одновременный Docker acceptance — вероятный источник таких notifications на этом
+runner, но Docker→конкретный OS notification не измерен и не объявляется доказанным.
+Chromium теперь проверяется отдельно от network-mutating acceptance. Задержки
+Vite и прочие причины UI loading не считаются автоматически устранёнными.
+
+В `index.html` установлен независимый inline guard до bundled entry. Capturing
+resource error для module script показывает static EN/RU alert и Reload вместо
+spinner. Если body ещё не существует, показ откладывается до DOMContentLoaded.
+После передачи страницы React guard не меняет DOM. Optional image/classic-script
+errors не превращаются в bootstrap failure. Raw error/URL/stack не отображаются.
+Нет auto-reload, retry loop, очистки storage или отправки credential commands.
+Повторная загрузка выполняется только пользователем. Это не таймер: медленная
+загрузка без ошибки не объявляется failed.
+
+Проверки используют реальные browser abort entry/dependency, localization и
+неудавшийся optional image. После manual Reload приложение действительно
+монтируется, а marker localStorage сохраняется. Marker устанавливается один раз
+после failure, не пересоздаётся init script на reload, поэтому тест не маскирует
+удаление storage. Восемь unit исполняют настоящий inline guard в отдельном DOM,
+включая early-head failure, blocked storage, duplicate errors и late failure после
+React ownership.
+
+`npm run test:ui:bootstrap` собирает UI и выполняет отдельный production artifact
+smoke. Собранные HTML/modules обслуживает owned loopback fixture: сначала JS
+возвращает HTTP 503, затем Reload загружает настоящие assets. Fixture блокирует
+внешние origins и возвращает API 503 вместо подключения к реальному backend.
+Проверены moved-to-head bundled entry, failure alert, отсутствие auto-navigation,
+восстановление React и сохранение storage. Browser/server закрываются в finally.
+Это не packaged Electron smoke и не проверка PWA/service-worker recovery.
+
+Checkpoint среза:
+
+- 8 новых guard unit tests; `npm run test:packages`: 1457 passed.
+- `npm run test:server:unit`: 3549 passed, 40 existing skipped.
+- `npm run test:server:contract`: 279 passed.
+- Chromium Agent/Running Agents + bootstrap recovery: сначала 6 passed, затем
+  отдельный `--repeat-each=5 --workers=1 --trace=on` — 30 passed без test retries.
+  Проверялись оба module abort, explicit reload, EN/RU и optional image failure.
+- `npm run test:ui:bootstrap`: production build + owned 503/recovery smoke успешны;
+  финальный повтор `node apps/ui/scripts/smoke-bootstrap-recovery.mjs` успешен.
+  UI build также собрал Electron main/preload, но это не packaged acceptance.
+- UI lint, UI typecheck, lockfile, formatting/diff и три inventory checks: успешно.
+- Backend source не менялся относительно `446320bc`; Docker/SSH acceptance этого
+  commit не запускались одновременно с Chromium. Их результат из предыдущего
+  среза остаётся отдельной записью, а не новым измерением текущего среза.
+- Один служебный browser запуск из root без UI config был остановлен; он не
+  использован как acceptance evidence. Валидные browser запуски выполнялись из
+  `apps/ui` с штатным config. Guard unit harness использует Node URL constructor,
+  чтобы Vite не превращал путь к HTML fixture в browser asset URL.
+
+Этап 10 не объявляется завершённым; этот срез устраняет конкретный дефект,
+обнаруженный acceptance незавершённого этапа 7. Остальные cutover, security,
+packaging и stage gates остаются обязательными.
+
 ## Exit criteria
 
 - Legacy bridge и production legacy entrypoint удалены.

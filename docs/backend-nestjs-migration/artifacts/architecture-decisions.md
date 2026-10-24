@@ -428,3 +428,26 @@ consent, z.ai credential mutation policy, Gemini OAuth refresh/write-back policy
 trust prompts и OS-level shutdown adapters остаются отдельными gates. Environment
 snapshot сам по себе не доказывает корректную authentication, capabilities или
 универсальное завершение subprocess tree.
+
+## ADR-025: Recoverable pre-React module loading failures
+
+HTML bootstrap owns its loading/error state until React mounts. A capturing error
+listener installed before bundled modules handles module resource failures,
+including a dependency fetch abort: it displays static localized EN/RU text and
+an explicit Reload action instead of leaving an infinite spinner. Early head
+errors wait for DOMContentLoaded; after React ownership the handler does not
+modify the application. No raw URL/stack is reflected, storage is not cleared,
+and there is no timed/automatic reload or credential-command retry.
+
+The observed trace contains `ERR_NETWORK_CHANGED`. A deterministic aborted-module
+test failed before this change. Chromium/network-mutating Docker acceptance now
+run in separate phases on a shared host; the precise source of the original OS
+network notification remains unproven. This does not disable network-change
+detection, weaken browser deadlines or claim to fix all development-server stalls.
+
+Tests cover entry/dependency abort, explicit recovery, optional image failure,
+locale/blocked storage and post-React ownership. `test:ui:bootstrap` additionally
+tests actual production HTML/modules with a local 503→healthy asset fixture, not
+a vendor or real backend. It verifies that the guard precedes moved head entries
+and that storage survives the user-requested reload. This is early hardening
+evidence, not completion of stage 7/10 or packaged Electron/PWA acceptance.
