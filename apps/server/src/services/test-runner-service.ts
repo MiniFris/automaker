@@ -651,15 +651,4 @@ class TestRunnerService {
   }
 }
 
-// Singleton instance
-let testRunnerServiceInstance: TestRunnerService | null = null;
-
-export function getTestRunnerService(): TestRunnerService {
-  if (!testRunnerServiceInstance) {
-    testRunnerServiceInstance = new TestRunnerService();
-  }
-  return testRunnerServiceInstance;
-}
-
-// Export the class for testing purposes
 export { TestRunnerService };

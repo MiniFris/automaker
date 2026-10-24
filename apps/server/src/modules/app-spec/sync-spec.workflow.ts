@@ -7,12 +7,11 @@
  * - Roadmap phase status updates
  */
 
-import * as secureFs from '../../lib/secure-fs.js';
+import type { PlanningRunContext } from './planning-workflow.context.js';
 import type { EventEmitter } from '../../lib/events.js';
 import { createLogger } from '@automaker/utils';
 import { DEFAULT_PHASE_MODELS, supportsStructuredOutput } from '@automaker/types';
 import { resolvePhaseModel } from '@automaker/model-resolver';
-import { streamingQuery } from '../../providers/simple-query-service.js';
 import type { ProviderRegistry } from '../../modules/providers/provider-registry.service.js';
 import { extractJson } from '../../lib/json-extractor.js';
 import { getAppSpecPath } from '@automaker/platform';
@@ -21,7 +20,6 @@ import {
   getAutoLoadClaudeMdSetting,
   getPhaseModelWithOverrides,
 } from '../../lib/settings-helpers.js';
-import { FeatureLoader } from '../../services/feature-loader.js';
 import {
   extractImplementedFeatures,
   extractTechnologyStack,
@@ -32,7 +30,6 @@ import {
   type ImplementedFeature,
 } from '../../lib/xml-extractor.js';
 import type { NotificationService } from '../../services/notification-service.js';
-import { atomicWriteText } from '../../lib/atomic-write-text.js';
 
 const logger = createLogger('SpecSync');
 
@@ -83,8 +80,13 @@ export async function syncSpec(
   abortController: AbortController,
   settingsService: SettingsService | undefined,
   notificationService: NotificationService | undefined,
-  providerRegistry: ProviderRegistry
+  providerRegistry: ProviderRegistry,
+  context: PlanningRunContext
 ): Promise<SyncResult> {
+  context.check();
+  const secureFs = context.filesystem;
+  const streamingQuery = context.query;
+  const atomicWriteText = context.writeText;
   logger.info('========== syncSpec() started ==========');
   logger.info('projectPath:', projectPath);
 
@@ -103,6 +105,7 @@ export async function syncSpec(
     specContent = (await secureFs.readFile(specPath, 'utf-8')) as string;
     logger.info(`Spec loaded successfully (${specContent.length} chars)`);
   } catch (readError) {
+    context.check();
     logger.error('Failed to read spec file:', readError);
     events.emit('spec-regeneration:event', {
       type: 'spec_regeneration_error',
@@ -128,7 +131,7 @@ export async function syncSpec(
   logger.info(`Current spec has ${currentRoadmapPhases.length} roadmap phases`);
 
   // Load completed Automaker features
-  const featureLoader = new FeatureLoader();
+  const featureLoader = context.features;
   const allFeatures = await featureLoader.getAll(projectPath);
   const completedFeatures = allFeatures.filter(
     (f) => f.status === 'completed' || f.status === 'verified'
@@ -317,6 +320,7 @@ CRITICAL INSTRUCTIONS:
       }
     }
   } catch (error) {
+    context.check();
     logger.warn('Failed to analyze tech stack:', error);
     // Continue with other sync operations
   }

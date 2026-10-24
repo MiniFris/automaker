@@ -29,7 +29,7 @@ import type {
   EventHookNtfyAction,
   EventHookContext,
 } from '@automaker/types';
-import { ntfyService, type NtfyContext } from './ntfy-service.js';
+import { NtfyService, type NtfyContext } from './ntfy-service.js';
 import { EnvironmentBindingStore } from './execution-environment/bindings.js';
 import {
   FeatureWorkspaceService,
@@ -100,6 +100,7 @@ export class EventHookCleanupError extends Error {
  * Also stores events to history for debugging and replay.
  */
 export class EventHookService {
+  constructor(private readonly ntfy: NtfyService) {}
   /** Feature status that indicates agent work is done and awaiting human review (tests skipped) */
   private static readonly STATUS_WAITING_APPROVAL = 'waiting_approval';
   /** Feature status that indicates agent work passed automated verification */
@@ -708,7 +709,7 @@ export class EventHookService {
 
     logger.info(`Executing ntfy hook "${hookName}" to endpoint "${endpoint.name}"`);
 
-    const result = await ntfyService.sendNotification(
+    const result = await this.ntfy.sendNotification(
       endpoint,
       {
         title: action.title,

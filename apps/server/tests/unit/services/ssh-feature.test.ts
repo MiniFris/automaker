@@ -1,3 +1,6 @@
+import { PipelineService } from '../../../src/services/pipeline-service.js';
+const pipelineService = new PipelineService();
+import { NtfyService } from '../../../src/services/ntfy-service.js';
 import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -16,7 +19,7 @@ import { EnvironmentBindingStore } from '@/services/execution-environment/bindin
 import { WorktreeResolver } from '@/services/worktree-resolver.js';
 import { AutoModeServiceFacade } from '@/services/auto-mode/facade.js';
 import { FeatureLoader } from '@/services/feature-loader.js';
-import { pipelineService } from '@/services/pipeline-service.js';
+
 import { createEventEmitter } from '@/lib/events.js';
 import { EventHookService } from '@/services/event-hook-service.js';
 import { ApplicationEventBusAdapter } from '@/core/eventing/application-event-bus.adapter.js';
@@ -387,6 +390,7 @@ describe.skipIf(process.platform !== 'linux')(
         const seen: unknown[] = [];
         events.subscribe((_type, event) => seen.push(event));
         const facade = AutoModeServiceFacade.create(project, {
+          pipeline: pipelineService as never,
           providerRegistry: createTestProviderRegistry(settings),
           events,
           settingsService: settings,
@@ -428,7 +432,8 @@ describe.skipIf(process.platform !== 'linux')(
           vi.fn(),
           vi.fn(),
           vi.fn(),
-          vi.fn()
+          vi.fn(),
+          pipelineService as never
         );
         expect(
           await pipeline.executeTestStep(
@@ -462,6 +467,7 @@ describe.skipIf(process.platform !== 'linux')(
           executionEnvironment: { default: { mode: 'local' }, profiles: [] },
         });
         const restarted = AutoModeServiceFacade.create(project, {
+          pipeline: pipelineService as never,
           providerRegistry: createTestProviderRegistry(settings),
           events,
           settingsService: settings,
@@ -491,6 +497,7 @@ describe.skipIf(process.platform !== 'linux')(
           if ((event as { type?: string }).type === 'plan_approval_required') waiting = true;
         });
         const facade = AutoModeServiceFacade.create(project, {
+          pipeline: pipelineService as never,
           providerRegistry: createTestProviderRegistry(settings),
           events,
           settingsService: settings,
@@ -543,6 +550,7 @@ describe.skipIf(process.platform !== 'linux')(
         await pipelineService.savePipelineConfig(project, { version: 1, steps: [step] });
         const events = createEventEmitter();
         const facade = AutoModeServiceFacade.create(project, {
+          pipeline: pipelineService as never,
           providerRegistry: createTestProviderRegistry(settings),
           events,
           settingsService: settings,
@@ -570,7 +578,7 @@ describe.skipIf(process.platform !== 'linux')(
       { timeout: 20000 },
       async () => {
         const run = (await service.prepare(project, feature, active()))!;
-        const hooks = new EventHookService();
+        const hooks = new EventHookService(new NtfyService());
         hooks.initialize(new ApplicationEventBusAdapter(createEventEmitter()), settings);
         const invoke = (id?: string) =>
           (
@@ -641,6 +649,7 @@ describe.skipIf(process.platform !== 'linux')(
       async () => {
         const events = createEventEmitter();
         const facade = AutoModeServiceFacade.create(project, {
+          pipeline: pipelineService as never,
           providerRegistry: createTestProviderRegistry(settings),
           events,
           settingsService: settings,
@@ -673,6 +682,7 @@ describe.skipIf(process.platform !== 'linux')(
       async () => {
         const events = createEventEmitter();
         const facade = AutoModeServiceFacade.create(project, {
+          pipeline: pipelineService as never,
           providerRegistry: createTestProviderRegistry(settings),
           events,
           settingsService: settings,

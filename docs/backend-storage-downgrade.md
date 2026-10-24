@@ -69,6 +69,11 @@ npm run preflight:backend:downgrade -- \
    В него входят settings, credentials, metadata, session history, queues,
    backups и любые safety artifacts. Проверьте полноту копии по manifest/hashes,
    не выводя содержимое секретов. Сохраните соответствие snapshot и artifact.
+   Отдельно сохраните согласованные snapshots `.automaker` всех затронутых
+   проектов: project storage может находиться вне DATA_DIR. Для ideation conversion
+   это включает `.automaker/ideation/conversions/<sha256>.json` и связанные
+   `.automaker/features/<feature-id>/feature.json` с `ideationConversion` provenance.
+   Сохранение только одного из этих файлов не сохраняет границу conversion.
 3. Обновляйте рабочий профиль, сохраняя предыдущие snapshot и artifact. Ротация
    `.bak1..3` отдельных JSON-файлов не является snapshot всего DATA_DIR.
 4. При rollback остановите новый controller с тем же требованием подтверждённого
@@ -78,6 +83,11 @@ npm run preflight:backend:downgrade -- \
    накладывайте старые файлы поверх нового профиля: новые tombstones/ledgers и
    stale snapshots иначе останутся в каталоге. Проверьте совпадение manifest и
    прав доступа восстановленного профиля с выбранным snapshot.
+   Для project mutations восстановите соответствующие project snapshots из той
+   же остановленной точки. Старый backend не понимает новые conversion intents;
+   наличие feature не даёт ему знания о завершённом преобразовании идеи. Не
+   удаляйте intent/provenance ради обхода этого ограничения. DATA_DIR preflight
+   не сканирует внешние project roots и не подтверждает их совместимость.
 6. Выполните preflight для восстановленного каталога. При exit `0` запускайте
    соответствующий сохранённый backend artifact с DATA_DIR этого каталога.
    Оригинальный обновлённый профиль не используется одновременно другим

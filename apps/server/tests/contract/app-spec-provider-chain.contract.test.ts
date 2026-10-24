@@ -6,7 +6,10 @@ import { MockProvider } from '../helpers/mock-provider.js';
 import type { ExecuteOptions } from '../../src/providers/types.js';
 import { createEventEmitter } from '../../src/lib/events.js';
 import { ProviderRegistry } from '../../src/modules/providers/provider-registry.service.js';
-import { LegacyAppSpecWorkflowAdapter } from '../../src/modules/app-spec/legacy-app-spec-workflow.adapter.js';
+import { NativeAppSpecWorkflow } from '../../src/modules/app-spec/native-app-spec.workflow.js';
+import { PlanningWorkflowContext } from '../../src/modules/app-spec/planning-workflow.context.js';
+import { secureFs } from '@automaker/platform';
+import type * as Filesystem from '../../src/lib/secure-fs.js';
 import { SettingsService } from '../../src/services/settings-service.js';
 import { NotificationService } from '../../src/services/notification-service.js';
 import { FeatureLoader } from '../../src/services/feature-loader.js';
@@ -48,11 +51,22 @@ describe('spec to features provider workflow', () => {
         [{ name: 'claude', create: () => new WorkflowProvider('claude') }],
         { isDisconnected: () => false } as never
       );
-      const workflow = new LegacyAppSpecWorkflowAdapter(
+      const filesystem = secureFs.createSecureFs((candidate) => {
+        const absolute = path.resolve(candidate),
+          relative = path.relative(project, absolute);
+        if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative))
+          throw new Error('Denied fixture path');
+        return absolute;
+      });
+      const workflow = new NativeAppSpecWorkflow(
         events,
         settings,
         new NotificationService(),
-        providers
+        providers,
+        new PlanningWorkflowContext(
+          filesystem as unknown as typeof Filesystem,
+          { validateLocalPath: (value: string) => value } as never
+        )
       );
       const emitted: Array<{ type?: string; content?: string }> = [];
       const unsubscribe = events.subscribe((_type, payload) => {
@@ -61,7 +75,7 @@ describe('spec to features provider workflow', () => {
         if (cancel && event.content?.includes('[Phase: spec_complete]')) controller.abort();
       });
       try {
-        await workflow.generate({
+        const generated = workflow.generate({
           projectPath: project,
           source: 'Build a fixture app',
           generateFeatures: true,
@@ -69,6 +83,8 @@ describe('spec to features provider workflow', () => {
           maxFeatures: 1,
           abortController: controller,
         });
+        if (cancel) await expect(generated).rejects.toMatchObject({ name: 'AbortError' });
+        else await generated;
         expect(await readFile(path.join(project, '.automaker', 'app_spec.txt'), 'utf8')).toContain(
           '<project_name>Fixture</project_name>'
         );
@@ -92,6 +108,8 @@ describe('spec to features provider workflow', () => {
         }
       } finally {
         unsubscribe();
+        await providers.onApplicationShutdown();
+        await filesystem.close();
         await rm(project, { recursive: true, force: true });
       }
     }

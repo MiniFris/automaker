@@ -133,8 +133,13 @@ Application services тестируются на in-memory/fake ports; adapter c
 
 - [ ] Завершить shared schema coverage всех endpoints.
 - [ ] Разбить большой UI HTTP client по domain modules.
-- [ ] Добавить generated/verified OpenAPI artifact.
-- [ ] Ввести deprecation policy и API versioning до intentional breaking changes.
+- [x] Добавить generated/verified OpenAPI artifact. Проверяются все 317 native
+      operations и ссылки на shared inputs; 42 incomplete inputs и все unverified
+      responses явно отмечены. Это не закрывает отдельный пункт полной coverage.
+      См. [audit](artifacts/shared-inputs-openapi-client-audit.md).
+- [x] Ввести deprecation policy и API versioning до intentional breaking changes.
+      [API policy](../backend-api-contracts.md) сохраняет текущую v13 и требует
+      явного решения о версии/переходе до нарушения совместимости.
 - [ ] Добавить stable machine-readable error codes.
 
 ## 11.5. Observability

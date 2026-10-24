@@ -1,5 +1,5 @@
 import type { BacklogPlanResult } from '@automaker/types';
-import type { StoredBacklogPlan } from '../../routes/backlog-plan/common.js';
+import type { StoredBacklogPlan } from '../app-spec/planning-workflow.context.js';
 import type { BacklogGenerateRequest } from './backlog-plan.schemas.js';
 
 export const BACKLOG_PLAN_WORKFLOW = Symbol('BACKLOG_PLAN_WORKFLOW');

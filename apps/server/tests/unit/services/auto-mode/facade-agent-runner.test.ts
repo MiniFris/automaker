@@ -1,3 +1,4 @@
+import { PipelineService } from '../../../../src/services/pipeline-service.js';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock dependencies (hoisted)
@@ -64,6 +65,7 @@ describe('AutoModeServiceFacade Agent Runner', () => {
 
     // Helper to access the private createRunAgentFn via factory creation
     factoryOptions = {
+      pipeline: new PipelineService(),
       providerRegistry: providers as unknown as ProviderRegistry,
       events: { on: vi.fn(), emit: vi.fn(), subscribe: vi.fn().mockReturnValue(vi.fn()) } as any,
       settingsService: mockSettingsService,
@@ -84,6 +86,7 @@ describe('AutoModeServiceFacade Agent Runner', () => {
     vi.mocked(settingsHelpers.resolveProviderContext).mockResolvedValue({} as never);
     const validateWorkingDirectory = vi.fn();
     const native = AutoModeServiceFacade.create('/project', {
+      pipeline: new PipelineService(),
       ...factoryOptions,
       validateWorkingDirectory,
     });
@@ -118,6 +121,7 @@ describe('AutoModeServiceFacade Agent Runner', () => {
       resolve: vi.fn((input) => (input.providerSupportsTools ? input.requested : [])),
     };
     const native = AutoModeServiceFacade.create('/project', {
+      pipeline: new PipelineService(),
       ...factoryOptions,
       toolPolicy: policy as never,
     });

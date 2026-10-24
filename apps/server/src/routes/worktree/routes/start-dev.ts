@@ -10,13 +10,16 @@
 
 import type { Request, Response } from 'express';
 import type { SettingsService } from '../../../services/settings-service.js';
-import { getDevServerService } from '../../../services/dev-server-service.js';
+import type { DevServerService } from '../../../services/dev-server-service.js';
 import { getErrorMessage, logError } from '../common.js';
 import { createLogger } from '@automaker/utils';
 
 const logger = createLogger('start-dev');
 
-export function createStartDevHandler(settingsService?: SettingsService) {
+export function createStartDevHandler(
+  devServerService: DevServerService,
+  settingsService?: SettingsService
+) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
       const { projectPath, worktreePath } = req.body as {
@@ -53,7 +56,6 @@ export function createStartDevHandler(settingsService?: SettingsService) {
         }
       }
 
-      const devServerService = getDevServerService();
       const result = await devServerService.startDevServer(
         projectPath,
         worktreePath,

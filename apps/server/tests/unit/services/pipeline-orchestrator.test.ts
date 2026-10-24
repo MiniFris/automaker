@@ -19,7 +19,7 @@ import type { WorktreeResolver } from '../../../src/services/worktree-resolver.j
 import type { SettingsService } from '../../../src/services/settings-service.js';
 import type { ConcurrencyManager } from '../../../src/services/concurrency-manager.js';
 import type { TestRunnerService } from '../../../src/services/test-runner-service.js';
-import { pipelineService } from '../../../src/services/pipeline-service.js';
+
 import * as secureFs from '../../../src/lib/secure-fs.js';
 import { getFeatureDir } from '@automaker/platform';
 import {
@@ -29,14 +29,12 @@ import {
 } from '../../../src/lib/settings-helpers.js';
 
 // Mock pipelineService
-vi.mock('../../../src/services/pipeline-service.js', () => ({
-  pipelineService: {
-    isPipelineStatus: vi.fn(),
-    getStepIdFromStatus: vi.fn(),
-    getPipelineConfig: vi.fn(),
-    getNextStatus: vi.fn(),
-  },
-}));
+const pipelineService = {
+  isPipelineStatus: vi.fn(),
+  getStepIdFromStatus: vi.fn(),
+  getPipelineConfig: vi.fn(),
+  getNextStatus: vi.fn(),
+};
 
 // Mock merge-service
 vi.mock('../../../src/services/merge-service.js', () => ({
@@ -243,7 +241,8 @@ describe('PipelineOrchestrator', () => {
       mockLoadContextFilesFn,
       mockBuildFeaturePromptFn,
       mockExecuteFeatureFn,
-      mockRunAgentFn
+      mockRunAgentFn,
+      pipelineService as never
     );
   });
 
@@ -298,7 +297,8 @@ describe('PipelineOrchestrator', () => {
       mockLoadContextFilesFn,
       mockBuildFeaturePromptFn,
       mockExecuteFeatureFn,
-      mockRunAgentFn
+      mockRunAgentFn,
+      pipelineService as never
     );
     const feature = { ...testFeature, model: toDirectModelId('remote') };
     const context = {
@@ -351,7 +351,8 @@ describe('PipelineOrchestrator', () => {
         mockLoadContextFilesFn,
         mockBuildFeaturePromptFn,
         mockExecuteFeatureFn,
-        mockRunAgentFn
+        mockRunAgentFn,
+        pipelineService as never
       );
       expect(orch).toBeInstanceOf(PipelineOrchestrator);
     });

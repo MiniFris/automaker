@@ -5,16 +5,15 @@
  * (defaults to Opus for high-quality specification generation).
  */
 
-import * as secureFs from '../../lib/secure-fs.js';
+import type { PlanningRunContext } from './planning-workflow.context.js';
 import type { EventEmitter } from '../../lib/events.js';
 import { specOutputSchema, specToXml, type SpecOutput } from '../../lib/app-spec-format.js';
 import { createLogger } from '@automaker/utils';
 import { DEFAULT_PHASE_MODELS, supportsStructuredOutput } from '@automaker/types';
 import { resolvePhaseModel } from '@automaker/model-resolver';
 import { extractJson } from '../../lib/json-extractor.js';
-import { streamingQuery } from '../../providers/simple-query-service.js';
-import { generateFeaturesFromSpec } from './generate-features-from-spec.js';
-import { ensureAutomakerDir, getAppSpecPath } from '@automaker/platform';
+import { generateFeaturesFromSpec } from './generate-features-from-spec.workflow.js';
+import { getAppSpecPath } from '@automaker/platform';
 import type { SettingsService } from '../../services/settings-service.js';
 import type { NotificationService } from '../../services/notification-service.js';
 import {
@@ -22,7 +21,6 @@ import {
   getPromptCustomization,
   getPhaseModelWithOverrides,
 } from '../../lib/settings-helpers.js';
-import { atomicWriteText } from '../../lib/atomic-write-text.js';
 import type { ProviderRegistry } from '../../modules/providers/provider-registry.service.js';
 
 const logger = createLogger('SpecRegeneration');
@@ -37,8 +35,13 @@ export async function generateSpec(
   maxFeatures: number | undefined,
   settingsService: SettingsService | undefined,
   notificationService: NotificationService | undefined,
-  providerRegistry: ProviderRegistry
+  providerRegistry: ProviderRegistry,
+  context: PlanningRunContext
 ): Promise<void> {
+  context.check();
+  const secureFs = context.filesystem;
+  const streamingQuery = context.query;
+  const atomicWriteText = context.writeText;
   logger.info('========== generateSpec() started ==========');
   logger.info('projectPath:', projectPath);
   logger.info('projectOverview length:', `${projectOverview.length} chars`);
@@ -264,7 +267,7 @@ Your entire response should be valid JSON starting with { and ending with }. No 
   }
 
   // Save spec to .automaker directory
-  await ensureAutomakerDir(projectPath);
+  await context.ensureDirectory(projectPath);
   const specPath = getAppSpecPath(projectPath);
 
   logger.info('Saving spec to:', specPath);
@@ -309,10 +312,12 @@ Your entire response should be valid JSON starting with { and ending with }. No 
         maxFeatures,
         settingsService,
         notificationService,
-        providerRegistry
+        providerRegistry,
+        context
       );
       // Final completion will be emitted by generateFeaturesFromSpec -> parseAndCreateFeatures
     } catch (featureError) {
+      context.check();
       logger.error('Feature generation failed:', featureError);
       // Don't throw - spec generation succeeded, feature generation is optional
       events.emit('spec-regeneration:event', {

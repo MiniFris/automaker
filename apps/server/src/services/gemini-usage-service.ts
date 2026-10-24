@@ -465,16 +465,3 @@ export class GeminiUsageService {
     this.cachedCredentialsAt = null;
   }
 }
-
-// Singleton instance
-let usageServiceInstance: GeminiUsageService | null = null;
-
-/**
- * Get the singleton instance of GeminiUsageService
- */
-export function getGeminiUsageService(): GeminiUsageService {
-  if (!usageServiceInstance) {
-    usageServiceInstance = new GeminiUsageService();
-  }
-  return usageServiceInstance;
-}

@@ -36,7 +36,7 @@ import type { AgentExecutor } from './agent-executor.js';
 import type { WorktreeResolver } from './worktree-resolver.js';
 import type { SettingsService } from './settings-service.js';
 import type { ConcurrencyManager, RunningFeature } from './concurrency-manager.js';
-import { pipelineService, type PipelineService } from './pipeline-service.js';
+import type { PipelineService } from './pipeline-service.js';
 import type { TestRunnerService, TestRunStatus } from './test-runner-service.js';
 import { performMerge } from './merge-service.js';
 import type {
@@ -78,7 +78,7 @@ export class PipelineOrchestrator {
     private buildFeaturePromptFn: BuildFeaturePromptFn,
     private executeFeatureFn: ExecuteFeatureFn,
     private runAgentFn: RunAgentFn,
-    private readonly pipeline: PipelineService = pipelineService,
+    private readonly pipeline: PipelineService,
     private readonly directoryValidator: (cwd: string) => void = validateWorkingDirectory
   ) {}
 

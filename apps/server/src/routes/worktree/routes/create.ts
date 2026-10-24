@@ -27,7 +27,7 @@ import {
 import { execGitCommand } from '../../../lib/git.js';
 import { trackBranch } from './branch-tracking.js';
 import { createLogger } from '@automaker/utils';
-import { runInitScript } from '../../../services/init-script-service.js';
+import type { InitScriptService } from '../../../services/init-script-service.js';
 import {
   syncBaseBranch,
   type BaseBranchSyncResult,
@@ -91,7 +91,11 @@ async function findExistingWorktreeForBranch(
   }
 }
 
-export function createCreateHandler(events: EventEmitter, settingsService?: SettingsService) {
+export function createCreateHandler(
+  init: InitScriptService,
+  events: EventEmitter,
+  settingsService?: SettingsService
+) {
   const worktreeService = new WorktreeService();
 
   return async (req: Request, res: Response): Promise<void> => {
@@ -327,14 +331,16 @@ export function createCreateHandler(events: EventEmitter, settingsService?: Sett
 
       // Trigger init script asynchronously after response
       // runInitScript internally checks if script exists and hasn't already run
-      runInitScript({
-        projectPath,
-        worktreePath: absoluteWorktreePath,
-        branch: branchName,
-        emitter: events,
-      }).catch((err) => {
-        logger.error(`Init script failed for ${branchName}:`, err);
-      });
+      init
+        .runInitScript({
+          projectPath,
+          worktreePath: absoluteWorktreePath,
+          branch: branchName,
+          emitter: events,
+        })
+        .catch((err) => {
+          logger.error(`Init script failed for ${branchName}:`, err);
+        });
     } catch (error) {
       logError(error, 'Create worktree failed');
       res.status(500).json({ success: false, error: getErrorMessage(error) });

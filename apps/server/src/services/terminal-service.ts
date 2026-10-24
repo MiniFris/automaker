@@ -1071,13 +1071,3 @@ export class TerminalService extends EventEmitter {
     return this.shutdown;
   }
 }
-
-// Singleton instance
-let terminalService: TerminalService | null = null;
-
-export function getTerminalService(settingsService?: SettingsService): TerminalService {
-  if (!terminalService) {
-    terminalService = new TerminalService(settingsService);
-  }
-  return terminalService;
-}

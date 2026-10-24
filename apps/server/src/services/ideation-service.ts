@@ -34,11 +34,16 @@ import {
   getIdeationSessionPath,
   getIdeationAnalysisPath,
   getAppSpecPath,
-  ensureIdeationDir,
+  getIdeationDraftsDir,
 } from '@automaker/platform';
 import { extractXmlElements, extractImplementedFeatures } from '../lib/xml-extractor.js';
 import { createLogger, loadContextFiles, isAbortError } from '@automaker/utils';
-import { atomicWriteJson, DEFAULT_BACKUP_COUNT } from '@automaker/utils';
+import {
+  atomicWriteJson,
+  DEFAULT_BACKUP_COUNT,
+  type AtomicWriteFilesystem,
+} from '@automaker/utils';
+import { IdeationJobs, isUnconfirmedIdeationCleanup } from '../modules/ideation/ideation-jobs.js';
 import type { ProviderRegistry } from '../modules/providers/provider-registry.service.js';
 import { prepareDirectExecution } from '../providers/openai-compatible/execution.js';
 import type { SettingsService } from './settings-service.js';
@@ -55,6 +60,8 @@ import {
 const logger = createLogger('IdeationService');
 
 interface ActiveSession {
+  cleanupUnconfirmed?: boolean;
+  task?: Promise<void>;
   session: IdeationSession;
   messages: IdeationMessage[];
   isRunning: boolean;
@@ -62,6 +69,7 @@ interface ActiveSession {
 }
 
 export class IdeationService {
+  private readonly jobs = new IdeationJobs();
   private activeSessions = new Map<string, ActiveSession>();
   private events: EventEmitter;
   private settingsService: SettingsService | null = null;
@@ -72,11 +80,40 @@ export class IdeationService {
     settingsService: SettingsService | undefined,
     featureLoader: FeatureLoader | undefined,
     private readonly providerRegistry: ProviderRegistry,
-    private readonly validateDirectory: (cwd: string) => void = validateWorkingDirectory
+    private readonly validateDirectory: (cwd: string) => void = validateWorkingDirectory,
+    private readonly filesystem: AtomicWriteFilesystem &
+      Pick<typeof secureFs, 'readdir' | 'rm' | 'link' | 'appendFile'> = secureFs
   ) {
     this.events = events;
     this.settingsService = settingsService ?? null;
     this.featureLoader = featureLoader ?? null;
+  }
+
+  runAccepted<T>(action: () => Promise<T>): Promise<T> {
+    return this.jobs.run(action);
+  }
+
+  launchMessage(sessionId: string, message: string, options?: SendMessageOptions): void {
+    this.jobs.assertOpen();
+    void this.sendMessage(sessionId, message, options).catch(() =>
+      logger.error('Ideation message failed.')
+    );
+  }
+
+  launchAnalysis(projectPath: string): void {
+    this.jobs.assertOpen();
+    void this.analyzeProject(projectPath).catch(() => logger.error('Ideation analysis failed.'));
+  }
+
+  onModuleDestroy(): Promise<void> {
+    for (const active of this.activeSessions.values()) active.abortController?.abort();
+    return this.jobs.close();
+  }
+
+  private async ensureProjectDirectories(projectPath: string): Promise<void> {
+    await this.filesystem.mkdir(getIdeasDir(projectPath), { recursive: true });
+    await this.filesystem.mkdir(getIdeationSessionsDir(projectPath), { recursive: true });
+    await this.filesystem.mkdir(getIdeationDraftsDir(projectPath), { recursive: true });
   }
 
   // ============================================================================
@@ -88,7 +125,7 @@ export class IdeationService {
    */
   async startSession(projectPath: string, options?: StartSessionOptions): Promise<IdeationSession> {
     this.validateDirectory(projectPath);
-    await ensureIdeationDir(projectPath);
+    await this.ensureProjectDirectories(projectPath);
 
     const sessionId = this.generateId('session');
     const now = new Date().toISOString();
@@ -156,23 +193,36 @@ export class IdeationService {
   /**
    * Send a message in an ideation session
    */
-  async sendMessage(
+  sendMessage(sessionId: string, message: string, options?: SendMessageOptions): Promise<void> {
+    this.jobs.assertOpen();
+    const active = this.activeSessions.get(sessionId);
+    if (!active) return Promise.reject(new Error(`Session ${sessionId} not found`));
+    if (active.isRunning)
+      return Promise.reject(new Error('Session is already processing a message'));
+    const controller = new AbortController();
+    active.isRunning = true;
+    active.abortController = controller;
+    const task = this.jobs
+      .run(() => this.sendMessageOwned(sessionId, message, options, active, controller), controller)
+      .finally(() => {
+        if (active.abortController === controller && !active.cleanupUnconfirmed) {
+          active.isRunning = false;
+          active.abortController = null;
+          active.task = undefined;
+        }
+      });
+    active.task = task;
+    return task;
+  }
+
+  private async sendMessageOwned(
     sessionId: string,
     message: string,
-    options?: SendMessageOptions
+    options: SendMessageOptions | undefined,
+    activeSession: ActiveSession,
+    controller: AbortController
   ): Promise<void> {
-    const activeSession = this.activeSessions.get(sessionId);
-    if (!activeSession) {
-      throw new Error(`Session ${sessionId} not found`);
-    }
-
-    if (activeSession.isRunning) {
-      throw new Error('Session is already processing a message');
-    }
-
-    activeSession.isRunning = true;
-    activeSession.abortController = new AbortController();
-
+    let persistenceAttempted = false;
     // Add user message
     const userMessage: IdeationMessage = {
       id: this.generateId('msg'),
@@ -201,7 +251,7 @@ export class IdeationService {
       // Load context files
       const contextResult = await loadContextFiles({
         projectPath,
-        fsModule: secureFs as Parameters<typeof loadContextFiles>[0]['fsModule'],
+        fsModule: this.filesystem as Parameters<typeof loadContextFiles>[0]['fsModule'],
       });
 
       // Gather existing features and ideas to prevent duplicate suggestions
@@ -246,9 +296,10 @@ export class IdeationService {
         cwd: projectPath,
         model: modelId,
         systemPrompt,
-        abortController: activeSession.abortController!,
+        abortController: controller,
       });
 
+      controller.signal.throwIfAborted();
       const provider = this.providerRegistry.providerForModel(modelId);
 
       // Strip provider prefix - providers need bare model IDs
@@ -261,20 +312,20 @@ export class IdeationService {
         cwd: projectPath,
         systemPrompt: sdkOptions.systemPrompt,
         maxTurns: 1, // Single turn for ideation
-        abortController: activeSession.abortController!,
+        abortController: controller,
         conversationHistory: conversationHistory.length > 0 ? conversationHistory : undefined,
         claudeCompatibleProvider, // Pass provider for alternative endpoint configuration
         credentials, // Pass credentials for resolving 'credentials' apiKeySource
       };
 
-      const stream = provider.executeQuery(
-        await prepareDirectExecution(
-          executeOptions,
-          this.settingsService,
-          { model: modelId, providerId: options?.providerId },
-          'text'
-        )
+      const prepared = await prepareDirectExecution(
+        executeOptions,
+        this.settingsService,
+        { model: modelId, providerId: options?.providerId },
+        'text'
       );
+      controller.signal.throwIfAborted();
+      const stream = provider.executeQuery(prepared);
 
       let responseText = '';
       const assistantMessage: IdeationMessage = {
@@ -285,6 +336,7 @@ export class IdeationService {
       };
 
       for await (const msg of stream) {
+        controller.signal.throwIfAborted();
         if (msg.type === 'assistant' && msg.message?.content) {
           for (const block of msg.message.content) {
             if (block.type === 'text') {
@@ -307,7 +359,10 @@ export class IdeationService {
         }
       }
 
+      controller.signal.throwIfAborted();
       activeSession.messages.push(assistantMessage);
+      persistenceAttempted = true;
+      await this.saveSessionToDisk(projectPath, activeSession.session, activeSession.messages);
 
       this.events.emit('ideation:stream', {
         sessionId,
@@ -316,9 +371,6 @@ export class IdeationService {
         content: responseText,
         done: true,
       });
-
-      // Save session
-      await this.saveSessionToDisk(projectPath, activeSession.session, activeSession.messages);
     } catch (error) {
       if (isAbortError(error)) {
         this.events.emit('ideation:stream', {
@@ -332,10 +384,18 @@ export class IdeationService {
           type: 'error',
           error: (error as Error).message,
         });
+        if (isUnconfirmedIdeationCleanup(error)) {
+          activeSession.cleanupUnconfirmed = true;
+          throw error;
+        }
       }
     } finally {
-      activeSession.isRunning = false;
-      activeSession.abortController = null;
+      if (!persistenceAttempted)
+        await this.saveSessionToDisk(
+          activeSession.session.projectPath,
+          activeSession.session,
+          activeSession.messages
+        );
     }
   }
 
@@ -350,8 +410,7 @@ export class IdeationService {
       activeSession.abortController.abort();
     }
 
-    activeSession.isRunning = false;
-    activeSession.abortController = null;
+    await this.jobs.wait(activeSession.task);
     activeSession.session.status = 'completed';
 
     await this.saveSessionToDisk(
@@ -372,7 +431,7 @@ export class IdeationService {
    */
   async createIdea(projectPath: string, input: CreateIdeaInput): Promise<Idea> {
     this.validateDirectory(projectPath);
-    await ensureIdeationDir(projectPath);
+    await this.ensureProjectDirectories(projectPath);
 
     const ideaId = this.generateId('idea');
     const now = new Date().toISOString();
@@ -395,9 +454,10 @@ export class IdeationService {
 
     // Save to disk
     const ideaDir = getIdeaDir(projectPath, ideaId);
-    await secureFs.mkdir(ideaDir, { recursive: true });
+    await this.filesystem.mkdir(ideaDir, { recursive: true });
     await atomicWriteJson(getIdeaPath(projectPath, ideaId), idea, {
       backupCount: DEFAULT_BACKUP_COUNT,
+      filesystem: this.filesystem,
     });
 
     return idea;
@@ -411,12 +471,12 @@ export class IdeationService {
       const ideasDir = getIdeasDir(projectPath);
 
       try {
-        await secureFs.access(ideasDir);
+        await this.filesystem.access(ideasDir);
       } catch {
         return [];
       }
 
-      const entries = (await secureFs.readdir(ideasDir, {
+      const entries = (await this.filesystem.readdir(ideasDir, {
         withFileTypes: true,
       })) as import('fs').Dirent[];
       const ideaDirs = entries.filter((entry) => entry.isDirectory());
@@ -425,7 +485,7 @@ export class IdeationService {
       for (const dir of ideaDirs) {
         try {
           const ideaPath = getIdeaPath(projectPath, dir.name);
-          const content = (await secureFs.readFile(ideaPath, 'utf-8')) as string;
+          const content = (await this.filesystem.readFile(ideaPath, 'utf-8')) as string;
           ideas.push(JSON.parse(content));
         } catch (error) {
           logger.warn(`Failed to load idea ${dir.name}:`, error);
@@ -448,7 +508,7 @@ export class IdeationService {
   async getIdea(projectPath: string, ideaId: string): Promise<Idea | null> {
     try {
       const ideaPath = getIdeaPath(projectPath, ideaId);
-      const content = (await secureFs.readFile(ideaPath, 'utf-8')) as string;
+      const content = (await this.filesystem.readFile(ideaPath, 'utf-8')) as string;
       return JSON.parse(content);
     } catch {
       return null;
@@ -474,6 +534,7 @@ export class IdeationService {
 
     await atomicWriteJson(getIdeaPath(projectPath, ideaId), updatedIdea, {
       backupCount: DEFAULT_BACKUP_COUNT,
+      filesystem: this.filesystem,
     });
 
     return updatedIdea;
@@ -485,9 +546,9 @@ export class IdeationService {
   async deleteIdea(projectPath: string, ideaId: string): Promise<void> {
     const ideaDir = getIdeaDir(projectPath, ideaId);
     try {
-      await secureFs.rm(ideaDir, { recursive: true });
-    } catch {
-      // Ignore if doesn't exist
+      await this.filesystem.rm(ideaDir, { recursive: true });
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
     }
   }
 
@@ -507,9 +568,16 @@ export class IdeationService {
   /**
    * Analyze project structure and generate suggestions
    */
-  async analyzeProject(projectPath: string): Promise<ProjectAnalysisResult> {
+  analyzeProject(projectPath: string): Promise<ProjectAnalysisResult> {
+    return this.jobs.run((controller) => this.analyzeProjectOwned(projectPath, controller));
+  }
+
+  private async analyzeProjectOwned(
+    projectPath: string,
+    controller: AbortController
+  ): Promise<ProjectAnalysisResult> {
     this.validateDirectory(projectPath);
-    await ensureIdeationDir(projectPath);
+    await this.ensureProjectDirectories(projectPath);
 
     this.emitAnalysisEvent('ideation:analysis-started', {
       projectPath,
@@ -518,7 +586,8 @@ export class IdeationService {
 
     try {
       // Gather project structure
-      const structure = await this.gatherProjectStructure(projectPath);
+      const structure = await this.gatherProjectStructure(projectPath, controller.signal);
+      controller.signal.throwIfAborted();
 
       this.emitAnalysisEvent('ideation:analysis-progress', {
         projectPath,
@@ -549,9 +618,11 @@ export class IdeationService {
         summary: this.generateAnalysisSummary(structure, suggestions),
       };
 
+      controller.signal.throwIfAborted();
       // Cache the result
       await atomicWriteJson(getIdeationAnalysisPath(projectPath), result, {
         backupCount: DEFAULT_BACKUP_COUNT,
+        filesystem: this.filesystem,
       });
 
       this.emitAnalysisEvent('ideation:analysis-complete', {
@@ -593,7 +664,7 @@ export class IdeationService {
    */
   async getCachedAnalysis(projectPath: string): Promise<ProjectAnalysisResult | null> {
     try {
-      const content = (await secureFs.readFile(
+      const content = (await this.filesystem.readFile(
         getIdeationAnalysisPath(projectPath),
         'utf-8'
       )) as string;
@@ -644,12 +715,32 @@ export class IdeationService {
    * Generate structured suggestions for a prompt
    * Returns parsed suggestions that can be directly added to the board
    */
-  async generateSuggestions(
+  generateSuggestions(
+    projectPath: string,
+    promptId: string,
+    category: IdeaCategory,
+    count = 10,
+    contextSources?: IdeationContextSources
+  ): Promise<AnalysisSuggestion[]> {
+    return this.jobs.run((controller) =>
+      this.generateSuggestionsOwned(
+        projectPath,
+        promptId,
+        category,
+        count,
+        contextSources,
+        controller
+      )
+    );
+  }
+
+  private async generateSuggestionsOwned(
     projectPath: string,
     promptId: string,
     category: IdeaCategory,
     count: number = 10,
-    contextSources?: IdeationContextSources
+    contextSources: IdeationContextSources | undefined,
+    controller: AbortController
   ): Promise<AnalysisSuggestion[]> {
     const suggestionCount = Math.min(Math.max(Math.floor(count ?? 10), 1), 20);
     // Merge with defaults for backward compatibility
@@ -673,7 +764,7 @@ export class IdeationService {
       // Load context files (respecting toggle settings)
       const contextResult = await loadContextFiles({
         projectPath,
-        fsModule: secureFs as Parameters<typeof loadContextFiles>[0]['fsModule'],
+        fsModule: this.filesystem as Parameters<typeof loadContextFiles>[0]['fsModule'],
         includeContextFiles: sources.useContextFiles,
         includeMemory: sources.useMemoryFiles,
       });
@@ -740,9 +831,10 @@ export class IdeationService {
         cwd: projectPath,
         model: modelId,
         systemPrompt,
-        abortController: new AbortController(),
+        abortController: controller,
       });
 
+      controller.signal.throwIfAborted();
       const provider = this.providerRegistry.providerForModel(modelId);
 
       // Strip provider prefix - providers need bare model IDs
@@ -757,23 +849,24 @@ export class IdeationService {
         maxTurns: 1,
         // Disable all tools - we just want text generation, not codebase analysis
         allowedTools: [],
-        abortController: new AbortController(),
+        abortController: controller,
         readOnly: true, // Suggestions only need to return JSON, never write files
         claudeCompatibleProvider, // Pass provider for alternative endpoint configuration
         credentials, // Pass credentials for resolving 'credentials' apiKeySource
       };
 
-      const stream = provider.executeQuery(
-        await prepareDirectExecution(
-          executeOptions,
-          this.settingsService,
-          { model: modelId, providerId: phaseResult.phaseModel.providerId },
-          'text'
-        )
+      const prepared = await prepareDirectExecution(
+        executeOptions,
+        this.settingsService,
+        { model: modelId, providerId: phaseResult.phaseModel.providerId },
+        'text'
       );
+      controller.signal.throwIfAborted();
+      const stream = provider.executeQuery(prepared);
 
       let responseText = '';
       for await (const msg of stream) {
+        controller.signal.throwIfAborted();
         if (msg.type === 'assistant' && msg.message?.content) {
           for (const block of msg.message.content) {
             if (block.type === 'text') {
@@ -1409,7 +1502,7 @@ ${contextSection}${existingWorkSection}`;
   private async buildAppSpecContext(projectPath: string): Promise<string> {
     try {
       const specPath = getAppSpecPath(projectPath);
-      const specContent = (await secureFs.readFile(specPath, 'utf-8')) as string;
+      const specContent = (await this.filesystem.readFile(specPath, 'utf-8')) as string;
 
       const parts: string[] = [];
       parts.push('## App Specification');
@@ -1473,7 +1566,7 @@ ${contextSection}${existingWorkSection}`;
     // Try to read package.json
     try {
       const packageJsonPath = path.join(projectPath, 'package.json');
-      const content = (await secureFs.readFile(packageJsonPath, 'utf-8')) as string;
+      const content = (await this.filesystem.readFile(packageJsonPath, 'utf-8')) as string;
       const pkg = JSON.parse(content);
 
       parts.push('## Project Information (from package.json)');
@@ -1519,7 +1612,7 @@ ${contextSection}${existingWorkSection}`;
     // Try to read README.md (first 500 chars)
     try {
       const readmePath = path.join(projectPath, 'README.md');
-      const content = (await secureFs.readFile(readmePath, 'utf-8')) as string;
+      const content = (await this.filesystem.readFile(readmePath, 'utf-8')) as string;
       if (content) {
         parts.push('\n## README.md (excerpt)');
         parts.push(content.slice(0, 1000));
@@ -1650,7 +1743,10 @@ ${contextSection}${existingWorkSection}`;
     return parts.join('\n');
   }
 
-  private async gatherProjectStructure(projectPath: string): Promise<{
+  private async gatherProjectStructure(
+    projectPath: string,
+    signal?: AbortSignal
+  ): Promise<{
     totalFiles: number;
     routes: AnalysisFileInfo[];
     components: AnalysisFileInfo[];
@@ -1670,7 +1766,7 @@ ${contextSection}${existingWorkSection}`;
     // Check for package.json to detect framework and dependencies
     try {
       const packageJsonPath = path.join(projectPath, 'package.json');
-      const content = (await secureFs.readFile(packageJsonPath, 'utf-8')) as string;
+      const content = (await this.filesystem.readFile(packageJsonPath, 'utf-8')) as string;
       const pkg = JSON.parse(content);
 
       const allDeps = { ...pkg.dependencies, ...pkg.devDependencies };
@@ -1700,9 +1796,10 @@ ${contextSection}${existingWorkSection}`;
     ];
 
     for (const pattern of scanPatterns) {
+      signal?.throwIfAborted();
       const fullPath = path.join(projectPath, pattern.dir);
       try {
-        const files = await this.scanDirectory(fullPath, pattern.type);
+        const files = await this.scanDirectory(fullPath, pattern.type, signal);
         totalFiles += files.length;
 
         if (pattern.type === 'route') routes.push(...files);
@@ -1726,18 +1823,20 @@ ${contextSection}${existingWorkSection}`;
 
   private async scanDirectory(
     dirPath: string,
-    type: 'route' | 'component' | 'service' | 'model' | 'config' | 'test' | 'other'
+    type: 'route' | 'component' | 'service' | 'model' | 'config' | 'test' | 'other',
+    signal?: AbortSignal
   ): Promise<AnalysisFileInfo[]> {
     const results: AnalysisFileInfo[] = [];
-
+    signal?.throwIfAborted();
     try {
-      const entries = (await secureFs.readdir(dirPath, {
+      const entries = (await this.filesystem.readdir(dirPath, {
         withFileTypes: true,
       })) as import('fs').Dirent[];
 
       for (const entry of entries) {
+        signal?.throwIfAborted();
         if (entry.isDirectory()) {
-          const subResults = await this.scanDirectory(path.join(dirPath, entry.name), type);
+          const subResults = await this.scanDirectory(path.join(dirPath, entry.name), type, signal);
           results.push(...subResults);
         } else if (entry.isFile() && this.isCodeFile(entry.name)) {
           results.push({
@@ -1747,8 +1846,9 @@ ${contextSection}${existingWorkSection}`;
           });
         }
       }
-    } catch {
-      // Ignore errors
+    } catch (error) {
+      if (isAbortError(error)) throw error;
+      // Preserve missing directory fallback.
     }
 
     return results;
@@ -1852,10 +1952,11 @@ ${contextSection}${existingWorkSection}`;
     session: IdeationSession,
     messages: IdeationMessage[]
   ): Promise<void> {
-    await secureFs.mkdir(getIdeationSessionsDir(projectPath), { recursive: true });
+    await this.filesystem.mkdir(getIdeationSessionsDir(projectPath), { recursive: true });
     const data = { session, messages };
     await atomicWriteJson(getIdeationSessionPath(projectPath, session.id), data, {
       backupCount: DEFAULT_BACKUP_COUNT,
+      filesystem: this.filesystem,
     });
   }
 
@@ -1864,7 +1965,7 @@ ${contextSection}${existingWorkSection}`;
     sessionId: string
   ): Promise<{ session: IdeationSession; messages: IdeationMessage[] } | null> {
     try {
-      const content = (await secureFs.readFile(
+      const content = (await this.filesystem.readFile(
         getIdeationSessionPath(projectPath, sessionId),
         'utf-8'
       )) as string;

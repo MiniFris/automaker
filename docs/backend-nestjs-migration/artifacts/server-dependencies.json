@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 604,
-    "internalEdges": 2011,
+    "files": 609,
+    "internalEdges": 2029,
     "stronglyConnectedComponents": 2
   },
   "layerEdges": {
@@ -13,12 +13,11 @@
     "core -> services": 9,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 161,
-    "modules -> lib": 31,
-    "modules -> modules": 358,
-    "modules -> providers": 31,
-    "modules -> routes": 9,
-    "modules -> services": 163,
+    "modules -> core": 171,
+    "modules -> lib": 48,
+    "modules -> modules": 385,
+    "modules -> providers": 33,
+    "modules -> services": 173,
     "modules -> types": 2,
     "providers -> core": 1,
     "providers -> lib": 3,
@@ -28,16 +27,16 @@
     "root -> core": 16,
     "root -> modules": 28,
     "root -> root": 2,
-    "routes -> lib": 97,
+    "routes -> lib": 75,
     "routes -> middleware": 7,
-    "routes -> modules": 7,
-    "routes -> providers": 11,
-    "routes -> routes": 289,
-    "routes -> services": 164,
+    "routes -> modules": 3,
+    "routes -> providers": 7,
+    "routes -> routes": 287,
+    "routes -> services": 156,
     "routes -> types": 2,
     "services -> core": 21,
     "services -> lib": 73,
-    "services -> modules": 16,
+    "services -> modules": 17,
     "services -> providers": 16,
     "services -> services": 296,
     "services -> types": 3,
@@ -205,7 +204,9 @@
       "apps/server/src/lib/auth-utils.ts",
       "apps/server/src/lib/error-handler.ts",
       "apps/server/src/lib/git.ts",
+      "apps/server/src/modules/app-spec/app-spec-job.registry.ts",
       "apps/server/src/modules/auto-mode/project-run-context.registry.ts",
+      "apps/server/src/modules/backlog-plan/backlog-plan-job.registry.ts",
       "apps/server/src/modules/event-history/event-replay.service.ts",
       "apps/server/src/modules/files/files-command.service.ts",
       "apps/server/src/modules/files/local-download.service.ts",
@@ -213,6 +214,7 @@
       "apps/server/src/modules/github/github-discovery.service.ts",
       "apps/server/src/modules/github/github-review.service.ts",
       "apps/server/src/modules/github/issue-validation-registry.service.ts",
+      "apps/server/src/modules/ideation/ideation-jobs.ts",
       "apps/server/src/modules/providers/claude-verification.service.ts",
       "apps/server/src/modules/providers/codex-verification.service.ts",
       "apps/server/src/modules/settings/legacy-profile-importer.ts",
@@ -223,7 +225,6 @@
       "apps/server/src/providers/openai-compatible/transport.ts",
       "apps/server/src/providers/provider-execution-scope.ts",
       "apps/server/src/providers/remote-sdk-worker.ts",
-      "apps/server/src/routes/backlog-plan/generate-plan.ts",
       "apps/server/src/routes/worktree/routes/checkout-branch.ts",
       "apps/server/src/routes/worktree/routes/create.ts",
       "apps/server/src/routes/worktree/routes/generate-commit-message.ts",
@@ -258,36 +259,27 @@
       "apps/server/src/services/zai-usage-service.ts"
     ],
     "singletonFactories": [
-      "apps/server/src/services/dev-server-service.ts",
       "apps/server/src/services/execution-environment/dev-server.ts",
-      "apps/server/src/services/execution-environment/test-runner.ts",
-      "apps/server/src/services/feature-export-service.ts",
-      "apps/server/src/services/gemini-usage-service.ts",
-      "apps/server/src/services/init-script-service.ts",
-      "apps/server/src/services/terminal-service.ts",
-      "apps/server/src/services/test-runner-service.ts"
+      "apps/server/src/services/execution-environment/test-runner.ts"
     ],
-    "exportedInstances": [
-      "apps/server/src/services/ntfy-service.ts",
-      "apps/server/src/services/pipeline-service.ts"
-    ]
+    "exportedInstances": []
   },
   "externalImports": {
     "@anthropic-ai/claude-agent-sdk": 3,
-    "@automaker/contracts": 29,
+    "@automaker/contracts": 21,
     "@automaker/dependency-resolver": 1,
     "@automaker/git-utils": 12,
     "@automaker/model-resolver": 20,
-    "@automaker/platform": 72,
+    "@automaker/platform": 74,
     "@automaker/prompts": 3,
-    "@automaker/types": 178,
-    "@automaker/utils": 157,
+    "@automaker/types": 180,
+    "@automaker/utils": 159,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 189,
+    "@nestjs/common": 191,
     "@nestjs/core": 8,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
@@ -308,23 +300,23 @@
     "node:async_hooks": 1,
     "node:buffer": 1,
     "node:child_process": 13,
-    "node:crypto": 35,
+    "node:crypto": 37,
     "node:events": 1,
     "node:fs": 10,
     "node:fs/promises": 19,
     "node:http": 7,
     "node:net": 3,
     "node:os": 11,
-    "node:path": 59,
-    "node:perf_hooks": 15,
+    "node:path": 61,
+    "node:perf_hooks": 16,
     "node:stream": 6,
     "node:stream/web": 2,
     "node:string_decoder": 4,
-    "node:timers/promises": 5,
+    "node:timers/promises": 6,
     "node:url": 4,
     "node:util": 13,
     "os": 13,
-    "path": 72,
+    "path": 71,
     "reflect-metadata": 1,
     "ssh2": 3,
     "url": 1,
@@ -332,7 +324,7 @@
     "vitest": 1,
     "ws": 1,
     "yaml": 1,
-    "zod": 24
+    "zod": 6
   },
   "edges": [
     {
@@ -1064,6 +1056,14 @@
       "target": "apps/server/src/modules/agents/running-agents.service.ts"
     },
     {
+      "source": "apps/server/src/modules/agents/agents.module.ts",
+      "target": "apps/server/src/modules/app-spec/app-spec.module.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agents.module.ts",
+      "target": "apps/server/src/modules/backlog-plan/backlog-plan.module.ts"
+    },
+    {
       "source": "apps/server/src/modules/agents/chat-execution-read-model.ts",
       "target": "apps/server/src/services/agent/agent-execution-coordinator.ts"
     },
@@ -1081,11 +1081,11 @@
     },
     {
       "source": "apps/server/src/modules/agents/running-agents.service.ts",
-      "target": "apps/server/src/routes/app-spec/common.ts"
+      "target": "apps/server/src/modules/app-spec/app-spec-job.registry.ts"
     },
     {
       "source": "apps/server/src/modules/agents/running-agents.service.ts",
-      "target": "apps/server/src/routes/backlog-plan/common.ts"
+      "target": "apps/server/src/modules/backlog-plan/backlog-plan-job.registry.ts"
     },
     {
       "source": "apps/server/src/modules/agents/running-agents.service.ts",
@@ -1109,11 +1109,15 @@
     },
     {
       "source": "apps/server/src/modules/app-spec/app-spec-job.registry.ts",
-      "target": "apps/server/src/modules/app-spec/app-spec-workflow.port.ts"
+      "target": "apps/server/src/core/errors/index.ts"
     },
     {
       "source": "apps/server/src/modules/app-spec/app-spec-job.registry.ts",
-      "target": "apps/server/src/routes/app-spec/common.ts"
+      "target": "apps/server/src/core/security/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/app-spec-job.registry.ts",
+      "target": "apps/server/src/modules/app-spec/app-spec-workflow.port.ts"
     },
     {
       "source": "apps/server/src/modules/app-spec/app-spec.controller.ts",
@@ -1149,42 +1153,186 @@
     },
     {
       "source": "apps/server/src/modules/app-spec/app-spec.module.ts",
-      "target": "apps/server/src/modules/app-spec/legacy-app-spec-workflow.adapter.ts"
+      "target": "apps/server/src/modules/app-spec/native-app-spec.workflow.ts"
     },
     {
-      "source": "apps/server/src/modules/app-spec/legacy-app-spec-workflow.adapter.ts",
-      "target": "apps/server/src/core/eventing/application-events.ts"
+      "source": "apps/server/src/modules/app-spec/app-spec.module.ts",
+      "target": "apps/server/src/modules/app-spec/planning-workflow.context.ts"
     },
     {
-      "source": "apps/server/src/modules/app-spec/legacy-app-spec-workflow.adapter.ts",
+      "source": "apps/server/src/modules/app-spec/generate-features-from-spec.workflow.ts",
       "target": "apps/server/src/lib/events.ts"
     },
     {
-      "source": "apps/server/src/modules/app-spec/legacy-app-spec-workflow.adapter.ts",
-      "target": "apps/server/src/modules/app-spec/app-spec-workflow.port.ts"
+      "source": "apps/server/src/modules/app-spec/generate-features-from-spec.workflow.ts",
+      "target": "apps/server/src/lib/json-extractor.ts"
     },
     {
-      "source": "apps/server/src/modules/app-spec/legacy-app-spec-workflow.adapter.ts",
+      "source": "apps/server/src/modules/app-spec/generate-features-from-spec.workflow.ts",
+      "target": "apps/server/src/lib/settings-helpers.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/generate-features-from-spec.workflow.ts",
+      "target": "apps/server/src/modules/app-spec/parse-and-create-features.workflow.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/generate-features-from-spec.workflow.ts",
+      "target": "apps/server/src/modules/app-spec/planning-workflow.context.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/generate-features-from-spec.workflow.ts",
       "target": "apps/server/src/modules/providers/provider-registry.service.ts"
     },
     {
-      "source": "apps/server/src/modules/app-spec/legacy-app-spec-workflow.adapter.ts",
-      "target": "apps/server/src/routes/app-spec/generate-features-from-spec.ts"
-    },
-    {
-      "source": "apps/server/src/modules/app-spec/legacy-app-spec-workflow.adapter.ts",
-      "target": "apps/server/src/routes/app-spec/generate-spec.ts"
-    },
-    {
-      "source": "apps/server/src/modules/app-spec/legacy-app-spec-workflow.adapter.ts",
-      "target": "apps/server/src/routes/app-spec/sync-spec.ts"
-    },
-    {
-      "source": "apps/server/src/modules/app-spec/legacy-app-spec-workflow.adapter.ts",
+      "source": "apps/server/src/modules/app-spec/generate-features-from-spec.workflow.ts",
       "target": "apps/server/src/services/notification-service.ts"
     },
     {
-      "source": "apps/server/src/modules/app-spec/legacy-app-spec-workflow.adapter.ts",
+      "source": "apps/server/src/modules/app-spec/generate-features-from-spec.workflow.ts",
+      "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/generate-spec.workflow.ts",
+      "target": "apps/server/src/lib/app-spec-format.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/generate-spec.workflow.ts",
+      "target": "apps/server/src/lib/events.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/generate-spec.workflow.ts",
+      "target": "apps/server/src/lib/json-extractor.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/generate-spec.workflow.ts",
+      "target": "apps/server/src/lib/settings-helpers.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/generate-spec.workflow.ts",
+      "target": "apps/server/src/modules/app-spec/generate-features-from-spec.workflow.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/generate-spec.workflow.ts",
+      "target": "apps/server/src/modules/app-spec/planning-workflow.context.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/generate-spec.workflow.ts",
+      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/generate-spec.workflow.ts",
+      "target": "apps/server/src/services/notification-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/generate-spec.workflow.ts",
+      "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/native-app-spec.workflow.ts",
+      "target": "apps/server/src/core/eventing/application-events.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/native-app-spec.workflow.ts",
+      "target": "apps/server/src/lib/events.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/native-app-spec.workflow.ts",
+      "target": "apps/server/src/modules/app-spec/app-spec-workflow.port.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/native-app-spec.workflow.ts",
+      "target": "apps/server/src/modules/app-spec/generate-features-from-spec.workflow.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/native-app-spec.workflow.ts",
+      "target": "apps/server/src/modules/app-spec/generate-spec.workflow.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/native-app-spec.workflow.ts",
+      "target": "apps/server/src/modules/app-spec/planning-workflow.context.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/native-app-spec.workflow.ts",
+      "target": "apps/server/src/modules/app-spec/sync-spec.workflow.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/native-app-spec.workflow.ts",
+      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/native-app-spec.workflow.ts",
+      "target": "apps/server/src/services/notification-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/native-app-spec.workflow.ts",
+      "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/parse-and-create-features.workflow.ts",
+      "target": "apps/server/src/lib/events.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/parse-and-create-features.workflow.ts",
+      "target": "apps/server/src/lib/json-extractor.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/parse-and-create-features.workflow.ts",
+      "target": "apps/server/src/modules/app-spec/planning-workflow.context.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/parse-and-create-features.workflow.ts",
+      "target": "apps/server/src/services/notification-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/parse-and-create-features.workflow.ts",
+      "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/planning-workflow.context.ts",
+      "target": "apps/server/src/core/errors/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/planning-workflow.context.ts",
+      "target": "apps/server/src/core/security/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/planning-workflow.context.ts",
+      "target": "apps/server/src/lib/secure-fs.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/planning-workflow.context.ts",
+      "target": "apps/server/src/providers/simple-query-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/sync-spec.workflow.ts",
+      "target": "apps/server/src/lib/events.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/sync-spec.workflow.ts",
+      "target": "apps/server/src/lib/json-extractor.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/sync-spec.workflow.ts",
+      "target": "apps/server/src/lib/settings-helpers.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/sync-spec.workflow.ts",
+      "target": "apps/server/src/lib/xml-extractor.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/sync-spec.workflow.ts",
+      "target": "apps/server/src/modules/app-spec/planning-workflow.context.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/sync-spec.workflow.ts",
+      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/sync-spec.workflow.ts",
+      "target": "apps/server/src/services/notification-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/sync-spec.workflow.ts",
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
@@ -1333,6 +1481,14 @@
     },
     {
       "source": "apps/server/src/modules/backlog-plan/backlog-plan-job.registry.ts",
+      "target": "apps/server/src/core/errors/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/backlog-plan-job.registry.ts",
+      "target": "apps/server/src/core/security/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/backlog-plan-job.registry.ts",
       "target": "apps/server/src/modules/backlog-plan/backlog-plan.schemas.ts"
     },
     {
@@ -1353,6 +1509,14 @@
     },
     {
       "source": "apps/server/src/modules/backlog-plan/backlog-plan.module.ts",
+      "target": "apps/server/src/modules/app-spec/app-spec.module.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/backlog-plan.module.ts",
+      "target": "apps/server/src/modules/app-spec/planning-workflow.context.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/backlog-plan.module.ts",
       "target": "apps/server/src/modules/backlog-plan/backlog-plan-application.service.ts"
     },
     {
@@ -1369,7 +1533,7 @@
     },
     {
       "source": "apps/server/src/modules/backlog-plan/backlog-plan.module.ts",
-      "target": "apps/server/src/modules/backlog-plan/legacy-backlog-plan.adapter.ts"
+      "target": "apps/server/src/modules/backlog-plan/native-backlog-plan.workflow.ts"
     },
     {
       "source": "apps/server/src/modules/backlog-plan/backlog-plan.module.ts",
@@ -1377,42 +1541,74 @@
     },
     {
       "source": "apps/server/src/modules/backlog-plan/backlog-plan.ports.ts",
-      "target": "apps/server/src/modules/backlog-plan/backlog-plan.schemas.ts"
+      "target": "apps/server/src/modules/app-spec/planning-workflow.context.ts"
     },
     {
       "source": "apps/server/src/modules/backlog-plan/backlog-plan.ports.ts",
-      "target": "apps/server/src/routes/backlog-plan/common.ts"
-    },
-    {
-      "source": "apps/server/src/modules/backlog-plan/legacy-backlog-plan.adapter.ts",
-      "target": "apps/server/src/core/eventing/application-events.ts"
-    },
-    {
-      "source": "apps/server/src/modules/backlog-plan/legacy-backlog-plan.adapter.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/modules/backlog-plan/legacy-backlog-plan.adapter.ts",
-      "target": "apps/server/src/modules/backlog-plan/backlog-plan.ports.ts"
-    },
-    {
-      "source": "apps/server/src/modules/backlog-plan/legacy-backlog-plan.adapter.ts",
       "target": "apps/server/src/modules/backlog-plan/backlog-plan.schemas.ts"
     },
     {
-      "source": "apps/server/src/modules/backlog-plan/legacy-backlog-plan.adapter.ts",
+      "source": "apps/server/src/modules/backlog-plan/generate-plan.workflow.ts",
+      "target": "apps/server/src/lib/events.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/generate-plan.workflow.ts",
+      "target": "apps/server/src/lib/json-extractor.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/generate-plan.workflow.ts",
+      "target": "apps/server/src/lib/settings-helpers.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/generate-plan.workflow.ts",
+      "target": "apps/server/src/modules/app-spec/planning-workflow.context.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/generate-plan.workflow.ts",
+      "target": "apps/server/src/modules/backlog-plan/backlog-plan-errors.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/generate-plan.workflow.ts",
       "target": "apps/server/src/modules/providers/provider-registry.service.ts"
     },
     {
-      "source": "apps/server/src/modules/backlog-plan/legacy-backlog-plan.adapter.ts",
-      "target": "apps/server/src/routes/backlog-plan/common.ts"
+      "source": "apps/server/src/modules/backlog-plan/generate-plan.workflow.ts",
+      "target": "apps/server/src/providers/openai-compatible/execution.ts"
     },
     {
-      "source": "apps/server/src/modules/backlog-plan/legacy-backlog-plan.adapter.ts",
-      "target": "apps/server/src/routes/backlog-plan/generate-plan.ts"
+      "source": "apps/server/src/modules/backlog-plan/generate-plan.workflow.ts",
+      "target": "apps/server/src/services/settings-service.ts"
     },
     {
-      "source": "apps/server/src/modules/backlog-plan/legacy-backlog-plan.adapter.ts",
+      "source": "apps/server/src/modules/backlog-plan/native-backlog-plan.workflow.ts",
+      "target": "apps/server/src/core/eventing/application-events.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/native-backlog-plan.workflow.ts",
+      "target": "apps/server/src/lib/events.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/native-backlog-plan.workflow.ts",
+      "target": "apps/server/src/modules/app-spec/planning-workflow.context.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/native-backlog-plan.workflow.ts",
+      "target": "apps/server/src/modules/backlog-plan/backlog-plan.ports.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/native-backlog-plan.workflow.ts",
+      "target": "apps/server/src/modules/backlog-plan/backlog-plan.schemas.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/native-backlog-plan.workflow.ts",
+      "target": "apps/server/src/modules/backlog-plan/generate-plan.workflow.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/native-backlog-plan.workflow.ts",
+      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/native-backlog-plan.workflow.ts",
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
@@ -2124,10 +2320,6 @@
       "target": "apps/server/src/modules/github/github-read.port.ts"
     },
     {
-      "source": "apps/server/src/modules/github/github-review.schemas.ts",
-      "target": "apps/server/src/modules/github/github-discovery.schemas.ts"
-    },
-    {
       "source": "apps/server/src/modules/github/github-review.service.ts",
       "target": "apps/server/src/core/errors/domain-errors.ts"
     },
@@ -2300,6 +2492,14 @@
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
+      "source": "apps/server/src/modules/ideation/idea-conversion.store.ts",
+      "target": "apps/server/src/core/errors/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/ideation/idea-conversion.store.ts",
+      "target": "apps/server/src/core/security/security.module.ts"
+    },
+    {
       "source": "apps/server/src/modules/ideation/ideation-application.service.ts",
       "target": "apps/server/src/core/errors/index.ts"
     },
@@ -2325,11 +2525,19 @@
     },
     {
       "source": "apps/server/src/modules/ideation/ideation-application.service.ts",
+      "target": "apps/server/src/modules/ideation/idea-conversion.store.ts"
+    },
+    {
+      "source": "apps/server/src/modules/ideation/ideation-application.service.ts",
       "target": "apps/server/src/modules/ideation/ideation.schemas.ts"
     },
     {
       "source": "apps/server/src/modules/ideation/ideation-application.service.ts",
       "target": "apps/server/src/services/ideation-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/ideation/ideation-jobs.ts",
+      "target": "apps/server/src/core/errors/index.ts"
     },
     {
       "source": "apps/server/src/modules/ideation/ideation.controller.ts",
@@ -2353,6 +2561,10 @@
     },
     {
       "source": "apps/server/src/modules/ideation/ideation.module.ts",
+      "target": "apps/server/src/core/security/security.module.ts"
+    },
+    {
+      "source": "apps/server/src/modules/ideation/ideation.module.ts",
       "target": "apps/server/src/core/security/security.service.ts"
     },
     {
@@ -2362,6 +2574,10 @@
     {
       "source": "apps/server/src/modules/ideation/ideation.module.ts",
       "target": "apps/server/src/modules/features/features.module.ts"
+    },
+    {
+      "source": "apps/server/src/modules/ideation/ideation.module.ts",
+      "target": "apps/server/src/modules/ideation/idea-conversion.store.ts"
     },
     {
       "source": "apps/server/src/modules/ideation/ideation.module.ts",
@@ -2542,6 +2758,10 @@
     {
       "source": "apps/server/src/modules/orchestration/orchestration.module.ts",
       "target": "apps/server/src/services/event-hook-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/orchestration/orchestration.module.ts",
+      "target": "apps/server/src/services/ntfy-service.ts"
     },
     {
       "source": "apps/server/src/modules/pipeline/pipeline-application.service.ts",
@@ -4504,110 +4724,6 @@
       "target": "apps/server/src/routes/common.ts"
     },
     {
-      "source": "apps/server/src/routes/app-spec/generate-features-from-spec.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/generate-features-from-spec.ts",
-      "target": "apps/server/src/lib/json-extractor.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/generate-features-from-spec.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/generate-features-from-spec.ts",
-      "target": "apps/server/src/lib/settings-helpers.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/generate-features-from-spec.ts",
-      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/generate-features-from-spec.ts",
-      "target": "apps/server/src/providers/simple-query-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/generate-features-from-spec.ts",
-      "target": "apps/server/src/routes/app-spec/parse-and-create-features.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/generate-features-from-spec.ts",
-      "target": "apps/server/src/services/feature-loader.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/generate-features-from-spec.ts",
-      "target": "apps/server/src/services/notification-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/generate-features-from-spec.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/generate-spec.ts",
-      "target": "apps/server/src/lib/app-spec-format.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/generate-spec.ts",
-      "target": "apps/server/src/lib/atomic-write-text.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/generate-spec.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/generate-spec.ts",
-      "target": "apps/server/src/lib/json-extractor.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/generate-spec.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/generate-spec.ts",
-      "target": "apps/server/src/lib/settings-helpers.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/generate-spec.ts",
-      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/generate-spec.ts",
-      "target": "apps/server/src/providers/simple-query-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/generate-spec.ts",
-      "target": "apps/server/src/routes/app-spec/generate-features-from-spec.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/generate-spec.ts",
-      "target": "apps/server/src/services/notification-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/generate-spec.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/parse-and-create-features.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/parse-and-create-features.ts",
-      "target": "apps/server/src/lib/json-extractor.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/parse-and-create-features.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/parse-and-create-features.ts",
-      "target": "apps/server/src/services/notification-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/parse-and-create-features.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
       "source": "apps/server/src/routes/app-spec/routes/status.ts",
       "target": "apps/server/src/routes/app-spec/common.ts"
     },
@@ -4616,84 +4732,8 @@
       "target": "apps/server/src/routes/app-spec/common.ts"
     },
     {
-      "source": "apps/server/src/routes/app-spec/sync-spec.ts",
-      "target": "apps/server/src/lib/atomic-write-text.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/sync-spec.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/sync-spec.ts",
-      "target": "apps/server/src/lib/json-extractor.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/sync-spec.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/sync-spec.ts",
-      "target": "apps/server/src/lib/settings-helpers.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/sync-spec.ts",
-      "target": "apps/server/src/lib/xml-extractor.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/sync-spec.ts",
-      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/sync-spec.ts",
-      "target": "apps/server/src/providers/simple-query-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/sync-spec.ts",
-      "target": "apps/server/src/services/feature-loader.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/sync-spec.ts",
-      "target": "apps/server/src/services/notification-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/sync-spec.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
       "source": "apps/server/src/routes/backlog-plan/common.ts",
       "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/backlog-plan/generate-plan.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/backlog-plan/generate-plan.ts",
-      "target": "apps/server/src/lib/json-extractor.ts"
-    },
-    {
-      "source": "apps/server/src/routes/backlog-plan/generate-plan.ts",
-      "target": "apps/server/src/lib/settings-helpers.ts"
-    },
-    {
-      "source": "apps/server/src/routes/backlog-plan/generate-plan.ts",
-      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/backlog-plan/generate-plan.ts",
-      "target": "apps/server/src/providers/openai-compatible/execution.ts"
-    },
-    {
-      "source": "apps/server/src/routes/backlog-plan/generate-plan.ts",
-      "target": "apps/server/src/routes/backlog-plan/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/backlog-plan/generate-plan.ts",
-      "target": "apps/server/src/services/feature-loader.ts"
-    },
-    {
-      "source": "apps/server/src/routes/backlog-plan/generate-plan.ts",
-      "target": "apps/server/src/services/settings-service.ts"
     },
     {
       "source": "apps/server/src/routes/backlog-plan/routes/apply.ts",
@@ -5824,6 +5864,10 @@
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
+      "source": "apps/server/src/routes/settings/index.ts",
+      "target": "apps/server/src/services/terminal-service.ts"
+    },
+    {
       "source": "apps/server/src/routes/settings/model-timeouts.ts",
       "target": "apps/server/src/services/settings-service.ts"
     },
@@ -5954,6 +5998,10 @@
     {
       "source": "apps/server/src/routes/worktree/index.ts",
       "target": "apps/server/src/routes/worktree/middleware.ts"
+    },
+    {
+      "source": "apps/server/src/routes/worktree/index.ts",
+      "target": "apps/server/src/routes/worktree/route-services.ts"
     },
     {
       "source": "apps/server/src/routes/worktree/index.ts",
@@ -6158,6 +6206,18 @@
     {
       "source": "apps/server/src/routes/worktree/middleware.ts",
       "target": "apps/server/src/routes/worktree/common.ts"
+    },
+    {
+      "source": "apps/server/src/routes/worktree/route-services.ts",
+      "target": "apps/server/src/services/dev-server-service.ts"
+    },
+    {
+      "source": "apps/server/src/routes/worktree/route-services.ts",
+      "target": "apps/server/src/services/init-script-service.ts"
+    },
+    {
+      "source": "apps/server/src/routes/worktree/route-services.ts",
+      "target": "apps/server/src/services/test-runner-service.ts"
     },
     {
       "source": "apps/server/src/routes/worktree/routes/abort-operation.ts",
@@ -8030,6 +8090,10 @@
     {
       "source": "apps/server/src/services/ideation-service.ts",
       "target": "apps/server/src/lib/xml-extractor.ts"
+    },
+    {
+      "source": "apps/server/src/services/ideation-service.ts",
+      "target": "apps/server/src/modules/ideation/ideation-jobs.ts"
     },
     {
       "source": "apps/server/src/services/ideation-service.ts",

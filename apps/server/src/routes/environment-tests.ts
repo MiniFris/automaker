@@ -4,13 +4,17 @@ import type { EventEmitter } from '../lib/events.js';
 import { ProjectGitService } from '../services/execution-environment/project-git.js';
 import { getManagedTestRunnerService } from '../services/execution-environment/test-runner.js';
 import { ExecutionEnvironmentError } from '../services/execution-environment/runtime.js';
-import { getTestRunnerService } from '../services/test-runner-service.js';
+import type { TestRunnerService } from '../services/test-runner-service.js';
 import { createGetTestLogsHandler } from './worktree/routes/test-logs.js';
 
 /** Before controller path validators/Git dispatcher: an SSH workspace is not a host path.
  * Session IDs take precedence over current defaults; unknown managed IDs never reach legacy.
  */
-export function environmentTestDispatcher(settings: SettingsService, events: EventEmitter) {
+export function environmentTestDispatcher(
+  settings: SettingsService,
+  events: EventEmitter,
+  local: TestRunnerService
+) {
   const git = new ProjectGitService(settings);
   const tests = getManagedTestRunnerService(settings, events);
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -59,16 +63,16 @@ export function environmentTestDispatcher(settings: SettingsService, events: Eve
       // Keep active/history reads on their captured target even after profile deletion/default changes.
       const previous = tests.find(requested);
       const managedActive = previous && ['pending', 'running'].includes(previous.status);
-      const localActive = getTestRunnerService().getActiveSession(requested);
+      const localActive = local.getActiveSession(requested);
       if (action === 'test-logs') {
-        const localLatest = getTestRunnerService().listSessions(requested).result.sessions.at(-1);
+        const localLatest = local.listSessions(requested).result.sessions.at(-1);
         if (
           !managedActive &&
           (localActive ||
             (localLatest &&
               (!previous || Date.parse(localLatest.startedAt) > Date.parse(previous.startedAt))))
         ) {
-          await createGetTestLogsHandler()(req, res);
+          await createGetTestLogsHandler(local)(req, res);
           return;
         }
         const session = previous;

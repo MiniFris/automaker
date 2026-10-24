@@ -1,3 +1,4 @@
+import { PipelineService } from '../../../src/services/pipeline-service.js';
 import { describe, it, expect, vi } from 'vitest';
 import { PipelineOrchestrator } from '../../../src/services/pipeline-orchestrator.js';
 import type { Feature } from '@automaker/types';
@@ -28,7 +29,8 @@ describe('PipelineOrchestrator Prompts', () => {
       null as any, // loadContextFilesFn
       mockBuildFeaturePrompt,
       null as any, // executeFeatureFn
-      null as any // runAgentFn
+      null as any,
+      new PipelineService() // runAgentFn
     );
 
     const step = {

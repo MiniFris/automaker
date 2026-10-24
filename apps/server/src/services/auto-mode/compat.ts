@@ -19,7 +19,7 @@ import type { NotificationService } from '../notification-service.js';
 import type { FacadeOptions, AutoModeStatus, RunningAgentInfo } from './types.js';
 import type { ProviderRegistry } from '../../modules/providers/provider-registry.service.js';
 import type { ToolPolicyService } from '../../modules/providers/tool-policy.service.js';
-import { pipelineService, type PipelineService } from '../pipeline-service.js';
+import type { PipelineService } from '../pipeline-service.js';
 import { ProjectRunContextRegistry } from '../../modules/auto-mode/project-run-context.registry.js';
 import type { FeatureRunCoordinator } from '../../modules/orchestration/feature-run-coordinator.service.js';
 
@@ -39,8 +39,8 @@ export class AutoModeServiceCompat {
     claudeUsageService: ClaudeUsageService | null | undefined,
     notificationService: NotificationService | null | undefined,
     providerRegistry: ProviderRegistry,
-    toolPolicy?: ToolPolicyService,
-    pipeline: PipelineService = pipelineService,
+    toolPolicy: ToolPolicyService | undefined,
+    pipeline: PipelineService,
     runtime?: {
       contexts: ProjectRunContextRegistry;
       coordinator?: FeatureRunCoordinator;

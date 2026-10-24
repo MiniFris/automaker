@@ -6,10 +6,10 @@
  */
 
 import type { Request, Response } from 'express';
-import { getTestRunnerService } from '../../../services/test-runner-service.js';
+import type { TestRunnerService } from '../../../services/test-runner-service.js';
 import { getErrorMessage, logError } from '../common.js';
 
-export function createStopTestsHandler() {
+export function createStopTestsHandler(testRunnerService: TestRunnerService) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
       const body = req.body;
@@ -33,7 +33,6 @@ export function createStopTestsHandler() {
         return;
       }
 
-      const testRunnerService = getTestRunnerService();
       const result = await testRunnerService.stopTests(sessionId);
 
       if (result.success && result.result) {

@@ -2,11 +2,9 @@
  * Parse agent response and create feature files
  */
 
-import path from 'path';
-import * as secureFs from '../../lib/secure-fs.js';
+import type { PlanningRunContext } from './planning-workflow.context.js';
 import type { EventEmitter } from '../../lib/events.js';
-import { createLogger, atomicWriteJson, DEFAULT_BACKUP_COUNT } from '@automaker/utils';
-import { getFeaturesDir } from '@automaker/platform';
+import { createLogger } from '@automaker/utils';
 import { extractJsonWithArray } from '../../lib/json-extractor.js';
 import type { NotificationService } from '../../services/notification-service.js';
 import type { SettingsService } from '../../services/settings-service.js';
@@ -18,9 +16,11 @@ export async function parseAndCreateFeatures(
   projectPath: string,
   content: string,
   events: EventEmitter,
-  settingsService?: SettingsService,
-  notificationService?: NotificationService
+  settingsService: SettingsService | undefined,
+  notificationService: NotificationService | undefined,
+  context: PlanningRunContext
 ): Promise<void> {
+  context.check();
   logger.info('========== parseAndCreateFeatures() started ==========');
   logger.info(`Content length: ${content.length} chars`);
   logger.info('========== CONTENT RECEIVED FOR PARSING ==========');
@@ -86,15 +86,11 @@ export async function parseAndCreateFeatures(
     logger.info(`Parsed ${parsed.features?.length || 0} features`);
     logger.info('Parsed features:', JSON.stringify(parsed.features, null, 2));
 
-    const featuresDir = getFeaturesDir(projectPath);
-    await secureFs.mkdir(featuresDir, { recursive: true });
-
     const createdFeatures: Array<{ id: string; title: string }> = [];
 
     for (const feature of parsed.features) {
       logger.debug('Creating feature:', feature.id);
-      const featureDir = path.join(featuresDir, feature.id);
-      await secureFs.mkdir(featureDir, { recursive: true });
+      context.check();
 
       const featureData: Record<string, unknown> = {
         id: feature.id,
@@ -120,9 +116,7 @@ export async function parseAndCreateFeatures(
       }
 
       // Use atomic write with backup support for crash protection
-      await atomicWriteJson(path.join(featureDir, 'feature.json'), featureData, {
-        backupCount: DEFAULT_BACKUP_COUNT,
-      });
+      await context.writeFeature(projectPath, featureData as never);
 
       createdFeatures.push({ id: feature.id, title: feature.title });
     }
@@ -145,6 +139,7 @@ export async function parseAndCreateFeatures(
       });
     }
   } catch (error) {
+    context.check();
     logger.error('❌ parseAndCreateFeatures() failed:');
     logger.error('Error:', error);
     events.emit('spec-regeneration:event', {
@@ -152,6 +147,7 @@ export async function parseAndCreateFeatures(
       error: (error as Error).message,
       projectPath: projectPath,
     });
+    throw error;
   }
 
   logger.debug('========== parseAndCreateFeatures() completed ==========');

@@ -1,3 +1,4 @@
+import { PipelineService } from '../../../src/services/pipeline-service.js';
 import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
 import {
   createTestAgentState,
@@ -267,6 +268,7 @@ const send=event=>process.stdout.write(JSON.stringify(event)+'\\n');
       });
       const events = createEventEmitter();
       const facade = AutoModeServiceFacade.create(project, {
+        pipeline: new PipelineService(),
         providerRegistry: createTestProviderRegistry(settings),
         events,
         settingsService: settings,
@@ -303,7 +305,8 @@ const send=event=>process.stdout.write(JSON.stringify(event)+'\\n');
         vi.fn(),
         vi.fn(),
         vi.fn(),
-        vi.fn()
+        vi.fn(),
+        new PipelineService()
       );
       expect(
         await pipeline.executeTestStep(

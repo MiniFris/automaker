@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { IdeaCategory } from '@automaker/types';
 import { NotFoundDomainError, ValidationDomainError } from '../../core/errors/index.js';
 import { APPLICATION_EVENTS } from '../../core/eventing/application-events.js';
@@ -7,6 +7,7 @@ import { IdeationService } from '../../services/ideation-service.js';
 import { FEATURE_REPOSITORY, type FeatureRepository } from '../features/feature.repository.js';
 import { FeatureTransitionService } from '../features/feature-transition.service.js';
 import { ProjectFeatureSerializer } from '../features/project-feature-serializer.js';
+import { IdeaConversionStore } from './idea-conversion.store.js';
 import type {
   AddSuggestionRequest,
   ConvertRequest,
@@ -23,37 +24,31 @@ import type {
 
 @Injectable()
 export class IdeationApplicationService {
-  private readonly logger = new Logger(IdeationApplicationService.name);
-
   constructor(
     @Inject(IdeationService) private readonly ideation: IdeationService,
     @Inject(APPLICATION_EVENTS) private readonly events: EventEmitter,
     @Inject(FEATURE_REPOSITORY) private readonly features: FeatureRepository,
     @Inject(ProjectFeatureSerializer) private readonly serializer: ProjectFeatureSerializer,
-    @Inject(FeatureTransitionService) private readonly transitions: FeatureTransitionService
+    @Inject(FeatureTransitionService) private readonly transitions: FeatureTransitionService,
+    @Inject(IdeaConversionStore) private readonly conversions: IdeaConversionStore
   ) {}
 
   async startSession(input: SessionStartRequest) {
     return {
       success: true as const,
-      session: await this.ideation.startSession(input.projectPath, input.options),
+      session: await this.ideation.runAccepted(() =>
+        this.ideation.startSession(input.projectPath, input.options)
+      ),
     };
   }
 
   message(input: SessionMessageRequest) {
-    void this.ideation
-      .sendMessage(input.sessionId, input.message, input.options)
-      .catch((error) =>
-        this.logger.error(
-          'Ideation message failed',
-          error instanceof Error ? error.stack : String(error)
-        )
-      );
+    this.ideation.launchMessage(input.sessionId, input.message, input.options);
     return { success: true as const };
   }
 
   async stopSession(input: SessionStopRequest) {
-    await this.ideation.stopSession(input.sessionId);
+    await this.ideation.runAccepted(() => this.ideation.stopSession(input.sessionId));
     this.events.emit('ideation:session-ended', input);
     return { success: true as const };
   }
@@ -73,11 +68,13 @@ export class IdeationApplicationService {
   }
 
   createIdea(input: IdeaCreateRequest) {
-    return this.serializer.run(input.projectPath, async () => {
-      const idea = await this.ideation.createIdea(input.projectPath, input.idea);
-      this.events.emit('ideation:idea-created', { projectPath: input.projectPath, idea });
-      return { success: true as const, idea };
-    });
+    return this.ideation.runAccepted(() =>
+      this.serializer.run(input.projectPath, async () => {
+        const idea = await this.ideation.createIdea(input.projectPath, input.idea);
+        this.events.emit('ideation:idea-created', { projectPath: input.projectPath, idea });
+        return { success: true as const, idea };
+      })
+    );
   }
 
   async getIdea(input: IdeaGetRequest) {
@@ -87,35 +84,32 @@ export class IdeationApplicationService {
   }
 
   updateIdea(input: IdeaUpdateRequest) {
-    return this.serializer.run(input.projectPath, async () => {
-      const idea = await this.ideation.updateIdea(input.projectPath, input.ideaId, input.updates);
-      if (!idea) throw new NotFoundDomainError('Idea not found');
-      this.events.emit('ideation:idea-updated', {
-        projectPath: input.projectPath,
-        ideaId: input.ideaId,
-        idea,
-      });
-      return { success: true as const, idea };
-    });
+    return this.ideation.runAccepted(() =>
+      this.serializer.run(input.projectPath, async () => {
+        const idea = await this.ideation.updateIdea(input.projectPath, input.ideaId, input.updates);
+        if (!idea) throw new NotFoundDomainError('Idea not found');
+        this.events.emit('ideation:idea-updated', {
+          projectPath: input.projectPath,
+          ideaId: input.ideaId,
+          idea,
+        });
+        return { success: true as const, idea };
+      })
+    );
   }
 
   deleteIdea(input: IdeaGetRequest) {
-    return this.serializer.run(input.projectPath, async () => {
-      await this.ideation.deleteIdea(input.projectPath, input.ideaId);
-      this.events.emit('ideation:idea-deleted', input);
-      return { success: true as const };
-    });
+    return this.ideation.runAccepted(() =>
+      this.serializer.run(input.projectPath, async () => {
+        await this.ideation.deleteIdea(input.projectPath, input.ideaId);
+        this.events.emit('ideation:idea-deleted', input);
+        return { success: true as const };
+      })
+    );
   }
 
   analyze(input: ProjectRequest) {
-    void this.ideation
-      .analyzeProject(input.projectPath)
-      .catch((error) =>
-        this.logger.error(
-          'Ideation analysis failed',
-          error instanceof Error ? error.stack : String(error)
-        )
-      );
+    this.ideation.launchAnalysis(input.projectPath);
     return { success: true as const, message: 'Analysis started' };
   }
 
@@ -127,43 +121,51 @@ export class IdeationApplicationService {
   }
 
   convert(input: ConvertRequest) {
-    return this.serializer.run(input.projectPath, async () => {
-      const data = await this.ideation.convertToFeature(input.projectPath, input.ideaId);
-      if (input.column) data.status = input.column;
-      if (input.dependencies?.length) data.dependencies = input.dependencies;
-      if (input.tags?.length) data.tags = input.tags;
-      this.transitions.assertAllowed(data.status ?? 'backlog');
-      const feature = await this.features.create(input.projectPath, data);
-      if (!input.keepIdea) {
-        await this.ideation.deleteIdea(input.projectPath, input.ideaId);
-        this.events.emit('ideation:idea-deleted', {
+    return this.ideation.runAccepted(() =>
+      this.serializer.run(input.projectPath, async () => {
+        let intent = await this.conversions.get(input.projectPath, input.ideaId);
+        if (!intent) {
+          const data = await this.ideation.convertToFeature(input.projectPath, input.ideaId);
+          if (input.column) data.status = input.column;
+          if (input.dependencies?.length) data.dependencies = input.dependencies;
+          if (input.tags?.length) data.tags = input.tags;
+          this.transitions.assertAllowed(data.status ?? 'backlog');
+          intent = await this.conversions.prepare(input.projectPath, input.ideaId, data);
+        }
+        const feature = await this.conversions.createFeature(input.projectPath, intent);
+        if (!input.keepIdea) {
+          await this.ideation.deleteIdea(input.projectPath, input.ideaId);
+          this.events.emit('ideation:idea-deleted', {
+            projectPath: input.projectPath,
+            ideaId: input.ideaId,
+          });
+        }
+        this.events.emit('ideation:idea-converted', {
           projectPath: input.projectPath,
           ideaId: input.ideaId,
+          featureId: feature.id,
+          keepIdea: !!input.keepIdea,
         });
-      }
-      this.events.emit('ideation:idea-converted', {
-        projectPath: input.projectPath,
-        ideaId: input.ideaId,
-        featureId: feature.id,
-        keepIdea: !!input.keepIdea,
-      });
-      return { success: true as const, featureId: feature.id };
-    });
+        return { success: true as const, featureId: feature.id };
+      })
+    );
   }
 
   addSuggestion(input: AddSuggestionRequest) {
-    return this.serializer.run(input.projectPath, async () => {
-      const description = input.suggestion.rationale
-        ? `${input.suggestion.description}\n\n**Rationale:** ${input.suggestion.rationale}`
-        : input.suggestion.description;
-      const feature = await this.features.create(input.projectPath, {
-        title: input.suggestion.title,
-        description,
-        category: this.ideation.mapSuggestionCategoryToFeatureCategory(input.suggestion.category),
-        status: 'backlog',
-      });
-      return { success: true as const, featureId: feature.id };
-    });
+    return this.ideation.runAccepted(() =>
+      this.serializer.run(input.projectPath, async () => {
+        const description = input.suggestion.rationale
+          ? `${input.suggestion.description}\n\n**Rationale:** ${input.suggestion.rationale}`
+          : input.suggestion.description;
+        const feature = await this.features.create(input.projectPath, {
+          title: input.suggestion.title,
+          description,
+          category: this.ideation.mapSuggestionCategoryToFeatureCategory(input.suggestion.category),
+          status: 'backlog',
+        });
+        return { success: true as const, featureId: feature.id };
+      })
+    );
   }
 
   prompts() {

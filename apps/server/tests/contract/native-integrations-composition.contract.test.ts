@@ -8,6 +8,7 @@ import { MCPTestService } from '../../src/services/mcp-test-service.js';
 import { PipelineService } from '../../src/services/pipeline-service.js';
 import { IdeationService } from '../../src/services/ideation-service.js';
 import { EventHookService } from '../../src/services/event-hook-service.js';
+import { NtfyService } from '../../src/services/ntfy-service.js';
 import { SettingsService } from '../../src/services/settings-service.js';
 import { FeatureLoader } from '../../src/services/feature-loader.js';
 import { EventHistoryService } from '../../src/services/event-history-service.js';
@@ -39,7 +40,13 @@ it('owns integration services once per application and preserves native dependen
   try {
     const first = await start('one'),
       second = await start('two');
-    for (const token of [MCPTestService, PipelineService, IdeationService, EventHookService]) {
+    for (const token of [
+      MCPTestService,
+      PipelineService,
+      IdeationService,
+      EventHookService,
+      NtfyService,
+    ]) {
       expect(first.app.get(token)).not.toBe(second.app.get(token));
       for (const runtime of apps) {
         const wrappers = [...runtime.app.get(ModulesContainer).values()]
@@ -65,6 +72,7 @@ it('owns integration services once per application and preserves native dependen
       expect(inspect(ideation).providerRegistry).toBe(runtime.app.get(ProviderRegistry));
       expect(inspect(ideation).events).toBe(runtime.app.get(APPLICATION_EVENTS));
       expect(inspect(hooks).events).toBe(runtime.app.get(EVENT_BUS));
+      expect(inspect(hooks).ntfy).toBe(runtime.app.get(NtfyService));
       expect(inspect(hooks).eventHistoryService).toBe(runtime.app.get(EventHistoryService));
       expect(inspect(hooks).featureLoader).toBe(runtime.app.get(FeatureLoader));
     }

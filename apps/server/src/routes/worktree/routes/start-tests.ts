@@ -7,10 +7,13 @@
 
 import type { Request, Response } from 'express';
 import type { SettingsService } from '../../../services/settings-service.js';
-import { getTestRunnerService } from '../../../services/test-runner-service.js';
+import type { TestRunnerService } from '../../../services/test-runner-service.js';
 import { getErrorMessage, logError } from '../common.js';
 
-export function createStartTestsHandler(settingsService?: SettingsService) {
+export function createStartTestsHandler(
+  testRunnerService: TestRunnerService,
+  settingsService?: SettingsService
+) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
       const body = req.body;
@@ -60,7 +63,6 @@ export function createStartTestsHandler(settingsService?: SettingsService) {
         return;
       }
 
-      const testRunnerService = getTestRunnerService();
       const result = await testRunnerService.startTests(worktreePath, {
         command: testCommand,
         testFile,

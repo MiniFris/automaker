@@ -11,7 +11,6 @@ import type { FeatureLoader } from '@/services/feature-loader.js';
 import * as secureFs from '@/lib/secure-fs.js';
 import { atomicWriteJson, readJsonWithRecovery } from '@automaker/utils';
 import { getFeatureDir, getFeaturesDir } from '@automaker/platform';
-import { pipelineService } from '@/services/pipeline-service.js';
 
 /**
  * Helper to normalize paths for cross-platform test compatibility.
@@ -40,15 +39,13 @@ vi.mock('@automaker/platform', () => ({
   getFeaturesDir: vi.fn(),
 }));
 
-vi.mock('@/services/pipeline-service.js', () => ({
-  pipelineService: {
-    getStepIdFromStatus: vi.fn((status: string) => {
-      if (status.startsWith('pipeline_')) return status.replace('pipeline_', '');
-      return null;
-    }),
-    getStep: vi.fn(),
-  },
-}));
+const pipelineService = {
+  getStepIdFromStatus: vi.fn((status: string) => {
+    if (status.startsWith('pipeline_')) return status.replace('pipeline_', '');
+    return null;
+  }),
+  getStep: vi.fn(),
+};
 
 describe('FeatureStateManager', () => {
   let manager: FeatureStateManager;
@@ -83,7 +80,12 @@ describe('FeatureStateManager', () => {
     } as unknown as FeatureLoader;
     notificationServiceRef = { createNotification: vi.fn() };
 
-    manager = new FeatureStateManager(mockEvents, mockFeatureLoader, notificationService as any);
+    manager = new FeatureStateManager(
+      mockEvents,
+      mockFeatureLoader,
+      notificationService as any,
+      pipelineService as never
+    );
 
     // Default mocks
     (getFeatureDir as Mock).mockReturnValue('/project/.automaker/features/feature-123');
@@ -1569,7 +1571,12 @@ describe('FeatureStateManager', () => {
       (mockEvents.subscribe as Mock).mockReturnValue(unsubscribeFn);
 
       // Create a new manager to get a fresh subscription
-      const newManager = new FeatureStateManager(mockEvents, mockFeatureLoader);
+      const newManager = new FeatureStateManager(
+        mockEvents,
+        mockFeatureLoader,
+        null,
+        pipelineService as never
+      );
 
       // Call destroy
       newManager.destroy();
@@ -1582,7 +1589,12 @@ describe('FeatureStateManager', () => {
       const unsubscribeFn = vi.fn();
       (mockEvents.subscribe as Mock).mockReturnValue(unsubscribeFn);
 
-      const newManager = new FeatureStateManager(mockEvents, mockFeatureLoader);
+      const newManager = new FeatureStateManager(
+        mockEvents,
+        mockFeatureLoader,
+        null,
+        pipelineService as never
+      );
 
       // Call destroy multiple times
       newManager.destroy();

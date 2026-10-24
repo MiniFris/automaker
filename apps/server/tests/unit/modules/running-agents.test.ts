@@ -1,17 +1,8 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { RunningAgentsService } from '../../../src/modules/agents/running-agents.service.js';
-import {
-  setRunningDetails,
-  setRunningState as setBacklogRunning,
-} from '../../../src/routes/backlog-plan/common.js';
-import { setRunningState as setSpecRunning } from '../../../src/routes/app-spec/common.js';
-
-afterEach(() => {
-  setBacklogRunning(false, null);
-  setRunningDetails(null);
-  setSpecRunning('/workspace/spec', false);
-});
+import { AppSpecJobRegistry } from '../../../src/modules/app-spec/app-spec-job.registry.js';
+import { BacklogPlanJobRegistry } from '../../../src/modules/backlog-plan/backlog-plan-job.registry.js';
 
 describe('RunningAgentsService', () => {
   it('combines feature, backlog and spec jobs into one read model', async () => {
@@ -25,20 +16,24 @@ describe('RunningAgentsService', () => {
         },
       ]),
     };
-    setRunningDetails({
-      projectPath: '/workspace/backlog',
-      prompt: 'Plan backlog',
-      startedAt: new Date().toISOString(),
+    const security = { validateLocalPath: (value: string) => value } as never;
+    const specs = new AppSpecJobRegistry(security),
+      backlog = new BacklogPlanJobRegistry(security);
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
     });
-    setBacklogRunning(true);
-    setSpecRunning('/workspace/spec', true, new AbortController(), 'sync');
+    backlog.generate({ projectPath: '/workspace/backlog', prompt: 'Plan backlog' }, () => held);
+    specs.run('/workspace/spec', 'sync', () => held);
 
     await expect(
       new RunningAgentsService(
         autoMode as never,
         {
           list: async () => [{ kind: 'chat', featureId: 'chat:session', sessionId: 'session' }],
-        } as never
+        } as never,
+        specs,
+        backlog
       ).list()
     ).resolves.toMatchObject({
       success: true,
@@ -50,5 +45,7 @@ describe('RunningAgentsService', () => {
         { kind: 'chat', featureId: 'chat:session', sessionId: 'session' },
       ],
     });
+    release();
+    await Promise.all([specs.onModuleDestroy(), backlog.onModuleDestroy()]);
   });
 });

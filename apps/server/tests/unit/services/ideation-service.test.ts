@@ -133,7 +133,9 @@ describe('IdeationService', () => {
         expect(session.status).toBe('active');
         expect(session.createdAt).toBeDefined();
         expect(session.updatedAt).toBeDefined();
-        expect(platform.ensureIdeationDir).toHaveBeenCalledWith(testProjectPath);
+        expect(secureFs.mkdir).toHaveBeenCalledWith('/test/project/.automaker/ideation/sessions', {
+          recursive: true,
+        });
         expect(secureFs.writeFile).toHaveBeenCalled();
         expect(mockEvents.emit).toHaveBeenCalledWith('ideation:session-started', {
           sessionId: session.id,
@@ -486,7 +488,9 @@ describe('IdeationService', () => {
       });
 
       it('should handle non-existent idea gracefully', async () => {
-        vi.mocked(secureFs.rm).mockRejectedValue(new Error('ENOENT'));
+        vi.mocked(secureFs.rm).mockRejectedValue(
+          Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+        );
 
         await expect(service.deleteIdea(testProjectPath, 'non-existent')).resolves.not.toThrow();
       });

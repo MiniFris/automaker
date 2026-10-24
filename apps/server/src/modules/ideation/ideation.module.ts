@@ -9,6 +9,8 @@ import { ProviderRegistry } from '../providers/provider-registry.service.js';
 import { APPLICATION_EVENTS } from '../../core/eventing/application-events.js';
 import type { EventEmitter } from '../../lib/events.js';
 import { SecurityService } from '../../core/security/security.service.js';
+import { SECURE_FILESYSTEM } from '../../core/security/security.module.js';
+import { IdeaConversionStore } from './idea-conversion.store.js';
 
 @Module({
   imports: [FeaturesModule],
@@ -22,19 +24,29 @@ import { SecurityService } from '../../core/security/security.service.js';
         FeatureLoader,
         ProviderRegistry,
         SecurityService,
+        SECURE_FILESYSTEM,
       ],
       useFactory: (
         events: EventEmitter,
         settings: SettingsService,
         features: FeatureLoader,
         providers: ProviderRegistry,
-        security: SecurityService
+        security: SecurityService,
+        filesystem: ConstructorParameters<typeof IdeationService>[5]
       ) =>
-        new IdeationService(events, settings, features, providers, (cwd) => {
-          security.validateLocalPath(cwd, 'ideation working directory');
-        }),
+        new IdeationService(
+          events,
+          settings,
+          features,
+          providers,
+          (cwd) => {
+            security.validateLocalPath(cwd, 'ideation working directory');
+          },
+          filesystem
+        ),
     },
     IdeationApplicationService,
+    IdeaConversionStore,
   ],
   exports: [IdeationService],
 })

@@ -30,14 +30,12 @@ import {
 } from '../../../src/lib/settings-helpers.js';
 
 // Mock pipelineService
-vi.mock('../../../src/services/pipeline-service.js', () => ({
-  pipelineService: {
-    isPipelineStatus: vi.fn(),
-    getStepIdFromStatus: vi.fn(),
-    getPipelineConfig: vi.fn(),
-    getNextStatus: vi.fn(),
-  },
-}));
+const pipelineService = {
+  isPipelineStatus: vi.fn(),
+  getStepIdFromStatus: vi.fn(),
+  getPipelineConfig: vi.fn(),
+  getNextStatus: vi.fn(),
+};
 
 // Mock merge-service
 vi.mock('../../../src/services/merge-service.js', () => ({
@@ -216,7 +214,8 @@ describe('PipelineOrchestrator - providerId passthrough', () => {
       mockLoadContextFilesFn,
       mockBuildFeaturePromptFn,
       mockExecuteFeatureFn,
-      mockRunAgentFn
+      mockRunAgentFn,
+      pipelineService as never
     );
   });
 

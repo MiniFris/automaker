@@ -11,7 +11,7 @@
  */
 
 import type { Request, Response } from 'express';
-import { getTestRunnerService } from '../../../services/test-runner-service.js';
+import type { TestRunnerService } from '../../../services/test-runner-service.js';
 import { getErrorMessage, logError } from '../common.js';
 
 interface SessionInfo {
@@ -47,15 +47,13 @@ function buildLogsResponse(session: SessionInfo, output: OutputResult) {
   };
 }
 
-export function createGetTestLogsHandler() {
+export function createGetTestLogsHandler(testRunnerService: TestRunnerService) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
       const { worktreePath, sessionId } = req.query as {
         worktreePath?: string;
         sessionId?: string;
       };
-
-      const testRunnerService = getTestRunnerService();
 
       // If sessionId is provided, get logs for that specific session
       if (sessionId) {

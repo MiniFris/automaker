@@ -287,6 +287,3 @@ export class PipelineService {
     return status.replace('pipeline_', '');
   }
 }
-
-// Export singleton instance
-export const pipelineService = new PipelineService();

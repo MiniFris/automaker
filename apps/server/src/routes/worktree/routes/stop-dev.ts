@@ -6,10 +6,10 @@
  */
 
 import type { Request, Response } from 'express';
-import { getDevServerService } from '../../../services/dev-server-service.js';
+import type { DevServerService } from '../../../services/dev-server-service.js';
 import { getErrorMessage, logError } from '../common.js';
 
-export function createStopDevHandler() {
+export function createStopDevHandler(devServerService: DevServerService) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
       const { worktreePath } = req.body as {
@@ -24,7 +24,6 @@ export function createStopDevHandler() {
         return;
       }
 
-      const devServerService = getDevServerService();
       const result = await devServerService.stopDevServer(worktreePath);
 
       if (result.success && result.result) {

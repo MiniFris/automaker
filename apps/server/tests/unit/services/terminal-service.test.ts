@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { TerminalService, getTerminalService } from '@/services/terminal-service.js';
+import { TerminalService } from '@/services/terminal-service.js';
 import * as pty from 'node-pty';
 import * as os from 'os';
 import * as path from 'path';
@@ -717,12 +717,12 @@ describe('terminal-service.ts', () => {
     }
   });
 
-  describe('getTerminalService', () => {
-    it('should return singleton instance', () => {
-      const instance1 = getTerminalService();
-      const instance2 = getTerminalService();
+  describe('explicit TerminalService ownership', () => {
+    it('creates independent service owners', () => {
+      const instance1 = new TerminalService();
+      const instance2 = new TerminalService();
 
-      expect(instance1).toBe(instance2);
+      expect(instance1).not.toBe(instance2);
     });
   });
 });

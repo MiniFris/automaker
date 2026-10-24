@@ -46,3 +46,32 @@ for (const folder of ['services', 'providers']) {
     assert.equal(result.errorCount, 0);
   });
 }
+
+for (const folder of ['core', 'modules']) {
+  test(`${folder} cannot recover legacy route dependencies through imports or re-exports`, async () => {
+    for (const source of [
+      "import { generate } from '../../routes/app-spec/routes/generate.js'; export const workflow = generate;",
+      "import type { Snapshot } from '@/routes/backlog-plan/common.js'; export type Owned = Snapshot;",
+      "export { execute } from 'routes/legacy.js';",
+      "export * from '../../routes/backlog-plan/routes/generate.js';",
+    ]) {
+      const [result] = await eslint.lintText(source, {
+        filePath: `src/${folder}/example/boundary-fixture.ts`,
+      });
+      assert.ok(
+        result.messages.some(
+          ({ ruleId, severity }) => ruleId === 'no-restricted-imports' && severity === 2
+        ),
+        `${folder} must reject ${source}`
+      );
+    }
+  });
+
+  test(`${folder} may compose native controllers and domain ports`, async () => {
+    const [result] = await eslint.lintText(
+      "import { Controller } from './example.controller.js'; import type { Snapshot } from '../../types/settings.js'; export const controller = Controller; export type Owned = Snapshot;",
+      { filePath: `src/${folder}/example/boundary-fixture.ts` }
+    );
+    assert.equal(result.errorCount, 0);
+  });
+}

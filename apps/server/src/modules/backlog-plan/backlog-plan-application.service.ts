@@ -32,14 +32,12 @@ export class BacklogPlanApplicationService {
   ) {}
 
   generate(input: BacklogGenerateRequest) {
-    const controller = this.jobs.start(input);
-    if (!controller) {
+    const admitted = this.jobs.generate(input, (controller, owned) =>
+      this.workflow.generate(owned, controller)
+    );
+    if (!admitted) {
       return { success: false as const, error: 'Backlog plan generation is already running' };
     }
-    void this.workflow
-      .generate(input, controller)
-      .catch(() => {})
-      .finally(() => this.jobs.finish(controller));
     return { success: true as const };
   }
 
@@ -57,88 +55,102 @@ export class BacklogPlanApplicationService {
   }
 
   clear(projectPath: string) {
-    return this.serializer.run(projectPath, async () => {
-      await this.store.clear(projectPath);
-      return { success: true as const };
-    });
+    return this.jobs.track((signal) =>
+      this.serializer.run(projectPath, async () => {
+        signal.throwIfAborted();
+        await this.store.clear(projectPath);
+        return { success: true as const };
+      })
+    );
   }
 
   apply(input: BacklogApplyRequest) {
-    return this.serializer.run(input.projectPath, async () => {
-      const [globalSettings, projectSettings, allFeatures] = await Promise.all([
-        this.settings.getGlobalSettings(),
-        this.settings.getProjectSettings(input.projectPath),
-        this.features.list(input.projectPath),
-      ]);
-      const defaultPlanningMode: PlanningMode = globalSettings.defaultPlanningMode ?? 'skip';
-      const defaultRequirePlanApproval = globalSettings.defaultRequirePlanApproval ?? false;
-      const defaults = resolvePhaseModel(
-        normalizeModel(projectSettings.defaultFeatureModel ?? globalSettings.defaultFeatureModel)
-      );
-      const featureMap = new Map(allFeatures.map((feature) => [feature.id, feature]));
-      const appliedChanges: string[] = [];
-
-      for (const change of input.plan.changes.filter(({ type }) => type === 'delete')) {
-        if (!change.featureId) continue;
-        for (const feature of allFeatures) {
-          if (!feature.dependencies?.includes(change.featureId)) continue;
-          const dependencies = feature.dependencies.filter((id) => id !== change.featureId);
-          await this.features.update(input.projectPath, feature.id, { dependencies });
-          feature.dependencies = dependencies;
-        }
-        if (await this.features.delete(input.projectPath, change.featureId)) {
-          appliedChanges.push(`deleted:${change.featureId}`);
-          featureMap.delete(change.featureId);
-        }
-      }
-
-      for (const change of input.plan.changes.filter(({ type }) => type === 'add')) {
-        if (!change.feature) continue;
-        this.transitions.assertAllowed(change.feature.status ?? 'backlog');
-        const source = change.feature as Partial<Feature>;
-        const planningMode = source.planningMode ?? defaultPlanningMode;
-        const created = await this.features.create(input.projectPath, {
-          ...source,
-          status: source.status ?? 'backlog',
-          model: source.model ?? defaults.model,
-          thinkingLevel: source.thinkingLevel ?? defaults.thinkingLevel,
-          reasoningEffort: source.reasoningEffort ?? defaults.reasoningEffort,
-          providerId: source.providerId ?? defaults.providerId,
-          planningMode,
-          requirePlanApproval:
-            planningMode === 'skip' || planningMode === 'lite'
-              ? false
-              : (source.requirePlanApproval ?? defaultRequirePlanApproval),
-          branchName: input.branchName,
-        });
-        appliedChanges.push(`added:${created.id}`);
-        featureMap.set(created.id, created);
-      }
-
-      for (const change of input.plan.changes.filter(({ type }) => type === 'update')) {
-        if (!change.featureId || !change.feature) continue;
-        this.transitions.assertAllowed(change.feature.status);
-        const updated = await this.features.update(
-          input.projectPath,
-          change.featureId,
-          change.feature as Partial<Feature>
+    return this.jobs.track((signal) =>
+      this.serializer.run(input.projectPath, async () => {
+        signal.throwIfAborted();
+        const [globalSettings, projectSettings, allFeatures] = await Promise.all([
+          this.settings.getGlobalSettings(),
+          this.settings.getProjectSettings(input.projectPath),
+          this.features.list(input.projectPath),
+        ]);
+        const defaultPlanningMode: PlanningMode = globalSettings.defaultPlanningMode ?? 'skip';
+        signal.throwIfAborted();
+        const defaultRequirePlanApproval = globalSettings.defaultRequirePlanApproval ?? false;
+        const defaults = resolvePhaseModel(
+          normalizeModel(projectSettings.defaultFeatureModel ?? globalSettings.defaultFeatureModel)
         );
-        appliedChanges.push(`updated:${change.featureId}`);
-        featureMap.set(change.featureId, updated);
-      }
+        const featureMap = new Map(allFeatures.map((feature) => [feature.id, feature]));
+        const appliedChanges: string[] = [];
 
-      for (const dependency of input.plan.dependencyUpdates) {
-        const feature = featureMap.get(dependency.featureId);
-        if (!feature) continue;
-        const current = feature.dependencies ?? [];
-        const dependencies = current
-          .filter((id) => !dependency.removedDependencies.includes(id))
-          .concat(dependency.addedDependencies.filter((id) => !current.includes(id)));
-        await this.features.update(input.projectPath, dependency.featureId, { dependencies });
-      }
+        for (const change of input.plan.changes.filter(({ type }) => type === 'delete')) {
+          signal.throwIfAborted();
+          if (!change.featureId) continue;
+          for (const feature of allFeatures) {
+            signal.throwIfAborted();
+            if (!feature.dependencies?.includes(change.featureId)) continue;
+            const dependencies = feature.dependencies.filter((id) => id !== change.featureId);
+            await this.features.update(input.projectPath, feature.id, { dependencies });
+            feature.dependencies = dependencies;
+          }
+          signal.throwIfAborted();
+          if (await this.features.delete(input.projectPath, change.featureId)) {
+            appliedChanges.push(`deleted:${change.featureId}`);
+            featureMap.delete(change.featureId);
+          }
+        }
 
-      await this.store.clear(input.projectPath).catch(() => {});
-      return { success: true as const, appliedChanges };
-    });
+        for (const change of input.plan.changes.filter(({ type }) => type === 'add')) {
+          signal.throwIfAborted();
+          if (!change.feature) continue;
+          this.transitions.assertAllowed(change.feature.status ?? 'backlog');
+          const source = change.feature as Partial<Feature>;
+          const planningMode = source.planningMode ?? defaultPlanningMode;
+          const created = await this.features.create(input.projectPath, {
+            ...source,
+            status: source.status ?? 'backlog',
+            model: source.model ?? defaults.model,
+            thinkingLevel: source.thinkingLevel ?? defaults.thinkingLevel,
+            reasoningEffort: source.reasoningEffort ?? defaults.reasoningEffort,
+            providerId: source.providerId ?? defaults.providerId,
+            planningMode,
+            requirePlanApproval:
+              planningMode === 'skip' || planningMode === 'lite'
+                ? false
+                : (source.requirePlanApproval ?? defaultRequirePlanApproval),
+            branchName: input.branchName,
+          });
+          appliedChanges.push(`added:${created.id}`);
+          featureMap.set(created.id, created);
+        }
+
+        for (const change of input.plan.changes.filter(({ type }) => type === 'update')) {
+          signal.throwIfAborted();
+          if (!change.featureId || !change.feature) continue;
+          this.transitions.assertAllowed(change.feature.status);
+          const updated = await this.features.update(
+            input.projectPath,
+            change.featureId,
+            change.feature as Partial<Feature>
+          );
+          appliedChanges.push(`updated:${change.featureId}`);
+          featureMap.set(change.featureId, updated);
+        }
+
+        for (const dependency of input.plan.dependencyUpdates) {
+          signal.throwIfAborted();
+          const feature = featureMap.get(dependency.featureId);
+          if (!feature) continue;
+          const current = feature.dependencies ?? [];
+          const dependencies = current
+            .filter((id) => !dependency.removedDependencies.includes(id))
+            .concat(dependency.addedDependencies.filter((id) => !current.includes(id)));
+          await this.features.update(input.projectPath, dependency.featureId, { dependencies });
+        }
+
+        signal.throwIfAborted();
+        await this.store.clear(input.projectPath);
+        return { success: true as const, appliedChanges };
+      })
+    );
   }
 }

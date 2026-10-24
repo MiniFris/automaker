@@ -6,6 +6,7 @@ application/infra границ этапа 11. Результаты возобн�
 [native cutover checkpoint](artifacts/native-cutover-checkpoint.md).
 Последующий проверенный срез: [run ownership, providers и filesystem](artifacts/run-ownership-provider-filesystem-checkpoint.md).
 Следующий проверенный срез: [verification, legacy import, Gemini и performance](artifacts/verification-import-gemini-performance-checkpoint.md).
+Текущий checkpoint: [planning, ideation и singleton retirement](artifacts/planning-ideation-singletons-checkpoint.md).
 Полная миграция ещё не завершена; checklist и результаты проверок ведутся
 в документах соответствующих этапов.
 

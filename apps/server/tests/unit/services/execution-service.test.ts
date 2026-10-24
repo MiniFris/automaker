@@ -31,7 +31,7 @@ import type {
 } from '../../../src/services/concurrency-manager.js';
 import type { WorktreeResolver } from '../../../src/services/worktree-resolver.js';
 import type { SettingsService } from '../../../src/services/settings-service.js';
-import { pipelineService } from '../../../src/services/pipeline-service.js';
+
 import * as secureFs from '../../../src/lib/secure-fs.js';
 import { getFeatureDir } from '@automaker/platform';
 import {
@@ -44,13 +44,11 @@ import { extractSummary } from '../../../src/services/spec-parser.js';
 import { resolveModelString } from '@automaker/model-resolver';
 
 // Mock pipelineService
-vi.mock('../../../src/services/pipeline-service.js', () => ({
-  pipelineService: {
-    getPipelineConfig: vi.fn(),
-    isPipelineStatus: vi.fn(),
-    getStepIdFromStatus: vi.fn(),
-  },
-}));
+const pipelineService = {
+  getPipelineConfig: vi.fn(),
+  isPipelineStatus: vi.fn(),
+  getStepIdFromStatus: vi.fn(),
+};
 
 // Mock secureFs
 vi.mock('../../../src/lib/secure-fs.js', () => ({
@@ -285,7 +283,8 @@ describe('execution-service.ts', () => {
       mockRecordSuccessFn,
       mockSaveExecutionStateFn,
       mockLoadContextFilesFn,
-      providers as unknown as ProviderRegistry
+      providers as unknown as ProviderRegistry,
+      pipelineService as never
     );
   });
 
@@ -317,7 +316,8 @@ describe('execution-service.ts', () => {
       mockRecordSuccessFn,
       mockSaveExecutionStateFn,
       mockLoadContextFilesFn,
-      providers as unknown as ProviderRegistry
+      providers as unknown as ProviderRegistry,
+      pipelineService as never
     );
     vi.mocked(mockLoadFeatureFn).mockResolvedValue({
       ...testFeature,
@@ -399,7 +399,8 @@ describe('execution-service.ts', () => {
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
         mockLoadContextFilesFn,
-        providers as unknown as ProviderRegistry
+        providers as unknown as ProviderRegistry,
+        pipelineService as never
       );
       await managed.executeFeature('/test/project', feature.id, true);
       expect(memory.recordUsage).toHaveBeenCalledWith(
@@ -458,7 +459,8 @@ describe('execution-service.ts', () => {
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
         mockLoadContextFilesFn,
-        providers as unknown as ProviderRegistry
+        providers as unknown as ProviderRegistry,
+        pipelineService as never
       );
       expect(svc).toBeInstanceOf(ExecutionService);
     });
@@ -555,7 +557,8 @@ describe('execution-service.ts', () => {
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
         mockLoadContextFilesFn,
-        providers as unknown as ProviderRegistry
+        providers as unknown as ProviderRegistry,
+        pipelineService as never
       );
 
       await svc.executeFeature('/test/project', 'nonexistent');
@@ -686,7 +689,8 @@ describe('execution-service.ts', () => {
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
         mockLoadContextFilesFn,
-        providers as unknown as ProviderRegistry
+        providers as unknown as ProviderRegistry,
+        pipelineService as never
       );
 
       await svc.executeFeature('/test/project', 'feature-1');
@@ -733,7 +737,8 @@ describe('execution-service.ts', () => {
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
         mockLoadContextFilesFn,
-        providers as unknown as ProviderRegistry
+        providers as unknown as ProviderRegistry,
+        pipelineService as never
       );
 
       await svc.executeFeature('/test/project', 'feature-1', true);
@@ -798,7 +803,8 @@ describe('execution-service.ts', () => {
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
         mockLoadContextFilesFn,
-        providers as unknown as ProviderRegistry
+        providers as unknown as ProviderRegistry,
+        pipelineService as never
       );
 
       await svc.executeFeature('/test/project', 'feature-1');
@@ -836,7 +842,8 @@ describe('execution-service.ts', () => {
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
         mockLoadContextFilesFn,
-        providers as unknown as ProviderRegistry
+        providers as unknown as ProviderRegistry,
+        pipelineService as never
       );
 
       await svc.executeFeature('/test/project', 'feature-1');
@@ -877,7 +884,8 @@ describe('execution-service.ts', () => {
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
         mockLoadContextFilesFn,
-        providers as unknown as ProviderRegistry
+        providers as unknown as ProviderRegistry,
+        pipelineService as never
       );
 
       await svc.executeFeature('/test/project', 'feature-1');
@@ -909,7 +917,8 @@ describe('execution-service.ts', () => {
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
         mockLoadContextFilesFn,
-        providers as unknown as ProviderRegistry
+        providers as unknown as ProviderRegistry,
+        pipelineService as never
       );
     };
 
@@ -1208,7 +1217,8 @@ describe('execution-service.ts', () => {
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
         mockLoadContextFilesFn,
-        providers as unknown as ProviderRegistry
+        providers as unknown as ProviderRegistry,
+        pipelineService as never
       );
 
       await svc.executeFeature('/test/project', 'feature-1');
@@ -1244,7 +1254,8 @@ describe('execution-service.ts', () => {
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
         mockLoadContextFilesFn,
-        providers as unknown as ProviderRegistry
+        providers as unknown as ProviderRegistry,
+        pipelineService as never
       );
 
       await svc.executeFeature('/test/project', 'feature-1');
@@ -1278,7 +1289,8 @@ describe('execution-service.ts', () => {
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
         mockLoadContextFilesFn,
-        providers as unknown as ProviderRegistry
+        providers as unknown as ProviderRegistry,
+        pipelineService as never
       );
 
       await svc.executeFeature('/test/project', 'feature-1');
@@ -1314,7 +1326,8 @@ describe('execution-service.ts', () => {
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
         mockLoadContextFilesFn,
-        providers as unknown as ProviderRegistry
+        providers as unknown as ProviderRegistry,
+        pipelineService as never
       );
 
       await svc.executeFeature('/test/project', 'feature-1');
@@ -1350,7 +1363,8 @@ describe('execution-service.ts', () => {
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
         mockLoadContextFilesFn,
-        providers as unknown as ProviderRegistry
+        providers as unknown as ProviderRegistry,
+        pipelineService as never
       );
 
       await svc.executeFeature('/test/project', 'feature-1', false, true);
@@ -1396,7 +1410,8 @@ describe('execution-service.ts', () => {
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
         mockLoadContextFilesFn,
-        providers as unknown as ProviderRegistry
+        providers as unknown as ProviderRegistry,
+        pipelineService as never
       );
 
       await svc.executeFeature('/test/project', 'feature-1', false, false);
@@ -1436,7 +1451,8 @@ describe('execution-service.ts', () => {
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
         mockLoadContextFilesFn,
-        providers as unknown as ProviderRegistry
+        providers as unknown as ProviderRegistry,
+        pipelineService as never
       );
 
       await svc.executeFeature('/test/project', 'feature-1');
@@ -1596,7 +1612,8 @@ describe('execution-service.ts', () => {
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
         mockLoadContextFilesFn,
-        providers as unknown as ProviderRegistry
+        providers as unknown as ProviderRegistry,
+        pipelineService as never
       );
 
       await svc.executeFeature('/test/project', 'feature-1');
@@ -1677,7 +1694,8 @@ describe('execution-service.ts', () => {
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
         mockLoadContextFilesFn,
-        providers as unknown as ProviderRegistry
+        providers as unknown as ProviderRegistry,
+        pipelineService as never
       );
     };
 
@@ -1790,7 +1808,8 @@ describe('execution-service.ts', () => {
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
         mockLoadContextFilesFn,
-        providers as unknown as ProviderRegistry
+        providers as unknown as ProviderRegistry,
+        pipelineService as never
       );
     };
 

@@ -20,17 +20,12 @@ import {
 } from '@automaker/types';
 import { resolvePhaseModel } from '@automaker/model-resolver';
 import { getCurrentBranch } from '@automaker/git-utils';
-import { FeatureLoader } from '../../services/feature-loader.js';
+import type { PlanningRunContext } from '../app-spec/planning-workflow.context.js';
+import { setTimeout as delay } from 'node:timers/promises';
 import type { ProviderRegistry } from '../../modules/providers/provider-registry.service.js';
 import { prepareDirectExecution } from '../../providers/openai-compatible/execution.js';
 import { extractJsonWithArray } from '../../lib/json-extractor.js';
-import {
-  logger,
-  setRunningState,
-  setRunningDetails,
-  getErrorMessage,
-  saveBacklogPlan,
-} from './common.js';
+import { logger, getErrorMessage } from './backlog-plan-errors.js';
 import type { SettingsService } from '../../services/settings-service.js';
 import {
   getAutoLoadClaudeMdSetting,
@@ -55,8 +50,6 @@ function isRetryableError(error: unknown): boolean {
     message.includes('Claude Code process terminated by signal')
   );
 }
-
-const featureLoader = new FeatureLoader();
 
 /**
  * Format features for the AI prompt
@@ -168,8 +161,12 @@ export async function generateBacklogPlan(
   model: string | undefined,
   branchName: string | undefined,
   providerId: string | undefined,
-  providerRegistry: ProviderRegistry
+  providerRegistry: ProviderRegistry,
+  context: PlanningRunContext
 ): Promise<BacklogPlanResult> {
+  context.check();
+  const featureLoader = context.features;
+  const saveBacklogPlan = context.savePlan;
   try {
     // Load current features
     const allFeatures = await featureLoader.getAll(projectPath);
@@ -383,7 +380,7 @@ ${userPrompt}`;
           type: 'backlog_plan_progress',
           content: `Retrying... (attempt ${attempt + 1}/${MAX_RETRIES + 1})`,
         });
-        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+        await delay(RETRY_DELAY_MS, undefined, { signal: abortController.signal });
       }
 
       let accumulatedText = '';
@@ -427,6 +424,7 @@ ${userPrompt}`;
         lastError = null;
         break;
       } catch (error) {
+        context.check();
         // Direct transport owns its retries. Never recover a partial protocol response
         // or replay it through the CLI-specific fallback below.
         if (isDirectModel(effectiveModel)) throw error;
@@ -478,6 +476,7 @@ ${userPrompt}`;
       throw lastError;
     }
 
+    context.check();
     // Parse the response
     const result = recoveredResult ?? parsePlanResponse(responseText);
 
@@ -504,8 +503,5 @@ ${userPrompt}`;
     });
 
     throw error;
-  } finally {
-    setRunningState(false, null);
-    setRunningDetails(null);
   }
 }

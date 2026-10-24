@@ -1,3 +1,4 @@
+import { createTestWorktreeRouteServices } from '../../helpers/worktree-route-services.js';
 import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -103,6 +104,7 @@ describe.skipIf(process.platform !== 'linux')(
       app.use(
         '/api/worktree',
         createWorktreeRoutes(
+          createTestWorktreeRouteServices(),
           createTestProviderRegistry(settings),
           createEventEmitter(),
           settings,

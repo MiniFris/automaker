@@ -524,16 +524,3 @@ export class FeatureExportService {
     return prettyPrint ? JSON.stringify(data, null, 2) : JSON.stringify(data);
   }
 }
-
-// Singleton instance
-let featureExportServiceInstance: FeatureExportService | null = null;
-
-/**
- * Get the singleton feature export service instance
- */
-export function getFeatureExportService(): FeatureExportService {
-  if (!featureExportServiceInstance) {
-    featureExportServiceInstance = new FeatureExportService();
-  }
-  return featureExportServiceInstance;
-}

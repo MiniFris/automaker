@@ -5,7 +5,7 @@
 import type { Request, Response } from 'express';
 import type { FeatureLoader } from '../../../services/feature-loader.js';
 import {
-  getFeatureExportService,
+  FeatureExportService,
   type ExportFormat,
   type BulkExportOptions,
 } from '../../../services/feature-export-service.js';
@@ -37,7 +37,7 @@ interface ExportRequest {
 }
 
 export function createExportHandler(_featureLoader: FeatureLoader) {
-  const exportService = getFeatureExportService();
+  const exportService = new FeatureExportService(_featureLoader);
 
   return async (req: Request, res: Response): Promise<void> => {
     try {

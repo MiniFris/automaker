@@ -6,13 +6,12 @@
  */
 
 import type { Request, Response } from 'express';
-import { getDevServerService } from '../../../services/dev-server-service.js';
+import type { DevServerService } from '../../../services/dev-server-service.js';
 import { getErrorMessage, logError } from '../common.js';
 
-export function createListDevServersHandler() {
+export function createListDevServersHandler(devServerService: DevServerService) {
   return async (_req: Request, res: Response): Promise<void> => {
     try {
-      const devServerService = getDevServerService();
       const result = devServerService.listDevServers();
 
       res.json({

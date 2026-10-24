@@ -1,3 +1,4 @@
+import { createTestWorktreeRouteServices } from '../../helpers/worktree-route-services.js';
 import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -129,7 +130,12 @@ describe.skipIf(process.platform !== 'linux')('manual test runner on real SSH', 
     app.use(
       '/worktree',
       auth.middleware,
-      createWorktreeRoutes(createTestProviderRegistry(settings), events, settings)
+      createWorktreeRoutes(
+        createTestWorktreeRouteServices(),
+        createTestProviderRegistry(settings),
+        events,
+        settings
+      )
     );
     server = app.listen(0, '127.0.0.1');
     await once(server, 'listening');

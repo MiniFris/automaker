@@ -1292,18 +1292,3 @@ export class DevServerService {
     }
   }
 }
-
-// Singleton instance
-let devServerServiceInstance: DevServerService | null = null;
-
-/** Managed browsing must not initialize/recover legacy host processes as a side effect. */
-export function peekDevServerService() {
-  return devServerServiceInstance ?? undefined;
-}
-
-export function getDevServerService(): DevServerService {
-  if (!devServerServiceInstance) {
-    devServerServiceInstance = new DevServerService();
-  }
-  return devServerServiceInstance;
-}

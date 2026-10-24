@@ -16,10 +16,11 @@ export class AppSpecApplicationService {
     @Inject(EVENT_BUS) private readonly events: EventBus
   ) {}
 
-  create(input: AppSpecCreateRequest) {
-    return this.start(input.projectPath, 'spec_regeneration', (abortController) =>
+  create(source: AppSpecCreateRequest) {
+    const input = { ...source };
+    return this.start(input.projectPath, 'spec_regeneration', (abortController, projectPath) =>
       this.workflow.generate({
-        projectPath: input.projectPath,
+        projectPath,
         source: input.projectOverview,
         generateFeatures: input.generateFeatures,
         analyzeProject: input.analyzeProject,
@@ -29,10 +30,11 @@ export class AppSpecApplicationService {
     );
   }
 
-  generate(input: AppSpecGenerateRequest) {
-    return this.start(input.projectPath, 'spec_regeneration', (abortController) =>
+  generate(source: AppSpecGenerateRequest) {
+    const input = { ...source };
+    return this.start(input.projectPath, 'spec_regeneration', (abortController, projectPath) =>
       this.workflow.generate({
-        projectPath: input.projectPath,
+        projectPath,
         source: input.projectDefinition,
         generateFeatures: input.generateFeatures,
         analyzeProject: input.analyzeProject,
@@ -42,15 +44,16 @@ export class AppSpecApplicationService {
     );
   }
 
-  generateFeatures(input: AppSpecFeaturesRequest) {
-    return this.start(input.projectPath, 'feature_generation', (abortController) =>
-      this.workflow.generateFeatures(input.projectPath, input.maxFeatures, abortController)
+  generateFeatures(source: AppSpecFeaturesRequest) {
+    const input = { ...source };
+    return this.start(input.projectPath, 'feature_generation', (abortController, projectPath) =>
+      this.workflow.generateFeatures(projectPath, input.maxFeatures, abortController)
     );
   }
 
   sync(projectPath: string) {
-    return this.start(projectPath, 'sync', (abortController) =>
-      this.workflow.sync(projectPath, abortController)
+    return this.start(projectPath, 'sync', (abortController, ownedProject) =>
+      this.workflow.sync(ownedProject, abortController)
     );
   }
 
@@ -66,21 +69,20 @@ export class AppSpecApplicationService {
   private start(
     projectPath: string,
     type: 'spec_regeneration' | 'feature_generation' | 'sync',
-    operation: (abortController: AbortController) => Promise<void>
+    operation: (abortController: AbortController, projectPath: string) => Promise<void>
   ) {
-    const controller = this.jobs.start(projectPath, type);
-    if (!controller) {
-      return { success: false as const, error: 'Operation already running for this project' };
-    }
-    void operation(controller)
-      .catch((error) => {
+    const admitted = this.jobs.run(projectPath, type, (controller, ownedProject) =>
+      operation(controller, ownedProject).catch(() => {
         this.events.emit('spec-regeneration:event', {
           type: 'spec_regeneration_error',
-          error: error instanceof Error ? error.message : String(error),
-          projectPath,
+          error: 'Specification generation failed.',
+          projectPath: ownedProject,
         } as never);
       })
-      .finally(() => this.jobs.finish(projectPath, controller));
+    );
+    if (!admitted) {
+      return { success: false as const, error: 'Operation already running for this project' };
+    }
     return { success: true as const };
   }
 }

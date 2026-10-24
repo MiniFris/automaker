@@ -21,7 +21,6 @@ import type { EventEmitter } from '@/lib/events.js';
 import type { FeatureLoader } from '@/services/feature-loader.js';
 import { atomicWriteJson, readJsonWithRecovery } from '@automaker/utils';
 import { getFeatureDir } from '@automaker/platform';
-import { pipelineService } from '@/services/pipeline-service.js';
 
 // Mock dependencies
 vi.mock('@/lib/secure-fs.js', () => ({
@@ -44,15 +43,13 @@ vi.mock('@automaker/platform', () => ({
   getFeaturesDir: vi.fn(),
 }));
 
-vi.mock('@/services/pipeline-service.js', () => ({
-  pipelineService: {
-    getStepIdFromStatus: vi.fn((status: string) => {
-      if (status.startsWith('pipeline_')) return status.replace('pipeline_', '');
-      return null;
-    }),
-    getStep: vi.fn(),
-  },
-}));
+const pipelineService = {
+  getStepIdFromStatus: vi.fn((status: string) => {
+    if (status.startsWith('pipeline_')) return status.replace('pipeline_', '');
+    return null;
+  }),
+  getStep: vi.fn(),
+};
 
 // ============================================================================
 // UI-side parsing functions (mirrored from apps/ui/src/lib/log-parser.ts)
@@ -181,7 +178,12 @@ describe('Agent Output Summary E2E Flow', () => {
       syncFeatureToAppSpec: vi.fn(),
     } as unknown as FeatureLoader;
 
-    manager = new FeatureStateManager(mockEvents, mockFeatureLoader);
+    manager = new FeatureStateManager(
+      mockEvents,
+      mockFeatureLoader,
+      null,
+      pipelineService as never
+    );
 
     (getFeatureDir as Mock).mockReturnValue('/project/.automaker/features/e2e-feature-1');
   });

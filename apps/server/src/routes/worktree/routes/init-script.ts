@@ -13,7 +13,7 @@ import * as secureFs from '../../../lib/secure-fs.js';
 import { getErrorMessage, logError, isValidBranchName } from '../common.js';
 import { createLogger } from '@automaker/utils';
 import type { EventEmitter } from '../../../lib/events.js';
-import { forceRunInitScript } from '../../../services/init-script-service.js';
+import type { InitScriptService } from '../../../services/init-script-service.js';
 
 const logger = createLogger('InitScript');
 
@@ -198,7 +198,7 @@ export function createDeleteInitScriptHandler() {
 /**
  * POST /run-init-script - Run (or re-run) the init script for a worktree
  */
-export function createRunInitScriptHandler(events: EventEmitter) {
+export function createRunInitScriptHandler(init: InitScriptService, events: EventEmitter) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
       const { projectPath, worktreePath, branch } = req.body as {
@@ -257,7 +257,7 @@ export function createRunInitScriptHandler(events: EventEmitter) {
       logger.info(`Running init script for branch "${branch}" (forced)`);
 
       // Run the script asynchronously (non-blocking)
-      forceRunInitScript({
+      init.forceRunInitScript({
         projectPath,
         worktreePath,
         branch,

@@ -22,7 +22,7 @@ import type { TypedEventBus } from './typed-event-bus.js';
 import type { ConcurrencyManager, RunningFeature } from './concurrency-manager.js';
 import type { WorktreeResolver } from './worktree-resolver.js';
 import type { SettingsService } from './settings-service.js';
-import { pipelineService, type PipelineService } from './pipeline-service.js';
+import type { PipelineService } from './pipeline-service.js';
 import { FeatureWorkspaceService } from './execution-environment/feature-workspace.js';
 
 // Re-export callback types from execution-types.ts for backward compatibility
@@ -90,7 +90,7 @@ export class ExecutionService {
     private saveExecutionStateFn: SaveExecutionStateFn,
     private loadContextFilesFn: LoadContextFilesFn,
     private readonly providerRegistry: ProviderRegistry,
-    private readonly pipeline: PipelineService = pipelineService,
+    private readonly pipeline: PipelineService,
     private readonly directoryValidator: (cwd: string) => void = validateWorkingDirectory
   ) {}
 

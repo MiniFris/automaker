@@ -5,7 +5,7 @@
 import type { Request, Response } from 'express';
 import type { FeatureLoader } from '../../../services/feature-loader.js';
 import type { FeatureImportResult, Feature, FeatureExport } from '@automaker/types';
-import { getFeatureExportService } from '../../../services/feature-export-service.js';
+import { FeatureExportService } from '../../../services/feature-export-service.js';
 import { getErrorMessage, logError } from '../common.js';
 
 interface ImportRequest {
@@ -34,7 +34,7 @@ interface ConflictInfo {
 }
 
 export function createImportHandler(_featureLoader: FeatureLoader) {
-  const exportService = getFeatureExportService();
+  const exportService = new FeatureExportService(_featureLoader);
 
   return async (req: Request, res: Response): Promise<void> => {
     try {
@@ -123,7 +123,7 @@ export function createImportHandler(_featureLoader: FeatureLoader) {
  * Create handler for checking conflicts before import
  */
 export function createConflictCheckHandler(featureLoader: FeatureLoader) {
-  const exportService = getFeatureExportService();
+  const exportService = new FeatureExportService(featureLoader);
 
   return async (req: Request, res: Response): Promise<void> => {
     try {

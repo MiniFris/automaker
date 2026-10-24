@@ -29,7 +29,7 @@ import type { EventEmitter } from '../lib/events.js';
 import type { AutoModeEventType } from './typed-event-bus.js';
 import type { NotificationService } from './notification-service.js';
 import { FeatureLoader } from './feature-loader.js';
-import { pipelineService, type PipelineService } from './pipeline-service.js';
+import type { PipelineService } from './pipeline-service.js';
 
 const logger = createLogger('FeatureStateManager');
 
@@ -82,7 +82,7 @@ export class FeatureStateManager {
     events: EventEmitter,
     featureLoader: FeatureLoader,
     notificationService: NotificationService | null = null,
-    private readonly pipeline: PipelineService = pipelineService
+    private readonly pipeline: PipelineService
   ) {
     this.events = events;
     this.featureLoader = featureLoader;

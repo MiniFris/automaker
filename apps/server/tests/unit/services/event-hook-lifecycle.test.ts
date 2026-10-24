@@ -1,3 +1,4 @@
+import { NtfyService } from '../../../src/services/ntfy-service.js';
 import { afterEach, expect, it, vi } from 'vitest';
 import { EventHookService } from '../../../src/services/event-hook-service.js';
 import { LocalExecutionEnvironment } from '../../../src/services/execution-environment/local.js';
@@ -20,7 +21,7 @@ function fixture(hooks: unknown[] = []) {
   const settings = { getGlobalSettings: vi.fn().mockResolvedValue({ eventHooks: hooks }) };
   const history = { storeEvent: vi.fn().mockResolvedValue({ id: 'history' }) };
   const features = { get: vi.fn().mockResolvedValue({ title: 'Owned feature' }) };
-  const service = new EventHookService();
+  const service = new EventHookService(new NtfyService());
   service.initialize(events, settings as never, history as never, features as never);
   services.push(service);
   return { service, events, settings, history, features };

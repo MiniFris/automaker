@@ -1,3 +1,4 @@
+import { PipelineService } from '../../../src/services/pipeline-service.js';
 import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
 import {
   createTestAgentState,
@@ -668,7 +669,8 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       vi.fn(async () => ({ files: [], formattedPrompt: '' })),
       vi.fn(() => 'Feature implementation'),
       vi.fn(),
-      routed
+      routed,
+      new PipelineService()
     );
     await pipeline.executePipeline({
       run,
@@ -857,7 +859,8 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       vi.fn(),
       vi.fn(),
       vi.fn(),
-      vi.fn()
+      vi.fn(),
+      new PipelineService()
     );
     const context = {
       projectPath: root,

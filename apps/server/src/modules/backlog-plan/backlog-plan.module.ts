@@ -4,17 +4,20 @@ import { BacklogPlanApplicationService } from './backlog-plan-application.servic
 import { BacklogPlanJobRegistry } from './backlog-plan-job.registry.js';
 import { BacklogPlanController } from './backlog-plan.controller.js';
 import { BACKLOG_PLAN_STORE, BACKLOG_PLAN_WORKFLOW } from './backlog-plan.ports.js';
-import { LegacyBacklogPlanAdapter } from './legacy-backlog-plan.adapter.js';
+import { NativeBacklogPlanWorkflow } from './native-backlog-plan.workflow.js';
+import { AppSpecModule } from '../app-spec/app-spec.module.js';
+import { PlanningWorkflowContext } from '../app-spec/planning-workflow.context.js';
 
 @Module({
-  imports: [FeaturesModule],
+  imports: [FeaturesModule, AppSpecModule],
   controllers: [BacklogPlanController],
   providers: [
     BacklogPlanApplicationService,
     BacklogPlanJobRegistry,
-    LegacyBacklogPlanAdapter,
-    { provide: BACKLOG_PLAN_WORKFLOW, useExisting: LegacyBacklogPlanAdapter },
-    { provide: BACKLOG_PLAN_STORE, useExisting: LegacyBacklogPlanAdapter },
+    NativeBacklogPlanWorkflow,
+    { provide: BACKLOG_PLAN_WORKFLOW, useExisting: NativeBacklogPlanWorkflow },
+    { provide: BACKLOG_PLAN_STORE, useExisting: PlanningWorkflowContext },
   ],
+  exports: [BacklogPlanJobRegistry],
 })
 export class BacklogPlanModule {}

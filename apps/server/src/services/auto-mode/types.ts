@@ -69,7 +69,7 @@ export interface FacadeOptions {
   /** Central policy for provider-independent tool authorization. */
   toolPolicy?: ToolPolicyService;
   /** Native composition supplies its application-owned configuration service. */
-  pipeline?: PipelineService;
+  pipeline: PipelineService;
   /** Host-local validation is application-owned; bound remote cwd is not a host path. */
   validateWorkingDirectory?: (cwd: string) => void;
 }

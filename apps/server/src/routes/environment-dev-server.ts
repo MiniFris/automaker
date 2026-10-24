@@ -4,11 +4,15 @@ import type { EventEmitter } from '../lib/events.js';
 import { ProjectGitService } from '../services/execution-environment/project-git.js';
 import { getManagedDevServerService } from '../services/execution-environment/dev-server.js';
 import { ExecutionEnvironmentError } from '../services/execution-environment/runtime.js';
-import { peekDevServerService } from '../services/dev-server-service.js';
+import type { DevServerService } from '../services/dev-server-service.js';
 import { createStopDevHandler } from './worktree/routes/stop-dev.js';
 import { createGetDevServerLogsHandler } from './worktree/routes/dev-server-logs.js';
 
-export function environmentDevDispatcher(settings: SettingsService, events: EventEmitter) {
+export function environmentDevDispatcher(
+  settings: SettingsService,
+  events: EventEmitter,
+  local: DevServerService
+) {
   const service = getManagedDevServerService(settings, events),
     git = new ProjectGitService(settings);
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -25,9 +29,9 @@ export function environmentDevDispatcher(settings: SettingsService, events: Even
       }
       if (action === 'list-dev-servers') {
         const managed = service.list();
-        const legacy = (peekDevServerService()?.listDevServers().result.servers ?? []).filter(
-          (s) => !managed.some((m) => m.worktreePath === s.worktreePath)
-        );
+        const legacy = local
+          .listDevServers()
+          .result.servers.filter((s) => !managed.some((m) => m.worktreePath === s.worktreePath));
         res.json({ success: true, result: { servers: [...legacy, ...managed] } });
         return;
       }
@@ -61,10 +65,10 @@ export function environmentDevDispatcher(settings: SettingsService, events: Even
       if (typeof alias !== 'string')
         throw new ExecutionEnvironmentError('DEV_REQUEST_INVALID', 'worktreePath is required.');
       const previous = service.find(alias),
-        legacy = peekDevServerService()?.isRunning(alias);
+        legacy = local.isRunning(alias);
       if (action === 'dev-server-logs') {
         if (legacy && (!previous || previous.finished)) {
-          await createGetDevServerLogsHandler()(req, res);
+          await createGetDevServerLogsHandler(local)(req, res);
           return;
         }
         if (previous) {
@@ -74,7 +78,7 @@ export function environmentDevDispatcher(settings: SettingsService, events: Even
       }
       if (action === 'stop-dev') {
         if (legacy && (!previous || previous.finished)) {
-          await createStopDevHandler()(req, res);
+          await createStopDevHandler(local)(req, res);
           return;
         }
         if (previous)

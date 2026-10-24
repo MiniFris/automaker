@@ -1,3 +1,4 @@
+import { PipelineService } from '../../src/services/pipeline-service.js';
 import { createTestProviderRegistry } from '../helpers/provider-registry.js';
 import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
@@ -13,6 +14,7 @@ describe('persisted plan recovery', () => {
     const project = await mkdtemp(path.join(os.tmpdir(), 'automaker-plan-recovery-'));
     const loader = new FeatureLoader();
     const facade = AutoModeServiceFacade.create(project, {
+      pipeline: new PipelineService(),
       providerRegistry: createTestProviderRegistry(new SettingsService(path.join(project, 'data'))),
       events: createEventEmitter(),
       featureLoader: loader,

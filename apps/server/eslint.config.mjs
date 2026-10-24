@@ -102,6 +102,23 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    files: ['src/core/**/*.ts', 'src/modules/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/routes/**', 'routes/**'],
+              message:
+                'Native core/modules depend on domain ports, not legacy route implementations.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['src/**/*.controller.ts'],
     rules: {
       'no-restricted-imports': [

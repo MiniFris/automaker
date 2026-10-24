@@ -5,14 +5,13 @@
  * (defaults to Sonnet for balanced speed and quality).
  */
 
-import * as secureFs from '../../lib/secure-fs.js';
+import type { PlanningRunContext } from './planning-workflow.context.js';
 import type { EventEmitter } from '../../lib/events.js';
 import { createLogger } from '@automaker/utils';
 import { DEFAULT_PHASE_MODELS, supportsStructuredOutput, isCodexModel } from '@automaker/types';
 import { resolvePhaseModel } from '@automaker/model-resolver';
-import { streamingQuery } from '../../providers/simple-query-service.js';
 import type { ProviderRegistry } from '../../modules/providers/provider-registry.service.js';
-import { parseAndCreateFeatures } from './parse-and-create-features.js';
+import { parseAndCreateFeatures } from './parse-and-create-features.workflow.js';
 import { extractJsonWithArray } from '../../lib/json-extractor.js';
 import { getAppSpecPath } from '@automaker/platform';
 import type { SettingsService } from '../../services/settings-service.js';
@@ -22,7 +21,6 @@ import {
   getPromptCustomization,
   getPhaseModelWithOverrides,
 } from '../../lib/settings-helpers.js';
-import { FeatureLoader } from '../../services/feature-loader.js';
 
 const logger = createLogger('SpecRegeneration');
 
@@ -93,8 +91,12 @@ export async function generateFeaturesFromSpec(
   maxFeatures: number | undefined,
   settingsService: SettingsService | undefined,
   notificationService: NotificationService | undefined,
-  providerRegistry: ProviderRegistry
+  providerRegistry: ProviderRegistry,
+  context: PlanningRunContext
 ): Promise<void> {
+  context.check();
+  const secureFs = context.filesystem;
+  const streamingQuery = context.query;
   const featureCount = maxFeatures ?? DEFAULT_MAX_FEATURES;
   logger.debug('========== generateFeaturesFromSpec() started ==========');
   logger.debug('projectPath:', projectPath);
@@ -112,6 +114,7 @@ export async function generateFeaturesFromSpec(
     logger.info(`Spec preview (first 500 chars): ${spec.substring(0, 500)}`);
     logger.info(`Spec preview (last 500 chars): ${spec.substring(spec.length - 500)}`);
   } catch (readError) {
+    context.check();
     logger.error('❌ Failed to read spec file:', readError);
     events.emit('spec-regeneration:event', {
       type: 'spec_regeneration_error',
@@ -125,7 +128,7 @@ export async function generateFeaturesFromSpec(
   const prompts = await getPromptCustomization(settingsService, '[FeatureGeneration]');
 
   // Load existing features to prevent duplicates
-  const featureLoader = new FeatureLoader();
+  const featureLoader = context.features;
   const existingFeatures = await featureLoader.getAll(projectPath);
 
   logger.info(`Found ${existingFeatures.length} existing features to exclude from generation`);
@@ -337,7 +340,8 @@ Your entire response should be valid JSON starting with { and ending with }. No 
     contentForParsing,
     events,
     settingsService,
-    notificationService
+    notificationService,
+    context
   );
 
   logger.debug('========== generateFeaturesFromSpec() completed ==========');

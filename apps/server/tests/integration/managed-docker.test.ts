@@ -1,3 +1,5 @@
+import { PipelineService } from '../../src/services/pipeline-service.js';
+import { NtfyService } from '../../src/services/ntfy-service.js';
 import { createTestProviderRegistry } from '../helpers/provider-registry.js';
 import {
   createTestAgentState,
@@ -623,6 +625,7 @@ process.stdout.write(JSON.stringify({type:'result',subtype:'success'})+'\\n');
     const events = createEventEmitter();
     const service = new FeatureWorkspaceService(settings);
     const facade = AutoModeServiceFacade.create(featureProject, {
+      pipeline: new PipelineService(),
       providerRegistry: createTestProviderRegistry(settings),
       events,
       settingsService: settings,
@@ -633,7 +636,7 @@ process.stdout.write(JSON.stringify({type:'result',subtype:'success'})+'\\n');
       .mockRejectedValue(new Error('controller worktree lookup forbidden'));
     vi.stubEnv('AUTOMAKER_MOCK_AGENT', 'false');
     vi.stubEnv('AUTOMAKER_API_KEY', 'controller-only');
-    const hooks = new EventHookService();
+    const hooks = new EventHookService(new NtfyService());
     hooks.initialize(new ApplicationEventBusAdapter(events), settings);
     try {
       await facade.executeFeature(feature.id, true, false);
@@ -673,7 +676,8 @@ process.stdout.write(JSON.stringify({type:'result',subtype:'success'})+'\\n');
         vi.fn(),
         vi.fn(),
         vi.fn(),
-        vi.fn()
+        vi.fn(),
+        new PipelineService()
       );
       expect(
         await pipeline.executeTestStep(

@@ -1,8 +1,8 @@
 import path from 'node:path';
 import { Inject, Injectable } from '@nestjs/common';
 
-import { getAllRunningGenerations } from '../../routes/app-spec/common.js';
-import { getBacklogPlanStatus, getRunningDetails } from '../../routes/backlog-plan/common.js';
+import { AppSpecJobRegistry } from '../app-spec/app-spec-job.registry.js';
+import { BacklogPlanJobRegistry } from '../backlog-plan/backlog-plan-job.registry.js';
 import { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
 import { ChatExecutionReadModel } from './chat-execution-read-model.js';
 
@@ -10,13 +10,15 @@ import { ChatExecutionReadModel } from './chat-execution-read-model.js';
 export class RunningAgentsService {
   constructor(
     @Inject(AutoModeServiceCompat) private readonly autoMode: AutoModeServiceCompat,
-    @Inject(ChatExecutionReadModel) private readonly chats: ChatExecutionReadModel
+    @Inject(ChatExecutionReadModel) private readonly chats: ChatExecutionReadModel,
+    @Inject(AppSpecJobRegistry) private readonly specs: AppSpecJobRegistry,
+    @Inject(BacklogPlanJobRegistry) private readonly backlog: BacklogPlanJobRegistry
   ) {}
 
   async list(): Promise<Record<string, unknown>> {
     const runningAgents = [...(await this.autoMode.getRunningAgents())];
-    const backlog = getRunningDetails();
-    if (getBacklogPlanStatus().isRunning && backlog) {
+    const backlog = this.backlog.snapshot();
+    if (backlog) {
       runningAgents.push({
         featureId: `backlog-plan:${backlog.projectPath}`,
         projectPath: backlog.projectPath,
@@ -26,7 +28,7 @@ export class RunningAgentsService {
         description: backlog.prompt,
       });
     }
-    for (const generation of getAllRunningGenerations()) {
+    for (const generation of this.specs.snapshot()) {
       const copy =
         generation.type === 'feature_generation'
           ? ['Generating features from spec', 'Creating features from the project specification']

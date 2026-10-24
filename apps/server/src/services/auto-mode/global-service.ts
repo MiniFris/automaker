@@ -21,7 +21,7 @@ import { FeatureLoader } from '../feature-loader.js';
 import type { SettingsService } from '../settings-service.js';
 import type { NotificationService } from '../notification-service.js';
 import type { SharedServices, AutoModeStatus, RunningAgentInfo } from './types.js';
-import { pipelineService, type PipelineService } from '../pipeline-service.js';
+import type { PipelineService } from '../pipeline-service.js';
 import { FeatureRunCoordinator } from '../../modules/orchestration/feature-run-coordinator.service.js';
 
 const logger = createLogger('GlobalAutoModeService');
@@ -44,7 +44,7 @@ export class GlobalAutoModeService {
     settingsService: SettingsService | null,
     featureLoader: FeatureLoader = new FeatureLoader(),
     notificationService: NotificationService | null = null,
-    pipeline: PipelineService = pipelineService,
+    pipeline: PipelineService,
     coordinator?: FeatureRunCoordinator
   ) {
     this.featureLoader = featureLoader;

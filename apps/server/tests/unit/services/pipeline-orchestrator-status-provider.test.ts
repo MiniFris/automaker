@@ -33,14 +33,12 @@ import {
   filterClaudeMdFromContext,
 } from '../../../src/lib/settings-helpers.js';
 
-vi.mock('../../../src/services/pipeline-service.js', () => ({
-  pipelineService: {
-    isPipelineStatus: vi.fn(),
-    getStepIdFromStatus: vi.fn(),
-    getPipelineConfig: vi.fn(),
-    getNextStatus: vi.fn(),
-  },
-}));
+const pipelineService = {
+  isPipelineStatus: vi.fn(),
+  getStepIdFromStatus: vi.fn(),
+  getPipelineConfig: vi.fn(),
+  getNextStatus: vi.fn(),
+};
 
 vi.mock('../../../src/services/merge-service.js', () => ({
   performMerge: vi.fn().mockResolvedValue({ success: true }),
@@ -207,7 +205,8 @@ describe('PipelineOrchestrator - status and providerId coexistence', () => {
       vi.fn().mockResolvedValue({ contextPrompt: 'test context' }),
       vi.fn().mockReturnValue('Feature prompt content'),
       vi.fn().mockResolvedValue(undefined),
-      mockRunAgentFn
+      mockRunAgentFn,
+      pipelineService as never
     );
   });
 

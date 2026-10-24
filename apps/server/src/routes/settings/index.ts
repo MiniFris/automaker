@@ -1,3 +1,4 @@
+import type { TerminalService } from '../../services/terminal-service.js';
 /**
  * Settings routes - HTTP API for persistent file-based settings
  *
@@ -48,7 +49,10 @@ import { createModelTimeoutSettingsRoutes } from './model-timeouts.js';
  * @param settingsService - Instance of SettingsService for file I/O
  * @returns Express Router configured with all settings endpoints
  */
-export function createSettingsRoutes(settingsService: SettingsService): Router {
+export function createSettingsRoutes(
+  settingsService: SettingsService,
+  terminal: TerminalService
+): Router {
   const router = Router();
   router.use('/model-timeouts', createModelTimeoutSettingsRoutes(settingsService));
   router.use('/execution-environments', createExecutionEnvironmentSettingsRoutes(settingsService));
@@ -59,7 +63,7 @@ export function createSettingsRoutes(settingsService: SettingsService): Router {
 
   // Global settings
   router.get('/global', createGetGlobalHandler(settingsService));
-  router.put('/global', createUpdateGlobalHandler(settingsService));
+  router.put('/global', createUpdateGlobalHandler(settingsService, terminal));
 
   // Credentials (separate for security)
   router.get('/credentials', createGetCredentialsHandler(settingsService));

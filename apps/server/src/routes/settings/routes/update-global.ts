@@ -14,7 +14,7 @@ import type { GlobalSettings } from '../../../types/settings.js';
 import { getErrorMessage, logError, logger } from '../common.js';
 import { setLogLevel, LogLevel } from '@automaker/utils';
 import { setRequestLoggingEnabled } from '../../../lib/request-logging-state.js';
-import { getTerminalService } from '../../../services/terminal-service.js';
+import type { TerminalService } from '../../../services/terminal-service.js';
 
 /**
  * Map server log level string to LogLevel enum
@@ -32,7 +32,10 @@ const LOG_LEVEL_MAP: Record<string, LogLevel> = {
  * @param settingsService - Instance of SettingsService for file I/O
  * @returns Express request handler
  */
-export function createUpdateGlobalHandler(settingsService: SettingsService) {
+export function createUpdateGlobalHandler(
+  settingsService: SettingsService,
+  terminalService: TerminalService
+) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
       const updates = req.body as Partial<GlobalSettings>;
@@ -69,7 +72,6 @@ export function createUpdateGlobalHandler(settingsService: SettingsService) {
 
       // Handle theme change - regenerate terminal RC files for all projects
       if ('theme' in updates && updates.theme && updates.theme !== oldTheme) {
-        const terminalService = getTerminalService(settingsService);
         const newTheme = updates.theme;
 
         logger.info(

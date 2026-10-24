@@ -30,7 +30,7 @@ describe('BacklogPlanApplicationService', () => {
     const service = new BacklogPlanApplicationService(
       { generate: vi.fn() },
       store,
-      new BacklogPlanJobRegistry(),
+      new BacklogPlanJobRegistry({ validateLocalPath: (value: string) => value } as never),
       repository,
       new ProjectFeatureSerializer(),
       new FeatureTransitionService(),
@@ -60,13 +60,13 @@ describe('BacklogPlanApplicationService', () => {
     expect(store.clear).toHaveBeenCalledWith('/project');
   });
 
-  it('keeps generation as a proposal until the separate apply operation', () => {
+  it('keeps generation as a proposal until the separate apply operation', async () => {
     const workflow = { generate: vi.fn().mockReturnValue(new Promise(() => {})) };
     const repository = {} as FeatureRepository;
     const service = new BacklogPlanApplicationService(
       workflow,
       { load: vi.fn(), clear: vi.fn() },
-      new BacklogPlanJobRegistry(),
+      new BacklogPlanJobRegistry({ validateLocalPath: (value: string) => value } as never),
       repository,
       new ProjectFeatureSerializer(),
       new FeatureTransitionService(),
@@ -76,6 +76,7 @@ describe('BacklogPlanApplicationService', () => {
     expect(service.generate({ projectPath: '/project', prompt: 'Change backlog' })).toEqual({
       success: true,
     });
+    await Promise.resolve();
     expect(workflow.generate).toHaveBeenCalledOnce();
   });
 });

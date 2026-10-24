@@ -64,8 +64,8 @@ describe('DevServerService Event Types', () => {
   });
 
   it('should emit all required event types during dev server lifecycle', async () => {
-    const { getDevServerService } = await import('@/services/dev-server-service.js');
-    const service = getDevServerService();
+    const { DevServerService } = await import('@/services/dev-server-service.js');
+    const service = new DevServerService();
     await service.initialize(testDataDir, mockEmitter as any);
 
     const mockProcess = createMockProcess();

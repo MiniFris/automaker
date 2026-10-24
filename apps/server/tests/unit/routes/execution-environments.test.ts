@@ -1,3 +1,4 @@
+import { TerminalService } from '../../../src/services/terminal-service.js';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -69,7 +70,7 @@ describe('execution environment settings API', () => {
       '/environments',
       createExecutionEnvironmentSettingsRoutes(settings, runner, docker, ssh)
     );
-    app.use('/settings', createSettingsRoutes(settings));
+    app.use('/settings', createSettingsRoutes(settings, new TerminalService(settings)));
     server = createServer(app);
     server.listen(0, '127.0.0.1');
     await once(server, 'listening');

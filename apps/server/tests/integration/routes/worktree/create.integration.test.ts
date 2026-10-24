@@ -1,3 +1,5 @@
+import { InitScriptService } from '../../../../src/services/init-script-service.js';
+import { createEventEmitter } from '../../../../src/lib/events.js';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { createCreateHandler } from '@/routes/worktree/routes/create.js';
 import { AUTOMAKER_INITIAL_COMMIT_MESSAGE } from '@/routes/worktree/common.js';
@@ -31,7 +33,7 @@ describe('worktree create route - repositories without commits', () => {
 
   it('creates an initial commit before adding a worktree when HEAD is missing', async () => {
     await initRepoWithoutCommit();
-    const handler = createCreateHandler();
+    const handler = createCreateHandler(new InitScriptService(), createEventEmitter());
 
     const json = vi.fn();
     const status = vi.fn().mockReturnThis();

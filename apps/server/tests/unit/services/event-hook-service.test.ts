@@ -1,3 +1,4 @@
+import { NtfyService } from '../../../src/services/ntfy-service.js';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { EventHookService } from '../../../src/services/event-hook-service.js';
 import type { EventEmitter, EventCallback, EventType } from '../../../src/lib/events.js';
@@ -82,7 +83,7 @@ describe('EventHookService', () => {
   let mockFetch: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    service = new EventHookService();
+    service = new EventHookService(new NtfyService());
     mockEmitter = createMockEventEmitter();
     mockSettingsService = createMockSettingsService();
     mockEventHistoryService = createMockEventHistoryService();

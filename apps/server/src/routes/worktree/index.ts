@@ -77,8 +77,10 @@ import { environmentTestDispatcher } from '../environment-tests.js';
 import { environmentDevDispatcher } from '../environment-dev-server.js';
 
 import type { ProviderRegistry } from '../../modules/providers/provider-registry.service.js';
+import type { WorktreeRouteServices } from './route-services.js';
 
 export function createWorktreeRoutes(
+  services: WorktreeRouteServices,
   providers: ProviderRegistry,
   events: EventEmitter,
   settingsService?: SettingsService,
@@ -87,8 +89,8 @@ export function createWorktreeRoutes(
 ): Router {
   const router = Router();
   if (settingsService) {
-    router.use(environmentDevDispatcher(settingsService, events));
-    router.use(environmentTestDispatcher(settingsService, events));
+    router.use(environmentDevDispatcher(settingsService, events, services.dev));
+    router.use(environmentTestDispatcher(settingsService, events, services.tests));
     router.use(environmentGitDispatcher(settingsService, 'worktree', isProjectBusy));
   }
 
@@ -106,7 +108,7 @@ export function createWorktreeRoutes(
   router.post(
     '/create',
     validatePathParams('projectPath'),
-    createCreateHandler(events, settingsService)
+    createCreateHandler(services.init, events, settingsService)
   );
   router.post(
     '/delete',
@@ -206,24 +208,28 @@ export function createWorktreeRoutes(
   router.post(
     '/start-dev',
     validatePathParams('projectPath', 'worktreePath'),
-    createStartDevHandler(settingsService)
+    createStartDevHandler(services.dev, settingsService)
   );
-  router.post('/stop-dev', createStopDevHandler());
-  router.post('/list-dev-servers', createListDevServersHandler());
+  router.post('/stop-dev', createStopDevHandler(services.dev));
+  router.post('/list-dev-servers', createListDevServersHandler(services.dev));
   router.get(
     '/dev-server-logs',
     validatePathParams('worktreePath'),
-    createGetDevServerLogsHandler()
+    createGetDevServerLogsHandler(services.dev)
   );
 
   // Test runner routes
   router.post(
     '/start-tests',
     validatePathParams('worktreePath', 'projectPath?'),
-    createStartTestsHandler(settingsService)
+    createStartTestsHandler(services.tests, settingsService)
   );
-  router.post('/stop-tests', createStopTestsHandler());
-  router.get('/test-logs', validatePathParams('worktreePath?'), createGetTestLogsHandler());
+  router.post('/stop-tests', createStopTestsHandler(services.tests));
+  router.get(
+    '/test-logs',
+    validatePathParams('worktreePath?'),
+    createGetTestLogsHandler(services.tests)
+  );
 
   // Init script routes
   router.get('/init-script', createGetInitScriptHandler());
@@ -232,7 +238,7 @@ export function createWorktreeRoutes(
   router.post(
     '/run-init-script',
     validatePathParams('projectPath', 'worktreePath'),
-    createRunInitScriptHandler(events)
+    createRunInitScriptHandler(services.init, events)
   );
 
   // Discard changes route

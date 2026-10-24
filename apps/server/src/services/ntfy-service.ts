@@ -281,6 +281,3 @@ export class NtfyService {
     });
   }
 }
-
-// Singleton instance
-export const ntfyService = new NtfyService();
