@@ -764,3 +764,37 @@ view/delete events, invalid input, static failures and checked failed close.
 This is not a cross-process/multi-writer lease, canonical filesystem alias policy,
 transactional storage redesign, complete result/capability validation, remote/live
 provider acceptance or completion of the remaining GitHub/stage 7–11 work.
+
+## ADR-037: native bounded read-only GitHub discovery
+
+GithubDiscoveryService owns remote/issues/PR requests behind native GithubReadPort.
+GithubCliReadAdapter is the only argv/GraphQL builder for these operations;
+NodeGithubCommandRuntime owns spawned CLI resources. Neither application/controller
+accepts arbitrary commands or queries, and the read port has no mutation method.
+Native class/abstract-port bindings share one concrete per-application owner.
+The two old list factories are removed; remaining review/mutation helpers are not
+silently routed into this read-only interface.
+
+Commands use shell:false, structured argv and JSON stdin. Linked-PR queries bind
+owner/repo/issue variables and batch 20 issues. Remote metadata is checked before
+argv construction; URLs lose credentials/query/fragment and dotted repository
+names remain intact. Host configuration comes from HOST_ENVIRONMENT, not module
+import-time process.env. GH_REPO is suppressed for explicit project targets;
+noninteractive flags and Windows PATH/case normalization preserve scoped auth.
+
+Concurrency, input/output, command/operation time and cleanup are bounded. Linux
+signals only the original detached group and observes live members/threads after
+parent exit. Unconfirmed cleanup retains PID identity, blocks new commands and
+fails checked native close. Optional linked discovery cannot swallow resource
+errors or claim empty/complete metadata when the bounded timeline is incomplete.
+Errors/rate limits are static, without raw stdout/stderr; no automatic retries or
+auth/setup/install mutations are issued. Successful paths/body fields and API v13
+remain, with explicit HTTP 200 restoring original Express semantics.
+
+Real owned CLI fixtures/native HTTP contracts prove argv/stdin, isolated native
+owners, initialization without probes, sensitive-output redaction, hostile
+metadata, cancellation, child/group drain and an orphan after parent exit. Unit
+fixtures additionally control observation deadlines and construct Windows env.
+This does not prove real Windows/macOS process trees, deliberate group escape,
+complete linked pagination/unknown UI, remaining review/mutation ports, GitHub live
+acceptance, all worktree helpers or completion of stage 7–11 requirements.

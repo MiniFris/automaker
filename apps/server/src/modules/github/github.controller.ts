@@ -4,6 +4,8 @@ import { AllowedPathFields, AllowedPathGuard } from '../../core/security/index.j
 import { GithubHandlersService, type GithubHandlerName } from './github-handlers.service.js';
 import { IssueValidationService } from './issue-validation.service.js';
 import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
+import { GithubDiscoveryService } from './github-discovery.service.js';
+import { GithubProjectSchema, type GithubProjectRequest } from './github-discovery.schemas.js';
 import {
   IssueValidationRequestSchema,
   IssueValidationStatusSchema,
@@ -19,21 +21,28 @@ import {
 export class GithubController {
   constructor(
     @Inject(GithubHandlersService) private readonly handlers: GithubHandlersService,
-    @Inject(IssueValidationService) private readonly issueValidations: IssueValidationService
+    @Inject(IssueValidationService) private readonly issueValidations: IssueValidationService,
+    @Inject(GithubDiscoveryService) private readonly discovery: GithubDiscoveryService
   ) {}
 
   private run(name: GithubHandlerName, request: Request, response: Response) {
     return this.handlers.run(name, request, response);
   }
 
-  @Post('check-remote') checkRemote(@Req() q: Request, @Res() s: Response) {
-    return this.run('checkRemote', q, s);
+  @Post('check-remote')
+  @HttpCode(200)
+  checkRemote(@Body(new ZodValidationPipe(GithubProjectSchema)) input: GithubProjectRequest) {
+    return this.discovery.remote(input.projectPath);
   }
-  @Post('issues') issues(@Req() q: Request, @Res() s: Response) {
-    return this.run('issues', q, s);
+  @Post('issues')
+  @HttpCode(200)
+  issues(@Body(new ZodValidationPipe(GithubProjectSchema)) input: GithubProjectRequest) {
+    return this.discovery.issues(input.projectPath);
   }
-  @Post('prs') prs(@Req() q: Request, @Res() s: Response) {
-    return this.run('prs', q, s);
+  @Post('prs')
+  @HttpCode(200)
+  prs(@Body(new ZodValidationPipe(GithubProjectSchema)) input: GithubProjectRequest) {
+    return this.discovery.prs(input.projectPath);
   }
   @Post('issue-comments') issueComments(@Req() q: Request, @Res() s: Response) {
     return this.run('issueComments', q, s);

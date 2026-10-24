@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 614,
-    "internalEdges": 2002,
+    "files": 617,
+    "internalEdges": 2010,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -18,11 +18,11 @@
     "legacy -> services": 6,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 133,
+    "modules -> core": 138,
     "modules -> lib": 29,
-    "modules -> modules": 309,
+    "modules -> modules": 319,
     "modules -> providers": 29,
-    "modules -> routes": 29,
+    "modules -> routes": 26,
     "modules -> services": 157,
     "modules -> types": 2,
     "providers -> core": 1,
@@ -40,7 +40,7 @@
     "routes -> middleware": 8,
     "routes -> modules": 7,
     "routes -> providers": 11,
-    "routes -> routes": 340,
+    "routes -> routes": 336,
     "routes -> services": 188,
     "routes -> types": 2,
     "services -> core": 15,
@@ -157,6 +157,7 @@
       "apps/server/src/lib/cli-detection.ts",
       "apps/server/src/modules/event-history/event-replay.service.ts",
       "apps/server/src/modules/files/local-download.service.ts",
+      "apps/server/src/modules/github/github-command.runtime.ts",
       "apps/server/src/modules/templates/template-command.runner.ts",
       "apps/server/src/providers/cli-provider.ts",
       "apps/server/src/providers/copilot-provider.ts",
@@ -170,7 +171,6 @@
       "apps/server/src/routes/git/routes/file-diff.ts",
       "apps/server/src/routes/github/routes/common.ts",
       "apps/server/src/routes/github/routes/list-comments.ts",
-      "apps/server/src/routes/github/routes/list-issues.ts",
       "apps/server/src/routes/worktree/common.ts",
       "apps/server/src/routes/worktree/routes/add-remote.ts",
       "apps/server/src/routes/worktree/routes/commit.ts",
@@ -220,6 +220,8 @@
       "apps/server/src/lib/error-handler.ts",
       "apps/server/src/lib/git.ts",
       "apps/server/src/modules/event-history/event-replay.service.ts",
+      "apps/server/src/modules/github/github-command.runtime.ts",
+      "apps/server/src/modules/github/github-discovery.service.ts",
       "apps/server/src/modules/github/issue-validation-registry.service.ts",
       "apps/server/src/modules/providers/claude-verification.service.ts",
       "apps/server/src/modules/providers/codex-verification.service.ts",
@@ -290,39 +292,39 @@
     "@automaker/platform": 74,
     "@automaker/prompts": 3,
     "@automaker/types": 177,
-    "@automaker/utils": 168,
+    "@automaker/utils": 167,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 179,
+    "@nestjs/common": 182,
     "@nestjs/core": 8,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
     "ajv": 4,
-    "child_process": 39,
+    "child_process": 38,
     "cookie": 1,
     "cookie-parser": 1,
     "cors": 1,
     "crypto": 4,
     "dotenv": 1,
     "events": 1,
-    "express": 217,
+    "express": 215,
     "fs": 11,
     "fs/promises": 13,
     "net": 1,
     "node-pty": 2,
     "node:async_hooks": 1,
-    "node:child_process": 13,
+    "node:child_process": 14,
     "node:crypto": 30,
     "node:fs": 9,
     "node:fs/promises": 18,
     "node:http": 7,
     "node:net": 2,
-    "node:os": 11,
-    "node:path": 48,
-    "node:perf_hooks": 8,
+    "node:os": 12,
+    "node:path": 49,
+    "node:perf_hooks": 10,
     "node:stream": 5,
     "node:stream/web": 2,
     "node:string_decoder": 4,
@@ -338,7 +340,7 @@
     "vitest": 1,
     "ws": 1,
     "yaml": 1,
-    "zod": 18
+    "zod": 19
   },
   "edges": [
     {
@@ -2018,8 +2020,40 @@
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
-      "source": "apps/server/src/modules/github/github-handlers.service.ts",
-      "target": "apps/server/src/routes/github/routes/check-github-remote.ts"
+      "source": "apps/server/src/modules/github/github-cli-read.adapter.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github-cli-read.adapter.ts",
+      "target": "apps/server/src/modules/github/github-command.runtime.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github-cli-read.adapter.ts",
+      "target": "apps/server/src/modules/github/github-read.port.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github-command.runtime.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github-command.runtime.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github-command.runtime.ts",
+      "target": "apps/server/src/core/platform/linux-process-group.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github-discovery.service.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github-discovery.service.ts",
+      "target": "apps/server/src/modules/github/github-command.runtime.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github-discovery.service.ts",
+      "target": "apps/server/src/modules/github/github-read.port.ts"
     },
     {
       "source": "apps/server/src/modules/github/github-handlers.service.ts",
@@ -2027,15 +2061,7 @@
     },
     {
       "source": "apps/server/src/modules/github/github-handlers.service.ts",
-      "target": "apps/server/src/routes/github/routes/list-issues.ts"
-    },
-    {
-      "source": "apps/server/src/modules/github/github-handlers.service.ts",
       "target": "apps/server/src/routes/github/routes/list-pr-review-comments.ts"
-    },
-    {
-      "source": "apps/server/src/modules/github/github-handlers.service.ts",
-      "target": "apps/server/src/routes/github/routes/list-prs.ts"
     },
     {
       "source": "apps/server/src/modules/github/github-handlers.service.ts",
@@ -2051,6 +2077,14 @@
     },
     {
       "source": "apps/server/src/modules/github/github.controller.ts",
+      "target": "apps/server/src/modules/github/github-discovery.schemas.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github.controller.ts",
+      "target": "apps/server/src/modules/github/github-discovery.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github.controller.ts",
       "target": "apps/server/src/modules/github/github-handlers.service.ts"
     },
     {
@@ -2063,7 +2097,23 @@
     },
     {
       "source": "apps/server/src/modules/github/github.module.ts",
+      "target": "apps/server/src/modules/github/github-cli-read.adapter.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github.module.ts",
+      "target": "apps/server/src/modules/github/github-command.runtime.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github.module.ts",
+      "target": "apps/server/src/modules/github/github-discovery.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github.module.ts",
       "target": "apps/server/src/modules/github/github-handlers.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github.module.ts",
+      "target": "apps/server/src/modules/github/github-read.port.ts"
     },
     {
       "source": "apps/server/src/modules/github/github.module.ts",
@@ -5170,14 +5220,6 @@
       "target": "apps/server/src/routes/github/routes/common.ts"
     },
     {
-      "source": "apps/server/src/routes/github/routes/list-issues.ts",
-      "target": "apps/server/src/routes/github/routes/check-github-remote.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/routes/list-issues.ts",
-      "target": "apps/server/src/routes/github/routes/common.ts"
-    },
-    {
       "source": "apps/server/src/routes/github/routes/list-pr-review-comments.ts",
       "target": "apps/server/src/routes/github/routes/check-github-remote.ts"
     },
@@ -5188,14 +5230,6 @@
     {
       "source": "apps/server/src/routes/github/routes/list-pr-review-comments.ts",
       "target": "apps/server/src/services/pr-review-comments.service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/routes/list-prs.ts",
-      "target": "apps/server/src/routes/github/routes/check-github-remote.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/routes/list-prs.ts",
-      "target": "apps/server/src/routes/github/routes/common.ts"
     },
     {
       "source": "apps/server/src/routes/github/routes/resolve-pr-comment.ts",

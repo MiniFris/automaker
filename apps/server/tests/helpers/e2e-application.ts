@@ -23,6 +23,7 @@ import { ApplicationCredentialsService } from '../../src/modules/providers/appli
 import { GeminiProvider } from '../../src/providers/gemini-provider.js';
 import { CursorProvider } from '../../src/providers/cursor-provider.js';
 import { MockProvider } from './mock-provider.js';
+import { GithubReadPort } from '../../src/modules/github/github-read.port.js';
 
 /** Test-only composition: production bootstrap has no environment-controlled mocks. */
 export async function createE2eApplication(
@@ -98,6 +99,15 @@ export async function createE2eApplication(
               },
             };
           }),
+      })
+      // Generic UI fixtures never query the operator's real GitHub profile/network.
+      // Native CLI/argv/cleanup behavior is exercised with an owned gh executable
+      // in github-discovery.contract.test.ts, not by vendor calls in browser smoke.
+      .overrideProvider(GithubReadPort)
+      .useValue({
+        remote: async () => ({ hasGitHubRemote: false, remoteUrl: null, owner: null, repo: null }),
+        issues: async () => ({ openIssues: [], closedIssues: [] }),
+        prs: async () => ({ openPRs: [], mergedPRs: [] }),
       })
       .overrideProvider(CodexCredentialRuntime)
       .useValue({ read: async () => ({ kind: 'api-key' }) })

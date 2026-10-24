@@ -260,6 +260,91 @@ microtasks. В первом общем unit suite остался caller удал
 При chat reload browser runner дважды сообщил Vite WS proxy `ECONNRESET`;
 17 tests прошли, но причина этих resets не установлена и не объявляется исправленной.
 
+### Срез 2026-10-24: native read-only GitHub discovery
+
+`check-remote`, `issues` и `prs` переключены с Express factories на native
+GithubDiscoveryService через typed project body и существующий path guard.
+GithubReadPort предоставляет только remote/issues/PR discovery, не mutation и не
+произвольный command/GraphQL input. GithubCliReadAdapter строит argv/queries,
+NodeGithubCommandRuntime владеет созданными child processes. Module ports и
+useExisting указывают на один concrete owner, не старый legacy service bag.
+
+Issue/PR lists запрашиваются параллельно: 100 open и 50 closed/merged; failed sibling
+отменяется и дожидается cleanup. Linked-PR batches по 20 используют JSON stdin и
+GraphQL variables вместо интерполяции owner/repo/issue values. Remote metadata
+проверяется до argv; dotted repository names не обрезаются на первой точке.
+HTTP paths/body fields и API v13 сохраняются; явно установлен исходный HTTP 200
+вместо default Nest POST 201.
+
+Environment берётся из native HOST_ENVIRONMENT, не import-time execEnv/ambient
+credentials. Host-wide GH_REPO убирается, чтобы не перенаправлять project request;
+prompt/update notification выключены. Windows environment/PATH case variants и
+delimiter нормализуются без потери auth values; Unix PATH extension сохранён.
+Remote URLs лишаются userinfo/query/fragment secrets; непарсируемый opaque string
+не публикуется. Command errors не содержат stdout/stderr или CLI diagnostics.
+
+Bounds: до 8 operations и 16 commands; command deadline 30 s, operation 60 s,
+stdin 256 KiB, stdout 10 MiB и сохранённый stderr 32 KiB. Linux KILL отправляется
+только исходной detached process group, затем read-only observer ждёт members/
+threads; parent exit сам по себе не доказывает cleanup. Confirmation ограничена
+2 s. Неизвестные PID identities сохраняются, replacement запрещён, native close
+сообщает failed cleanup. Discovery shutdown закрывает admission и ограничивает
+drain 5 s; late result не делает уже выданный failed close успешным.
+
+Timeout отображается в 504, rate limit — в 429, unavailable/invalid/oversized
+responses — в статические ошибки. Нет automatic retry, install/login/setup или
+mutation-команд. Неизвестная ошибка обоих инструментов не выдаётся за успешный
+отрицательный remote lookup. Optional enrichment не скрывает cancel/cleanup/
+deadline/limit failure. Если timeline first-10 window имеет следующую страницу,
+pagination metadata отсутствует или запрос не удался, `linkedPRs` не публикуется
+как подтверждённый полный список/пустой массив. Полная pagination и отображение
+такого unknown metadata в UI остаются отдельной задачей.
+
+Доказательства:
+
+- `github-discovery.test.ts`: argv/variables, redaction, sibling drain, optional
+  uncertainty/resource-error precedence, bounded close и Windows env construction;
+- `github-command-runtime.test.ts`: реальный owned CLI child с controlled observer;
+  parent close ждёт group observation, cleanup timeout сохраняет identity/запрещает
+  replacement, output bound, sanitized rate error, spawn error и pre-spawn cancel;
+- `github-discovery.contract.test.ts`: native HTTP, owned executable fake gh и
+  настоящий Git только в owned temporary repository. Проверяются native identity,
+  две независимые app/profile, отсутствие init probes, argv/stdin, literal
+  metacharacter cwd, hostile metadata, rate/errors, optional discovery failure,
+  native shutdown активных CLI/root/child и orphan descendant после parent exit.
+  GitHub/model services не вызываются.
+
+Удалены legacy list-issues/list-prs factories. `issue-comments`,
+`pr-review-comments`, `resolve-pr-comment`, прежние review services и общий remote
+helper legacy worktree/review paths ещё требуют переноса. Отдельный write port и
+mutation unknown-outcome policy не добавляются в read port. Это не полный GitHub
+cutover, universal process supervisor, containment намеренного group/session
+escape, Windows/macOS native acceptance/packaging или завершение этапов 7–11.
+
+Проверки среза:
+
+- 16 targeted units и 4 native GitHub discovery contracts прошли;
+- финальный frozen `test:server:unit`: 3637 passed, 40 skipped;
+- `test:server:contract`: 327 passed; shared packages: 1473 passed;
+- Docker с owned base image `automaker-nest-stage2-smoke:latest`: 11 passed,
+  4 opt-in skipped; real SSH feature workflow: 14 passed. Это offline fixture
+  provider exchanges, не paid/vendor acceptance;
+- server production build/lint, UI typecheck/lint/build и lockfile check прошли;
+- SIGTERM/SIGINT smoke: exit 0; все три inventories обновлены и проверены;
+- Chromium regression после завершения Docker/SSH: 17 passed без test retries.
+  Generic E2E composition явно заменяет только GithubReadPort offline fixture,
+  чтобы не обращаться к профилю/сети оператора. Native CLI path проверяется
+  отдельными contracts с настоящими owned child processes, не этим UI stub;
+- полный format check и diff whitespace check прошли.
+
+Дополнительная regression проверяет minimal environment без PATH: Unix сохраняет
+системный `/usr/bin:/bin`, Windows — стандартный OS lookup вместо пустого PATH.
+Один промежуточный общий unit запуск пересёкся с исправлением/обновлением этой
+regression и наблюдал старый module snapshot с новым expectation. Он не принят
+как финальный checkpoint; targeted повтор и новый полный запуск после завершения
+всех source edits прошли. Test timeout/retries не увеличивались. Windows проверен
+на уровне environment construction, не реальным процессом на Windows.
+
 ## 8.7. MCPModule
 
 - [ ] Перенести server config lookup в SettingsModule.
