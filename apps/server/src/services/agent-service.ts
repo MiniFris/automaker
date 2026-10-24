@@ -4,24 +4,17 @@
  */
 
 import path from 'path';
-import * as secureFs from '../lib/secure-fs.js';
 import type { EventEmitter } from '../lib/events.js';
 import type { ExecuteOptions, ThinkingLevel } from '@automaker/types';
-import { stripProviderPrefix, isDirectModel } from '@automaker/types';
-import {
-  readImageAsBase64,
-  buildPromptWithImages,
-  isAbortError,
-  loadContextFiles,
-  createLogger,
-  classifyError,
-} from '@automaker/utils';
+import { stripProviderPrefix } from '@automaker/types';
+import { isAbortError, createLogger, classifyError } from '@automaker/utils';
 import type { ProviderRegistry } from '../modules/providers/provider-registry.service.js';
 import type { ToolPolicyService } from '../modules/providers/tool-policy.service.js';
 import { AgentSessionRepository } from './agent/agent-session.repository.js';
 import { AgentSessionRegistry } from './agent/agent-session-registry.js';
 import { AgentSessionStorageError } from './agent/agent-session-storage.error.js';
 import { AgentExecutionCoordinator } from './agent/agent-execution-coordinator.js';
+import { AgentPromptBuilder } from './agent/agent-prompt-builder.js';
 import { ConflictDomainError, UnavailableDomainError } from '../core/errors/domain-errors.js';
 import type {
   ActiveSession as Session,
@@ -39,9 +32,7 @@ import type { SettingsService } from './settings-service.js';
 import {
   getAutoLoadClaudeMdSetting,
   getUseClaudeCodeSystemPromptSetting,
-  filterClaudeMdFromContext,
   getMCPServersFromSettings,
-  getPromptCustomization,
   getSkillsConfiguration,
   getSubagentsConfiguration,
   getCustomSubagents,
@@ -61,6 +52,7 @@ export class AgentService {
     private readonly repository: AgentSessionRepository,
     private readonly sessions: AgentSessionRegistry,
     private readonly executions: AgentExecutionCoordinator,
+    private readonly prompts: AgentPromptBuilder,
     events: EventEmitter,
     settingsService: SettingsService | undefined,
     private readonly providerRegistry: ProviderRegistry,
@@ -333,21 +325,7 @@ export class AgentService {
     }
 
     // Read images and convert to base64
-    const images: Message['images'] = [];
-    if (imagePaths && imagePaths.length > 0) {
-      for (const imagePath of imagePaths) {
-        try {
-          const imageData = await readImageAsBase64(imagePath);
-          images.push({
-            data: imageData.base64,
-            mimeType: imageData.mimeType,
-            filename: imageData.filename,
-          });
-        } catch (error) {
-          this.logger.error(`Failed to load image ${imagePath}:`, error);
-        }
-      }
-    }
+    const images = await this.prompts.readImages(imagePaths, controller.signal);
 
     // Add user message
     controller.signal.throwIfAborted();
@@ -450,7 +428,6 @@ export class AgentService {
         }
       }
 
-      let combinedSystemPrompt: string | undefined;
       const remoteContext =
         this.settingsService &&
         (await hasRemoteEnvironment(
@@ -458,35 +435,15 @@ export class AgentService {
           session.projectPath ?? effectiveWorkDir,
           `chat:${sessionId}`
         ));
-      // Load project context files (CLAUDE.md, CODE_QUALITY.md, etc.) and memory files
-      // Use the user's message as task context for smart memory selection
-      // Do not initialize/update controller memory before a managed runtime is bound.
-      // In SSH the controller copy is metadata, not source; Docker writes also use its runtime.
-      const contextResult = remoteContext
-        ? undefined
-        : await loadContextFiles({
-            projectPath: effectiveWorkDir,
-            fsModule: secureFs as Parameters<typeof loadContextFiles>[0]['fsModule'],
-            taskContext: {
-              title: message.substring(0, 200), // Use first 200 chars as title
-              description: message,
-            },
-          });
-
-      // When autoLoadClaudeMd is enabled, filter out CLAUDE.md to avoid duplication
-      // (SDK handles CLAUDE.md via settingSources), but keep other context files like CODE_QUALITY.md
-      const contextFilesPrompt = contextResult
-        ? filterClaudeMdFromContext(
-            contextResult,
-            autoLoadClaudeMd && !isDirectModel(requestedModel ?? '')
-          )
-        : '';
-
-      // Build combined system prompt with base prompt and context files
-      const baseSystemPrompt = await this.getSystemPrompt();
-      combinedSystemPrompt = contextFilesPrompt
-        ? `${contextFilesPrompt}\n\n${baseSystemPrompt}`
-        : baseSystemPrompt;
+      const combinedSystemPrompt = await this.prompts.systemPrompt({
+        workingDirectory: effectiveWorkDir,
+        message,
+        autoLoadClaudeMd,
+        requestedModel,
+        remoteContext: Boolean(remoteContext),
+        settings: this.settingsService,
+        signal: controller.signal,
+      });
 
       // Build SDK options using centralized configuration
       // Use thinking level and reasoning effort from request, or fall back to session's stored values
@@ -597,13 +554,7 @@ export class AgentService {
         : stripProviderPrefix(effectiveModel);
 
       // Build options for provider
-      const conversationHistory = session.messages
-        .slice(0, -1)
-        .map((msg) => ({
-          role: msg.role,
-          content: msg.content,
-        }))
-        .filter((msg) => msg.content.trim().length > 0);
+      const conversationHistory = this.prompts.history(session.messages);
 
       const options: ExecuteOptions = {
         prompt: '', // Will be set below based on images
@@ -614,8 +565,7 @@ export class AgentService {
         maxTurns: maxTurns,
         allowedTools: allowedTools,
         abortController: session.abortController!,
-        conversationHistory:
-          conversationHistory && conversationHistory.length > 0 ? conversationHistory : undefined,
+        conversationHistory,
         settingSources: settingSources.length > 0 ? settingSources : undefined,
         sdkSessionId: session.sdkSessionId, // Pass SDK session ID for resuming
         mcpServers: Object.keys(mcpServers).length > 0 ? mcpServers : undefined, // Pass MCP servers configuration
@@ -627,15 +577,7 @@ export class AgentService {
       };
 
       // Build prompt content with images
-      const { content: promptContent } = await buildPromptWithImages(
-        message,
-        imagePaths,
-        undefined, // no workDir for agent service
-        true // include image paths in text
-      );
-
-      // Set the prompt in options
-      options.prompt = promptContent;
+      options.prompt = await this.prompts.content(message, imagePaths, controller.signal);
 
       // Execute via provider
       const prepared = await prepareDirectExecution(options, this.settingsService, {
@@ -661,14 +603,10 @@ export class AgentService {
         ? await managedContext.service.context(managedContext.run, prepared.abortController!.signal)
         : undefined;
       if (targetContext?.formattedPrompt) {
-        const base = prepared.systemPrompt;
-        prepared.systemPrompt =
-          typeof base === 'object'
-            ? {
-                ...base,
-                append: [base.append, targetContext.formattedPrompt].filter(Boolean).join('\n\n'),
-              }
-            : [base, targetContext.formattedPrompt].filter(Boolean).join('\n\n');
+        prepared.systemPrompt = this.prompts.appendContext(
+          prepared.systemPrompt,
+          targetContext.formattedPrompt
+        );
       }
       const allowDisconnected =
         prepared.executionEnvironmentBinding?.type === 'ssh' ||
@@ -1454,12 +1392,6 @@ export class AgentService {
     )
       return;
     this.events.emit('agent:stream', { sessionId, type: 'error', error });
-  }
-
-  private async getSystemPrompt(): Promise<string> {
-    // Load from settings (no caching - allows hot reload of custom prompts)
-    const prompts = await getPromptCustomization(this.settingsService, '[AgentService]');
-    return prompts.agent.systemPrompt;
   }
 
   private generateId(): string {

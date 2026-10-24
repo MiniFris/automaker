@@ -3,11 +3,13 @@ import { RUNTIME_CONFIG, type RuntimeConfig } from '../../core/config/index.js';
 import { AgentSessionRepository } from '../../services/agent/agent-session.repository.js';
 import { AgentSessionRegistry } from '../../services/agent/agent-session-registry.js';
 import { AgentExecutionCoordinator } from '../../services/agent/agent-execution-coordinator.js';
+import { AgentPromptBuilder } from '../../services/agent/agent-prompt-builder.js';
 
 @Global()
 @Module({
   providers: [
     AgentSessionRegistry,
+    AgentPromptBuilder,
     { provide: AgentExecutionCoordinator, useFactory: () => new AgentExecutionCoordinator() },
     {
       provide: AgentSessionRepository,
@@ -16,6 +18,11 @@ import { AgentExecutionCoordinator } from '../../services/agent/agent-execution-
         new AgentSessionRepository(config.storage.dataDirectory),
     },
   ],
-  exports: [AgentSessionRegistry, AgentSessionRepository, AgentExecutionCoordinator],
+  exports: [
+    AgentSessionRegistry,
+    AgentSessionRepository,
+    AgentExecutionCoordinator,
+    AgentPromptBuilder,
+  ],
 })
 export class AgentStateModule {}

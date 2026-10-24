@@ -149,7 +149,7 @@ UI typecheck, все три inventory checks и production SIGTERM/SIGINT smoke.
 ## 7.4. AgentService decomposition
 
 - [x] Отделить persisted session repository от active session registry.
-- [ ] Отделить prompt/context construction.
+- [x] Отделить prompt/context construction.
 - [ ] Отделить provider selection.
 - [ ] Отделить execution environment preparation.
 - [ ] Отделить stream normalization/event publication.
@@ -159,6 +159,25 @@ UI typecheck, все три inventory checks и production SIGTERM/SIGINT smoke.
 
 На первом migration commit этого блока существующий `AgentService` допустимо зарегистрировать целиком как
 Nest provider. Его деление выполняется после переноса routes и contract coverage.
+
+### Срез: prompt/context builder
+
+`AgentPromptBuilder` зарегистрирован отдельным provider в `AgentStateModule` и
+передаётся в `AgentService` явно. Он собирает system prompt, историю и attachments,
+сохраняет SDK preset при добавлении target context и перечитывает custom prompts
+между сообщениями. Выбор provider и подготовка runtime в builder не перенесены.
+Для managed execution controller context/memory не читаются; Direct сохраняет
+CLAUDE.md, тогда как SDK-managed CLAUDE.md исключается из дублирующего контекста.
+Отмена проверяется до и после асинхронного чтения контекста и изображений.
+
+Проверки среза: 2973 unit tests (40 skipped), включая 12 отдельных builder tests;
+241 HTTP/WS contract; server production build/lint и UI typecheck; три inventory
+checks. Три выбранных реальных SSH сценария Direct/CLI/SDK подтвердили отсутствие
+controller context и сохранение binding после restart/default change (34 остальных
+теста отфильтрованы). Chromium smoke проверил send/stream/reload истории.
+Production lifecycle smoke завершился с exit 0 для SIGTERM и SIGINT.
+Это проверка среза, а не завершение этапа 7: оставшаяся декомпозиция и полный
+provider/environment acceptance checkpoint остаются обязательными.
 
 ### Срез: persisted state и active registry
 

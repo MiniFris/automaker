@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 600,
-    "internalEdges": 1881,
+    "files": 601,
+    "internalEdges": 1889,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -17,7 +17,7 @@
     "legacy -> lib": 1,
     "legacy -> modules": 4,
     "legacy -> root": 2,
-    "legacy -> services": 22,
+    "legacy -> services": 23,
     "lib -> lib": 3,
     "lib -> services": 1,
     "modules -> core": 82,
@@ -26,7 +26,7 @@
     "modules -> modules": 244,
     "modules -> providers": 19,
     "modules -> routes": 62,
-    "modules -> services": 96,
+    "modules -> services": 97,
     "modules -> types": 2,
     "providers -> lib": 5,
     "providers -> modules": 1,
@@ -46,11 +46,11 @@
     "routes -> services": 196,
     "routes -> types": 3,
     "services -> core": 4,
-    "services -> lib": 71,
+    "services -> lib": 73,
     "services -> modules": 9,
-    "services -> providers": 10,
+    "services -> providers": 11,
     "services -> routes": 2,
-    "services -> services": 219,
+    "services -> services": 222,
     "services -> types": 2,
     "tests -> lib": 2
   },
@@ -315,8 +315,8 @@
     "@automaker/model-resolver": 20,
     "@automaker/platform": 80,
     "@automaker/prompts": 3,
-    "@automaker/types": 173,
-    "@automaker/utils": 167,
+    "@automaker/types": 174,
+    "@automaker/utils": 168,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
@@ -917,6 +917,10 @@
     },
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
+      "target": "apps/server/src/services/agent/agent-prompt-builder.ts"
+    },
+    {
+      "source": "apps/server/src/legacy/application-service.providers.ts",
       "target": "apps/server/src/services/agent/agent-session-registry.ts"
     },
     {
@@ -1070,6 +1074,10 @@
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
       "target": "apps/server/src/services/agent/agent-execution-coordinator.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-state.module.ts",
+      "target": "apps/server/src/services/agent/agent-prompt-builder.ts"
     },
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
@@ -6697,6 +6705,10 @@
     },
     {
       "source": "apps/server/src/services/agent-service.ts",
+      "target": "apps/server/src/services/agent/agent-prompt-builder.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent-service.ts",
       "target": "apps/server/src/services/agent/agent-session-registry.ts"
     },
     {
@@ -6730,6 +6742,26 @@
     {
       "source": "apps/server/src/services/agent/agent-execution-coordinator.ts",
       "target": "apps/server/src/services/agent/agent-session-id.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-prompt-builder.ts",
+      "target": "apps/server/src/lib/secure-fs.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-prompt-builder.ts",
+      "target": "apps/server/src/lib/settings-helpers.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-prompt-builder.ts",
+      "target": "apps/server/src/providers/types.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-prompt-builder.ts",
+      "target": "apps/server/src/services/agent/agent-session.types.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-prompt-builder.ts",
+      "target": "apps/server/src/services/settings-service.ts"
     },
     {
       "source": "apps/server/src/services/agent/agent-session-id.ts",
