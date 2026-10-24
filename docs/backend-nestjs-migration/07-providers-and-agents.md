@@ -965,11 +965,80 @@ Codex catalog уже обслуживается `ProviderUsageController`/`Provi
 Границы: низкоуровневые CLI helpers, settings/credential sources внутри adapters и
 общий application shutdown deadline ещё требуют работы. Ожидание discovery promise
 не является доказательством OS-level exit всех внешних процессов. Live login,
-SSH/Docker и packaged Electron acceptance для этого среза не запускались. Claude/GH
-status, setup mutations и usage implementations остаются в работе. OpenCode status
+SSH/Docker и packaged Electron acceptance для этого среза не запускались. На момент
+среза Claude/GH status, setup mutations и usage implementations оставались в работе. OpenCode status
 сохраняет прежнюю интерпретацию auth indicators независимо от local disconnect marker;
 согласование этого поведения и дешёвый passive status ещё не закрыты. Этап 7 и вся
 миграция не объявляются завершёнными.
+
+### Срез: native host status и application-scoped setup credential cache
+
+Claude/GitHub CLI status, platform info и API-key availability переведены на native
+`SetupController` / `HostSetupStatusService`. Удалены четыре Express route handlers
+и route-owned `get-claude-status` helper; прежние версии доступны в Git. Сохранены
+public access policy, успешные payloads, Claude auth flags/priority, disconnected
+masking, GitHub version/user parsing и platform flags. В частности, Claude flags
+`oauthTokenValid`/`apiKeyValid` сохраняют прежнюю эвристику наличия credentials,
+а не становятся доказательством успешной network verification.
+
+`SetupStatusRuntime` отделяет application logic от OS/CLI/filesystem inspection.
+Node adapter ищет CLI, запускает именно найденный executable с vector arguments,
+`shell: false`, timeout 10 seconds и bounded output 128 KiB. Ошибка version probe
+не отменяет installation evidence. GitHub API user probe и fallback auth status
+используют тот же найденный path, включая common-path fallback. Windows PATH casing
+нормализуется; Windows `.cmd` version probe остаётся best-effort, без включения
+shell execution ради metadata. При shutdown adapter закрывает admission и ожидает
+уже принятые операции целиком, включая цепочки нескольких subprocess calls.
+
+`HOST_ENVIRONMENT` — неизменяемый bootstrap snapshot для host subprocesses.
+Production bootstrap и test composition передают его явно через `AppModule` /
+`RuntimeConfigModule`; environment не пересылается в legacy application options
+и не возвращается в HTTP. Runtime использует snapshot и injected working directory,
+а не module-level environment. OS user-profile inspection остаётся за platform port.
+
+Route-global API-key map заменён application-scoped `SetupCredentialCache`.
+Оставшиеся store/delete/verify factories получают его явно из Nest composition,
+без default singleton или самостоятельного создания кеша. Native Claude/API-key
+status читает тот же кеш. App-owned availability overrides сохраняют видимые
+store/delete effects относительно bootstrap environment, не считывая изменения
+process-global environment другого приложения. В E2E composition host runtime
+подменяется только явно зарегистрированным test fixture; production bootstrap
+не содержит mock flags или успешных fake auth paths.
+
+Проверки среза:
+
+- 25 host status cases: auth priority/evidence, disconnect, missing CLI, platform,
+  API-key booleans, app isolation и safe errors.
+- 14 runtime cases: resolved binary, empty/fallback detection, bounded shell-free
+  execution, metacharacters/spaces in executable path, injected environment,
+  Windows PATH/where, API/auth fallback и shutdown drain.
+- 3 bridge cases доказывают общий injected cache для legacy mutations/native
+  status; `.env` persistence в них заменена spy и не затрагивает user files.
+- Новый native HTTP contract использует реальные локальные CLI fixtures в owned
+  temporary directories: два приложения, независимые PATH/cwd/environment,
+  immutable bootstrap snapshot, четыре endpoints, credential cache и disconnect.
+  Реальные пользовательские credential files и GitHub API не читаются: auth
+  indicators заменены fixture. Дополнительно настоящий CLI child удерживается
+  owned filesystem gate; Nest close ждёт его завершения, закрывает admission,
+  второе приложение продолжает обслуживать запросы. Это не live provider login.
+- Connection-test timeout contracts для обоих verify factories сохранены.
+- `npm run test:server:unit`: 3266 passed, 40 skipped.
+- `npm run test:server:contract`: 261 passed.
+- `npm run test:packages`: 1194 passed.
+- Server production build/lint, UI typecheck/lint, lockfile и три inventory checks
+  успешны; generated inventories обновлены.
+- Startup/shutdown smoke: SIGTERM/SIGINT exit 0.
+- Chromium chat/Running Agents smoke: 2 passed.
+
+Границы: credential cache isolation не означает завершения credential/runtime
+refactor. Legacy setup mutations всё ещё меняют `process.env`, пишут `.env` через
+прежний cwd-based helper и не стали атомарными native commands с подтверждением
+target. Другие provider adapters/verify helpers пока также имеют global runtime
+effects; их изоляция и profile-target consistency требуют отдельного переноса.
+GitHub GET status по-прежнему может выполнять API/auth probes; дешёвый passive
+status ещё не реализован. Общий shutdown deadline, subprocess-tree termination,
+live login, SSH/Docker и packaged Electron/Windows acceptance этот срез не закрывает.
+Этап 7 и вся миграция остаются незавершёнными.
 
 ## 7.7. Agent routes
 

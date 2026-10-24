@@ -9,8 +9,8 @@ import { secureFs } from '@automaker/platform';
 
 const logger = createLogger('Setup');
 
-// In-memory storage reference (imported from common.ts pattern)
-import { setApiKey } from '../common.js';
+// The owning Nest application supplies the setup-wizard cache.
+import type { SetupCredentialCache } from '../../../modules/providers/setup-credential-cache.service.js';
 
 /**
  * Remove an API key from the .env file
@@ -28,7 +28,7 @@ async function removeApiKeyFromEnv(key: string): Promise<void> {
   }
 }
 
-export function createDeleteApiKeyHandler() {
+export function createDeleteApiKeyHandler(keys: SetupCredentialCache) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
       const { provider } = req.body as { provider: string };
@@ -59,10 +59,11 @@ export function createDeleteApiKeyHandler() {
       }
 
       // Clear from in-memory storage
-      setApiKey(provider, '');
+      keys.set(provider, '');
 
       // Remove from environment
       delete process.env[envKey];
+      keys.setEnvironmentConfigured(envKey, false);
 
       // Remove from .env file
       await removeApiKeyFromEnv(envKey);

@@ -7,7 +7,7 @@ import type { SettingsService } from '../../../services/settings-service.js';
 import { createLogger } from '@automaker/utils';
 import { CODEX_MODEL_MAP, modelTimeout, providerModelTimeouts } from '@automaker/types';
 import type { ProviderRegistry } from '../../../modules/providers/provider-registry.service.js';
-import { getApiKey } from '../common.js';
+import type { SetupCredentialCache } from '../../../modules/providers/setup-credential-cache.service.js';
 import { getCodexAuthIndicators } from '@automaker/platform';
 import {
   createSecureAuthEnv,
@@ -82,7 +82,8 @@ function isRateLimitError(text: string): boolean {
 
 export function createVerifyCodexAuthHandler(
   settingsService: SettingsService | undefined,
-  providerRegistry: ProviderRegistry
+  providerRegistry: ProviderRegistry,
+  keys: SetupCredentialCache
 ) {
   return async (req: Request, res: Response): Promise<void> => {
     const { authMethod, apiKey } = req.body as {
@@ -131,7 +132,7 @@ export function createVerifyCodexAuthHandler(
           authEnv[OPENAI_API_KEY_ENV] = validation.normalizedKey;
         } else {
           // Try stored key
-          const storedApiKey = getApiKey('openai');
+          const storedApiKey = keys.get('openai');
           if (storedApiKey) {
             const validation = validateApiKey(storedApiKey, 'openai');
             if (!validation.isValid) {

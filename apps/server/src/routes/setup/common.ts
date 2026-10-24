@@ -1,5 +1,5 @@
 /**
- * Common utilities and state for setup routes
+ * Common utilities for transitional setup routes
  */
 
 import { createLogger } from '@automaker/utils';
@@ -8,30 +8,6 @@ import { secureFs } from '@automaker/platform';
 import { getErrorMessage as getErrorMessageShared, createLogError } from '../common.js';
 
 const logger = createLogger('Setup');
-
-// Storage for API keys (in-memory cache) - private
-const apiKeys: Record<string, string> = {};
-
-/**
- * Get an API key for a provider
- */
-export function getApiKey(provider: string): string | undefined {
-  return apiKeys[provider];
-}
-
-/**
- * Set an API key for a provider
- */
-export function setApiKey(provider: string, key: string): void {
-  apiKeys[provider] = key;
-}
-
-/**
- * Get all API keys (for read-only access)
- */
-export function getAllApiKeys(): Record<string, string> {
-  return { ...apiKeys };
-}
 
 /**
  * Helper to persist API keys to .env file

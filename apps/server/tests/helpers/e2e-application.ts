@@ -15,6 +15,8 @@ import { LEGACY_SERVICES } from '../../src/legacy/legacy.tokens.js';
 import { ProviderRegistry } from '../../src/modules/providers/provider-registry.service.js';
 import { createProviderRegistrations } from '../../src/modules/providers/provider-registrations.js';
 import { SetupHandlersService } from '../../src/modules/providers/setup-handlers.service.js';
+import { SetupCredentialCache } from '../../src/modules/providers/setup-credential-cache.service.js';
+import { SetupStatusRuntime } from '../../src/core/platform/setup-status.runtime.js';
 import type { SetupHandlerName } from '../../src/modules/providers/setup-handlers.service.js';
 import { SettingsService } from '../../src/services/settings-service.js';
 import { MockProvider } from './mock-provider.js';
@@ -42,7 +44,13 @@ export async function createE2eApplication(
     const httpServer = createServer(expressApplication);
     const adapter = new SharedHttpServerExpressAdapter(expressApplication, httpServer);
     const module = await Test.createTestingModule({
-      imports: [AppModule.register(config, process.cwd(), { runStartupTasks: false, httpServer })],
+      imports: [
+        AppModule.register(config, process.cwd(), {
+          runStartupTasks: false,
+          httpServer,
+          hostEnvironment: environment,
+        }),
+      ],
       providers: [
         { provide: Symbol('E2E_DATA_CLEANUP'), useValue: { onApplicationShutdown: cleanup } },
       ],
@@ -67,9 +75,13 @@ export async function createE2eApplication(
       })
       .overrideProvider(SetupHandlersService)
       .useFactory({
-        inject: [SettingsService, ProviderRegistry],
-        factory: (settings: SettingsService, providers: ProviderRegistry) => {
-          const real = new SetupHandlersService(settings, providers);
+        inject: [SettingsService, ProviderRegistry, SetupCredentialCache],
+        factory: (
+          settings: SettingsService,
+          providers: ProviderRegistry,
+          keys: SetupCredentialCache
+        ) => {
+          const real = new SetupHandlersService(settings, providers, keys);
           return {
             run(name: SetupHandlerName, request: Request, response: Response) {
               if (name === 'verifyClaudeAuth' || name === 'verifyCodexAuth') {
@@ -80,6 +92,24 @@ export async function createE2eApplication(
             },
           };
         },
+      })
+      .overrideProvider(SetupStatusRuntime)
+      .useValue({
+        platformInfo: () => ({ platform: os.platform(), arch: os.arch(), homeDir: os.homedir() }),
+        detect: async () => ({
+          installed: true,
+          version: 'test-fixture',
+          path: '/test-only/cli',
+          method: 'path',
+        }),
+        claudeIndicators: async () => ({
+          hasCredentialsFile: false,
+          hasSettingsFile: false,
+          hasStatsCacheWithActivity: true,
+          hasProjectsSessions: false,
+          credentials: null,
+        }),
+        githubAuthentication: async () => ({ authenticated: true, user: 'test-fixture' }),
       })
       .compile();
     app = module.createNestApplication<NestExpressApplication>(adapter, {

@@ -5,6 +5,7 @@ import { Public } from '../../core/auth/index.js';
 import { SetupHandlersService, type SetupHandlerName } from './setup-handlers.service.js';
 import { ProviderSetupStatusService } from './provider-setup-status.service.js';
 import { ProviderModelCatalogService } from './provider-model-catalog.service.js';
+import { HostSetupStatusService } from './host-setup-status.service.js';
 
 @Public()
 @Controller('setup')
@@ -12,7 +13,8 @@ export class SetupController {
   constructor(
     @Inject(SetupHandlersService) private readonly handlers: SetupHandlersService,
     @Inject(ProviderSetupStatusService) private readonly statuses: ProviderSetupStatusService,
-    @Inject(ProviderModelCatalogService) private readonly catalogs: ProviderModelCatalogService
+    @Inject(ProviderModelCatalogService) private readonly catalogs: ProviderModelCatalogService,
+    @Inject(HostSetupStatusService) private readonly hostStatus: HostSetupStatusService
   ) {}
 
   private run(name: SetupHandlerName, request: Request, response: Response) {
@@ -22,8 +24,8 @@ export class SetupController {
     return this.handlers.run(name, request, response);
   }
 
-  @Get('claude-status') claudeStatus(@Req() q: Request, @Res() s: Response) {
-    return this.run('claudeStatus', q, s);
+  @Get('claude-status') claudeStatus() {
+    return this.hostStatus.claude();
   }
   @Post('install-claude') installClaude(@Req() q: Request, @Res() s: Response) {
     return this.run('installClaude', q, s);
@@ -40,11 +42,11 @@ export class SetupController {
   @Post('delete-api-key') deleteApiKey(@Req() q: Request, @Res() s: Response) {
     return this.run('deleteApiKey', q, s);
   }
-  @Get('api-keys') apiKeys(@Req() q: Request, @Res() s: Response) {
-    return this.run('apiKeys', q, s);
+  @Get('api-keys') apiKeys() {
+    return this.hostStatus.apiKeys();
   }
-  @Get('platform') platform(@Req() q: Request, @Res() s: Response) {
-    return this.run('platform', q, s);
+  @Get('platform') platform() {
+    return this.hostStatus.platform();
   }
   @Post('verify-claude-auth') verifyClaudeAuth(@Req() q: Request, @Res() s: Response) {
     return this.run('verifyClaudeAuth', q, s);
@@ -52,8 +54,8 @@ export class SetupController {
   @Post('verify-codex-auth') verifyCodexAuth(@Req() q: Request, @Res() s: Response) {
     return this.run('verifyCodexAuth', q, s);
   }
-  @Get('gh-status') ghStatus(@Req() q: Request, @Res() s: Response) {
-    return this.run('ghStatus', q, s);
+  @Get('gh-status') ghStatus() {
+    return this.hostStatus.github();
   }
   @Get('cursor-status') cursorStatus() {
     return this.statuses.status('cursor');

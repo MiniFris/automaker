@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 610,
-    "internalEdges": 1984,
+    "files": 608,
+    "internalEdges": 1985,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
-    "core -> core": 51,
+    "core -> core": 52,
     "core -> legacy": 2,
     "core -> lib": 5,
     "core -> middleware": 1,
@@ -20,12 +20,12 @@
     "legacy -> services": 33,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 85,
+    "modules -> core": 88,
     "modules -> legacy": 29,
     "modules -> lib": 24,
-    "modules -> modules": 255,
+    "modules -> modules": 261,
     "modules -> providers": 24,
-    "modules -> routes": 55,
+    "modules -> routes": 51,
     "modules -> services": 111,
     "modules -> types": 2,
     "providers -> core": 1,
@@ -41,9 +41,9 @@
     "root -> services": 21,
     "routes -> lib": 105,
     "routes -> middleware": 8,
-    "routes -> modules": 9,
+    "routes -> modules": 13,
     "routes -> providers": 13,
-    "routes -> routes": 371,
+    "routes -> routes": 362,
     "routes -> services": 195,
     "routes -> types": 3,
     "services -> core": 8,
@@ -70,6 +70,7 @@
   ],
   "signals": {
     "processEnv": [
+      "apps/server/src/core/config/runtime-config.module.ts",
       "apps/server/src/legacy-application.ts",
       "apps/server/src/lib/auth-utils.ts",
       "apps/server/src/lib/cli-detection.ts",
@@ -93,12 +94,9 @@
       "apps/server/src/routes/app-spec/common.ts",
       "apps/server/src/routes/fs/routes/resolve-directory.ts",
       "apps/server/src/routes/settings/openai-compatible.ts",
-      "apps/server/src/routes/setup/get-claude-status.ts",
-      "apps/server/src/routes/setup/routes/api-keys.ts",
       "apps/server/src/routes/setup/routes/auth-cursor.ts",
       "apps/server/src/routes/setup/routes/auth-opencode.ts",
       "apps/server/src/routes/setup/routes/delete-api-key.ts",
-      "apps/server/src/routes/setup/routes/gh-status.ts",
       "apps/server/src/routes/setup/routes/store-api-key.ts",
       "apps/server/src/routes/setup/routes/verify-claude-auth.ts",
       "apps/server/src/routes/setup/routes/verify-codex-auth.ts",
@@ -147,7 +145,6 @@
       "apps/server/src/providers/simple-query-service.ts",
       "apps/server/src/routes/fs/routes/resolve-directory.ts",
       "apps/server/src/routes/setup/common.ts",
-      "apps/server/src/routes/setup/get-claude-status.ts",
       "apps/server/src/routes/setup/routes/auth-claude.ts",
       "apps/server/src/routes/setup/routes/auth-codex.ts",
       "apps/server/src/routes/setup/routes/auth-cursor.ts",
@@ -174,6 +171,7 @@
       "apps/server/src/services/execution-environment/docker-worker.ts"
     ],
     "childProcess": [
+      "apps/server/src/core/platform/setup-status.runtime.ts",
       "apps/server/src/lib/auth-utils.ts",
       "apps/server/src/lib/cli-detection.ts",
       "apps/server/src/modules/event-history/event-replay.service.ts",
@@ -192,8 +190,6 @@
       "apps/server/src/routes/github/routes/common.ts",
       "apps/server/src/routes/github/routes/list-comments.ts",
       "apps/server/src/routes/github/routes/list-issues.ts",
-      "apps/server/src/routes/setup/get-claude-status.ts",
-      "apps/server/src/routes/setup/routes/gh-status.ts",
       "apps/server/src/routes/worktree/common.ts",
       "apps/server/src/routes/worktree/routes/add-remote.ts",
       "apps/server/src/routes/worktree/routes/commit.ts",
@@ -309,7 +305,7 @@
     "@automaker/dependency-resolver": 1,
     "@automaker/git-utils": 12,
     "@automaker/model-resolver": 20,
-    "@automaker/platform": 80,
+    "@automaker/platform": 79,
     "@automaker/prompts": 3,
     "@automaker/types": 175,
     "@automaker/utils": 175,
@@ -318,31 +314,31 @@
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 150,
+    "@nestjs/common": 153,
     "@nestjs/core": 7,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
     "ajv": 4,
-    "child_process": 43,
+    "child_process": 41,
     "cookie": 1,
     "cookie-parser": 1,
     "cors": 1,
     "crypto": 4,
     "dotenv": 1,
     "events": 1,
-    "express": 243,
-    "fs": 20,
+    "express": 239,
+    "fs": 19,
     "fs/promises": 16,
     "net": 1,
     "node-pty": 2,
     "node:async_hooks": 1,
-    "node:child_process": 10,
+    "node:child_process": 11,
     "node:crypto": 28,
     "node:fs": 6,
     "node:fs/promises": 14,
     "node:http": 7,
     "node:net": 2,
-    "node:os": 6,
+    "node:os": 7,
     "node:path": 41,
     "node:perf_hooks": 2,
     "node:stream": 5,
@@ -350,13 +346,13 @@
     "node:string_decoder": 3,
     "node:timers/promises": 3,
     "node:util": 12,
-    "os": 16,
-    "path": 88,
+    "os": 15,
+    "path": 87,
     "readline": 1,
     "reflect-metadata": 1,
     "ssh2": 3,
     "url": 1,
-    "util": 28,
+    "util": 26,
     "vitest": 1,
     "ws": 1,
     "yaml": 1,
@@ -710,6 +706,10 @@
     {
       "source": "apps/server/src/core/observability/observability.module.ts",
       "target": "apps/server/src/core/observability/metrics.ts"
+    },
+    {
+      "source": "apps/server/src/core/platform/setup-status.runtime.ts",
+      "target": "apps/server/src/core/config/index.ts"
     },
     {
       "source": "apps/server/src/core/security/allowed-path.guard.ts",
@@ -2548,6 +2548,22 @@
       "target": "apps/server/src/providers/simple-query-service.ts"
     },
     {
+      "source": "apps/server/src/modules/providers/host-setup-status.service.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/host-setup-status.service.ts",
+      "target": "apps/server/src/core/platform/setup-status.runtime.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/host-setup-status.service.ts",
+      "target": "apps/server/src/modules/providers/provider-connection.repository.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/host-setup-status.service.ts",
+      "target": "apps/server/src/modules/providers/setup-credential-cache.service.ts"
+    },
+    {
       "source": "apps/server/src/modules/providers/provider-connection.repository.ts",
       "target": "apps/server/src/core/config/index.ts"
     },
@@ -2689,7 +2705,15 @@
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/core/platform/setup-status.runtime.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
       "target": "apps/server/src/legacy/legacy.tokens.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/modules/providers/host-setup-status.service.ts"
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
@@ -2717,6 +2741,10 @@
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/modules/providers/setup-credential-cache.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
       "target": "apps/server/src/modules/providers/setup-handlers.service.ts"
     },
     {
@@ -2733,7 +2761,7 @@
     },
     {
       "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/routes/setup/routes/api-keys.ts"
+      "target": "apps/server/src/modules/providers/setup-credential-cache.service.ts"
     },
     {
       "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
@@ -2758,10 +2786,6 @@
     {
       "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
       "target": "apps/server/src/routes/setup/routes/auth-opencode.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/routes/setup/routes/claude-status.ts"
     },
     {
       "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
@@ -2797,19 +2821,11 @@
     },
     {
       "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/routes/setup/routes/gh-status.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
       "target": "apps/server/src/routes/setup/routes/install-claude.ts"
     },
     {
       "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
       "target": "apps/server/src/routes/setup/routes/install-codex.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
-      "target": "apps/server/src/routes/setup/routes/platform.ts"
     },
     {
       "source": "apps/server/src/modules/providers/setup-handlers.service.ts",
@@ -2830,6 +2846,10 @@
     {
       "source": "apps/server/src/modules/providers/setup.controller.ts",
       "target": "apps/server/src/core/auth/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "target": "apps/server/src/modules/providers/host-setup-status.service.ts"
     },
     {
       "source": "apps/server/src/modules/providers/setup.controller.ts",
@@ -5752,14 +5772,6 @@
       "target": "apps/server/src/routes/common.ts"
     },
     {
-      "source": "apps/server/src/routes/setup/get-claude-status.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/api-keys.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
-    },
-    {
       "source": "apps/server/src/routes/setup/routes/auth-claude.ts",
       "target": "apps/server/src/routes/setup/common.ts"
     },
@@ -5786,14 +5798,6 @@
     {
       "source": "apps/server/src/routes/setup/routes/auth-opencode.ts",
       "target": "apps/server/src/routes/setup/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/claude-status.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/claude-status.ts",
-      "target": "apps/server/src/routes/setup/get-claude-status.ts"
     },
     {
       "source": "apps/server/src/routes/setup/routes/cursor-config.ts",
@@ -5837,11 +5841,7 @@
     },
     {
       "source": "apps/server/src/routes/setup/routes/delete-api-key.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/setup/routes/gh-status.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
+      "target": "apps/server/src/modules/providers/setup-credential-cache.service.ts"
     },
     {
       "source": "apps/server/src/routes/setup/routes/install-claude.ts",
@@ -5852,8 +5852,8 @@
       "target": "apps/server/src/routes/setup/common.ts"
     },
     {
-      "source": "apps/server/src/routes/setup/routes/platform.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
+      "source": "apps/server/src/routes/setup/routes/store-api-key.ts",
+      "target": "apps/server/src/modules/providers/setup-credential-cache.service.ts"
     },
     {
       "source": "apps/server/src/routes/setup/routes/store-api-key.ts",
@@ -5865,7 +5865,7 @@
     },
     {
       "source": "apps/server/src/routes/setup/routes/verify-claude-auth.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
+      "target": "apps/server/src/modules/providers/setup-credential-cache.service.ts"
     },
     {
       "source": "apps/server/src/routes/setup/routes/verify-claude-auth.ts",
@@ -5881,7 +5881,7 @@
     },
     {
       "source": "apps/server/src/routes/setup/routes/verify-codex-auth.ts",
-      "target": "apps/server/src/routes/setup/common.ts"
+      "target": "apps/server/src/modules/providers/setup-credential-cache.service.ts"
     },
     {
       "source": "apps/server/src/routes/setup/routes/verify-codex-auth.ts",

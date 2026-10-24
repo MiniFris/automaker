@@ -1,14 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Request, RequestHandler, Response } from 'express';
 
-import { createApiKeysHandler } from '../../routes/setup/routes/api-keys.js';
 import { createAuthClaudeHandler } from '../../routes/setup/routes/auth-claude.js';
 import { createAuthCodexHandler } from '../../routes/setup/routes/auth-codex.js';
 import { createAuthCopilotHandler } from '../../routes/setup/routes/auth-copilot.js';
 import { createAuthCursorHandler } from '../../routes/setup/routes/auth-cursor.js';
 import { createAuthGeminiHandler } from '../../routes/setup/routes/auth-gemini.js';
 import { createAuthOpencodeHandler } from '../../routes/setup/routes/auth-opencode.js';
-import { createClaudeStatusHandler } from '../../routes/setup/routes/claude-status.js';
 import {
   createApplyPermissionProfileHandler,
   createDeleteProjectPermissionsHandler,
@@ -26,15 +24,14 @@ import { createDeauthCursorHandler } from '../../routes/setup/routes/deauth-curs
 import { createDeauthGeminiHandler } from '../../routes/setup/routes/deauth-gemini.js';
 import { createDeauthOpencodeHandler } from '../../routes/setup/routes/deauth-opencode.js';
 import { createDeleteApiKeyHandler } from '../../routes/setup/routes/delete-api-key.js';
-import { createGhStatusHandler } from '../../routes/setup/routes/gh-status.js';
 import { createInstallClaudeHandler } from '../../routes/setup/routes/install-claude.js';
 import { createInstallCodexHandler } from '../../routes/setup/routes/install-codex.js';
-import { createPlatformHandler } from '../../routes/setup/routes/platform.js';
 import { createStoreApiKeyHandler } from '../../routes/setup/routes/store-api-key.js';
 import { createVerifyClaudeAuthHandler } from '../../routes/setup/routes/verify-claude-auth.js';
 import { createVerifyCodexAuthHandler } from '../../routes/setup/routes/verify-codex-auth.js';
 import { SettingsService } from '../../services/settings-service.js';
 import { ProviderRegistry } from './provider-registry.service.js';
+import { SetupCredentialCache } from './setup-credential-cache.service.js';
 
 export type SetupHandlerName = keyof ReturnType<SetupHandlersService['createHandlers']>;
 
@@ -48,9 +45,10 @@ export class SetupHandlersService {
 
   constructor(
     @Inject(SettingsService) settings: SettingsService,
-    @Inject(ProviderRegistry) providers: ProviderRegistry
+    @Inject(ProviderRegistry) providers: ProviderRegistry,
+    @Inject(SetupCredentialCache) keys: SetupCredentialCache
   ) {
-    this.handlers = this.createHandlers(settings, providers);
+    this.handlers = this.createHandlers(settings, providers, keys);
   }
 
   run(name: SetupHandlerName, request: Request, response: Response): Promise<void> {
@@ -62,19 +60,19 @@ export class SetupHandlersService {
     );
   }
 
-  private createHandlers(settings: SettingsService, providers: ProviderRegistry) {
+  private createHandlers(
+    settings: SettingsService,
+    providers: ProviderRegistry,
+    keys: SetupCredentialCache
+  ) {
     return {
-      claudeStatus: createClaudeStatusHandler(),
       installClaude: createInstallClaudeHandler(),
       authClaude: createAuthClaudeHandler(),
       deauthClaude: createDeauthClaudeHandler(),
-      storeApiKey: createStoreApiKeyHandler(),
-      deleteApiKey: createDeleteApiKeyHandler(),
-      apiKeys: createApiKeysHandler(),
-      platform: createPlatformHandler(),
-      verifyClaudeAuth: createVerifyClaudeAuthHandler(settings),
-      verifyCodexAuth: createVerifyCodexAuthHandler(settings, providers),
-      ghStatus: createGhStatusHandler(),
+      storeApiKey: createStoreApiKeyHandler(keys),
+      deleteApiKey: createDeleteApiKeyHandler(keys),
+      verifyClaudeAuth: createVerifyClaudeAuthHandler(settings, keys),
+      verifyCodexAuth: createVerifyCodexAuthHandler(settings, providers, keys),
       authCursor: createAuthCursorHandler(),
       deauthCursor: createDeauthCursorHandler(),
       installCodex: createInstallCodexHandler(),

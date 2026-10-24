@@ -11,6 +11,7 @@ import { createGenerateCommitMessageHandler } from '@/routes/worktree/routes/gen
 import { createGeneratePRDescriptionHandler } from '@/routes/worktree/routes/generate-pr-description.js';
 import { createVerifyClaudeAuthHandler } from '@/routes/setup/routes/verify-claude-auth.js';
 import { createVerifyCodexAuthHandler } from '@/routes/setup/routes/verify-codex-auth.js';
+import { SetupCredentialCache } from '@/modules/providers/setup-credential-cache.service.js';
 
 let directory: string, project: string, settings: SettingsService;
 let providers: ReturnType<typeof createTestProviderRegistry>;
@@ -86,12 +87,9 @@ it.each([
   }
 );
 
-it.each([
-  ['Claude', createVerifyClaudeAuthHandler],
-  ['Codex', createVerifyCodexAuthHandler],
-] as const)(
+it.each(['Claude', 'Codex'] as const)(
   'uses the shared connection-test timeout for the %s authentication probe',
-  async (_label, create) => {
+  async (label) => {
     // The retired flag must not turn a real auth probe into a successful mock.
     vi.stubEnv('AUTOMAKER_MOCK_AGENT', 'true');
     await settings.updateGlobalSettings({
@@ -103,7 +101,12 @@ it.each([
     });
     const timer = vi.spyOn(globalThis, 'setTimeout');
     const json = vi.fn();
-    await create(settings, providers)(
+    const keys = new SetupCredentialCache();
+    const handler =
+      label === 'Claude'
+        ? createVerifyClaudeAuthHandler(settings, keys)
+        : createVerifyCodexAuthHandler(settings, providers, keys);
+    await handler(
       { body: { authMethod: 'api_key', apiKey: 'invalid' }, ip: 'fixture' } as Request,
       { json } as unknown as Response
     );

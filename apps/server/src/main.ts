@@ -54,6 +54,7 @@ export async function createNestApplication(
     AppModule.register(config, workingDirectory, {
       runStartupTasks: options.runStartupTasks ?? true,
       services: options.services,
+      hostEnvironment: environment,
       httpServer,
     }),
     adapter,

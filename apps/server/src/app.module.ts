@@ -47,15 +47,19 @@ export class AppModule {
   static register(
     config: RuntimeConfig,
     workingDirectory: string,
-    serviceOptions: Pick<LegacyApplicationOptions, 'runStartupTasks' | 'services' | 'httpServer'>
+    serviceOptions: Pick<
+      LegacyApplicationOptions,
+      'runStartupTasks' | 'services' | 'httpServer'
+    > & { hostEnvironment?: NodeJS.ProcessEnv }
   ): DynamicModule {
+    const { hostEnvironment, ...legacyOptions } = serviceOptions;
     return {
       module: AppModule,
       imports: [
-        RuntimeConfigModule.register(config, workingDirectory),
+        RuntimeConfigModule.register(config, workingDirectory, hostEnvironment),
         LegacyModule.register(
           {
-            ...serviceOptions,
+            ...legacyOptions,
             dataDir: config.storage.dataDirectory,
             workingDirectory,
           },

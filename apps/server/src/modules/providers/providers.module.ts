@@ -9,6 +9,12 @@ import { ProviderModelCatalogService } from './provider-model-catalog.service.js
 import { SetupController } from './setup.controller.js';
 import { SetupHandlersService } from './setup-handlers.service.js';
 import { ToolPolicyService } from './tool-policy.service.js';
+import { HostSetupStatusService } from './host-setup-status.service.js';
+import { SetupCredentialCache } from './setup-credential-cache.service.js';
+import {
+  SetupStatusRuntime,
+  NodeSetupStatusRuntime,
+} from '../../core/platform/setup-status.runtime.js';
 
 @Global()
 @Module({
@@ -21,6 +27,9 @@ import { ToolPolicyService } from './tool-policy.service.js';
     ProviderModelCatalogService,
     SetupHandlersService,
     ToolPolicyService,
+    SetupCredentialCache,
+    HostSetupStatusService,
+    { provide: SetupStatusRuntime, useClass: NodeSetupStatusRuntime },
   ],
   exports: [ProviderRegistry, ProviderConnectionRepository, ToolPolicyService],
 })

@@ -9,7 +9,7 @@ import type { SettingsService } from '../../../services/settings-service.js';
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import { createLogger } from '@automaker/utils';
 import { getClaudeAuthIndicators } from '@automaker/platform';
-import { getApiKey } from '../common.js';
+import type { SetupCredentialCache } from '../../../modules/providers/setup-credential-cache.service.js';
 import {
   createSecureAuthEnv,
   AuthSessionManager,
@@ -79,7 +79,10 @@ function containsAuthError(text: string): boolean {
   return AUTH_ERROR_PATTERNS.some((pattern) => lowerText.includes(pattern.toLowerCase()));
 }
 
-export function createVerifyClaudeAuthHandler(settingsService?: SettingsService) {
+export function createVerifyClaudeAuthHandler(
+  settingsService: SettingsService | undefined,
+  keys: SetupCredentialCache
+) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
       // Get the auth method and optional API key from the request body
@@ -142,7 +145,7 @@ export function createVerifyClaudeAuthHandler(settingsService?: SettingsService)
 
         // For API key verification without provided key, use stored key or env var
         if (authMethod === 'api_key' && !apiKey) {
-          const storedApiKey = getApiKey('anthropic');
+          const storedApiKey = keys.get('anthropic');
           if (storedApiKey) {
             authEnv.ANTHROPIC_API_KEY = storedApiKey;
             logger.info('[Setup] Using stored API key for verification');
