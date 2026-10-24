@@ -48,23 +48,20 @@ afterAll(async () => {
 
 describe('Nest shell and legacy bridge contract', () => {
   it('rejects conflicting provider model catalogs before the application can listen', async () => {
-    const providerRegistry = new ProviderRegistry(
-      ['claude', 'cursor'].map((name) => ({
-        name,
-        create: () =>
-          ({
-            getAvailableModels: () => [{ id: 'conflicting-model' }],
-          }) as never,
-      })),
-      { isDisconnected: () => false } as never
-    );
+    const providerRegistrations = ['claude', 'cursor'].map((name) => ({
+      name,
+      create: () =>
+        ({
+          getAvailableModels: () => [{ id: 'conflicting-model' }],
+        }) as never,
+    }));
     await expect(
       createNestApplication({
         host: '127.0.0.1',
         port: 0,
         runStartupTasks: false,
         enableShutdownHooks: false,
-        services: { providerRegistry },
+        providerRegistrations,
       })
     ).rejects.toThrow('Duplicate model ID conflicting-model: providers claude and cursor.');
   });
@@ -92,8 +89,6 @@ describe('Nest shell and legacy bridge contract', () => {
       pipeline: services.pipelineService,
       eventHook: services.eventHookService,
       loginAttemptStore: services.loginAttemptStore,
-      providerConnections: services.providerConnections,
-      providerRegistry: services.providerRegistry,
     };
 
     for (const [name, token] of Object.entries(LEGACY_SERVICES)) {
@@ -110,6 +105,7 @@ describe('Nest shell and legacy bridge contract', () => {
       enableShutdownHooks: false,
     });
     try {
+      expect(second.app.get(ProviderRegistry)).not.toBe(runtime.app.get(ProviderRegistry));
       for (const [name, token] of Object.entries(LEGACY_SERVICES)) {
         expect(second.app.get(token), name).not.toBe(runtime.app.get(token));
       }

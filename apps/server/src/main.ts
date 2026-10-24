@@ -12,6 +12,7 @@ import type { LegacyApplication, LegacyApplicationOptions } from './legacy-appli
 import { LEGACY_APPLICATION } from './legacy/legacy.tokens.js';
 import { NestLogger } from './nest-logger.js';
 import { SharedHttpServerExpressAdapter } from './core/http/shared-http-server.adapter.js';
+import type { ProviderRegistration } from './modules/providers/provider-registry.service.js';
 
 const logger = createLogger('ServerBootstrap');
 
@@ -26,6 +27,8 @@ export interface NestApplicationFactoryOptions extends Pick<
   enableShutdownHooks?: boolean;
   environment?: NodeJS.ProcessEnv;
   workingDirectory?: string;
+  /** Explicit code-level composition seam; never populated from environment/HTTP. */
+  providerRegistrations?: readonly ProviderRegistration[];
 }
 
 export interface AutomakerNestApplication {
@@ -54,6 +57,7 @@ export async function createNestApplication(
     AppModule.register(config, workingDirectory, {
       runStartupTasks: options.runStartupTasks ?? true,
       services: options.services,
+      providerRegistrations: options.providerRegistrations,
       hostEnvironment: environment,
       httpServer,
     }),

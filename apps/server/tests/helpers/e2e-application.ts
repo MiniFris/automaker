@@ -11,9 +11,7 @@ import path from 'node:path';
 import { AppModule } from '../../src/app.module.js';
 import { parseRuntimeConfig } from '../../src/core/config/index.js';
 import { SharedHttpServerExpressAdapter } from '../../src/core/http/shared-http-server.adapter.js';
-import { LEGACY_SERVICES } from '../../src/legacy/legacy.tokens.js';
-import { ProviderRegistry } from '../../src/modules/providers/provider-registry.service.js';
-import { ProviderConnectionRepository } from '../../src/modules/providers/provider-connection.repository.js';
+import { PROVIDER_REGISTRATIONS } from '../../src/modules/providers/provider-registry.service.js';
 import { createProviderRegistrations } from '../../src/modules/providers/provider-registrations.js';
 import { SetupStatusRuntime } from '../../src/core/platform/setup-status.runtime.js';
 import { ClaudeVerificationRuntime } from '../../src/core/platform/claude-verification.runtime.js';
@@ -68,48 +66,37 @@ export async function createE2eApplication(
         { provide: Symbol('E2E_DATA_CLEANUP'), useValue: { onApplicationShutdown: cleanup } },
       ],
     })
-      .overrideProvider(LEGACY_SERVICES.providerRegistry)
+      .overrideProvider(PROVIDER_REGISTRATIONS)
       .useFactory({
-        inject: [
-          SettingsService,
-          LEGACY_SERVICES.providerConnections,
-          ApplicationCredentialsService,
-        ],
-        factory: (
-          settings: SettingsService,
-          connections: ProviderConnectionRepository,
-          credentials: ApplicationCredentialsService
-        ) =>
-          new ProviderRegistry(
-            createProviderRegistrations(settings).map((registration) => {
-              // Preserve production metadata/aliases/priority, but never real execution.
-              // Catalog access is offline; the production registrations unit test guards it.
-              const models = registration.create().getAvailableModels();
-              return {
-                ...registration,
-                create: () => {
-                  const provider = new MockProvider(
-                    registration.name,
-                    models,
-                    '[test] hold Running Agents chat'
-                  );
-                  if (registration.name === 'cursor')
-                    provider.checkAuth = () =>
-                      new CursorProvider({}, () => credentials.environment()).checkAuth();
-                  // Real passive Google-key policy/status, but never a vendor CLI/query.
-                  // Keep file hints inside the owned test profile, not the operator's home.
-                  if (registration.name === 'gemini')
-                    provider.checkAuth = () =>
-                      new GeminiProvider({}, async () => ({
-                        ...(await credentials.environment()),
-                        HOME: path.join(dataDirectory, 'gemini-home'),
-                      })).checkAuth();
-                  return provider;
-                },
-              };
-            }),
-            connections
-          ),
+        inject: [SettingsService, ApplicationCredentialsService],
+        factory: (settings: SettingsService, credentials: ApplicationCredentialsService) =>
+          createProviderRegistrations(settings).map((registration) => {
+            // Preserve production metadata/aliases/priority, but never real execution.
+            // Catalog access is offline; the production registrations unit test guards it.
+            const models = registration.create().getAvailableModels();
+            return {
+              ...registration,
+              create: () => {
+                const provider = new MockProvider(
+                  registration.name,
+                  models,
+                  '[test] hold Running Agents chat'
+                );
+                if (registration.name === 'cursor')
+                  provider.checkAuth = () =>
+                    new CursorProvider({}, () => credentials.environment()).checkAuth();
+                // Real passive Google-key policy/status, but never a vendor CLI/query.
+                // Keep file hints inside the owned test profile, not the operator's home.
+                if (registration.name === 'gemini')
+                  provider.checkAuth = () =>
+                    new GeminiProvider({}, async () => ({
+                      ...(await credentials.environment()),
+                      HOME: path.join(dataDirectory, 'gemini-home'),
+                    })).checkAuth();
+                return provider;
+              },
+            };
+          }),
       })
       .overrideProvider(CodexCredentialRuntime)
       .useValue({ read: async () => ({ kind: 'api-key' }) })

@@ -18,6 +18,27 @@ export interface ProviderRegistration {
 
 export const PROVIDER_REGISTRATIONS = Symbol('PROVIDER_REGISTRATIONS');
 
+/** Pure metadata validation: safe before Nest creates any resource owners. */
+export function indexProviderRegistrations(registrations: readonly ProviderRegistration[]) {
+  const providers = new Map<string, ProviderRegistration>();
+  const aliases = new Map<string, string>();
+  for (const registration of registrations) {
+    const name = registration.name.toLowerCase();
+    if (!name || providers.has(name) || aliases.has(name)) {
+      throw new Error(`Duplicate provider name or alias: ${name || '<empty>'}.`);
+    }
+    providers.set(name, Object.freeze({ ...registration, name }));
+    for (const value of registration.aliases ?? []) {
+      const alias = value.toLowerCase();
+      if (!alias || alias === name || providers.has(alias) || aliases.has(alias)) {
+        throw new Error(`Duplicate provider name or alias: ${alias || '<empty>'}.`);
+      }
+      aliases.set(alias, name);
+    }
+  }
+  return { providers, aliases };
+}
+
 @Injectable()
 export class ProviderRegistry implements OnModuleInit, OnApplicationShutdown {
   private readonly registrations: ReadonlyMap<string, ProviderRegistration>;
@@ -29,22 +50,7 @@ export class ProviderRegistry implements OnModuleInit, OnApplicationShutdown {
     @Inject(ProviderConnectionRepository)
     private readonly connections: ProviderConnectionRepository
   ) {
-    const providers = new Map<string, ProviderRegistration>();
-    const aliases = new Map<string, string>();
-    for (const registration of registrations) {
-      const name = registration.name.toLowerCase();
-      if (!name || providers.has(name) || aliases.has(name)) {
-        throw new Error(`Duplicate provider name or alias: ${name || '<empty>'}.`);
-      }
-      providers.set(name, Object.freeze({ ...registration, name }));
-      for (const value of registration.aliases ?? []) {
-        const alias = value.toLowerCase();
-        if (!alias || alias === name || providers.has(alias) || aliases.has(alias)) {
-          throw new Error(`Duplicate provider name or alias: ${alias || '<empty>'}.`);
-        }
-        aliases.set(alias, name);
-      }
-    }
+    const { providers, aliases } = indexProviderRegistrations(registrations);
     this.registrations = providers;
     this.aliases = aliases;
   }

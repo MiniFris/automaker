@@ -29,12 +29,8 @@ import { EventHookService } from '../services/event-hook-service.js';
 import { NotificationService } from '../services/notification-service.js';
 import { EventHistoryService } from '../services/event-history-service.js';
 import { LoginAttemptStore } from '../core/auth/login-attempt.store.js';
-import { ProviderConnectionRepository } from '../modules/providers/provider-connection.repository.js';
-import { createProviderRegistrations } from '../modules/providers/provider-registrations.js';
 import { ProviderRegistry } from '../modules/providers/provider-registry.service.js';
 import { ToolPolicyService } from '../modules/providers/tool-policy.service.js';
-import { RuntimePathsService } from '../core/config/index.js';
-import { ApplicationCredentialsService } from '../modules/providers/application-credentials.service.js';
 import {
   DATA_DIRECTORY,
   LEGACY_EVENT_EMITTER,
@@ -58,11 +54,15 @@ export const APPLICATION_SERVICE_TOKENS = {
   pipelineService: tokens.pipeline,
   eventHookService: tokens.eventHook,
   loginAttemptStore: tokens.loginAttemptStore,
-  providerConnections: tokens.providerConnections,
-  providerRegistry: tokens.providerRegistry,
 } satisfies Record<keyof LegacyServiceOverrides, symbol>;
 
 export function createApplicationServiceProviders(options: LegacyApplicationOptions): Provider[] {
+  for (const key of Object.keys(options.services ?? {})) {
+    if (!Object.hasOwn(APPLICATION_SERVICE_TOKENS, key))
+      throw new Error(
+        'Unknown legacy service override. Configure providers through providerRegistrations.'
+      );
+  }
   function service<K extends keyof LegacyServiceOverrides, Args extends unknown[]>(
     key: K,
     inject: InjectionToken[],
@@ -76,27 +76,8 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
   }
 
   return [
-    ToolPolicyService,
     service('events', [], createEventEmitter),
     service('settingsService', [DATA_DIRECTORY], (dataDir: string) => new SettingsService(dataDir)),
-    service(
-      'providerConnections',
-      [RuntimePathsService],
-      (paths: RuntimePathsService) => new ProviderConnectionRepository(paths)
-    ),
-    service(
-      'providerRegistry',
-      [tokens.settings, tokens.providerConnections, ApplicationCredentialsService],
-      (
-        settings: SettingsService,
-        connections: ProviderConnectionRepository,
-        credentials: ApplicationCredentialsService
-      ) =>
-        new ProviderRegistry(
-          createProviderRegistrations(settings, () => credentials.environment()),
-          connections
-        )
-    ),
     service(
       'agentService',
       [
@@ -165,7 +146,7 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
         tokens.settings,
         tokens.featureLoader,
         tokens.notification,
-        tokens.providerRegistry,
+        ProviderRegistry,
         ToolPolicyService,
       ],
       (
@@ -193,7 +174,7 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
     ),
     service(
       'ideationService',
-      [LEGACY_EVENT_EMITTER, tokens.settings, tokens.featureLoader, tokens.providerRegistry],
+      [LEGACY_EVENT_EMITTER, tokens.settings, tokens.featureLoader, ProviderRegistry],
       (
         events: EventEmitter,
         settings: SettingsService,

@@ -1,6 +1,5 @@
 import { createNestApplication } from '../../src/main.js';
 import { AgentSessionRepository } from '../../src/services/agent/agent-session.repository.js';
-import { ProviderRegistry } from '../../src/modules/providers/provider-registry.service.js';
 import { MockProvider } from '../helpers/mock-provider.js';
 import { AgentQueueDeliveryStore } from '../../src/services/agent/agent-queue-delivery-store.js';
 
@@ -44,11 +43,8 @@ const runtime = await createNestApplication({
   dataDir: directory,
   runStartupTasks: false,
   enableShutdownHooks: false,
-  services: {
-    providerRegistry: new ProviderRegistry([{ name: 'claude', create: () => provider }], {
-      isDisconnected: () => false,
-    } as never),
-  },
+  workingDirectory: directory,
+  providerRegistrations: [{ name: 'claude', create: () => provider }],
 });
 await runtime.start();
 const service = runtime.legacy.services.agentService;

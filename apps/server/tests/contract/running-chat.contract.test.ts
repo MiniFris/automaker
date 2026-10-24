@@ -4,7 +4,6 @@ import os from 'node:os';
 import type { AddressInfo } from 'node:net';
 import { expect, it, vi } from 'vitest';
 import { createNestApplication } from '../../src/main.js';
-import { ProviderRegistry } from '../../src/modules/providers/provider-registry.service.js';
 import { MockProvider } from '../helpers/mock-provider.js';
 import type { ExecuteOptions } from '../../src/providers/types.js';
 
@@ -45,11 +44,8 @@ it('lists native chat leases through cancellation cleanup without exposing promp
     dataDir: directory,
     runStartupTasks: false,
     enableShutdownHooks: false,
-    services: {
-      providerRegistry: new ProviderRegistry([{ name: 'claude', create: () => provider }], {
-        isDisconnected: () => false,
-      } as never),
-    },
+    workingDirectory: directory,
+    providerRegistrations: [{ name: 'claude', create: () => provider }],
   });
   try {
     await runtime.start();

@@ -24,8 +24,6 @@ const LOG_LEVEL_MAP: Record<string, LogLevel> = {
 };
 import { setRequestLoggingEnabled } from './lib/request-logging-state.js';
 import type { LoginAttemptStore } from './core/auth/login-attempt.store.js';
-import type { ProviderConnectionRepository } from './modules/providers/provider-connection.repository.js';
-import type { ProviderRegistry } from './modules/providers/provider-registry.service.js';
 import {
   createCorrelationId,
   runWithCorrelationContext,
@@ -191,8 +189,6 @@ export interface LegacyServiceOverrides {
   pipelineService: PipelineService;
   eventHookService: EventHookService;
   loginAttemptStore: LoginAttemptStore;
-  providerConnections: ProviderConnectionRepository;
-  providerRegistry: ProviderRegistry;
 }
 
 export interface LegacyApplicationOptions {

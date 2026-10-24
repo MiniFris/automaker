@@ -3,7 +3,7 @@
   "sourceRoot": "apps/server/src",
   "summary": {
     "files": 605,
-    "internalEdges": 2000,
+    "internalEdges": 1997,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -12,21 +12,21 @@
     "core -> lib": 5,
     "core -> middleware": 1,
     "core -> services": 1,
-    "legacy -> core": 3,
+    "legacy -> core": 2,
     "legacy -> legacy": 3,
     "legacy -> lib": 1,
-    "legacy -> modules": 5,
+    "legacy -> modules": 2,
     "legacy -> root": 2,
     "legacy -> services": 27,
     "lib -> lib": 3,
     "lib -> services": 1,
     "modules -> core": 116,
-    "modules -> legacy": 28,
+    "modules -> legacy": 27,
     "modules -> lib": 24,
-    "modules -> modules": 291,
+    "modules -> modules": 292,
     "modules -> providers": 27,
     "modules -> routes": 32,
-    "modules -> services": 121,
+    "modules -> services": 122,
     "modules -> types": 2,
     "providers -> core": 1,
     "providers -> lib": 3,
@@ -472,6 +472,10 @@
     },
     {
       "source": "apps/server/src/app.module.ts",
+      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
+    },
+    {
+      "source": "apps/server/src/app.module.ts",
       "target": "apps/server/src/modules/providers/providers.module.ts"
     },
     {
@@ -772,14 +776,6 @@
     },
     {
       "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/modules/providers/provider-connection.repository.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/agent-service.ts"
     },
     {
@@ -844,10 +840,6 @@
     },
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/core/config/index.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
       "target": "apps/server/src/legacy-application.ts"
     },
     {
@@ -857,18 +849,6 @@
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
       "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/modules/providers/application-credentials.service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/modules/providers/provider-connection.repository.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/modules/providers/provider-registrations.ts"
     },
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
@@ -1037,6 +1017,10 @@
     {
       "source": "apps/server/src/main.ts",
       "target": "apps/server/src/legacy/legacy.tokens.ts"
+    },
+    {
+      "source": "apps/server/src/main.ts",
+      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
     },
     {
       "source": "apps/server/src/main.ts",
@@ -2836,10 +2820,6 @@
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/providers.module.ts",
       "target": "apps/server/src/modules/providers/application-credentials.service.ts"
     },
     {
@@ -2896,6 +2876,10 @@
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/modules/providers/provider-registrations.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
       "target": "apps/server/src/modules/providers/provider-registry.service.ts"
     },
     {
@@ -2945,6 +2929,10 @@
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
       "target": "apps/server/src/services/gemini-usage-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/services/settings-service.ts"
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",

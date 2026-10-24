@@ -1,7 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createNestApplication } from '../../src/main.js';
-import { ProviderRegistry } from '../../src/modules/providers/provider-registry.service.js';
 import type { ExecuteOptions } from '../../src/providers/types.js';
 import { MockProvider } from '../helpers/mock-provider.js';
 
@@ -44,11 +43,8 @@ const runtime = await createNestApplication({
   port: 0,
   dataDir: directory,
   runStartupTasks: false,
-  services: {
-    providerRegistry: new ProviderRegistry([{ name: 'claude', create: () => provider }], {
-      isDisconnected: () => false,
-    } as never),
-  },
+  workingDirectory: directory,
+  providerRegistrations: [{ name: 'claude', create: () => provider }],
 });
 await runtime.start();
 sessionId = (

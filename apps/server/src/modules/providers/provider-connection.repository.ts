@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -18,7 +18,7 @@ const DISCONNECTED_MARKERS: Readonly<Record<string, string>> = Object.freeze({
 @Injectable()
 export class ProviderConnectionRepository {
   private readonly instanceId = randomUUID();
-  constructor(private readonly paths: RuntimePathsService) {}
+  constructor(@Inject(RuntimePathsService) private readonly paths: RuntimePathsService) {}
 
   static forWorkingDirectory(workingDirectory: string): ProviderConnectionRepository {
     return new ProviderConnectionRepository({

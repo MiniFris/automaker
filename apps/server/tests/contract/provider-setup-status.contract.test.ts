@@ -4,8 +4,6 @@ import path from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { expect, it, vi } from 'vitest';
 import { createNestApplication } from '../../src/main.js';
-import { ProviderRegistry } from '../../src/modules/providers/provider-registry.service.js';
-import { ProviderConnectionRepository } from '../../src/modules/providers/provider-connection.repository.js';
 import { MockProvider } from '../helpers/mock-provider.js';
 
 it('serves native setup status through injected adapters and isolates disconnect markers between apps', async () => {
@@ -21,10 +19,6 @@ it('serves native setup status through injected adapters and isolates disconnect
         return checkAuth();
       }
     }
-    const registry = new ProviderRegistry(
-      names.map((provider) => ({ name: provider, create: () => new StatusProvider(provider) })),
-      ProviderConnectionRepository.forWorkingDirectory(workingDirectory)
-    );
     const runtime = await createNestApplication({
       host: '127.0.0.1',
       port: 0,
@@ -32,7 +26,10 @@ it('serves native setup status through injected adapters and isolates disconnect
       workingDirectory,
       runStartupTasks: false,
       enableShutdownHooks: false,
-      services: { providerRegistry: registry },
+      providerRegistrations: names.map((provider) => ({
+        name: provider,
+        create: () => new StatusProvider(provider),
+      })),
       environment: {
         NODE_ENV: 'test',
         AUTOMAKER_API_KEY: 'fixture-api-key',

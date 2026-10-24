@@ -4,8 +4,6 @@ import path from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { expect, it, vi } from 'vitest';
 import { createNestApplication } from '../../src/main.js';
-import { ProviderRegistry } from '../../src/modules/providers/provider-registry.service.js';
-import { ProviderConnectionRepository } from '../../src/modules/providers/provider-connection.repository.js';
 import { ProviderModelCatalogService } from '../../src/modules/providers/provider-model-catalog.service.js';
 import { MockProvider } from '../helpers/mock-provider.js';
 
@@ -42,21 +40,18 @@ it('owns model discovery/cache per Nest app and preserves native catalog/status 
         ];
       }
     }
-    const registry = new ProviderRegistry(
-      ['copilot', 'opencode', 'codex'].map((name) => ({
-        name,
-        create: () =>
-          new CatalogProvider(name, [
-            {
-              id: `${name}-${application}`,
-              name: application,
-              modelString: application,
-              provider: name,
-            },
-          ]),
-      })),
-      ProviderConnectionRepository.forWorkingDirectory(workingDirectory)
-    );
+    const providerRegistrations = ['copilot', 'opencode', 'codex'].map((name) => ({
+      name,
+      create: () =>
+        new CatalogProvider(name, [
+          {
+            id: `${name}-${application}`,
+            name: application,
+            modelString: application,
+            provider: name,
+          },
+        ]),
+    }));
     const runtime = await createNestApplication({
       host: '127.0.0.1',
       port: 0,
@@ -64,7 +59,7 @@ it('owns model discovery/cache per Nest app and preserves native catalog/status 
       workingDirectory,
       runStartupTasks: false,
       enableShutdownHooks: false,
-      services: { providerRegistry: registry },
+      providerRegistrations,
       environment: {
         NODE_ENV: 'test',
         AUTOMAKER_API_KEY: 'fixture-key',

@@ -7,7 +7,6 @@ import type { AddressInfo } from 'node:net';
 import { expect, it, vi } from 'vitest';
 import { createNestApplication } from '../../src/main.js';
 import { AgentSessionRepository } from '../../src/services/agent/agent-session.repository.js';
-import { ProviderRegistry } from '../../src/modules/providers/provider-registry.service.js';
 import { MockProvider } from '../helpers/mock-provider.js';
 
 it.each(['before-history', 'running', 'intent', 'history', 'settled', 'queued-ledger'] as const)(
@@ -67,11 +66,8 @@ it.each(['before-history', 'running', 'intent', 'history', 'settled', 'queued-le
         dataDir: directory,
         runStartupTasks: false,
         enableShutdownHooks: false,
-        services: {
-          providerRegistry: new ProviderRegistry([{ name: 'claude', create: () => provider }], {
-            isDisconnected: () => false,
-          } as never),
-        },
+        workingDirectory: directory,
+        providerRegistrations: [{ name: 'claude', create: () => provider }],
       });
       await runtime.start();
       const { port } = runtime.app.getHttpServer().address() as AddressInfo;

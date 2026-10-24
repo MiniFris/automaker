@@ -4,7 +4,6 @@ import path from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { expect, it, vi } from 'vitest';
 import { createNestApplication } from '../../src/main.js';
-import { ProviderRegistry } from '../../src/modules/providers/provider-registry.service.js';
 import { AgentSessionRegistry } from '../../src/services/agent/agent-session-registry.js';
 import { MockProvider } from '../helpers/mock-provider.js';
 import { EVENT_BUS, type EventBus } from '../../src/core/eventing/event-bus.js';
@@ -58,16 +57,14 @@ it.each(['chunks', 'buffered', 'native-tools'] as const)(
           };
           yield { type: 'result', subtype: 'success' };
         });
-      const providerRegistry = new ProviderRegistry([{ name: 'claude', create: () => provider }], {
-        isDisconnected: () => false,
-      } as never);
       const runtime = await createNestApplication({
         host: '127.0.0.1',
         port: 0,
         dataDir: directory,
         runStartupTasks: false,
         enableShutdownHooks: false,
-        services: { providerRegistry },
+        workingDirectory: directory,
+        providerRegistrations: [{ name: 'claude', create: () => provider }],
       });
       runtimes.push(runtime);
       runtime.legacy.events.subscribe((type, payload) => {

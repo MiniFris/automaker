@@ -501,3 +501,25 @@ Unit/native HTTP/browser contracts cover false-positive prevention, isolated app
 profiles, safe metadata errors, strict transport, clipboard/no polling and confirmed
 connection changes. This does not add a Cursor verifier/key manager or certify all
 discovery/WSL/version/cancellation paths and does not complete stage 7.
+
+## ADR-028: native provider ownership, registrations-only bootstrap seam
+
+ProvidersModule owns ProviderRegistry, ProviderConnectionRepository and
+ToolPolicyService directly, once per application. Legacy service factories,
+registry/connection tokens and service-bag fields are removed; transitional
+AutoMode/Ideation consumers inject the same native instances as agent services.
+
+Explicit bootstrap providerRegistrations supply metadata and adapter factories,
+not a replacement registry or repository. The array is copied/frozen; undefined
+selects production registrations, whereas an empty array never falls back to
+production. Invalid names/alias collisions fail in pure preflight before Nest
+creates services; adapter factories must not run during this validation.
+Retired legacy override keys fail closed rather than silently selecting live
+adapters. There is no HTTP/environment switch for this test/composition seam.
+
+Contract and E2E fixtures replace registrations while preserving native owners
+and shutdown behavior. Two-application contracts inspect actual Nest wrappers,
+consumer identity, marker isolation and independence after one app closes.
+This changes composition, not API v13, persisted formats or provider execution
+semantics. Remaining adapter DI, status, capabilities, tool policy, cleanup and
+stage 7–11 gates are not declared complete by this ownership change.

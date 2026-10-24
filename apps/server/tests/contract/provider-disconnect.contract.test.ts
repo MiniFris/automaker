@@ -22,10 +22,6 @@ it('requires a confirmed instance/provider target and persists only the selected
   const names = CliConnectionProviderSchema.options;
   const start = async (name: string) => {
     const workingDirectory = path.join(directory, name);
-    const registry = new ProviderRegistry(
-      names.map((provider) => ({ name: provider, create: () => new MockProvider(provider) })),
-      ProviderConnectionRepository.forWorkingDirectory(workingDirectory)
-    );
     const runtime = await createNestApplication({
       host: '127.0.0.1',
       port: 0,
@@ -33,7 +29,10 @@ it('requires a confirmed instance/provider target and persists only the selected
       dataDir: path.join(workingDirectory, 'data'),
       runStartupTasks: false,
       enableShutdownHooks: false,
-      services: { providerRegistry: registry },
+      providerRegistrations: names.map((provider) => ({
+        name: provider,
+        create: () => new MockProvider(provider),
+      })),
       environment: {
         NODE_ENV: 'test',
         AUTOMAKER_API_KEY: 'fixture-key',
@@ -75,7 +74,7 @@ it('requires a confirmed instance/provider target and persists only the selected
       );
       return { status: response.status, body: await response.json() };
     };
-    return { runtime, registry, request, workingDirectory };
+    return { runtime, registry: runtime.app.get(ProviderRegistry), request, workingDirectory };
   };
   try {
     const first = await start('first');

@@ -11,9 +11,15 @@ import {
   CodexUsageRuntime,
   NodeCodexUsageRuntime,
 } from '../../core/platform/codex-usage.runtime.js';
-import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
+import { SettingsService } from '../../services/settings-service.js';
+import { createProviderRegistrations } from './provider-registrations.js';
 import { ProviderConnectionRepository } from './provider-connection.repository.js';
-import { ProviderRegistry } from './provider-registry.service.js';
+import {
+  ProviderRegistry,
+  PROVIDER_REGISTRATIONS,
+  indexProviderRegistrations,
+  type ProviderRegistration,
+} from './provider-registry.service.js';
 import { ProviderUsageController } from './provider-usage.controller.js';
 import { ProviderUsageService } from './provider-usage.service.js';
 import { ProviderSetupStatusService } from './provider-setup-status.service.js';
@@ -56,8 +62,8 @@ import {
 @Module({
   controllers: [ProviderUsageController, SetupController],
   providers: [
-    { provide: ProviderConnectionRepository, useExisting: LEGACY_SERVICES.providerConnections },
-    { provide: ProviderRegistry, useExisting: LEGACY_SERVICES.providerRegistry },
+    ProviderConnectionRepository,
+    ProviderRegistry,
     {
       provide: ClaudeUsageService,
       inject: [ApplicationCredentialsService, RuntimePathsService],
@@ -130,10 +136,27 @@ import {
   ],
 })
 export class ProvidersModule {
-  static register(runStartupTasks: boolean): DynamicModule {
+  static register(
+    runStartupTasks: boolean,
+    registrations?: readonly ProviderRegistration[]
+  ): DynamicModule {
+    // Fail before NestFactory.create: a constructor failure there can abort the
+    // process after unrelated resource owners have already been instantiated.
+    // Never invoke adapter factories during this metadata-only preflight.
+    if (registrations !== undefined) indexProviderRegistrations(registrations);
     return {
       module: ProvidersModule,
-      providers: [{ provide: PROVIDER_STARTUP_TASKS, useValue: runStartupTasks }],
+      providers: [
+        { provide: PROVIDER_STARTUP_TASKS, useValue: runStartupTasks },
+        registrations !== undefined
+          ? { provide: PROVIDER_REGISTRATIONS, useValue: Object.freeze([...registrations]) }
+          : {
+              provide: PROVIDER_REGISTRATIONS,
+              inject: [SettingsService, ApplicationCredentialsService],
+              useFactory: (settings: SettingsService, credentials: ApplicationCredentialsService) =>
+                createProviderRegistrations(settings, () => credentials.environment()),
+            },
+      ],
     };
   }
 }

@@ -32,18 +32,16 @@ it('Nest shutdown drains a registry-owned stream outside AgentService before clo
       }
     }
   }
-  const registry = new ProviderRegistry(
-    [{ name: 'claude', create: () => new OwnedProvider('claude') }],
-    { isDisconnected: () => false } as never
-  );
   const runtime = await createNestApplication({
     host: '127.0.0.1',
     port: 0,
     dataDir: directory,
     runStartupTasks: false,
     enableShutdownHooks: false,
-    services: { providerRegistry: registry },
+    workingDirectory: directory,
+    providerRegistrations: [{ name: 'claude', create: () => new OwnedProvider('claude') }],
   });
+  const registry = runtime.app.get(ProviderRegistry);
   let closing: Promise<unknown> | undefined;
   try {
     await runtime.start();

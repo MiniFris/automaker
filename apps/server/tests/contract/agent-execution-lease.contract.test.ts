@@ -4,7 +4,6 @@ import path from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { expect, it, vi } from 'vitest';
 import { createNestApplication } from '../../src/main.js';
-import { ProviderRegistry } from '../../src/modules/providers/provider-registry.service.js';
 import { MockProvider } from '../helpers/mock-provider.js';
 import type { ExecuteOptions } from '../../src/providers/types.js';
 
@@ -59,11 +58,8 @@ it('rejects duplicate HTTP admission without erroring the original stream, and a
     dataDir: directory,
     runStartupTasks: false,
     enableShutdownHooks: false,
-    services: {
-      providerRegistry: new ProviderRegistry([{ name: 'claude', create: () => provider }], {
-        isDisconnected: () => false,
-      } as never),
-    },
+    workingDirectory: directory,
+    providerRegistrations: [{ name: 'claude', create: () => provider }],
   });
   const events: Array<{ type: string }> = [];
   runtime.legacy.events.subscribe((type, payload) => {

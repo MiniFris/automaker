@@ -30,6 +30,53 @@ AgentsModule
 └── AgentRecoveryService
 ```
 
+### Срез: native ownership реестра и подключений провайдеров
+
+`ProvidersModule` создаёт `ProviderRegistry` и `ProviderConnectionRepository`
+как class providers. Их legacy tokens, фабрики и поля service bag удалены.
+AutoMode и Ideation получают тот же native registry, что AgentProviderSelector;
+дублирующая регистрация `ToolPolicyService` в LegacyModule также удалена.
+Каждый из трёх сервисов имеет ровно одного владельца в Nest application,
+а разные applications не разделяют экземпляры или connection markers.
+
+Bootstrap поддерживает явные code-only `providerRegistrations`: это данные
+регистраций, а не подмена registry или его lifecycle. Неуказанное значение
+использует production registrations; пустой массив означает пустой registry,
+без неявного fallback. Массив копируется и замораживается. Дубликаты имён и aliases
+проверяются чистой metadata-функцией до NestFactory.create, без вызовов adapter
+factories и создания resource owners. Retired legacy overrides отклоняются
+до инициализации, а не игнорируются с запуском production adapters.
+
+HTTP contracts, child-process fixtures и browser E2E заменяют только registrations,
+сохраняя настоящие registry, repository и Nest shutdown hooks. Production model
+catalog, aliases, priority и fresh adapter semantics остаются прежними.
+HTTP API version остаётся 13: wire contracts в этом срезе не меняются.
+
+Проверки среза:
+
+- `native-provider-composition.contract.test.ts`: 9 passed — реальные Nest
+  wrappers, identity потребителей, две applications, disconnect/reconnect,
+  custom/empty registrations, retired overrides и metadata preflight без side effects.
+- `npm run test:server:unit`: 3573 passed, 40 skipped.
+- `npm run test:server:contract`: 291 passed. Первый запуск четырёх новых
+  preflight cases выявил ошибку параметризации самого теста (`metadata.map`);
+  после исправления весь contract suite повторно прошёл без retries/timeouts.
+- `npm run test:packages`: 1473 passed.
+- Server/UI production build (включая Electron main/preload), server/UI lint,
+  UI typecheck, lockfile, formatting/diff и три inventory checks: успешно.
+- Production lifecycle smoke: SIGTERM/SIGINT, exit 0.
+- Docker acceptance с `automaker-nest-stage2-smoke:latest`: 11 passed,
+  4 opt-in skipped; проверка owned cleanup успешна.
+- Выбранные реальные SSH CLI/SDK/Direct chat/restart cases: 3 passed,
+  34 отфильтрованы.
+- Chromium после завершения Docker/SSH: 8 passed — chat/Running Agents,
+  Cursor status/permissions, Gemini/Copilot status, confirmed credentials и
+  explicit legacy credential import. Adapters используют offline fixtures;
+  paid upstream, live vendor authentication и packaged Electron не проверялись.
+
+Это завершает перенос ownership этих сервисов, но не перенос всех adapters в DI,
+не capability/status audit и не весь этап 7. Остальные gates этапов 7–11 открыты.
+
 ## 7.1. Provider interface
 
 - [x] Зафиксировать общий interface: installation/auth status, models, capabilities,
@@ -196,10 +243,13 @@ capability автоматически доступной» и полного too
 - [x] Сохранить aliases и model matching priorities.
 - [x] Вынести disconnected markers в provider connection repository.
 - [x] Ввести duplicate alias/model ownership checks при startup.
-- [x] Поддержать mock provider только через test module override.
+- [x] Поддержать mock provider только через явную test composition registrations
+      или test module override, без HTTP/environment mock switch.
+- [x] Передать registry и connection repository в native ownership ProvidersModule,
+      удалить legacy aliases/factories и проверить единственность DI instances.
 
-Nest не предоставляет неявный multi-binding, поэтому registry должен получать
-явный массив provider tokens или собираться factory с перечисленными dependencies.
+Nest не предоставляет неявный multi-binding: registry получает явный массив
+registrations через `PROVIDER_REGISTRATIONS`, а repository — через class token.
 
 ### Промежуточный срез: обязательная зависимость registry
 

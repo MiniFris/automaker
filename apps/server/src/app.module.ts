@@ -31,6 +31,7 @@ import { ExecutionModule } from './modules/execution/execution.module.js';
 import { GitModule } from './modules/git/git.module.js';
 import { WorktreeModule } from './modules/worktree/worktree.module.js';
 import { ProvidersModule } from './modules/providers/providers.module.js';
+import type { ProviderRegistration } from './modules/providers/provider-registry.service.js';
 import { AgentsModule } from './modules/agents/agents.module.js';
 import { PipelineModule } from './modules/pipeline/pipeline.module.js';
 import { MCPModule } from './modules/mcp/mcp.module.js';
@@ -50,9 +51,12 @@ export class AppModule {
     serviceOptions: Pick<
       LegacyApplicationOptions,
       'runStartupTasks' | 'services' | 'httpServer'
-    > & { hostEnvironment?: NodeJS.ProcessEnv }
+    > & {
+      hostEnvironment?: NodeJS.ProcessEnv;
+      providerRegistrations?: readonly ProviderRegistration[];
+    }
   ): DynamicModule {
-    const { hostEnvironment, ...legacyOptions } = serviceOptions;
+    const { hostEnvironment, providerRegistrations, ...legacyOptions } = serviceOptions;
     return {
       module: AppModule,
       imports: [
@@ -73,7 +77,7 @@ export class AppModule {
         SecurityModule,
         ValidationModule,
         SettingsModule,
-        ProvidersModule.register(serviceOptions.runStartupTasks ?? true),
+        ProvidersModule.register(serviceOptions.runStartupTasks ?? true, providerRegistrations),
         AgentsModule,
         PipelineModule,
         MCPModule,
