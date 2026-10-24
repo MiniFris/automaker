@@ -5,17 +5,16 @@
 
 import path from 'path';
 import type { EventEmitter } from '../lib/events.js';
-import type { ExecuteOptions, ThinkingLevel } from '@automaker/types';
-import { stripProviderPrefix } from '@automaker/types';
+import type { ThinkingLevel } from '@automaker/types';
 import { isAbortError, createLogger, classifyError } from '@automaker/utils';
-import type { ProviderRegistry } from '../modules/providers/provider-registry.service.js';
-import type { ToolPolicyService } from '../modules/providers/tool-policy.service.js';
 import { AgentSessionRepository } from './agent/agent-session.repository.js';
 import { AgentSessionRegistry } from './agent/agent-session-registry.js';
 import { AgentSessionStorageError } from './agent/agent-session-storage.error.js';
 import { AgentExecutionCoordinator } from './agent/agent-execution-coordinator.js';
 import { AgentPromptBuilder } from './agent/agent-prompt-builder.js';
 import { AgentEnvironmentPreparer } from './agent/agent-environment-preparer.js';
+import { AgentProviderSelector } from './agent/agent-provider-selector.js';
+import { AgentQueryOptionsBuilder } from './agent/agent-query-options-builder.js';
 import { ConflictDomainError, UnavailableDomainError } from '../core/errors/domain-errors.js';
 import type {
   ActiveSession as Session,
@@ -24,25 +23,13 @@ import type {
   SessionMetadata,
   AgentMessageInput,
 } from './agent/agent-session.types.js';
-import { createChatOptions, validateWorkingDirectory } from '../lib/sdk-options.js';
+import { validateWorkingDirectory } from '../lib/sdk-options.js';
 import type { SettingsService } from './settings-service.js';
-import {
-  getAutoLoadClaudeMdSetting,
-  getUseClaudeCodeSystemPromptSetting,
-  getMCPServersFromSettings,
-  getSkillsConfiguration,
-  getSubagentsConfiguration,
-  getCustomSubagents,
-  getProviderByModelId,
-  resolveProviderContext,
-  getDefaultMaxTurnsSetting,
-} from '../lib/settings-helpers.js';
 
 export class AgentService {
   private reportedErrors = new WeakSet<object>();
   private events: EventEmitter;
   private settingsService: SettingsService | null = null;
-  private toolPolicy: ToolPolicyService | null = null;
   private logger = createLogger('AgentService');
 
   constructor(
@@ -53,12 +40,11 @@ export class AgentService {
     private readonly environments: AgentEnvironmentPreparer,
     events: EventEmitter,
     settingsService: SettingsService | undefined,
-    private readonly providerRegistry: ProviderRegistry,
-    toolPolicy?: ToolPolicyService
+    private readonly providers: AgentProviderSelector,
+    private readonly queries: AgentQueryOptionsBuilder
   ) {
     this.events = events;
     this.settingsService = settingsService ?? null;
-    this.toolPolicy = toolPolicy ?? null;
   }
 
   async initialize(): Promise<void> {
@@ -313,7 +299,7 @@ export class AgentService {
     // Validate vision support before processing images
     const effectiveModel = model || session.model;
     if (imagePaths && imagePaths.length > 0 && effectiveModel) {
-      const supportsVision = this.providerRegistry.supportsVision(effectiveModel);
+      const supportsVision = this.providers.supportsVision(effectiveModel);
       if (!supportsVision) {
         throw new Error(
           `This model (${effectiveModel}) does not support image input. ` +
@@ -357,74 +343,14 @@ export class AgentService {
       // Determine the effective working directory for context loading
       const effectiveWorkDir = workingDirectory || session.workingDirectory;
 
-      // Load autoLoadClaudeMd setting (project setting takes precedence over global)
-      const autoLoadClaudeMd = await getAutoLoadClaudeMdSetting(
-        effectiveWorkDir,
-        this.settingsService,
-        '[AgentService]'
-      );
-
-      // Load useClaudeCodeSystemPrompt setting (project setting takes precedence over global)
-      // Wrap in try/catch so transient settingsService errors don't abort message processing
-      let useClaudeCodeSystemPrompt = true;
-      try {
-        useClaudeCodeSystemPrompt = await getUseClaudeCodeSystemPromptSetting(
-          effectiveWorkDir,
-          this.settingsService,
-          '[AgentService]'
-        );
-      } catch (err) {
-        this.logger.error(
-          '[AgentService] getUseClaudeCodeSystemPromptSetting failed, defaulting to true',
-          err
-        );
-      }
-
-      // Load MCP servers from settings (global setting only)
-      const mcpServers = await getMCPServersFromSettings(this.settingsService, '[AgentService]');
-
-      // Get Skills configuration from settings
-      const skillsConfig = this.settingsService
-        ? await getSkillsConfiguration(this.settingsService)
-        : { enabled: false, sources: [] as Array<'user' | 'project'>, shouldIncludeInTools: false };
-
-      // Get Subagents configuration from settings
-      const subagentsConfig = this.settingsService
-        ? await getSubagentsConfiguration(this.settingsService)
-        : { enabled: false, sources: [] as Array<'user' | 'project'>, shouldIncludeInTools: false };
-
-      // Get custom subagents from settings (merge global + project-level) only if enabled
-      const customSubagents =
-        this.settingsService && subagentsConfig.enabled
-          ? await getCustomSubagents(this.settingsService, effectiveWorkDir)
-          : undefined;
-
-      // Get credentials for API calls
-      const credentials = await this.settingsService?.getCredentials();
-
-      // Try to find a provider for the model (if it's a provider model like "GLM-4.7")
-      // This allows users to select provider models in the Agent Runner UI
-      let claudeCompatibleProvider: import('@automaker/types').ClaudeCompatibleProvider | undefined;
-      let providerResolvedModel: string | undefined;
       const requestedModel = model || session.model;
-      if (requestedModel && this.settingsService) {
-        const providerResult = session.providerId
-          ? await resolveProviderContext(
-              this.settingsService,
-              requestedModel,
-              session.providerId,
-              '[AgentService]'
-            )
-          : await getProviderByModelId(requestedModel, this.settingsService, '[AgentService]');
-        if (providerResult.provider) {
-          claudeCompatibleProvider = providerResult.provider;
-          providerResolvedModel = providerResult.resolvedModel;
-          this.logger.info(
-            `[AgentService] Using provider "${providerResult.provider.name}" for model "${requestedModel}"` +
-              (providerResolvedModel ? ` -> resolved to "${providerResolvedModel}"` : '')
-          );
-        }
-      }
+      const configuration = await this.queries.configuration({
+        workingDirectory: effectiveWorkDir,
+        settings: this.settingsService,
+        requestedModel,
+        providerId: session.providerId,
+        signal: controller.signal,
+      });
 
       const remoteContext = await this.environments.usesManagedContext(
         this.settingsService,
@@ -435,143 +361,24 @@ export class AgentService {
       const combinedSystemPrompt = await this.prompts.systemPrompt({
         workingDirectory: effectiveWorkDir,
         message,
-        autoLoadClaudeMd,
+        autoLoadClaudeMd: configuration.autoLoadClaudeMd,
         requestedModel,
         remoteContext: Boolean(remoteContext),
         settings: this.settingsService,
         signal: controller.signal,
       });
 
-      // Build SDK options using centralized configuration
-      // Use thinking level and reasoning effort from request, or fall back to session's stored values
-      const effectiveThinkingLevel = thinkingLevel ?? session.thinkingLevel;
-      const effectiveReasoningEffort = reasoningEffort ?? session.reasoningEffort;
-
-      // When using a custom provider (GLM, MiniMax), use resolved Claude model for SDK config
-      // (thinking level budgets, allowedTools) but we MUST pass the provider's model ID
-      // (e.g. "GLM-4.7") to the API - not "claude-sonnet-4-6" which causes "model not found"
-      const modelForSdk = providerResolvedModel || model;
-      const sessionModelForSdk = providerResolvedModel ? undefined : session.model;
-
-      // Read user-configured max turns from settings
-      const userMaxTurns = await getDefaultMaxTurnsSetting(this.settingsService, '[AgentService]');
-
-      const sdkOptions = createChatOptions({
-        cwd: effectiveWorkDir,
-        model: modelForSdk,
-        sessionModel: sessionModelForSdk,
+      const { options, effectiveModel, routingModel } = this.queries.build({
+        configuration,
+        workingDirectory: effectiveWorkDir,
+        model,
+        session,
         systemPrompt: combinedSystemPrompt,
-        abortController: session.abortController!,
-        autoLoadClaudeMd,
-        useClaudeCodeSystemPrompt,
-        thinkingLevel: effectiveThinkingLevel, // Pass thinking level for Claude models
-        maxTurns: userMaxTurns, // User-configured max turns from settings
-        mcpServers: Object.keys(mcpServers).length > 0 ? mcpServers : undefined,
+        abortController: controller,
+        thinkingLevel,
+        reasoningEffort,
+        conversationHistory: this.prompts.history(session.messages),
       });
-
-      // Extract model, maxTurns, and allowedTools from SDK options
-      const effectiveModel = sdkOptions.model!;
-      const maxTurns = sdkOptions.maxTurns;
-      let allowedTools = sdkOptions.allowedTools as string[] | undefined;
-
-      // Build merged settingSources array using Set for automatic deduplication
-      const sdkSettingSources = (sdkOptions.settingSources ?? []).filter(
-        (source): source is 'user' | 'project' => source === 'user' || source === 'project'
-      );
-      const skillSettingSources = skillsConfig.enabled ? skillsConfig.sources : [];
-      const settingSources = [...new Set([...sdkSettingSources, ...skillSettingSources])];
-
-      // Enhance allowedTools with Skills and Subagents tools
-      // These tools are not in the provider's default set - they're added dynamically based on settings
-      const needsSkillTool = skillsConfig.shouldIncludeInTools;
-      const needsTaskTool =
-        subagentsConfig.shouldIncludeInTools &&
-        customSubagents &&
-        Object.keys(customSubagents).length > 0;
-
-      // Base tools that match the provider's default set
-      const baseTools = [
-        'Read',
-        'Write',
-        'Edit',
-        'MultiEdit',
-        'Glob',
-        'Grep',
-        'LS',
-        'Bash',
-        'WebSearch',
-        'WebFetch',
-        'TodoWrite',
-      ];
-
-      if (allowedTools) {
-        allowedTools = [...allowedTools]; // Create a copy to avoid mutating SDK options
-        // Add Skill tool if skills are enabled
-        if (needsSkillTool && !allowedTools.includes('Skill')) {
-          allowedTools.push('Skill');
-        }
-        // Add Task tool if custom subagents are configured
-        if (needsTaskTool && !allowedTools.includes('Task')) {
-          allowedTools.push('Task');
-        }
-      } else if (needsSkillTool || needsTaskTool) {
-        // If no allowedTools specified but we need to add Skill/Task tools,
-        // build the full list including base tools
-        allowedTools = [...baseTools];
-        if (needsSkillTool) {
-          allowedTools.push('Skill');
-        }
-        if (needsTaskTool) {
-          allowedTools.push('Task');
-        }
-      }
-
-      // Get provider for this model (with prefix)
-      // When using custom provider (GLM, MiniMax), requestedModel routes to Claude provider
-      const modelForProvider = claudeCompatibleProvider
-        ? (requestedModel ?? effectiveModel)
-        : effectiveModel;
-
-      if (this.toolPolicy) {
-        const capabilities = this.providerRegistry
-          .byName(this.providerRegistry.providerNameForModel(modelForProvider))
-          ?.getCapabilities();
-        allowedTools = this.toolPolicy.resolve({
-          requested: allowedTools,
-          readOnly: false,
-          providerSupportsTools: capabilities?.tools === true,
-        });
-      }
-
-      // Strip provider prefix - providers should receive bare model IDs
-      // CRITICAL: For custom providers (GLM, MiniMax), pass the provider's model ID (e.g. "GLM-4.7")
-      // to the API, NOT the resolved Claude model - otherwise we get "model not found"
-      const bareModel: string = claudeCompatibleProvider
-        ? (requestedModel ?? effectiveModel)
-        : stripProviderPrefix(effectiveModel);
-
-      // Build options for provider
-      const conversationHistory = this.prompts.history(session.messages);
-
-      const options: ExecuteOptions = {
-        prompt: '', // Will be set below based on images
-        model: bareModel, // Bare model ID (e.g., "gpt-5.1-codex-max", "composer-1")
-        originalModel: effectiveModel, // Original with prefix for logging (e.g., "codex-gpt-5.1-codex-max")
-        cwd: effectiveWorkDir,
-        systemPrompt: sdkOptions.systemPrompt,
-        maxTurns: maxTurns,
-        allowedTools: allowedTools,
-        abortController: session.abortController!,
-        conversationHistory,
-        settingSources: settingSources.length > 0 ? settingSources : undefined,
-        sdkSessionId: session.sdkSessionId, // Pass SDK session ID for resuming
-        mcpServers: Object.keys(mcpServers).length > 0 ? mcpServers : undefined, // Pass MCP servers configuration
-        agents: customSubagents, // Pass custom subagents for task delegation
-        thinkingLevel: effectiveThinkingLevel, // Pass thinking level for Claude models
-        reasoningEffort: effectiveReasoningEffort, // Pass reasoning effort for Codex models
-        credentials, // Pass credentials for resolving 'credentials' apiKeySource
-        claudeCompatibleProvider, // Pass provider for alternative endpoint configuration (GLM, MiniMax, etc.)
-      };
 
       // Build prompt content with images
       options.prompt = await this.prompts.content(message, imagePaths, controller.signal);
@@ -590,12 +397,7 @@ export class AgentService {
         onBinding: (binding) => this.updateSession(sessionId, { executionEnvironment: binding }),
       });
       const prepared = execution.options;
-      const allowDisconnected =
-        prepared.executionEnvironmentBinding?.type === 'ssh' ||
-        prepared.executionEnvironmentBinding?.type === 'docker';
-      const provider = this.providerRegistry.providerForModel(modelForProvider, {
-        throwOnDisconnected: !allowDisconnected,
-      });
+      const provider = this.providers.forQuery(routingModel, prepared.executionEnvironmentBinding);
       controller.signal.throwIfAborted();
       const stream = provider.executeQuery(prepared);
 

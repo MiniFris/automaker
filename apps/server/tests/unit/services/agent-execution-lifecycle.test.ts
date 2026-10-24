@@ -8,6 +8,7 @@ import { AgentSessionRegistry } from '../../../src/services/agent/agent-session-
 import { AgentExecutionCoordinator } from '../../../src/services/agent/agent-execution-coordinator.js';
 import { AgentPromptBuilder } from '../../../src/services/agent/agent-prompt-builder.js';
 import { AgentEnvironmentPreparer } from '../../../src/services/agent/agent-environment-preparer.js';
+import { createTestAgentProviders } from '../../helpers/agent-state.js';
 import { AgentSessionStorageError } from '../../../src/services/agent/agent-session-storage.error.js';
 import {
   ConflictDomainError,
@@ -120,9 +121,11 @@ describe('AgentService execution ownership', () => {
       new AgentEnvironmentPreparer(new AgentPromptBuilder()),
       emitter,
       undefined,
-      new ProviderRegistry([{ name: 'claude', create: () => provider }], {
-        isDisconnected: () => false,
-      } as never)
+      ...createTestAgentProviders(
+        new ProviderRegistry([{ name: 'claude', create: () => provider }], {
+          isDisconnected: () => false,
+        } as never)
+      )
     );
     await service.initialize();
     sessionId = (await service.createSession('Lease fixture', directory, directory, 'sonnet')).id;

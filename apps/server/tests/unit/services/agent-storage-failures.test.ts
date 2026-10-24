@@ -8,6 +8,7 @@ import { AgentSessionRegistry } from '../../../src/services/agent/agent-session-
 import { AgentExecutionCoordinator } from '../../../src/services/agent/agent-execution-coordinator.js';
 import { AgentPromptBuilder } from '../../../src/services/agent/agent-prompt-builder.js';
 import { AgentEnvironmentPreparer } from '../../../src/services/agent/agent-environment-preparer.js';
+import { createTestAgentProviders } from '../../helpers/agent-state.js';
 import { AgentSessionStorageError } from '../../../src/services/agent/agent-session-storage.error.js';
 import { ProviderRegistry } from '../../../src/modules/providers/provider-registry.service.js';
 import { createEventEmitter } from '../../../src/lib/events.js';
@@ -38,9 +39,11 @@ describe('agent storage failure boundaries', () => {
       new AgentEnvironmentPreparer(new AgentPromptBuilder()),
       emitter,
       undefined,
-      new ProviderRegistry([{ name: 'claude', create: () => new MockProvider('claude') }], {
-        isDisconnected: () => false,
-      } as never)
+      ...createTestAgentProviders(
+        new ProviderRegistry([{ name: 'claude', create: () => new MockProvider('claude') }], {
+          isDisconnected: () => false,
+        } as never)
+      )
     );
     execute = vi.spyOn(MockProvider.prototype, 'executeQuery');
     await service.initialize();

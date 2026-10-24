@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AgentService } from '@/services/agent-service.js';
-import { createTestAgentState } from '../../helpers/agent-state.js';
+import { createTestAgentState, createTestAgentProviders } from '../../helpers/agent-state.js';
 import type { ProviderRegistry } from '@/modules/providers/provider-registry.service.js';
 import * as fs from 'fs/promises';
 import * as imageHandler from '@automaker/utils';
@@ -60,7 +60,7 @@ describe('agent-service.ts', () => {
       ...createTestAgentState('/test/data'),
       mockEvents as any,
       undefined,
-      providers as unknown as ProviderRegistry
+      ...createTestAgentProviders(providers as unknown as ProviderRegistry)
     );
 
     // Mock loadContextFiles to return empty context by default
@@ -706,7 +706,7 @@ describe('agent-service.ts', () => {
         ...createTestAgentState('/test/data'),
         mockEvents as any,
         undefined,
-        providers as unknown as ProviderRegistry
+        ...createTestAgentProviders(providers as unknown as ProviderRegistry)
       );
       vi.mocked(fs.readFile).mockResolvedValue('{}');
       vi.mocked(fs.writeFile).mockResolvedValue(undefined);

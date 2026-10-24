@@ -3,6 +3,15 @@ import { AgentSessionRegistry } from '../../src/services/agent/agent-session-reg
 import { AgentExecutionCoordinator } from '../../src/services/agent/agent-execution-coordinator.js';
 import { AgentPromptBuilder } from '../../src/services/agent/agent-prompt-builder.js';
 import { AgentEnvironmentPreparer } from '../../src/services/agent/agent-environment-preparer.js';
+import { AgentProviderSelector } from '../../src/services/agent/agent-provider-selector.js';
+import { AgentQueryOptionsBuilder } from '../../src/services/agent/agent-query-options-builder.js';
+import type { ProviderRegistry } from '../../src/modules/providers/provider-registry.service.js';
+import type { ToolPolicyService } from '../../src/modules/providers/tool-policy.service.js';
+
+export function createTestAgentProviders(registry: ProviderRegistry, policy?: ToolPolicyService) {
+  const providers = new AgentProviderSelector(registry, policy);
+  return [providers, new AgentQueryOptionsBuilder(providers)] as const;
+}
 
 /** Separate persisted state and active registry for each explicit test application. */
 export function createTestAgentState(dataDirectory: string) {

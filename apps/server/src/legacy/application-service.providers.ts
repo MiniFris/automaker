@@ -8,6 +8,8 @@ import { AgentSessionRegistry } from '../services/agent/agent-session-registry.j
 import { AgentExecutionCoordinator } from '../services/agent/agent-execution-coordinator.js';
 import { AgentPromptBuilder } from '../services/agent/agent-prompt-builder.js';
 import { AgentEnvironmentPreparer } from '../services/agent/agent-environment-preparer.js';
+import { AgentProviderSelector } from '../services/agent/agent-provider-selector.js';
+import { AgentQueryOptionsBuilder } from '../services/agent/agent-query-options-builder.js';
 import { FeatureLoader } from '../services/feature-loader.js';
 import { AutoModeServiceCompat } from '../services/auto-mode/index.js';
 import { TerminalService } from '../services/terminal-service.js';
@@ -102,8 +104,8 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
         AgentEnvironmentPreparer,
         LEGACY_EVENT_EMITTER,
         tokens.settings,
-        tokens.providerRegistry,
-        ToolPolicyService,
+        AgentProviderSelector,
+        AgentQueryOptionsBuilder,
       ],
       (
         repository: AgentSessionRepository,
@@ -113,8 +115,8 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
         environments: AgentEnvironmentPreparer,
         events: EventEmitter,
         settings: SettingsService,
-        providers: ProviderRegistry,
-        policy: ToolPolicyService
+        providers: AgentProviderSelector,
+        queries: AgentQueryOptionsBuilder
       ) =>
         new AgentService(
           repository,
@@ -125,7 +127,7 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
           events,
           settings,
           providers,
-          policy
+          queries
         )
     ),
     service('featureLoader', [], () => new FeatureLoader()),

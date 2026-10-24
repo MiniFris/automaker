@@ -1,5 +1,5 @@
 import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
-import { createTestAgentState } from '../../helpers/agent-state.js';
+import { createTestAgentState, createTestAgentProviders } from '../../helpers/agent-state.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -235,7 +235,7 @@ describe.skipIf(process.platform !== 'linux')('target-side SDK setup and executi
       ...createTestAgentState(settings.getDataDirectory()),
       createEventEmitter(),
       settings,
-      createTestProviderRegistry(settings)
+      ...createTestAgentProviders(createTestProviderRegistry(settings))
     );
     await service.initialize();
     const session = await service.createSession('Remote SDK', project, project, 'sonnet');
@@ -253,7 +253,7 @@ describe.skipIf(process.platform !== 'linux')('target-side SDK setup and executi
       ...createTestAgentState(settings.getDataDirectory()),
       createEventEmitter(),
       settings,
-      createTestProviderRegistry(settings)
+      ...createTestAgentProviders(createTestProviderRegistry(settings))
     );
     await restarted.initialize();
     expect(

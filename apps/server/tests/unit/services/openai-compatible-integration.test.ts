@@ -1,5 +1,5 @@
 import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
-import { createTestAgentState } from '../../helpers/agent-state.js';
+import { createTestAgentState, createTestAgentProviders } from '../../helpers/agent-state.js';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -359,7 +359,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       ...createTestAgentState(settings.getDataDirectory()),
       events,
       settings,
-      createTestProviderRegistry(settings)
+      ...createTestAgentProviders(createTestProviderRegistry(settings))
     );
     await first.initialize();
     const session = await first.createSession('Direct chat', root, root, model, 'second');
@@ -370,7 +370,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       ...createTestAgentState(settings.getDataDirectory()),
       events,
       settings,
-      createTestProviderRegistry(settings)
+      ...createTestAgentProviders(createTestProviderRegistry(settings))
     );
     await restarted.initialize();
     expect(
@@ -411,7 +411,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       ...createTestAgentState(settings.getDataDirectory()),
       events,
       settings,
-      createTestProviderRegistry(settings)
+      ...createTestAgentProviders(createTestProviderRegistry(settings))
     );
     await service.initialize();
     const session = await service.createSession('Queue', root, root, model, 'first');
@@ -422,7 +422,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       ...createTestAgentState(settings.getDataDirectory()),
       events,
       settings,
-      createTestProviderRegistry(settings)
+      ...createTestAgentProviders(createTestProviderRegistry(settings))
     );
     expect((await restarted.getQueue(session.id)).queue?.[0]).toMatchObject({
       model,
@@ -449,7 +449,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       ...createTestAgentState(settings.getDataDirectory()),
       events,
       settings,
-      createTestProviderRegistry(settings)
+      ...createTestAgentProviders(createTestProviderRegistry(settings))
     );
     await service.initialize();
     const session = await service.createSession('Coding', root, root, model, 'first');
@@ -541,7 +541,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       ...createTestAgentState(settings.getDataDirectory()),
       events,
       settings,
-      createTestProviderRegistry(settings)
+      ...createTestAgentProviders(createTestProviderRegistry(settings))
     );
     await service.initialize();
     const session = await service.createSession('Invalid selection', root, root, model, 'missing');
@@ -803,7 +803,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       ...createTestAgentState(settings.getDataDirectory()),
       createEventEmitter(),
       settings,
-      createTestProviderRegistry(settings)
+      ...createTestAgentProviders(createTestProviderRegistry(settings))
     );
     await first.initialize();
     const session = await first.createSession('Pinned Local', root, root, model, 'first');
@@ -823,7 +823,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       ...createTestAgentState(settings.getDataDirectory()),
       createEventEmitter(),
       settings,
-      createTestProviderRegistry(settings)
+      ...createTestAgentProviders(createTestProviderRegistry(settings))
     );
     await restarted.initialize();
     await restarted.sendMessage({ sessionId: session.id, message: 'Continue pinned chat' });

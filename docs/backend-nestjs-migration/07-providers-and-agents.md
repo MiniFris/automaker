@@ -150,7 +150,7 @@ UI typecheck, все три inventory checks и production SIGTERM/SIGINT smoke.
 
 - [x] Отделить persisted session repository от active session registry.
 - [x] Отделить prompt/context construction.
-- [ ] Отделить provider selection.
+- [x] Отделить provider selection.
 - [x] Отделить execution environment preparation.
 - [ ] Отделить stream normalization/event publication.
 - [ ] Отделить follow-up/cancel.
@@ -206,8 +206,9 @@ preparer. Проверки среза:
   send/stream/reload истории.
 - `npm run test:packages`: 1181 shared package/UI tests passed;
   `npm run lint:lockfile`: успешно.
-- `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest npm run
-test:docker --workspace=apps/server`: 11 passed, 4 opt-in skipped. Расширенный
+- `npm run test:docker --workspace=apps/server` с переменной
+  `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest`:
+  11 passed, 4 opt-in skipped. Расширенный
   Direct сценарий проходит через настоящий `AgentService`: tools, stream/complete,
   повторная загрузка persisted history и сохранение Docker binding после смены
   project environment на Local. Набор проверяет очистку принадлежащих fixture
@@ -215,8 +216,49 @@ test:docker --workspace=apps/server`: 11 passed, 4 opt-in skipped. Расшир�
   проверки (`getHistory` возвращает объект с `messages`); после исправления
   весь Docker-набор повторно прошёл.
 
-Полный этап 7 остаётся незавершённым: provider selection, normalization и
-completion/recovery всё ещё требуют отдельной декомпозиции и общей приёмки.
+Полный этап 7 остаётся незавершённым: normalization и completion/recovery всё ещё
+требуют отдельной декомпозиции и общей приёмки.
+
+### Срез: provider selection и query options
+
+`AgentProviderSelector` получает `ProviderRegistry` и `ToolPolicyService` через
+Nest factory. Он владеет разрешением custom endpoint, routing/bare model IDs,
+проверкой vision, применением tool capability policy и controller disconnection
+policy для Local против pinned Docker/SSH. `AgentService` больше не импортирует
+registry, tool policy или settings helpers для выбора provider.
+
+`AgentQueryOptionsBuilder` отдельно собирает SDK options, skills/subagents/MCP,
+setting sources, credentials, thinking/reasoning и max turns. Настройки не
+кэшируются между сообщениями; при отмене дальнейшие шаги подготовки прекращаются.
+Mapped Claude model управляет SDK-настройками, но custom endpoint получает свой
+исходный model ID. Completion persistence и запуск adapter не входят в builder.
+Оба компонента зарегистрированы в `AgentStateModule`; two-app contract проверяет
+независимость их экземпляров. В unit/SSH/Docker callers используется явная
+композиция через `createTestAgentProviders`, без скрытого production fallback.
+
+33 component tests проверяют selector/options отдельно. Дополнительные два
+сценария с реальными SettingsService, SDK options и файловыми сессиями проверяют
+explicit/model-only endpoint selection, смену mapped Claude model/max turns,
+повторную загрузку сессии и сохранение API model ID и истории. Только исполнение
+модели в этих двух сценариях заменено offline adapter.
+
+Checkpoint среза:
+
+- `npm run test:server:unit`: 3025 passed, 40 skipped, включая все 35 новых tests.
+- `npm run test:server:contract`: 241 passed.
+- `npm run build --workspace=apps/server`, `npm run lint:server:errors`,
+  `npm run typecheck`: успешно.
+- Три inventory checks и production SIGTERM/SIGINT lifecycle smoke: успешно.
+- Выбранные реальные SSH chat/restart/default-change сценарии Direct/CLI/SDK:
+  3 passed, 34 отфильтрованы.
+- Docker acceptance с локальным base image `automaker-nest-stage2-smoke:latest`:
+  11 passed, 4 opt-in skipped, включая real chat/restart и cleanup owned resources.
+- Chromium send/stream/reload smoke: 1 passed.
+- `npm run test:packages`: 1181 passed; `npm run lint:lockfile`: успешно.
+
+Это не завершение этапа 7. Stream normalization, follow-up/cancel decomposition,
+durable completion/recovery и полный provider capability/lifecycle contract ещё
+не закрыты; этапы 8–11 также не объявляются завершёнными по этому checkpoint.
 
 ### Срез: persisted state и active registry
 
@@ -339,7 +381,7 @@ chunk, cancel→новый run, clear/delete, обе model mutation paths, timeo
 Остаются durable execution/queue recovery journal, полный provider dispose/terminal
 contract, удаление queue/backups вместе с session и decomposition stream logic.
 Prompt/context и environment preparation уже выделены последующими
-срезами, описанными выше; provider selection и stream logic ещё остаются.
+срезами, описанными выше. Provider selection также выделен; stream logic ещё остаётся.
 Общий deadline всей shutdown-последовательности, включая зависший
 filesystem I/O и ошибки Nest hooks, также требует hardening этапа 10. Этап 7 не
 отмечается завершённым по одному успешному lease checkpoint.
