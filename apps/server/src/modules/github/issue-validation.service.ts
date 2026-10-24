@@ -1,19 +1,25 @@
 /**
- * POST /validate-issue endpoint - Validate a GitHub issue using provider abstraction (async)
+ * Native issue-validation workflow and application service.
  *
  * Scans the codebase to determine if an issue is valid, invalid, or needs clarification.
  * Runs asynchronously and emits events for progress and completion.
  * Supports Claude, Codex, Cursor, and OpenCode models.
  */
 
-import type { Request, Response } from 'express';
-import type { EventEmitter } from '../../../lib/events.js';
+import { Inject, Injectable } from '@nestjs/common';
+import { createLogger } from '@automaker/utils';
+import { EVENT_BUS, type EventBus } from '../../core/eventing/event-bus.js';
+import { UnavailableDomainError, ValidationDomainError } from '../../core/errors/domain-errors.js';
+import { IssueValidationRegistry } from './issue-validation-registry.service.js';
+import type {
+  IssueValidationRequest,
+  IssueValidationStatusRequest,
+  IssueValidationStopRequest,
+} from './issue-validation.schemas.js';
 import type {
   IssueValidationResult,
   IssueValidationEvent,
   ModelId,
-  GitHubComment,
-  LinkedPRInfo,
   ThinkingLevel,
   ReasoningEffort,
 } from '@automaker/types';
@@ -26,52 +32,24 @@ import {
   supportsStructuredOutput,
 } from '@automaker/types';
 import { resolvePhaseModel, resolveModelString } from '@automaker/model-resolver';
-import { extractJson } from '../../../lib/json-extractor.js';
-import { writeValidation } from '../../../lib/validation-storage.js';
-import { streamingQuery } from '../../../providers/simple-query-service.js';
+import { extractJson } from '../../lib/json-extractor.js';
+import { IssueValidationRepository } from './issue-validation.repository.js';
+import { streamingQuery } from '../../providers/simple-query-service.js';
 import {
   issueValidationSchema,
   buildValidationPrompt,
   ValidationComment,
   ValidationLinkedPR,
-} from './validation-schema.js';
+} from './issue-validation-prompt.js';
 import {
   getPromptCustomization,
   getAutoLoadClaudeMdSetting,
   resolveProviderContext,
-} from '../../../lib/settings-helpers.js';
-import {
-  trySetValidationRunning,
-  clearValidationStatus,
-  getErrorMessage,
-  logError,
-  logger,
-} from './validation-common.js';
-import type { SettingsService } from '../../../services/settings-service.js';
-import type { ProviderRegistry } from '../../../modules/providers/provider-registry.service.js';
+} from '../../lib/settings-helpers.js';
+import { SettingsService } from '../../services/settings-service.js';
+import { ProviderRegistry } from '../providers/provider-registry.service.js';
 
-/**
- * Request body for issue validation
- */
-interface ValidateIssueRequestBody {
-  projectPath: string;
-  issueNumber: number;
-  issueTitle: string;
-  issueBody: string;
-  issueLabels?: string[];
-  /** Model to use for validation (Claude alias or provider model ID) */
-  model?: ModelId;
-  /** Thinking level for Claude models (ignored for non-Claude models) */
-  thinkingLevel?: ThinkingLevel;
-  /** Reasoning effort for Codex models (ignored for non-Codex models) */
-  reasoningEffort?: ReasoningEffort;
-  /** Optional Claude-compatible provider ID for custom providers (e.g., GLM, MiniMax) */
-  providerId?: string;
-  /** Comments to include in validation analysis */
-  comments?: GitHubComment[];
-  /** Linked pull requests for this issue */
-  linkedPRs?: LinkedPRInfo[];
-}
+const logger = createLogger('IssueValidation');
 
 /**
  * Run the validation asynchronously
@@ -87,7 +65,7 @@ async function runValidation(
   issueBody: string,
   issueLabels: string[] | undefined,
   model: ModelId,
-  events: EventEmitter,
+  events: EventBus,
   abortController: AbortController,
   settingsService: SettingsService | undefined,
   providerId: string | undefined,
@@ -95,7 +73,8 @@ async function runValidation(
   linkedPRs: ValidationLinkedPR[] | undefined,
   thinkingLevel: ThinkingLevel | undefined,
   reasoningEffort: ReasoningEffort | undefined,
-  providerRegistry: ProviderRegistry
+  providerRegistry: ProviderRegistry,
+  repository: IssueValidationRepository
 ): Promise<void> {
   // Emit start event
   const startEvent: IssueValidationEvent = {
@@ -105,13 +84,6 @@ async function runValidation(
     projectPath,
   };
   events.emit('issue-validation:event', startEvent);
-
-  // Set up timeout (6 minutes)
-  const VALIDATION_TIMEOUT_MS = 360000;
-  const timeoutId = setTimeout(() => {
-    logger.warn(`Validation timeout reached after ${VALIDATION_TIMEOUT_MS}ms`);
-    abortController.abort();
-  }, VALIDATION_TIMEOUT_MS);
 
   try {
     // Build the prompt (include comments and linked PRs if provided)
@@ -229,6 +201,7 @@ ${basePrompt}`;
             }
           : undefined,
         onText: (text) => {
+          if (abortController.signal.aborted) return;
           responseText += text;
           // Emit progress event
           const progressEvent: IssueValidationEvent = {
@@ -243,15 +216,14 @@ ${basePrompt}`;
       providerRegistry
     );
 
-    // Clear timeout
-    clearTimeout(timeoutId);
+    abortController.signal.throwIfAborted();
 
     // Get validation result from structured output or parse from text
     let validationResult: IssueValidationResult | null = null;
 
     if (result.structured_output) {
       validationResult = result.structured_output as unknown as IssueValidationResult;
-      logger.debug('Received structured output:', validationResult);
+      logger.debug('Received structured validation output.');
     } else if (responseText) {
       // Parse JSON from response text
       validationResult = extractJson<IssueValidationResult>(responseText, { logger });
@@ -266,7 +238,8 @@ ${basePrompt}`;
     logger.info(`Issue #${issueNumber} validation complete: ${validationResult.verdict}`);
 
     // Store the result
-    await writeValidation(projectPath, issueNumber, {
+    abortController.signal.throwIfAborted();
+    await repository.write(projectPath, issueNumber, {
       issueNumber,
       issueTitle,
       validatedAt: new Date().toISOString(),
@@ -274,6 +247,7 @@ ${basePrompt}`;
       result: validationResult,
     });
 
+    abortController.signal.throwIfAborted();
     // Emit completion event
     const completeEvent: IssueValidationEvent = {
       type: 'issue_validation_complete',
@@ -285,10 +259,10 @@ ${basePrompt}`;
     };
     events.emit('issue-validation:event', completeEvent);
   } catch (error) {
-    clearTimeout(timeoutId);
-
-    const errorMessage = getErrorMessage(error);
-    logError(error, `Issue #${issueNumber} validation failed`);
+    const errorMessage = abortController.signal.aborted
+      ? 'Validation cancelled.'
+      : 'Issue validation failed.';
+    logger.error(`Issue #${issueNumber} validation failed.`);
 
     // Emit error event
     const errorEvent: IssueValidationEvent = {
@@ -303,115 +277,43 @@ ${basePrompt}`;
   }
 }
 
-/**
- * Creates the handler for validating GitHub issues against the codebase.
- *
- * Uses the provider abstraction with:
- * - Read-only tools (Read, Glob, Grep) for codebase analysis
- * - JSON schema structured output for reliable parsing
- * - System prompt guiding the validation process
- * - Async execution with event emission
- */
-export function createValidateIssueHandler(
-  events: EventEmitter,
-  settingsService: SettingsService | undefined,
-  providerRegistry: ProviderRegistry
-) {
-  return async (req: Request, res: Response): Promise<void> => {
-    try {
-      const {
-        projectPath,
-        issueNumber,
-        issueTitle,
-        issueBody,
-        issueLabels,
-        model = 'opus',
-        thinkingLevel,
-        reasoningEffort,
-        providerId,
-        comments: rawComments,
-        linkedPRs: rawLinkedPRs,
-      } = req.body as ValidateIssueRequestBody;
+@Injectable()
+export class IssueValidationService {
+  constructor(
+    @Inject(EVENT_BUS) private readonly events: EventBus,
+    @Inject(SettingsService) private readonly settings: SettingsService,
+    @Inject(ProviderRegistry) private readonly providers: ProviderRegistry,
+    @Inject(IssueValidationRegistry) private readonly registry: IssueValidationRegistry,
+    @Inject(IssueValidationRepository) private readonly repository: IssueValidationRepository
+  ) {}
 
-      const normalizedProviderId =
-        typeof providerId === 'string' && providerId.trim().length > 0
-          ? providerId.trim()
-          : undefined;
-
-      // Transform GitHubComment[] to ValidationComment[] if provided
-      const validationComments: ValidationComment[] | undefined = rawComments?.map((c) => ({
-        author: c.author?.login || 'ghost',
-        createdAt: c.createdAt,
-        body: c.body,
-      }));
-
-      // Transform LinkedPRInfo[] to ValidationLinkedPR[] if provided
-      const validationLinkedPRs: ValidationLinkedPR[] | undefined = rawLinkedPRs?.map((pr) => ({
-        number: pr.number,
-        title: pr.title,
-        state: pr.state,
-      }));
-
-      logger.info(
-        `[ValidateIssue] Received validation request for issue #${issueNumber}` +
-          (rawComments?.length ? ` with ${rawComments.length} comments` : ' (no comments)') +
-          (rawLinkedPRs?.length ? ` and ${rawLinkedPRs.length} linked PRs` : '')
-      );
-
-      // Validate required fields
-      if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
-        return;
-      }
-
-      if (!issueNumber || typeof issueNumber !== 'number') {
-        res
-          .status(400)
-          .json({ success: false, error: 'issueNumber is required and must be a number' });
-        return;
-      }
-
-      if (!issueTitle || typeof issueTitle !== 'string') {
-        res.status(400).json({ success: false, error: 'issueTitle is required' });
-        return;
-      }
-
-      if (typeof issueBody !== 'string') {
-        res.status(400).json({ success: false, error: 'issueBody must be a string' });
-        return;
-      }
-
-      // Validate model parameter at runtime - accept any supported provider model
-      const isValidModel =
+  start(input: IssueValidationRequest) {
+    const {
+      projectPath,
+      issueNumber,
+      issueTitle,
+      issueBody,
+      issueLabels,
+      model = 'opus',
+      thinkingLevel,
+      reasoningEffort,
+      comments,
+      linkedPRs,
+    } = input;
+    const providerId = input.providerId?.trim() || undefined;
+    if (
+      !(
         isClaudeModel(model) ||
         isCursorModel(model) ||
         isCodexModel(model) ||
         isOpencodeModel(model) ||
-        !!normalizedProviderId;
-
-      if (!isValidModel) {
-        res.status(400).json({
-          success: false,
-          error:
-            'Invalid model. Must be a Claude, Cursor, Codex, or OpenCode model ID (or alias), or provide a valid providerId for custom Claude-compatible models.',
-        });
-        return;
-      }
-
-      logger.info(`Starting async validation for issue #${issueNumber}: ${issueTitle}`);
-
-      // Create abort controller and atomically try to claim validation slot
-      // This prevents TOCTOU race conditions
-      const abortController = new AbortController();
-      if (!trySetValidationRunning(projectPath, issueNumber, abortController)) {
-        res.json({
-          success: false,
-          error: `Validation is already running for issue #${issueNumber}`,
-        });
-        return;
-      }
-
-      // Start validation in background (fire-and-forget)
+        providerId
+      )
+    )
+      throw new ValidationDomainError(
+        'Invalid model. Must be a Claude, Cursor, Codex, or OpenCode model ID (or alias), or provide a valid providerId for custom Claude-compatible models.'
+      );
+    const accepted = this.registry.start(projectPath, issueNumber, (controller) =>
       runValidation(
         projectPath,
         issueNumber,
@@ -419,39 +321,70 @@ export function createValidateIssueHandler(
         issueBody,
         issueLabels,
         model,
-        events,
-        abortController,
-        settingsService,
-        normalizedProviderId,
-        validationComments,
-        validationLinkedPRs,
+        this.events,
+        controller,
+        this.settings,
+        providerId,
+        comments?.map((comment) => ({
+          author: comment.author?.login || 'ghost',
+          createdAt: comment.createdAt,
+          body: comment.body,
+        })),
+        linkedPRs?.map((pr) => ({ number: pr.number, title: pr.title, state: pr.state })),
         thinkingLevel,
         reasoningEffort,
-        providerRegistry
+        this.providers,
+        this.repository
       )
-        .catch(() => {
-          // Error is already handled inside runValidation (event emitted)
-        })
-        .finally(() => {
-          clearValidationStatus(projectPath, issueNumber);
-        });
+    );
+    return accepted
+      ? { success: true, message: `Validation started for issue #${issueNumber}`, issueNumber }
+      : { success: false, error: `Validation is already running for issue #${issueNumber}` };
+  }
 
-      // Return immediately
-      res.json({
-        success: true,
-        message: `Validation started for issue #${issueNumber}`,
-        issueNumber,
+  status(input: IssueValidationStatusRequest) {
+    if (this.registry.hasUnconfirmed(input.projectPath, input.issueNumber))
+      throw new UnavailableDomainError('Issue validation cleanup is unconfirmed.');
+    if (input.issueNumber === undefined)
+      return { success: true, runningIssues: this.registry.running(input.projectPath) };
+    const status = this.registry.status(input.projectPath, input.issueNumber);
+    return {
+      success: true,
+      isRunning: status?.isRunning ?? false,
+      startedAt: status?.startedAt.toISOString(),
+    };
+  }
+
+  stop(input: IssueValidationStopRequest) {
+    return this.registry.abort(input.projectPath, input.issueNumber)
+      ? { success: true, message: `Validation for issue #${input.issueNumber} has been stopped` }
+      : { success: false, error: `No validation is running for issue #${input.issueNumber}` };
+  }
+
+  async stored(input: IssueValidationStatusRequest) {
+    if (input.issueNumber === undefined)
+      return { success: true, validations: await this.repository.list(input.projectPath) };
+    const result = await this.repository.get(input.projectPath, input.issueNumber);
+    return result
+      ? { success: true, validation: result.validation, isStale: result.isStale }
+      : { success: true, validation: null };
+  }
+
+  async delete(input: IssueValidationStopRequest) {
+    return {
+      success: true,
+      deleted: await this.repository.delete(input.projectPath, input.issueNumber),
+    };
+  }
+
+  async markViewed(input: IssueValidationStopRequest) {
+    const success = await this.repository.markViewed(input.projectPath, input.issueNumber);
+    if (success)
+      this.events.emit('issue-validation:event', {
+        type: 'issue_validation_viewed',
+        issueNumber: input.issueNumber,
+        projectPath: input.projectPath,
       });
-    } catch (error) {
-      logError(error, `Issue validation failed`);
-      logger.error('Issue validation error:', error);
-
-      if (!res.headersSent) {
-        res.status(500).json({
-          success: false,
-          error: getErrorMessage(error),
-        });
-      }
-    }
-  };
+    return { success };
+  }
 }

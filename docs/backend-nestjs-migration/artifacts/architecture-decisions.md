@@ -726,3 +726,41 @@ attempts. Unit fixtures cover timer/deadline/nested-task/error/dedup behavior an
 Windows argument construction. They do not certify real Windows/macOS packaging,
 process escape containment, exactly-once/event-loop guarantees, all remote failure
 paths or completion of the remaining migration stages. Evidence is in stage 8.
+
+## ADR-036: native issue validation, retained reservations and bounded drain
+
+GithubModule owns IssueValidationService, IssueValidationRegistry and an explicit
+IssueValidationRepository. All six validation endpoints use native controller
+methods, typed Zod request pipes and service returns, not Express handler factories.
+The old validation route files/global map are deleted and the prompt helper moves
+into the module. The remaining GithubHandlersService owns only unrelated CLI
+operations. Validation scheduling no longer belongs to the hooks lifecycle.
+
+Each registry reserves project/issue identity synchronously and owns its controller,
+completion promise, six-minute operation timer and hourly stale cleanup interval.
+Stop/stale/timeout request cancellation without deleting an active reservation.
+An older task cannot release a newer reservation, and different application
+contexts do not share a runtime map. Provider/process cleanup uncertainty retains
+identity and blocks replacement/status with UNAVAILABLE instead of silently starting
+another query. Module destruction stops admission, cancels and drains all admitted
+work within 25 s; repeated destruction shares the same outcome. Failed cleanup
+propagates through checked Nest close without suppressing later provider hooks.
+
+The native workflow keeps read-only query options, provider selection and event
+payloads, but checks cancellation before result persistence and complete emission.
+Late progress is suppressed. Already-started filesystem writes are drained, not
+rolled back. Private provider failures become static issue-validation error events.
+The repository retains existing project-scoped files and freshness/view/delete
+semantics, rather than partitioning existing data by application DATA_DIR.
+
+All six validation POST methods explicitly return HTTP 200: a native contract found
+Nest's accidental 201 default on the earlier stored-validation wrapper. Valid
+payload shapes/API v13 remain; invalid bodies are rejected before admission.
+Schemas are native-local pending full shared-contract/OpenAPI coverage.
+
+Unit/native HTTP contracts prove reservation/cancellation/stale/deadline races,
+two-application isolation, actual fixture provider completion/abort, persistence,
+view/delete events, invalid input, static failures and checked failed close.
+This is not a cross-process/multi-writer lease, canonical filesystem alias policy,
+transactional storage redesign, complete result/capability validation, remote/live
+provider acceptance or completion of the remaining GitHub/stage 7–11 work.

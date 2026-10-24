@@ -1,13 +1,26 @@
-import { Controller, Inject, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpCode, Inject, Post, Req, Res, UseGuards } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { AllowedPathFields, AllowedPathGuard } from '../../core/security/index.js';
 import { GithubHandlersService, type GithubHandlerName } from './github-handlers.service.js';
+import { IssueValidationService } from './issue-validation.service.js';
+import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
+import {
+  IssueValidationRequestSchema,
+  IssueValidationStatusSchema,
+  IssueValidationStopSchema,
+  type IssueValidationRequest,
+  type IssueValidationStatusRequest,
+  type IssueValidationStopRequest,
+} from './issue-validation.schemas.js';
 
 @Controller('github')
 @UseGuards(AllowedPathGuard)
 @AllowedPathFields('projectPath')
 export class GithubController {
-  constructor(@Inject(GithubHandlersService) private readonly handlers: GithubHandlersService) {}
+  constructor(
+    @Inject(GithubHandlersService) private readonly handlers: GithubHandlersService,
+    @Inject(IssueValidationService) private readonly issueValidations: IssueValidationService
+  ) {}
 
   private run(name: GithubHandlerName, request: Request, response: Response) {
     return this.handlers.run(name, request, response);
@@ -31,22 +44,46 @@ export class GithubController {
   @Post('resolve-pr-comment') resolvePrComment(@Req() q: Request, @Res() s: Response) {
     return this.run('resolvePrComment', q, s);
   }
-  @Post('validate-issue') validateIssue(@Req() q: Request, @Res() s: Response) {
-    return this.run('validateIssue', q, s);
+  @Post('validate-issue')
+  @HttpCode(200)
+  validateIssue(
+    @Body(new ZodValidationPipe(IssueValidationRequestSchema)) input: IssueValidationRequest
+  ) {
+    return this.issueValidations.start(input);
   }
-  @Post('validation-status') validationStatus(@Req() q: Request, @Res() s: Response) {
-    return this.run('validationStatus', q, s);
+  @Post('validation-status')
+  @HttpCode(200)
+  validationStatus(
+    @Body(new ZodValidationPipe(IssueValidationStatusSchema)) input: IssueValidationStatusRequest
+  ) {
+    return this.issueValidations.status(input);
   }
-  @Post('validation-stop') validationStop(@Req() q: Request, @Res() s: Response) {
-    return this.run('validationStop', q, s);
+  @Post('validation-stop')
+  @HttpCode(200)
+  validationStop(
+    @Body(new ZodValidationPipe(IssueValidationStopSchema)) input: IssueValidationStopRequest
+  ) {
+    return this.issueValidations.stop(input);
   }
-  @Post('validations') validations(@Req() q: Request, @Res() s: Response) {
-    return this.run('validations', q, s);
+  @Post('validations')
+  @HttpCode(200)
+  validations(
+    @Body(new ZodValidationPipe(IssueValidationStatusSchema)) input: IssueValidationStatusRequest
+  ) {
+    return this.issueValidations.stored(input);
   }
-  @Post('validation-delete') validationDelete(@Req() q: Request, @Res() s: Response) {
-    return this.run('validationDelete', q, s);
+  @Post('validation-delete')
+  @HttpCode(200)
+  validationDelete(
+    @Body(new ZodValidationPipe(IssueValidationStopSchema)) input: IssueValidationStopRequest
+  ) {
+    return this.issueValidations.delete(input);
   }
-  @Post('validation-mark-viewed') validationMarkViewed(@Req() q: Request, @Res() s: Response) {
-    return this.run('validationMarkViewed', q, s);
+  @Post('validation-mark-viewed')
+  @HttpCode(200)
+  validationMarkViewed(
+    @Body(new ZodValidationPipe(IssueValidationStopSchema)) input: IssueValidationStopRequest
+  ) {
+    return this.issueValidations.markViewed(input);
   }
 }

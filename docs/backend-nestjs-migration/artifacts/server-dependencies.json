@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 613,
-    "internalEdges": 2001,
+    "files": 614,
+    "internalEdges": 2002,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -18,12 +18,12 @@
     "legacy -> services": 6,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 130,
-    "modules -> lib": 27,
-    "modules -> modules": 300,
-    "modules -> providers": 27,
-    "modules -> routes": 32,
-    "modules -> services": 156,
+    "modules -> core": 133,
+    "modules -> lib": 29,
+    "modules -> modules": 309,
+    "modules -> providers": 29,
+    "modules -> routes": 29,
+    "modules -> services": 157,
     "modules -> types": 2,
     "providers -> core": 1,
     "providers -> lib": 3,
@@ -36,12 +36,12 @@
     "root -> modules": 28,
     "root -> root": 4,
     "root -> services": 8,
-    "routes -> lib": 103,
+    "routes -> lib": 97,
     "routes -> middleware": 8,
-    "routes -> modules": 8,
-    "routes -> providers": 12,
-    "routes -> routes": 344,
-    "routes -> services": 189,
+    "routes -> modules": 7,
+    "routes -> providers": 11,
+    "routes -> routes": 340,
+    "routes -> services": 188,
     "routes -> types": 2,
     "services -> core": 15,
     "services -> lib": 76,
@@ -220,7 +220,7 @@
       "apps/server/src/lib/error-handler.ts",
       "apps/server/src/lib/git.ts",
       "apps/server/src/modules/event-history/event-replay.service.ts",
-      "apps/server/src/modules/orchestration/background-integrations.lifecycle.ts",
+      "apps/server/src/modules/github/issue-validation-registry.service.ts",
       "apps/server/src/modules/providers/claude-verification.service.ts",
       "apps/server/src/modules/providers/codex-verification.service.ts",
       "apps/server/src/modules/terminal/terminal-access.service.ts",
@@ -232,7 +232,6 @@
       "apps/server/src/providers/remote-sdk-worker.ts",
       "apps/server/src/routes/backlog-plan/generate-plan.ts",
       "apps/server/src/routes/github/routes/list-comments.ts",
-      "apps/server/src/routes/github/routes/validate-issue.ts",
       "apps/server/src/routes/terminal/common.ts",
       "apps/server/src/routes/worktree/routes/checkout-branch.ts",
       "apps/server/src/routes/worktree/routes/create.ts",
@@ -290,14 +289,14 @@
     "@automaker/model-resolver": 20,
     "@automaker/platform": 74,
     "@automaker/prompts": 3,
-    "@automaker/types": 178,
-    "@automaker/utils": 169,
+    "@automaker/types": 177,
+    "@automaker/utils": 168,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 176,
+    "@nestjs/common": 179,
     "@nestjs/core": 8,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
@@ -309,7 +308,7 @@
     "crypto": 4,
     "dotenv": 1,
     "events": 1,
-    "express": 219,
+    "express": 217,
     "fs": 11,
     "fs/promises": 13,
     "net": 1,
@@ -323,7 +322,7 @@
     "node:net": 2,
     "node:os": 11,
     "node:path": 48,
-    "node:perf_hooks": 7,
+    "node:perf_hooks": 8,
     "node:stream": 5,
     "node:stream/web": 2,
     "node:string_decoder": 4,
@@ -339,7 +338,7 @@
     "vitest": 1,
     "ws": 1,
     "yaml": 1,
-    "zod": 17
+    "zod": 18
   },
   "edges": [
     {
@@ -2020,18 +2019,6 @@
     },
     {
       "source": "apps/server/src/modules/github/github-handlers.service.ts",
-      "target": "apps/server/src/core/eventing/application-events.ts"
-    },
-    {
-      "source": "apps/server/src/modules/github/github-handlers.service.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/modules/github/github-handlers.service.ts",
-      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
-    },
-    {
-      "source": "apps/server/src/modules/github/github-handlers.service.ts",
       "target": "apps/server/src/routes/github/routes/check-github-remote.ts"
     },
     {
@@ -2055,24 +2042,24 @@
       "target": "apps/server/src/routes/github/routes/resolve-pr-comment.ts"
     },
     {
-      "source": "apps/server/src/modules/github/github-handlers.service.ts",
-      "target": "apps/server/src/routes/github/routes/validate-issue.ts"
-    },
-    {
-      "source": "apps/server/src/modules/github/github-handlers.service.ts",
-      "target": "apps/server/src/routes/github/routes/validation-endpoints.ts"
-    },
-    {
-      "source": "apps/server/src/modules/github/github-handlers.service.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
       "source": "apps/server/src/modules/github/github.controller.ts",
       "target": "apps/server/src/core/security/index.ts"
     },
     {
       "source": "apps/server/src/modules/github/github.controller.ts",
+      "target": "apps/server/src/core/validation/zod-validation.pipe.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github.controller.ts",
       "target": "apps/server/src/modules/github/github-handlers.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github.controller.ts",
+      "target": "apps/server/src/modules/github/issue-validation.schemas.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github.controller.ts",
+      "target": "apps/server/src/modules/github/issue-validation.service.ts"
     },
     {
       "source": "apps/server/src/modules/github/github.module.ts",
@@ -2081,6 +2068,78 @@
     {
       "source": "apps/server/src/modules/github/github.module.ts",
       "target": "apps/server/src/modules/github/github.controller.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github.module.ts",
+      "target": "apps/server/src/modules/github/issue-validation-registry.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github.module.ts",
+      "target": "apps/server/src/modules/github/issue-validation.repository.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github.module.ts",
+      "target": "apps/server/src/modules/github/issue-validation.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/issue-validation-registry.service.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/issue-validation-registry.service.ts",
+      "target": "apps/server/src/providers/provider-execution-scope.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/issue-validation-registry.service.ts",
+      "target": "apps/server/src/services/execution-environment/runtime.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/issue-validation.repository.ts",
+      "target": "apps/server/src/lib/validation-storage.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/issue-validation.service.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/issue-validation.service.ts",
+      "target": "apps/server/src/core/eventing/event-bus.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/issue-validation.service.ts",
+      "target": "apps/server/src/lib/json-extractor.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/issue-validation.service.ts",
+      "target": "apps/server/src/lib/settings-helpers.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/issue-validation.service.ts",
+      "target": "apps/server/src/modules/github/issue-validation-prompt.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/issue-validation.service.ts",
+      "target": "apps/server/src/modules/github/issue-validation-registry.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/issue-validation.service.ts",
+      "target": "apps/server/src/modules/github/issue-validation.repository.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/issue-validation.service.ts",
+      "target": "apps/server/src/modules/github/issue-validation.schemas.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/issue-validation.service.ts",
+      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/issue-validation.service.ts",
+      "target": "apps/server/src/providers/simple-query-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/issue-validation.service.ts",
+      "target": "apps/server/src/services/settings-service.ts"
     },
     {
       "source": "apps/server/src/modules/ideation/ideation-application.service.ts",
@@ -2277,10 +2336,6 @@
     {
       "source": "apps/server/src/modules/orchestration/background-integrations.lifecycle.ts",
       "target": "apps/server/src/core/eventing/event-bus.ts"
-    },
-    {
-      "source": "apps/server/src/modules/orchestration/background-integrations.lifecycle.ts",
-      "target": "apps/server/src/routes/github/routes/validation-common.ts"
     },
     {
       "source": "apps/server/src/modules/orchestration/background-integrations.lifecycle.ts",
@@ -5153,58 +5208,6 @@
     {
       "source": "apps/server/src/routes/github/routes/resolve-pr-comment.ts",
       "target": "apps/server/src/services/github-pr-comment.service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/routes/validate-issue.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/routes/validate-issue.ts",
-      "target": "apps/server/src/lib/json-extractor.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/routes/validate-issue.ts",
-      "target": "apps/server/src/lib/settings-helpers.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/routes/validate-issue.ts",
-      "target": "apps/server/src/lib/validation-storage.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/routes/validate-issue.ts",
-      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/routes/validate-issue.ts",
-      "target": "apps/server/src/providers/simple-query-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/routes/validate-issue.ts",
-      "target": "apps/server/src/routes/github/routes/validation-common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/routes/validate-issue.ts",
-      "target": "apps/server/src/routes/github/routes/validation-schema.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/routes/validate-issue.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/routes/validation-common.ts",
-      "target": "apps/server/src/routes/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/routes/validation-endpoints.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/routes/validation-endpoints.ts",
-      "target": "apps/server/src/lib/validation-storage.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/routes/validation-endpoints.ts",
-      "target": "apps/server/src/routes/github/routes/validation-common.ts"
     },
     {
       "source": "apps/server/src/routes/ideation/common.ts",

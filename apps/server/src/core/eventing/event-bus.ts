@@ -1,6 +1,7 @@
-import type { EventType } from '@automaker/types';
+import type { EventType, IssueValidationEvent } from '@automaker/types';
 
 export interface ApplicationEventMap extends Record<EventType, unknown> {
+  'issue-validation:event': IssueValidationEvent;
   'auto-mode:event': {
     type?: string;
     featureId?: string;

@@ -42,7 +42,8 @@ in-flight hook shell/HTTP drain, typed EventBus subscriptions, validation regist
 ошибки чтения и multi-writer coordination этим clone fix не закрыты. HTTP API v13,
 wire payloads, IDs, persisted formats и execution binding semantics не меняются.
 Подписки и in-flight hook drain из этого списка реализованы дальнейшим срезом
-ниже; остальные ограничения этого ownership checkpoint сохраняются.
+ниже; native validation registry также реализован отдельным срезом ниже.
+Остальные ограничения этого ownership checkpoint сохраняются.
 
 Проверки среза (не финальный checkpoint этапа 8):
 
@@ -160,8 +161,104 @@ Write недоступен, после решения используется �
 - [ ] Перенести issues, PRs, comments, review threads и validation.
 - [ ] Разделить read-only discovery и mutation.
 - [ ] Ввести rate/error mapping без утечки command output.
-- [ ] Cleanup stale validations сделать lifecycle task.
+- [x] Cleanup stale validations сделать lifecycle task.
 - [ ] PR creation использует Git/Worktree modules, а не shell из controller.
+
+### Срез 2026-10-24: native issue validation и per-application ownership
+
+Шесть endpoints (`validate-issue`, `validation-status`, `validation-stop`,
+`validations`, `validation-delete`, `validation-mark-viewed`) больше не используют
+Express handler factories. GithubController получает typed bodies через
+ZodValidationPipe и вызывает IssueValidationService. GithubModule владеет этим
+application service, IssueValidationRegistry и IssueValidationRepository; никаких
+новых process-global maps или compatibility aliases не добавлено.
+
+Удалены legacy `validate-issue.ts`, `validation-common.ts` и
+`validation-endpoints.ts`; prompt/schema helper перенесён в native module.
+GithubHandlersService остаётся временной границей только шести других GitHub CLI
+operations и больше не получает events/settings/providers для validation.
+BackgroundIntegrationsLifecycle не запускает чужую validation cleanup task.
+
+Registry резервирует project/issue slot синхронно и хранит completion promise вместе
+с AbortController. Stop и шестиминутный operation timeout запрашивают отмену, но не
+освобождают slot до фактического завершения работы. Ранее stop/stale cleanup сразу
+удаляли глобальную запись: новый запуск мог пересечься со старым, а старый finally
+мог удалить его статус. Теперь duplicate не принимается во время drain и finally
+может освободить только собственный reservation. Keys — пары project path/issue,
+без prefix-парсинга; registry каждой app независим.
+
+Периодическая stale cleanup теперь является native `onModuleInit` task registry.
+Она только отменяет старую работу, не выдавая потерю identity за подтверждённую
+очистку. `onModuleDestroy` закрывает admission, отменяет controllers, очищает interval
+и operation timers и ждёт все принятые tasks в пределах 25 s. Повторный close
+возвращает тот же результат. Неподтверждённый provider/process cleanup сохраняет slot
+и приводит к `ISSUE_VALIDATION_CLEANUP_FAILED`; публичный checked Nest close
+отклоняется, но последующие provider cleanup hooks всё равно выполняются.
+Новый запуск и status для известного unconfirmed slot получают 503 `UNAVAILABLE`,
+а не новый model request или ложное подтверждение running/completed.
+
+Workflow использует тот же native ProviderRegistry и typed EVENT_BUS. Read-only
+tool options, model/provider selection и valid event envelopes сохранены.
+После cancellation не публикуется late progress/complete и не начинается запись
+результата; уже начатая запись дожидается завершения, не обещая filesystem rollback.
+Error events теперь статические, без private provider diagnostics. Result parsing
+и общее provider capability enforcement не объявляются полностью переработанными.
+
+Repository явно инжектируется в native service и адаптирует прежние project-scoped
+storage helpers. `.automaker/validations/<issue>/validation.json`, freshness,
+viewed/delete behavior и API v13 payload shapes сохраняются. Shared project paths
+по-прежнему означают общие файлы: per-app registry isolation не даёт multi-writer
+или cross-process lease гарантий. Canonical aliases одного filesystem path и
+транзакционная сериализация хранения остаются отдельными требованиями.
+
+Для всех шести POST явно установлен HTTP 200. Новый contract сначала обнаружил
+201 у прежнего stored-validation wrapper из-за default Nest POST status: явный
+HttpCode восстанавливает исходную Express semantics, не меняя success body.
+Некорректные issue numbers, arrays/comments и enum settings отклоняются с 400
+до reservation/provider execution. Локальные schemas пока не заменяют требование
+shared contract/OpenAPI coverage всех endpoints в этапе 11.
+
+Доказательства:
+
+- `issue-validation-registry.test.ts`: 8 regressions — синхронный claim,
+  app/project isolation, cancel/duplicate race, queued cancellation, stale cleanup,
+  operation timeout, idempotent bounded drain и retained unknown cleanup;
+- `issue-validation.service.test.ts`: прежняя state-query проверка перенесена
+  с удалённого handler на native service; проверяются repository delegation и
+  viewed event только при успешной записи;
+- `issue-validation-lifecycle.contract.test.ts`: 4 native HTTP contracts с реальным
+  Nest, explicit fixture BaseProvider registrations и owned filesystem. Два apps
+  используют один project path без пересечения runtime reservations; проверяются
+  duplicate/stop/drain, provider cancellation/finally, events, persistence,
+  read/view/delete, request errors, static failures, 503 admission и попытка
+  последующего provider disposal при failed cleanup. Vendor/`gh` не вызываются.
+
+Это не завершает GitHub ports/read-only-vs-mutation/rate mapping, остальные
+orchestration/provider/transport/packaging gates или весь этап 8.
+
+Проверки этого среза:
+
+- native registry/service units: 10 passed; native validation contracts: 4 passed;
+- финальный `npm run test:server:unit`: 3621 passed, 40 skipped;
+- финальный `npm run test:server:contract`: 323 passed;
+- `npm run test:packages`: 1473 passed;
+- Docker acceptance с owned base image `automaker-nest-stage2-smoke:latest`:
+  11 passed, 4 opt-in skipped; real SSH feature suite: 14 passed. Model/vendor
+  exchanges остаются offline fixtures, не live acceptance;
+- server build/lint, UI typecheck/lint/build, lockfile check прошли;
+- SIGTERM/SIGINT lifecycle smoke: exit 0;
+- Chromium regression после завершения Docker/SSH: 17 passed без test retries;
+- все три inventories обновлены/проверены; полный `format:check` и
+  `git diff --check` прошли.
+
+Первый build обнаружил конфликт имени controller property с методом `validations`;
+property переименовано. Первоначальный unit assertion о failed cleanup наблюдал
+promise до его catch: теперь он ждёт фактический флаг, не фиксированное число
+microtasks. В первом общем unit suite остался caller удалённого legacy handler;
+проверка перенесена на native service и дополнена repository delegation, а не
+удалена. Повторные финальные suites зелёные, без увеличения test timeout/retries.
+При chat reload browser runner дважды сообщил Vite WS proxy `ECONNRESET`;
+17 tests прошли, но причина этих resets не установлена и не объявляется исправленной.
 
 ## 8.7. MCPModule
 
@@ -252,7 +349,7 @@ desktop/audio: эти проверки и event-loop/exactly-once semantics ещ
   `EVENT_BUS`, отдельный owner каждой app, реальную инициализацию/остановку и restart.
 
 Это промежуточный срез этапа 8. Он не закрывает Auto Mode state-machine, ideation
-decomposition/drain, pipeline storage serialization, validation registry, GitHub
+decomposition/drain, pipeline storage serialization, остальные GitHub
 ports, MCP HTTP/SSE и остальные gates этапов 7–11. Real remote cancellation при
 потере transport, process escape и все платформы не объявляются доказанными одним
 host/loopback contract.

@@ -5,7 +5,7 @@
  * helper functions for building validation prompts.
  *
  * Note: The system prompt is now centralized in @automaker/prompts
- * and accessed via getPromptCustomization() in validate-issue.ts
+ * and accessed via getPromptCustomization() in issue-validation.service.ts
  */
 
 /**
