@@ -1,9 +1,10 @@
 import type { Credentials } from '@automaker/types';
 
-export type SetupCredentialProvider = 'anthropic' | 'openai' | 'anthropic_oauth_token';
+export type SetupCredentialProvider = 'anthropic' | 'openai' | 'google' | 'anthropic_oauth_token';
 export const SETUP_CREDENTIAL_ENV = Object.freeze({
   anthropic: 'ANTHROPIC_API_KEY',
   openai: 'OPENAI_API_KEY',
+  google: 'GEMINI_API_KEY',
   anthropic_oauth_token: 'CLAUDE_CODE_OAUTH_TOKEN',
 });
 

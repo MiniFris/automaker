@@ -3,6 +3,7 @@ import { ProjectPathSchema } from './common.js';
 export const SetupCredentialProviderSchema = z.enum([
   'anthropic',
   'openai',
+  'google',
   'anthropic_oauth_token',
 ]);
 export const SetupCredentialTargetSchema = z
@@ -37,6 +38,7 @@ export const SetupCredentialStoreRequestSchema = z
   .refine(
     ({ target, apiKey }) =>
       target.provider === 'anthropic_oauth_token' ||
+      target.provider === 'google' ||
       apiKey.startsWith(target.provider === 'anthropic' ? 'sk-ant-' : 'sk-'),
     'Credential format does not match provider.'
   );

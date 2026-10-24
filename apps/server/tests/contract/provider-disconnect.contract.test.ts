@@ -154,8 +154,9 @@ it('requires a confirmed instance/provider target and persists only the selected
       );
       expect(first.registry.providerForModel(`${provider}-fixture`).getName()).toBe(provider);
       const status = (await first.request(`${provider}-status`)).body.auth;
-      expect(status.authenticated).toBe(provider !== 'copilot');
-      if (provider === 'copilot') expect(status.authenticationChecked).toBe(false);
+      expect(status.authenticated).toBe(!['copilot', 'gemini'].includes(provider));
+      if (['copilot', 'gemini'].includes(provider))
+        expect(status.authenticationChecked).toBe(false);
     }
     expect(await readdir(path.join(first.workingDirectory, '.automaker'))).toEqual([]);
 

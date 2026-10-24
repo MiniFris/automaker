@@ -43,10 +43,14 @@ it('resolves bootstrap keys without modifying ambient environment or persisting 
   });
   expect(process.env).toEqual(before);
 });
-it.each(['anthropic', 'openai'] as const)(
+it.each(['anthropic', 'openai', 'google'] as const)(
   'persists %s and disables bootstrap fallback after deletion and restart',
   async (provider) => {
-    const name = provider === 'anthropic' ? 'ANTHROPIC_API_KEY' : 'OPENAI_API_KEY';
+    const name = {
+      anthropic: 'ANTHROPIC_API_KEY',
+      openai: 'OPENAI_API_KEY',
+      google: 'GEMINI_API_KEY',
+    }[provider];
     const { settings, service, create, directory } = await fixture({ [name]: 'sk-bootstrap' });
     await settings.setSetupCredential(provider, 'sk-managed');
     expect((await service.environment())[name]).toBe('sk-managed');
@@ -64,6 +68,25 @@ it.each(['anthropic', 'openai'] as const)(
     expect((await create().environment())[name]).toBe('sk-replacement');
   }
 );
+
+it('selects managed Gemini keys without an alternate Google override and preserves deletion after restart', async () => {
+  const { service, create } = await fixture({
+    GEMINI_API_KEY: 'bootstrap-gemini',
+    GOOGLE_API_KEY: 'bootstrap-vertex',
+  });
+  expect(await service.environment()).toMatchObject({
+    GEMINI_API_KEY: 'bootstrap-gemini',
+    GOOGLE_API_KEY: 'bootstrap-vertex',
+  });
+  await service.change('google', 'managed-gemini');
+  expect((await service.environment()).GEMINI_API_KEY).toBe('managed-gemini');
+  expect((await service.environment()).GOOGLE_API_KEY).toBeUndefined();
+  await service.change('google', null);
+  const restarted = create();
+  expect((await restarted.environment()).GEMINI_API_KEY).toBeUndefined();
+  expect((await restarted.environment()).GOOGLE_API_KEY).toBeUndefined();
+  expect((await restarted.presence()).hasGoogleKey).toBe(false);
+});
 it('switches API-key and subscription token modes without leaving a competing bootstrap override active', async () => {
   const { settings, create } = await fixture({
     ANTHROPIC_API_KEY: 'sk-bootstrap',

@@ -168,7 +168,7 @@ export function CopilotCliStatus({
             {authStatus?.authenticationChecked === false ? (
               <div className="space-y-3">
                 <PassiveAuthenticationNotice
-                  hasEnvToken={authStatus.hasEnvToken}
+                  hasCredentialsHint={authStatus.hasEnvToken}
                   hasConfigFile={authStatus.hasConfigFile}
                 />
                 {connected === false ? (

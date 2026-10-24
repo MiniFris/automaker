@@ -1,4 +1,13 @@
 {
+  "Gemini connection verification is not available. Saving or detecting a key does not verify authentication.": "Проверка соединения Gemini пока недоступна. Сохранение или обнаружение ключа не подтверждает авторизацию.",
+  "Local credentials or configuration detected. This does not verify your account or provider access.": "Найдены локальные учётные данные или конфигурация. Это не подтверждает учётную запись или доступ к провайдеру.",
+  "No local credentials or configuration detected. CLI login is performed separately.": "Локальные учётные данные или конфигурация не найдены. Вход через CLI выполняется отдельно.",
+  "Refreshing status does not run authentication commands.": "Обновление статуса не запускает команды авторизации.",
+  "API key saved; authentication not checked.": "API-ключ сохранён; авторизация не проверена.",
+  "API key deleted from this application.": "API-ключ удалён из этого приложения.",
+  "Failed to change API key": "Не удалось изменить API-ключ",
+  "This key is stored in the backend application, not verified with Google.": "Ключ сохраняется в приложении бэкенда, без проверки авторизации в Google.",
+  "Delete API key": "Удалить API-ключ",
   "Authentication not checked": "Авторизация не проверена",
   "Local token or configuration detected. This does not verify your account or Copilot access.": "Найден локальный токен или конфигурация. Это не подтверждает учётную запись или доступ к Copilot.",
   "No local token or configuration detected. CLI login is performed separately.": "Локальный токен или конфигурация не найдены. Вход через CLI выполняется отдельно.",

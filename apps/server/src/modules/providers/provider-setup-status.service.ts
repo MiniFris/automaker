@@ -1,5 +1,5 @@
 import { Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { CopilotSetupStatusSchema } from '@automaker/contracts';
+import { CopilotSetupStatusSchema, GeminiSetupStatusSchema } from '@automaker/contracts';
 import type { BaseProvider } from '../../providers/base-provider.js';
 import { RUNTIME_CONFIG, type RuntimeConfig } from '../../core/config/index.js';
 import { ProviderConnectionRepository } from './provider-connection.repository.js';
@@ -11,6 +11,7 @@ interface CliAuthenticationStatus {
   authenticated: boolean;
   hasEnvToken?: boolean;
   hasConfigFile?: boolean;
+  hasVertexConfig?: boolean;
   method: string;
   hasApiKey?: boolean;
   hasEnvApiKey?: boolean;
@@ -67,7 +68,7 @@ export class ProviderSetupStatusService {
       if (disconnected && name !== 'cursor') {
         return {
           success: true,
-          ...(name === 'copilot' && { connected: false }),
+          connected: false,
           installed: true,
           version: null,
           path: null,
@@ -88,14 +89,16 @@ export class ProviderSetupStatusService {
       ]);
       const result = {
         success: true,
-        ...(name === 'copilot' && { connected: !disconnected }),
+        ...(name !== 'cursor' && { connected: !disconnected }),
         installed,
         version: version || null,
         path: installed ? provider.getCliPath() : null,
         auth: this.auth(name, auth, disconnected),
         ...commands[name],
       };
-      return name === 'copilot' ? CopilotSetupStatusSchema.parse(result) : result;
+      if (name === 'copilot') return CopilotSetupStatusSchema.parse(result);
+      if (name === 'gemini') return GeminiSetupStatusSchema.parse(result);
+      return result;
     } catch {
       // CLI errors can contain credentials, environment dumps or command output.
       throw new InternalServerErrorException({
@@ -195,10 +198,22 @@ export class ProviderSetupStatusService {
     const identity = { authenticated: auth.authenticated, method: auth.method };
     if (name === 'cursor') return identity;
     return {
-      ...identity,
-      hasApiKey: auth.hasApiKey || false,
-      ...(!disconnected && { hasEnvApiKey: auth.hasEnvApiKey || false }),
-      ...(auth.error && { error: 'Provider authentication check failed.' }),
+      authenticated: false,
+      authenticationChecked: false,
+      method: disconnected
+        ? 'none'
+        : auth.hasApiKey
+          ? auth.method === 'vertex_ai'
+            ? 'vertex_ai'
+            : 'api_key'
+          : auth.hasVertexConfig
+            ? 'vertex_ai'
+            : 'none',
+      hasApiKey: !disconnected && !!auth.hasApiKey,
+      hasEnvApiKey: !disconnected && !!auth.hasEnvApiKey,
+      hasConfigFile: !disconnected && !!auth.hasConfigFile,
+      hasVertexConfig: !disconnected && !!auth.hasVertexConfig,
+      ...(!disconnected && auth.error && { error: 'Local configuration could not be inspected.' }),
     };
   }
 }

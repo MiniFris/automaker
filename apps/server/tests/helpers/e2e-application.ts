@@ -20,6 +20,8 @@ import { ClaudeVerificationRuntime } from '../../src/core/platform/claude-verifi
 import { CodexCredentialRuntime } from '../../src/core/platform/codex-credential.runtime.js';
 import { CodexVerificationRuntime } from '../../src/core/platform/codex-verification.runtime.js';
 import { SettingsService } from '../../src/services/settings-service.js';
+import { ApplicationCredentialsService } from '../../src/modules/providers/application-credentials.service.js';
+import { GeminiProvider } from '../../src/providers/gemini-provider.js';
 import { MockProvider } from './mock-provider.js';
 
 /** Test-only composition: production bootstrap has no environment-controlled mocks. */
@@ -51,6 +53,10 @@ export async function createE2eApplication(
           httpServer,
           hostEnvironment: {
             ...environment,
+            GEMINI_API_KEY: undefined,
+            GOOGLE_API_KEY: undefined,
+            GOOGLE_APPLICATION_CREDENTIALS: undefined,
+            GOOGLE_CLOUD_PROJECT: undefined,
             CURSOR_CONFIG_DIR: path.join(dataDirectory, 'host-cursor-profile'),
             ANTHROPIC_BASE_URL: 'https://claude-verification.fixture.invalid',
           },
@@ -62,8 +68,16 @@ export async function createE2eApplication(
     })
       .overrideProvider(LEGACY_SERVICES.providerRegistry)
       .useFactory({
-        inject: [SettingsService, LEGACY_SERVICES.providerConnections],
-        factory: (settings: SettingsService, connections: ProviderConnectionRepository) =>
+        inject: [
+          SettingsService,
+          LEGACY_SERVICES.providerConnections,
+          ApplicationCredentialsService,
+        ],
+        factory: (
+          settings: SettingsService,
+          connections: ProviderConnectionRepository,
+          credentials: ApplicationCredentialsService
+        ) =>
           new ProviderRegistry(
             createProviderRegistrations(settings).map((registration) => {
               // Preserve production metadata/aliases/priority, but never real execution.
@@ -71,8 +85,22 @@ export async function createE2eApplication(
               const models = registration.create().getAvailableModels();
               return {
                 ...registration,
-                create: () =>
-                  new MockProvider(registration.name, models, '[test] hold Running Agents chat'),
+                create: () => {
+                  const provider = new MockProvider(
+                    registration.name,
+                    models,
+                    '[test] hold Running Agents chat'
+                  );
+                  // Real passive Google-key policy/status, but never a vendor CLI/query.
+                  // Keep file hints inside the owned test profile, not the operator's home.
+                  if (registration.name === 'gemini')
+                    provider.checkAuth = () =>
+                      new GeminiProvider({}, async () => ({
+                        ...(await credentials.environment()),
+                        HOME: path.join(dataDirectory, 'gemini-home'),
+                      })).checkAuth();
+                  return provider;
+                },
               };
             }),
             connections

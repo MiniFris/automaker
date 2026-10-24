@@ -8,6 +8,7 @@ import type {
   CodexVerificationRequest,
   CodexVerificationResponse,
   CopilotSetupStatus,
+  GeminiSetupStatus,
 } from '@automaker/contracts';
 // Type definitions for Electron IPC API
 import type { SessionListItem, Message } from '@/types/electron';
@@ -1828,30 +1829,7 @@ interface SetupAPI {
     error?: string;
   }>;
   // Gemini CLI methods
-  getGeminiStatus?: () => Promise<{
-    success: boolean;
-    status?: string;
-    installed?: boolean;
-    method?: string;
-    version?: string;
-    path?: string;
-    recommendation?: string;
-    installCommands?: {
-      macos?: string;
-      linux?: string;
-      npm?: string;
-    };
-    auth?: {
-      authenticated: boolean;
-      method: string;
-      hasApiKey?: boolean;
-      hasEnvApiKey?: boolean;
-      error?: string;
-    };
-    loginCommand?: string;
-    installCommand?: string;
-    error?: string;
-  }>;
+  getGeminiStatus?: () => Promise<GeminiSetupStatus>;
   authGemini?: (request: ProviderReconnectRequest) => Promise<{
     success: boolean;
     requiresManualAuth?: boolean;
@@ -2134,9 +2112,21 @@ function createMockSetupAPI(): SetupAPI {
       console.log('[Mock] Getting Gemini status');
       return {
         success: true,
-        status: 'not_installed',
         installed: false,
-        auth: { authenticated: false, method: 'none' },
+        connected: true,
+        version: null,
+        path: null,
+        auth: {
+          authenticated: false,
+          authenticationChecked: false,
+          method: 'none',
+          hasApiKey: false,
+          hasEnvApiKey: false,
+          hasConfigFile: false,
+          hasVertexConfig: false,
+        },
+        installCommand: 'npm install -g @google/gemini-cli',
+        loginCommand: 'gemini',
       };
     },
 

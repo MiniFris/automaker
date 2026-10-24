@@ -7,6 +7,7 @@
 
 import { createLogger } from '@automaker/utils/logger';
 import { translate } from './i18n';
+import { GeminiSetupStatusSchema, type GeminiSetupStatus } from '@automaker/contracts';
 import { CopilotSetupStatusSchema, type CopilotSetupStatus } from '@automaker/contracts';
 import {
   SetupCredentialProviderSchema,
@@ -2202,30 +2203,11 @@ export class HttpApiClient implements ElectronAPI {
     }> => this.post('/api/setup/opencode/cache/clear'),
 
     // Gemini CLI methods
-    getGeminiStatus: (): Promise<{
-      success: boolean;
-      status?: string;
-      installed?: boolean;
-      method?: string;
-      version?: string;
-      path?: string;
-      recommendation?: string;
-      installCommands?: {
-        macos?: string;
-        linux?: string;
-        npm?: string;
-      };
-      auth?: {
-        authenticated: boolean;
-        method: string;
-        hasApiKey?: boolean;
-        hasEnvApiKey?: boolean;
-        error?: string;
-      };
-      loginCommand?: string;
-      installCommand?: string;
-      error?: string;
-    }> => this.get('/api/setup/gemini-status'),
+    getGeminiStatus: async (): Promise<GeminiSetupStatus> => {
+      const result = GeminiSetupStatusSchema.safeParse(await this.get('/api/setup/gemini-status'));
+      if (!result.success) throw new Error('Gemini status protocol is unavailable.');
+      return result.data;
+    },
 
     authGemini: (
       request: ProviderReconnectRequest

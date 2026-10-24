@@ -2143,6 +2143,78 @@ hint здесь только `GITHUB_TOKEN`. Прочие vendor credential sour
 fallback, CLI discovery/runtime lifecycle и остальные providers' auth evidence
 ещё требуют аудита. Этап 7 и миграция остаются незавершёнными.
 
+## Срез Gemini / Google credentials (2026-10-24, API v11)
+
+`GeminiProvider.checkAuth()` теперь читает application environment snapshot и
+stat-ит settings-файл в home context, не разбирая token/selected auth type и не
+запуская auth query. Status/install hints не объявляют authorization success.
+Version subprocess также получает application snapshot. Native status normalizer
+не доверяет legacy adapter `authenticated: true`; strict shared DTO и HTTP client
+возвращают unverified hints и отдельное application `connected`.
+
+Google provider добавлен в native confirmed store/delete, private credential FIFO
+и persisted bootstrap-deletion policy. Managed key попадает в `GEMINI_API_KEY`,
+а competing `GOOGLE_API_KEY` исключается. Без application policy исходные Gemini/
+Vertex переменные оператора не объединяются и не переименовываются. Delete
+подавляет оба key bootstrap paths и после restart, но не удаляет vendor OAuth/ADC,
+CLI files, operator `.env` или backups и не отзывает key у Google. Credentials
+принимаются как bounded opaque value; upstream проверка при сохранении не делается.
+Режимы сверены с [официальным описанием Gemini CLI authentication](https://geminicli.com/docs/get-started/authentication/).
+
+Setup form больше не вызывает отсутствующий `saveApiKey`, не пишет plaintext в
+frontend store и не выставляет auth success после сохранения. Native consent
+с target instance/root/private path обязателен для save/delete. После reload
+показываются только hints и Delete, не сам backend key. Login command копируется
+без polling якобы успешной авторизации. Setup и Gemini settings используют общую
+native key форму; общий Settings Save не вызывает native Google command для
+скрытого legacy value. Legacy credentials settings transport и его consumer policy
+ещё требуют отдельного аудита.
+Прежний fake success у Test Gemini connection заменён явным
+сообщением, что реальный verifier недоступен. Этот verifier остаётся незакрытым.
+
+Добавлены real-Nest production-factory HTTP tests в двух приложениях и после
+restart: actual private record, stat/config hints и реальные локальные Node child
+processes с разрешённым per-app environment. Только installation/version adapter
+ports заменены fixtures; платные vendor CLI/queries не запускаются. Browser E2E
+composition использует real Gemini passive hints/application credential reader,
+но mock execution и owned temporary home; bootstrap Google/Vertex vars очищены
+только в test host snapshot, не в process.env оператора.
+
+Проверки среза:
+
+- Финальный `npm run test:server:unit`: 3511 passed, 40 existing skipped.
+  Более ранний полный запуск: 3510 passed, 1 failed, 40 skipped; lifecycle race
+  описана ниже и не объявляется исправленной последующим повтором.
+- `npm run test:server:contract`: 274 passed.
+- Финальный `npm run test:packages`: 1438 passed, включая Google opaque DTO,
+  private-field rejection, native consent, passive notices и cancellation form.
+- Types/contracts/server builds и Web UI/Electron main/preload build: успешно.
+  Packaged Electron и Windows acceptance этим не доказываются.
+- UI typecheck, server/UI lint, Prettier, lockfile, `git diff --check` и три
+  generated inventory checks: успешно.
+- Lifecycle smoke: SIGTERM/SIGINT exit 0.
+- Real SSH Direct/CLI/SDK chat/restart выборка: 3 passed, 34 отфильтрованы.
+- Docker с `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest`:
+  11 passed, 4 opt-in skipped, owned cleanup checks успешны.
+- Финальный Chromium набор: 11 passed, `--workers=1 --reporter=line --trace=on`.
+  Gemini cancel/store/reload и Delete через обычные Gemini settings проходят
+  без false auth и без выдачи сохранённого key в форму. Остальные scenarios:
+  Copilot status, native setup keys, GitHub auth, Codex/Claude verification,
+  Cursor permissions/disconnect, install guidance и два Agent chat workflows.
+
+## Открытая lifecycle regression, обнаруженная в этом срезе
+
+Первый полный server unit run упал в неизменённом
+`local-execution-environment.test.ts`:
+`cancels the shell and ordinary child/grandchild processes before returning`.
+После возврата `PROCESS_INTERRUPTED` `/proc/<fixture-pid>/status` ещё показывал
+`R (running)` с pending SIGKILL. Последующий read подтвердил отсутствие этого PID;
+изолированный recheck файла — 17 passed. Это не доказательство исправления.
+Linux branch `LocalExecutionEnvironment.exec().stop()` ждёт отправку SIGKILL,
+но не отдельно quiescence process group после root `close`. Требуется отдельный
+owned/bounded cleanup fix с deterministic tests, без ослабления текущего теста.
+Этап 7 и итоговая система не признаются завершёнными по повторному зелёному запуску.
+
 ## Тесты
 
 - Registry priority/aliases/duplicate detection.

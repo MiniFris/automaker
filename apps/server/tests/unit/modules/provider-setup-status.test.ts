@@ -58,9 +58,13 @@ describe('native provider setup status', () => {
         version: '1.2.3',
         path: '/fixture/cli',
         auth:
-          name === 'copilot'
-            ? { authenticated: false, authenticationChecked: false, method: 'none' }
-            : { authenticated: true, method: 'oauth' },
+          name === 'cursor'
+            ? { authenticated: true, method: 'oauth' }
+            : {
+                authenticated: false,
+                authenticationChecked: false,
+                method: name === 'gemini' ? 'api_key' : 'none',
+              },
       });
       expect(connections.isDisconnected).toHaveBeenCalledWith(name);
       expect(providers.byName).toHaveBeenCalledWith(name);
@@ -78,7 +82,16 @@ describe('native provider setup status', () => {
       installed: true,
       version: '1.2.3',
       path: '/fixture/cli',
-      auth: { authenticated: true, method: 'oauth', hasApiKey: true, hasEnvApiKey: true },
+      connected: true,
+      auth: {
+        authenticated: false,
+        authenticationChecked: false,
+        method: 'api_key',
+        hasApiKey: true,
+        hasEnvApiKey: true,
+        hasConfigFile: false,
+        hasVertexConfig: false,
+      },
       installCommand: 'npm install -g @google/gemini-cli',
       loginCommand: 'gemini',
     });
@@ -115,8 +128,12 @@ describe('native provider setup status', () => {
       if (name === 'gemini')
         expect((await service.status(name)).auth).toEqual({
           authenticated: false,
+          authenticationChecked: false,
           method: 'none',
           hasApiKey: false,
+          hasEnvApiKey: false,
+          hasConfigFile: false,
+          hasVertexConfig: false,
         });
     }
   );
@@ -173,7 +190,7 @@ describe('native provider setup status', () => {
       error: 'secret-token',
     });
     const response = await service.status('gemini');
-    expect(response.auth).toMatchObject({ error: 'Provider authentication check failed.' });
+    expect(response.auth).toMatchObject({ error: 'Local configuration could not be inspected.' });
     expect(JSON.stringify(response)).not.toContain('secret-token');
   });
 
@@ -188,11 +205,20 @@ describe('native provider setup status', () => {
 
   it('observes disconnect/reconnect on every read rather than retaining stale status', async () => {
     const { service, connections, adapter } = fixture();
-    expect((await service.status('gemini')).auth.authenticated).toBe(true);
+    expect((await service.status('gemini')).auth).toMatchObject({
+      hasApiKey: true,
+      authenticated: false,
+    });
     connections.isDisconnected.mockReturnValue(true);
-    expect((await service.status('gemini')).auth.authenticated).toBe(false);
+    expect((await service.status('gemini')).auth).toMatchObject({
+      hasApiKey: false,
+      authenticated: false,
+    });
     connections.isDisconnected.mockReturnValue(false);
-    expect((await service.status('gemini')).auth.authenticated).toBe(true);
+    expect((await service.status('gemini')).auth).toMatchObject({
+      hasApiKey: true,
+      authenticated: false,
+    });
     expect(adapter.checkAuth).toHaveBeenCalledTimes(2);
   });
 

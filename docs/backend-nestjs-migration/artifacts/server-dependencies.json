@@ -86,7 +86,6 @@
       "apps/server/src/providers/codex-provider.ts",
       "apps/server/src/providers/codex-sdk-client.ts",
       "apps/server/src/providers/cursor-provider.ts",
-      "apps/server/src/providers/gemini-provider.ts",
       "apps/server/src/providers/openai-compatible/config.ts",
       "apps/server/src/providers/openai-compatible/workspace.ts",
       "apps/server/src/providers/opencode-provider.ts",

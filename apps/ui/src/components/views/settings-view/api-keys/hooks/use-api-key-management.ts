@@ -175,11 +175,12 @@ export function useApiKeyManagement() {
       return;
     }
 
-    // For now, just validate the key format (starts with expected prefix)
-    // Full verification requires a backend endpoint
+    // No upstream request was made. Key presence/shape is never a successful test.
     setGeminiTestResult({
-      success: true,
-      message: translate('API key saved. Connection test not yet available.'),
+      success: false,
+      message: translate(
+        'Gemini connection verification is not available. Saving or detecting a key does not verify authentication.'
+      ),
     });
     setTestingGeminiConnection(false);
   };
@@ -259,7 +260,7 @@ export function useApiKeyManagement() {
   const handleSave = async (): Promise<void> => {
     setSaved(false);
     // Empty fields do not erase a backend-only key. Deletion is an explicit command.
-    // Never report a browser-state update as durable Anthropic/OpenAI persistence.
+    // Never report a browser-state update as durable provider key persistence.
     for (const [provider, value] of [
       ['anthropic', anthropicKey],
       ['openai', openaiKey],

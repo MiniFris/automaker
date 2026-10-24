@@ -158,9 +158,6 @@ export function useGeminiCliStatus() {
         throw new Error('Gemini CLI status API not available');
       }
       const result = await api.setup.getGeminiStatus();
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch Gemini CLI status');
-      }
       return result;
     },
     staleTime: STALE_TIMES.CLI_STATUS,

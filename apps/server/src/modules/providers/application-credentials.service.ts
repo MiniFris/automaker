@@ -50,7 +50,7 @@ export class ApplicationCredentialsService {
       hasAnthropicKey && !!(this.cache.get('anthropic') || credentials.apiKeys.anthropic);
     return {
       hasAnthropicKey,
-      hasGoogleKey: !!credentials.apiKeys.google || !!this.cache.get('google'),
+      hasGoogleKey: !!environment.GEMINI_API_KEY?.trim() || !!environment.GOOGLE_API_KEY?.trim(),
       hasOpenaiKey: !!environment.OPENAI_API_KEY,
       hasStoredAnthropicKey,
       hasEnvAnthropicKey: hasAnthropicKey && !hasStoredAnthropicKey,
@@ -84,6 +84,15 @@ export class ApplicationCredentialsService {
     // A stale alternate Codex key must not override the selected application key.
     if (environment.OPENAI_API_KEY) environment.CODEX_API_KEY = environment.OPENAI_API_KEY;
     else delete environment.CODEX_API_KEY;
+    // Publish the managed Gemini key without a competing operator Google/Vertex key.
+    // This does not force the CLI's selected OAuth/ADC/API auth mode.
+    // Without an application policy, preserve the operator's separate variables.
+    if (
+      this.cache.get('google') ||
+      credentials.apiKeys.google ||
+      credentials.disabledBootstrapApiKeys?.google
+    )
+      delete environment.GOOGLE_API_KEY;
     return { environment, credentials };
   }
 }

@@ -294,3 +294,34 @@ command. Settings и setup показывают unverified state; настрой
 отдельные confirmed disconnect/reconnect. Все paid/live проверки остаются явными;
 GitHub account verification не доказывает Copilot entitlement. Другие providers,
 полный CLI discovery/runtime ownership и public setup auth/CSRF остаются gates.
+
+## ADR-020: API v11 passive Gemini status и confirmed Google-key storage
+
+Native Gemini status всегда возвращает `authenticationChecked: false` и
+`authenticated: false`. Key/Vertex environment flags и обычный settings-файл —
+только локальные hints. Содержимое settings/OAuth files не читается, неизвестный
+selected auth type не становится успешной авторизацией. `connected` отдельно
+описывает application disconnect marker. Identity, произвольные error fields и
+verified claims отвергаются strict shared schema/HTTP client. API header — `11`.
+
+Google-key включён в existing protocol-1 confirmed credential target, durable FIFO
+и private credentials record. Managed Google key передаётся как `GEMINI_API_KEY`;
+competing bootstrap `GOOGLE_API_KEY` в этом режиме исключается. При отсутствии
+managed policy отдельные operator variables сохраняются без переименования.
+После удаления Google key оба bootstrap key variables подавляются и после restart.
+Независимые OAuth/ADC/Vertex credentials и vendor login не удаляются и не отзываются.
+
+Режимы разделены по официальной [Gemini CLI authentication documentation](https://geminicli.com/docs/get-started/authentication/):
+Gemini API key и Vertex credentials — разные варианты. Наличие env/config не
+доказывает выбранный CLI mode, account, quota или upstream authorization.
+Google key принимается как bounded opaque value, без предположений о вечном prefix.
+
+Setup Google-key save/delete использует native target consent, не сохраняет
+plaintext в frontend store и не активирует `authenticated`. Исчезает недоступный
+`saveApiKey` path и login-success polling. Общая Google-key форма в setup и Gemini
+settings использует native persistence; native command не вызывается для скрытого
+legacy Google value общим Settings Save. Legacy credentials settings transport
+и его consumer policy ещё требуют отдельного аудита. Формальный Test Gemini connection больше не сообщает success
+из-за длины ключа: настоящий verifier пока не реализован. Нельзя считать это
+завершённой provider acceptance. Остальные consumer/auth/lifecycle/security gates
+и unsafe downgrade, игнорирующий Google deletion metadata, остаются открытыми.

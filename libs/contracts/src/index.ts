@@ -13,3 +13,4 @@ export * from './codex-verification.js';
 export * from './github-authentication.js';
 export * from './setup-credentials.js';
 export * from './copilot-status.js';
+export * from './gemini-status.js';

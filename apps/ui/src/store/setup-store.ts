@@ -68,10 +68,14 @@ export interface OpencodeCliStatus {
 // Gemini CLI Status
 export interface GeminiCliStatus {
   installed: boolean;
+  connected?: boolean;
   version?: string | null;
   path?: string | null;
   auth?: {
     authenticated: boolean;
+    authenticationChecked?: boolean;
+    hasConfigFile?: boolean;
+    hasVertexConfig?: boolean;
     method: string;
     hasApiKey?: boolean;
     hasEnvApiKey?: boolean;

@@ -6,6 +6,8 @@ import { CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { CliStatus } from '../shared/types';
 import { GeminiIcon } from '@/components/ui/provider-icon';
+import { PassiveAuthenticationNotice } from '@/components/shared/passive-authentication-notice';
+import { ProviderDisconnectButton, ProviderReconnectButton } from './provider-connection-button';
 
 export type GeminiAuthMethod =
   | 'api_key' // API key authentication
@@ -15,6 +17,9 @@ export type GeminiAuthMethod =
 
 export interface GeminiAuthStatus {
   authenticated: boolean;
+  authenticationChecked?: boolean;
+  hasConfigFile?: boolean;
+  hasVertexConfig?: boolean;
   method: GeminiAuthMethod;
   hasApiKey?: boolean;
   hasEnvApiKey?: boolean;
@@ -37,6 +42,7 @@ function getAuthMethodLabel(method: GeminiAuthMethod): string {
 
 interface GeminiCliStatusProps {
   status: CliStatus | null;
+  connected?: boolean;
   authStatus?: GeminiAuthStatus | null;
   isChecking: boolean;
   onRefresh: () => void;
@@ -90,6 +96,7 @@ export function GeminiCliStatusSkeleton() {
 
 export function GeminiCliStatus({
   status,
+  connected,
   authStatus,
   isChecking,
   onRefresh,
@@ -173,7 +180,19 @@ export function GeminiCliStatus({
             </div>
 
             {/* Authentication Status */}
-            {authStatus?.authenticated ? (
+            {authStatus?.authenticationChecked === false ? (
+              <div className="space-y-3">
+                <PassiveAuthenticationNotice
+                  hasCredentialsHint={authStatus.hasApiKey || authStatus.hasVertexConfig}
+                  hasConfigFile={authStatus.hasConfigFile}
+                />
+                {connected === false ? (
+                  <ProviderReconnectButton provider="gemini" onRefresh={onRefresh} />
+                ) : (
+                  <ProviderDisconnectButton provider="gemini" onRefresh={onRefresh} />
+                )}
+              </div>
+            ) : authStatus?.authenticated ? (
               <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
                 <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center border border-emerald-500/20 shrink-0">
                   <CheckCircle2 className="w-5 h-5 text-emerald-500" />

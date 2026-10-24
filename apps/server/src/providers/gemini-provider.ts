@@ -703,6 +703,7 @@ export class GeminiProvider extends CliProvider {
         encoding: 'utf8',
         timeout: 5000,
         stdio: 'pipe',
+        env: await this.readEnvironment(),
       }).trim();
       return result;
     } catch {
@@ -711,146 +712,41 @@ export class GeminiProvider extends CliProvider {
   }
 
   /**
-   * Check authentication status
-   *
-   * Uses a fast credential check approach:
-   * 1. Check for GEMINI_API_KEY environment variable
-   * 2. Check for Google Cloud credentials
-   * 3. Check for Gemini settings file with stored credentials
-   * 4. Quick CLI auth test with --help (fast, doesn't make API calls)
+   * Passive local hints only. Settings/token presence is not proof of identity,
+   * permissions or quota. Never read OAuth credentials or run an auth query.
    */
   async checkAuth(): Promise<GeminiAuthStatus> {
-    this.ensureCliDetected();
-    if (!this.cliPath) {
-      logger.debug('checkAuth: CLI not found');
-      return { authenticated: false, method: 'none' };
-    }
-
-    logger.debug('checkAuth: Starting credential check');
-
-    // Determine the likely auth method based on environment
-    const hasApiKey = !!process.env.GEMINI_API_KEY;
-    const hasEnvApiKey = hasApiKey;
-    const hasVertexAi = !!(
-      process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.GOOGLE_CLOUD_PROJECT
+    const environment = await this.readEnvironment();
+    const hasApiKey = !!(environment.GEMINI_API_KEY?.trim() || environment.GOOGLE_API_KEY?.trim());
+    const hasVertexConfig = !!(
+      environment.GOOGLE_API_KEY?.trim() ||
+      environment.GOOGLE_APPLICATION_CREDENTIALS?.trim() ||
+      environment.GOOGLE_CLOUD_PROJECT?.trim()
     );
-
-    logger.debug(`checkAuth: hasApiKey=${hasApiKey}, hasVertexAi=${hasVertexAi}`);
-
-    // Check for Gemini credentials file (~/.gemini/settings.json)
-    const geminiConfigDir = path.join(os.homedir(), '.gemini');
-    const settingsPath = path.join(geminiConfigDir, 'settings.json');
-    let hasCredentialsFile = false;
-    let authType: string | null = null;
-
+    let hasConfigFile = false;
+    let error: string | undefined;
+    const home = environment.HOME || environment.USERPROFILE || os.homedir();
     try {
-      await fs.access(settingsPath);
-      logger.debug(`checkAuth: Found settings file at ${settingsPath}`);
-      try {
-        const content = await fs.readFile(settingsPath, 'utf8');
-        const settings = JSON.parse(content);
-
-        // Auth config is at security.auth.selectedType (e.g., "oauth-personal", "oauth-adc", "api-key")
-        const selectedType = settings?.security?.auth?.selectedType;
-        if (selectedType) {
-          hasCredentialsFile = true;
-          authType = selectedType;
-          logger.debug(`checkAuth: Settings file has auth config, selectedType=${selectedType}`);
-        } else {
-          logger.debug(`checkAuth: Settings file found but no auth type configured`);
-        }
-      } catch (e) {
-        logger.debug(`checkAuth: Failed to parse settings file: ${e}`);
-      }
-    } catch {
-      logger.debug('checkAuth: No settings file found');
+      hasConfigFile = (await fs.stat(path.join(home, '.gemini', 'settings.json'))).isFile();
+    } catch (failure) {
+      if (
+        !(failure && typeof failure === 'object' && 'code' in failure && failure.code === 'ENOENT')
+      )
+        error = 'Local configuration could not be inspected.';
     }
-
-    // If we have an API key, we're authenticated
-    if (hasApiKey) {
-      logger.debug('checkAuth: Using API key authentication');
-      return {
-        authenticated: true,
-        method: 'api_key',
-        hasApiKey,
-        hasEnvApiKey,
-        hasCredentialsFile,
-      };
-    }
-
-    // If we have Vertex AI credentials, we're authenticated
-    if (hasVertexAi) {
-      logger.debug('checkAuth: Using Vertex AI authentication');
-      return {
-        authenticated: true,
-        method: 'vertex_ai',
-        hasApiKey,
-        hasEnvApiKey,
-        hasCredentialsFile,
-      };
-    }
-
-    // Check if settings file indicates configured authentication
-    if (hasCredentialsFile && authType) {
-      // OAuth types: "oauth-personal", "oauth-adc"
-      // API key type: "api-key"
-      // Code assist: "code-assist" (requires IDE integration)
-      if (authType.startsWith('oauth')) {
-        logger.debug(`checkAuth: OAuth authentication configured (${authType})`);
-        return {
-          authenticated: true,
-          method: 'google_login',
-          hasApiKey,
-          hasEnvApiKey,
-          hasCredentialsFile,
-        };
-      }
-
-      if (authType === 'api-key') {
-        logger.debug('checkAuth: API key authentication configured in settings');
-        return {
-          authenticated: true,
-          method: 'api_key',
-          hasApiKey,
-          hasEnvApiKey,
-          hasCredentialsFile,
-        };
-      }
-
-      if (authType === 'code-assist' || authType === 'codeassist') {
-        logger.debug('checkAuth: Code Assist auth configured but requires local server');
-        return {
-          authenticated: false,
-          method: 'google_login',
-          hasApiKey,
-          hasEnvApiKey,
-          hasCredentialsFile,
-          error:
-            'Code Assist authentication requires IDE integration. Please use "gemini" CLI to log in with a different method, or set GEMINI_API_KEY.',
-        };
-      }
-
-      // Unknown auth type but something is configured
-      logger.debug(`checkAuth: Unknown auth type configured: ${authType}`);
-      return {
-        authenticated: true,
-        method: 'google_login',
-        hasApiKey,
-        hasEnvApiKey,
-        hasCredentialsFile,
-      };
-    }
-
-    // No credentials found
-    logger.debug('checkAuth: No valid credentials found');
     return {
       authenticated: false,
-      method: 'none',
+      authenticationChecked: false,
+      method: environment.GEMINI_API_KEY?.trim()
+        ? 'api_key'
+        : hasVertexConfig
+          ? 'vertex_ai'
+          : 'none',
       hasApiKey,
-      hasEnvApiKey,
-      hasCredentialsFile,
-      error:
-        'No authentication configured. Run "gemini" interactively to log in, or set GEMINI_API_KEY.',
+      hasEnvApiKey: hasApiKey,
+      hasConfigFile,
+      hasVertexConfig,
+      ...(error && { error }),
     };
   }
 
@@ -867,7 +763,7 @@ export class GeminiProvider extends CliProvider {
       version: version || undefined,
       path: this.cliPath || undefined,
       method: 'cli',
-      hasApiKey: !!process.env.GEMINI_API_KEY,
+      hasApiKey: !!auth.hasApiKey,
       authenticated: auth.authenticated,
     };
   }

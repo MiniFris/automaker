@@ -40,7 +40,7 @@ it('uses real application snapshots and passive file hints over native HTTP with
     const status = async () => {
       const response = await fetch(`http://127.0.0.1:${address.port}/api/setup/copilot-status`);
       expect(response.status).toBe(200);
-      expect(response.headers.get('X-Automaker-API-Version')).toBe('10');
+      expect(response.headers.get('X-Automaker-API-Version')).toBe('11');
       return CopilotSetupStatusSchema.parse(await response.json());
     };
     return { root, app, status };
