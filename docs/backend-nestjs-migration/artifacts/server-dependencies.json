@@ -3,7 +3,7 @@
   "sourceRoot": "apps/server/src",
   "summary": {
     "files": 608,
-    "internalEdges": 1999,
+    "internalEdges": 1997,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -16,16 +16,16 @@
     "legacy -> lib": 2,
     "legacy -> modules": 2,
     "legacy -> root": 2,
-    "legacy -> services": 13,
+    "legacy -> services": 9,
     "lib -> lib": 3,
     "lib -> services": 1,
-    "modules -> core": 126,
-    "modules -> legacy": 15,
-    "modules -> lib": 25,
-    "modules -> modules": 294,
+    "modules -> core": 127,
+    "modules -> legacy": 11,
+    "modules -> lib": 26,
+    "modules -> modules": 295,
     "modules -> providers": 27,
     "modules -> routes": 32,
-    "modules -> services": 140,
+    "modules -> services": 147,
     "modules -> types": 2,
     "providers -> core": 1,
     "providers -> lib": 3,
@@ -37,7 +37,7 @@
     "root -> lib": 2,
     "root -> modules": 28,
     "root -> root": 4,
-    "root -> services": 12,
+    "root -> services": 8,
     "routes -> lib": 103,
     "routes -> middleware": 8,
     "routes -> modules": 8,
@@ -779,27 +779,11 @@
     },
     {
       "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/services/event-hook-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/execution-environment/dev-server.ts"
     },
     {
       "source": "apps/server/src/legacy-application.ts",
       "target": "apps/server/src/services/execution-environment/test-runner.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/services/ideation-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/services/mcp-test-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy-application.ts",
-      "target": "apps/server/src/services/pipeline-service.ts"
     },
     {
       "source": "apps/server/src/legacy-application.ts",
@@ -847,27 +831,11 @@
     },
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/event-hook-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
       "target": "apps/server/src/services/feature-loader.ts"
     },
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/ideation-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/mcp-test-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
       "target": "apps/server/src/services/notification-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/pipeline-service.ts"
     },
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
@@ -2115,10 +2083,6 @@
     },
     {
       "source": "apps/server/src/modules/ideation/ideation-application.service.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
-    },
-    {
-      "source": "apps/server/src/modules/ideation/ideation-application.service.ts",
       "target": "apps/server/src/lib/events.ts"
     },
     {
@@ -2159,6 +2123,14 @@
     },
     {
       "source": "apps/server/src/modules/ideation/ideation.module.ts",
+      "target": "apps/server/src/core/eventing/application-events.ts"
+    },
+    {
+      "source": "apps/server/src/modules/ideation/ideation.module.ts",
+      "target": "apps/server/src/lib/events.ts"
+    },
+    {
+      "source": "apps/server/src/modules/ideation/ideation.module.ts",
       "target": "apps/server/src/modules/features/features.module.ts"
     },
     {
@@ -2170,8 +2142,20 @@
       "target": "apps/server/src/modules/ideation/ideation.controller.ts"
     },
     {
-      "source": "apps/server/src/modules/mcp/mcp-application.service.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
+      "source": "apps/server/src/modules/ideation/ideation.module.ts",
+      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/ideation/ideation.module.ts",
+      "target": "apps/server/src/services/feature-loader.ts"
+    },
+    {
+      "source": "apps/server/src/modules/ideation/ideation.module.ts",
+      "target": "apps/server/src/services/ideation-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/ideation/ideation.module.ts",
+      "target": "apps/server/src/services/settings-service.ts"
     },
     {
       "source": "apps/server/src/modules/mcp/mcp-application.service.ts",
@@ -2200,6 +2184,14 @@
     {
       "source": "apps/server/src/modules/mcp/mcp.module.ts",
       "target": "apps/server/src/modules/mcp/mcp.controller.ts"
+    },
+    {
+      "source": "apps/server/src/modules/mcp/mcp.module.ts",
+      "target": "apps/server/src/services/mcp-test-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/mcp/mcp.module.ts",
+      "target": "apps/server/src/services/settings-service.ts"
     },
     {
       "source": "apps/server/src/modules/models/models-catalog.service.ts",
@@ -2279,10 +2271,6 @@
     },
     {
       "source": "apps/server/src/modules/orchestration/background-integrations.lifecycle.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
-    },
-    {
-      "source": "apps/server/src/modules/orchestration/background-integrations.lifecycle.ts",
       "target": "apps/server/src/lib/events.ts"
     },
     {
@@ -2322,8 +2310,8 @@
       "target": "apps/server/src/modules/orchestration/feature-run-coordinator.service.ts"
     },
     {
-      "source": "apps/server/src/modules/pipeline/pipeline-application.service.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
+      "source": "apps/server/src/modules/orchestration/orchestration.module.ts",
+      "target": "apps/server/src/services/event-hook-service.ts"
     },
     {
       "source": "apps/server/src/modules/pipeline/pipeline-application.service.ts",
@@ -2356,6 +2344,10 @@
     {
       "source": "apps/server/src/modules/pipeline/pipeline.module.ts",
       "target": "apps/server/src/modules/pipeline/pipeline.controller.ts"
+    },
+    {
+      "source": "apps/server/src/modules/pipeline/pipeline.module.ts",
+      "target": "apps/server/src/services/pipeline-service.ts"
     },
     {
       "source": "apps/server/src/modules/projects/project-overview.service.ts",

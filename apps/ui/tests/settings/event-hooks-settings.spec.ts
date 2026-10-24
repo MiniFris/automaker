@@ -217,7 +217,8 @@ test.describe('Event Hooks Settings', () => {
     // Fill in the endpoint form
     const uniqueSuffix = Date.now();
     await dialog.locator('input#endpoint-name').fill(`Test Endpoint ${uniqueSuffix}`);
-    await dialog.locator('input#endpoint-server').fill('https://ntfy.sh');
+    // Persist configuration against a reserved host, never a public notification service.
+    await dialog.locator('input#endpoint-server').fill('https://ntfy.invalid');
     await dialog.locator('input#endpoint-topic').fill(`test-topic-${uniqueSuffix}`);
 
     // Save the endpoint

@@ -5,7 +5,6 @@ import {
   type OnApplicationShutdown,
 } from '@nestjs/common';
 import { createLogger } from '@automaker/utils';
-import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import { APPLICATION_EVENTS } from '../../core/eventing/application-events.js';
 import type { EventEmitter } from '../../lib/events.js';
 import { cleanupStaleValidations } from '../../routes/github/routes/validation-common.js';
@@ -28,7 +27,7 @@ export class BackgroundIntegrationsLifecycle
     @Inject(SettingsService) private readonly settings: SettingsService,
     @Inject(EventHistoryService) private readonly history: EventHistoryService,
     @Inject(FeatureLoader) private readonly features: FeatureLoader,
-    @Inject(LEGACY_SERVICES.eventHook) private readonly hooks: EventHookService
+    @Inject(EventHookService) private readonly hooks: EventHookService
   ) {}
 
   onApplicationBootstrap(): void {

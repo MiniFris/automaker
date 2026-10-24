@@ -13,6 +13,7 @@ import { ToolPolicyService } from '../../src/modules/providers/tool-policy.servi
 import { AgentProviderSelector } from '../../src/services/agent/agent-provider-selector.js';
 import { LEGACY_SERVICES } from '../../src/legacy/legacy.tokens.js';
 import { MockProvider } from '../helpers/mock-provider.js';
+import { IdeationService } from '../../src/services/ideation-service.js';
 
 it.each([
   { metadata: [{ name: 'claude' }, { name: 'CLAUDE' }] },
@@ -81,7 +82,7 @@ it('owns registry, connection repository and tool policy exactly once per Nest a
       const auto = runtime.app.get(LEGACY_SERVICES.autoMode) as {
         facadeOptions: { providerRegistry: unknown; toolPolicy: unknown };
       };
-      const ideation = runtime.app.get(LEGACY_SERVICES.ideation) as { providerRegistry: unknown };
+      const ideation = runtime.app.get(IdeationService) as unknown as { providerRegistry: unknown };
       const selector = runtime.app.get(AgentProviderSelector) as unknown as {
         registry: unknown;
         tools: unknown;
@@ -141,6 +142,10 @@ it.each([
   'featureLoader',
   'notificationService',
   'eventHistoryService',
+  'mcpTestService',
+  'ideationService',
+  'pipelineService',
+  'eventHookService',
 ])(
   'rejects retired legacy override %s before creating services or falling back to production adapters',
   async (key) => {

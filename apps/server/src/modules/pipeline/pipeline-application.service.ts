@@ -1,5 +1,4 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import { PipelineService } from '../../services/pipeline-service.js';
 import type {
   PipelineAddRequest,
@@ -12,7 +11,7 @@ import type {
 
 @Injectable()
 export class PipelineApplicationService {
-  constructor(@Inject(LEGACY_SERVICES.pipeline) private readonly pipeline: PipelineService) {}
+  constructor(@Inject(PipelineService) private readonly pipeline: PipelineService) {}
 
   async get(input: PipelineProjectRequest) {
     return {

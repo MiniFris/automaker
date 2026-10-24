@@ -592,3 +592,28 @@ independent application shutdown and persistence/restart. Storage is still scope
 to explicit project paths, not secretly partitioned by application DATA_DIR.
 No multi-writer guarantee, new failure policy, format/ID/event/API-v13 change or
 completion of the remaining migration stages is claimed.
+
+## ADR-032: native integration ownership with preserved lifecycle hooks
+
+MCPModule, IdeationModule and PipelineModule construct their services through
+explicit class-token factories. OrchestrationModule owns EventHookService and
+injects it into the existing BackgroundIntegrationsLifecycle. The four legacy
+tokens, factories, service-bag fields and bootstrap overrides are removed; no
+replacement aliases or new global modules are introduced. Native settings,
+features, providers and application events remain the explicit dependencies.
+
+Native composition contracts inspect wrapper cardinality and consumer identity,
+two-application isolation, hook initialization/destruction and idea/pipeline
+persistence. A real Nest shutdown contract starts an owned saved stdio MCP server
+with a hanging handshake, then proves child exit, pending discovery settlement and
+closed admission. Existing transport fixtures still cover timeout/bounds/redaction.
+
+Pipeline fallback/merge defaults must not share the mutable steps array: both
+the read fallback and default merge are cloned, including partial JSON without
+steps. Missing/malformed/partial-file and caller-mutation regressions protect
+project boundaries. Existing files are preserved; no provenance-based cleanup
+or persisted format/ID/API-v13 change is attempted.
+
+This does not complete ideation decomposition/drain, hook in-flight task drain,
+typed event subscriptions, MCP operation separation or HTTP/SSE acceptance,
+pipeline storage serialization, validation ownership or remaining stage 7–11 gates.

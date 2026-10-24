@@ -6,6 +6,65 @@
 planning, ideation, GitHub, MCP, notifications и hooks. Этот этап начинается только
 после стабилизации Features, Execution, Git и Agents modules.
 
+## Срез: native ownership интеграционных сервисов
+
+`MCPModule`, `IdeationModule` и `PipelineModule` теперь создают свои сервисы
+через явные class-token factory providers. `OrchestrationModule` владеет
+`EventHookService`, который получает `BackgroundIntegrationsLifecycle`.
+Четыре legacy tokens/factories/service-bag fields и bootstrap overrides удалены.
+Application services и background lifecycle инжектируют native instances;
+retired override keys отклоняются до создания сервисов. Новые global modules
+или скрытые service-bag aliases для этих сервисов не добавлены.
+
+Сохранены явные dependencies: MCP использует native SettingsService, ideation —
+application events, SettingsService, FeatureLoader и ProviderRegistry. Hook startup
+по-прежнему выполняет initialize один раз через существующий lifecycle owner;
+shutdown снимает его subscription и cleanup timers, не меняя другое приложение.
+Native composition contract проверяет actual Nest wrappers и identity consumers,
+два приложения, persisted ideas/pipeline steps и независимость после закрытия
+первого приложения. Отдельный contract сохраняет MCP server в настоящих settings,
+запускает owned Node stdio fixture с зависшим handshake и закрывает приложение:
+реальный Nest before-shutdown hook завершает child PID, завершает pending discovery
+и запрещает новое discovery после shutdown. Это не live external MCP server.
+
+В pipeline подтверждён аналогичный notifications/history дефект: shallow spread
+defaults сохранял общий массив steps. Создание step в одном проекте загрязняло
+конфигурации других проектов без файлов. Reader теперь клонирует fallback,
+а merge defaults создаёт отдельный массив и для partial JSON без steps. Три
+regressions сначала упали, затем прошли для missing/malformed/partial config;
+дополнительно проверяется, что изменение возвращённого пустого config не меняет
+другой read или проект. Исторические pipeline files не очищаются автоматически.
+
+Это ownership cutover, не завершение этапа 8: ideation decomposition, cancellation/
+persistence drain, разделение MCP test/list и SSE/HTTP transport acceptance,
+in-flight hook shell/HTTP drain, typed EventBus subscriptions, validation registry
+и остальные orchestration gates остаются открытыми. Pipeline storage serialization,
+ошибки чтения и multi-writer coordination этим clone fix не закрыты. HTTP API v13,
+wire payloads, IDs, persisted formats и execution binding semantics не меняются.
+
+Проверки среза (не финальный checkpoint этапа 8):
+
+- Pipeline isolation: 3 real-filesystem regressions первоначально упали,
+  затем прошли без сброса defaults или изменения существующих файлов.
+- Целевые native composition/Nest shell/MCP transport contracts: 45 passed;
+  повтор после форматирования и усиления PID assertion до `ESRCH` также успешен.
+- `npm run test:server:unit`: 3580 passed, 40 skipped.
+- `npm run test:server:contract`: 307 passed.
+- `npm run test:packages`: 1473 passed.
+- Server/UI production build (Electron main/preload включены), server/UI lint,
+  UI typecheck, lockfile, formatting/diff и три inventory checks: успешно.
+- Production SIGTERM/SIGINT lifecycle smoke: exit 0.
+- Docker acceptance с `automaker-nest-stage2-smoke:latest`: 11 passed,
+  4 opt-in skipped; owned containers/image/volume cleanup проверен.
+- Выбранные реальные SSH CLI/SDK/Direct chat/restart cases: 3 passed,
+  34 отфильтрованы.
+- Chromium после Docker/SSH: 17 passed — hooks settings/dialog validation и
+  endpoint persistence/reload, feature add/edit, Agent chat/Running Agents,
+  Cursor/Gemini/Copilot status и confirmed credentials/import. Endpoint fixture
+  использует `https://ntfy.invalid`, а не публичный notification server.
+  Paid/live vendor authentication, внешний MCP/Ntfy и packaged Electron этим
+  offline fixture acceptance не проверялись.
+
 ## 8.1. OrchestrationModule
 
 - [ ] Ввести явный `FeatureRunCoordinator`.

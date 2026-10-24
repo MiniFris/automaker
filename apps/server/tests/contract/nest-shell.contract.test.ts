@@ -16,6 +16,7 @@ import WebSocket from 'ws';
 import { createNestApplication } from '../../src/main.js';
 import { LEGACY_APPLICATION, LEGACY_SERVICES } from '../../src/legacy/legacy.tokens.js';
 import { SettingsService } from '../../src/services/settings-service.js';
+import { MCPTestService } from '../../src/services/mcp-test-service.js';
 import { AgentService } from '../../src/services/agent-service.js';
 import { ProviderRegistry } from '../../src/modules/providers/provider-registry.service.js';
 import { AgentSessionRegistry } from '../../src/services/agent/agent-session-registry.js';
@@ -77,13 +78,9 @@ describe('Nest shell and legacy bridge contract', () => {
     const services = runtime.legacy.services;
     const expected = {
       autoMode: services.autoModeService,
-      mcpTest: services.mcpTestService,
-      ideation: services.ideationService,
       devServer: services.devServerService,
       testRunner: services.testRunnerService,
       terminal: services.terminalService,
-      pipeline: services.pipelineService,
-      eventHook: services.eventHookService,
     };
 
     for (const [name, token] of Object.entries(LEGACY_SERVICES)) {
@@ -144,9 +141,7 @@ describe('Nest shell and legacy bridge contract', () => {
       } finally {
         firstCleanup.mockRestore();
       }
-      expect(runtime.legacy.services.mcpTestService).not.toBe(
-        second.legacy.services.mcpTestService
-      );
+      expect(runtime.app.get(MCPTestService)).not.toBe(second.app.get(MCPTestService));
     } finally {
       await second.app.close();
     }

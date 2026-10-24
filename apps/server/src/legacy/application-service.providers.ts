@@ -6,12 +6,8 @@ import { SettingsService } from '../services/settings-service.js';
 import { FeatureLoader } from '../services/feature-loader.js';
 import { AutoModeServiceCompat } from '../services/auto-mode/index.js';
 import { TerminalService } from '../services/terminal-service.js';
-import { MCPTestService } from '../services/mcp-test-service.js';
-import { PipelineService } from '../services/pipeline-service.js';
-import { IdeationService } from '../services/ideation-service.js';
 import { DevServerService } from '../services/dev-server-service.js';
 import { TestRunnerService } from '../services/test-runner-service.js';
-import { EventHookService } from '../services/event-hook-service.js';
 import { NotificationService } from '../services/notification-service.js';
 import { ProviderRegistry } from '../modules/providers/provider-registry.service.js';
 import { ToolPolicyService } from '../modules/providers/tool-policy.service.js';
@@ -20,13 +16,9 @@ import { LEGACY_SERVICES as tokens } from './legacy.tokens.js';
 /** Transitional token aliases; construction and dependency ordering belong to Nest. */
 export const APPLICATION_SERVICE_TOKENS = {
   autoModeService: tokens.autoMode,
-  mcpTestService: tokens.mcpTest,
-  ideationService: tokens.ideation,
   devServerService: tokens.devServer,
   testRunnerService: tokens.testRunner,
   terminalService: tokens.terminal,
-  pipelineService: tokens.pipeline,
-  eventHookService: tokens.eventHook,
 } satisfies Record<keyof LegacyServiceOverrides, symbol>;
 
 export function createApplicationServiceProviders(options: LegacyApplicationOptions): Provider[] {
@@ -77,21 +69,6 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
           policy
         )
     ),
-    service(
-      'mcpTestService',
-      [SettingsService],
-      (settings: SettingsService) => new MCPTestService(settings)
-    ),
-    service(
-      'ideationService',
-      [APPLICATION_EVENTS, SettingsService, FeatureLoader, ProviderRegistry],
-      (
-        events: EventEmitter,
-        settings: SettingsService,
-        features: FeatureLoader,
-        providers: ProviderRegistry
-      ) => new IdeationService(events, settings, features, providers)
-    ),
     service('devServerService', [], () => new DevServerService()),
     service('testRunnerService', [APPLICATION_EVENTS], (events: EventEmitter) => {
       const runner = new TestRunnerService();
@@ -103,7 +80,5 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
       [SettingsService],
       (settings: SettingsService) => new TerminalService(settings)
     ),
-    service('pipelineService', [], () => new PipelineService()),
-    service('eventHookService', [], () => new EventHookService()),
   ];
 }

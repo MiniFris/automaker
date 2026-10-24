@@ -31,11 +31,7 @@ import type { AgentService } from './services/agent-service.js';
 import type { AutoModeServiceCompat } from './services/auto-mode/index.js';
 import type { TerminalService } from './services/terminal-service.js';
 import type { SettingsService } from './services/settings-service.js';
-import type { MCPTestService } from './services/mcp-test-service.js';
-import type { PipelineService } from './services/pipeline-service.js';
-import type { IdeationService } from './services/ideation-service.js';
 import type { DevServerService } from './services/dev-server-service.js';
-import type { EventHookService } from './services/event-hook-service.js';
 import type { TestRunnerService } from './services/test-runner-service.js';
 import { getManagedTestRunnerService } from './services/execution-environment/test-runner.js';
 import { getManagedDevServerService } from './services/execution-environment/dev-server.js';
@@ -171,13 +167,9 @@ ${pathsChecked
 
 export interface LegacyServiceOverrides {
   autoModeService: AutoModeServiceCompat;
-  mcpTestService: MCPTestService;
-  ideationService: IdeationService;
   devServerService: DevServerService;
   testRunnerService: TestRunnerService;
   terminalService: TerminalService;
-  pipelineService: PipelineService;
-  eventHookService: EventHookService;
 }
 
 export interface LegacyApplicationOptions {
