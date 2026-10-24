@@ -19,10 +19,13 @@ import { AgentPromptQueue } from '../../services/agent/agent-prompt-queue.js';
 import { AgentQueueDeliveryStore } from '../../services/agent/agent-queue-delivery-store.js';
 import { AgentSessionDeletion } from '../../services/agent/agent-session-deletion.js';
 import { AgentExecutionStore } from '../../services/agent/agent-execution-store.js';
+import { AgentService } from '../../services/agent-service.js';
+import { agentServiceProvider } from './agent-service.provider.js';
 
 @Global()
 @Module({
   providers: [
+    agentServiceProvider,
     AgentSessionRegistry,
     AgentPromptBuilder,
     AgentStreamNormalizer,
@@ -161,6 +164,7 @@ import { AgentExecutionStore } from '../../services/agent/agent-execution-store.
     },
   ],
   exports: [
+    AgentService,
     AgentExecutionStore,
     AgentSessionDeletion,
     AgentSessionRegistry,

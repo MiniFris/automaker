@@ -4,7 +4,6 @@ export const LEGACY_EVENT_EMITTER = Symbol('LEGACY_EVENT_EMITTER');
 
 export const LEGACY_SERVICES = {
   settings: Symbol('LEGACY_SETTINGS_SERVICE'),
-  agent: Symbol('LEGACY_AGENT_SERVICE'),
   featureLoader: Symbol('LEGACY_FEATURE_LOADER'),
   autoMode: Symbol('LEGACY_AUTO_MODE_SERVICE'),
   mcpTest: Symbol('LEGACY_MCP_TEST_SERVICE'),

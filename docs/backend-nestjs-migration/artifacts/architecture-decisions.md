@@ -523,3 +523,25 @@ consumer identity, marker isolation and independence after one app closes.
 This changes composition, not API v13, persisted formats or provider execution
 semantics. Remaining adapter DI, status, capabilities, tool policy, cleanup and
 stage 7–11 gates are not declared complete by this ownership change.
+
+## ADR-029: native agent facade, explicit transitional lifecycle port
+
+AgentStateModule owns AgentService through a typed factory provider using native
+class-token dependencies. Chat and sessions consume the same per-application
+facade. The legacy agent factory, token, service-bag field and bootstrap override
+are retired; session transport adaptation is renamed AgentSessionAdapter and no
+longer depends on legacy tokens. The application service itself remains free
+of Nest decorators and transport concerns.
+
+Until lifecycle orchestration is migrated, the existing legacy orchestrator
+receives an explicit initialize/interruptActiveSessions port to the native agent.
+This is not a second owner, factory or service-bag alias. Keeping that bridge
+preserves settings-before-agent startup, runStartupTasks behavior, interruption
+before provider close and best-effort remaining cleanup after storage failure.
+Removing this final lifecycle bridge remains required work, not an achieved gate.
+
+Contracts and child-process crash/shutdown fixtures resolve the real native facade;
+test execution is selected through explicit registrations, not a facade replacement.
+Composition contracts check actual Nest wrapper cardinality, consumer/dependency
+identity and two-application persistence isolation. This is an ownership change,
+not an API v13 or persisted-format change, and does not complete stages 7–11.

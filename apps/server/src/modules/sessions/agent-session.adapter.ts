@@ -1,5 +1,4 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
 import { AgentService } from '../../services/agent-service.js';
 import type {
   ActiveSessionCoordinator,
@@ -9,8 +8,8 @@ import type {
 import type { SessionCreateRequest, SessionUpdateRequest } from './session.schemas.js';
 
 @Injectable()
-export class LegacySessionAdapter implements SessionMetadataRepository, ActiveSessionCoordinator {
-  constructor(@Inject(LEGACY_SERVICES.agent) private readonly agent: AgentService) {}
+export class AgentSessionAdapter implements SessionMetadataRepository, ActiveSessionCoordinator {
+  constructor(@Inject(AgentService) private readonly agent: AgentService) {}
 
   async list(includeArchived: boolean): Promise<PersistedSessionMetadata[]> {
     return (await this.agent.listSessions(includeArchived)) as PersistedSessionMetadata[];
@@ -36,7 +35,10 @@ export class LegacySessionAdapter implements SessionMetadataRepository, ActiveSe
     sessionId: string,
     updates: SessionUpdateRequest
   ): Promise<PersistedSessionMetadata | null> {
-    return (await this.agent.updateSessionDetails(sessionId, updates)) as PersistedSessionMetadata | null;
+    return (await this.agent.updateSessionDetails(
+      sessionId,
+      updates
+    )) as PersistedSessionMetadata | null;
   }
 
   archive(sessionId: string, archived: boolean): Promise<boolean> {

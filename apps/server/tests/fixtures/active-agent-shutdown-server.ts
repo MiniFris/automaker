@@ -1,6 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createNestApplication } from '../../src/main.js';
+import { AgentService } from '../../src/services/agent-service.js';
 import type { ExecuteOptions } from '../../src/providers/types.js';
 import { MockProvider } from '../helpers/mock-provider.js';
 
@@ -48,14 +49,11 @@ const runtime = await createNestApplication({
 });
 await runtime.start();
 sessionId = (
-  await runtime.legacy.services.agentService.createSession(
-    'Active shutdown fixture',
-    directory,
-    directory,
-    'sonnet'
-  )
+  await runtime.app
+    .get(AgentService)
+    .createSession('Active shutdown fixture', directory, directory, 'sonnet')
 ).id;
-await runtime.legacy.services.agentService.sendMessage({
+await runtime.app.get(AgentService).sendMessage({
   sessionId,
   message: 'Hold until shutdown',
 });

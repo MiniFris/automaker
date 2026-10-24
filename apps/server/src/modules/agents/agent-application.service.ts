@@ -1,8 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { createLogger } from '@automaker/utils';
 
-import { LEGACY_SERVICES } from '../../legacy/legacy.tokens.js';
-import type { AgentService } from '../../services/agent-service.js';
+import { AgentService } from '../../services/agent-service.js';
 import type {
   AgentModelRequest,
   AgentQueueAddRequest,
@@ -16,7 +15,7 @@ const logger = createLogger('AgentsModule');
 
 @Injectable()
 export class AgentApplicationService {
-  constructor(@Inject(LEGACY_SERVICES.agent) private readonly agents: AgentService) {}
+  constructor(@Inject(AgentService) private readonly agents: AgentService) {}
 
   start(request: AgentStartRequest): Promise<unknown> {
     return this.agents.startConversation(request);

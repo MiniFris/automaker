@@ -1,4 +1,5 @@
 import { createNestApplication } from '../../src/main.js';
+import { AgentService } from '../../src/services/agent-service.js';
 import { AgentSessionRepository } from '../../src/services/agent/agent-session.repository.js';
 import { MockProvider } from '../helpers/mock-provider.js';
 import { AgentQueueDeliveryStore } from '../../src/services/agent/agent-queue-delivery-store.js';
@@ -47,7 +48,7 @@ const runtime = await createNestApplication({
   providerRegistrations: [{ name: 'claude', create: () => provider }],
 });
 await runtime.start();
-const service = runtime.legacy.services.agentService;
+const service = runtime.app.get(AgentService);
 sessionId = (await service.createSession('Crash fixture', directory, directory, 'sonnet')).id;
 const repository = runtime.app.get(AgentSessionRepository);
 await repository.updateMetadata(sessionId, { sdkSessionId: 'old-sdk' });

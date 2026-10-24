@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 605,
-    "internalEdges": 1997,
+    "files": 606,
+    "internalEdges": 1999,
     "stronglyConnectedComponents": 1
   },
   "layerEdges": {
@@ -17,16 +17,16 @@
     "legacy -> lib": 1,
     "legacy -> modules": 2,
     "legacy -> root": 2,
-    "legacy -> services": 27,
+    "legacy -> services": 13,
     "lib -> lib": 3,
     "lib -> services": 1,
     "modules -> core": 116,
-    "modules -> legacy": 27,
+    "modules -> legacy": 25,
     "modules -> lib": 24,
-    "modules -> modules": 292,
+    "modules -> modules": 293,
     "modules -> providers": 27,
     "modules -> routes": 32,
-    "modules -> services": 122,
+    "modules -> services": 139,
     "modules -> types": 2,
     "providers -> core": 1,
     "providers -> lib": 3,
@@ -297,7 +297,7 @@
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 170,
+    "@nestjs/common": 171,
     "@nestjs/core": 7,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
@@ -860,66 +860,6 @@
     },
     {
       "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/agent-service.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/agent/agent-conversation-coordinator.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/agent/agent-environment-preparer.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/agent/agent-event-publisher.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/agent/agent-execution-coordinator.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/agent/agent-execution-store.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/agent/agent-prompt-builder.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/agent/agent-prompt-queue.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/agent/agent-provider-selector.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/agent/agent-query-options-builder.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/agent/agent-session-deletion.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/agent/agent-session-loader.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/agent/agent-session-registry.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/agent/agent-session.repository.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
-      "target": "apps/server/src/services/agent/agent-stream-normalizer.ts"
-    },
-    {
-      "source": "apps/server/src/legacy/application-service.providers.ts",
       "target": "apps/server/src/services/auto-mode/index.ts"
     },
     {
@@ -983,6 +923,10 @@
       "target": "apps/server/src/legacy/legacy.tokens.ts"
     },
     {
+      "source": "apps/server/src/legacy/legacy.module.ts",
+      "target": "apps/server/src/services/agent-service.ts"
+    },
+    {
       "source": "apps/server/src/lib/atomic-write-text.ts",
       "target": "apps/server/src/lib/secure-fs.ts"
     },
@@ -1028,15 +972,75 @@
     },
     {
       "source": "apps/server/src/modules/agents/agent-application.service.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
-    },
-    {
-      "source": "apps/server/src/modules/agents/agent-application.service.ts",
       "target": "apps/server/src/modules/agents/agent.schemas.ts"
     },
     {
       "source": "apps/server/src/modules/agents/agent-application.service.ts",
       "target": "apps/server/src/services/agent-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-service.provider.ts",
+      "target": "apps/server/src/services/agent-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-service.provider.ts",
+      "target": "apps/server/src/services/agent/agent-conversation-coordinator.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-service.provider.ts",
+      "target": "apps/server/src/services/agent/agent-environment-preparer.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-service.provider.ts",
+      "target": "apps/server/src/services/agent/agent-event-publisher.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-service.provider.ts",
+      "target": "apps/server/src/services/agent/agent-execution-coordinator.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-service.provider.ts",
+      "target": "apps/server/src/services/agent/agent-execution-store.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-service.provider.ts",
+      "target": "apps/server/src/services/agent/agent-prompt-builder.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-service.provider.ts",
+      "target": "apps/server/src/services/agent/agent-prompt-queue.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-service.provider.ts",
+      "target": "apps/server/src/services/agent/agent-provider-selector.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-service.provider.ts",
+      "target": "apps/server/src/services/agent/agent-query-options-builder.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-service.provider.ts",
+      "target": "apps/server/src/services/agent/agent-session-deletion.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-service.provider.ts",
+      "target": "apps/server/src/services/agent/agent-session-loader.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-service.provider.ts",
+      "target": "apps/server/src/services/agent/agent-session-registry.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-service.provider.ts",
+      "target": "apps/server/src/services/agent/agent-session.repository.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-service.provider.ts",
+      "target": "apps/server/src/services/agent/agent-stream-normalizer.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-service.provider.ts",
+      "target": "apps/server/src/services/settings-service.ts"
     },
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
@@ -1052,11 +1056,19 @@
     },
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
+      "target": "apps/server/src/modules/agents/agent-service.provider.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-state.module.ts",
       "target": "apps/server/src/modules/providers/provider-registry.service.ts"
     },
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
       "target": "apps/server/src/modules/providers/tool-policy.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-state.module.ts",
+      "target": "apps/server/src/services/agent-service.ts"
     },
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
@@ -3007,19 +3019,15 @@
       "target": "apps/server/src/modules/providers/setup-credentials.service.ts"
     },
     {
-      "source": "apps/server/src/modules/sessions/legacy-session.adapter.ts",
-      "target": "apps/server/src/legacy/legacy.tokens.ts"
-    },
-    {
-      "source": "apps/server/src/modules/sessions/legacy-session.adapter.ts",
+      "source": "apps/server/src/modules/sessions/agent-session.adapter.ts",
       "target": "apps/server/src/modules/sessions/session-metadata.repository.ts"
     },
     {
-      "source": "apps/server/src/modules/sessions/legacy-session.adapter.ts",
+      "source": "apps/server/src/modules/sessions/agent-session.adapter.ts",
       "target": "apps/server/src/modules/sessions/session.schemas.ts"
     },
     {
-      "source": "apps/server/src/modules/sessions/legacy-session.adapter.ts",
+      "source": "apps/server/src/modules/sessions/agent-session.adapter.ts",
       "target": "apps/server/src/services/agent-service.ts"
     },
     {
@@ -3060,7 +3068,7 @@
     },
     {
       "source": "apps/server/src/modules/sessions/sessions.module.ts",
-      "target": "apps/server/src/modules/sessions/legacy-session.adapter.ts"
+      "target": "apps/server/src/modules/sessions/agent-session.adapter.ts"
     },
     {
       "source": "apps/server/src/modules/sessions/sessions.module.ts",

@@ -14,6 +14,7 @@ import {
   type LegacyServiceOverrides,
 } from '../legacy-application.js';
 import { ReadinessStateService } from '../core/lifecycle/readiness-state.service.js';
+import { AgentService } from '../services/agent-service.js';
 import {
   DATA_DIRECTORY,
   LEGACY_APPLICATION,
@@ -58,12 +59,17 @@ export class LegacyModule {
         ...createApplicationServiceProviders(options),
         {
           provide: LEGACY_APPLICATION,
-          inject: Object.values(APPLICATION_SERVICE_TOKENS),
-          useFactory: (...instances: unknown[]) => {
+          inject: [AgentService, ...Object.values(APPLICATION_SERVICE_TOKENS)],
+          useFactory: (agents: AgentService, ...instances: unknown[]) => {
             const services = Object.fromEntries(
               Object.keys(APPLICATION_SERVICE_TOKENS).map((key, index) => [key, instances[index]])
             ) as unknown as LegacyServiceOverrides;
-            return createLegacyApplication({ ...options, dataDir: dataDirectory, services });
+            return createLegacyApplication({
+              ...options,
+              dataDir: dataDirectory,
+              services,
+              agents,
+            });
           },
         },
         LegacyLifecycle,

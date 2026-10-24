@@ -4,6 +4,7 @@ import path from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { expect, it, vi } from 'vitest';
 import { createNestApplication } from '../../src/main.js';
+import { AgentService } from '../../src/services/agent-service.js';
 import { AgentSessionRegistry } from '../../src/services/agent/agent-session-registry.js';
 import { AgentSessionRepository } from '../../src/services/agent/agent-session.repository.js';
 import { AgentSessionStorageError } from '../../src/services/agent/agent-session-storage.error.js';
@@ -18,7 +19,7 @@ it('returns safe 503 errors instead of empty HTTP state and recovers only valida
     enableShutdownHooks: false,
   });
   try {
-    const agents = runtime.legacy.services.agentService;
+    const agents = runtime.app.get(AgentService);
     await agents.initialize();
     const session = await agents.createSession('Fixture', directory, directory, 'sonnet');
     await runtime.start();

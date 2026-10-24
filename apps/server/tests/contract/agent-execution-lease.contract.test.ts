@@ -4,6 +4,7 @@ import path from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { expect, it, vi } from 'vitest';
 import { createNestApplication } from '../../src/main.js';
+import { AgentService } from '../../src/services/agent-service.js';
 import { MockProvider } from '../helpers/mock-provider.js';
 import type { ExecuteOptions } from '../../src/providers/types.js';
 
@@ -68,12 +69,7 @@ it('rejects duplicate HTTP admission without erroring the original stream, and a
   try {
     await runtime.start();
     const sessionId = (
-      await runtime.legacy.services.agentService.createSession(
-        'Fixture',
-        directory,
-        directory,
-        'sonnet'
-      )
+      await runtime.app.get(AgentService).createSession('Fixture', directory, directory, 'sonnet')
     ).id;
     const { port } = runtime.app.getHttpServer().address() as AddressInfo;
     const request = (route: string, body: object, method = 'POST') =>

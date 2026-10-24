@@ -176,7 +176,6 @@ ${pathsChecked
 export interface LegacyServiceOverrides {
   events: EventEmitter;
   settingsService: SettingsService;
-  agentService: AgentService;
   featureLoader: FeatureLoader;
   autoModeService: AutoModeServiceCompat;
   mcpTestService: MCPTestService;
@@ -213,7 +212,11 @@ export interface LegacyApplication {
 }
 
 export function createLegacyApplication(
-  options: Omit<LegacyApplicationOptions, 'services'> & { services: LegacyServiceOverrides }
+  options: Omit<LegacyApplicationOptions, 'services'> & {
+    services: LegacyServiceOverrides;
+    /** Transitional lifecycle bridge, not an owned/overridable legacy service. */
+    agents: Pick<AgentService, 'initialize' | 'interruptActiveSessions'>;
+  }
 ): LegacyApplication {
   const dataDir = options.dataDir ?? DATA_DIR;
   const server = options.httpServer;
@@ -221,7 +224,6 @@ export function createLegacyApplication(
   const {
     events,
     settingsService,
-    agentService,
     autoModeService,
     devServerService,
     testRunnerService,
@@ -276,7 +278,7 @@ export function createLegacyApplication(
       }
     }
 
-    await agentService.initialize();
+    await options.agents.initialize();
     logger.info('Agent service initialized');
 
     // Reconcile feature states on startup
@@ -430,10 +432,9 @@ export function createLegacyApplication(
     };
     try {
       // Persistence failure must not prevent abort/drain or cleanup of other resources.
-      if (typeof agentService.interruptActiveSessions === 'function')
-        await attempt('agent-interruption', () =>
-          agentService.interruptActiveSessions(`${signal} signal received`)
-        );
+      await attempt('agent-interruption', () =>
+        options.agents.interruptActiveSessions(`${signal} signal received`)
+      );
       await attempt('feature-interruption', () =>
         autoModeService.markAllRunningFeaturesInterrupted(`${signal} signal received`)
       );

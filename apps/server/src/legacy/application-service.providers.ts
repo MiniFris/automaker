@@ -2,21 +2,6 @@ import type { InjectionToken, Provider } from '@nestjs/common';
 import { createEventEmitter, type EventEmitter } from '../lib/events.js';
 import type { LegacyApplicationOptions, LegacyServiceOverrides } from '../legacy-application.js';
 import { SettingsService } from '../services/settings-service.js';
-import { AgentService } from '../services/agent-service.js';
-import { AgentSessionRepository } from '../services/agent/agent-session.repository.js';
-import { AgentSessionRegistry } from '../services/agent/agent-session-registry.js';
-import { AgentExecutionCoordinator } from '../services/agent/agent-execution-coordinator.js';
-import { AgentPromptBuilder } from '../services/agent/agent-prompt-builder.js';
-import { AgentEnvironmentPreparer } from '../services/agent/agent-environment-preparer.js';
-import { AgentProviderSelector } from '../services/agent/agent-provider-selector.js';
-import { AgentQueryOptionsBuilder } from '../services/agent/agent-query-options-builder.js';
-import { AgentEventPublisher } from '../services/agent/agent-event-publisher.js';
-import { AgentStreamNormalizer } from '../services/agent/agent-stream-normalizer.js';
-import { AgentSessionLoader } from '../services/agent/agent-session-loader.js';
-import { AgentConversationCoordinator } from '../services/agent/agent-conversation-coordinator.js';
-import { AgentPromptQueue } from '../services/agent/agent-prompt-queue.js';
-import { AgentSessionDeletion } from '../services/agent/agent-session-deletion.js';
-import { AgentExecutionStore } from '../services/agent/agent-execution-store.js';
 import { FeatureLoader } from '../services/feature-loader.js';
 import { AutoModeServiceCompat } from '../services/auto-mode/index.js';
 import { TerminalService } from '../services/terminal-service.js';
@@ -41,7 +26,6 @@ import {
 export const APPLICATION_SERVICE_TOKENS = {
   events: LEGACY_EVENT_EMITTER,
   settingsService: tokens.settings,
-  agentService: tokens.agent,
   featureLoader: tokens.featureLoader,
   autoModeService: tokens.autoMode,
   mcpTestService: tokens.mcpTest,
@@ -60,7 +44,7 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
   for (const key of Object.keys(options.services ?? {})) {
     if (!Object.hasOwn(APPLICATION_SERVICE_TOKENS, key))
       throw new Error(
-        'Unknown legacy service override. Configure providers through providerRegistrations.'
+        'Unknown legacy service override. Configure native services through their owning modules.'
       );
   }
   function service<K extends keyof LegacyServiceOverrides, Args extends unknown[]>(
@@ -78,60 +62,6 @@ export function createApplicationServiceProviders(options: LegacyApplicationOpti
   return [
     service('events', [], createEventEmitter),
     service('settingsService', [DATA_DIRECTORY], (dataDir: string) => new SettingsService(dataDir)),
-    service(
-      'agentService',
-      [
-        AgentSessionRepository,
-        AgentSessionRegistry,
-        AgentExecutionCoordinator,
-        AgentPromptBuilder,
-        AgentEnvironmentPreparer,
-        AgentStreamNormalizer,
-        AgentSessionLoader,
-        AgentConversationCoordinator,
-        AgentPromptQueue,
-        AgentSessionDeletion,
-        AgentExecutionStore,
-        AgentEventPublisher,
-        tokens.settings,
-        AgentProviderSelector,
-        AgentQueryOptionsBuilder,
-      ],
-      (
-        repository: AgentSessionRepository,
-        sessions: AgentSessionRegistry,
-        executions: AgentExecutionCoordinator,
-        prompts: AgentPromptBuilder,
-        environments: AgentEnvironmentPreparer,
-        streams: AgentStreamNormalizer,
-        loader: AgentSessionLoader,
-        conversations: AgentConversationCoordinator,
-        queue: AgentPromptQueue,
-        deletion: AgentSessionDeletion,
-        runs: AgentExecutionStore,
-        events: AgentEventPublisher,
-        settings: SettingsService,
-        providers: AgentProviderSelector,
-        queries: AgentQueryOptionsBuilder
-      ) =>
-        new AgentService(
-          repository,
-          sessions,
-          executions,
-          prompts,
-          environments,
-          streams,
-          loader,
-          conversations,
-          queue,
-          deletion,
-          runs,
-          events,
-          settings,
-          providers,
-          queries
-        )
-    ),
     service('featureLoader', [], () => new FeatureLoader()),
     service('notificationService', [LEGACY_EVENT_EMITTER], (events: EventEmitter) => {
       const notifications = new NotificationService();

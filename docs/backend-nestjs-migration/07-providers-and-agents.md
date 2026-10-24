@@ -354,9 +354,61 @@ UI typecheck, все три inventory checks и production SIGTERM/SIGINT smoke.
 - [x] Отделить follow-up/cancel.
 - [x] Отделить completion persistence/recovery.
 - [x] Сохранить session identifiers и UI event order.
+- [x] Передать фасад AgentService в native ownership AgentStateModule,
+      удалить legacy service alias и переключить chat/session consumers.
 
 На первом migration commit этого блока существующий `AgentService` допустимо зарегистрировать целиком как
 Nest provider. Его деление выполняется после переноса routes и contract coverage.
+
+### Срез: native AgentService и session adapter
+
+Фасад `AgentService` создаётся typed Nest factory provider в `AgentStateModule`,
+получая все выделенные зависимости через class tokens. Из LegacyModule удалены
+его factory, token и поле service bag/override. `AgentApplicationService` и
+`AgentSessionAdapter` инжектируют один native instance; session adapter больше
+не называется legacy и не импортирует legacy tokens. Сам application service
+остаётся независимым от Nest decorators и transport.
+
+Тесты и crash/shutdown child fixtures получают настоящий фасад через
+`app.get(AgentService)`, а не через legacy bag. Retired `services.agentService`
+отклоняется до создания сервисов. Fake SDK/CLI по-прежнему подставляются только
+через явные provider registrations/test composition, без production mock switch.
+Двухприложенческий contract проверяет единственность Nest wrapper, identity всех
+потребителей и основных dependencies, отсутствие alias, изоляцию session metadata
+и работу второго application после закрытия первого.
+
+Порядок lifecycle намеренно сохранён. Пока legacy startup/shutdown orchestration
+не перенесён, он получает отдельный узкий port native агента (`initialize` и
+`interruptActiveSessions`), не владея его конструированием. Settings migration
+по-прежнему предшествует initialize; флаг `runStartupTasks` сохраняет семантику.
+При shutdown interruption сохраняет прежний порядок до feature/process cleanup
+и закрытия providers; ошибка записи не отменяет остальные cleanup attempts.
+Blocking startup failure проверяется на настоящем facade через scoped spy,
+без подмены lifecycle owner; spy всегда восстанавливается.
+
+Проверки среза:
+
+- Целевые native composition/startup/storage/lease contracts: 30 passed.
+- `npm run test:server:unit`: 3573 passed, 40 skipped, включая продолжение
+  legacy cleanup после failure native interruption port.
+- `npm run test:server:contract`: 293 passed, включая native facade identity,
+  retired override rejection, active-agent shutdown и crash/restart recovery.
+- `npm run test:packages`: 1473 passed.
+- Server/UI production build (Electron main/preload включены), server/UI lint,
+  UI typecheck, lockfile, formatting/diff и три inventory checks: успешно.
+- Production SIGTERM/SIGINT lifecycle smoke: exit 0.
+- Docker acceptance с `automaker-nest-stage2-smoke:latest`: 11 passed,
+  4 opt-in skipped; owned cleanup проверен.
+- Выбранные реальные SSH CLI/SDK/Direct chat/restart cases: 3 passed,
+  34 отфильтрованы.
+- Chromium после Docker/SSH: 8 passed — Agent chat/Running Agents,
+  Cursor status/permissions, Gemini/Copilot status, confirmed credentials и
+  explicit legacy credential import. Это offline vendor fixtures, не paid/live
+  authentication и не packaged Electron acceptance.
+
+Это не завершает перенос lifecycle orchestration или оставшиеся gates этапа 7;
+legacy composition и остальные этапы 8–11 ещё требуют работы. API v13 и форматы
+session/execution/queue persistence этим срезом не меняются.
 
 ### Срез: prompt/context builder
 

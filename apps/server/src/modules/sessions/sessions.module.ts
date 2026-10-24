@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { LegacySessionAdapter } from './legacy-session.adapter.js';
+import { AgentSessionAdapter } from './agent-session.adapter.js';
 import { SessionApplicationService } from './session-application.service.js';
 import {
   ACTIVE_SESSION_COORDINATOR,
@@ -10,9 +10,9 @@ import { SessionsController } from './sessions.controller.js';
 @Module({
   controllers: [SessionsController],
   providers: [
-    LegacySessionAdapter,
-    { provide: SESSION_METADATA_REPOSITORY, useExisting: LegacySessionAdapter },
-    { provide: ACTIVE_SESSION_COORDINATOR, useExisting: LegacySessionAdapter },
+    AgentSessionAdapter,
+    { provide: SESSION_METADATA_REPOSITORY, useExisting: AgentSessionAdapter },
+    { provide: ACTIVE_SESSION_COORDINATOR, useExisting: AgentSessionAdapter },
     SessionApplicationService,
   ],
 })

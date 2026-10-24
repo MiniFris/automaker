@@ -16,6 +16,7 @@ import WebSocket from 'ws';
 import { createNestApplication } from '../../src/main.js';
 import { LEGACY_APPLICATION, LEGACY_SERVICES } from '../../src/legacy/legacy.tokens.js';
 import { SettingsService } from '../../src/services/settings-service.js';
+import { AgentService } from '../../src/services/agent-service.js';
 import { ProviderRegistry } from '../../src/modules/providers/provider-registry.service.js';
 import { AgentSessionRegistry } from '../../src/services/agent/agent-session-registry.js';
 import { AgentSessionRepository } from '../../src/services/agent/agent-session.repository.js';
@@ -76,7 +77,6 @@ describe('Nest shell and legacy bridge contract', () => {
     const services = runtime.legacy.services;
     const expected = {
       settings: services.settingsService,
-      agent: services.agentService,
       featureLoader: services.featureLoader,
       autoMode: services.autoModeService,
       mcpTest: services.mcpTestService,
@@ -1197,17 +1197,21 @@ describe('Nest shell and legacy bridge contract', () => {
   });
 
   it('cleans up a partially initialized Nest application when a blocking task fails', async () => {
-    const initialize = vi.fn().mockRejectedValue(new Error('startup fixture failed'));
-
-    await expect(
-      createNestApplication({
-        host: '127.0.0.1',
-        port: 0,
-        runStartupTasks: true,
-        enableShutdownHooks: false,
-        services: { agentService: { initialize } as never },
-      })
-    ).rejects.toThrow('startup fixture failed');
-    expect(initialize).toHaveBeenCalledOnce();
+    const initialize = vi
+      .spyOn(AgentService.prototype, 'initialize')
+      .mockRejectedValueOnce(new Error('startup fixture failed'));
+    try {
+      await expect(
+        createNestApplication({
+          host: '127.0.0.1',
+          port: 0,
+          runStartupTasks: true,
+          enableShutdownHooks: false,
+        })
+      ).rejects.toThrow('startup fixture failed');
+      expect(initialize).toHaveBeenCalledOnce();
+    } finally {
+      initialize.mockRestore();
+    }
   });
 });

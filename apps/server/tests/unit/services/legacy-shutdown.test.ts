@@ -26,10 +26,10 @@ it('attempts every owned cleanup after interruption/storage failures and never r
   const runtime = createLegacyApplication({
     httpServer: createServer(),
     runStartupTasks: false,
+    agents: { initialize: vi.fn(), interruptActiveSessions: interrupt },
     services: {
       events: createEventEmitter(),
       settingsService: {},
-      agentService: { interruptActiveSessions: interrupt },
       autoModeService: {
         markAllRunningFeaturesInterrupted: features,
         interruptForShutdown: autoMode,
