@@ -8,6 +8,18 @@
 import { createLogger } from '@automaker/utils/logger';
 import { ProviderInstallGuidanceSchema, type ProviderInstallGuidance } from '@automaker/contracts';
 import {
+  CursorModelConfigTargetSchema,
+  CursorModelConfigTargetResponseSchema,
+  CursorModelConfigResponseSchema,
+  CursorDefaultModelRequestSchema,
+  CursorDefaultModelResponseSchema,
+  CursorEnabledModelsRequestSchema,
+  CursorEnabledModelsResponseSchema,
+  type CursorModelConfigTarget,
+  type CursorDefaultModelRequest,
+  type CursorEnabledModelsRequest,
+} from '@automaker/contracts';
+import {
   CursorPermissionsTargetSchema,
   CursorPermissionsTargetResponseSchema,
   CursorPermissionsMutationResponseSchema,
@@ -1075,6 +1087,14 @@ export class HttpApiClient implements ElectronAPI {
     return headers;
   }
 
+  private async preflightCursorModelConfig(input: CursorModelConfigTarget) {
+    const target = CursorModelConfigTargetSchema.parse(input);
+    const preview = await this.setup.getCursorModelConfigTarget(target.projectPath);
+    if (JSON.stringify(preview.target) !== JSON.stringify(target))
+      throw new Error('Cursor model config target changed. Inspect and confirm it again.');
+    return target;
+  }
+
   private async preflightCursorPermissions(input: CursorPermissionsTarget) {
     const target = CursorPermissionsTargetSchema.parse(input);
     const preview = await this.setup.getCursorPermissionsTarget(
@@ -1823,43 +1843,45 @@ export class HttpApiClient implements ElectronAPI {
       error?: string;
     }> => this.disconnectSetupProvider('opencode', request),
 
-    getCursorConfig: (
-      projectPath: string
-    ): Promise<{
-      success: boolean;
-      config?: {
-        defaultModel?: string;
-        models?: string[];
-        mcpServers?: string[];
-        rules?: string[];
-      };
-      availableModels?: Array<{
-        id: string;
-        label: string;
-        description: string;
-        hasThinking: boolean;
-        tier: 'free' | 'pro';
-      }>;
-      error?: string;
-    }> => this.get(`/api/setup/cursor-config?projectPath=${encodeURIComponent(projectPath)}`),
+    getCursorConfig: async (projectPath: string) =>
+      CursorModelConfigResponseSchema.parse(
+        await this.get(`/api/setup/cursor-config?projectPath=${encodeURIComponent(projectPath)}`)
+      ),
 
-    setCursorDefaultModel: (
-      projectPath: string,
-      model: string
-    ): Promise<{
-      success: boolean;
-      model?: string;
-      error?: string;
-    }> => this.post('/api/setup/cursor-config/default-model', { projectPath, model }),
+    getCursorModelConfigTarget: async (projectPath: string) =>
+      CursorModelConfigTargetResponseSchema.parse(
+        await this.get(
+          `/api/setup/cursor-config/target?projectPath=${encodeURIComponent(projectPath)}`
+        )
+      ),
 
-    setCursorModels: (
-      projectPath: string,
-      models: string[]
-    ): Promise<{
-      success: boolean;
-      models?: string[];
-      error?: string;
-    }> => this.post('/api/setup/cursor-config/models', { projectPath, models }),
+    setCursorDefaultModel: async (input: CursorDefaultModelRequest) => {
+      const request = CursorDefaultModelRequestSchema.parse(input);
+      const target = await this.preflightCursorModelConfig(request.target);
+      const result = CursorDefaultModelResponseSchema.parse(
+        await this.post('/api/setup/cursor-config/default-model', request)
+      );
+      if (
+        JSON.stringify(result.target) !== JSON.stringify(target) ||
+        result.model !== request.model
+      )
+        throw new Error('Cursor model config response does not match confirmation.');
+      return result;
+    },
+
+    setCursorModels: async (input: CursorEnabledModelsRequest) => {
+      const request = CursorEnabledModelsRequestSchema.parse(input);
+      const target = await this.preflightCursorModelConfig(request.target);
+      const result = CursorEnabledModelsResponseSchema.parse(
+        await this.post('/api/setup/cursor-config/models', request)
+      );
+      if (
+        JSON.stringify(result.target) !== JSON.stringify(target) ||
+        JSON.stringify(result.models) !== JSON.stringify(request.models)
+      )
+        throw new Error('Cursor model config response does not match confirmation.');
+      return result;
+    },
 
     // Cursor CLI Permissions
     getCursorPermissions: (

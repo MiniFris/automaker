@@ -130,3 +130,21 @@ corrupt/symlink/hardlink config не перезаписывается. UI под
 Общий setup auth/CSRF hardening и перенос model config/keys/verify остаются отдельными
 задачами. Это не distributed lock и не гарантия против внешнего concurrent editor
 или hostile filesystem race.
+
+## ADR-012: API v5 confirmed project Cursor model config
+
+Project `.automaker/cursor-config.json` переносится в native service с shared
+confirmation DTO и host-file target. API header повышен до `5`; отдельный
+model-config preview имеет `protocolVersion: 1`. Новый client проверяет capability
+до POST, не заменяет уже approved target и проверяет применённые model IDs в ответе.
+API v4 Cursor permission protocol (`1`) и connection protocol (`3`) сохранены.
+
+Input должен содержать только известные model IDs, проверяемые own-property lookup;
+неизвестные элементы списка не фильтруются молча. Corrupt config не подменяется
+defaults и не перезаписывается. Unknown JSON fields/MCP/rules сохраняются.
+Permissions и models переиспользуют один injectable host JSON file boundary.
+Принятые model writes сериализуются по file path и drain при shutdown.
+
+Global UI settings остаются settings-store preferences и не превращаются в project
+file operations. Этот перенос не меняет фактический provider runtime model selection,
+не добавляет remote writes и не означает завершения setup auth/keys/verify hardening.

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { RuntimePathsService } from '../../../src/core/config/index.js';
 import { CursorPermissionsRepository } from '../../../src/modules/providers/cursor-permissions.repository.js';
+import { HostSetupJsonFiles } from '../../../src/modules/providers/host-setup-json-files.js';
 import { CursorPermissionsService } from '../../../src/modules/providers/cursor-permissions.service.js';
 import { ProviderConnectionRepository } from '../../../src/modules/providers/provider-connection.repository.js';
 import { CURSOR_PERMISSION_PROFILES } from '@automaker/types';
@@ -19,7 +20,7 @@ function create(name = 'profile') {
     resolveFromWorkingDirectory: (...segments: string[]) => path.resolve(directory, ...segments),
   } as RuntimePathsService;
   const environment = { CURSOR_CONFIG_DIR: path.join(directory, name) };
-  const repo = new CursorPermissionsRepository(paths, environment);
+  const repo = new CursorPermissionsRepository(paths, environment, new HostSetupJsonFiles(paths));
   return {
     repository: repo,
     service: new CursorPermissionsService(

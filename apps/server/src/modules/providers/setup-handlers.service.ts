@@ -1,11 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Request, RequestHandler, Response } from 'express';
 
-import {
-  createGetCursorConfigHandler,
-  createSetCursorDefaultModelHandler,
-  createSetCursorModelsHandler,
-} from '../../routes/setup/routes/cursor-config.js';
 import { createDeleteApiKeyHandler } from '../../routes/setup/routes/delete-api-key.js';
 import { createStoreApiKeyHandler } from '../../routes/setup/routes/store-api-key.js';
 import { createVerifyClaudeAuthHandler } from '../../routes/setup/routes/verify-claude-auth.js';
@@ -51,9 +46,6 @@ export class SetupHandlersService {
       deleteApiKey: createDeleteApiKeyHandler(keys),
       verifyClaudeAuth: createVerifyClaudeAuthHandler(settings, keys),
       verifyCodexAuth: createVerifyCodexAuthHandler(settings, providers, keys),
-      cursorConfig: createGetCursorConfigHandler(),
-      setCursorDefaultModel: createSetCursorDefaultModelHandler(),
-      setCursorModels: createSetCursorModelsHandler(),
     } satisfies Record<string, RequestHandler>;
   }
 }

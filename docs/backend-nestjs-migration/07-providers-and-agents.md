@@ -873,7 +873,9 @@ filesystem I/O и ошибки Nest hooks, также требует hardening �
         установки, фактический application target и отсутствие ложного UI success.
   - [x] Cursor permissions: native read/profile/custom/delete/example, host-file
         target preview, confirmation, FIFO writes и UI dialog (API v4).
-  - [ ] Key/model-config/verify mutations и единый setup target policy; настоящий host
+  - [x] Cursor project model config: native read/default-model/models, known-model
+        validation, host-file target, confirmation и protocol gate (API v5).
+  - [ ] Key/verify mutations и единый setup target policy; настоящий host
         installer, если потребуется, проектируется отдельно с confirmation.
 
 ### Срез: native Gemini/Copilot/Cursor setup status
@@ -1358,6 +1360,84 @@ usage и этапы 8–11 остаются открытыми; срез не з
   `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest`: 11 passed,
   4 opt-in skipped; проверка cleanup owned containers/image/volume успешна.
 
+### Срез: native confirmed Cursor project model config / API v5
+
+GET `/api/setup/cursor-config` и POST `/api/setup/cursor-config/default-model`,
+`/api/setup/cursor-config/models` переведены в `CursorModelConfigService`.
+Оставшийся legacy `routes/setup/routes/cursor-config.ts` удалён (восстанавливается
+из Git). Setup bridge теперь содержит только store/delete API key и две verify
+операции. Старый `CursorConfigManager` остаётся exported legacy utility с отдельными
+тестами, но больше не создаётся из HTTP endpoints и не является native persistence port;
+его окончательная очистка относится к post-migration refactor.
+
+Место хранения сохранено: `<project>/.automaker/cursor-config.json`. Это отдельный
+host project artifact, не `~/.cursor/cli-config.json` и не remote execution config.
+Видимые global Cursor model controls в settings tab используют общий settings store,
+а не эти endpoints. Они намеренно не переподключены к project file; global preferences
+и фактический runtime selection этим срезом не меняются.
+
+GET `/api/setup/cursor-config/target?projectPath=...` возвращает read-only
+`protocolVersion: 1`, kind `host-cursor-model-config`, provider, scope `project`,
+application instance UUID, backend directory, canonical project root и config path.
+Shared DTO требует `confirmed: true` и исходный target. Server проверяет target
+повторно перед записью; missing project допускает только read defaults, не write
+preview. Обе mutation проверяют catalog membership через own property, не `in`;
+`constructor`/`__proto__`, неизвестные IDs и пустой список отвергаются. Invalid list
+не фильтруется молча до подмножества valid models. Это намеренное ужесточение input
+contract; API header повышен до `5`.
+
+Web/Electron HTTP client разбирает shared schemas, проверяет отдельный model-config
+preview protocol перед POST, сравнивает уже подтверждённый target и проверяет target
+и применённую model/list в ответе. Backend API v4 не имеет model-config preview:
+новый client не отправит ему mutation с body, который старый handler игнорировал бы.
+Connection protocol остаётся `3`, Cursor permissions protocol — `1`.
+
+Новый injectable `HostSetupJsonFiles` переиспользуется permissions repository и
+model-config service: immutable allowed-root policy, canonical path validation,
+запрет project config-directory symlink и shared/symlink файлов, bounded JSON read
+до 1 MiB, owned exclusive temporary file (0600), rename и cleanup. Поведение
+permissions подтверждается прежними native tests и browser cycle после extraction.
+При отсутствующем model config сохранены defaults (`cursor-auto`, все models).
+Повреждённый JSON/структура не скрывается defaults и не перезаписывается.
+MCP/rules/неизвестные metadata сохраняются read-modify-write; legacy model strings
+при чтении не мигрируются автоматически. Фактический model catalog содержит
+`supportsVision`, не выдуманный обязательный `tier`; shared read schema отражает
+данные. Оба model commands имеют file-scoped FIFO и shutdown drain/reject admission.
+
+Нет distributed file lock, external-editor revision check, гарантии против hostile
+filesystem race или power-loss durability. Общая setup auth/CSRF policy не менялась.
+Этап 7 остаётся открыт: keys/verify, usage, capability/tool policy и остальные
+невыполненные пункты не закрываются этим переносом; этапы 8–11 также не завершены.
+
+Проверки среза:
+
+- 18 новых model-config service/file cases; 19 прежних permissions cases после
+  extraction проходят через тот же `HostSetupJsonFiles`. Проверены defaults,
+  preservation/restart, strict confirmation, prototype names, corrupt JSON/size,
+  allowed root, symlink/hardlink, FIFO/error recovery и shutdown drain.
+- Native two-app HTTP contract проверяет оба commands, API v5, target conflict,
+  реальный disk/read round trip и неизменность global model preferences.
+- 9 shared schema cases и 14 HTTP-client cases проверяют actual catalog metadata,
+  отсутствие POST на backend без поддерживаемого preview, stale-target и applied
+  model/list mismatch. После финального форматирования client tests повторены.
+- `npm run test:server:unit`: 3356 passed, 40 skipped.
+- `npm run test:server:contract`: 265 passed.
+- `npm run test:packages`: 1318 passed.
+- Contracts/server build, UI typecheck/lint, server lint, lockfile, formatting/diff
+  checks: успешно. Три generated inventories обновлены, checks успешны.
+- UI production и Electron main/preload build успешны с прежним chunk warning;
+  packaged Electron/Windows acceptance не заявляется.
+- Lifecycle после завершения server build: SIGTERM/SIGINT exit 0.
+- Chromium с `--trace=on`: 5 passed (два chat/Running Agents сценария, permissions
+  preview/cancel/confirm/reload, connection cycle, install guidance). Ранее отмеченный
+  единичный startup timeout в этом запуске не повторился; его root cause по-прежнему
+  не доказан, hardening gate остаётся открытым.
+- Выбранные SSH CLI/SDK/Direct chat/restart: 3 passed, 34 отфильтрованы.
+
+- Полный Docker fixture acceptance с
+  `MANAGED_DOCKER_TEST_BASE_IMAGE=automaker-nest-stage2-smoke:latest`: 11 passed,
+  4 opt-in skipped; afterAll успешно проверил cleanup owned containers/image/volume.
+
 ## 7.7. Agent routes
 
 - [x] Start/query/follow-up/cancel.
@@ -1443,7 +1523,7 @@ capability/dispose contract, tool policy и оставшиеся setup/usage mod
 
 ## Exit criteria
 
-- Versioned connection contract (API v4, connection protocol 3) проверен совместно с Web/Electron HTTP clients:
+- Versioned connection contract (API v5, connection protocol 3) проверен совместно с Web/Electron HTTP clients:
   без confirmation — 400, при другом instance/provider/path — 409 до записи,
   фактический target возвращается в success response и показан в UI confirmation.
 - Client не отправляет connection POST на server без поддерживаемого read-only

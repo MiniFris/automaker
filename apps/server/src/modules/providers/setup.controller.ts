@@ -20,6 +20,10 @@ import {
   type CursorProfileRequest,
   type CursorCustomPermissionsRequest,
   type CursorDeletePermissionsRequest,
+  CursorDefaultModelRequestSchema,
+  CursorEnabledModelsRequestSchema,
+  type CursorDefaultModelRequest,
+  type CursorEnabledModelsRequest,
   type CliConnectionProvider,
   type ProviderDisconnectRequest,
   type ProviderReconnectRequest,
@@ -35,6 +39,7 @@ import { ProviderConnectionCommandService } from './provider-connection-command.
 import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
 import { ProviderInstallGuidanceService } from './provider-install-guidance.service.js';
 import { CursorPermissionsService } from './cursor-permissions.service.js';
+import { CursorModelConfigService } from './cursor-model-config.service.js';
 
 @Public()
 @Controller('setup')
@@ -48,7 +53,8 @@ export class SetupController {
     private readonly connections: ProviderConnectionCommandService,
     @Inject(ProviderInstallGuidanceService)
     private readonly installation: ProviderInstallGuidanceService,
-    @Inject(CursorPermissionsService) private readonly permissions: CursorPermissionsService
+    @Inject(CursorPermissionsService) private readonly permissions: CursorPermissionsService,
+    @Inject(CursorModelConfigService) private readonly modelConfig: CursorModelConfigService
   ) {}
 
   private run(name: SetupHandlerName, request: Request, response: Response) {
@@ -190,17 +196,21 @@ export class SetupController {
   @Post('opencode/cache/clear') @HttpCode(200) clearOpencodeCache() {
     return this.catalogs.clear('opencode');
   }
-  @Get('cursor-config') cursorConfig(@Req() q: Request, @Res() s: Response) {
-    return this.run('cursorConfig', q, s);
+  @Get('cursor-config/target') cursorConfigTarget(@Query('projectPath') projectPath: string) {
+    return this.modelConfig.target(projectPath);
   }
-  @Post('cursor-config/default-model') setCursorDefaultModel(
-    @Req() q: Request,
-    @Res() s: Response
+  @Get('cursor-config') cursorConfig(@Query('projectPath') projectPath: string) {
+    return this.modelConfig.read(projectPath);
+  }
+  @Post('cursor-config/default-model') @HttpCode(200) setCursorDefaultModel(
+    @Body(new ZodValidationPipe(CursorDefaultModelRequestSchema)) body: CursorDefaultModelRequest
   ) {
-    return this.run('setCursorDefaultModel', q, s);
+    return this.modelConfig.setDefaultModel(body);
   }
-  @Post('cursor-config/models') setCursorModels(@Req() q: Request, @Res() s: Response) {
-    return this.run('setCursorModels', q, s);
+  @Post('cursor-config/models') @HttpCode(200) setCursorModels(
+    @Body(new ZodValidationPipe(CursorEnabledModelsRequestSchema)) body: CursorEnabledModelsRequest
+  ) {
+    return this.modelConfig.setEnabledModels(body);
   }
   @Get('cursor-permissions/target') cursorPermissionsTarget(
     @Query('scope') scope: string,

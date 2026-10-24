@@ -7,3 +7,4 @@ export * from './plan-approval.js';
 export * from './provider-connection.js';
 export * from './provider-install-guidance.js';
 export * from './cursor-permissions.js';
+export * from './cursor-model-config.js';

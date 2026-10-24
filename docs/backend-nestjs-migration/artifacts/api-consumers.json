@@ -2,82 +2,82 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/ui/src",
   "summary": {
-    "references": 295,
-    "serverEndpoints": 311,
-    "endpointsWithDetectedConsumers": 279
+    "references": 296,
+    "serverEndpoints": 312,
+    "endpointsWithDetectedConsumers": 280
   },
   "references": [
     {
       "method": "POST",
       "path": "/api/agent/clear",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2959
+      "line": 2981
     },
     {
       "method": "POST",
       "path": "/api/agent/history",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2953
+      "line": 2975
     },
     {
       "method": "POST",
       "path": "/api/agent/queue/add",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2985
+      "line": 3007
     },
     {
       "method": "POST",
       "path": "/api/agent/queue/clear",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3017
+      "line": 3039
     },
     {
       "method": "POST",
       "path": "/api/agent/queue/list",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3008
+      "line": 3030
     },
     {
       "method": "POST",
       "path": "/api/agent/queue/remove",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3014
+      "line": 3036
     },
     {
       "method": "POST",
       "path": "/api/agent/send",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2936
+      "line": 2958
     },
     {
       "method": "POST",
       "path": "/api/agent/start",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2925
+      "line": 2947
     },
     {
       "method": "POST",
       "path": "/api/agent/stop",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2956
+      "line": 2978
     },
     {
       "method": "POST",
       "path": "/api/auth/login",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 452
+      "line": 464
     },
     {
       "method": "POST",
       "path": "/api/auth/logout",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 130
+      "line": 142
     },
     {
       "method": "POST",
       "path": "/api/auth/logout",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 524
+      "line": 536
     },
     {
       "method": "GET",
@@ -89,13 +89,13 @@
       "method": "GET",
       "path": "/api/auth/status",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 427
+      "line": 439
     },
     {
       "method": "GET",
       "path": "/api/auth/status",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 495
+      "line": 507
     },
     {
       "method": "GET",
@@ -107,139 +107,139 @@
       "method": "GET",
       "path": "/api/auth/token",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 862
+      "line": 874
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/analyze-project",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2437
+      "line": 2459
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/approve-plan",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2487
+      "line": 2509
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/commit-feature",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2467
+      "line": 2489
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/context-exists",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2435
+      "line": 2457
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/follow-up-feature",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2445
+      "line": 2467
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/merge-environment-feature",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2456
+      "line": 2478
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/merge-ssh-feature",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2465
+      "line": 2487
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/pending-plan-approval",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2473
+      "line": 2495
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/resume-feature",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2429
+      "line": 2451
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/resume-interrupted",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2498
+      "line": 2520
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/run-feature",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2420
+      "line": 2442
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/start",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2408
+      "line": 2430
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/status",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2413
+      "line": 2435
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/stop-feature",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2411
+      "line": 2433
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/stop",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2410
+      "line": 2432
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/verify-feature",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2427
+      "line": 2449
     },
     {
       "method": "POST",
       "path": "/api/backlog-plan/apply",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3608
+      "line": 3630
     },
     {
       "method": "POST",
       "path": "/api/backlog-plan/clear",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3611
+      "line": 3633
     },
     {
       "method": "POST",
       "path": "/api/backlog-plan/generate",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3565
+      "line": 3587
     },
     {
       "method": "GET",
       "path": "/api/backlog-plan/status",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3601
+      "line": 3623
     },
     {
       "method": "POST",
       "path": "/api/backlog-plan/stop",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3574
+      "line": 3596
     },
     {
       "method": "GET",
       "path": "/api/claude/usage",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3505
+      "line": 3527
     },
     {
       "method": "GET",
@@ -251,355 +251,355 @@
       "method": "GET",
       "path": "/api/codex/usage",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3510
+      "line": 3532
     },
     {
       "method": "POST",
       "path": "/api/context/describe-file",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3553
+      "line": 3575
     },
     {
       "method": "POST",
       "path": "/api/context/describe-image",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3545
+      "line": 3567
     },
     {
       "method": "POST",
       "path": "/api/enhance-prompt",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2514
+      "line": 2536
     },
     {
       "method": "POST",
       "path": "/api/event-history/clear",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3716
+      "line": 3738
     },
     {
       "method": "POST",
       "path": "/api/event-history/delete",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3714
+      "line": 3736
     },
     {
       "method": "POST",
       "path": "/api/event-history/get",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3711
+      "line": 3733
     },
     {
       "method": "POST",
       "path": "/api/event-history/list",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3708
+      "line": 3730
     },
     {
       "method": "POST",
       "path": "/api/event-history/replay",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3719
+      "line": 3741
     },
     {
       "method": "POST",
       "path": "/api/features/agent-output",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2300
+      "line": 2322
     },
     {
       "method": "POST",
       "path": "/api/features/bulk-delete",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2306
+      "line": 2328
     },
     {
       "method": "POST",
       "path": "/api/features/bulk-update",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2304
+      "line": 2326
     },
     {
       "method": "POST",
       "path": "/api/features/check-conflicts",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2364
+      "line": 2386
     },
     {
       "method": "POST",
       "path": "/api/features/create",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2280
+      "line": 2302
     },
     {
       "method": "POST",
       "path": "/api/features/delete",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2298
+      "line": 2320
     },
     {
       "method": "POST",
       "path": "/api/features/export",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2326
+      "line": 2348
     },
     {
       "method": "POST",
       "path": "/api/features/generate-title",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2302
+      "line": 2324
     },
     {
       "method": "POST",
       "path": "/api/features/get",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2278
+      "line": 2300
     },
     {
       "method": "POST",
       "path": "/api/features/import",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2348
+      "line": 2370
     },
     {
       "method": "GET",
       "path": "/api/features/list",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2276
+      "line": 2298
     },
     {
       "method": "POST",
       "path": "/api/features/orphaned/bulk-resolve",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2397
+      "line": 2419
     },
     {
       "method": "POST",
       "path": "/api/features/orphaned/resolve",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2384
+      "line": 2406
     },
     {
       "method": "POST",
       "path": "/api/features/orphaned",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2371
+      "line": 2393
     },
     {
       "method": "POST",
       "path": "/api/features/update",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2289
+      "line": 2311
     },
     {
       "method": "POST",
       "path": "/api/fs/copy",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1512
+      "line": 1532
     },
     {
       "method": "POST",
       "path": "/api/fs/delete-board-background",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1608
+      "line": 1628
     },
     {
       "method": "POST",
       "path": "/api/fs/delete",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1499
+      "line": 1519
     },
     {
       "method": "POST",
       "path": "/api/fs/download",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1537
+      "line": 1557
     },
     {
       "method": "POST",
       "path": "/api/fs/exists",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1458
+      "line": 1478
     },
     {
       "method": "POST",
       "path": "/api/fs/exists",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1488
+      "line": 1508
     },
     {
       "method": "POST",
       "path": "/api/fs/mkdir",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1480
+      "line": 1500
     },
     {
       "method": "POST",
       "path": "/api/fs/move",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1520
+      "line": 1540
     },
     {
       "method": "POST",
       "path": "/api/fs/readdir",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1484
+      "line": 1504
     },
     {
       "method": "POST",
       "path": "/api/fs/read",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1472
+      "line": 1492
     },
     {
       "method": "POST",
       "path": "/api/fs/save-board-background",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1599
+      "line": 1619
     },
     {
       "method": "POST",
       "path": "/api/fs/save-image",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1585
+      "line": 1605
     },
     {
       "method": "POST",
       "path": "/api/fs/stat",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1495
+      "line": 1515
     },
     {
       "method": "POST",
       "path": "/api/fs/validate-path",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1428
+      "line": 1448
     },
     {
       "method": "POST",
       "path": "/api/fs/write",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1476
+      "line": 1496
     },
     {
       "method": "GET",
       "path": "/api/gemini/usage",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3534
+      "line": 3556
     },
     {
       "method": "POST",
       "path": "/api/git/details",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2792
+      "line": 2814
     },
     {
       "method": "POST",
       "path": "/api/git/diffs",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2786
+      "line": 2808
     },
     {
       "method": "POST",
       "path": "/api/git/enhanced-status",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2794
+      "line": 2816
     },
     {
       "method": "POST",
       "path": "/api/git/environment",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3226
+      "line": 3248
     },
     {
       "method": "POST",
       "path": "/api/git/file-diff",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2788
+      "line": 2810
     },
     {
       "method": "POST",
       "path": "/api/git/stage-files",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2790
+      "line": 2812
     },
     {
       "method": "POST",
       "path": "/api/github/check-remote",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2862
+      "line": 2884
     },
     {
       "method": "POST",
       "path": "/api/github/issue-comments",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2892
+      "line": 2914
     },
     {
       "method": "POST",
       "path": "/api/github/issues",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2863
+      "line": 2885
     },
     {
       "method": "POST",
       "path": "/api/github/pr-review-comments",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2894
+      "line": 2916
     },
     {
       "method": "POST",
       "path": "/api/github/prs",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2864
+      "line": 2886
     },
     {
       "method": "POST",
       "path": "/api/github/resolve-pr-comment",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2896
+      "line": 2918
     },
     {
       "method": "POST",
       "path": "/api/github/validate-issue",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2873
+      "line": 2895
     },
     {
       "method": "POST",
       "path": "/api/github/validation-mark-viewed",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2888
+      "line": 2910
     },
     {
       "method": "POST",
       "path": "/api/github/validation-status",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2882
+      "line": 2904
     },
     {
       "method": "POST",
       "path": "/api/github/validation-stop",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2884
+      "line": 2906
     },
     {
       "method": "POST",
       "path": "/api/github/validations",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2886
+      "line": 2908
     },
     {
       "method": "GET",
       "path": "/api/health/detailed",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1573
+      "line": 1593
     },
     {
       "method": "GET",
       "path": "/api/health/environment",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 613
+      "line": 625
     },
     {
       "method": "GET",
@@ -617,13 +617,13 @@
       "method": "GET",
       "path": "/api/health",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1363
+      "line": 1383
     },
     {
       "method": "GET",
       "path": "/api/health",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 197
+      "line": 209
     },
     {
       "method": "GET",
@@ -641,169 +641,169 @@
       "method": "POST",
       "path": "/api/ideation/add-suggestion",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3672
+      "line": 3694
     },
     {
       "method": "POST",
       "path": "/api/ideation/analyze",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3648
+      "line": 3670
     },
     {
       "method": "POST",
       "path": "/api/ideation/convert",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3666
+      "line": 3688
     },
     {
       "method": "POST",
       "path": "/api/ideation/ideas/create",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3637
+      "line": 3659
     },
     {
       "method": "POST",
       "path": "/api/ideation/ideas/delete",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3646
+      "line": 3668
     },
     {
       "method": "POST",
       "path": "/api/ideation/ideas/get",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3640
+      "line": 3662
     },
     {
       "method": "POST",
       "path": "/api/ideation/ideas/list",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3634
+      "line": 3656
     },
     {
       "method": "POST",
       "path": "/api/ideation/ideas/update",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3643
+      "line": 3665
     },
     {
       "method": "GET",
       "path": "/api/ideation/prompts",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3674
+      "line": 3696
     },
     {
       "method": "POST",
       "path": "/api/ideation/session/get",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3624
+      "line": 3646
     },
     {
       "method": "POST",
       "path": "/api/ideation/session/message",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3630
+      "line": 3652
     },
     {
       "method": "POST",
       "path": "/api/ideation/session/start",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3621
+      "line": 3643
     },
     {
       "method": "POST",
       "path": "/api/ideation/session/stop",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3632
+      "line": 3654
     },
     {
       "method": "POST",
       "path": "/api/ideation/suggestions/generate",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3657
+      "line": 3679
     },
     {
       "method": "POST",
       "path": "/api/mcp/test",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3742
+      "line": 3764
     },
     {
       "method": "POST",
       "path": "/api/mcp/tools",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3755
+      "line": 3777
     },
     {
       "method": "GET",
       "path": "/api/models/available",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1637
+      "line": 1657
     },
     {
       "method": "GET",
       "path": "/api/models/providers",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1644
+      "line": 1664
     },
     {
       "method": "POST",
       "path": "/api/notifications/dismiss",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3698
+      "line": 3720
     },
     {
       "method": "POST",
       "path": "/api/notifications/list",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3689
+      "line": 3711
     },
     {
       "method": "POST",
       "path": "/api/notifications/mark-read",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3695
+      "line": 3717
     },
     {
       "method": "POST",
       "path": "/api/notifications/unread-count",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3692
+      "line": 3714
     },
     {
       "method": "POST",
       "path": "/api/pipeline/config/save",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3794
+      "line": 3816
     },
     {
       "method": "POST",
       "path": "/api/pipeline/config",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3777
+      "line": 3799
     },
     {
       "method": "POST",
       "path": "/api/pipeline/steps/add",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3816
+      "line": 3838
     },
     {
       "method": "POST",
       "path": "/api/pipeline/steps/delete",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3845
+      "line": 3867
     },
     {
       "method": "POST",
       "path": "/api/pipeline/steps/reorder",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3851
+      "line": 3873
     },
     {
       "method": "POST",
       "path": "/api/pipeline/steps/update",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3839
+      "line": 3861
     },
     {
       "method": "GET",
@@ -815,517 +815,523 @@
       "method": "GET",
       "path": "/api/running-agents",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2857
+      "line": 2879
     },
     {
       "method": "POST",
       "path": "/api/sessions/:sessionId/archive",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3494
+      "line": 3516
     },
     {
       "method": "POST",
       "path": "/api/sessions/:sessionId/unarchive",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3497
+      "line": 3519
     },
     {
       "method": "DELETE",
       "path": "/api/sessions/:sessionId",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3500
+      "line": 3522
     },
     {
       "method": "PUT",
       "path": "/api/sessions/:sessionId",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3491
+      "line": 3513
     },
     {
       "method": "GET",
       "path": "/api/sessions",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3467
+      "line": 3489
     },
     {
       "method": "POST",
       "path": "/api/sessions",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3484
+      "line": 3506
     },
     {
       "method": "POST",
       "path": "/api/settings/agents/discover",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3216
+      "line": 3238
     },
     {
       "method": "GET",
       "path": "/api/settings/credentials",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3118
+      "line": 3140
     },
     {
       "method": "PUT",
       "path": "/api/settings/credentials",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3130
+      "line": 3152
     },
     {
       "method": "POST",
       "path": "/api/settings/execution-environments/auto/confirm",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3364
+      "line": 3386
     },
     {
       "method": "POST",
       "path": "/api/settings/execution-environments/auto/revoke",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3370
+      "line": 3392
     },
     {
       "method": "POST",
       "path": "/api/settings/execution-environments/docker/check",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3393
+      "line": 3415
     },
     {
       "method": "POST",
       "path": "/api/settings/execution-environments/docker/prepare",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3358
+      "line": 3380
     },
     {
       "method": "POST",
       "path": "/api/settings/execution-environments/feature/inspect",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3296
+      "line": 3318
     },
     {
       "method": "PUT",
       "path": "/api/settings/execution-environments/global",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3384
+      "line": 3406
     },
     {
       "method": "POST",
       "path": "/api/settings/execution-environments/inspect",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3380
+      "line": 3402
     },
     {
       "method": "POST",
       "path": "/api/settings/execution-environments/local/confirm",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3372
+      "line": 3394
     },
     {
       "method": "POST",
       "path": "/api/settings/execution-environments/local/revoke",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3378
+      "line": 3400
     },
     {
       "method": "PUT",
       "path": "/api/settings/execution-environments/project",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3389
+      "line": 3411
     },
     {
       "method": "POST",
       "path": "/api/settings/execution-environments/providers/inspect",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3235
+      "line": 3257
     },
     {
       "method": "POST",
       "path": "/api/settings/execution-environments/providers/install",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3248
+      "line": 3270
     },
     {
       "method": "POST",
       "path": "/api/settings/execution-environments/providers/key",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3264
+      "line": 3286
     },
     {
       "method": "POST",
       "path": "/api/settings/execution-environments/providers/key",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3280
+      "line": 3302
     },
     {
       "method": "POST",
       "path": "/api/settings/execution-environments/ssh/check",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3328
+      "line": 3350
     },
     {
       "method": "POST",
       "path": "/api/settings/execution-environments/ssh/key",
-      "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3317
-    },
-    {
-      "method": "POST",
-      "path": "/api/settings/execution-environments/ssh/key",
-      "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3323
-    },
-    {
-      "method": "POST",
-      "path": "/api/settings/execution-environments/ssh/prepare",
-      "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3330
-    },
-    {
-      "method": "POST",
-      "path": "/api/settings/execution-environments/ssh/project",
       "source": "apps/ui/src/lib/http-api-client.ts",
       "line": 3339
     },
     {
       "method": "POST",
+      "path": "/api/settings/execution-environments/ssh/key",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 3345
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/ssh/prepare",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 3352
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/ssh/project",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 3361
+    },
+    {
+      "method": "POST",
       "path": "/api/settings/execution-environments/ssh/recover",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3349
+      "line": 3371
     },
     {
       "method": "POST",
       "path": "/api/settings/execution-environments/ssh/scan",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3300
+      "line": 3322
     },
     {
       "method": "POST",
       "path": "/api/settings/execution-environments/ssh/trust",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3306
+      "line": 3328
     },
     {
       "method": "GET",
       "path": "/api/settings/global",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3099
+      "line": 3121
     },
     {
       "method": "PUT",
       "path": "/api/settings/global",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3107
+      "line": 3129
     },
     {
       "method": "POST",
       "path": "/api/settings/migrate",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3196
+      "line": 3218
     },
     {
       "method": "GET",
       "path": "/api/settings/model-timeouts/:dynamic",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3400
+      "line": 3422
     },
     {
       "method": "PUT",
       "path": "/api/settings/model-timeouts/:dynamic",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3405
+      "line": 3427
     },
     {
       "method": "GET",
       "path": "/api/settings/model-timeouts",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3407
+      "line": 3429
     },
     {
       "method": "PUT",
       "path": "/api/settings/model-timeouts",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3411
+      "line": 3433
     },
     {
       "method": "PUT",
       "path": "/api/settings/openai-compatible/agent",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3446
+      "line": 3468
     },
     {
       "method": "PUT",
       "path": "/api/settings/openai-compatible/endpoint",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3430
+      "line": 3452
     },
     {
       "method": "POST",
       "path": "/api/settings/openai-compatible/models",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3450
+      "line": 3472
     },
     {
       "method": "POST",
       "path": "/api/settings/openai-compatible/remove",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3438
+      "line": 3460
     },
     {
       "method": "POST",
       "path": "/api/settings/openai-compatible/test",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3456
+      "line": 3478
     },
     {
       "method": "GET",
       "path": "/api/settings/openai-compatible",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3420
+      "line": 3442
     },
     {
       "method": "POST",
       "path": "/api/settings/project",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3172
+      "line": 3194
     },
     {
       "method": "PUT",
       "path": "/api/settings/project",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3181
+      "line": 3203
     },
     {
       "method": "GET",
       "path": "/api/settings/status",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3043
+      "line": 3065
     },
     {
       "method": "GET",
       "path": "/api/settings/status",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 574
+      "line": 586
     },
     {
       "method": "GET",
       "path": "/api/setup/api-keys",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1735
+      "line": 1755
     },
     {
       "method": "POST",
       "path": "/api/setup/auth-claude",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1192
+      "line": 1212
     },
     {
       "method": "POST",
       "path": "/api/setup/auth-codex",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1194
+      "line": 1214
     },
     {
       "method": "POST",
       "path": "/api/setup/auth-copilot",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1200
+      "line": 1220
     },
     {
       "method": "POST",
       "path": "/api/setup/auth-cursor",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1196
+      "line": 1216
     },
     {
       "method": "POST",
       "path": "/api/setup/auth-gemini",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1198
+      "line": 1218
     },
     {
       "method": "POST",
       "path": "/api/setup/auth-opencode",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1202
+      "line": 1222
     },
     {
       "method": "GET",
       "path": "/api/setup/claude-status",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1627
+      "line": 1647
     },
     {
       "method": "GET",
       "path": "/api/setup/claude-status",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1683
+      "line": 1703
     },
     {
       "method": "GET",
       "path": "/api/setup/codex-status",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1952
+      "line": 1974
     },
     {
       "method": "GET",
       "path": "/api/setup/connection-target",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1655
+      "line": 1675
     },
     {
       "method": "GET",
       "path": "/api/setup/copilot-status",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2144
+      "line": 2166
     },
     {
       "method": "POST",
       "path": "/api/setup/cursor-config/default-model",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1853
+      "line": 1862
     },
     {
       "method": "POST",
       "path": "/api/setup/cursor-config/models",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1862
+      "line": 1876
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/cursor-config/target",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 1853
     },
     {
       "method": "GET",
       "path": "/api/setup/cursor-config",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1844
+      "line": 1848
     },
     {
       "method": "POST",
       "path": "/api/setup/cursor-permissions/custom",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1908
+      "line": 1930
     },
     {
       "method": "GET",
       "path": "/api/setup/cursor-permissions/example",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1930
+      "line": 1952
     },
     {
       "method": "POST",
       "path": "/api/setup/cursor-permissions/profile",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1899
+      "line": 1921
     },
     {
       "method": "GET",
       "path": "/api/setup/cursor-permissions/target",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1890
+      "line": 1912
     },
     {
       "method": "DELETE",
       "path": "/api/setup/cursor-permissions",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1917
+      "line": 1939
     },
     {
       "method": "GET",
       "path": "/api/setup/cursor-permissions",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1884
+      "line": 1906
     },
     {
       "method": "GET",
       "path": "/api/setup/cursor-status",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1780
+      "line": 1800
     },
     {
       "method": "POST",
       "path": "/api/setup/deauth-claude",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1135
+      "line": 1155
     },
     {
       "method": "POST",
       "path": "/api/setup/deauth-codex",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1137
+      "line": 1157
     },
     {
       "method": "POST",
       "path": "/api/setup/deauth-copilot",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1143
+      "line": 1163
     },
     {
       "method": "POST",
       "path": "/api/setup/deauth-cursor",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1139
+      "line": 1159
     },
     {
       "method": "POST",
       "path": "/api/setup/deauth-gemini",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1141
+      "line": 1161
     },
     {
       "method": "POST",
       "path": "/api/setup/deauth-opencode",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1145
+      "line": 1165
     },
     {
       "method": "POST",
       "path": "/api/setup/delete-api-key",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1728
+      "line": 1748
     },
     {
       "method": "GET",
       "path": "/api/setup/gemini-status",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2103
+      "line": 2125
     },
     {
       "method": "GET",
       "path": "/api/setup/gh-status",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1765
+      "line": 1785
     },
     {
       "method": "POST",
       "path": "/api/setup/install-claude",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1688
+      "line": 1708
     },
     {
       "method": "POST",
       "path": "/api/setup/install-codex",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1957
+      "line": 1979
     },
     {
       "method": "GET",
       "path": "/api/setup/opencode-status",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2016
+      "line": 2038
     },
     {
       "method": "POST",
       "path": "/api/setup/opencode/cache/clear",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2077
+      "line": 2099
     },
     {
       "method": "POST",
       "path": "/api/setup/opencode/models/refresh",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2054
+      "line": 2076
     },
     {
       "method": "GET",
       "path": "/api/setup/opencode/models",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2037
+      "line": 2059
     },
     {
       "method": "GET",
@@ -1337,445 +1343,445 @@
       "method": "GET",
       "path": "/api/setup/opencode/providers",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2071
+      "line": 2093
     },
     {
       "method": "GET",
       "path": "/api/setup/platform",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1745
+      "line": 1765
     },
     {
       "method": "POST",
       "path": "/api/setup/store-api-key",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1720
+      "line": 1740
     },
     {
       "method": "POST",
       "path": "/api/setup/verify-claude-auth",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1755
+      "line": 1775
     },
     {
       "method": "POST",
       "path": "/api/setup/verify-codex-auth",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 1990
+      "line": 2012
     },
     {
       "method": "POST",
       "path": "/api/spec-regeneration/create",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2806
+      "line": 2828
     },
     {
       "method": "POST",
       "path": "/api/spec-regeneration/generate-features",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2828
+      "line": 2850
     },
     {
       "method": "POST",
       "path": "/api/spec-regeneration/generate",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2820
+      "line": 2842
     },
     {
       "method": "POST",
       "path": "/api/spec-regeneration/stop",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2833
+      "line": 2855
     },
     {
       "method": "POST",
       "path": "/api/spec-regeneration/sync",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2832
+      "line": 2854
     },
     {
       "method": "POST",
       "path": "/api/templates/clone",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 3031
+      "line": 3053
     },
     {
       "method": "GET",
       "path": "/api/workspace/config",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2907
+      "line": 2929
     },
     {
       "method": "GET",
       "path": "/api/workspace/directories",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2913
+      "line": 2935
     },
     {
       "method": "POST",
       "path": "/api/worktree/abort-operation",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2755
+      "line": 2777
     },
     {
       "method": "POST",
       "path": "/api/worktree/add-remote",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2632
+      "line": 2654
     },
     {
       "method": "GET",
       "path": "/api/worktree/available-editors",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2636
+      "line": 2658
     },
     {
       "method": "GET",
       "path": "/api/worktree/available-terminals",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2638
+      "line": 2660
     },
     {
       "method": "POST",
       "path": "/api/worktree/branch-commit-log",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2759
+      "line": 2781
     },
     {
       "method": "POST",
       "path": "/api/worktree/check-changes",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2624
+      "line": 2646
     },
     {
       "method": "POST",
       "path": "/api/worktree/checkout-branch",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2616
+      "line": 2638
     },
     {
       "method": "POST",
       "path": "/api/worktree/cherry-pick",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2751
+      "line": 2773
     },
     {
       "method": "POST",
       "path": "/api/worktree/commit-log",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2742
+      "line": 2764
     },
     {
       "method": "POST",
       "path": "/api/worktree/commit",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2560
+      "line": 2582
     },
     {
       "method": "POST",
       "path": "/api/worktree/continue-operation",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2757
+      "line": 2779
     },
     {
       "method": "POST",
       "path": "/api/worktree/create-pr",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2594
+      "line": 2616
     },
     {
       "method": "POST",
       "path": "/api/worktree/create",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2548
+      "line": 2570
     },
     {
       "method": "GET",
       "path": "/api/worktree/default-editor",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2635
+      "line": 2657
     },
     {
       "method": "GET",
       "path": "/api/worktree/default-terminal",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2639
+      "line": 2661
     },
     {
       "method": "POST",
       "path": "/api/worktree/delete",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2554
+      "line": 2576
     },
     {
       "method": "GET",
       "path": "/api/worktree/dev-server-logs",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2659
+      "line": 2681
     },
     {
       "method": "POST",
       "path": "/api/worktree/diffs",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2598
+      "line": 2620
     },
     {
       "method": "POST",
       "path": "/api/worktree/discard-changes",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2698
+      "line": 2720
     },
     {
       "method": "POST",
       "path": "/api/worktree/file-diff",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2600
+      "line": 2622
     },
     {
       "method": "POST",
       "path": "/api/worktree/generate-commit-message",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2567
+      "line": 2589
     },
     {
       "method": "POST",
       "path": "/api/worktree/generate-pr-description",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2580
+      "line": 2602
     },
     {
       "method": "POST",
       "path": "/api/worktree/info",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2541
+      "line": 2563
     },
     {
       "method": "POST",
       "path": "/api/worktree/init-git",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2643
+      "line": 2665
     },
     {
       "method": "DELETE",
       "path": "/api/worktree/init-script",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2694
+      "line": 2716
     },
     {
       "method": "GET",
       "path": "/api/worktree/init-script",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2690
+      "line": 2712
     },
     {
       "method": "PUT",
       "path": "/api/worktree/init-script",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2692
+      "line": 2714
     },
     {
       "method": "POST",
       "path": "/api/worktree/list-branches",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2626
+      "line": 2648
     },
     {
       "method": "POST",
       "path": "/api/worktree/list-dev-servers",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2657
+      "line": 2679
     },
     {
       "method": "POST",
       "path": "/api/worktree/list-remotes",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2630
+      "line": 2652
     },
     {
       "method": "POST",
       "path": "/api/worktree/list",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2544
+      "line": 2566
     },
     {
       "method": "POST",
       "path": "/api/worktree/list",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2546
+      "line": 2568
     },
     {
       "method": "POST",
       "path": "/api/worktree/merge",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2533
+      "line": 2555
     },
     {
       "method": "POST",
       "path": "/api/worktree/open-in-editor",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2634
+      "line": 2656
     },
     {
       "method": "POST",
       "path": "/api/worktree/open-in-external-terminal",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2642
+      "line": 2664
     },
     {
       "method": "POST",
       "path": "/api/worktree/pr-info",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2687
+      "line": 2709
     },
     {
       "method": "POST",
       "path": "/api/worktree/pull",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2608
+      "line": 2630
     },
     {
       "method": "POST",
       "path": "/api/worktree/push",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2588
+      "line": 2610
     },
     {
       "method": "POST",
       "path": "/api/worktree/rebase",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2753
+      "line": 2775
     },
     {
       "method": "POST",
       "path": "/api/worktree/refresh-editors",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2637
+      "line": 2659
     },
     {
       "method": "POST",
       "path": "/api/worktree/refresh-terminals",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2640
+      "line": 2662
     },
     {
       "method": "POST",
       "path": "/api/worktree/run-init-script",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2696
+      "line": 2718
     },
     {
       "method": "POST",
       "path": "/api/worktree/set-tracking",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2592
+      "line": 2614
     },
     {
       "method": "POST",
       "path": "/api/worktree/stage-files",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2606
+      "line": 2628
     },
     {
       "method": "POST",
       "path": "/api/worktree/start-dev",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2650
+      "line": 2672
     },
     {
       "method": "POST",
       "path": "/api/worktree/start-tests",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2731
+      "line": 2753
     },
     {
       "method": "POST",
       "path": "/api/worktree/stash-apply",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2747
+      "line": 2769
     },
     {
       "method": "POST",
       "path": "/api/worktree/stash-drop",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2749
+      "line": 2771
     },
     {
       "method": "POST",
       "path": "/api/worktree/stash-list",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2745
+      "line": 2767
     },
     {
       "method": "POST",
       "path": "/api/worktree/stash-push",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2744
+      "line": 2766
     },
     {
       "method": "POST",
       "path": "/api/worktree/status",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2543
+      "line": 2565
     },
     {
       "method": "POST",
       "path": "/api/worktree/stop-dev",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2656
+      "line": 2678
     },
     {
       "method": "POST",
       "path": "/api/worktree/stop-tests",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2740
+      "line": 2762
     },
     {
       "method": "POST",
       "path": "/api/worktree/switch-branch",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2628
+      "line": 2650
     },
     {
       "method": "POST",
       "path": "/api/worktree/sync",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2590
+      "line": 2612
     },
     {
       "method": "GET",
       "path": "/api/worktree/test-logs",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2764
+      "line": 2786
     },
     {
       "method": "POST",
       "path": "/api/worktree/update-pr-number",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2596
+      "line": 2618
     },
     {
       "method": "POST",
       "path": "/api/zai/configure",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2180
+      "line": 2202
     },
     {
       "method": "GET",
       "path": "/api/zai/status",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2168
+      "line": 2190
     },
     {
       "method": "GET",
       "path": "/api/zai/usage",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2170
+      "line": 2192
     },
     {
       "method": "POST",
       "path": "/api/zai/verify",
       "source": "apps/ui/src/lib/http-api-client.ts",
-      "line": 2189
+      "line": 2211
     }
   ],
   "endpoints": [
@@ -1787,7 +1793,7 @@
           "method": "POST",
           "path": "/api/agent/clear",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2959
+          "line": 2981
         }
       ]
     },
@@ -1799,7 +1805,7 @@
           "method": "POST",
           "path": "/api/agent/history",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2953
+          "line": 2975
         }
       ]
     },
@@ -1816,7 +1822,7 @@
           "method": "POST",
           "path": "/api/agent/queue/add",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2985
+          "line": 3007
         }
       ]
     },
@@ -1828,7 +1834,7 @@
           "method": "POST",
           "path": "/api/agent/queue/clear",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3017
+          "line": 3039
         }
       ]
     },
@@ -1840,7 +1846,7 @@
           "method": "POST",
           "path": "/api/agent/queue/list",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3008
+          "line": 3030
         }
       ]
     },
@@ -1852,7 +1858,7 @@
           "method": "POST",
           "path": "/api/agent/queue/remove",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3014
+          "line": 3036
         }
       ]
     },
@@ -1864,7 +1870,7 @@
           "method": "POST",
           "path": "/api/agent/send",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2936
+          "line": 2958
         }
       ]
     },
@@ -1876,7 +1882,7 @@
           "method": "POST",
           "path": "/api/agent/start",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2925
+          "line": 2947
         }
       ]
     },
@@ -1888,7 +1894,7 @@
           "method": "POST",
           "path": "/api/agent/stop",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2956
+          "line": 2978
         }
       ]
     },
@@ -1900,7 +1906,7 @@
           "method": "POST",
           "path": "/api/auth/login",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 452
+          "line": 464
         }
       ]
     },
@@ -1912,13 +1918,13 @@
           "method": "POST",
           "path": "/api/auth/logout",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 130
+          "line": 142
         },
         {
           "method": "POST",
           "path": "/api/auth/logout",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 524
+          "line": 536
         }
       ]
     },
@@ -1936,13 +1942,13 @@
           "method": "GET",
           "path": "/api/auth/status",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 427
+          "line": 439
         },
         {
           "method": "GET",
           "path": "/api/auth/status",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 495
+          "line": 507
         }
       ]
     },
@@ -1960,7 +1966,7 @@
           "method": "GET",
           "path": "/api/auth/token",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 862
+          "line": 874
         }
       ]
     },
@@ -1972,7 +1978,7 @@
           "method": "POST",
           "path": "/api/auto-mode/analyze-project",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2437
+          "line": 2459
         }
       ]
     },
@@ -1984,7 +1990,7 @@
           "method": "POST",
           "path": "/api/auto-mode/approve-plan",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2487
+          "line": 2509
         }
       ]
     },
@@ -1996,7 +2002,7 @@
           "method": "POST",
           "path": "/api/auto-mode/commit-feature",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2467
+          "line": 2489
         }
       ]
     },
@@ -2008,7 +2014,7 @@
           "method": "POST",
           "path": "/api/auto-mode/context-exists",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2435
+          "line": 2457
         }
       ]
     },
@@ -2020,7 +2026,7 @@
           "method": "POST",
           "path": "/api/auto-mode/follow-up-feature",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2445
+          "line": 2467
         }
       ]
     },
@@ -2032,7 +2038,7 @@
           "method": "POST",
           "path": "/api/auto-mode/merge-environment-feature",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2456
+          "line": 2478
         }
       ]
     },
@@ -2044,7 +2050,7 @@
           "method": "POST",
           "path": "/api/auto-mode/merge-ssh-feature",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2465
+          "line": 2487
         }
       ]
     },
@@ -2056,7 +2062,7 @@
           "method": "POST",
           "path": "/api/auto-mode/pending-plan-approval",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2473
+          "line": 2495
         }
       ]
     },
@@ -2073,7 +2079,7 @@
           "method": "POST",
           "path": "/api/auto-mode/resume-feature",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2429
+          "line": 2451
         }
       ]
     },
@@ -2085,7 +2091,7 @@
           "method": "POST",
           "path": "/api/auto-mode/resume-interrupted",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2498
+          "line": 2520
         }
       ]
     },
@@ -2097,7 +2103,7 @@
           "method": "POST",
           "path": "/api/auto-mode/run-feature",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2420
+          "line": 2442
         }
       ]
     },
@@ -2109,7 +2115,7 @@
           "method": "POST",
           "path": "/api/auto-mode/start",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2408
+          "line": 2430
         }
       ]
     },
@@ -2121,7 +2127,7 @@
           "method": "POST",
           "path": "/api/auto-mode/status",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2413
+          "line": 2435
         }
       ]
     },
@@ -2133,7 +2139,7 @@
           "method": "POST",
           "path": "/api/auto-mode/stop-feature",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2411
+          "line": 2433
         }
       ]
     },
@@ -2145,7 +2151,7 @@
           "method": "POST",
           "path": "/api/auto-mode/stop",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2410
+          "line": 2432
         }
       ]
     },
@@ -2157,7 +2163,7 @@
           "method": "POST",
           "path": "/api/auto-mode/verify-feature",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2427
+          "line": 2449
         }
       ]
     },
@@ -2169,7 +2175,7 @@
           "method": "POST",
           "path": "/api/backlog-plan/apply",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3608
+          "line": 3630
         }
       ]
     },
@@ -2181,7 +2187,7 @@
           "method": "POST",
           "path": "/api/backlog-plan/clear",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3611
+          "line": 3633
         }
       ]
     },
@@ -2193,7 +2199,7 @@
           "method": "POST",
           "path": "/api/backlog-plan/generate",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3565
+          "line": 3587
         }
       ]
     },
@@ -2205,7 +2211,7 @@
           "method": "GET",
           "path": "/api/backlog-plan/status",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3601
+          "line": 3623
         }
       ]
     },
@@ -2217,7 +2223,7 @@
           "method": "POST",
           "path": "/api/backlog-plan/stop",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3574
+          "line": 3596
         }
       ]
     },
@@ -2229,7 +2235,7 @@
           "method": "GET",
           "path": "/api/claude/usage",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3505
+          "line": 3527
         }
       ]
     },
@@ -2253,7 +2259,7 @@
           "method": "GET",
           "path": "/api/codex/usage",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3510
+          "line": 3532
         }
       ]
     },
@@ -2265,7 +2271,7 @@
           "method": "POST",
           "path": "/api/context/describe-file",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3553
+          "line": 3575
         }
       ]
     },
@@ -2277,7 +2283,7 @@
           "method": "POST",
           "path": "/api/context/describe-image",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3545
+          "line": 3567
         }
       ]
     },
@@ -2289,7 +2295,7 @@
           "method": "POST",
           "path": "/api/enhance-prompt",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2514
+          "line": 2536
         }
       ]
     },
@@ -2301,7 +2307,7 @@
           "method": "POST",
           "path": "/api/event-history/clear",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3716
+          "line": 3738
         }
       ]
     },
@@ -2313,7 +2319,7 @@
           "method": "POST",
           "path": "/api/event-history/delete",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3714
+          "line": 3736
         }
       ]
     },
@@ -2325,7 +2331,7 @@
           "method": "POST",
           "path": "/api/event-history/get",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3711
+          "line": 3733
         }
       ]
     },
@@ -2337,7 +2343,7 @@
           "method": "POST",
           "path": "/api/event-history/list",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3708
+          "line": 3730
         }
       ]
     },
@@ -2349,7 +2355,7 @@
           "method": "POST",
           "path": "/api/event-history/replay",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3719
+          "line": 3741
         }
       ]
     },
@@ -2361,7 +2367,7 @@
           "method": "POST",
           "path": "/api/features/agent-output",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2300
+          "line": 2322
         }
       ]
     },
@@ -2373,7 +2379,7 @@
           "method": "POST",
           "path": "/api/features/bulk-delete",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2306
+          "line": 2328
         }
       ]
     },
@@ -2385,7 +2391,7 @@
           "method": "POST",
           "path": "/api/features/bulk-update",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2304
+          "line": 2326
         }
       ]
     },
@@ -2397,7 +2403,7 @@
           "method": "POST",
           "path": "/api/features/check-conflicts",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2364
+          "line": 2386
         }
       ]
     },
@@ -2409,7 +2415,7 @@
           "method": "POST",
           "path": "/api/features/create",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2280
+          "line": 2302
         }
       ]
     },
@@ -2421,7 +2427,7 @@
           "method": "POST",
           "path": "/api/features/delete",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2298
+          "line": 2320
         }
       ]
     },
@@ -2433,7 +2439,7 @@
           "method": "POST",
           "path": "/api/features/export",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2326
+          "line": 2348
         }
       ]
     },
@@ -2445,7 +2451,7 @@
           "method": "POST",
           "path": "/api/features/generate-title",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2302
+          "line": 2324
         }
       ]
     },
@@ -2457,7 +2463,7 @@
           "method": "POST",
           "path": "/api/features/get",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2278
+          "line": 2300
         }
       ]
     },
@@ -2469,7 +2475,7 @@
           "method": "POST",
           "path": "/api/features/import",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2348
+          "line": 2370
         }
       ]
     },
@@ -2481,7 +2487,7 @@
           "method": "GET",
           "path": "/api/features/list",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2276
+          "line": 2298
         }
       ]
     },
@@ -2498,7 +2504,7 @@
           "method": "POST",
           "path": "/api/features/orphaned/bulk-resolve",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2397
+          "line": 2419
         }
       ]
     },
@@ -2510,7 +2516,7 @@
           "method": "POST",
           "path": "/api/features/orphaned/resolve",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2384
+          "line": 2406
         }
       ]
     },
@@ -2522,7 +2528,7 @@
           "method": "POST",
           "path": "/api/features/orphaned",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2371
+          "line": 2393
         }
       ]
     },
@@ -2539,7 +2545,7 @@
           "method": "POST",
           "path": "/api/features/update",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2289
+          "line": 2311
         }
       ]
     },
@@ -2561,7 +2567,7 @@
           "method": "POST",
           "path": "/api/fs/copy",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1512
+          "line": 1532
         }
       ]
     },
@@ -2573,7 +2579,7 @@
           "method": "POST",
           "path": "/api/fs/delete-board-background",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1608
+          "line": 1628
         }
       ]
     },
@@ -2585,7 +2591,7 @@
           "method": "POST",
           "path": "/api/fs/delete",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1499
+          "line": 1519
         }
       ]
     },
@@ -2597,7 +2603,7 @@
           "method": "POST",
           "path": "/api/fs/download",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1537
+          "line": 1557
         }
       ]
     },
@@ -2609,13 +2615,13 @@
           "method": "POST",
           "path": "/api/fs/exists",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1458
+          "line": 1478
         },
         {
           "method": "POST",
           "path": "/api/fs/exists",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1488
+          "line": 1508
         }
       ]
     },
@@ -2632,7 +2638,7 @@
           "method": "POST",
           "path": "/api/fs/mkdir",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1480
+          "line": 1500
         }
       ]
     },
@@ -2644,7 +2650,7 @@
           "method": "POST",
           "path": "/api/fs/move",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1520
+          "line": 1540
         }
       ]
     },
@@ -2656,7 +2662,7 @@
           "method": "POST",
           "path": "/api/fs/readdir",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1484
+          "line": 1504
         }
       ]
     },
@@ -2668,7 +2674,7 @@
           "method": "POST",
           "path": "/api/fs/read",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1472
+          "line": 1492
         }
       ]
     },
@@ -2685,7 +2691,7 @@
           "method": "POST",
           "path": "/api/fs/save-board-background",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1599
+          "line": 1619
         }
       ]
     },
@@ -2697,7 +2703,7 @@
           "method": "POST",
           "path": "/api/fs/save-image",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1585
+          "line": 1605
         }
       ]
     },
@@ -2709,7 +2715,7 @@
           "method": "POST",
           "path": "/api/fs/stat",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1495
+          "line": 1515
         }
       ]
     },
@@ -2721,7 +2727,7 @@
           "method": "POST",
           "path": "/api/fs/validate-path",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1428
+          "line": 1448
         }
       ]
     },
@@ -2733,7 +2739,7 @@
           "method": "POST",
           "path": "/api/fs/write",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1476
+          "line": 1496
         }
       ]
     },
@@ -2750,7 +2756,7 @@
           "method": "GET",
           "path": "/api/gemini/usage",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3534
+          "line": 3556
         }
       ]
     },
@@ -2762,7 +2768,7 @@
           "method": "POST",
           "path": "/api/git/details",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2792
+          "line": 2814
         }
       ]
     },
@@ -2774,7 +2780,7 @@
           "method": "POST",
           "path": "/api/git/diffs",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2786
+          "line": 2808
         }
       ]
     },
@@ -2786,7 +2792,7 @@
           "method": "POST",
           "path": "/api/git/enhanced-status",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2794
+          "line": 2816
         }
       ]
     },
@@ -2798,7 +2804,7 @@
           "method": "POST",
           "path": "/api/git/environment",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3226
+          "line": 3248
         }
       ]
     },
@@ -2810,7 +2816,7 @@
           "method": "POST",
           "path": "/api/git/file-diff",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2788
+          "line": 2810
         }
       ]
     },
@@ -2822,7 +2828,7 @@
           "method": "POST",
           "path": "/api/git/stage-files",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2790
+          "line": 2812
         }
       ]
     },
@@ -2834,7 +2840,7 @@
           "method": "POST",
           "path": "/api/github/check-remote",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2862
+          "line": 2884
         }
       ]
     },
@@ -2846,7 +2852,7 @@
           "method": "POST",
           "path": "/api/github/issue-comments",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2892
+          "line": 2914
         }
       ]
     },
@@ -2858,7 +2864,7 @@
           "method": "POST",
           "path": "/api/github/issues",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2863
+          "line": 2885
         }
       ]
     },
@@ -2870,7 +2876,7 @@
           "method": "POST",
           "path": "/api/github/pr-review-comments",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2894
+          "line": 2916
         }
       ]
     },
@@ -2882,7 +2888,7 @@
           "method": "POST",
           "path": "/api/github/prs",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2864
+          "line": 2886
         }
       ]
     },
@@ -2894,7 +2900,7 @@
           "method": "POST",
           "path": "/api/github/resolve-pr-comment",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2896
+          "line": 2918
         }
       ]
     },
@@ -2906,7 +2912,7 @@
           "method": "POST",
           "path": "/api/github/validate-issue",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2873
+          "line": 2895
         }
       ]
     },
@@ -2923,7 +2929,7 @@
           "method": "POST",
           "path": "/api/github/validation-mark-viewed",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2888
+          "line": 2910
         }
       ]
     },
@@ -2935,7 +2941,7 @@
           "method": "POST",
           "path": "/api/github/validation-status",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2882
+          "line": 2904
         }
       ]
     },
@@ -2947,7 +2953,7 @@
           "method": "POST",
           "path": "/api/github/validation-stop",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2884
+          "line": 2906
         }
       ]
     },
@@ -2959,7 +2965,7 @@
           "method": "POST",
           "path": "/api/github/validations",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2886
+          "line": 2908
         }
       ]
     },
@@ -2971,7 +2977,7 @@
           "method": "GET",
           "path": "/api/health/detailed",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1573
+          "line": 1593
         }
       ]
     },
@@ -2983,7 +2989,7 @@
           "method": "GET",
           "path": "/api/health/environment",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 613
+          "line": 625
         }
       ]
     },
@@ -3017,13 +3023,13 @@
           "method": "GET",
           "path": "/api/health",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1363
+          "line": 1383
         },
         {
           "method": "GET",
           "path": "/api/health",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 197
+          "line": 209
         },
         {
           "method": "GET",
@@ -3047,7 +3053,7 @@
           "method": "POST",
           "path": "/api/ideation/add-suggestion",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3672
+          "line": 3694
         }
       ]
     },
@@ -3064,7 +3070,7 @@
           "method": "POST",
           "path": "/api/ideation/analyze",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3648
+          "line": 3670
         }
       ]
     },
@@ -3076,7 +3082,7 @@
           "method": "POST",
           "path": "/api/ideation/convert",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3666
+          "line": 3688
         }
       ]
     },
@@ -3088,7 +3094,7 @@
           "method": "POST",
           "path": "/api/ideation/ideas/create",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3637
+          "line": 3659
         }
       ]
     },
@@ -3100,7 +3106,7 @@
           "method": "POST",
           "path": "/api/ideation/ideas/delete",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3646
+          "line": 3668
         }
       ]
     },
@@ -3112,7 +3118,7 @@
           "method": "POST",
           "path": "/api/ideation/ideas/get",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3640
+          "line": 3662
         }
       ]
     },
@@ -3124,7 +3130,7 @@
           "method": "POST",
           "path": "/api/ideation/ideas/list",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3634
+          "line": 3656
         }
       ]
     },
@@ -3136,7 +3142,7 @@
           "method": "POST",
           "path": "/api/ideation/ideas/update",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3643
+          "line": 3665
         }
       ]
     },
@@ -3153,7 +3159,7 @@
           "method": "GET",
           "path": "/api/ideation/prompts",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3674
+          "line": 3696
         }
       ]
     },
@@ -3165,7 +3171,7 @@
           "method": "POST",
           "path": "/api/ideation/session/get",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3624
+          "line": 3646
         }
       ]
     },
@@ -3177,7 +3183,7 @@
           "method": "POST",
           "path": "/api/ideation/session/message",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3630
+          "line": 3652
         }
       ]
     },
@@ -3189,7 +3195,7 @@
           "method": "POST",
           "path": "/api/ideation/session/start",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3621
+          "line": 3643
         }
       ]
     },
@@ -3201,7 +3207,7 @@
           "method": "POST",
           "path": "/api/ideation/session/stop",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3632
+          "line": 3654
         }
       ]
     },
@@ -3213,7 +3219,7 @@
           "method": "POST",
           "path": "/api/ideation/suggestions/generate",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3657
+          "line": 3679
         }
       ]
     },
@@ -3225,7 +3231,7 @@
           "method": "POST",
           "path": "/api/mcp/test",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3742
+          "line": 3764
         }
       ]
     },
@@ -3237,7 +3243,7 @@
           "method": "POST",
           "path": "/api/mcp/tools",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3755
+          "line": 3777
         }
       ]
     },
@@ -3249,7 +3255,7 @@
           "method": "GET",
           "path": "/api/models/available",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1637
+          "line": 1657
         }
       ]
     },
@@ -3261,7 +3267,7 @@
           "method": "GET",
           "path": "/api/models/providers",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1644
+          "line": 1664
         }
       ]
     },
@@ -3273,7 +3279,7 @@
           "method": "POST",
           "path": "/api/notifications/dismiss",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3698
+          "line": 3720
         }
       ]
     },
@@ -3285,7 +3291,7 @@
           "method": "POST",
           "path": "/api/notifications/list",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3689
+          "line": 3711
         }
       ]
     },
@@ -3297,7 +3303,7 @@
           "method": "POST",
           "path": "/api/notifications/mark-read",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3695
+          "line": 3717
         }
       ]
     },
@@ -3309,7 +3315,7 @@
           "method": "POST",
           "path": "/api/notifications/unread-count",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3692
+          "line": 3714
         }
       ]
     },
@@ -3321,7 +3327,7 @@
           "method": "POST",
           "path": "/api/pipeline/config/save",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3794
+          "line": 3816
         }
       ]
     },
@@ -3333,7 +3339,7 @@
           "method": "POST",
           "path": "/api/pipeline/config",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3777
+          "line": 3799
         }
       ]
     },
@@ -3345,7 +3351,7 @@
           "method": "POST",
           "path": "/api/pipeline/steps/add",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3816
+          "line": 3838
         }
       ]
     },
@@ -3357,7 +3363,7 @@
           "method": "POST",
           "path": "/api/pipeline/steps/delete",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3845
+          "line": 3867
         }
       ]
     },
@@ -3369,7 +3375,7 @@
           "method": "POST",
           "path": "/api/pipeline/steps/reorder",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3851
+          "line": 3873
         }
       ]
     },
@@ -3381,7 +3387,7 @@
           "method": "POST",
           "path": "/api/pipeline/steps/update",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3839
+          "line": 3861
         }
       ]
     },
@@ -3405,7 +3411,7 @@
           "method": "GET",
           "path": "/api/running-agents",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2857
+          "line": 2879
         }
       ]
     },
@@ -3417,7 +3423,7 @@
           "method": "POST",
           "path": "/api/sessions/:sessionId/archive",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3494
+          "line": 3516
         }
       ]
     },
@@ -3429,7 +3435,7 @@
           "method": "POST",
           "path": "/api/sessions/:sessionId/unarchive",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3497
+          "line": 3519
         }
       ]
     },
@@ -3441,7 +3447,7 @@
           "method": "DELETE",
           "path": "/api/sessions/:sessionId",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3500
+          "line": 3522
         }
       ]
     },
@@ -3458,7 +3464,7 @@
           "method": "PUT",
           "path": "/api/sessions/:sessionId",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3491
+          "line": 3513
         }
       ]
     },
@@ -3470,7 +3476,7 @@
           "method": "GET",
           "path": "/api/sessions",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3467
+          "line": 3489
         }
       ]
     },
@@ -3482,7 +3488,7 @@
           "method": "POST",
           "path": "/api/sessions",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3484
+          "line": 3506
         }
       ]
     },
@@ -3494,7 +3500,7 @@
           "method": "POST",
           "path": "/api/settings/agents/discover",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3216
+          "line": 3238
         }
       ]
     },
@@ -3506,7 +3512,7 @@
           "method": "GET",
           "path": "/api/settings/credentials",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3118
+          "line": 3140
         }
       ]
     },
@@ -3518,7 +3524,7 @@
           "method": "PUT",
           "path": "/api/settings/credentials",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3130
+          "line": 3152
         }
       ]
     },
@@ -3530,7 +3536,7 @@
           "method": "POST",
           "path": "/api/settings/execution-environments/auto/confirm",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3364
+          "line": 3386
         }
       ]
     },
@@ -3542,7 +3548,7 @@
           "method": "POST",
           "path": "/api/settings/execution-environments/auto/revoke",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3370
+          "line": 3392
         }
       ]
     },
@@ -3554,7 +3560,7 @@
           "method": "POST",
           "path": "/api/settings/execution-environments/docker/check",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3393
+          "line": 3415
         }
       ]
     },
@@ -3566,7 +3572,7 @@
           "method": "POST",
           "path": "/api/settings/execution-environments/docker/prepare",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3358
+          "line": 3380
         }
       ]
     },
@@ -3578,7 +3584,7 @@
           "method": "POST",
           "path": "/api/settings/execution-environments/feature/inspect",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3296
+          "line": 3318
         }
       ]
     },
@@ -3590,7 +3596,7 @@
           "method": "PUT",
           "path": "/api/settings/execution-environments/global",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3384
+          "line": 3406
         }
       ]
     },
@@ -3602,7 +3608,7 @@
           "method": "POST",
           "path": "/api/settings/execution-environments/inspect",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3380
+          "line": 3402
         }
       ]
     },
@@ -3614,7 +3620,7 @@
           "method": "POST",
           "path": "/api/settings/execution-environments/local/confirm",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3372
+          "line": 3394
         }
       ]
     },
@@ -3626,7 +3632,7 @@
           "method": "POST",
           "path": "/api/settings/execution-environments/local/revoke",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3378
+          "line": 3400
         }
       ]
     },
@@ -3638,7 +3644,7 @@
           "method": "PUT",
           "path": "/api/settings/execution-environments/project",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3389
+          "line": 3411
         }
       ]
     },
@@ -3650,7 +3656,7 @@
           "method": "POST",
           "path": "/api/settings/execution-environments/providers/inspect",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3235
+          "line": 3257
         }
       ]
     },
@@ -3662,7 +3668,7 @@
           "method": "POST",
           "path": "/api/settings/execution-environments/providers/install",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3248
+          "line": 3270
         }
       ]
     },
@@ -3674,13 +3680,13 @@
           "method": "POST",
           "path": "/api/settings/execution-environments/providers/key",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3264
+          "line": 3286
         },
         {
           "method": "POST",
           "path": "/api/settings/execution-environments/providers/key",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3280
+          "line": 3302
         }
       ]
     },
@@ -3692,7 +3698,7 @@
           "method": "POST",
           "path": "/api/settings/execution-environments/ssh/check",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3328
+          "line": 3350
         }
       ]
     },
@@ -3704,13 +3710,13 @@
           "method": "POST",
           "path": "/api/settings/execution-environments/ssh/key",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3317
+          "line": 3339
         },
         {
           "method": "POST",
           "path": "/api/settings/execution-environments/ssh/key",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3323
+          "line": 3345
         }
       ]
     },
@@ -3722,7 +3728,7 @@
           "method": "POST",
           "path": "/api/settings/execution-environments/ssh/prepare",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3330
+          "line": 3352
         }
       ]
     },
@@ -3734,7 +3740,7 @@
           "method": "POST",
           "path": "/api/settings/execution-environments/ssh/project",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3339
+          "line": 3361
         }
       ]
     },
@@ -3746,7 +3752,7 @@
           "method": "POST",
           "path": "/api/settings/execution-environments/ssh/recover",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3349
+          "line": 3371
         }
       ]
     },
@@ -3758,7 +3764,7 @@
           "method": "POST",
           "path": "/api/settings/execution-environments/ssh/scan",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3300
+          "line": 3322
         }
       ]
     },
@@ -3770,7 +3776,7 @@
           "method": "POST",
           "path": "/api/settings/execution-environments/ssh/trust",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3306
+          "line": 3328
         }
       ]
     },
@@ -3782,7 +3788,7 @@
           "method": "GET",
           "path": "/api/settings/global",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3099
+          "line": 3121
         }
       ]
     },
@@ -3794,7 +3800,7 @@
           "method": "PUT",
           "path": "/api/settings/global",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3107
+          "line": 3129
         }
       ]
     },
@@ -3806,7 +3812,7 @@
           "method": "POST",
           "path": "/api/settings/migrate",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3196
+          "line": 3218
         }
       ]
     },
@@ -3818,7 +3824,7 @@
           "method": "GET",
           "path": "/api/settings/model-timeouts/:dynamic",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3400
+          "line": 3422
         }
       ]
     },
@@ -3830,7 +3836,7 @@
           "method": "PUT",
           "path": "/api/settings/model-timeouts/:dynamic",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3405
+          "line": 3427
         }
       ]
     },
@@ -3842,7 +3848,7 @@
           "method": "GET",
           "path": "/api/settings/model-timeouts",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3407
+          "line": 3429
         }
       ]
     },
@@ -3854,7 +3860,7 @@
           "method": "PUT",
           "path": "/api/settings/model-timeouts",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3411
+          "line": 3433
         }
       ]
     },
@@ -3866,7 +3872,7 @@
           "method": "PUT",
           "path": "/api/settings/openai-compatible/agent",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3446
+          "line": 3468
         }
       ]
     },
@@ -3878,7 +3884,7 @@
           "method": "PUT",
           "path": "/api/settings/openai-compatible/endpoint",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3430
+          "line": 3452
         }
       ]
     },
@@ -3890,7 +3896,7 @@
           "method": "POST",
           "path": "/api/settings/openai-compatible/models",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3450
+          "line": 3472
         }
       ]
     },
@@ -3902,7 +3908,7 @@
           "method": "POST",
           "path": "/api/settings/openai-compatible/remove",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3438
+          "line": 3460
         }
       ]
     },
@@ -3914,7 +3920,7 @@
           "method": "POST",
           "path": "/api/settings/openai-compatible/test",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3456
+          "line": 3478
         }
       ]
     },
@@ -3926,7 +3932,7 @@
           "method": "GET",
           "path": "/api/settings/openai-compatible",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3420
+          "line": 3442
         }
       ]
     },
@@ -3938,7 +3944,7 @@
           "method": "POST",
           "path": "/api/settings/project",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3172
+          "line": 3194
         }
       ]
     },
@@ -3950,7 +3956,7 @@
           "method": "PUT",
           "path": "/api/settings/project",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3181
+          "line": 3203
         }
       ]
     },
@@ -3962,13 +3968,13 @@
           "method": "GET",
           "path": "/api/settings/status",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3043
+          "line": 3065
         },
         {
           "method": "GET",
           "path": "/api/settings/status",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 574
+          "line": 586
         }
       ]
     },
@@ -3980,7 +3986,7 @@
           "method": "GET",
           "path": "/api/setup/api-keys",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1735
+          "line": 1755
         }
       ]
     },
@@ -3992,7 +3998,7 @@
           "method": "POST",
           "path": "/api/setup/auth-claude",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1192
+          "line": 1212
         }
       ]
     },
@@ -4004,7 +4010,7 @@
           "method": "POST",
           "path": "/api/setup/auth-codex",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1194
+          "line": 1214
         }
       ]
     },
@@ -4016,7 +4022,7 @@
           "method": "POST",
           "path": "/api/setup/auth-copilot",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1200
+          "line": 1220
         }
       ]
     },
@@ -4028,7 +4034,7 @@
           "method": "POST",
           "path": "/api/setup/auth-cursor",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1196
+          "line": 1216
         }
       ]
     },
@@ -4040,7 +4046,7 @@
           "method": "POST",
           "path": "/api/setup/auth-gemini",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1198
+          "line": 1218
         }
       ]
     },
@@ -4052,7 +4058,7 @@
           "method": "POST",
           "path": "/api/setup/auth-opencode",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1202
+          "line": 1222
         }
       ]
     },
@@ -4064,13 +4070,13 @@
           "method": "GET",
           "path": "/api/setup/claude-status",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1627
+          "line": 1647
         },
         {
           "method": "GET",
           "path": "/api/setup/claude-status",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1683
+          "line": 1703
         }
       ]
     },
@@ -4082,7 +4088,7 @@
           "method": "GET",
           "path": "/api/setup/codex-status",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1952
+          "line": 1974
         }
       ]
     },
@@ -4094,7 +4100,7 @@
           "method": "GET",
           "path": "/api/setup/connection-target",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1655
+          "line": 1675
         }
       ]
     },
@@ -4106,7 +4112,7 @@
           "method": "GET",
           "path": "/api/setup/copilot-status",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2144
+          "line": 2166
         }
       ]
     },
@@ -4133,7 +4139,7 @@
           "method": "POST",
           "path": "/api/setup/cursor-config/default-model",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1853
+          "line": 1862
         }
       ]
     },
@@ -4145,7 +4151,19 @@
           "method": "POST",
           "path": "/api/setup/cursor-config/models",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1862
+          "line": 1876
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/cursor-config/target",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/setup/cursor-config/target",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 1853
         }
       ]
     },
@@ -4157,7 +4175,7 @@
           "method": "GET",
           "path": "/api/setup/cursor-config",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1844
+          "line": 1848
         }
       ]
     },
@@ -4169,7 +4187,7 @@
           "method": "POST",
           "path": "/api/setup/cursor-permissions/custom",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1908
+          "line": 1930
         }
       ]
     },
@@ -4181,7 +4199,7 @@
           "method": "GET",
           "path": "/api/setup/cursor-permissions/example",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1930
+          "line": 1952
         }
       ]
     },
@@ -4193,7 +4211,7 @@
           "method": "POST",
           "path": "/api/setup/cursor-permissions/profile",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1899
+          "line": 1921
         }
       ]
     },
@@ -4205,7 +4223,7 @@
           "method": "GET",
           "path": "/api/setup/cursor-permissions/target",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1890
+          "line": 1912
         }
       ]
     },
@@ -4217,7 +4235,7 @@
           "method": "DELETE",
           "path": "/api/setup/cursor-permissions",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1917
+          "line": 1939
         }
       ]
     },
@@ -4229,7 +4247,7 @@
           "method": "GET",
           "path": "/api/setup/cursor-permissions",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1884
+          "line": 1906
         }
       ]
     },
@@ -4241,7 +4259,7 @@
           "method": "GET",
           "path": "/api/setup/cursor-status",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1780
+          "line": 1800
         }
       ]
     },
@@ -4253,7 +4271,7 @@
           "method": "POST",
           "path": "/api/setup/deauth-claude",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1135
+          "line": 1155
         }
       ]
     },
@@ -4265,7 +4283,7 @@
           "method": "POST",
           "path": "/api/setup/deauth-codex",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1137
+          "line": 1157
         }
       ]
     },
@@ -4277,7 +4295,7 @@
           "method": "POST",
           "path": "/api/setup/deauth-copilot",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1143
+          "line": 1163
         }
       ]
     },
@@ -4289,7 +4307,7 @@
           "method": "POST",
           "path": "/api/setup/deauth-cursor",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1139
+          "line": 1159
         }
       ]
     },
@@ -4301,7 +4319,7 @@
           "method": "POST",
           "path": "/api/setup/deauth-gemini",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1141
+          "line": 1161
         }
       ]
     },
@@ -4313,7 +4331,7 @@
           "method": "POST",
           "path": "/api/setup/deauth-opencode",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1145
+          "line": 1165
         }
       ]
     },
@@ -4325,7 +4343,7 @@
           "method": "POST",
           "path": "/api/setup/delete-api-key",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1728
+          "line": 1748
         }
       ]
     },
@@ -4337,7 +4355,7 @@
           "method": "GET",
           "path": "/api/setup/gemini-status",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2103
+          "line": 2125
         }
       ]
     },
@@ -4349,7 +4367,7 @@
           "method": "GET",
           "path": "/api/setup/gh-status",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1765
+          "line": 1785
         }
       ]
     },
@@ -4361,7 +4379,7 @@
           "method": "POST",
           "path": "/api/setup/install-claude",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1688
+          "line": 1708
         }
       ]
     },
@@ -4373,7 +4391,7 @@
           "method": "POST",
           "path": "/api/setup/install-codex",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1957
+          "line": 1979
         }
       ]
     },
@@ -4385,7 +4403,7 @@
           "method": "GET",
           "path": "/api/setup/opencode-status",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2016
+          "line": 2038
         }
       ]
     },
@@ -4397,7 +4415,7 @@
           "method": "POST",
           "path": "/api/setup/opencode/cache/clear",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2077
+          "line": 2099
         }
       ]
     },
@@ -4409,7 +4427,7 @@
           "method": "POST",
           "path": "/api/setup/opencode/models/refresh",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2054
+          "line": 2076
         }
       ]
     },
@@ -4421,7 +4439,7 @@
           "method": "GET",
           "path": "/api/setup/opencode/models",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2037
+          "line": 2059
         },
         {
           "method": "GET",
@@ -4439,7 +4457,7 @@
           "method": "GET",
           "path": "/api/setup/opencode/providers",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2071
+          "line": 2093
         }
       ]
     },
@@ -4451,7 +4469,7 @@
           "method": "GET",
           "path": "/api/setup/platform",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1745
+          "line": 1765
         }
       ]
     },
@@ -4463,7 +4481,7 @@
           "method": "POST",
           "path": "/api/setup/store-api-key",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1720
+          "line": 1740
         }
       ]
     },
@@ -4475,7 +4493,7 @@
           "method": "POST",
           "path": "/api/setup/verify-claude-auth",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1755
+          "line": 1775
         }
       ]
     },
@@ -4487,7 +4505,7 @@
           "method": "POST",
           "path": "/api/setup/verify-codex-auth",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 1990
+          "line": 2012
         }
       ]
     },
@@ -4499,7 +4517,7 @@
           "method": "POST",
           "path": "/api/spec-regeneration/create",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2806
+          "line": 2828
         }
       ]
     },
@@ -4511,7 +4529,7 @@
           "method": "POST",
           "path": "/api/spec-regeneration/generate-features",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2828
+          "line": 2850
         }
       ]
     },
@@ -4523,7 +4541,7 @@
           "method": "POST",
           "path": "/api/spec-regeneration/generate",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2820
+          "line": 2842
         }
       ]
     },
@@ -4540,7 +4558,7 @@
           "method": "POST",
           "path": "/api/spec-regeneration/stop",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2833
+          "line": 2855
         }
       ]
     },
@@ -4552,7 +4570,7 @@
           "method": "POST",
           "path": "/api/spec-regeneration/sync",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2832
+          "line": 2854
         }
       ]
     },
@@ -4564,7 +4582,7 @@
           "method": "POST",
           "path": "/api/templates/clone",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 3031
+          "line": 3053
         }
       ]
     },
@@ -4626,7 +4644,7 @@
           "method": "GET",
           "path": "/api/workspace/config",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2907
+          "line": 2929
         }
       ]
     },
@@ -4638,7 +4656,7 @@
           "method": "GET",
           "path": "/api/workspace/directories",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2913
+          "line": 2935
         }
       ]
     },
@@ -4650,7 +4668,7 @@
           "method": "POST",
           "path": "/api/worktree/abort-operation",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2755
+          "line": 2777
         }
       ]
     },
@@ -4662,7 +4680,7 @@
           "method": "POST",
           "path": "/api/worktree/add-remote",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2632
+          "line": 2654
         }
       ]
     },
@@ -4674,7 +4692,7 @@
           "method": "GET",
           "path": "/api/worktree/available-editors",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2636
+          "line": 2658
         }
       ]
     },
@@ -4686,7 +4704,7 @@
           "method": "GET",
           "path": "/api/worktree/available-terminals",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2638
+          "line": 2660
         }
       ]
     },
@@ -4698,7 +4716,7 @@
           "method": "POST",
           "path": "/api/worktree/branch-commit-log",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2759
+          "line": 2781
         }
       ]
     },
@@ -4710,7 +4728,7 @@
           "method": "POST",
           "path": "/api/worktree/check-changes",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2624
+          "line": 2646
         }
       ]
     },
@@ -4722,7 +4740,7 @@
           "method": "POST",
           "path": "/api/worktree/checkout-branch",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2616
+          "line": 2638
         }
       ]
     },
@@ -4734,7 +4752,7 @@
           "method": "POST",
           "path": "/api/worktree/cherry-pick",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2751
+          "line": 2773
         }
       ]
     },
@@ -4746,7 +4764,7 @@
           "method": "POST",
           "path": "/api/worktree/commit-log",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2742
+          "line": 2764
         }
       ]
     },
@@ -4758,7 +4776,7 @@
           "method": "POST",
           "path": "/api/worktree/commit",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2560
+          "line": 2582
         }
       ]
     },
@@ -4770,7 +4788,7 @@
           "method": "POST",
           "path": "/api/worktree/continue-operation",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2757
+          "line": 2779
         }
       ]
     },
@@ -4782,7 +4800,7 @@
           "method": "POST",
           "path": "/api/worktree/create-pr",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2594
+          "line": 2616
         }
       ]
     },
@@ -4794,7 +4812,7 @@
           "method": "POST",
           "path": "/api/worktree/create",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2548
+          "line": 2570
         }
       ]
     },
@@ -4806,7 +4824,7 @@
           "method": "GET",
           "path": "/api/worktree/default-editor",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2635
+          "line": 2657
         }
       ]
     },
@@ -4818,7 +4836,7 @@
           "method": "GET",
           "path": "/api/worktree/default-terminal",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2639
+          "line": 2661
         }
       ]
     },
@@ -4830,7 +4848,7 @@
           "method": "POST",
           "path": "/api/worktree/delete",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2554
+          "line": 2576
         }
       ]
     },
@@ -4842,7 +4860,7 @@
           "method": "GET",
           "path": "/api/worktree/dev-server-logs",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2659
+          "line": 2681
         }
       ]
     },
@@ -4854,7 +4872,7 @@
           "method": "POST",
           "path": "/api/worktree/diffs",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2598
+          "line": 2620
         }
       ]
     },
@@ -4866,7 +4884,7 @@
           "method": "POST",
           "path": "/api/worktree/discard-changes",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2698
+          "line": 2720
         }
       ]
     },
@@ -4883,7 +4901,7 @@
           "method": "POST",
           "path": "/api/worktree/file-diff",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2600
+          "line": 2622
         }
       ]
     },
@@ -4895,7 +4913,7 @@
           "method": "POST",
           "path": "/api/worktree/generate-commit-message",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2567
+          "line": 2589
         }
       ]
     },
@@ -4907,7 +4925,7 @@
           "method": "POST",
           "path": "/api/worktree/generate-pr-description",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2580
+          "line": 2602
         }
       ]
     },
@@ -4919,7 +4937,7 @@
           "method": "POST",
           "path": "/api/worktree/info",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2541
+          "line": 2563
         }
       ]
     },
@@ -4931,7 +4949,7 @@
           "method": "POST",
           "path": "/api/worktree/init-git",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2643
+          "line": 2665
         }
       ]
     },
@@ -4943,7 +4961,7 @@
           "method": "DELETE",
           "path": "/api/worktree/init-script",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2694
+          "line": 2716
         }
       ]
     },
@@ -4955,7 +4973,7 @@
           "method": "GET",
           "path": "/api/worktree/init-script",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2690
+          "line": 2712
         }
       ]
     },
@@ -4967,7 +4985,7 @@
           "method": "PUT",
           "path": "/api/worktree/init-script",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2692
+          "line": 2714
         }
       ]
     },
@@ -4979,7 +4997,7 @@
           "method": "POST",
           "path": "/api/worktree/list-branches",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2626
+          "line": 2648
         }
       ]
     },
@@ -4991,7 +5009,7 @@
           "method": "POST",
           "path": "/api/worktree/list-dev-servers",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2657
+          "line": 2679
         }
       ]
     },
@@ -5003,7 +5021,7 @@
           "method": "POST",
           "path": "/api/worktree/list-remotes",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2630
+          "line": 2652
         }
       ]
     },
@@ -5015,13 +5033,13 @@
           "method": "POST",
           "path": "/api/worktree/list",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2544
+          "line": 2566
         },
         {
           "method": "POST",
           "path": "/api/worktree/list",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2546
+          "line": 2568
         }
       ]
     },
@@ -5033,7 +5051,7 @@
           "method": "POST",
           "path": "/api/worktree/merge",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2533
+          "line": 2555
         }
       ]
     },
@@ -5050,7 +5068,7 @@
           "method": "POST",
           "path": "/api/worktree/open-in-editor",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2634
+          "line": 2656
         }
       ]
     },
@@ -5062,7 +5080,7 @@
           "method": "POST",
           "path": "/api/worktree/open-in-external-terminal",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2642
+          "line": 2664
         }
       ]
     },
@@ -5079,7 +5097,7 @@
           "method": "POST",
           "path": "/api/worktree/pr-info",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2687
+          "line": 2709
         }
       ]
     },
@@ -5091,7 +5109,7 @@
           "method": "POST",
           "path": "/api/worktree/pull",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2608
+          "line": 2630
         }
       ]
     },
@@ -5103,7 +5121,7 @@
           "method": "POST",
           "path": "/api/worktree/push",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2588
+          "line": 2610
         }
       ]
     },
@@ -5115,7 +5133,7 @@
           "method": "POST",
           "path": "/api/worktree/rebase",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2753
+          "line": 2775
         }
       ]
     },
@@ -5127,7 +5145,7 @@
           "method": "POST",
           "path": "/api/worktree/refresh-editors",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2637
+          "line": 2659
         }
       ]
     },
@@ -5139,7 +5157,7 @@
           "method": "POST",
           "path": "/api/worktree/refresh-terminals",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2640
+          "line": 2662
         }
       ]
     },
@@ -5151,7 +5169,7 @@
           "method": "POST",
           "path": "/api/worktree/run-init-script",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2696
+          "line": 2718
         }
       ]
     },
@@ -5163,7 +5181,7 @@
           "method": "POST",
           "path": "/api/worktree/set-tracking",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2592
+          "line": 2614
         }
       ]
     },
@@ -5175,7 +5193,7 @@
           "method": "POST",
           "path": "/api/worktree/stage-files",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2606
+          "line": 2628
         }
       ]
     },
@@ -5187,7 +5205,7 @@
           "method": "POST",
           "path": "/api/worktree/start-dev",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2650
+          "line": 2672
         }
       ]
     },
@@ -5199,7 +5217,7 @@
           "method": "POST",
           "path": "/api/worktree/start-tests",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2731
+          "line": 2753
         }
       ]
     },
@@ -5211,7 +5229,7 @@
           "method": "POST",
           "path": "/api/worktree/stash-apply",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2747
+          "line": 2769
         }
       ]
     },
@@ -5223,7 +5241,7 @@
           "method": "POST",
           "path": "/api/worktree/stash-drop",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2749
+          "line": 2771
         }
       ]
     },
@@ -5235,7 +5253,7 @@
           "method": "POST",
           "path": "/api/worktree/stash-list",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2745
+          "line": 2767
         }
       ]
     },
@@ -5247,7 +5265,7 @@
           "method": "POST",
           "path": "/api/worktree/stash-push",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2744
+          "line": 2766
         }
       ]
     },
@@ -5259,7 +5277,7 @@
           "method": "POST",
           "path": "/api/worktree/status",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2543
+          "line": 2565
         }
       ]
     },
@@ -5271,7 +5289,7 @@
           "method": "POST",
           "path": "/api/worktree/stop-dev",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2656
+          "line": 2678
         }
       ]
     },
@@ -5283,7 +5301,7 @@
           "method": "POST",
           "path": "/api/worktree/stop-tests",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2740
+          "line": 2762
         }
       ]
     },
@@ -5295,7 +5313,7 @@
           "method": "POST",
           "path": "/api/worktree/switch-branch",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2628
+          "line": 2650
         }
       ]
     },
@@ -5307,7 +5325,7 @@
           "method": "POST",
           "path": "/api/worktree/sync",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2590
+          "line": 2612
         }
       ]
     },
@@ -5319,7 +5337,7 @@
           "method": "GET",
           "path": "/api/worktree/test-logs",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2764
+          "line": 2786
         }
       ]
     },
@@ -5331,7 +5349,7 @@
           "method": "POST",
           "path": "/api/worktree/update-pr-number",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2596
+          "line": 2618
         }
       ]
     },
@@ -5343,7 +5361,7 @@
           "method": "POST",
           "path": "/api/zai/configure",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2180
+          "line": 2202
         }
       ]
     },
@@ -5355,7 +5373,7 @@
           "method": "GET",
           "path": "/api/zai/status",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2168
+          "line": 2190
         }
       ]
     },
@@ -5367,7 +5385,7 @@
           "method": "GET",
           "path": "/api/zai/usage",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2170
+          "line": 2192
         }
       ]
     },
@@ -5379,7 +5397,7 @@
           "method": "POST",
           "path": "/api/zai/verify",
           "source": "apps/ui/src/lib/http-api-client.ts",
-          "line": 2189
+          "line": 2211
         }
       ]
     }

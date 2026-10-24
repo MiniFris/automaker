@@ -15,6 +15,8 @@ import { ProviderConnectionCommandService } from './provider-connection-command.
 import { ProviderInstallGuidanceService } from './provider-install-guidance.service.js';
 import { CursorPermissionsRepository } from './cursor-permissions.repository.js';
 import { CursorPermissionsService } from './cursor-permissions.service.js';
+import { HostSetupJsonFiles } from './host-setup-json-files.js';
+import { CursorModelConfigService } from './cursor-model-config.service.js';
 import {
   SetupStatusRuntime,
   NodeSetupStatusRuntime,
@@ -37,6 +39,8 @@ import {
     ProviderInstallGuidanceService,
     CursorPermissionsRepository,
     CursorPermissionsService,
+    HostSetupJsonFiles,
+    CursorModelConfigService,
     { provide: SetupStatusRuntime, useClass: NodeSetupStatusRuntime },
   ],
   exports: [ProviderRegistry, ProviderConnectionRepository, ToolPolicyService],
