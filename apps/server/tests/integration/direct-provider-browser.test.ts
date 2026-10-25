@@ -198,12 +198,25 @@ it.skipIf(!process.env.DIRECT_PROVIDER_BROWSER_EXECUTABLE)(
       await page.getByRole('button', { name: 'Enable Local execution', exact: true }).click();
       await page.getByText('Local access confirmed (global scope).', { exact: true }).waitFor();
       await page.reload();
-      await page.getByRole('button', { name: 'Edit', exact: true }).click();
+      await page
+        .getByRole('button', { name: 'Edit', exact: true })
+        .click()
+        .catch(async (error) => {
+          throw new Error(
+            `${error.message}; reload errors: ${pageErrors.join('; ')}; network/console: ${bootstrapDiagnostics.join('; ')}; body: ${(await page.locator('body').innerText()).slice(0, 1500)}`
+          );
+        });
       expect(await page.getByLabel(/New API key/).inputValue()).toBe('');
       expect(await page.getByLabel('Model ID').inputValue()).toBe('direct-Vendor/Exact:Tag');
       await page.getByText('Local access confirmed (global scope).', { exact: true }).waitFor();
       expect(prepare).not.toHaveBeenCalled();
-      await page.getByLabel('Default execution environment').selectOption('auto');
+      await page.getByRole('combobox', { name: 'Default execution environment' }).click();
+      await page
+        .getByRole('option', {
+          name: 'Auto — prefer managed Docker; local fallback requires confirmation',
+          exact: true,
+        })
+        .click();
       await page.getByRole('button', { name: 'Save environment configuration' }).click();
       await page.getByRole('button', { name: 'Allow Auto Local fallback' }).waitFor();
       await page.getByRole('checkbox', { name: /Allow image download\/build/ }).check();
@@ -217,10 +230,24 @@ it.skipIf(!process.env.DIRECT_PROVIDER_BROWSER_EXECUTABLE)(
       await page
         .getByRole('checkbox', { name: /I accept full Local access if Docker preflight/ })
         .check();
+      const consentResponse = page.waitForResponse((response) =>
+        response.url().endsWith('/auto/confirm')
+      );
       await page.getByRole('button', { name: 'Allow Auto Local fallback' }).click();
-      await page.getByText(/Auto Local fallback confirmed \(global scope\)/).waitFor();
+      expect(await (await consentResponse).json()).toMatchObject({ success: true });
+      await page
+        .getByText(
+          'Auto Local fallback confirmed (global scope). The actual environment is pinned for the session/task.',
+          { exact: true }
+        )
+        .waitFor();
       await page.reload();
-      await page.getByText(/Auto Local fallback confirmed \(global scope\)/).waitFor();
+      await page
+        .getByText(
+          'Auto Local fallback confirmed (global scope). The actual environment is pinned for the session/task.',
+          { exact: true }
+        )
+        .waitFor();
       expect(prepare).toHaveBeenCalledTimes(1);
       // Actual SSH peer: global setup is explicit; reload must not reconnect/install again.
       const privateKey = testSSHKey();
@@ -233,9 +260,8 @@ it.skipIf(!process.env.DIRECT_PROVIDER_BROWSER_EXECUTABLE)(
       await page.getByLabel('SSH user', { exact: true }).fill('developer');
       await page.getByLabel('Remote projects base path').fill(path.join(remoteRoot, 'projects'));
       await page.getByLabel('SSH credential ID (empty = server ssh-agent)').fill('browser-ssh');
-      await page
-        .getByLabel('Default execution environment')
-        .selectOption({ label: 'Browser SSH (SSH)' });
+      await page.getByRole('combobox', { name: 'Default execution environment' }).click();
+      await page.getByRole('option', { name: 'Browser SSH (SSH)', exact: true }).click();
       await page.getByRole('button', { name: 'Save environment configuration' }).click();
       await page.getByRole('button', { name: 'Inspect SSH host fingerprint' }).waitFor();
       expect(remotePeer.authentications).toBe(0);

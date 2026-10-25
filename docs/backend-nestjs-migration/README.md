@@ -18,7 +18,8 @@ application/infra границ этапа 11. Результаты возобн�
 Предыдущий checkpoint: [execution settings, AutoMode, integrations и usage contracts](artifacts/environment-automode-integrations-usage-checkpoint.md).
 Предыдущий checkpoint: [все JSON response schemas](artifacts/json-response-coverage-checkpoint.md).
 Предыдущий checkpoint: [transport contexts, binary contracts, terminal и workflow metrics](artifacts/transport-context-terminal-observability-checkpoint.md).
-Последний checkpoint: [полное удаление legacy routes, native characterization и logging ownership](artifacts/legacy-retirement-logging-checkpoint.md).
+Предыдущий checkpoint: [полное удаление legacy routes, native characterization и logging ownership](artifacts/legacy-retirement-logging-checkpoint.md).
+Последний artifact checkpoint: [Docker/Linux Electron и private upgrade/rollback](artifacts/current-artifact-acceptance-checkpoint.md).
 Полная миграция ещё не завершена; checklist и результаты проверок ведутся
 в документах соответствующих этапов.
 

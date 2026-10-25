@@ -55,14 +55,54 @@ Local logs: `/tmp/automaker-wave17-workload.log`,
 `/tmp/automaker-wave17-workload-repeat2.log`. These temporary logs are supporting
 local evidence; this document records their results for review.
 
-An earlier run before the final server build failed the exact PTY output
-assertion during a fast shell exit. Its initial diagnostic did not preserve the
-received output; the script now includes that output in the assertion failure.
-No terminal source change was made as part of this acceptance. Three subsequent
-runs passed, which does not establish that an intermittent output issue is
-impossible. A separate attempted run overlapped the server build's clean phase
-and failed artifact preflight before starting a server; run the script only after
-build completion.
+## Prompt interleaving investigation
+
+An early run failed the exact marker-line assertion during a fast shell exit.
+A focused run of 51 real PTY sessions subsequently passed (24 descriptors and
+zero remaining children at every sample, 51 observed descendants gone).
+Source inspection found that the backend flushes pending output before sending
+exit, and the installed node-pty implementation waits for its PTY stream to close
+before publishing process exit.
+
+The assertion failure was reproduced deterministically using a private shell
+wrapper that waits 150 ms and then executes `/bin/sh`. Input echo can arrive
+before the interactive shell's first prompt. The captured output contained the
+complete marker, prefixed by the shell prompt (`$ WORKLOAD_...`); the assertion
+required the marker to occupy its own line. This was a probe synchronization
+assumption, not missing PTY output in the reproduced case.
+
+The command now prints a leading newline before the assembled marker, ensuring
+an exact standalone output line regardless of initial prompt timing. The marker
+remains split across separate command arguments, so input echo still cannot
+satisfy the output assertion. No production terminal code was changed.
+
+Focused checks after the correction both passed:
+
+- Normal shell: 51 sessions, 51 observed descendant identities gone, FD 24 and
+  zero settled children throughout; 1993.2 ms workload, 50.9 ms shutdown, exit zero.
+- Delayed private shell: two sessions, four observed descendant identities gone
+  (the wrappers/sleep processes included), FD 24 and zero settled children;
+  494.8 ms workload, 31.4 ms shutdown, exit zero.
+
+The reproduction used an executable private file containing:
+
+```sh
+#!/bin/sh
+sleep 0.15
+exec /bin/sh
+```
+
+It was selected through the existing terminal session `shell` option. The original
+command's captured output included `\r\n$ WORKLOAD_<complete marker>\r\n`.
+After adding the leading newline, the same delayed-shell check passed without
+waiting for or interpreting the prompt. Local diagnostics are
+`/tmp/automaker-wave17-delayed-pty.log`,
+`/tmp/automaker-wave17-focused-pty-fixed.log` and
+`/tmp/automaker-wave17-delayed-pty-fixed.log`.
+
+A separate attempted run overlapped the server build's clean phase and failed
+artifact preflight before starting a server; run the script only after build
+completion.
 
 ## Limits
 

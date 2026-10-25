@@ -63,7 +63,11 @@ instances; source/build guards запрещают возврат legacy handlers
 `process.env`/`process.cwd()` запрещено в `core`/`modules` (кроме config parser).
 Это **не** полный набор правил выше: ограничение не охватывает все `services` и
 `providers`; framework-free application/domain, public exports соседних модулей и
-проверка полного module dependency graph ещё требуют отдельного решения/проверки.
+проверка provider DI graph ещё требуют отдельного решения/проверки.
+Явный граф импортов Nest проверяется автоматически:40модулей,52ребра и
+5динамических фабрик;циклов нет. Неизвестная композиция завершает проверку
+с ошибкой. См.
+[module graph audit](artifacts/nest-module-import-graph-audit.md).
 Например, Local execution adapter всё ещё использует ambient process environment.
 
 ## 10.3. Production configuration
@@ -103,7 +107,10 @@ instances; source/build guards запрещают возврат legacy handlers
 
 ## 10.5. Security review
 
-- [ ] Auth bypass на public metadata и route inheritance.
+- [x] Auth bypass на public metadata и route inheritance.
+      Проверены actual Nest HTTP inheritance/explicit false override/protected siblings
+      и текущий production public inventory без controller inheritance:
+      [contract](../../apps/server/tests/contract/auth-metadata-inheritance.contract.test.ts).
 - [ ] Path traversal/symlink/remote alias boundary.
 - [ ] CSRF/content-type/cookie behavior.
 - [x] WebSocket token reuse и expiry. Настоящий upgrade принимает one-time
@@ -193,12 +200,12 @@ Storage migrations должны быть backward-readable либо сопров
 
 ## Оставшиеся acceptance gates на текущем срезе
 
-- Свежие Web/Docker/Linux Electron artifacts и smoke после итоговых изменений;
-  предыдущий успешный packaged checkpoint не подтверждает текущий исходный код.
-- Upgrade с существующим изолированным DATA_DIR/volume, restart и проверка
-  согласованного rollback snapshot с конкретным выбранным старым artifact.
-  Read-only downgrade preflight и snapshot fixture уже реализованы, но не заменяют
-  эту acceptance проверку.
+- После следующих production изменений повторить artifact acceptance. Для backend
+  commit `86afe69c` свежие Web/Docker/Linux Electron artifacts уже проверены:
+  [checkpoint](artifacts/current-artifact-acceptance-checkpoint.md).
+- Private existing-volume upgrade/restart и snapshot rollback с выбранным старым
+  artifact прошли [реальную проверку](artifacts/backend-upgrade-acceptance.md).
+  Реальный operator/staging DATA_DIR и иные старые releases этим не проверены.
 - Sustained feature/event/provider/PTY workload и повторные workflows с проверкой
   файловых дескрипторов и owned child processes. Idle budgets уже действуют,
   sustained workload SLO ими не определяется.

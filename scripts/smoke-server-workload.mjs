@@ -158,7 +158,7 @@ async function terminalCycle() {
               ws.send(
                 JSON.stringify({
                   type: 'input',
-                  data: `printf '%s%s\\n' '${marker.slice(0, 12)}' '${marker.slice(12)}'; exit 0\n`,
+                  data: `printf '\\n%s%s\\n' '${marker.slice(0, 12)}' '${marker.slice(12)}'; exit 0\n`,
                 })
               );
             }

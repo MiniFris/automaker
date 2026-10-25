@@ -30,7 +30,7 @@ coverage по каждому владельцу. См.
   bounded context; зафиксировать обоснованные исключения. Само наличие большого
   файла не требует механического разделения.
 - Завершить автоматические dependency rules: framework-free domain/application,
-  public module exports, полный cycle check и ambient config за пределами
+  public module exports, provider DI cycles и ambient config за пределами
   `core`/`modules`. В частности, Local execution ещё читает process environment.
 - Сверить переходы/recovery всех перечисленных lifecycle owners, включая
   неизвестный cleanup outcome, с отдельными negative/concurrency tests.
@@ -230,7 +230,9 @@ Application services тестируются на in-memory/fake ports; adapter c
 - Нет production services с несколькими несвязанными lifecycle responsibilities.
 - Controllers обычно меньше 150 строк, application services — меньше 400 строк;
   исключения обоснованы архитектурой, а не механическим лимитом.
-- Нет circular module dependencies.
+- Нет circular module dependencies. Явный Nest import graph автоматически проверяется:
+  [audit](artifacts/nest-module-import-graph-audit.md); provider DI cycles требуют
+  самостоятельной проверки.
 - Нет framework imports в domain layer.
 - Mutation use cases имеют negative/recovery/concurrency tests.
 - Adapter contract suites работают для Local/Docker/SSH/provider variants.

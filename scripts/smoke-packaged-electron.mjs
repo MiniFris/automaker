@@ -158,7 +158,7 @@ async function terminalCommand(WebSocket, base, key, workspace) {
               socket.send(
                 JSON.stringify({
                   type: 'input',
-                  data: `printf '%s%s\\n' '${marker.slice(0, midpoint)}' '${marker.slice(midpoint)}'; exit 0\n`,
+                  data: `printf '\\n%s%s\\n' '${marker.slice(0, midpoint)}' '${marker.slice(midpoint)}'; exit 0\n`,
                 })
               );
             }

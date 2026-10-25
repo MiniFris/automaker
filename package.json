@@ -73,7 +73,7 @@
     "baseline:server": "npm run build:server && node scripts/measure-server-baseline.mjs",
     "check:server:performance": "npm run build:server && node scripts/measure-server-baseline.mjs --assert-budget",
     "test:backend:performance-budget": "node --test scripts/tests/server-performance-budget.test.mjs",
-    "test:backend:architecture": "node --test scripts/tests/server-architecture-rules.test.mjs",
+    "test:backend:architecture": "node --test scripts/tests/server-architecture-rules.test.mjs scripts/tests/server-module-graph.test.mjs",
     "preflight:backend:downgrade": "node scripts/check-backend-downgrade.mjs",
     "test:backend:downgrade": "node --test scripts/tests/backend-downgrade.test.mjs",
     "smoke:server:lifecycle": "npm run build:server && node scripts/smoke-server-lifecycle.mjs",
