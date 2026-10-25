@@ -60,7 +60,17 @@ function input() {
   };
 }
 const hostEnvironment = Object.freeze({ PATH: '/owned-tooling', OWNED_HOST: 'fixture' });
-const preparer = new AgentEnvironmentPreparer(new AgentPromptBuilder(filesystem), hostEnvironment);
+const checkpointRepository = {
+  save: async () => {},
+  load: async () => {
+    throw new Error('Unused checkpoint load');
+  },
+};
+const preparer = new AgentEnvironmentPreparer(
+  new AgentPromptBuilder(filesystem),
+  hostEnvironment,
+  checkpointRepository
+);
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.remote.mockResolvedValue(true);
@@ -136,7 +146,8 @@ describe('AgentEnvironmentPreparer', () => {
       settings,
       request.selection,
       'agent',
-      hostEnvironment
+      hostEnvironment,
+      checkpointRepository
     );
     expect(mocks.workspace).toHaveBeenCalledWith(settings, undefined, hostEnvironment);
     expect(mocks.context).toHaveBeenCalledWith(

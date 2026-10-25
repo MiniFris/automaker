@@ -2,36 +2,36 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 448,
-    "internalEdges": 1622,
+    "files": 453,
+    "internalEdges": 1664,
     "stronglyConnectedComponents": 2
   },
   "layerEdges": {
-    "core -> core": 87,
+    "core -> core": 88,
     "core -> lib": 6,
     "core -> middleware": 1,
     "core -> services": 8,
     "lib -> lib": 4,
     "lib -> services": 1,
-    "modules -> core": 213,
+    "modules -> core": 218,
     "modules -> lib": 53,
-    "modules -> modules": 389,
-    "modules -> providers": 37,
+    "modules -> modules": 399,
+    "modules -> providers": 43,
     "modules -> services": 186,
     "modules -> types": 2,
     "providers -> core": 1,
     "providers -> lib": 3,
     "providers -> modules": 1,
-    "providers -> providers": 93,
+    "providers -> providers": 94,
     "providers -> services": 26,
     "root -> core": 18,
     "root -> modules": 28,
     "root -> root": 2,
-    "services -> core": 35,
+    "services -> core": 42,
     "services -> lib": 67,
     "services -> modules": 17,
-    "services -> providers": 19,
-    "services -> services": 320,
+    "services -> providers": 24,
+    "services -> services": 327,
     "services -> types": 3,
     "tests -> lib": 2
   },
@@ -104,6 +104,7 @@
       "apps/server/src/services/gemini-usage-service.ts",
       "apps/server/src/services/ideation-service.ts",
       "apps/server/src/services/init-script-service.ts",
+      "apps/server/src/services/mcp-test-service.ts",
       "apps/server/src/services/pipeline-orchestrator.ts",
       "apps/server/src/services/pr-service.ts",
       "apps/server/src/services/terminal-service.ts",
@@ -131,7 +132,8 @@
       "apps/server/src/services/execution-environment/managed-feature-workspace.ts",
       "apps/server/src/services/execution-environment/preview-policy.compat.ts",
       "apps/server/src/services/execution-environment/ssh.ts",
-      "apps/server/src/services/gemini-usage-service.ts"
+      "apps/server/src/services/gemini-usage-service.ts",
+      "apps/server/src/services/mcp-test-service.ts"
     ],
     "processOn": [
       "apps/server/src/core/lifecycle/application-shutdown.ts",
@@ -171,7 +173,7 @@
       "apps/server/src/services/execution-environment/terminal.ts",
       "apps/server/src/services/init-script-service.ts",
       "apps/server/src/services/local-process-preflight.ts",
-      "apps/server/src/services/mcp-test-service.ts",
+      "apps/server/src/services/mcp/bounded-stdio-transport.ts",
       "apps/server/src/services/owned-local-child.ts",
       "apps/server/src/services/pr-service.ts",
       "apps/server/src/services/test-runner-service.ts",
@@ -210,6 +212,7 @@
       "apps/server/src/modules/terminal/websocket-transport.service.ts",
       "apps/server/src/modules/worktree/worktree-text.service.ts",
       "apps/server/src/providers/openai-compatible/agent-loop.ts",
+      "apps/server/src/providers/openai-compatible/checkpoint.ts",
       "apps/server/src/providers/openai-compatible/shell-tool.ts",
       "apps/server/src/providers/openai-compatible/transport.ts",
       "apps/server/src/providers/provider-execution-scope.ts",
@@ -236,6 +239,7 @@
       "apps/server/src/services/feature-state-manager.ts",
       "apps/server/src/services/local-process-preflight.ts",
       "apps/server/src/services/mcp-test-service.ts",
+      "apps/server/src/services/mcp/operation.ts",
       "apps/server/src/services/ntfy-service.ts",
       "apps/server/src/services/owned-local-child.ts",
       "apps/server/src/services/pipeline-config.repository.ts",
@@ -289,7 +293,7 @@
     "@automaker/model-resolver": 17,
     "@automaker/platform": 51,
     "@automaker/prompts": 2,
-    "@automaker/types": 152,
+    "@automaker/types": 153,
     "@automaker/utils": 115,
     "@automaker/utils/logger": 1,
     "@github/copilot-sdk": 1,
@@ -297,12 +301,15 @@
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 196,
+    "@modelcontextprotocol/sdk/shared/stdio.js": 1,
+    "@modelcontextprotocol/sdk/shared/transport.js": 2,
+    "@modelcontextprotocol/sdk/types.js": 1,
+    "@nestjs/common": 197,
     "@nestjs/core": 8,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
     "ajv": 4,
-    "child_process": 14,
+    "child_process": 13,
     "cookie": 1,
     "cookie-parser": 1,
     "cors": 1,
@@ -317,28 +324,29 @@
     "node-pty": 2,
     "node:async_hooks": 2,
     "node:buffer": 1,
-    "node:child_process": 16,
+    "node:child_process": 17,
     "node:crypto": 41,
-    "node:events": 1,
+    "node:events": 2,
     "node:fs": 12,
     "node:fs/promises": 20,
     "node:http": 8,
+    "node:module": 1,
     "node:net": 4,
     "node:os": 12,
-    "node:path": 63,
+    "node:path": 64,
     "node:perf_hooks": 25,
-    "node:stream": 6,
-    "node:stream/web": 2,
+    "node:stream": 7,
+    "node:stream/web": 3,
     "node:string_decoder": 4,
     "node:timers/promises": 6,
     "node:url": 4,
-    "node:util": 12,
+    "node:util": 13,
     "os": 11,
     "path": 34,
     "reflect-metadata": 1,
     "ssh2": 3,
     "url": 1,
-    "util": 4,
+    "util": 3,
     "vitest": 1,
     "ws": 1,
     "yaml": 1,
@@ -799,6 +807,10 @@
     },
     {
       "source": "apps/server/src/core/observability/application-metrics.ts",
+      "target": "apps/server/src/core/observability/operation-observer.ts"
+    },
+    {
+      "source": "apps/server/src/core/observability/application-metrics.ts",
       "target": "apps/server/src/core/observability/request-context.ts"
     },
     {
@@ -1068,6 +1080,10 @@
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
       "target": "apps/server/src/modules/agents/agent-service.provider.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-state.module.ts",
+      "target": "apps/server/src/modules/providers/direct-checkpoint.repository.ts"
     },
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
@@ -1439,6 +1455,14 @@
     },
     {
       "source": "apps/server/src/modules/app-spec/planning-workflow.context.ts",
+      "target": "apps/server/src/modules/providers/direct-checkpoint.repository.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/planning-workflow.context.ts",
+      "target": "apps/server/src/providers/openai-compatible/checkpoint.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/planning-workflow.context.ts",
       "target": "apps/server/src/providers/simple-query-service.ts"
     },
     {
@@ -1539,6 +1563,10 @@
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
+      "target": "apps/server/src/core/observability/application-metrics.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
       "target": "apps/server/src/core/security/index.ts"
     },
     {
@@ -1556,6 +1584,10 @@
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
       "target": "apps/server/src/modules/orchestration/feature-run-coordinator.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
+      "target": "apps/server/src/modules/providers/direct-checkpoint.repository.ts"
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
@@ -1731,6 +1763,10 @@
     },
     {
       "source": "apps/server/src/modules/backlog-plan/generate-plan.workflow.ts",
+      "target": "apps/server/src/providers/openai-compatible/checkpoint.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/generate-plan.workflow.ts",
       "target": "apps/server/src/providers/openai-compatible/execution.ts"
     },
     {
@@ -1767,7 +1803,15 @@
     },
     {
       "source": "apps/server/src/modules/backlog-plan/native-backlog-plan.workflow.ts",
+      "target": "apps/server/src/modules/providers/direct-checkpoint.repository.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/native-backlog-plan.workflow.ts",
       "target": "apps/server/src/modules/providers/provider-registry.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/native-backlog-plan.workflow.ts",
+      "target": "apps/server/src/providers/openai-compatible/checkpoint.ts"
     },
     {
       "source": "apps/server/src/modules/backlog-plan/native-backlog-plan.workflow.ts",
@@ -1843,7 +1887,15 @@
     },
     {
       "source": "apps/server/src/modules/context/simple-context-query.adapter.ts",
+      "target": "apps/server/src/modules/providers/direct-checkpoint.repository.ts"
+    },
+    {
+      "source": "apps/server/src/modules/context/simple-context-query.adapter.ts",
       "target": "apps/server/src/modules/providers/provider-registry.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/context/simple-context-query.adapter.ts",
+      "target": "apps/server/src/providers/openai-compatible/checkpoint.ts"
     },
     {
       "source": "apps/server/src/modules/context/simple-context-query.adapter.ts",
@@ -2727,7 +2779,15 @@
     },
     {
       "source": "apps/server/src/modules/github/issue-validation.service.ts",
+      "target": "apps/server/src/modules/providers/direct-checkpoint.repository.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/issue-validation.service.ts",
       "target": "apps/server/src/modules/providers/provider-registry.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/issue-validation.service.ts",
+      "target": "apps/server/src/providers/openai-compatible/checkpoint.ts"
     },
     {
       "source": "apps/server/src/modules/github/issue-validation.service.ts",
@@ -2839,6 +2899,10 @@
     },
     {
       "source": "apps/server/src/modules/ideation/ideation.module.ts",
+      "target": "apps/server/src/modules/providers/direct-checkpoint.repository.ts"
+    },
+    {
+      "source": "apps/server/src/modules/ideation/ideation.module.ts",
       "target": "apps/server/src/modules/providers/provider-registry.service.ts"
     },
     {
@@ -2872,6 +2936,14 @@
     {
       "source": "apps/server/src/modules/mcp/mcp.controller.ts",
       "target": "apps/server/src/modules/mcp/mcp.schemas.ts"
+    },
+    {
+      "source": "apps/server/src/modules/mcp/mcp.module.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/mcp/mcp.module.ts",
+      "target": "apps/server/src/core/observability/application-metrics.ts"
     },
     {
       "source": "apps/server/src/modules/mcp/mcp.module.ts",
@@ -3155,6 +3227,10 @@
     },
     {
       "source": "apps/server/src/modules/prompt-enhancement/prompt-enhancement.module.ts",
+      "target": "apps/server/src/modules/providers/direct-checkpoint.repository.ts"
+    },
+    {
+      "source": "apps/server/src/modules/prompt-enhancement/prompt-enhancement.module.ts",
       "target": "apps/server/src/modules/providers/provider-registry.service.ts"
     },
     {
@@ -3324,6 +3400,22 @@
     {
       "source": "apps/server/src/modules/providers/cursor-permissions.service.ts",
       "target": "apps/server/src/modules/providers/provider-connection.repository.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/direct-checkpoint.repository.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/direct-checkpoint.repository.ts",
+      "target": "apps/server/src/core/security/security.module.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/direct-checkpoint.repository.ts",
+      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/direct-checkpoint.repository.ts",
+      "target": "apps/server/src/providers/openai-compatible/checkpoint.ts"
     },
     {
       "source": "apps/server/src/modules/providers/direct-workspace-access.ts",
@@ -3608,6 +3700,10 @@
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
       "target": "apps/server/src/modules/providers/cursor-permissions.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/modules/providers/direct-checkpoint.repository.ts"
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
@@ -4975,6 +5071,10 @@
     },
     {
       "source": "apps/server/src/providers/simple-query-service.ts",
+      "target": "apps/server/src/providers/openai-compatible/checkpoint.ts"
+    },
+    {
+      "source": "apps/server/src/providers/simple-query-service.ts",
       "target": "apps/server/src/providers/openai-compatible/execution.ts"
     },
     {
@@ -4992,6 +5092,10 @@
     {
       "source": "apps/server/src/services/agent-executor.ts",
       "target": "apps/server/src/lib/settings-helpers.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent-executor.ts",
+      "target": "apps/server/src/providers/openai-compatible/checkpoint.ts"
     },
     {
       "source": "apps/server/src/services/agent-executor.ts",
@@ -5140,6 +5244,10 @@
     {
       "source": "apps/server/src/services/agent/agent-environment-preparer.ts",
       "target": "apps/server/src/providers/environment-execution.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent/agent-environment-preparer.ts",
+      "target": "apps/server/src/providers/openai-compatible/checkpoint.ts"
     },
     {
       "source": "apps/server/src/services/agent/agent-environment-preparer.ts",
@@ -5471,6 +5579,10 @@
     },
     {
       "source": "apps/server/src/services/auto-mode/compat.ts",
+      "target": "apps/server/src/core/observability/operation-observer.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/compat.ts",
       "target": "apps/server/src/lib/events.ts"
     },
     {
@@ -5488,6 +5600,10 @@
     {
       "source": "apps/server/src/services/auto-mode/compat.ts",
       "target": "apps/server/src/modules/providers/tool-policy.service.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/compat.ts",
+      "target": "apps/server/src/providers/openai-compatible/checkpoint.ts"
     },
     {
       "source": "apps/server/src/services/auto-mode/compat.ts",
@@ -5528,6 +5644,10 @@
     {
       "source": "apps/server/src/services/auto-mode/facade.ts",
       "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/facade.ts",
+      "target": "apps/server/src/core/observability/operation-observer.ts"
     },
     {
       "source": "apps/server/src/services/auto-mode/facade.ts",
@@ -5675,6 +5795,10 @@
     },
     {
       "source": "apps/server/src/services/auto-mode/types.ts",
+      "target": "apps/server/src/core/observability/operation-observer.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/types.ts",
       "target": "apps/server/src/lib/events.ts"
     },
     {
@@ -5684,6 +5808,10 @@
     {
       "source": "apps/server/src/services/auto-mode/types.ts",
       "target": "apps/server/src/modules/providers/tool-policy.service.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/types.ts",
+      "target": "apps/server/src/providers/openai-compatible/checkpoint.ts"
     },
     {
       "source": "apps/server/src/services/auto-mode/types.ts",
@@ -6435,6 +6563,10 @@
     },
     {
       "source": "apps/server/src/services/ideation-service.ts",
+      "target": "apps/server/src/providers/openai-compatible/checkpoint.ts"
+    },
+    {
+      "source": "apps/server/src/services/ideation-service.ts",
       "target": "apps/server/src/providers/openai-compatible/execution.ts"
     },
     {
@@ -6475,7 +6607,47 @@
     },
     {
       "source": "apps/server/src/services/mcp-test-service.ts",
+      "target": "apps/server/src/core/observability/operation-observer.ts"
+    },
+    {
+      "source": "apps/server/src/services/mcp-test-service.ts",
+      "target": "apps/server/src/core/platform/owned-local-child.runtime.ts"
+    },
+    {
+      "source": "apps/server/src/services/mcp-test-service.ts",
+      "target": "apps/server/src/services/mcp/bounded-fetch.ts"
+    },
+    {
+      "source": "apps/server/src/services/mcp-test-service.ts",
+      "target": "apps/server/src/services/mcp/bounded-stdio-transport.ts"
+    },
+    {
+      "source": "apps/server/src/services/mcp-test-service.ts",
+      "target": "apps/server/src/services/mcp/operation.ts"
+    },
+    {
+      "source": "apps/server/src/services/mcp-test-service.ts",
       "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/services/mcp/bounded-fetch.ts",
+      "target": "apps/server/src/services/mcp/operation.ts"
+    },
+    {
+      "source": "apps/server/src/services/mcp/bounded-stdio-transport.ts",
+      "target": "apps/server/src/core/platform/owned-local-child.runtime.ts"
+    },
+    {
+      "source": "apps/server/src/services/mcp/bounded-stdio-transport.ts",
+      "target": "apps/server/src/services/execution-environment/local.ts"
+    },
+    {
+      "source": "apps/server/src/services/mcp/bounded-stdio-transport.ts",
+      "target": "apps/server/src/services/execution-environment/local.ts"
+    },
+    {
+      "source": "apps/server/src/services/mcp/bounded-stdio-transport.ts",
+      "target": "apps/server/src/services/mcp/operation.ts"
     },
     {
       "source": "apps/server/src/services/merge-service.ts",
@@ -6504,6 +6676,10 @@
     {
       "source": "apps/server/src/services/pipeline-config.repository.ts",
       "target": "apps/server/src/lib/secure-fs.ts"
+    },
+    {
+      "source": "apps/server/src/services/pipeline-orchestrator.ts",
+      "target": "apps/server/src/core/observability/operation-observer.ts"
     },
     {
       "source": "apps/server/src/services/pipeline-orchestrator.ts",

@@ -1,3 +1,4 @@
+import type { AgentCheckpointRepository } from '../providers/openai-compatible/checkpoint.js';
 /**
  * AgentExecutor - Core agent execution engine with streaming support
  */
@@ -82,7 +83,8 @@ export class AgentExecutor {
     private planApprovalService: PlanApprovalService,
     private settingsService: SettingsService | null = null,
     private readonly filesystem: ExecutionFilesystem,
-    hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
+    hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env,
+    private readonly checkpointRepository?: AgentCheckpointRepository
   ) {
     this.hostEnvironment = captureNativeLocalEnvironment(hostEnvironment);
   }
@@ -202,7 +204,8 @@ export class AgentExecutor {
         feature: { targetBranch: options.branchName },
       },
       'agent',
-      this.hostEnvironment
+      this.hostEnvironment,
+      this.checkpointRepository
     );
     const featureDirForOutput = getFeatureDir(projectPath, featureId);
     const outputPath = path.join(featureDirForOutput, 'agent-output.md');
@@ -968,7 +971,8 @@ export class AgentExecutor {
         feature: { targetBranch: o.branchName },
       },
       'agent',
-      this.hostEnvironment
+      this.hostEnvironment,
+      this.checkpointRepository
     );
   }
 

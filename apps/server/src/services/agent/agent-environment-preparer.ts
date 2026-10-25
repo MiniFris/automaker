@@ -1,3 +1,4 @@
+import type { AgentCheckpointRepository } from '../../providers/openai-compatible/checkpoint.js';
 import type { ExecutionEnvironmentBinding } from '@automaker/types';
 import { hasRemoteEnvironment } from '../../providers/environment-execution.js';
 import { prepareDirectExecution } from '../../providers/openai-compatible/execution.js';
@@ -12,7 +13,8 @@ export class AgentEnvironmentPreparer {
   private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>;
   constructor(
     private readonly prompts: AgentPromptBuilder,
-    hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
+    hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env,
+    private readonly checkpointRepository?: AgentCheckpointRepository
   ) {
     this.hostEnvironment = Object.freeze({ ...hostEnvironment });
   }
@@ -48,7 +50,8 @@ export class AgentEnvironmentPreparer {
       input.settings,
       input.selection,
       'agent',
-      this.hostEnvironment
+      this.hostEnvironment,
+      this.checkpointRepository
     );
     // Persist a newly acquired binding even if cancellation arrived while binding.
     // A restart must not silently select a different environment for this chat.

@@ -1,3 +1,4 @@
+import type { AgentCheckpointRepository } from '../../providers/openai-compatible/checkpoint.js';
 /**
  * Generate backlog plan using Claude AI
  *
@@ -163,7 +164,8 @@ export async function generateBacklogPlan(
   providerId: string | undefined,
   providerRegistry: ProviderRegistry,
   context: PlanningRunContext,
-  hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
+  hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env,
+  checkpointRepository?: AgentCheckpointRepository
 ): Promise<BacklogPlanResult> {
   context.check();
   const featureLoader = context.features;
@@ -360,7 +362,8 @@ ${userPrompt}`;
       settingsService,
       { model: effectiveModel, providerId },
       'text',
-      hostEnvironment
+      hostEnvironment,
+      checkpointRepository
     );
 
     let responseText = '';

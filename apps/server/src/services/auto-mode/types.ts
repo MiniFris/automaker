@@ -1,3 +1,5 @@
+import type { AgentCheckpointRepository } from '../../providers/openai-compatible/checkpoint.js';
+import type { ObserveOperation } from '../../core/observability/operation-observer.js';
 /**
  * Facade Types - Type definitions for AutoModeServiceFacade
  *
@@ -56,6 +58,9 @@ export interface SharedServices {
  * Options for creating an AutoModeServiceFacade instance
  */
 export interface FacadeOptions {
+  observeOperation?: ObserveOperation;
+  /** Trusted application checkpoint storage, never a wire option. */
+  checkpointRepository?: AgentCheckpointRepository;
   /** Native Direct execution uses the owning application filesystem policy. */
   directWorkspaceAccess?: WorkspaceAccessPolicy;
   /** Native composition supplies a captured, sanitized Local child environment. */

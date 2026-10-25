@@ -1,3 +1,5 @@
+import { DirectCheckpointRepository } from '../providers/direct-checkpoint.repository.js';
+import type { AgentCheckpointRepository } from '../../providers/openai-compatible/checkpoint.js';
 import { HOST_ENVIRONMENT } from '../../core/config/index.js';
 import { Inject, Injectable } from '@nestjs/common';
 import {
@@ -12,10 +14,12 @@ import { ProviderRegistry } from '../providers/provider-registry.service.js';
 export class SimpleContextQueryAdapter implements ContextQueryPort {
   constructor(
     @Inject(ProviderRegistry) private readonly providers: ProviderRegistry,
-    @Inject(HOST_ENVIRONMENT) private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>
+    @Inject(HOST_ENVIRONMENT) private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>,
+    @Inject(DirectCheckpointRepository)
+    private readonly checkpointRepository?: AgentCheckpointRepository
   ) {}
 
   execute(options: SimpleQueryOptions): Promise<SimpleQueryResult> {
-    return simpleQuery(options, this.providers, this.hostEnvironment);
+    return simpleQuery(options, this.providers, this.hostEnvironment, this.checkpointRepository);
   }
 }

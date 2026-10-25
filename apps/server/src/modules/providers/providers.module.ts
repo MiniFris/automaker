@@ -1,3 +1,4 @@
+import { DirectCheckpointRepository } from './direct-checkpoint.repository.js';
 import { DirectWorkspaceAccess } from './direct-workspace-access.js';
 import { type DynamicModule, Global, Module } from '@nestjs/common';
 import { HOST_ENVIRONMENT, RuntimePathsService } from '../../core/config/index.js';
@@ -69,6 +70,7 @@ import {
 @Module({
   controllers: [ProviderUsageController, SetupController],
   providers: [
+    DirectCheckpointRepository,
     DirectWorkspaceAccess,
     ProviderConnectionRepository,
     ProviderRegistry,
@@ -142,6 +144,7 @@ import {
     { provide: SetupStatusRuntime, useClass: NodeSetupStatusRuntime },
   ],
   exports: [
+    DirectCheckpointRepository,
     DirectWorkspaceAccess,
     ProviderRegistry,
     ProviderConnectionRepository,

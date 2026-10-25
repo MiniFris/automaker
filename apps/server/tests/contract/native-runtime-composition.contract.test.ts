@@ -100,7 +100,7 @@ it('owns native runtimes once, applies per-app terminal config and preserves ord
       cleanTerminal = terminal.cleanup.bind(terminal),
       cleanTests = tests.cleanup.bind(tests),
       cleanPreview = preview.stopAll.bind(preview),
-      closeProviders = providers.onApplicationShutdown.bind(providers);
+      closeProviders = providers.close.bind(providers);
     const filesystem = first.app.get(SECURE_FILESYSTEM),
       closeFilesystem = filesystem.close.bind(filesystem);
     spies.push(
@@ -132,11 +132,17 @@ it('owns native runtimes once, applies per-app terminal config and preserves ord
         order.push('preview');
         return cleanPreview();
       }),
-      vi.spyOn(providers, 'onApplicationShutdown').mockImplementation(() => {
+      vi.spyOn(providers, 'close').mockImplementation(() => {
         order.push('providers');
         return closeProviders();
       })
     );
+    const providerHook = vi.spyOn(providers, 'onApplicationShutdown');
+    const scopeDisposal = vi.spyOn(
+      (providers as unknown as { executions: { dispose(): Promise<void> } }).executions,
+      'dispose'
+    );
+    spies.push(providerHook, scopeDisposal);
     const otherCleanup = vi.spyOn(second.app.get(TerminalService), 'cleanup');
     spies.push(otherCleanup);
     await first.app.close();
@@ -147,9 +153,11 @@ it('owns native runtimes once, applies per-app terminal config and preserves ord
       'terminal',
       'tests',
       'preview',
-      'filesystem',
       'providers',
+      'filesystem',
     ]);
+    expect(providerHook).toHaveBeenCalledOnce();
+    expect(scopeDisposal).toHaveBeenCalledOnce();
     expect(otherCleanup).not.toHaveBeenCalled();
     expect(second.app.get(TerminalService).getMaxSessions()).toBe(5);
     await first.app.close();
@@ -160,8 +168,8 @@ it('owns native runtimes once, applies per-app terminal config and preserves ord
       'terminal',
       'tests',
       'preview',
-      'filesystem',
       'providers',
+      'filesystem',
     ]);
   } finally {
     for (const spy of spies) spy.mockRestore();

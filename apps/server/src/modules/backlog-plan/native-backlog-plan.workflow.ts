@@ -1,3 +1,5 @@
+import { DirectCheckpointRepository } from '../providers/direct-checkpoint.repository.js';
+import type { AgentCheckpointRepository } from '../../providers/openai-compatible/checkpoint.js';
 import { HOST_ENVIRONMENT } from '../../core/config/index.js';
 import { Inject, Injectable } from '@nestjs/common';
 import { APPLICATION_EVENTS } from '../../core/eventing/application-events.js';
@@ -16,7 +18,9 @@ export class NativeBacklogPlanWorkflow implements BacklogPlanWorkflow {
     @Inject(SettingsService) private readonly settings: SettingsService,
     @Inject(ProviderRegistry) private readonly providers: ProviderRegistry,
     @Inject(PlanningWorkflowContext) private readonly context: PlanningWorkflowContext,
-    @Inject(HOST_ENVIRONMENT) private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>
+    @Inject(HOST_ENVIRONMENT) private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>,
+    @Inject(DirectCheckpointRepository)
+    private readonly checkpointRepository?: AgentCheckpointRepository
   ) {}
   generate(input: BacklogGenerateRequest, controller: AbortController) {
     const run = this.context.operation(input.projectPath, controller.signal);
@@ -31,7 +35,8 @@ export class NativeBacklogPlanWorkflow implements BacklogPlanWorkflow {
       input.providerId,
       this.providers,
       run,
-      this.hostEnvironment
+      this.hostEnvironment,
+      this.checkpointRepository
     );
   }
 }

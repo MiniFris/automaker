@@ -1,3 +1,7 @@
+import {
+  unobservedOperation,
+  type ObserveOperation,
+} from '../../core/observability/operation-observer.js';
 /**
  * AutoModeServiceFacade - Clean interface for auto-mode functionality
  *
@@ -93,7 +97,8 @@ export class AutoModeServiceFacade {
     private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv> = Object.freeze({
       ...process.env,
     }),
-    private readonly ownsFeatureStateManager = true
+    private readonly ownsFeatureStateManager = true,
+    private readonly observeOperation: ObserveOperation = unobservedOperation
   ) {}
 
   /**
@@ -173,6 +178,7 @@ export class AutoModeServiceFacade {
    * @param options - Configuration options including events, settingsService, featureLoader
    */
   static create(projectPath: string, options: FacadeOptions): AutoModeServiceFacade {
+    const observeOperation = options.observeOperation ?? unobservedOperation;
     const hostEnvironment = Object.freeze({ ...(options.hostEnvironment ?? process.env) });
     const {
       events,
@@ -208,7 +214,8 @@ export class AutoModeServiceFacade {
       planApprovalService,
       settingsService,
       filesystem,
-      hostEnvironment
+      hostEnvironment,
+      options.checkpointRepository
     );
     const testRunnerService = new TestRunnerService();
 
@@ -278,167 +285,179 @@ export class AutoModeServiceFacade {
           status?: string; // Feature status for pipeline summary check
           [key: string]: unknown;
         }
-      ): Promise<void> => {
-        const resolvedModel = resolveModelString(model, DEFAULT_MODELS.claude);
-        const remoteCLI =
-          (isRemoteCliModel(resolvedModel) || isRemoteSdkModel(resolvedModel)) &&
-          settingsService &&
-          (await hasRemoteEnvironment(
-            settingsService,
-            pPath,
-            `feature:${pPath}:${featureId}`,
-            hostEnvironment
-          ));
-        const provider = remoteCLI
-          ? providerRegistry.providerForModel(resolvedModel, { throwOnDisconnected: false })
-          : providerRegistry.providerForModel(resolvedModel);
-        const effectiveBareModel = stripProviderPrefix(resolvedModel);
+      ): Promise<void> =>
+        observeOperation(
+          'feature_execution',
+          async () => {
+            const resolvedModel = resolveModelString(model, DEFAULT_MODELS.claude);
+            const remoteCLI =
+              (isRemoteCliModel(resolvedModel) || isRemoteSdkModel(resolvedModel)) &&
+              settingsService &&
+              (await hasRemoteEnvironment(
+                settingsService,
+                pPath,
+                `feature:${pPath}:${featureId}`,
+                hostEnvironment
+              ));
+            const provider = remoteCLI
+              ? providerRegistry.providerForModel(resolvedModel, { throwOnDisconnected: false })
+              : providerRegistry.providerForModel(resolvedModel);
+            const effectiveBareModel = stripProviderPrefix(resolvedModel);
 
-        // Resolve custom provider (GLM, MiniMax, etc.) for baseUrl and credentials
-        let claudeCompatibleProvider:
-          | import('@automaker/types').ClaudeCompatibleProvider
-          | undefined;
-        let credentials: import('@automaker/types').Credentials | undefined;
-        let providerResolvedModel: string | undefined;
+            // Resolve custom provider (GLM, MiniMax, etc.) for baseUrl and credentials
+            let claudeCompatibleProvider:
+              | import('@automaker/types').ClaudeCompatibleProvider
+              | undefined;
+            let credentials: import('@automaker/types').Credentials | undefined;
+            let providerResolvedModel: string | undefined;
 
-        if (settingsService) {
-          const providerId = opts?.providerId as string | undefined;
-          const result = await resolveProviderContext(
-            settingsService,
-            resolvedModel,
-            providerId,
-            '[AutoModeFacade]'
-          );
-          claudeCompatibleProvider = result.provider;
-          credentials = result.credentials;
-          providerResolvedModel = result.resolvedModel;
-        }
-
-        // Build sdkOptions with proper maxTurns and allowedTools for auto-mode.
-        // Without this, maxTurns would be undefined, causing providers to use their
-        // internal defaults which may be much lower than intended (e.g., Codex CLI's
-        // default turn limit can cause feature runs to stop prematurely).
-        const autoLoadClaudeMd = opts?.autoLoadClaudeMd ?? false;
-        const useClaudeCodeSystemPrompt = opts?.useClaudeCodeSystemPrompt ?? true;
-        let mcpServers: Record<string, unknown> | undefined;
-        try {
-          if (settingsService) {
-            const servers = await getMCPServersFromSettings(settingsService, '[AutoModeFacade]');
-            if (Object.keys(servers).length > 0) {
-              mcpServers = servers;
+            if (settingsService) {
+              const providerId = opts?.providerId as string | undefined;
+              const result = await resolveProviderContext(
+                settingsService,
+                resolvedModel,
+                providerId,
+                '[AutoModeFacade]'
+              );
+              claudeCompatibleProvider = result.provider;
+              credentials = result.credentials;
+              providerResolvedModel = result.resolvedModel;
             }
-          }
-        } catch {
-          // MCP servers are optional - continue without them
-        }
 
-        // Read user-configured max turns from settings
-        const userMaxTurns = await getDefaultMaxTurnsSetting(settingsService, '[AutoModeFacade]');
-
-        const sdkOpts = createAutoModeOptions({
-          cwd: workDir,
-          model: providerResolvedModel || resolvedModel,
-          systemPrompt: opts?.systemPrompt,
-          abortController,
-          autoLoadClaudeMd,
-          useClaudeCodeSystemPrompt,
-          thinkingLevel: opts?.thinkingLevel,
-          maxTurns: userMaxTurns,
-          validateWorkingDirectory:
-            typeof opts?.boundTargetCwd === 'string'
-              ? (cwd) => {
-                  if (cwd !== opts.boundTargetCwd || cwd !== workDir)
-                    throw new Error('Feature execution target changed.');
+            // Build sdkOptions with proper maxTurns and allowedTools for auto-mode.
+            // Without this, maxTurns would be undefined, causing providers to use their
+            // internal defaults which may be much lower than intended (e.g., Codex CLI's
+            // default turn limit can cause feature runs to stop prematurely).
+            const autoLoadClaudeMd = opts?.autoLoadClaudeMd ?? false;
+            const useClaudeCodeSystemPrompt = opts?.useClaudeCodeSystemPrompt ?? true;
+            let mcpServers: Record<string, unknown> | undefined;
+            try {
+              if (settingsService) {
+                const servers = await getMCPServersFromSettings(
+                  settingsService,
+                  '[AutoModeFacade]'
+                );
+                if (Object.keys(servers).length > 0) {
+                  mcpServers = servers;
                 }
-              : options.validateWorkingDirectory,
-          mcpServers: mcpServers as
-            | Record<string, import('@automaker/types').McpServerConfig>
-            | undefined,
-        });
-
-        if (!sdkOpts) {
-          logger.error(
-            `[createRunAgentFn] sdkOpts is UNDEFINED! createAutoModeOptions type: ${typeof createAutoModeOptions}`
-          );
-        }
-
-        logger.info(
-          `[createRunAgentFn] Feature ${featureId}: model=${resolvedModel} (resolved=${providerResolvedModel || resolvedModel}), ` +
-            `maxTurns=${sdkOpts.maxTurns}, allowedTools=${(sdkOpts.allowedTools as string[])?.length ?? 'default'}, ` +
-            `provider=${provider.getName()}`
-        );
-
-        const allowedTools = toolPolicy
-          ? toolPolicy.resolve({
-              requested: sdkOpts.allowedTools as string[] | undefined,
-              readOnly:
-                opts?.planningMode !== undefined &&
-                opts.planningMode !== 'skip' &&
-                opts.requirePlanApproval === true,
-              providerSupportsTools: claudeCompatibleProvider
-                ? provider.getCapabilities().tools
-                : providerRegistry.modelCapabilities(resolvedModel).tools,
-            })
-          : (sdkOpts.allowedTools as string[] | undefined);
-
-        await agentExecutor.execute(
-          {
-            runPort: opts?.runPort as
-              | import('../agent-executor-types.js').FeatureRunPort
-              | undefined,
-            workDir,
-            featureId,
-            prompt,
-            projectPath: pPath,
-            abortController,
-            imagePaths,
-            model: resolvedModel,
-            providerId: opts?.providerId as string | undefined,
-            planningMode: opts?.planningMode as PlanningMode | undefined,
-            requirePlanApproval: opts?.requirePlanApproval as boolean | undefined,
-            previousContent: opts?.previousContent as string | undefined,
-            systemPrompt: opts?.systemPrompt as string | undefined,
-            autoLoadClaudeMd: opts?.autoLoadClaudeMd as boolean | undefined,
-            useClaudeCodeSystemPrompt,
-            thinkingLevel: opts?.thinkingLevel as ThinkingLevel | undefined,
-            reasoningEffort: opts?.reasoningEffort as ReasoningEffort | undefined,
-            branchName: opts?.branchName as string | null | undefined,
-            status: opts?.status as string | undefined,
-            provider,
-            effectiveBareModel,
-            credentials,
-            claudeCompatibleProvider,
-            mcpServers,
-            sdkOptions: {
-              maxTurns: sdkOpts.maxTurns,
-              allowedTools,
-              systemPrompt: sdkOpts.systemPrompt,
-              settingSources: sdkOpts.settingSources as
-                | Array<'user' | 'project' | 'local'>
-                | undefined,
-            },
-          },
-          {
-            waitForApproval: (fId, projPath, ticket) =>
-              planApprovalService.waitForApproval(fId, projPath, ticket),
-            saveFeatureSummary: (projPath, fId, summary) =>
-              featureStateManager.saveFeatureSummary(projPath, fId, summary),
-            updateFeatureSummary: (projPath, fId, summary) =>
-              featureStateManager.saveFeatureSummary(projPath, fId, summary),
-            buildTaskPrompt: (task, allTasks, taskIndex, _planContent, template, feedback) => {
-              let taskPrompt = template
-                .replace(/\{\{taskName\}\}/g, task.description || `Task ${task.id}`)
-                .replace(/\{\{taskIndex\}\}/g, String(taskIndex + 1))
-                .replace(/\{\{totalTasks\}\}/g, String(allTasks.length))
-                .replace(/\{\{taskDescription\}\}/g, task.description || `Task ${task.id}`);
-              if (feedback) {
-                taskPrompt = taskPrompt.replace(/\{\{userFeedback\}\}/g, feedback);
               }
-              return taskPrompt;
-            },
-          }
+            } catch {
+              // MCP servers are optional - continue without them
+            }
+
+            // Read user-configured max turns from settings
+            const userMaxTurns = await getDefaultMaxTurnsSetting(
+              settingsService,
+              '[AutoModeFacade]'
+            );
+
+            const sdkOpts = createAutoModeOptions({
+              cwd: workDir,
+              model: providerResolvedModel || resolvedModel,
+              systemPrompt: opts?.systemPrompt,
+              abortController,
+              autoLoadClaudeMd,
+              useClaudeCodeSystemPrompt,
+              thinkingLevel: opts?.thinkingLevel,
+              maxTurns: userMaxTurns,
+              validateWorkingDirectory:
+                typeof opts?.boundTargetCwd === 'string'
+                  ? (cwd) => {
+                      if (cwd !== opts.boundTargetCwd || cwd !== workDir)
+                        throw new Error('Feature execution target changed.');
+                    }
+                  : options.validateWorkingDirectory,
+              mcpServers: mcpServers as
+                | Record<string, import('@automaker/types').McpServerConfig>
+                | undefined,
+            });
+
+            if (!sdkOpts) {
+              logger.error(
+                `[createRunAgentFn] sdkOpts is UNDEFINED! createAutoModeOptions type: ${typeof createAutoModeOptions}`
+              );
+            }
+
+            logger.info(
+              `[createRunAgentFn] Feature ${featureId}: model=${resolvedModel} (resolved=${providerResolvedModel || resolvedModel}), ` +
+                `maxTurns=${sdkOpts.maxTurns}, allowedTools=${(sdkOpts.allowedTools as string[])?.length ?? 'default'}, ` +
+                `provider=${provider.getName()}`
+            );
+
+            const allowedTools = toolPolicy
+              ? toolPolicy.resolve({
+                  requested: sdkOpts.allowedTools as string[] | undefined,
+                  readOnly:
+                    opts?.planningMode !== undefined &&
+                    opts.planningMode !== 'skip' &&
+                    opts.requirePlanApproval === true,
+                  providerSupportsTools: claudeCompatibleProvider
+                    ? provider.getCapabilities().tools
+                    : providerRegistry.modelCapabilities(resolvedModel).tools,
+                })
+              : (sdkOpts.allowedTools as string[] | undefined);
+
+            await agentExecutor.execute(
+              {
+                runPort: opts?.runPort as
+                  | import('../agent-executor-types.js').FeatureRunPort
+                  | undefined,
+                workDir,
+                featureId,
+                prompt,
+                projectPath: pPath,
+                abortController,
+                imagePaths,
+                model: resolvedModel,
+                providerId: opts?.providerId as string | undefined,
+                planningMode: opts?.planningMode as PlanningMode | undefined,
+                requirePlanApproval: opts?.requirePlanApproval as boolean | undefined,
+                previousContent: opts?.previousContent as string | undefined,
+                systemPrompt: opts?.systemPrompt as string | undefined,
+                autoLoadClaudeMd: opts?.autoLoadClaudeMd as boolean | undefined,
+                useClaudeCodeSystemPrompt,
+                thinkingLevel: opts?.thinkingLevel as ThinkingLevel | undefined,
+                reasoningEffort: opts?.reasoningEffort as ReasoningEffort | undefined,
+                branchName: opts?.branchName as string | null | undefined,
+                status: opts?.status as string | undefined,
+                provider,
+                effectiveBareModel,
+                credentials,
+                claudeCompatibleProvider,
+                mcpServers,
+                sdkOptions: {
+                  maxTurns: sdkOpts.maxTurns,
+                  allowedTools,
+                  systemPrompt: sdkOpts.systemPrompt,
+                  settingSources: sdkOpts.settingSources as
+                    | Array<'user' | 'project' | 'local'>
+                    | undefined,
+                },
+              },
+              {
+                waitForApproval: (fId, projPath, ticket) =>
+                  planApprovalService.waitForApproval(fId, projPath, ticket),
+                saveFeatureSummary: (projPath, fId, summary) =>
+                  featureStateManager.saveFeatureSummary(projPath, fId, summary),
+                updateFeatureSummary: (projPath, fId, summary) =>
+                  featureStateManager.saveFeatureSummary(projPath, fId, summary),
+                buildTaskPrompt: (task, allTasks, taskIndex, _planContent, template, feedback) => {
+                  let taskPrompt = template
+                    .replace(/\{\{taskName\}\}/g, task.description || `Task ${task.id}`)
+                    .replace(/\{\{taskIndex\}\}/g, String(taskIndex + 1))
+                    .replace(/\{\{totalTasks\}\}/g, String(allTasks.length))
+                    .replace(/\{\{taskDescription\}\}/g, task.description || `Task ${task.id}`);
+                  if (feedback) {
+                    taskPrompt = taskPrompt.replace(/\{\{userFeedback\}\}/g, feedback);
+                  }
+                  return taskPrompt;
+                },
+              }
+            );
+          },
+          { featureId },
+          abortController.signal
         );
-      };
 
     // PipelineOrchestrator - runAgentFn delegates to AgentExecutor via shared helper
     const pipelineOrchestrator = new PipelineOrchestrator(
@@ -461,7 +480,8 @@ export class AutoModeServiceFacade {
       filesystem,
       options.validateWorkingDirectory,
       hostEnvironment,
-      options.directWorkspaceAccess
+      options.directWorkspaceAccess,
+      observeOperation
     );
 
     // AutoLoopCoordinator - ALWAYS create new with proper execution callbacks
@@ -634,7 +654,8 @@ export class AutoModeServiceFacade {
       filesystem,
       options.validateWorkingDirectory,
       hostEnvironment,
-      !sharedServices?.featureStateManager
+      !sharedServices?.featureStateManager,
+      observeOperation
     );
 
     return facadeInstance;
@@ -927,11 +948,18 @@ export class AutoModeServiceFacade {
         port.assertCurrent();
         signal.throwIfAborted();
         try {
-          const result = await environment.exec(command, signal, {
-            timeoutMs: timeout,
-            maxOutputBytes: 1_048_576,
-            windowsShell: 'cmd',
-          });
+          const result = await this.observeOperation(
+            'execution_command',
+            () =>
+              environment.exec(command, signal, {
+                timeoutMs: timeout,
+                maxOutputBytes: 1_048_576,
+                windowsShell: 'cmd',
+              }),
+            { featureId, executionType: environment.type },
+            signal,
+            (value) => (signal.aborted ? 'cancelled' : value.exitCode === 0 ? 'completed' : 'error')
+          );
           port.assertCurrent();
           if (result.exitCode !== 0) {
             allPassed = false;

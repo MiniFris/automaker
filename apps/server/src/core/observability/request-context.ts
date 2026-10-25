@@ -8,11 +8,23 @@ import { ApplicationLoggingPolicy } from './logging-policy.js';
 import { METRICS, type Metrics } from './metrics.js';
 
 const logger = createLogger('HTTP');
-const storage = new AsyncLocalStorage<{ correlationId: string }>();
+const storage = new AsyncLocalStorage<{ correlationId: string; operationId?: string }>();
 const SAFE_ID = /^[A-Za-z0-9._:-]{1,128}$/;
 
 export function getCorrelationId(): string | undefined {
   return storage.getStore()?.correlationId;
+}
+
+export function getOperationId(): string | undefined {
+  return storage.getStore()?.operationId;
+}
+
+export function runWithOperationContext<T>(
+  correlationId: string,
+  operationId: string,
+  callback: () => T
+): T {
+  return storage.run({ correlationId, operationId }, callback);
 }
 
 export function createCorrelationId(supplied?: string): string {

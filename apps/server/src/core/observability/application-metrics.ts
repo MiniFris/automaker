@@ -3,7 +3,8 @@ import { performance } from 'node:perf_hooks';
 import { randomUUID } from 'node:crypto';
 import { createLogger } from '@automaker/utils';
 import type { Metrics } from './metrics.js';
-import { getCorrelationId, runWithCorrelationContext } from './request-context.js';
+import { getCorrelationId, getOperationId, runWithOperationContext } from './request-context.js';
+import type { OperationIdentity, OperationKind, OperationOutcome } from './operation-observer.js';
 
 const logger = createLogger('Operations');
 const LIMIT = 2048;
@@ -50,29 +51,57 @@ export class ApplicationMetrics implements Metrics {
   }
 
   async operation<T>(
-    kind: 'startup' | 'agent_execution' | 'agent_mutation',
+    kind: OperationKind,
     task: () => Promise<T>,
-    sessionId?: string,
-    signal?: AbortSignal
+    identity?: string | OperationIdentity,
+    signal?: AbortSignal,
+    classify?: (result: T) => OperationOutcome
   ): Promise<T> {
     const correlationId = getCorrelationId() ?? randomUUID();
     const operationId = randomUUID();
+    const parentOperationId = getOperationId();
+    const subject = typeof identity === 'string' ? { sessionId: identity } : identity;
+    const safeId = (value: unknown): value is string =>
+      typeof value === 'string' && /^[A-Za-z0-9._:-]{1,128}$/.test(value);
     const context = {
       correlationId,
       operationId,
+      ...(parentOperationId && { parentOperationId }),
       kind,
-      ...(sessionId && /^[A-Za-z0-9._:-]{1,128}$/.test(sessionId) ? { sessionId } : {}),
+      ...(safeId(subject?.sessionId) && { sessionId: subject.sessionId }),
+      ...(safeId(subject?.featureId) && { featureId: subject.featureId }),
+      ...(['legacy', 'local', 'docker', 'ssh'].includes(subject?.executionType ?? '') && {
+        executionType: subject!.executionType,
+      }),
     };
     const started = performance.now();
     logger.debug('operation started', context);
-    let outcome = 'completed';
+    let outcome: OperationOutcome = 'completed';
     try {
-      return await runWithCorrelationContext(correlationId, task);
+      const result = await runWithOperationContext(correlationId, operationId, task);
+      outcome = classify?.(result) ?? 'completed';
+      return result;
     } catch (error) {
-      outcome = error instanceof Error && error.name === 'AbortError' ? 'cancelled' : 'error';
+      const fields = error && typeof error === 'object' ? (error as Record<string, unknown>) : {};
+      outcome =
+        (error instanceof Error && error.name === 'ProviderCleanupError') ||
+        (typeof fields.code === 'string' &&
+          [
+            'PROCESS_CLEANUP_FAILED',
+            'LOCAL_PROCESS_CLEANUP_FAILED',
+            'SSH_OUTCOME_UNKNOWN',
+            'DOCKER_PROBE_CLEANUP_FAILED',
+          ].includes(fields.code)) ||
+        fields.errorCode === 'UNKNOWN_OUTCOME'
+          ? 'unknown'
+          : error instanceof Error && error.name === 'AbortError'
+            ? 'cancelled'
+            : 'error';
       throw error;
     } finally {
-      if (outcome === 'completed' && signal?.aborted) outcome = 'cancelled';
+      // A transport can abort only to retire its successful reader/process. A caller
+      // with a result classifier distinguishes that cleanup from user cancellation.
+      if (!classify && outcome === 'completed' && signal?.aborted) outcome = 'cancelled';
       const durationMs = performance.now() - started;
       this.increment('operations_total', { kind, outcome });
       this.observe('operation_duration_ms', durationMs, { kind, outcome });
@@ -158,8 +187,10 @@ export class ApplicationMetrics implements Metrics {
     const started = performance.now();
     const correlationId = getCorrelationId();
     const operationId = randomUUID();
+    const parentOperationId = getOperationId();
+    const context = { correlationId, operationId, ...(parentOperationId && { parentOperationId }) };
     this.providerActive++;
-    logger.debug('provider query started', { correlationId, operationId });
+    logger.debug('provider query started', context);
     let finished = false;
     return (result) => {
       if (finished) return;
@@ -177,7 +208,7 @@ export class ApplicationMetrics implements Metrics {
       if (outcome === 'error' || outcome === 'unknown')
         this.increment('provider_errors_total', { outcome });
       this.observe('provider_query_duration_ms', durationMs, { outcome });
-      logger.debug('provider query settled', { correlationId, operationId, outcome, durationMs });
+      logger.debug('provider query settled', { ...context, outcome, durationMs });
     };
   }
 

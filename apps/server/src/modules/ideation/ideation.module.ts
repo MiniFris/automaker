@@ -1,3 +1,4 @@
+import { DirectCheckpointRepository } from '../providers/direct-checkpoint.repository.js';
 import { HOST_ENVIRONMENT } from '../../core/config/index.js';
 import { Module } from '@nestjs/common';
 import { FeaturesModule } from '../features/features.module.js';
@@ -27,6 +28,7 @@ import { IdeaConversionStore } from './idea-conversion.store.js';
         SecurityService,
         SECURE_FILESYSTEM,
         HOST_ENVIRONMENT,
+        DirectCheckpointRepository,
       ],
       useFactory: (
         events: EventEmitter,
@@ -35,7 +37,8 @@ import { IdeaConversionStore } from './idea-conversion.store.js';
         providers: ProviderRegistry,
         security: SecurityService,
         filesystem: ConstructorParameters<typeof IdeationService>[5],
-        hostEnvironment: Readonly<NodeJS.ProcessEnv>
+        hostEnvironment: Readonly<NodeJS.ProcessEnv>,
+        checkpointRepository: DirectCheckpointRepository
       ) =>
         new IdeationService(
           events,
@@ -46,7 +49,8 @@ import { IdeaConversionStore } from './idea-conversion.store.js';
             security.validateLocalPath(cwd, 'ideation working directory');
           },
           filesystem,
-          hostEnvironment
+          hostEnvironment,
+          checkpointRepository
         ),
     },
     IdeationApplicationService,

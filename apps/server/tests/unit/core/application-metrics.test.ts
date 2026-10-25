@@ -1,3 +1,4 @@
+import { ExecutionEnvironmentError } from '../../../src/services/execution-environment/runtime.js';
 import { EventEmitter } from 'node:events';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MetricsSnapshotSchema } from '@automaker/contracts';
@@ -5,6 +6,7 @@ import { ApplicationMetrics } from '../../../src/core/observability/application-
 import {
   RequestContextMiddleware,
   getCorrelationId,
+  getOperationId,
   runWithCorrelationContext,
 } from '../../../src/core/observability/request-context.js';
 import {
@@ -269,4 +271,86 @@ describe('application metrics', () => {
     ).resolves.toBeUndefined();
     await expect(scope.dispose()).resolves.toBeUndefined();
   });
+});
+
+it('links nested feature, command and provider records while preserving results and isolating owners', async () => {
+  const one = new ApplicationMetrics(),
+    two = new ApplicationMetrics();
+  const result = { exitCode: 7, output: 'private-command-output' };
+  await runWithCorrelationContext('feature-http-proof', () =>
+    one.operation(
+      'feature_execution',
+      async () => {
+        const featureOperation = getOperationId();
+        expect(featureOperation).toBeTypeOf('string');
+        expect(
+          await one.operation(
+            'execution_command',
+            async () => {
+              expect(getOperationId()).not.toBe(featureOperation);
+              return result;
+            },
+            { featureId: 'feature-one', executionType: 'local' },
+            undefined,
+            (value) => (value.exitCode === 0 ? 'completed' : 'error')
+          )
+        ).toBe(result);
+        expect(getOperationId()).toBe(featureOperation);
+        one.providerQueryStarted()({ failed: false, cancelled: false, unconfirmed: false });
+      },
+      {
+        featureId: 'feature-one',
+        sessionId: '/private-invalid-session',
+        prompt: 'private-prompt',
+      } as never
+    )
+  );
+  expect(getOperationId()).toBeUndefined();
+  expect(getCorrelationId()).toBeUndefined();
+  const starts = debug.mock.calls
+    .filter(([event]) => event === 'operation started')
+    .map(([, fields]) => fields);
+  expect(starts).toHaveLength(2);
+  expect(starts[1].parentOperationId).toBe(starts[0].operationId);
+  expect(
+    debug.mock.calls.find(([event]) => event === 'provider query started')?.[1].parentOperationId
+  ).toBe(starts[0].operationId);
+  expect(
+    debug.mock.calls.every(([, fields]) => fields.correlationId === 'feature-http-proof')
+  ).toBe(true);
+  expect(JSON.stringify(debug.mock.calls)).not.toMatch(
+    /private-command-output|private-prompt|private-invalid-session/
+  );
+  expect(one.snapshot().counters).toContainEqual({
+    name: 'operations_total',
+    labels: { kind: 'execution_command', outcome: 'error' },
+    value: 1,
+  });
+  expect(JSON.stringify(one.snapshot())).not.toMatch(/feature-one|feature-http-proof|private/);
+  expect(two.snapshot().counters).toEqual([]);
+});
+
+it.each([
+  new ProviderCleanupError(),
+  new ExecutionEnvironmentError('SSH_OUTCOME_UNKNOWN', 'private transport failure'),
+])('keeps unknown cleanup ahead of cancellation in operation observations', async (uncertainty) => {
+  const metrics = new ApplicationMetrics(),
+    controller = new AbortController();
+  await expect(
+    metrics.operation(
+      'execution_command',
+      async () => {
+        controller.abort();
+        throw uncertainty;
+      },
+      undefined,
+      controller.signal
+    )
+  ).rejects.toBe(uncertainty);
+  expect(metrics.snapshot().counters).toContainEqual({
+    name: 'operations_total',
+    labels: { kind: 'execution_command', outcome: 'unknown' },
+    value: 1,
+  });
+  expect(debug.mock.calls.at(-1)?.[1].outcome).toBe('unknown');
 });

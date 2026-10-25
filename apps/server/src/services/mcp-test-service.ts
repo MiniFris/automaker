@@ -1,324 +1,303 @@
-/**
- * MCP Test Service
- *
- * Provides functionality to test MCP server connections and list available tools.
- * Supports stdio, SSE, and HTTP transport types.
- */
-
+/** Saved-server MCP discovery; no tools are executed and no server installation occurs. */
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { MCPServerConfig, MCPToolInfo } from '@automaker/types';
 import type { SettingsService } from './settings-service.js';
-
-const execAsync = promisify(exec);
-const DEFAULT_TIMEOUT = 10000; // 10 seconds
-const IS_WINDOWS = process.platform === 'win32';
-type MCPTransport = StdioClientTransport | SSEClientTransport | StreamableHTTPClientTransport;
+import type { OwnedLocalChildRuntime } from '../core/platform/owned-local-child.runtime.js';
+import { MCPBoundedFetch } from './mcp/bounded-fetch.js';
+import { MCPBoundedStdioTransport } from './mcp/bounded-stdio-transport.js';
+import { bounded, MCPCleanupError, MCPOperationError, MCPByteBudget } from './mcp/operation.js';
+import {
+  unobservedOperation,
+  type ObserveOperation,
+} from '../core/observability/operation-observer.js';
 
 export interface MCPTestResult {
   success: boolean;
   tools?: MCPToolInfo[];
   error?: string;
   connectionTime?: number;
-  serverInfo?: {
-    name?: string;
-    version?: string;
-  };
+  serverInfo?: { name?: string; version?: string };
 }
-
-/**
- * MCP Test Service for testing server connections and listing tools
- */
+export interface MCPRuntimeOptions {
+  observeOperation?: ObserveOperation;
+  environment?: Readonly<NodeJS.ProcessEnv>;
+  workingDirectory?: string;
+  childRuntime?: OwnedLocalChildRuntime;
+}
+interface Operation {
+  controller: AbortController;
+  task: Promise<MCPTestResult>;
+  unknown: boolean;
+  client?: Client;
+  transport?: Transport;
+  network?: MCPBoundedFetch;
+  cleanup?: Promise<void>;
+}
 export class MCPTestService {
-  private settingsService: SettingsService;
+  private readonly observeOperation: ObserveOperation;
+  private readonly environment: Readonly<NodeJS.ProcessEnv>;
+  private readonly cwd: string;
+  private readonly operations = new Set<Operation>();
   private stopping = false;
-  private readonly activeConnections = new Map<Client, MCPTransport>();
-  private readonly closingConnections = new WeakMap<Client, Promise<void>>();
-
+  private shutdown?: Promise<void>;
   constructor(
-    settingsService: SettingsService,
-    private readonly requestTimeoutMs = DEFAULT_TIMEOUT
+    private readonly settingsService: SettingsService,
+    private readonly requestTimeoutMs = 10000,
+    private readonly runtime: MCPRuntimeOptions = {}
   ) {
-    this.settingsService = settingsService;
+    this.observeOperation = runtime.observeOperation ?? unobservedOperation;
+    this.environment = Object.freeze({ ...(runtime.environment ?? process.env) });
+    this.cwd = runtime.workingDirectory ?? process.cwd();
   }
-
-  /**
-   * Test connection to an MCP server and list its tools
-   */
-  async testServer(serverConfig: MCPServerConfig): Promise<MCPTestResult> {
-    return this.inspectServer(serverConfig, true);
+  get activeOperationCount(): number {
+    return this.operations.size;
   }
-
-  /** Connection testing deliberately does not enumerate remote tools. */
-  async testConnectionById(serverId: string): Promise<MCPTestResult> {
-    return this.inspectSavedServer(serverId, false);
+  get unconfirmedOperationCount(): number {
+    return [...this.operations].filter((operation) => operation.unknown).length;
   }
-
-  async listToolsById(serverId: string): Promise<MCPTestResult> {
-    return this.inspectSavedServer(serverId, true);
+  testServer(config: MCPServerConfig): Promise<MCPTestResult> {
+    const snapshot = globalThis.structuredClone(config);
+    return this.admit(async () => snapshot, true);
   }
-
-  private async inspectServer(
-    serverConfig: MCPServerConfig,
-    discoverTools: boolean
+  testConnectionById(id: string): Promise<MCPTestResult> {
+    return this.saved(id, false);
+  }
+  listToolsById(id: string): Promise<MCPTestResult> {
+    return this.saved(id, true);
+  }
+  testServerById(id: string): Promise<MCPTestResult> {
+    return this.saved(id, true);
+  }
+  private saved(id: string, discover: boolean): Promise<MCPTestResult> {
+    return this.admit(async () => {
+      const settings = await this.settingsService.getGlobalSettings();
+      const config = settings.mcpServers?.find((server) => server.id === id);
+      if (!config) throw new MCPOperationError(`Server with ID "${id.slice(0, 256)}" not found`);
+      return globalThis.structuredClone(config);
+    }, discover);
+  }
+  private admit(
+    resolve: () => Promise<MCPServerConfig>,
+    discover: boolean
   ): Promise<MCPTestResult> {
-    const startTime = Date.now();
-    let client: Client | null = null;
-    let transport:
-      | StdioClientTransport
-      | SSEClientTransport
-      | StreamableHTTPClientTransport
-      | null = null;
-
+    const error = this.stopping
+      ? 'MCP discovery is shutting down'
+      : [...this.operations].some((operation) => operation.unknown)
+        ? 'MCP cleanup is unconfirmed. Inspect owned resources before retrying.'
+        : this.operations.size >= 16
+          ? 'MCP discovery admission limit reached'
+          : undefined;
+    if (error) return Promise.resolve({ success: false, error });
+    const operation = { controller: new AbortController(), unknown: false } as Operation;
+    this.operations.add(operation);
+    operation.task = Promise.resolve()
+      .then(() =>
+        this.observeOperation(
+          'mcp_inspection',
+          () => this.inspect(operation, resolve, discover),
+          undefined,
+          operation.controller.signal,
+          (result) =>
+            operation.unknown
+              ? 'unknown'
+              : result.success
+                ? 'completed'
+                : this.stopping && operation.controller.signal.aborted
+                  ? 'cancelled'
+                  : 'error'
+        )
+      )
+      .finally(() => {
+        if (!operation.unknown) this.operations.delete(operation);
+      });
+    return operation.task;
+  }
+  private async inspect(
+    operation: Operation,
+    resolve: () => Promise<MCPServerConfig>,
+    discover: boolean
+  ): Promise<MCPTestResult> {
+    const start = Date.now();
+    let config: MCPServerConfig | undefined, result: MCPTestResult;
     try {
-      if (this.stopping) throw new Error('MCP discovery is shutting down');
-      client = new Client({
+      config = await resolve();
+      this.check(operation);
+      const budget = new MCPByteBudget();
+      const client = (operation.client = new Client({
         name: 'automaker-mcp-test',
         version: '1.0.0',
-      });
-
-      // Create transport based on server type
-      transport = await this.createTransport(serverConfig);
-      if (this.stopping) throw new Error('MCP discovery is shutting down');
-      this.activeConnections.set(client, transport);
-
-      // Connect with timeout
-      await this.withTimeout(client.connect(transport), 'Connection timeout');
-
-      // List tools with timeout
-      const toolsResult = discoverTools
-        ? await this.withTimeout(client.listTools(), 'List tools timeout')
+      }));
+      operation.transport = this.transport(config, operation, budget);
+      this.check(operation);
+      await this.phase(client.connect(operation.transport), operation, 'Connection timeout');
+      this.check(operation);
+      const tools = discover
+        ? await this.phase(client.listTools(), operation, 'List tools timeout')
         : undefined;
+      this.check(operation);
       if (
-        toolsResult &&
-        (toolsResult.tools.length > 1000 ||
-          Buffer.byteLength(JSON.stringify(toolsResult)) > 1024 * 1024)
-      ) {
-        throw new Error('MCP tool catalog exceeds the allowed size');
-      }
-
-      const connectionTime = Date.now() - startTime;
-
-      // Convert tools to MCPToolInfo format
-      const tools: MCPToolInfo[] | undefined = toolsResult?.tools.map(
-        (tool: { name: string; description?: string; inputSchema?: Record<string, unknown> }) => ({
-          name: tool.name,
-          description: tool.description,
-          inputSchema: tool.inputSchema,
-          enabled: true,
-        })
-      );
-
-      return {
+        tools &&
+        (tools.tools.length > 1000 || Buffer.byteLength(JSON.stringify(tools)) > 1024 * 1024)
+      )
+        throw new MCPOperationError('MCP tool catalog exceeds the allowed size');
+      result = {
         success: true,
-        ...(tools && { tools }),
-        connectionTime,
+        ...(tools && {
+          tools: tools.tools.map((tool) => ({
+            name: tool.name,
+            description: tool.description,
+            inputSchema: tool.inputSchema,
+            enabled: true,
+          })),
+        }),
+        connectionTime: Date.now() - start,
         serverInfo: {
-          name: client.getServerVersion()?.name ?? serverConfig.name,
+          name: client.getServerVersion()?.name ?? config.name,
           version: client.getServerVersion()?.version,
         },
       };
     } catch (error) {
-      const connectionTime = Date.now() - startTime;
-      return {
+      result = {
         success: false,
-        error: this.getErrorMessage(error, serverConfig),
-        connectionTime,
+        error: this.message(error, config, operation),
+        connectionTime: Date.now() - start,
       };
-    } finally {
-      // Clean up client connection and ensure process termination
-      await this.cleanupConnection(client, transport);
     }
-  }
-
-  /**
-   * Clean up MCP client connection and terminate spawned processes
-   *
-   * On Windows, child processes spawned via 'cmd /c' don't get terminated when the
-   * parent process is killed. We use taskkill with /t flag to kill the entire process tree.
-   * This prevents orphaned MCP server processes that would spam logs with ping warnings.
-   *
-   * IMPORTANT: We must run taskkill BEFORE client.close() because:
-   * - client.close() kills only the parent cmd.exe process
-   * - This orphans the child node.exe processes before we can kill them
-   * - taskkill /t needs the parent PID to exist to traverse the process tree
-   */
-  private async cleanupConnection(
-    client: Client | null,
-    transport: MCPTransport | null
-  ): Promise<void> {
-    if (!client) return;
-    const existing = this.closingConnections.get(client);
-    if (existing) return existing;
-    const closing = this.closeConnection(client, transport).finally(() => {
-      this.activeConnections.delete(client);
-    });
-    this.closingConnections.set(client, closing);
-    return closing;
-  }
-
-  async beforeApplicationShutdown(): Promise<void> {
-    this.stopping = true;
-    await Promise.all(
-      [...this.activeConnections].map(([client, transport]) =>
-        this.cleanupConnection(client, transport)
-      )
-    );
-  }
-
-  private async closeConnection(client: Client, transport: MCPTransport | null): Promise<void> {
-    // Get the PID before any cleanup (only available for stdio transports)
-    const pid = transport instanceof StdioClientTransport ? transport.pid : null;
-
-    // On Windows with stdio transport, kill the entire process tree FIRST
-    // This must happen before client.close() which would orphan child processes
-    if (IS_WINDOWS && pid) {
-      try {
-        // taskkill /f = force, /t = kill process tree, /pid = process ID
-        await execAsync(`taskkill /f /t /pid ${pid}`);
-      } catch {
-        // Process may have already exited, which is fine
-      }
-    }
-
-    // Now do the standard close (may be a no-op if taskkill already killed everything)
-    if (client) {
-      try {
-        await client.close();
-      } catch {
-        // Expected if taskkill already terminated the process
-      }
-    }
-  }
-
-  /**
-   * Test server by ID (looks up config from settings)
-   */
-  async testServerById(serverId: string): Promise<MCPTestResult> {
-    return this.inspectSavedServer(serverId, true);
-  }
-
-  private async inspectSavedServer(
-    serverId: string,
-    discoverTools: boolean
-  ): Promise<MCPTestResult> {
-    if (this.stopping) return { success: false, error: 'MCP discovery is shutting down' };
     try {
-      const globalSettings = await this.settingsService.getGlobalSettings();
-      const serverConfig = globalSettings.mcpServers?.find((s) => s.id === serverId);
-
-      if (!serverConfig) {
-        return {
-          success: false,
-          error: `Server with ID "${serverId}" not found`,
-        };
-      }
-
-      return this.inspectServer(serverConfig, discoverTools);
-    } catch (error) {
-      return {
+      await this.cleanup(operation);
+    } catch {
+      operation.unknown = true;
+      result = {
         success: false,
-        error: this.getErrorMessage(error),
+        error: new MCPCleanupError().message,
+        connectionTime: Date.now() - start,
       };
     }
+    return result;
   }
-
-  /**
-   * Create appropriate transport based on server type
-   */
-  private async createTransport(
-    config: MCPServerConfig
-  ): Promise<StdioClientTransport | SSEClientTransport | StreamableHTTPClientTransport> {
-    if (config.type === 'sse') {
-      if (!config.url) {
-        throw new Error('URL is required for SSE transport');
-      }
-      // Use eventSourceInit workaround for SSE headers (SDK bug workaround)
-      // See: https://github.com/modelcontextprotocol/typescript-sdk/issues/436
-      const headers = config.headers;
-      return new SSEClientTransport(new URL(config.url), {
-        requestInit: headers ? { headers } : undefined,
-        eventSourceInit: headers
-          ? {
-              fetch: (url: string | URL | Request, init?: RequestInit) => {
-                const fetchHeaders = new Headers(init?.headers || {});
-                for (const [key, value] of Object.entries(headers)) {
-                  fetchHeaders.set(key, value);
-                }
-                return fetch(url, { ...init, headers: fetchHeaders });
-              },
-            }
-          : undefined,
-      });
-    }
-
-    if (config.type === 'http') {
-      if (!config.url) {
-        throw new Error('URL is required for HTTP transport');
-      }
-      return new StreamableHTTPClientTransport(new URL(config.url), {
-        requestInit: config.headers
-          ? {
-              headers: config.headers,
-            }
-          : undefined,
-      });
-    }
-
-    // Default to stdio
-    if (!config.command) {
-      throw new Error('Command is required for stdio transport');
-    }
-
-    return new StdioClientTransport({
-      command: config.command,
-      args: config.args,
-      env: config.env,
-      // Discovery returns structured diagnostics; never inherit arbitrary server stderr.
-      stderr: 'ignore',
-    });
+  private check(operation: Operation): void {
+    if (this.stopping && !operation.controller.signal.aborted)
+      operation.controller.abort(new MCPOperationError('MCP discovery is shutting down'));
+    operation.controller.signal.throwIfAborted();
   }
-
-  /**
-   * Create a timeout promise
-   */
-  private async withTimeout<T>(operation: Promise<T>, message: string): Promise<T> {
-    let timer: NodeJS.Timeout | undefined;
+  private async phase<T>(promise: Promise<T>, operation: Operation, message: string): Promise<T> {
+    const signal = operation.controller.signal;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let onAbort: () => void = () => {};
     try {
       return await Promise.race([
-        operation,
+        promise,
         new Promise<never>((_, reject) => {
-          timer = setTimeout(() => reject(new Error(message)), this.requestTimeoutMs);
+          onAbort = () => reject(signal.reason ?? new MCPOperationError('MCP operation cancelled'));
+          signal.addEventListener('abort', onAbort, { once: true });
+          timer = setTimeout(
+            () => operation.controller.abort(new MCPOperationError(message)),
+            this.requestTimeoutMs
+          );
+          if (signal.aborted) onAbort();
         }),
       ]);
     } finally {
       if (timer) clearTimeout(timer);
+      signal.removeEventListener('abort', onAbort);
     }
   }
-
-  /**
-   * Extract error message from unknown error
-   */
-  private getErrorMessage(error: unknown, config?: MCPServerConfig): string {
-    let message = error instanceof Error ? error.message : String(error);
+  private transport(
+    config: MCPServerConfig,
+    operation: Operation,
+    budget: MCPByteBudget
+  ): Transport {
+    if (config.type === 'http' || config.type === 'sse') {
+      if (!config.url)
+        throw new MCPOperationError(
+          `URL is required for ${config.type === 'http' ? 'HTTP' : 'SSE'} transport`
+        );
+      const network = (operation.network = new MCPBoundedFetch(operation.controller, budget));
+      const options = {
+        fetch: network.fetch,
+        requestInit: config.headers ? { headers: config.headers } : undefined,
+      };
+      return config.type === 'http'
+        ? new StreamableHTTPClientTransport(new URL(config.url), options)
+        : new SSEClientTransport(new URL(config.url), {
+            ...options,
+            eventSourceInit: { fetch: network.fetch },
+          });
+    }
+    if (!config.command) throw new MCPOperationError('Command is required for stdio transport');
+    return new MCPBoundedStdioTransport(
+      config,
+      this.environment,
+      this.cwd,
+      operation.controller,
+      budget,
+      this.runtime.childRuntime
+    );
+  }
+  private cleanup(operation: Operation): Promise<void> {
+    return (operation.cleanup ??= bounded(
+      (async () => {
+        operation.controller.abort(new MCPOperationError('MCP operation cancelled'));
+        const results = await Promise.allSettled([
+          operation.client?.close(),
+          operation.transport?.close(),
+          operation.network?.close(),
+        ]);
+        if (results.some((result) => result.status === 'rejected')) throw new MCPCleanupError();
+      })(),
+      5000,
+      new MCPCleanupError()
+    ).catch((error) => {
+      operation.unknown = true;
+      throw error;
+    }));
+  }
+  /** Drain accepted settings/transport work before the shared filesystem barrier. */
+  onModuleDestroy(): Promise<void> {
+    return this.beforeApplicationShutdown();
+  }
+  beforeApplicationShutdown(): Promise<void> {
+    if (this.shutdown) return this.shutdown;
+    this.stopping = true;
+    for (const operation of this.operations)
+      operation.controller.abort(new MCPOperationError('MCP discovery is shutting down'));
+    const accepted = [...this.operations];
+    return (this.shutdown = bounded(
+      Promise.all(accepted.map((operation) => operation.task)).then(() => {
+        if (accepted.some((operation) => operation.unknown)) throw new MCPCleanupError();
+      }),
+      5000,
+      new MCPCleanupError()
+    ).catch((error) => {
+      for (const operation of accepted) operation.unknown = true;
+      throw error;
+    }));
+  }
+  private message(
+    error: unknown,
+    config: MCPServerConfig | undefined,
+    operation: Operation
+  ): string {
+    const reason = operation.controller.signal.reason;
+    if (error instanceof MCPOperationError) return error.message;
+    if (reason instanceof MCPOperationError) return reason.message;
+    // Remote SDK/HTTP text may contain secrets not represented by named credential fields.
+    // Return a fixed diagnostic; retain the historical explicit redaction marker when matched.
+    const raw = error instanceof Error ? error.message : String(error);
     const secrets = [...Object.values(config?.env ?? {}), ...Object.values(config?.headers ?? {})];
     if (config?.url) {
+      secrets.push(config.url);
       try {
         const url = new URL(config.url);
         secrets.push(url.username, url.password);
         url.searchParams.forEach((value) => secrets.push(value));
       } catch {
-        /* Invalid URLs are reported without echoing configuration. */
+        /* Never echo invalid URL. */
       }
-      secrets.push(config.url);
     }
-    for (const secret of secrets.filter(Boolean).sort((a, b) => b.length - a.length)) {
-      message = message.split(secret).join('[REDACTED]');
-    }
-    return message.slice(0, 2048);
+    return `MCP connection or discovery failed${secrets.some((secret) => secret && raw.includes(secret)) ? ' ([REDACTED])' : ''}`;
   }
 }

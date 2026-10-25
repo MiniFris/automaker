@@ -1,3 +1,7 @@
+import {
+  unobservedOperation,
+  type ObserveOperation,
+} from '../core/observability/operation-observer.js';
 import type { WorkspaceAccessPolicy } from '../providers/openai-compatible/workspace.js';
 /**
  * PipelineOrchestrator - Pipeline step execution and coordination
@@ -84,7 +88,8 @@ export class PipelineOrchestrator {
     private readonly filesystem: ExecutionFilesystem,
     private readonly directoryValidator: (cwd: string) => void = validateWorkingDirectory,
     hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env,
-    private readonly directWorkspaceAccess?: WorkspaceAccessPolicy
+    private readonly directWorkspaceAccess?: WorkspaceAccessPolicy,
+    private readonly observeOperation: ObserveOperation = unobservedOperation
   ) {
     this.hostEnvironment = Object.freeze({ ...hostEnvironment });
   }
@@ -619,6 +624,20 @@ export class PipelineOrchestrator {
 
   /** Execute test step with agent fix loop (REQ-F07) */
   async executeTestStep(context: PipelineContext, testCommand: string): Promise<StepResult> {
+    return this.observeOperation(
+      'execution_command',
+      () => this.executeObservedTestStep(context, testCommand),
+      { featureId: context.featureId },
+      context.abortController.signal,
+      (value) =>
+        context.abortController.signal.aborted ? 'cancelled' : value.success ? 'completed' : 'error'
+    );
+  }
+
+  private async executeObservedTestStep(
+    context: PipelineContext,
+    testCommand: string
+  ): Promise<StepResult> {
     const runPort = context.run
       ? this.concurrencyManager.coordinator.bind(this.concurrencyManager, context.run)
       : undefined;

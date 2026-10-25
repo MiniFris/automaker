@@ -53,6 +53,7 @@ export class ProviderRegistry implements OnModuleInit, OnApplicationShutdown {
   private readonly registrations: ReadonlyMap<string, ProviderRegistration>;
   private readonly aliases: ReadonlyMap<string, string>;
   private readonly executions: ProviderExecutionScope;
+  private closing?: Promise<void>;
 
   constructor(
     @Inject(PROVIDER_REGISTRATIONS) registrations: readonly ProviderRegistration[],
@@ -122,8 +123,26 @@ export class ProviderRegistry implements OnModuleInit, OnApplicationShutdown {
     return [...this.registrations.keys()].map((name) => this.byName(name)!);
   }
 
+  /** Explicit owner drain, also reused by Nest's later lifecycle hook. */
+  close(): Promise<void> {
+    if (this.closing) return this.closing;
+    let resolve!: () => void;
+    let reject!: (error: unknown) => void;
+    // Install identity before abort listeners can synchronously re-enter close.
+    this.closing = new Promise<void>((done, failed) => {
+      resolve = done;
+      reject = failed;
+    });
+    try {
+      void this.executions.dispose().then(resolve, reject);
+    } catch (error) {
+      reject(error);
+    }
+    return this.closing;
+  }
+
   onApplicationShutdown(): Promise<void> {
-    return this.executions.dispose();
+    return this.closing ?? this.close();
   }
 
   allModels(): ModelDefinition[] {

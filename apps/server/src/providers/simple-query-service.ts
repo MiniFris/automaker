@@ -1,3 +1,4 @@
+import type { AgentCheckpointRepository } from './openai-compatible/checkpoint.js';
 /**
  * Simple Query Service - Simplified interface for basic AI queries
  *
@@ -123,7 +124,8 @@ const DEFAULT_MODEL = 'claude-sonnet-4-6';
 export async function simpleQuery(
   options: SimpleQueryOptions,
   providerRegistry: ProviderRegistry,
-  hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
+  hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env,
+  checkpointRepository?: AgentCheckpointRepository
 ): Promise<SimpleQueryResult> {
   options.abortController?.signal.throwIfAborted();
   const model = options.model || DEFAULT_MODEL;
@@ -158,7 +160,8 @@ export async function simpleQuery(
     options.settingsService,
     { model, providerId: options.providerId },
     'text',
-    hostEnvironment
+    hostEnvironment,
+    checkpointRepository
   );
   for await (const msg of provider.executeQuery(executeOptions)) {
     // Handle error messages
@@ -220,7 +223,8 @@ export async function simpleQuery(
 export async function streamingQuery(
   options: StreamingQueryOptions,
   providerRegistry: ProviderRegistry,
-  hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
+  hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env,
+  checkpointRepository?: AgentCheckpointRepository
 ): Promise<SimpleQueryResult> {
   options.abortController?.signal.throwIfAborted();
   const model = options.model || DEFAULT_MODEL;
@@ -258,7 +262,8 @@ export async function streamingQuery(
     options.settingsService,
     { model, providerId: options.providerId },
     'agent',
-    hostEnvironment
+    hostEnvironment,
+    checkpointRepository
   );
   for await (const msg of provider.executeQuery(executeOptions)) {
     // Handle error messages

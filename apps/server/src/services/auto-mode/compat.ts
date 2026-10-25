@@ -1,3 +1,5 @@
+import type { AgentCheckpointRepository } from '../../providers/openai-compatible/checkpoint.js';
+import type { ObserveOperation } from '../../core/observability/operation-observer.js';
 /**
  * Compatibility Shim - Provides AutoModeService-like interface using the new architecture
  *
@@ -45,6 +47,8 @@ export class AutoModeServiceCompat {
     filesystem: import('../execution-filesystem.js').ExecutionFilesystem,
     runtime?: {
       contexts: ProjectRunContextRegistry;
+      observeOperation?: ObserveOperation;
+      checkpointRepository?: AgentCheckpointRepository;
       directWorkspaceAccess?: WorkspaceAccessPolicy;
       coordinator?: FeatureRunCoordinator;
       hostEnvironment?: Readonly<NodeJS.ProcessEnv>;
@@ -76,6 +80,8 @@ export class AutoModeServiceCompat {
       hostEnvironment: Object.freeze({ ...(runtime?.hostEnvironment ?? process.env) }),
       filesystem,
       directWorkspaceAccess: runtime?.directWorkspaceAccess,
+      checkpointRepository: runtime?.checkpointRepository,
+      observeOperation: runtime?.observeOperation,
     };
   }
 

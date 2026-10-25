@@ -1,3 +1,4 @@
+import type { AgentCheckpointRepository } from '../providers/openai-compatible/checkpoint.js';
 /**
  * Ideation Service - Manages brainstorming sessions and ideas
  * Provides AI-powered ideation, project analysis, and idea-to-feature conversion
@@ -86,7 +87,8 @@ export class IdeationService {
     private readonly validateDirectory: (cwd: string) => void = validateWorkingDirectory,
     private readonly filesystem: AtomicWriteFilesystem &
       Pick<typeof secureFs, 'readdir' | 'rm' | 'link' | 'appendFile'> = secureFs,
-    hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
+    hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env,
+    private readonly checkpointRepository?: AgentCheckpointRepository
   ) {
     this.hostEnvironment = captureNativeLocalEnvironment(hostEnvironment);
     this.events = events;
@@ -328,7 +330,8 @@ export class IdeationService {
         this.settingsService,
         { model: modelId, providerId: options?.providerId },
         'text',
-        this.hostEnvironment
+        this.hostEnvironment,
+        this.checkpointRepository
       );
       controller.signal.throwIfAborted();
       const stream = provider.executeQuery(prepared);
@@ -866,7 +869,8 @@ export class IdeationService {
         this.settingsService,
         { model: modelId, providerId: phaseResult.phaseModel.providerId },
         'text',
-        this.hostEnvironment
+        this.hostEnvironment,
+        this.checkpointRepository
       );
       controller.signal.throwIfAborted();
       const stream = provider.executeQuery(prepared);

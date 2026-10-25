@@ -1,3 +1,4 @@
+import { DirectCheckpointRepository } from '../providers/direct-checkpoint.repository.js';
 import { Global, Inject, Module } from '@nestjs/common';
 import { RUNTIME_CONFIG, HOST_ENVIRONMENT, type RuntimeConfig } from '../../core/config/index.js';
 import { AgentSessionRepository } from '../../services/agent/agent-session.repository.js';
@@ -189,9 +190,17 @@ import { ApplicationMetrics } from '../../core/observability/application-metrics
     },
     {
       provide: AgentEnvironmentPreparer,
-      inject: [AgentPromptBuilder, HOST_ENVIRONMENT],
-      useFactory: (prompts: AgentPromptBuilder, environment: Readonly<NodeJS.ProcessEnv>) =>
-        new AgentEnvironmentPreparer(prompts, captureNativeLocalEnvironment(environment)),
+      inject: [AgentPromptBuilder, HOST_ENVIRONMENT, DirectCheckpointRepository],
+      useFactory: (
+        prompts: AgentPromptBuilder,
+        environment: Readonly<NodeJS.ProcessEnv>,
+        checkpointRepository: DirectCheckpointRepository
+      ) =>
+        new AgentEnvironmentPreparer(
+          prompts,
+          captureNativeLocalEnvironment(environment),
+          checkpointRepository
+        ),
     },
     {
       provide: AgentExecutionCoordinator,

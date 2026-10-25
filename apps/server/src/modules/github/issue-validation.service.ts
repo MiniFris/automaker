@@ -1,3 +1,5 @@
+import { DirectCheckpointRepository } from '../providers/direct-checkpoint.repository.js';
+import type { AgentCheckpointRepository } from '../../providers/openai-compatible/checkpoint.js';
 import { HOST_ENVIRONMENT } from '../../core/config/index.js';
 /**
  * Native issue-validation workflow and application service.
@@ -76,7 +78,8 @@ async function runValidation(
   reasoningEffort: ReasoningEffort | undefined,
   providerRegistry: ProviderRegistry,
   repository: IssueValidationRepository,
-  hostEnvironment: Readonly<NodeJS.ProcessEnv>
+  hostEnvironment: Readonly<NodeJS.ProcessEnv>,
+  checkpointRepository?: AgentCheckpointRepository
 ): Promise<void> {
   // Emit start event
   const startEvent: IssueValidationEvent = {
@@ -216,7 +219,8 @@ ${basePrompt}`;
         },
       },
       providerRegistry,
-      hostEnvironment
+      hostEnvironment,
+      checkpointRepository
     );
 
     abortController.signal.throwIfAborted();
@@ -288,7 +292,9 @@ export class IssueValidationService {
     @Inject(ProviderRegistry) private readonly providers: ProviderRegistry,
     @Inject(IssueValidationRegistry) private readonly registry: IssueValidationRegistry,
     @Inject(IssueValidationRepository) private readonly repository: IssueValidationRepository,
-    @Inject(HOST_ENVIRONMENT) private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv> = {}
+    @Inject(HOST_ENVIRONMENT) private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv> = {},
+    @Inject(DirectCheckpointRepository)
+    private readonly checkpointRepository?: AgentCheckpointRepository
   ) {}
 
   start(input: IssueValidationRequest) {
@@ -339,7 +345,8 @@ export class IssueValidationService {
         reasoningEffort,
         this.providers,
         this.repository,
-        this.hostEnvironment
+        this.hostEnvironment,
+        this.checkpointRepository
       )
     );
     return accepted

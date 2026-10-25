@@ -1,3 +1,4 @@
+import { DirectCheckpointRepository } from '../providers/direct-checkpoint.repository.js';
 import { HOST_ENVIRONMENT } from '../../core/config/index.js';
 import { Module } from '@nestjs/common';
 import { ProviderRegistry } from '../providers/provider-registry.service.js';
@@ -11,11 +12,15 @@ import { PromptEnhancementService } from './prompt-enhancement.service.js';
   providers: [
     {
       provide: PROMPT_QUERY,
-      inject: [ProviderRegistry, HOST_ENVIRONMENT],
+      inject: [ProviderRegistry, HOST_ENVIRONMENT, DirectCheckpointRepository],
       useFactory:
-        (registry: ProviderRegistry, hostEnvironment: Readonly<NodeJS.ProcessEnv>) =>
+        (
+          registry: ProviderRegistry,
+          hostEnvironment: Readonly<NodeJS.ProcessEnv>,
+          checkpointRepository: DirectCheckpointRepository
+        ) =>
         (options: Parameters<typeof simpleQuery>[0]) =>
-          simpleQuery(options, registry, hostEnvironment),
+          simpleQuery(options, registry, hostEnvironment, checkpointRepository),
     },
     PromptEnhancementService,
   ],

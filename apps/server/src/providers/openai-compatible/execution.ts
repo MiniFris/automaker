@@ -11,7 +11,7 @@ import { resolveOpenAICompatibleConnection } from './config.js';
 import { toolPolicy, ToolRegistry } from './tool-registry.js';
 import { ReadOnlyWorkspace, type WorkspaceAccessPolicy } from './workspace.js';
 import { agentLimits } from './agent-loop.js';
-import { AgentCheckpointStore } from './checkpoint.js';
+import { AgentCheckpointStore, type AgentCheckpointRepository } from './checkpoint.js';
 import { OpenAICompatibleError } from './errors.js';
 import { EnvironmentBindingStore } from '../../services/execution-environment/bindings.js';
 import { type ExecutionEnvironment } from '../../services/execution-environment/runtime.js';
@@ -62,7 +62,8 @@ export async function prepareDirectExecution(
     feature?: { targetBranch?: string | null };
   },
   mode: 'text' | 'agent' = 'agent',
-  hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
+  hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env,
+  checkpointRepository?: AgentCheckpointRepository
 ): Promise<ExecuteOptions> {
   const environmentSnapshot = captureNativeLocalEnvironment(hostEnvironment);
   const global = settings ? await settings.getGlobalSettings() : undefined;
@@ -126,7 +127,7 @@ export async function prepareDirectExecution(
   policy = applyTimeoutLimits(policy, connection.timeouts);
   // Internal text helpers do not need access to local tools or runtime configuration.
   if (mode === 'text') policy.access = 'read-only';
-  const store = new AgentCheckpointStore(settings.getDataDirectory());
+  const store = checkpointRepository ?? new AgentCheckpointStore(settings.getDataDirectory());
   return {
     ...options,
     ...(binding?.runtimeCwd && { cwd: environment!.cwd }),

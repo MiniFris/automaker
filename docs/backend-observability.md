@@ -44,8 +44,11 @@ mutate the collector.
 HTTP responses echo a validated/generated `x-request-id`. Async context carries
 that correlation id into registry-owned provider execution, including detached
 work created inside the request. With `LOG_LEVEL=debug`, the `HTTP` logger emits
-completion records and the `Operations` logger emits provider start/settlement
-records with `correlationId`, a generated `operationId`, outcome and duration.
+completion records and the `Operations` logger emits provider/feature/execution/MCP
+start and settlement records with `correlationId`, a generated `operationId`, outcome
+and duration. Nested operation/provider records also contain `parentOperationId`.
+Safe-shaped feature/session IDs and finite execution types are diagnostic fields
+only; they are excluded from metric labels.
 Provider prompts, output and raw exceptions are not included in these records.
 Consumers that start work outside an HTTP context have no invented HTTP id.
 
@@ -56,8 +59,9 @@ strings where key-based redaction cannot remove them reliably. Existing safe err
 envelopes and intentional domain/HTTP error responses keep their wire behavior.
 
 This supplies local structured correlation. It does not implement distributed
-tracing, external trace export, execution transport spans or a persistent job/run
-index. Existing provider/application logs are not all normalized by this slice.
+tracing, external trace export, a span for every execution transport call or a
+persistent job/run index. Native verification commands and feature/provider
+boundaries do have [actual correlation proofs](backend-nestjs-migration/artifacts/feature-execution-correlation-audit.md). Existing provider/application logs are not all normalized by this slice.
 
 ## Initial operational thresholds
 
@@ -82,3 +86,10 @@ Each native application owns its mutable log level and HTTP request logging poli
 Async HTTP, startup, shutdown and WebSocket callbacks use that owner’s context;
 changing settings in one application does not reconfigure another application.
 Disabling HTTP request logging preserves metrics and correlation IDs.
+
+Native MCP snapshots include `mcp_active_operations` and
+`mcp_unconfirmed_operations`. They inspect bounded in-memory ownership, including
+saved-settings lookup and retained unknown cleanup; they do not count OS sockets.
+MCP outcomes distinguish successful inspection followed by normal reader abort from
+user/application cancellation, protocol errors and unconfirmed cleanup. No saved
+server URL, headers or catalog payload enters these operation records.
