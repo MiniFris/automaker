@@ -3,6 +3,11 @@ import { z } from 'zod';
 export const NonEmptyStringSchema = z.string().trim().min(1);
 export const EntityIdSchema = NonEmptyStringSchema.max(512);
 
+// Preserve the existing UTC wire format: seconds were optional before Zod 4.6.
+export const UtcDateTimeSchema = z
+  .union([z.iso.datetime(), z.iso.datetime({ precision: -1 })])
+  .meta({ type: 'string', format: 'date-time' });
+
 // Paths remain platform-neutral at the transport boundary. The server's path
 // sandbox is still authoritative for resolving and authorizing them.
 export const ProjectPathSchema = NonEmptyStringSchema.max(32_768);

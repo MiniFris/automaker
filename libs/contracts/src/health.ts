@@ -1,8 +1,9 @@
 import { z } from 'zod';
+import { UtcDateTimeSchema } from './common.js';
 
 export const HealthResponseSchema = z.object({
   status: z.literal('ok'),
-  timestamp: z.string().datetime(),
+  timestamp: UtcDateTimeSchema,
   version: z.string().min(1),
 });
 
@@ -15,7 +16,7 @@ export const HealthEnvironmentResponseSchema = z.object({
 export const LivenessResponseSchema = HealthResponseSchema.omit({ version: true });
 export const ReadinessResponseSchema = z.object({
   status: z.literal('ready'),
-  timestamp: z.string().datetime(),
+  timestamp: UtcDateTimeSchema,
 });
 export const DetailedHealthResponseSchema = HealthResponseSchema.extend({
   uptime: z.number().nonnegative(),

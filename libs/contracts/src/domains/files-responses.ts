@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { UtcDateTimeSchema } from '../common.js';
 
 const success = z.literal(true);
 const entry = z
@@ -18,7 +19,7 @@ export const FilesStatResponseSchema = z
         // Native stat produces Date; Express previously serialized the same ISO value.
         mtime: z.preprocess(
           (value) => (value instanceof Date ? value.toJSON() : value),
-          z.iso.datetime()
+          UtcDateTimeSchema
         ),
       })
       .passthrough(),

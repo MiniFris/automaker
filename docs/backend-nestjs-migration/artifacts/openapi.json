@@ -11581,63 +11581,39 @@
                       ]
                     },
                     "isError": {
-                      "anyOf": [
-                        {
-                          "type": "boolean"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "boolean",
+                        "null"
                       ]
                     },
                     "deliveryId": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "queuedPromptId": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "deliveryStatus": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "runId": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "executionStatus": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     }
                   },
@@ -11788,53 +11764,33 @@
                     ]
                   },
                   "model": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "providerId": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "thinkingLevel": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "deliveryId": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "deliveryStatus": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   }
                 },
@@ -11953,53 +11909,33 @@
                       ]
                     },
                     "model": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "providerId": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "thinkingLevel": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "deliveryId": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "deliveryStatus": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     }
                   },
@@ -12202,63 +12138,39 @@
                   ]
                 },
                 "isError": {
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "boolean",
+                    "null"
                   ]
                 },
                 "deliveryId": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "string",
+                    "null"
                   ]
                 },
                 "queuedPromptId": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "string",
+                    "null"
                   ]
                 },
                 "deliveryStatus": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "string",
+                    "null"
                   ]
                 },
                 "runId": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "string",
+                    "null"
                   ]
                 },
                 "executionStatus": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "string",
+                    "null"
                   ]
                 }
               },
@@ -12446,13 +12358,9 @@
             "const": true
           },
           "commitHash": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           }
         },
@@ -12534,13 +12442,9 @@
             "type": "string"
           },
           "branchName": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "alreadyRunning": {
@@ -12593,13 +12497,9 @@
                       "type": "string"
                     },
                     "branchName": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     }
                   },
@@ -12652,13 +12552,9 @@
                 "type": "string"
               },
               "branchName": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "string",
+                  "null"
                 ]
               }
             },
@@ -12708,13 +12604,9 @@
                 "type": "string"
               },
               "branchName": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "string",
+                  "null"
                 ]
               },
               "wasRunning": {
@@ -12741,13 +12633,9 @@
                 "type": "string"
               },
               "branchName": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "string",
+                  "null"
                 ]
               },
               "runningFeaturesCount": {
@@ -12843,13 +12731,9 @@
             "minLength": 1
           },
           "branchName": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           }
         },
@@ -13001,13 +12885,9 @@
             "minLength": 1
           },
           "branchName": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "maxConcurrency": {
@@ -13030,13 +12910,9 @@
             "minLength": 1
           },
           "branchName": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           }
         },
@@ -13200,23 +13076,15 @@
                   "type": "string"
                 },
                 "featureId": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "string",
+                    "null"
                   ]
                 },
                 "featureName": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "string",
+                    "null"
                   ]
                 }
               },
@@ -13262,23 +13130,15 @@
                 "type": "string"
               },
               "featureId": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "string",
+                  "null"
                 ]
               },
               "featureName": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "string",
+                  "null"
                 ]
               },
               "projectPath": {
@@ -13288,33 +13148,21 @@
                 "type": "string"
               },
               "error": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "string",
+                  "null"
                 ]
               },
               "errorType": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "string",
+                  "null"
                 ]
               },
               "passes": {
-                "anyOf": [
-                  {
-                    "type": "boolean"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "boolean",
+                  "null"
                 ]
               },
               "metadata": {
@@ -13376,26 +13224,18 @@
                       "type": "string"
                     },
                     "hookName": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "success": {
                       "type": "boolean"
                     },
                     "error": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "durationMs": {
@@ -13448,14 +13288,34 @@
                 "maxLength": 512
               },
               "since": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?:Z))$"
+                  }
+                ],
                 "type": "string",
-                "format": "date-time",
-                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                "format": "date-time"
               },
               "until": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?:Z))$"
+                  }
+                ],
                 "type": "string",
-                "format": "date-time",
-                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                "format": "date-time"
               },
               "limit": {
                 "type": "integer",
@@ -13630,13 +13490,9 @@
                 "type": "string"
               },
               "containerId": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "string",
+                  "null"
                 ]
               }
             },
@@ -13720,13 +13576,9 @@
                     "type": "string"
                   },
                   "profileId": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   }
                 },
@@ -13750,63 +13602,39 @@
                       "type": "string"
                     },
                     "context": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "host": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "port": {
-                      "anyOf": [
-                        {
-                          "type": "number"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "number",
+                        "null"
                       ]
                     },
                     "username": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "basePath": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "credentialId": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     }
                   },
@@ -13834,13 +13662,9 @@
                     "type": "string"
                   },
                   "profileId": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   }
                 },
@@ -13864,13 +13688,9 @@
                     "type": "string"
                   },
                   "profileId": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   }
                 },
@@ -13900,63 +13720,39 @@
                         "type": "string"
                       },
                       "context": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       },
                       "host": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       },
                       "port": {
-                        "anyOf": [
-                          {
-                            "type": "number"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "number",
+                          "null"
                         ]
                       },
                       "username": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       },
                       "basePath": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       },
                       "credentialId": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       }
                     },
@@ -13996,13 +13792,9 @@
                     "type": "boolean"
                   },
                   "scope": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "legacy": {
@@ -14012,23 +13804,15 @@
                     "type": "boolean"
                   },
                   "autoFallbackConfirmed": {
-                    "anyOf": [
-                      {
-                        "type": "boolean"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "boolean",
+                      "null"
                     ]
                   },
                   "autoFallbackScope": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   }
                 },
@@ -14094,23 +13878,15 @@
                             "maximum": 9007199254740991
                           },
                           "preparing": {
-                            "anyOf": [
-                              {
-                                "type": "boolean"
-                              },
-                              {
-                                "type": "null"
-                              }
+                            "type": [
+                              "boolean",
+                              "null"
                             ]
                           },
                           "stagingPath": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
+                            "type": [
+                              "string",
+                              "null"
                             ]
                           }
                         },
@@ -14259,13 +14035,9 @@
                 "type": "string"
               },
               "remotePath": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "string",
+                  "null"
                 ]
               }
             },
@@ -14772,13 +14544,9 @@
             "const": true
           },
           "content": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           }
         },
@@ -14841,13 +14609,9 @@
             "type": "string"
           },
           "parentRelativePath": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "entries": {
@@ -14898,13 +14662,9 @@
             "type": "string"
           },
           "parentPath": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "directories": {
@@ -15057,9 +14817,19 @@
                 "minimum": 0
               },
               "mtime": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?:Z))$"
+                  }
+                ],
                 "type": "string",
-                "format": "date-time",
-                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                "format": "date-time"
               }
             },
             "required": [
@@ -17153,33 +16923,21 @@
             "type": "boolean"
           },
           "remoteUrl": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "owner": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "repo": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           }
         },
@@ -18036,83 +17794,51 @@
                   "type": "string"
                 },
                 "providerId": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "string",
+                    "null"
                   ]
                 },
                 "contextWindow": {
-                  "anyOf": [
-                    {
-                      "type": "number"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "number",
+                    "null"
                   ]
                 },
                 "maxOutputTokens": {
-                  "anyOf": [
-                    {
-                      "type": "number"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "number",
+                    "null"
                   ]
                 },
                 "supportsVision": {
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "boolean",
+                    "null"
                   ]
                 },
                 "supportsTools": {
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "boolean",
+                    "null"
                   ]
                 },
                 "tier": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "string",
+                    "null"
                   ]
                 },
                 "default": {
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "boolean",
+                    "null"
                   ]
                 },
                 "hasReasoning": {
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "boolean",
+                    "null"
                   ]
                 }
               },
@@ -18370,13 +18096,9 @@
                     "type": "boolean"
                   },
                   "featureId": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "projectPath": {
@@ -18458,13 +18180,9 @@
                   "type": "boolean"
                 },
                 "featureId": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "string",
+                    "null"
                   ]
                 },
                 "projectPath": {
@@ -19050,33 +18768,21 @@
                 "type": "string"
               },
               "costUsed": {
-                "anyOf": [
-                  {
-                    "type": "number"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "number",
+                  "null"
                 ]
               },
               "costLimit": {
-                "anyOf": [
-                  {
-                    "type": "number"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "number",
+                  "null"
                 ]
               },
               "costCurrency": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "string",
+                  "null"
                 ]
               },
               "lastUpdated": {
@@ -19299,23 +19005,15 @@
                 "type": "boolean"
               },
               "version": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "string",
+                  "null"
                 ]
               },
               "path": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "string",
+                  "null"
                 ]
               },
               "authenticated": {
@@ -20041,53 +19739,33 @@
                   "type": "boolean"
                 },
                 "kind": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "string",
+                    "null"
                   ]
                 },
                 "sessionId": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "string",
+                    "null"
                   ]
                 },
                 "workingDirectory": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "string",
+                    "null"
                   ]
                 },
                 "model": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "string",
+                    "null"
                   ]
                 },
                 "provider": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "string",
+                    "null"
                   ]
                 },
                 "title": {},
@@ -20173,13 +19851,9 @@
                       ]
                     },
                     "model": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     }
                   },
@@ -20356,23 +20030,15 @@
                           "type": "string"
                         },
                         "variableName": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "credentialId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         }
                       },
@@ -20382,13 +20048,9 @@
                       "additionalProperties": {}
                     },
                     "timeoutMs": {
-                      "anyOf": [
-                        {
-                          "type": "number"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "number",
+                        "null"
                       ]
                     },
                     "timeouts": {
@@ -20408,13 +20070,9 @@
                       ]
                     },
                     "maxRetries": {
-                      "anyOf": [
-                        {
-                          "type": "number"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "number",
+                        "null"
                       ]
                     },
                     "models": {
@@ -20438,33 +20096,21 @@
                                 "type": "boolean"
                               },
                               "vision": {
-                                "anyOf": [
-                                  {
-                                    "type": "boolean"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "boolean",
+                                  "null"
                                 ]
                               },
                               "structuredOutput": {
-                                "anyOf": [
-                                  {
-                                    "type": "boolean"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "boolean",
+                                  "null"
                                 ]
                               },
                               "reasoning": {
-                                "anyOf": [
-                                  {
-                                    "type": "boolean"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "boolean",
+                                  "null"
                                 ]
                               }
                             },
@@ -20475,23 +20121,15 @@
                             "additionalProperties": {}
                           },
                           "contextWindow": {
-                            "anyOf": [
-                              {
-                                "type": "number"
-                              },
-                              {
-                                "type": "null"
-                              }
+                            "type": [
+                              "number",
+                              "null"
                             ]
                           },
                           "maxOutputTokens": {
-                            "anyOf": [
-                              {
-                                "type": "number"
-                              },
-                              {
-                                "type": "null"
-                              }
+                            "type": [
+                              "number",
+                              "null"
                             ]
                           }
                         },
@@ -20530,13 +20168,9 @@
             "type": "object",
             "properties": {
               "access": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "string",
+                  "null"
                 ]
               },
               "shell": {
@@ -20551,13 +20185,9 @@
                         "type": "string"
                       },
                       "executable": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       }
                     },
@@ -21140,23 +20770,15 @@
             "type": "boolean"
           },
           "version": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "path": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "auth": {
@@ -21837,23 +21459,15 @@
             "type": "boolean"
           },
           "version": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "path": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "auth": {
@@ -21935,23 +21549,15 @@
             "type": "boolean"
           },
           "version": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "path": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "auth": {
@@ -22464,13 +22070,9 @@
                   "type": "boolean"
                 },
                 "authMethod": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "string",
+                    "null"
                   ]
                 }
               },
@@ -22497,13 +22099,9 @@
                   "type": "boolean"
                 },
                 "authMethod": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "string",
+                    "null"
                   ]
                 }
               },
@@ -22800,13 +22398,9 @@
           "projectPermissions": {},
           "effectivePermissions": {},
           "activeProfile": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "hasProjectConfig": {
@@ -23073,33 +22667,21 @@
             "type": "boolean"
           },
           "user": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "version": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "path": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           }
         },
@@ -23129,23 +22711,15 @@
             "type": "boolean"
           },
           "version": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "path": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "auth": {
@@ -23167,23 +22741,15 @@
                 "type": "boolean"
               },
               "hasEnvApiKey": {
-                "anyOf": [
-                  {
-                    "type": "boolean"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "boolean",
+                  "null"
                 ]
               },
               "hasOAuthToken": {
-                "anyOf": [
-                  {
-                    "type": "boolean"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "boolean",
+                  "null"
                 ]
               }
             },
@@ -23219,13 +22785,9 @@
             ]
           },
           "recommendation": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           }
         },
@@ -23296,83 +22858,51 @@
                   "type": "string"
                 },
                 "providerId": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "string",
+                    "null"
                   ]
                 },
                 "contextWindow": {
-                  "anyOf": [
-                    {
-                      "type": "number"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "number",
+                    "null"
                   ]
                 },
                 "maxOutputTokens": {
-                  "anyOf": [
-                    {
-                      "type": "number"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "number",
+                    "null"
                   ]
                 },
                 "supportsVision": {
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "boolean",
+                    "null"
                   ]
                 },
                 "supportsTools": {
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "boolean",
+                    "null"
                   ]
                 },
                 "tier": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "string",
+                    "null"
                   ]
                 },
                 "default": {
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "boolean",
+                    "null"
                   ]
                 },
                 "hasReasoning": {
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "boolean",
+                    "null"
                   ]
                 }
               },
@@ -24405,9 +23935,19 @@
             "const": "ok"
           },
           "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?:Z))$"
+              }
+            ],
             "type": "string",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+            "format": "date-time"
           },
           "version": {
             "type": "string",
@@ -24910,9 +24450,19 @@
             "const": "ok"
           },
           "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?:Z))$"
+              }
+            ],
             "type": "string",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+            "format": "date-time"
           },
           "version": {
             "type": "string",
@@ -24935,9 +24485,19 @@
             "const": "ok"
           },
           "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?:Z))$"
+              }
+            ],
             "type": "string",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+            "format": "date-time"
           }
         },
         "required": [
@@ -25786,9 +25346,19 @@
             "const": "ready"
           },
           "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?:Z))$"
+              }
+            ],
             "type": "string",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+            "format": "date-time"
           }
         },
         "required": [
@@ -26138,13 +25708,9 @@
                     "type": "object",
                     "properties": {
                       "targetBranch": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       }
                     },
@@ -26560,13 +26126,9 @@
                       "type": "object",
                       "properties": {
                         "targetBranch": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         }
                       },
@@ -26972,13 +26534,9 @@
                     "type": "object",
                     "properties": {
                       "targetBranch": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       }
                     },
@@ -27386,13 +26944,9 @@
                     "type": "object",
                     "properties": {
                       "targetBranch": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       }
                     },
@@ -28435,13 +27989,9 @@
                 "type": "string"
               },
               "defaultDir": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "string",
+                  "null"
                 ]
               },
               "error": {
@@ -28470,13 +28020,9 @@
                 "type": "string"
               },
               "defaultDir": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "string",
+                  "null"
                 ]
               },
               "error": {
@@ -29506,13 +29052,9 @@
                 "type": "boolean"
               },
               "commitHash": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "string",
+                  "null"
                 ]
               },
               "pushed": {
@@ -29852,13 +29394,9 @@
                 "type": "string"
               },
               "branch": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "string",
+                  "null"
                 ]
               },
               "branchName": {
@@ -29974,13 +29512,9 @@
                 "type": "string"
               },
               "exitCode": {
-                "anyOf": [
-                  {
-                    "type": "number"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "number",
+                  "null"
                 ]
               },
               "logs": {
@@ -30805,13 +30339,9 @@
                       "type": "string"
                     },
                     "exitCode": {
-                      "anyOf": [
-                        {
-                          "type": "number"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "number",
+                        "null"
                       ]
                     },
                     "urlDetected": {
@@ -32134,13 +31664,9 @@
                 "type": "string"
               },
               "exitCode": {
-                "anyOf": [
-                  {
-                    "type": "number"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "number",
+                  "null"
                 ]
               },
               "message": {
@@ -32209,23 +31735,15 @@
                 "type": "string"
               },
               "finishedAt": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "string",
+                  "null"
                 ]
               },
               "exitCode": {
-                "anyOf": [
-                  {
-                    "type": "number"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "number",
+                  "null"
                 ]
               },
               "executionEnvironment": {
@@ -33026,23 +32544,15 @@
                 "type": "string"
               },
               "finishedAt": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "string",
+                  "null"
                 ]
               },
               "exitCode": {
-                "anyOf": [
-                  {
-                    "type": "number"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "number",
+                  "null"
                 ]
               },
               "executionEnvironment": {

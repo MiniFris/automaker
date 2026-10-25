@@ -144,7 +144,10 @@ describe.skipIf(process.platform !== 'linux')('target-side SDK setup and executi
         messages.push(message);
       expect(messages.at(-1)).toMatchObject({
         type: 'result',
-        session_id: `${provider}-actual-session`,
+        session_id:
+          provider === 'copilot'
+            ? await fs.readFile(path.join(options.cwd, 'actual-sdk-session-id.txt'), 'utf8')
+            : `${provider}-actual-session`,
       });
       expect(JSON.stringify(messages)).toContain('Actual installed SDK protocol completed');
       expect(await fs.readFile(path.join(options.cwd, 'actual-sdk-result.txt'), 'utf8')).toContain(

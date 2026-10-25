@@ -96,9 +96,14 @@
     "husky": "9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "3.7.4",
-    "vitest": "4.0.16"
+    "vitest": "4.1.12"
   },
   "optionalDependencies": {
     "dmg-license": "^1.0.11"
+  },
+  "overrides": {
+    "@nestjs/platform-express": {
+      "multer": "2.5.0"
+    }
   }
 }

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { EntityIdSchema, ProjectPathSchema } from '../common.js';
+import { EntityIdSchema, ProjectPathSchema, UtcDateTimeSchema } from '../common.js';
 import type {
   StoredEvent,
   StoredEventSummary,
@@ -12,8 +12,8 @@ const EventFilterSchema = z
   .object({
     trigger: z.string().trim().min(1).optional(),
     featureId: EntityIdSchema.optional(),
-    since: z.iso.datetime().optional(),
-    until: z.iso.datetime().optional(),
+    since: UtcDateTimeSchema.optional(),
+    until: UtcDateTimeSchema.optional(),
     limit: z.number().int().positive().max(1000).optional(),
     offset: z.number().int().nonnegative().optional(),
   })
