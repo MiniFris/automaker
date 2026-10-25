@@ -264,9 +264,9 @@ actual Local/private protocol/managed transport contracts. Эти доказат
       workflow по correlation id; actual contracts проверяют эту цепочку.
 - [x] Новая архитектура описана в contributor documentation; обязательные guards
       и contracts проверяют соблюдение заявленных границ в следующих изменениях.
-- [ ] Полный checkpoint этапа 11 успешно выполнен после глубокого рефакторинга и
-      зафиксирован завершающим коммитом в единственной migration-ветке. Targeted
-      counts не заменяют этот gate; его результат записывает основной агент.
+- [x] Полный checkpoint этапа 11 выполнен после глубокого рефакторинга:
+      source commit `56cb8535` в единственной migration-ветке, полные unit/contract/
+      package/SSH/Docker/architecture/OpenAPI suites и [финальные artifacts](artifacts/final-migration-acceptance.md).
 
 ## Остаток после wave23 source freeze
 
@@ -275,7 +275,7 @@ actual Local/private protocol/managed transport contracts. Эти доказат
 [pipeline uncertainty с restart barrier](artifacts/feature-execution-uncertainty-audit.md).
 Недостижимый generic test-step helper не возвращался для этих проверок.
 
-Остаётся финальный совместный checkpoint/commit. Строгая semantic application
+Финальный совместный checkpoint выполнен; source commit `56cb8535`. Строгая semantic application
 граница закрыта реальным переносом 25 use cases, independent inputs и parsing
 ports. Это не новый security/vendor/OS audit и не требование механически дробить
 каждый большой файл. [Матрица](artifacts/stage-11-completion-matrix.md)

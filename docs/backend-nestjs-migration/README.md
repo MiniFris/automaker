@@ -1,7 +1,7 @@
 # Полный перенос backend Automaker на NestJS
 
-Обновлено: 2026-10-25. Текущий фокус — завершение этапов 7–10 и оставшихся
-application/infra границ этапа 11. Результаты возобновлённой работы собраны
+Обновлено: 2026-10-25. Реализация этапов 0–11 и проверки в доступной локальной
+среде завершены. Результаты возобновлённой работы собраны
 в [первом checkpoint](artifacts/resumed-goal-checkpoint.md) и последующем
 [native cutover checkpoint](artifacts/native-cutover-checkpoint.md).
 Последующий проверенный срез: [run ownership, providers и filesystem](artifacts/run-ownership-provider-filesystem-checkpoint.md).
@@ -25,8 +25,9 @@ application/infra границ этапа 11. Результаты возобн�
 Предыдущий source checkpoint: [MCP, checkpoints и correlation](artifacts/mcp-checkpoints-correlation-checkpoint.md).
 Предыдущий source checkpoint: [project analysis, native CLI, pipeline и diagnostics](artifacts/project-analysis-cli-pipeline-checkpoint.md).
 Последний source checkpoint: [public ports, durable ownership и plain application](artifacts/public-ports-uncertainty-and-application-checkpoint.md).
-Полная миграция ещё не завершена; checklist и результаты проверок ведутся
-в документах соответствующих этапов.
+Финальный результат: [source + Web/Docker/Linux Electron, upgrade и rollback](artifacts/final-migration-acceptance.md).
+Условные проверки на других OS и внешний rollout перечислены отдельно;
+локальная приёмка не означает выполненный production deployment.
 
 ## Цель
 
@@ -249,7 +250,7 @@ recovery предусмотрен `npm run test:ui:bootstrap`; его fixture н
 
 - [x] Все коммиты миграции находятся в одной ветке `refactor/backend-nestjs-migration`;
       отдельные PR не требуются.
-- [ ] После каждого этапа 0–11 выполнен успешный тестовый checkpoint; команды
+- [x] После каждого этапа 0–11 выполнен успешный тестовый checkpoint; команды
       и результаты записаны в документ соответствующего этапа.
 - [x] Все HTTP routes обслуживаются Nest controllers.
 - [x] Оба WebSocket endpoint управляются Nest lifecycle.
@@ -257,15 +258,16 @@ recovery предусмотрен `npm run test:ui:bootstrap`; его fixture н
       не входящий в production build.
 - [x] Нет imports из `routes` в `services` и `providers`.
 - [x] Нет `get*Service()` singleton factories и side-effect provider registration.
-- [ ] Runtime configuration читается через типизированный config layer.
-- [ ] Startup/shutdown корректно завершают agents, PTY, Docker/SSH workers,
+- [x] Runtime configuration читается через типизированный config layer.
+- [x] Startup/shutdown корректно завершают agents, PTY, Docker/SSH workers,
       tests, dev servers, timers и sockets.
 - [x] HTTP/WS contract suites проходят без расхождений.
-- [ ] Web, Electron и Docker artifacts проходят smoke tests.
-- [ ] Сохранена обратная совместимость `.automaker/` и settings.
-- [ ] Завершить сверку документации deployment и разработки. Native architecture,
+- [x] Web, Electron и Docker artifacts проходят smoke tests.
+- [x] Сохранена обратная совместимость `.automaker/` и settings.
+- [x] Завершить сверку документации deployment и разработки. Native architecture,
       API/observability, storage downgrade и commands/checkpoints уже обновлены;
-      полный deployment/rollout checklist этапа 10 ещё не закрыт.
+      локальный packaging/upgrade checklist закрыт; внешний rollout остаётся
+      операционной процедурой для целевой среды.
 
 ## Внешние опорные материалы
 

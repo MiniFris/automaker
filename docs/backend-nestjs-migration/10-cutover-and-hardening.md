@@ -110,7 +110,8 @@ legacy Direct workspace policy и FSM notification ownership затем испр
 - [x] Liveness/readiness probes. Native HTTP проверяет public live/ready,
       protected detailed health и ready=503 при stopping; liveness остаётся 200.
       [Core HTTP contract](../../apps/server/tests/contract/core-response-contracts.contract.test.ts).
-- [ ] Graceful shutdown в Docker stop timeout.
+- [x] Graceful shutdown в Docker stop timeout: production smoke и четыре
+      upgrade/restart/rollback остановки завершились с кодом 0; [финальный checkpoint](artifacts/final-migration-acceptance.md).
 
 ## 10.4. Performance
 
@@ -216,25 +217,18 @@ Storage migrations должны быть backward-readable либо сопров
       [операционная процедура](../backend-storage-downgrade.md).
       Проверка конкретного старого artifact на staging остаётся частью rollout.
 
-## Оставшиеся acceptance gates на текущем срезе
+## Итог локальной приёмки и внешние условия
 
-- После следующих production изменений повторить artifact acceptance. Для backend
-  commit `86afe69c` свежие Web/Docker/Linux Electron artifacts уже проверены:
-  [checkpoint](artifacts/current-artifact-acceptance-checkpoint.md).
-- Private existing-volume upgrade/restart и snapshot rollback с выбранным старым
-  artifact прошли [реальную проверку](artifacts/backend-upgrade-acceptance.md).
-  Реальный operator/staging DATA_DIR и иные старые releases этим не проверены.
-- Sustained feature/event/provider/PTY workload и повторные workflows с проверкой
-  файловых дескрипторов и owned child processes. Idle budgets уже действуют,
-  sustained workload SLO ими не определяется.
-- Полная security/deployment matrix: proxy, cookie/CORS/CSRF и поддерживаемые
-  execution transports. Имеющиеся negative contracts закрывают конкретные paths,
-  но не позволяют автоматически отметить весь security review выполненным.
-- macOS/Windows packaged/process ownership acceptance на доступных OS runners;
-  Linux evidence не объявляется проверкой этих систем.
-- Сверка полного набора dependency rules, operational docs и rollout evidence.
-  Canary/prerelease/production rollout требуют соответствующей среды и отдельного
-  разрешения; локальная проверка не считается внешним deployment.
+[Финальный checkpoint](artifacts/final-migration-acceptance.md) закрывает actual
+Web/Docker/Linux Electron, existing-volume upgrade/restart и full-snapshot rollback
+для source `56cb8535`. Full suites, workload/FD/children, terminal backpressure,
+performance и native security/transport matrix подтверждены source checkpoint.
+
+Реальный operator/staging DATA_DIR и другие исторические releases требуют проверки
+в соответствующей среде. macOS/Windows packaged/process ownership проверяются на
+их OS runners; Linux evidence не считается такой проверкой. Canary, prerelease,
+production rollout и monitoring window остаются операционной последовательностью
+10.7 после выбора среды и разрешения на release. Внешний deployment не выполнялся.
 
 ## 10.8. Документация
 
@@ -249,7 +243,8 @@ Storage migrations должны быть backward-readable либо сопров
 - [x] WebSocket protocols.
 - [x] Startup/shutdown lifecycle. Admission/drain/FS barrier и unknown outcomes
       описаны в [lifecycle](../backend-architecture.md#lifecycle).
-- [ ] Electron/Docker packaging.
+- [x] Electron/Docker packaging: actual source `56cb8535`, Linux Electron и
+      production Docker smoke прошли; [команды и результаты](artifacts/final-migration-acceptance.md).
 - [x] Troubleshooting и rollback.
 
 ## Срез hardening: recovery при ошибке загрузки UI до React bootstrap
@@ -314,7 +309,7 @@ Checkpoint среза:
   `apps/ui` с штатным config. Guard unit harness использует Node URL constructor,
   чтобы Vite не превращал путь к HTML fixture в browser asset URL.
 
-Этап 10 не объявляется завершённым; этот срез устраняет конкретный дефект,
+На момент этого исторического среза этап 10 не был завершён; срез устраняет конкретный дефект,
 обнаруженный acceptance незавершённого этапа 7. Остальные cutover, security,
 packaging и stage gates остаются обязательными.
 
@@ -361,6 +356,6 @@ Specific new evidence is in [source checkpoint](artifacts/public-ports-uncertain
 [merge audit](artifacts/native-local-merge-environment-audit.md),
 [stage11 matrix](artifacts/stage-11-completion-matrix.md) and
 [terminal pressure acceptance](artifacts/terminal-backpressure-acceptance.md).
-The final source checkpoint records aggregate commands/results. Actual final
-Docker/Linux Electron/Web artifacts and old-volume upgrade/rollback remain the
-separate packaging gates; source review does not close them.
+The final source checkpoint records aggregate commands/results. The separate
+[final artifact checkpoint](artifacts/final-migration-acceptance.md) now records
+successful actual Docker/Linux Electron/Web and old-volume upgrade/rollback acceptance.
