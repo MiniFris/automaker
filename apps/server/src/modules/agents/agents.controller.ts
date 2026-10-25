@@ -4,6 +4,17 @@ import { AllowedPathFields, AllowedPathGuard } from '../../core/security/index.j
 import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
 import { AgentApplicationService } from './agent-application.service.js';
 import { RunningAgentsService } from './running-agents.service.js';
+import { RunningAgentsResponseSchema } from '@automaker/contracts/domains/running-agents';
+import {
+  AgentStartResponseSchema,
+  AgentSendResponseSchema,
+  AgentHistoryResponseSchema,
+  AgentMutationResponseSchema,
+  AgentClearResponseSchema,
+  AgentModelResponseSchema,
+  AgentQueueAddResponseSchema,
+  AgentQueueListResponseSchema,
+} from '@automaker/contracts/domains/agent';
 import {
   AgentModelSchema,
   AgentQueueAddSchema,
@@ -27,64 +38,66 @@ export class AgentsController {
   @Post('start')
   @HttpCode(200)
   @AllowedPathFields('workingDirectory?')
-  start(@Body(new ZodValidationPipe(AgentStartSchema)) body: AgentStartRequest) {
-    return this.agents.start(body);
+  async start(@Body(new ZodValidationPipe(AgentStartSchema)) body: AgentStartRequest) {
+    return AgentStartResponseSchema.parse(await this.agents.start(body));
   }
 
   @Post('send')
   @HttpCode(200)
   @AllowedPathFields('workingDirectory?', 'imagePaths?[]')
   send(@Body(new ZodValidationPipe(AgentSendSchema)) body: AgentSendRequest) {
-    return this.agents.send(body);
+    return AgentSendResponseSchema.parse(this.agents.send(body));
   }
 
   @Post('history')
   @HttpCode(200)
-  history(@Body(new ZodValidationPipe(AgentSessionSchema)) body: AgentSessionRequest) {
-    return this.agents.history(body);
+  async history(@Body(new ZodValidationPipe(AgentSessionSchema)) body: AgentSessionRequest) {
+    return AgentHistoryResponseSchema.parse(await this.agents.history(body));
   }
 
   @Post('stop')
   @HttpCode(200)
-  stop(@Body(new ZodValidationPipe(AgentSessionSchema)) body: AgentSessionRequest) {
-    return this.agents.stop(body);
+  async stop(@Body(new ZodValidationPipe(AgentSessionSchema)) body: AgentSessionRequest) {
+    return AgentMutationResponseSchema.parse(await this.agents.stop(body));
   }
 
   @Post('clear')
   @HttpCode(200)
-  clear(@Body(new ZodValidationPipe(AgentSessionSchema)) body: AgentSessionRequest) {
-    return this.agents.clear(body);
+  async clear(@Body(new ZodValidationPipe(AgentSessionSchema)) body: AgentSessionRequest) {
+    return AgentClearResponseSchema.parse(await this.agents.clear(body));
   }
 
   @Post('model')
   @HttpCode(200)
-  model(@Body(new ZodValidationPipe(AgentModelSchema)) body: AgentModelRequest) {
-    return this.agents.model(body);
+  async model(@Body(new ZodValidationPipe(AgentModelSchema)) body: AgentModelRequest) {
+    return AgentModelResponseSchema.parse(await this.agents.model(body));
   }
 
   @Post('queue/add')
   @HttpCode(200)
   @AllowedPathFields('imagePaths?[]')
-  queueAdd(@Body(new ZodValidationPipe(AgentQueueAddSchema)) body: AgentQueueAddRequest) {
-    return this.agents.queueAdd(body);
+  async queueAdd(@Body(new ZodValidationPipe(AgentQueueAddSchema)) body: AgentQueueAddRequest) {
+    return AgentQueueAddResponseSchema.parse(await this.agents.queueAdd(body));
   }
 
   @Post('queue/list')
   @HttpCode(200)
-  queueList(@Body(new ZodValidationPipe(AgentSessionSchema)) body: AgentSessionRequest) {
-    return this.agents.queueList(body);
+  async queueList(@Body(new ZodValidationPipe(AgentSessionSchema)) body: AgentSessionRequest) {
+    return AgentQueueListResponseSchema.parse(await this.agents.queueList(body));
   }
 
   @Post('queue/remove')
   @HttpCode(200)
-  queueRemove(@Body(new ZodValidationPipe(AgentQueueRemoveSchema)) body: AgentQueueRemoveRequest) {
-    return this.agents.queueRemove(body);
+  async queueRemove(
+    @Body(new ZodValidationPipe(AgentQueueRemoveSchema)) body: AgentQueueRemoveRequest
+  ) {
+    return AgentMutationResponseSchema.parse(await this.agents.queueRemove(body));
   }
 
   @Post('queue/clear')
   @HttpCode(200)
-  queueClear(@Body(new ZodValidationPipe(AgentSessionSchema)) body: AgentSessionRequest) {
-    return this.agents.queueClear(body);
+  async queueClear(@Body(new ZodValidationPipe(AgentSessionSchema)) body: AgentSessionRequest) {
+    return AgentMutationResponseSchema.parse(await this.agents.queueClear(body));
   }
 }
 
@@ -93,7 +106,7 @@ export class RunningAgentsController {
   constructor(@Inject(RunningAgentsService) private readonly running: RunningAgentsService) {}
 
   @Get()
-  list() {
-    return this.running.list();
+  async list() {
+    return RunningAgentsResponseSchema.parse(await this.running.list());
   }
 }

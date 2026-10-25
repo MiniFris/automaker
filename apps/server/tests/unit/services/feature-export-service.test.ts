@@ -595,6 +595,27 @@ title: Test
       expect(createCalls[1][1].category).toBe('ImportedCategory');
     });
 
+    it('keeps each bulk record when an untyped caller includes its original payload in options', async () => {
+      mockFeatureLoader.get.mockResolvedValue(null);
+      mockFeatureLoader.create.mockImplementation(async (_, data) => ({
+        ...sampleFeature,
+        ...data,
+      }));
+      const options = { data: JSON.stringify(bulkExport), targetCategory: 'ImportedCategory' };
+      const results = await exportService.importFeatures(testProjectPath, bulkExport, options);
+      expect(results).toHaveLength(2);
+      expect(results.every((result) => result.success)).toBe(true);
+      expect(
+        mockFeatureLoader.create.mock.calls.map(([, data]) => ({
+          id: data.id,
+          category: data.category,
+        }))
+      ).toEqual([
+        { id: 'feature-1', category: 'ImportedCategory' },
+        { id: 'feature-2', category: 'ImportedCategory' },
+      ]);
+    });
+
     it('should return error for invalid bulk format', async () => {
       const results = await exportService.importFeatures(testProjectPath, '{ "invalid": "data" }');
 

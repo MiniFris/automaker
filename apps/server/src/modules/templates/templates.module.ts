@@ -7,7 +7,7 @@ import { TemplatesService } from './templates.service.js';
   controllers: [TemplatesController],
   providers: [
     TemplatesService,
-    { provide: TEMPLATE_COMMAND_RUNNER, useClass: SpawnTemplateCommandRunner },
+    { provide: TEMPLATE_COMMAND_RUNNER, useFactory: () => new SpawnTemplateCommandRunner() },
   ],
 })
 export class TemplatesModule {}

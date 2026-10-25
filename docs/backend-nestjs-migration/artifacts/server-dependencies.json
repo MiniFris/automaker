@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 534,
-    "internalEdges": 1861,
+    "files": 530,
+    "internalEdges": 1856,
     "stronglyConnectedComponents": 2
   },
   "layerEdges": {
@@ -13,11 +13,11 @@
     "core -> services": 9,
     "lib -> lib": 4,
     "lib -> services": 1,
-    "modules -> core": 191,
+    "modules -> core": 192,
     "modules -> lib": 54,
     "modules -> modules": 387,
     "modules -> providers": 33,
-    "modules -> services": 178,
+    "modules -> services": 180,
     "modules -> types": 2,
     "providers -> core": 1,
     "providers -> lib": 3,
@@ -31,8 +31,8 @@
     "routes -> middleware": 4,
     "routes -> modules": 3,
     "routes -> providers": 6,
-    "routes -> routes": 158,
-    "routes -> services": 90,
+    "routes -> routes": 152,
+    "routes -> services": 88,
     "routes -> types": 2,
     "services -> core": 29,
     "services -> lib": 67,
@@ -220,6 +220,8 @@
       "apps/server/src/modules/providers/codex-verification.service.ts",
       "apps/server/src/modules/settings/agent-profile.source.ts",
       "apps/server/src/modules/settings/legacy-profile-importer.ts",
+      "apps/server/src/modules/templates/template-command.runner.ts",
+      "apps/server/src/modules/templates/templates.service.ts",
       "apps/server/src/modules/terminal/terminal-access.service.ts",
       "apps/server/src/modules/terminal/websocket-transport.service.ts",
       "apps/server/src/providers/openai-compatible/agent-loop.ts",
@@ -272,10 +274,14 @@
   "externalImports": {
     "@anthropic-ai/claude-agent-sdk": 3,
     "@automaker/contracts": 25,
+    "@automaker/contracts/domains/agent": 1,
     "@automaker/contracts/domains/auth": 1,
+    "@automaker/contracts/domains/context": 1,
     "@automaker/contracts/domains/event-history": 1,
+    "@automaker/contracts/domains/feature-responses": 1,
     "@automaker/contracts/domains/ideation": 1,
     "@automaker/contracts/domains/notifications": 1,
+    "@automaker/contracts/domains/running-agents": 1,
     "@automaker/contracts/domains/setup-query": 5,
     "@automaker/contracts/domains/templates": 1,
     "@automaker/contracts/domains/terminal": 2,
@@ -286,7 +292,7 @@
     "@automaker/platform": 56,
     "@automaker/prompts": 3,
     "@automaker/types": 164,
-    "@automaker/utils": 142,
+    "@automaker/utils": 140,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
@@ -304,7 +310,7 @@
     "crypto": 2,
     "dotenv": 1,
     "events": 1,
-    "express": 106,
+    "express": 104,
     "fflate": 1,
     "fs": 10,
     "fs/promises": 12,
@@ -321,7 +327,7 @@
     "node:net": 3,
     "node:os": 11,
     "node:path": 62,
-    "node:perf_hooks": 22,
+    "node:perf_hooks": 23,
     "node:stream": 6,
     "node:stream/web": 2,
     "node:string_decoder": 4,
@@ -329,7 +335,7 @@
     "node:url": 4,
     "node:util": 13,
     "os": 11,
-    "path": 55,
+    "path": 54,
     "reflect-metadata": 1,
     "ssh2": 3,
     "url": 1,
@@ -3957,6 +3963,14 @@
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
+      "source": "apps/server/src/modules/templates/template-command.runner.ts",
+      "target": "apps/server/src/core/errors/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/templates/template-command.runner.ts",
+      "target": "apps/server/src/services/owned-local-child.ts"
+    },
+    {
       "source": "apps/server/src/modules/templates/templates.controller.ts",
       "target": "apps/server/src/core/validation/zod-validation.pipe.ts"
     },
@@ -3999,6 +4013,10 @@
     {
       "source": "apps/server/src/modules/templates/templates.service.ts",
       "target": "apps/server/src/modules/templates/templates.schemas.ts"
+    },
+    {
+      "source": "apps/server/src/modules/templates/templates.service.ts",
+      "target": "apps/server/src/services/owned-local-child.ts"
     },
     {
       "source": "apps/server/src/modules/terminal/terminal-access.service.ts",
@@ -4983,38 +5001,6 @@
     {
       "source": "apps/server/src/routes/pipeline/routes/update-step.ts",
       "target": "apps/server/src/services/pipeline-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/running-agents/common.ts",
-      "target": "apps/server/src/routes/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/running-agents/routes/index.ts",
-      "target": "apps/server/src/routes/app-spec/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/running-agents/routes/index.ts",
-      "target": "apps/server/src/routes/backlog-plan/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/running-agents/routes/index.ts",
-      "target": "apps/server/src/routes/running-agents/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/running-agents/routes/index.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
-    },
-    {
-      "source": "apps/server/src/routes/sessions/common.ts",
-      "target": "apps/server/src/routes/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/sessions/routes/index.ts",
-      "target": "apps/server/src/routes/sessions/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/sessions/routes/index.ts",
-      "target": "apps/server/src/services/agent-service.ts"
     },
     {
       "source": "apps/server/src/routes/settings/common.ts",

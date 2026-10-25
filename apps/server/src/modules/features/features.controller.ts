@@ -1,4 +1,19 @@
 import {
+  FeatureListResponseSchema,
+  FeatureRecordResponseSchema,
+  FeatureOutputResponseSchema,
+  FeatureDeleteResponseSchema,
+  FeatureTitleResponseSchema,
+  FeatureExportResponseSchema,
+  FeatureOperationResultSchema,
+  FeatureBulkUpdateResponseSchema,
+  FeatureBulkDeleteResponseSchema,
+  FeatureImportResponseSchema,
+  FeatureBulkResolveResponseSchema,
+  FeatureConflictResponseSchema,
+  FeatureOrphanedResponseSchema,
+} from '@automaker/contracts/domains/feature-responses';
+import {
   Body,
   Controller,
   Get,
@@ -53,131 +68,145 @@ export class FeaturesController {
 
   @Get('list')
   @AllowedPathFields('projectPath')
-  listGet(@Query(new ZodValidationPipe(FeatureListSchema)) input: FeatureListRequest) {
-    return this.queries.list(input.projectPath);
+  async listGet(@Query(new ZodValidationPipe(FeatureListSchema)) input: FeatureListRequest) {
+    return FeatureListResponseSchema.parse(await this.queries.list(input.projectPath));
   }
 
   @Post('list')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  listPost(@Body(new ZodValidationPipe(FeatureListSchema)) input: FeatureListRequest) {
-    return this.queries.list(input.projectPath);
+  async listPost(@Body(new ZodValidationPipe(FeatureListSchema)) input: FeatureListRequest) {
+    return FeatureListResponseSchema.parse(await this.queries.list(input.projectPath));
   }
 
   @Post('get')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  get(@Body(new ZodValidationPipe(ProjectFeatureSchema)) input: ProjectFeatureRequest) {
-    return this.queries.get(input.projectPath, input.featureId);
+  async get(@Body(new ZodValidationPipe(ProjectFeatureSchema)) input: ProjectFeatureRequest) {
+    return FeatureRecordResponseSchema.parse(
+      await this.queries.get(input.projectPath, input.featureId)
+    );
   }
 
   @Post('agent-output')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  agentOutput(@Body(new ZodValidationPipe(ProjectFeatureSchema)) input: ProjectFeatureRequest) {
-    return this.queries.agentOutput(input.projectPath, input.featureId);
+  async agentOutput(
+    @Body(new ZodValidationPipe(ProjectFeatureSchema)) input: ProjectFeatureRequest
+  ) {
+    return FeatureOutputResponseSchema.parse(
+      await this.queries.agentOutput(input.projectPath, input.featureId)
+    );
   }
 
   @Post('raw-output')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  rawOutput(@Body(new ZodValidationPipe(ProjectFeatureSchema)) input: ProjectFeatureRequest) {
-    return this.queries.rawOutput(input.projectPath, input.featureId);
+  async rawOutput(@Body(new ZodValidationPipe(ProjectFeatureSchema)) input: ProjectFeatureRequest) {
+    return FeatureOutputResponseSchema.parse(
+      await this.queries.rawOutput(input.projectPath, input.featureId)
+    );
   }
 
   @Post('export')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  export(@Body(new ZodValidationPipe(FeatureExportSchema)) input: FeatureExportRequest) {
-    return this.queries.export(input);
+  async export(@Body(new ZodValidationPipe(FeatureExportSchema)) input: FeatureExportRequest) {
+    return FeatureExportResponseSchema.parse(await this.queries.export(input));
   }
 
   @Post('check-conflicts')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  conflicts(
+  async conflicts(
     @Body(new ZodValidationPipe(FeatureConflictCheckSchema)) input: FeatureConflictCheckRequest
   ) {
-    return this.queries.conflicts(input);
+    return FeatureConflictResponseSchema.parse(await this.queries.conflicts(input));
   }
 
   @Post('orphaned')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  orphaned(@Body(new ZodValidationPipe(FeatureListSchema)) input: FeatureListRequest) {
-    return this.queries.orphaned(input.projectPath);
+  async orphaned(@Body(new ZodValidationPipe(FeatureListSchema)) input: FeatureListRequest) {
+    return FeatureOrphanedResponseSchema.parse(await this.queries.orphaned(input.projectPath));
   }
 
   @Post('create')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  create(@Body(new ZodValidationPipe(FeatureCreateSchema)) input: FeatureCreateRequest) {
-    return this.commands.create(input);
+  async create(@Body(new ZodValidationPipe(FeatureCreateSchema)) input: FeatureCreateRequest) {
+    return FeatureRecordResponseSchema.parse(await this.commands.create(input));
   }
 
   @Post('update')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  update(@Body(new ZodValidationPipe(FeatureUpdateSchema)) input: FeatureUpdateRequest) {
-    return this.commands.update(input);
+  async update(@Body(new ZodValidationPipe(FeatureUpdateSchema)) input: FeatureUpdateRequest) {
+    return FeatureRecordResponseSchema.parse(await this.commands.update(input));
   }
 
   @Post('delete')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  remove(@Body(new ZodValidationPipe(ProjectFeatureSchema)) input: ProjectFeatureRequest) {
-    return this.commands.remove(input.projectPath, input.featureId);
+  async remove(@Body(new ZodValidationPipe(ProjectFeatureSchema)) input: ProjectFeatureRequest) {
+    return FeatureDeleteResponseSchema.parse(
+      await this.commands.remove(input.projectPath, input.featureId)
+    );
   }
 
   @Post('bulk-update')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  bulkUpdate(
+  async bulkUpdate(
     @Body(new ZodValidationPipe(FeatureBulkUpdateSchema)) input: FeatureBulkUpdateRequest
   ) {
-    return this.commands.bulkUpdate(input);
+    return FeatureBulkUpdateResponseSchema.parse(await this.commands.bulkUpdate(input));
   }
 
   @Post('bulk-delete')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  bulkDelete(
+  async bulkDelete(
     @Body(new ZodValidationPipe(FeatureBulkDeleteSchema)) input: FeatureBulkDeleteRequest
   ) {
-    return this.commands.bulkDelete(input);
+    return FeatureBulkDeleteResponseSchema.parse(await this.commands.bulkDelete(input));
   }
 
   @Post('import')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  import(@Body(new ZodValidationPipe(FeatureImportSchema)) input: FeatureImportRequest) {
-    return this.commands.import(input);
+  async import(@Body(new ZodValidationPipe(FeatureImportSchema)) input: FeatureImportRequest) {
+    return FeatureImportResponseSchema.parse(await this.commands.import(input));
   }
 
   @Post('orphaned/resolve')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  resolveOrphan(@Body(new ZodValidationPipe(OrphanResolveSchema)) input: OrphanResolveRequest) {
-    return this.commands.resolveOrphan(input);
+  async resolveOrphan(
+    @Body(new ZodValidationPipe(OrphanResolveSchema)) input: OrphanResolveRequest
+  ) {
+    return FeatureOperationResultSchema.parse(await this.commands.resolveOrphan(input));
   }
 
   @Post('orphaned/bulk-resolve')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  bulkResolveOrphans(
+  async bulkResolveOrphans(
     @Body(new ZodValidationPipe(OrphanBulkResolveSchema)) input: OrphanBulkResolveRequest
   ) {
-    return this.commands.bulkResolveOrphans(input);
+    return FeatureBulkResolveResponseSchema.parse(await this.commands.bulkResolveOrphans(input));
   }
 
   @Post('generate-title')
   @HttpCode(200)
-  generateTitle(
+  async generateTitle(
     @Body(new ZodValidationPipe(FeatureTitleSchema)) input: FeatureTitleRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.withCancellation(response, (controller) =>
-      this.titles.generate(input.description, input.projectPath, controller)
+    return FeatureTitleResponseSchema.parse(
+      await this.withCancellation(response, (controller) =>
+        this.titles.generate(input.description, input.projectPath, controller)
+      )
     );
   }
 

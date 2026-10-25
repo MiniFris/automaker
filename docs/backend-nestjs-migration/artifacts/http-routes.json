@@ -44,7 +44,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/agents/agents.controller.ts",
-      "line": 53,
+      "line": 64,
       "middleware": [
         "AgentsController.clear"
       ],
@@ -59,7 +59,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/agents/agents.controller.ts",
-      "line": 41,
+      "line": 52,
       "middleware": [
         "AgentsController.history"
       ],
@@ -74,7 +74,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/agents/agents.controller.ts",
-      "line": 59,
+      "line": 70,
       "middleware": [
         "AgentsController.model"
       ],
@@ -89,7 +89,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/agents/agents.controller.ts",
-      "line": 65,
+      "line": 76,
       "middleware": [
         "AgentsController.queueAdd"
       ],
@@ -104,7 +104,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/agents/agents.controller.ts",
-      "line": 84,
+      "line": 97,
       "middleware": [
         "AgentsController.queueClear"
       ],
@@ -119,7 +119,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/agents/agents.controller.ts",
-      "line": 72,
+      "line": 83,
       "middleware": [
         "AgentsController.queueList"
       ],
@@ -134,7 +134,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/agents/agents.controller.ts",
-      "line": 78,
+      "line": 89,
       "middleware": [
         "AgentsController.queueRemove"
       ],
@@ -149,7 +149,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/agents/agents.controller.ts",
-      "line": 34,
+      "line": 45,
       "middleware": [
         "AgentsController.send"
       ],
@@ -164,7 +164,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/agents/agents.controller.ts",
-      "line": 27,
+      "line": 38,
       "middleware": [
         "AgentsController.start"
       ],
@@ -179,7 +179,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/agents/agents.controller.ts",
-      "line": 47,
+      "line": 58,
       "middleware": [
         "AgentsController.stop"
       ],
@@ -629,7 +629,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/context/context.controller.ts",
-      "line": 20,
+      "line": 24,
       "middleware": [
         "ContextController.describeFile"
       ],
@@ -644,7 +644,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/context/context.controller.ts",
-      "line": 32,
+      "line": 38,
       "middleware": [
         "ContextController.describeImage"
       ],
@@ -749,7 +749,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/features/features.controller.ts",
-      "line": 74,
+      "line": 91,
       "middleware": [
         "FeaturesController.agentOutput"
       ],
@@ -764,7 +764,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/features/features.controller.ts",
-      "line": 141,
+      "line": 166,
       "middleware": [
         "FeaturesController.bulkDelete"
       ],
@@ -779,7 +779,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/features/features.controller.ts",
-      "line": 132,
+      "line": 157,
       "middleware": [
         "FeaturesController.bulkUpdate"
       ],
@@ -794,7 +794,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/features/features.controller.ts",
-      "line": 95,
+      "line": 118,
       "middleware": [
         "FeaturesController.conflicts"
       ],
@@ -809,7 +809,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/features/features.controller.ts",
-      "line": 111,
+      "line": 134,
       "middleware": [
         "FeaturesController.create"
       ],
@@ -824,7 +824,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/features/features.controller.ts",
-      "line": 125,
+      "line": 148,
       "middleware": [
         "FeaturesController.remove"
       ],
@@ -839,7 +839,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/features/features.controller.ts",
-      "line": 88,
+      "line": 111,
       "middleware": [
         "FeaturesController.export"
       ],
@@ -854,7 +854,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/features/features.controller.ts",
-      "line": 173,
+      "line": 200,
       "middleware": [
         "FeaturesController.generateTitle"
       ],
@@ -869,7 +869,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/features/features.controller.ts",
-      "line": 67,
+      "line": 82,
       "middleware": [
         "FeaturesController.get"
       ],
@@ -884,7 +884,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/features/features.controller.ts",
-      "line": 150,
+      "line": 175,
       "middleware": [
         "FeaturesController.import"
       ],
@@ -899,7 +899,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/features/features.controller.ts",
-      "line": 54,
+      "line": 69,
       "middleware": [
         "FeaturesController.listGet"
       ],
@@ -914,7 +914,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/features/features.controller.ts",
-      "line": 60,
+      "line": 75,
       "middleware": [
         "FeaturesController.listPost"
       ],
@@ -929,7 +929,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/features/features.controller.ts",
-      "line": 164,
+      "line": 191,
       "middleware": [
         "FeaturesController.bulkResolveOrphans"
       ],
@@ -944,7 +944,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/features/features.controller.ts",
-      "line": 157,
+      "line": 182,
       "middleware": [
         "FeaturesController.resolveOrphan"
       ],
@@ -959,7 +959,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/features/features.controller.ts",
-      "line": 104,
+      "line": 127,
       "middleware": [
         "FeaturesController.orphaned"
       ],
@@ -974,7 +974,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/features/features.controller.ts",
-      "line": 81,
+      "line": 102,
       "middleware": [
         "FeaturesController.rawOutput"
       ],
@@ -989,7 +989,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/features/features.controller.ts",
-      "line": 118,
+      "line": 141,
       "middleware": [
         "FeaturesController.update"
       ],
@@ -2129,7 +2129,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/agents/agents.controller.ts",
-      "line": 95,
+      "line": 108,
       "middleware": [
         "RunningAgentsController.list"
       ],

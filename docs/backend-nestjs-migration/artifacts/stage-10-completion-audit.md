@@ -48,6 +48,10 @@ checkpoint; wave 8 results are recorded separately by the owning checkpoint.
   from production. The last managed dev/test getter exports and their WeakMaps
   were removed; test fixtures now pass explicit owners. Getter/module-instance
   negative guards supplement existing architecture checks (13 fixture cases).
+- Subsequent native response tests retired four Running Agents/Sessions route
+  files, leaving 90 characterization files. Template command/workflow ownership,
+  clone target exclusion and bulk-import correction are recorded in the
+  [template/coverage checkpoint](template-coverage-retirement-checkpoint.md).
 - Deleting source-only compatibility factories, accounting for temporary
   flags, and completing public-module/cycle/framework-free dependency rules remain
   source/architecture gates. There is no new evidence of a live legacy bridge.

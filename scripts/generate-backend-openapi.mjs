@@ -115,7 +115,7 @@ function guardedInputSchema(method, parameterName) {
   return undefined;
 }
 
-function ownsResponseBody(method, parameter, decorator) {
+export function ownsResponseBody(method, parameter, decorator) {
   const options = decorator.arguments[0];
   const passthrough =
     options &&
@@ -127,22 +127,96 @@ function ownsResponseBody(method, parameter, decorator) {
         p.initializer.kind === ts.SyntaxKind.TrueKeyword
     );
   if (!passthrough || !ts.isIdentifier(parameter.name)) return true;
-  const name = parameter.name.text;
-  let manual = false;
-  function visit(node) {
-    if (ts.isIdentifier(node) && node.text === name) {
-      const parent = node.parent;
+  const fluent = new Set([
+    'cookie',
+    'clearCookie',
+    'setHeader',
+    'header',
+    'append',
+    'on',
+    'once',
+    'off',
+    'removeListener',
+  ]);
+  const reads = new Set(['writableEnded', 'writableFinished', 'destroyed', 'headersSent']);
+  const seen = new Set();
+  function usesBody(owner, name) {
+    const key = `${owner.pos}:${name}`;
+    if (seen.has(key) || !owner.body) return true;
+    seen.add(key);
+    let manual = false;
+    function allowed(reference) {
+      let expression = reference;
+      while (
+        ts.isPropertyAccessExpression(expression.parent) &&
+        expression.parent.expression === expression
+      ) {
+        const access = expression.parent;
+        if (reads.has(access.name.text)) {
+          const use = access.parent;
+          return !(
+            (ts.isBinaryExpression(use) &&
+              use.left === access &&
+              use.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
+              use.operatorToken.kind <= ts.SyntaxKind.LastAssignment) ||
+            ts.isDeleteExpression(use) ||
+            ((ts.isPrefixUnaryExpression(use) || ts.isPostfixUnaryExpression(use)) &&
+              [ts.SyntaxKind.PlusPlusToken, ts.SyntaxKind.MinusMinusToken].includes(use.operator))
+          );
+        }
+        if (!fluent.has(access.name.text)) return false;
+        const call = access.parent;
+        if (!ts.isCallExpression(call) || call.expression !== access) return false;
+        if (['on', 'once'].includes(access.name.text)) {
+          const listener = call.arguments[1];
+          const local =
+            ts.isIdentifier(listener ?? {}) &&
+            owner.body.statements
+              .flatMap((statement) =>
+                ts.isVariableStatement(statement) ? [...statement.declarationList.declarations] : []
+              )
+              .find(
+                (declaration) =>
+                  ts.isIdentifier(declaration.name) && declaration.name.text === listener.text
+              )?.initializer;
+          // EventEmitter binds ordinary callbacks to Response itself. Only lexical
+          // arrows can be inspected here without granting an implicit body writer.
+          if (
+            !listener ||
+            (!ts.isArrowFunction(listener) && (!local || !ts.isArrowFunction(local)))
+          )
+            return false;
+        }
+        expression = call;
+      }
+      if (expression !== reference) return ts.isExpressionStatement(expression.parent);
+      const call = reference.parent;
+      if (!ts.isCallExpression(call)) return false;
+      const index = call.arguments.indexOf(reference);
       if (
-        !ts.isPropertyAccessExpression(parent) ||
-        parent.expression !== node ||
-        !['cookie', 'clearCookie', 'setHeader', 'header', 'append'].includes(parent.name.text)
+        index < 0 ||
+        !ts.isPropertyAccessExpression(call.expression) ||
+        call.expression.expression.kind !== ts.SyntaxKind.ThisKeyword
       )
-        manual = true;
+        return false;
+      const container = owner.parent;
+      if (!ts.isClassDeclaration(container)) return false;
+      const helper = container.members.find(
+        (member) =>
+          ts.isMethodDeclaration(member) && member.name.getText() === call.expression.name.text
+      );
+      const input = helper?.parameters[index];
+      return !!input && ts.isIdentifier(input.name) && !usesBody(helper, input.name.text);
     }
-    ts.forEachChild(node, visit);
+    function visit(node) {
+      if (ts.isIdentifier(node) && node.text === name && !allowed(node)) manual = true;
+      ts.forEachChild(node, visit);
+    }
+    visit(owner.body);
+    seen.delete(key);
+    return manual;
   }
-  if (method.body) visit(method.body);
-  return manual;
+  return usesBody(method, parameter.name.text);
 }
 
 async function operation(endpoint) {

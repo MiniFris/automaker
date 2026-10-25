@@ -66,7 +66,10 @@ test('publishes an output schema only for a direct shared runtime parse response
   const schema = document.components.schemas[reference.split('/').at(-1)];
   assert.equal(schema.properties.seriesLimit.const, 2048);
   assert.ok(schema.required.includes('providerActiveQueries'));
-  assert.equal(document.paths['/api/features/get'].post['x-response-contract'], 'unverified');
+  assert.equal(
+    document.paths['/api/terminal/sessions/{id}'].get['x-response-contract'],
+    'unverified'
+  );
 });
 
 test('recognizes guarded whole-body validation without narrowing the terminal wire contract', () => {
@@ -120,4 +123,25 @@ test('publishes session and project runtime response schemas with typed nested r
   const overview = document.components.schemas['shared.ProjectsOverviewResponseSchema.Response'];
   assert.equal(overview.properties.projects.items.properties.healthStatus.type, 'string');
   assert.ok(overview.properties.aggregate.required.includes('featureCounts'));
+});
+
+test('recognizes inspected cancellation helpers and the native running-agent response', () => {
+  for (const path of ['/api/context/describe-file', '/api/context/describe-image']) {
+    const operation = document.paths[path].post;
+    assert.equal(operation['x-response-contract'], 'shared-runtime');
+    const schema =
+      document.components.schemas[
+        operation.responses['200'].content['application/json'].schema.$ref.split('/').at(-1)
+      ];
+    assert.equal(schema.properties.description.type, 'string');
+    assert.ok(schema.required.includes('description'));
+  }
+  const operation = document.paths['/api/running-agents'].get;
+  assert.equal(operation['x-response-contract'], 'shared-runtime');
+  const schema =
+    document.components.schemas[
+      operation.responses['200'].content['application/json'].schema.$ref.split('/').at(-1)
+    ];
+  assert.equal(schema.properties.totalCount.minimum, 0);
+  assert.ok(schema.properties.runningAgents.items.required.includes('featureId'));
 });

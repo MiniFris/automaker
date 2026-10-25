@@ -47,6 +47,7 @@ describe('migrated edge Nest modules', () => {
     const filesystem = {
       access: vi.fn().mockRejectedValue(Object.assign(new Error('missing'), { code: 'ENOENT' })),
       mkdir: vi.fn().mockResolvedValue(undefined),
+      lstat: vi.fn().mockResolvedValue({ isDirectory: () => true, dev: 1, ino: 2 }),
       rm: vi.fn().mockResolvedValue(undefined),
     };
     const commands: TemplateCommandRunner = {
@@ -75,7 +76,8 @@ describe('migrated edge Nest modules', () => {
       1,
       'git',
       ['clone', 'https://github.com/example/template.git', '/workspace/sample'],
-      '/workspace'
+      '/workspace',
+      expect.any(AbortSignal)
     );
     expect(filesystem.rm).toHaveBeenCalledWith('/workspace/sample/.git', {
       recursive: true,
@@ -88,6 +90,7 @@ describe('migrated edge Nest modules', () => {
     const filesystem = {
       access: vi.fn().mockRejectedValue(Object.assign(new Error('missing'), { code: 'ENOENT' })),
       mkdir: vi.fn().mockResolvedValue(undefined),
+      lstat: vi.fn().mockResolvedValue({ isDirectory: () => true, dev: 1, ino: 2 }),
       rm: vi.fn().mockResolvedValue(undefined),
     };
     const module = await Test.createTestingModule({

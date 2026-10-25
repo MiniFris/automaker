@@ -9,8 +9,8 @@
     "operations": 318,
     "sharedOrNoInput": 296,
     "incompleteInput": 22,
-    "sharedRuntimeResponses": 30,
-    "unverifiedResponses": 288
+    "sharedRuntimeResponses": 60,
+    "unverifiedResponses": 258
   },
   "paths": {
     "/api/agent/clear": {
@@ -19,10 +19,10 @@
         "tags": [
           "agent"
         ],
-        "x-source": "apps/server/src/modules/agents/agents.controller.ts:53",
+        "x-source": "apps/server/src/modules/agents/agents.controller.ts:64",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -35,7 +35,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/agent.AgentClearResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -49,10 +56,10 @@
         "tags": [
           "agent"
         ],
-        "x-source": "apps/server/src/modules/agents/agents.controller.ts:41",
+        "x-source": "apps/server/src/modules/agents/agents.controller.ts:52",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -65,7 +72,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/agent.AgentHistoryResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -79,10 +93,10 @@
         "tags": [
           "agent"
         ],
-        "x-source": "apps/server/src/modules/agents/agents.controller.ts:59",
+        "x-source": "apps/server/src/modules/agents/agents.controller.ts:70",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -95,7 +109,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/agent.AgentModelResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -109,10 +130,10 @@
         "tags": [
           "agent"
         ],
-        "x-source": "apps/server/src/modules/agents/agents.controller.ts:65",
+        "x-source": "apps/server/src/modules/agents/agents.controller.ts:76",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -125,7 +146,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/agent.AgentQueueAddResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -139,10 +167,10 @@
         "tags": [
           "agent"
         ],
-        "x-source": "apps/server/src/modules/agents/agents.controller.ts:84",
+        "x-source": "apps/server/src/modules/agents/agents.controller.ts:97",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -155,7 +183,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/agent.AgentMutationResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -169,10 +204,10 @@
         "tags": [
           "agent"
         ],
-        "x-source": "apps/server/src/modules/agents/agents.controller.ts:72",
+        "x-source": "apps/server/src/modules/agents/agents.controller.ts:83",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -185,7 +220,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/agent.AgentQueueListResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -199,10 +241,10 @@
         "tags": [
           "agent"
         ],
-        "x-source": "apps/server/src/modules/agents/agents.controller.ts:78",
+        "x-source": "apps/server/src/modules/agents/agents.controller.ts:89",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -215,7 +257,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/agent.AgentMutationResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -229,10 +278,10 @@
         "tags": [
           "agent"
         ],
-        "x-source": "apps/server/src/modules/agents/agents.controller.ts:34",
+        "x-source": "apps/server/src/modules/agents/agents.controller.ts:45",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -245,7 +294,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/agent.AgentSendResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -259,10 +315,10 @@
         "tags": [
           "agent"
         ],
-        "x-source": "apps/server/src/modules/agents/agents.controller.ts:27",
+        "x-source": "apps/server/src/modules/agents/agents.controller.ts:38",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -275,7 +331,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/agent.AgentStartResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -289,10 +352,10 @@
         "tags": [
           "agent"
         ],
-        "x-source": "apps/server/src/modules/agents/agents.controller.ts:47",
+        "x-source": "apps/server/src/modules/agents/agents.controller.ts:58",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -305,7 +368,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/agent.AgentMutationResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -1168,10 +1238,10 @@
         "tags": [
           "context"
         ],
-        "x-source": "apps/server/src/modules/context/context.controller.ts:20",
+        "x-source": "apps/server/src/modules/context/context.controller.ts:24",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1183,8 +1253,18 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/context.DescribeFileResponseSchema.Response"
+                }
+              }
+            }
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -1195,10 +1275,10 @@
         "tags": [
           "context"
         ],
-        "x-source": "apps/server/src/modules/context/context.controller.ts:32",
+        "x-source": "apps/server/src/modules/context/context.controller.ts:38",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1210,8 +1290,18 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/context.DescribeImageResponseSchema.Response"
+                }
+              }
+            }
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -1437,10 +1527,10 @@
         "tags": [
           "features"
         ],
-        "x-source": "apps/server/src/modules/features/features.controller.ts:74",
+        "x-source": "apps/server/src/modules/features/features.controller.ts:91",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1453,7 +1543,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/feature-responses.FeatureOutputResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -1467,10 +1564,10 @@
         "tags": [
           "features"
         ],
-        "x-source": "apps/server/src/modules/features/features.controller.ts:141",
+        "x-source": "apps/server/src/modules/features/features.controller.ts:166",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1483,7 +1580,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/feature-responses.FeatureBulkDeleteResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -1497,10 +1601,10 @@
         "tags": [
           "features"
         ],
-        "x-source": "apps/server/src/modules/features/features.controller.ts:132",
+        "x-source": "apps/server/src/modules/features/features.controller.ts:157",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1513,7 +1617,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/feature-responses.FeatureBulkUpdateResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -1527,10 +1638,10 @@
         "tags": [
           "features"
         ],
-        "x-source": "apps/server/src/modules/features/features.controller.ts:95",
+        "x-source": "apps/server/src/modules/features/features.controller.ts:118",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1543,7 +1654,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/feature-responses.FeatureConflictResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -1557,10 +1675,10 @@
         "tags": [
           "features"
         ],
-        "x-source": "apps/server/src/modules/features/features.controller.ts:111",
+        "x-source": "apps/server/src/modules/features/features.controller.ts:134",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1573,7 +1691,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/feature-responses.FeatureRecordResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -1587,10 +1712,10 @@
         "tags": [
           "features"
         ],
-        "x-source": "apps/server/src/modules/features/features.controller.ts:125",
+        "x-source": "apps/server/src/modules/features/features.controller.ts:148",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1603,7 +1728,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/feature-responses.FeatureDeleteResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -1617,10 +1749,10 @@
         "tags": [
           "features"
         ],
-        "x-source": "apps/server/src/modules/features/features.controller.ts:88",
+        "x-source": "apps/server/src/modules/features/features.controller.ts:111",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1633,7 +1765,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/feature-responses.FeatureExportResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -1647,10 +1786,10 @@
         "tags": [
           "features"
         ],
-        "x-source": "apps/server/src/modules/features/features.controller.ts:173",
+        "x-source": "apps/server/src/modules/features/features.controller.ts:200",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1662,8 +1801,18 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/feature-responses.FeatureTitleResponseSchema.Response"
+                }
+              }
+            }
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -1674,10 +1823,10 @@
         "tags": [
           "features"
         ],
-        "x-source": "apps/server/src/modules/features/features.controller.ts:67",
+        "x-source": "apps/server/src/modules/features/features.controller.ts:82",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1690,7 +1839,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/feature-responses.FeatureRecordResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -1704,10 +1860,10 @@
         "tags": [
           "features"
         ],
-        "x-source": "apps/server/src/modules/features/features.controller.ts:150",
+        "x-source": "apps/server/src/modules/features/features.controller.ts:175",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1720,7 +1876,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/feature-responses.FeatureImportResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -1734,10 +1897,10 @@
         "tags": [
           "features"
         ],
-        "x-source": "apps/server/src/modules/features/features.controller.ts:54",
+        "x-source": "apps/server/src/modules/features/features.controller.ts:69",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "parameters": [
           {
             "name": "projectPath",
@@ -1752,7 +1915,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/feature-responses.FeatureListResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -1764,10 +1934,10 @@
         "tags": [
           "features"
         ],
-        "x-source": "apps/server/src/modules/features/features.controller.ts:60",
+        "x-source": "apps/server/src/modules/features/features.controller.ts:75",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1780,7 +1950,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/feature-responses.FeatureListResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -1794,10 +1971,10 @@
         "tags": [
           "features"
         ],
-        "x-source": "apps/server/src/modules/features/features.controller.ts:164",
+        "x-source": "apps/server/src/modules/features/features.controller.ts:191",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1810,7 +1987,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/feature-responses.FeatureBulkResolveResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -1824,10 +2008,10 @@
         "tags": [
           "features"
         ],
-        "x-source": "apps/server/src/modules/features/features.controller.ts:157",
+        "x-source": "apps/server/src/modules/features/features.controller.ts:182",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1840,7 +2024,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/feature-responses.FeatureOperationResultSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -1854,10 +2045,10 @@
         "tags": [
           "features"
         ],
-        "x-source": "apps/server/src/modules/features/features.controller.ts:104",
+        "x-source": "apps/server/src/modules/features/features.controller.ts:127",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1870,7 +2061,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/feature-responses.FeatureOrphanedResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -1884,10 +2082,10 @@
         "tags": [
           "features"
         ],
-        "x-source": "apps/server/src/modules/features/features.controller.ts:81",
+        "x-source": "apps/server/src/modules/features/features.controller.ts:102",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1900,7 +2098,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/feature-responses.FeatureOutputResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -1914,10 +2119,10 @@
         "tags": [
           "features"
         ],
-        "x-source": "apps/server/src/modules/features/features.controller.ts:118",
+        "x-source": "apps/server/src/modules/features/features.controller.ts:141",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1930,7 +2135,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/feature-responses.FeatureRecordResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -2539,8 +2751,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -2566,8 +2781,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -2593,8 +2811,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -2650,8 +2871,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -2677,8 +2901,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -4136,13 +4363,20 @@
         "tags": [
           "running-agents"
         ],
-        "x-source": "apps/server/src/modules/agents/agents.controller.ts:95",
+        "x-source": "apps/server/src/modules/agents/agents.controller.ts:108",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/running-agents.RunningAgentsResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -4588,8 +4822,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -4621,8 +4858,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -4834,8 +5074,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -4867,8 +5110,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -4900,8 +5146,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -4933,8 +5182,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -4996,8 +5248,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -5029,8 +5284,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -5062,8 +5320,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -5095,8 +5356,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -5128,8 +5392,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -5415,8 +5682,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -5478,8 +5748,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -7494,8 +7767,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -7521,8 +7797,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -7588,8 +7867,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -7615,8 +7897,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -7642,8 +7927,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -7669,8 +7957,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -7696,8 +7987,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -7723,8 +8017,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -7750,8 +8047,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -7777,8 +8077,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -7804,8 +8107,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -7871,8 +8177,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -7940,8 +8249,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -7967,8 +8279,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -8024,8 +8339,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -8051,8 +8369,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -8078,8 +8399,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -8105,8 +8429,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -8132,8 +8459,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -8159,8 +8489,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       },
@@ -8186,8 +8519,11 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       },
@@ -8211,8 +8547,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -8238,8 +8577,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -8285,8 +8627,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -8312,8 +8657,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -8339,8 +8687,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -8486,8 +8837,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -8513,8 +8867,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -8540,8 +8897,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -8567,8 +8927,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -8664,8 +9027,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -8691,8 +9057,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -8778,8 +9147,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -8805,8 +9177,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -8832,8 +9207,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -8859,8 +9237,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -8886,8 +9267,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -8973,8 +9357,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -9000,8 +9387,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -9069,8 +9459,11 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Successful response; response schema not yet verified."
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Error response; see endpoint implementation."
           }
         }
       }
@@ -9166,6 +9559,194 @@
   },
   "components": {
     "schemas": {
+      "agent.AgentClearResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "additionalProperties": {}
+      },
+      "agent.AgentHistoryResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean",
+                "const": true
+              },
+              "messages": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "user",
+                        "assistant"
+                      ]
+                    },
+                    "content": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string"
+                    },
+                    "images": {
+                      "anyOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "data": {
+                                "type": "string"
+                              },
+                              "mimeType": {
+                                "type": "string"
+                              },
+                              "filename": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "data",
+                              "mimeType",
+                              "filename"
+                            ],
+                            "additionalProperties": {}
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "isError": {
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "deliveryId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "queuedPromptId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "deliveryStatus": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "runId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "executionStatus": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "role",
+                    "content",
+                    "timestamp"
+                  ],
+                  "additionalProperties": {}
+                }
+              },
+              "isRunning": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "success",
+              "messages",
+              "isRunning"
+            ],
+            "additionalProperties": {}
+          },
+          {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean",
+                "const": false
+              },
+              "error": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "success",
+              "error"
+            ],
+            "additionalProperties": {}
+          }
+        ]
+      },
+      "agent.AgentModelResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "additionalProperties": {}
+      },
       "agent.AgentModelSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -9189,6 +9770,160 @@
           "model"
         ],
         "additionalProperties": false
+      },
+      "agent.AgentMutationResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean",
+                "const": true
+              }
+            },
+            "required": [
+              "success"
+            ],
+            "additionalProperties": {}
+          },
+          {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean",
+                "const": false
+              },
+              "error": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "success",
+              "error"
+            ],
+            "additionalProperties": {}
+          }
+        ]
+      },
+      "agent.AgentQueueAddResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean",
+                "const": true
+              },
+              "queuedPrompt": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "addedAt": {
+                    "type": "string"
+                  },
+                  "imagePaths": {
+                    "anyOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "model": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "providerId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "thinkingLevel": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "deliveryId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "deliveryStatus": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "message",
+                  "addedAt"
+                ],
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "success",
+              "queuedPrompt"
+            ],
+            "additionalProperties": {}
+          },
+          {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean",
+                "const": false
+              },
+              "error": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "success",
+              "error"
+            ],
+            "additionalProperties": {}
+          }
+        ]
       },
       "agent.AgentQueueAddSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -9234,6 +9969,128 @@
         ],
         "additionalProperties": false
       },
+      "agent.AgentQueueListResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean",
+                "const": true
+              },
+              "queue": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "addedAt": {
+                      "type": "string"
+                    },
+                    "imagePaths": {
+                      "anyOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "model": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "providerId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "thinkingLevel": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "deliveryId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "deliveryStatus": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "message",
+                    "addedAt"
+                  ],
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "required": [
+              "success",
+              "queue"
+            ],
+            "additionalProperties": {}
+          },
+          {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean",
+                "const": false
+              },
+              "error": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "success",
+              "error"
+            ],
+            "additionalProperties": {}
+          }
+        ]
+      },
       "agent.AgentQueueRemoveSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -9254,6 +10111,24 @@
           "promptId"
         ],
         "additionalProperties": false
+      },
+      "agent.AgentSendResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "success",
+          "message"
+        ],
+        "additionalProperties": {}
       },
       "agent.AgentSendSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -9317,6 +10192,146 @@
           "sessionId"
         ],
         "additionalProperties": false
+      },
+      "agent.AgentStartResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "assistant"
+                  ]
+                },
+                "content": {
+                  "type": "string"
+                },
+                "timestamp": {
+                  "type": "string"
+                },
+                "images": {
+                  "anyOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "data": {
+                            "type": "string"
+                          },
+                          "mimeType": {
+                            "type": "string"
+                          },
+                          "filename": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "data",
+                          "mimeType",
+                          "filename"
+                        ],
+                        "additionalProperties": {}
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "isError": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "deliveryId": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "queuedPromptId": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "deliveryStatus": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "runId": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "executionStatus": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "role",
+                "content",
+                "timestamp"
+              ],
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "success",
+          "sessionId",
+          "messages"
+        ],
+        "additionalProperties": {}
       },
       "agent.AgentStartSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -9677,6 +10692,24 @@
         ],
         "additionalProperties": false
       },
+      "context.DescribeFileResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "success",
+          "description"
+        ],
+        "additionalProperties": {}
+      },
       "context.DescribeImageRequestSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -9691,6 +10724,24 @@
           "imagePath"
         ],
         "additionalProperties": false
+      },
+      "context.DescribeImageResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "success",
+          "description"
+        ],
+        "additionalProperties": {}
       },
       "event-history.EventByIdRequestSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -10090,6 +11141,519 @@
           "eventId"
         ],
         "additionalProperties": false
+      },
+      "feature-responses.FeatureBulkDeleteResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "deletedCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "failedCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "featureId": {
+                  "type": "string"
+                },
+                "success": {
+                  "type": "boolean"
+                },
+                "action": {
+                  "type": "string"
+                },
+                "error": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "featureId",
+                "success"
+              ],
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "success",
+          "deletedCount",
+          "failedCount",
+          "results"
+        ],
+        "additionalProperties": {}
+      },
+      "feature-responses.FeatureBulkResolveResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "resolvedCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "failedCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "featureId": {
+                  "type": "string"
+                },
+                "success": {
+                  "type": "boolean"
+                },
+                "action": {
+                  "type": "string"
+                },
+                "error": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "featureId",
+                "success"
+              ],
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "success",
+          "resolvedCount",
+          "failedCount",
+          "results"
+        ],
+        "additionalProperties": {}
+      },
+      "feature-responses.FeatureBulkUpdateResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "updatedCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "failedCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "featureId": {
+                  "type": "string"
+                },
+                "success": {
+                  "type": "boolean"
+                },
+                "action": {
+                  "type": "string"
+                },
+                "error": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "featureId",
+                "success"
+              ],
+              "additionalProperties": {}
+            }
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "success",
+          "updatedCount",
+          "failedCount",
+          "results",
+          "features"
+        ],
+        "additionalProperties": {}
+      },
+      "feature-responses.FeatureConflictResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "hasConflicts": {
+            "type": "boolean"
+          },
+          "conflicts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "featureId": {
+                  "type": "string"
+                },
+                "title": {},
+                "existingTitle": {},
+                "hasConflict": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "featureId",
+                "hasConflict"
+              ],
+              "additionalProperties": {}
+            }
+          },
+          "totalFeatures": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "conflictCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "success",
+          "hasConflicts",
+          "conflicts",
+          "totalFeatures",
+          "conflictCount"
+        ],
+        "additionalProperties": {}
+      },
+      "feature-responses.FeatureDeleteResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "additionalProperties": {}
+      },
+      "feature-responses.FeatureExportResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean",
+                "const": true
+              },
+              "data": {
+                "type": "string"
+              },
+              "format": {
+                "type": "string",
+                "const": "json"
+              },
+              "contentType": {
+                "type": "string",
+                "const": "application/json"
+              },
+              "filename": {
+                "type": "string",
+                "const": "features-export.json"
+              }
+            },
+            "required": [
+              "success",
+              "data",
+              "format",
+              "contentType",
+              "filename"
+            ],
+            "additionalProperties": {}
+          },
+          {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean",
+                "const": true
+              },
+              "data": {
+                "type": "string"
+              },
+              "format": {
+                "type": "string",
+                "const": "yaml"
+              },
+              "contentType": {
+                "type": "string",
+                "const": "application/x-yaml"
+              },
+              "filename": {
+                "type": "string",
+                "const": "features-export.yaml"
+              }
+            },
+            "required": [
+              "success",
+              "data",
+              "format",
+              "contentType",
+              "filename"
+            ],
+            "additionalProperties": {}
+          }
+        ]
+      },
+      "feature-responses.FeatureImportResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "importedCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "failedCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "featureId": {
+                  "type": "string"
+                },
+                "importedAt": {
+                  "type": "string"
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "errors": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "wasOverwritten": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "success",
+                "importedAt"
+              ],
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "success",
+          "importedCount",
+          "failedCount",
+          "results"
+        ],
+        "additionalProperties": {}
+      },
+      "feature-responses.FeatureListResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "success",
+          "features"
+        ],
+        "additionalProperties": {}
+      },
+      "feature-responses.FeatureOperationResultSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "featureId": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "action": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "featureId",
+          "success"
+        ],
+        "additionalProperties": {}
+      },
+      "feature-responses.FeatureOrphanedResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "orphanedFeatures": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "feature": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                },
+                "missingBranch": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "feature",
+                "missingBranch"
+              ],
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "success",
+          "orphanedFeatures"
+        ],
+        "additionalProperties": {}
+      },
+      "feature-responses.FeatureOutputResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "content"
+        ],
+        "additionalProperties": {}
+      },
+      "feature-responses.FeatureRecordResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "feature": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "success",
+          "feature"
+        ],
+        "additionalProperties": {}
+      },
+      "feature-responses.FeatureTitleResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "success",
+          "title"
+        ],
+        "additionalProperties": {}
       },
       "files.BrowseProjectRequestSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -11652,6 +13216,106 @@
           "apiKey"
         ],
         "additionalProperties": false
+      },
+      "running-agents.RunningAgentsResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "runningAgents": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "featureId": {
+                  "type": "string"
+                },
+                "projectPath": {
+                  "type": "string"
+                },
+                "projectName": {
+                  "type": "string"
+                },
+                "isAutoMode": {
+                  "type": "boolean"
+                },
+                "kind": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "sessionId": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "workingDirectory": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "model": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "provider": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "title": {},
+                "description": {}
+              },
+              "required": [
+                "featureId",
+                "projectPath",
+                "projectName",
+                "isAutoMode"
+              ],
+              "additionalProperties": {}
+            }
+          },
+          "totalCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "success",
+          "runningAgents",
+          "totalCount"
+        ],
+        "additionalProperties": {}
       },
       "settings.ModelTimeoutProviderSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",

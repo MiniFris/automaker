@@ -332,8 +332,8 @@ export class FeatureExportService {
     const results: FeatureImportResult[] = [];
     for (const featureExport of bulkData.features) {
       const result = await this.importFeature(projectPath, {
-        data: featureExport,
         ...options,
+        data: featureExport,
       });
       results.push(result);
     }

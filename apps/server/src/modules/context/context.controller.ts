@@ -4,6 +4,10 @@ import { AllowedPathFields, AllowedPathGuard } from '../../core/security/index.j
 import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
 import { ContextDescriptionService } from './context-description.service.js';
 import {
+  DescribeFileResponseSchema,
+  DescribeImageResponseSchema,
+} from '@automaker/contracts/domains/context';
+import {
   DescribeFileRequestSchema,
   DescribeImageRequestSchema,
   type DescribeFileRequest,
@@ -20,24 +24,28 @@ export class ContextController {
   @Post('describe-file')
   @HttpCode(200)
   @AllowedPathFields('filePath')
-  describeFile(
+  async describeFile(
     @Body(new ZodValidationPipe(DescribeFileRequestSchema)) input: DescribeFileRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.withCancellation(response, (controller) =>
-      this.descriptions.describeFile(input.filePath, controller)
+    return DescribeFileResponseSchema.parse(
+      await this.withCancellation(response, (controller) =>
+        this.descriptions.describeFile(input.filePath, controller)
+      )
     );
   }
 
   @Post('describe-image')
   @HttpCode(200)
   @AllowedPathFields('imagePath')
-  describeImage(
+  async describeImage(
     @Body(new ZodValidationPipe(DescribeImageRequestSchema)) input: DescribeImageRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.withCancellation(response, (controller) =>
-      this.descriptions.describeImage(input.imagePath, controller)
+    return DescribeImageResponseSchema.parse(
+      await this.withCancellation(response, (controller) =>
+        this.descriptions.describeImage(input.imagePath, controller)
+      )
     );
   }
 

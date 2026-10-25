@@ -164,7 +164,11 @@ export class FeatureCommandService {
       }
       let results: FeatureImportResult[];
       if (this.imports.isBulkExport(parsed)) {
-        results = await this.imports.importFeatures(input.projectPath, parsed, input);
+        results = await this.imports.importFeatures(input.projectPath, parsed, {
+          overwrite: input.overwrite,
+          preserveBranchInfo: input.preserveBranchInfo,
+          targetCategory: input.targetCategory,
+        });
       } else {
         results = [
           await this.imports.importFeature(input.projectPath, {
