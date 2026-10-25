@@ -3,6 +3,15 @@
 Статус: завершён 2026-10-23. Проверяемые результаты находятся в
 [`artifacts/`](artifacts/current-architecture.md).
 
+## Сверка текущего прогресса — 2026-10-25
+
+Инвентаризация завершена. Текущий native inventory содержит 318 operations;
+`src/routes` удалён, генератор читает только controllers. Исходные числа ниже —
+baseline до миграции, а не оставшийся объём. См.
+[retirement checkpoint](artifacts/legacy-retirement-logging-checkpoint.md).
+Актуальность route/dependency/API-consumer artifacts проверяется генераторами;
+полнота всех architectural restrictions остаётся задачей этапа 11.
+
 ## Цель
 
 Получить проверяемую карту backend до начала структурных изменений. Результатом

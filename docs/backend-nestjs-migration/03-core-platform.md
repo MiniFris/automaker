@@ -1,5 +1,16 @@
 # Этап 3. Core platform
 
+## Сверка текущего прогресса — 2026-10-25
+
+Native config/auth/security/eventing/lifecycle/health ownership перенесено.
+Application logging изолирован: [checkpoint](artifacts/legacy-retirement-logging-checkpoint.md).
+Local execution snapshot и additive global HTTP error codes подтверждены
+[следующим checkpoint](artifacts/local-runtime-http-errors-checkpoint.md).
+Ограничения ESLint core/modules не означают отсутствие всех standalone compatibility
+helpers с ambient defaults. Полный config/log/DTO review и execution correlation
+продолжаются в этапе 11. Wave20 Direct workspace/Dev/Test/FSM fixes имеют targeted
+проверки и [полный checkpoint](artifacts/fsm-direct-policy-process-checkpoint.md).
+
 ## Цель
 
 Перенести сквозные обязанности в Nest primitives до массового создания controllers.

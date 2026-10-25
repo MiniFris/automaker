@@ -4,6 +4,18 @@
 `refactor/backend-nestjs-migration`; после каждого unit запускались целевые тесты,
 после этапа — полный checkpoint.
 
+## Сверка текущего прогресса — 2026-10-25
+
+Project-domain transport cutover завершён. Native storage и atomic mutation
+boundaries усилены после первоначального checkpoint:
+[state/FS](artifacts/state-execution-contract-checkpoint.md),
+[agent stores/recovery](artifacts/agent-storage-recovery-session-checkpoint.md),
+[planning/ideation](artifacts/planning-ideation-singletons-checkpoint.md).
+Все 318 operations уже имеют shared input/context и response contracts;
+[coverage checkpoint](artifacts/transport-context-terminal-observability-checkpoint.md).
+Broad service decomposition, remaining opaque business maps и полный error review
+не объявляются завершёнными этим транспортным этапом.
+
 ## Цель
 
 Перенести modules, которые владеют настройками и файловым состоянием проектов,

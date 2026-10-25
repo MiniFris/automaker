@@ -69,8 +69,10 @@ instances; source/build guards запрещают возврат legacy handlers
 с ошибкой. См.
 [module graph audit](artifacts/nest-module-import-graph-audit.md).
 Native Local execution теперь использует application snapshot:
-[checkpoint](artifacts/local-runtime-http-errors-checkpoint.md). Отдельные Dev/Test
-spawns и legacy Direct workspace policy ещё требуют исправления.
+[checkpoint](artifacts/local-runtime-http-errors-checkpoint.md). Dev/Test spawns,
+legacy Direct workspace policy и FSM notification ownership затем исправлены и
+прошли [следующий checkpoint](artifacts/fsm-direct-policy-process-checkpoint.md).
+Оставшиеся MCP/config/helper boundaries проверяются отдельно.
 
 ## 10.3. Production configuration
 

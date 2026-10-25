@@ -17,6 +17,7 @@ import {
  */
 
 import { spawn, execSync, type ChildProcess } from 'child_process';
+import { localComspec } from './execution-environment/local.js';
 import * as secureFs from '../lib/secure-fs.js';
 import { createLogger } from '@automaker/utils';
 import {
@@ -100,6 +101,7 @@ export interface TestRunResult {
  * Manages test execution processes across worktrees
  */
 class TestRunnerService {
+  private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>;
   private readonly acceptedStarts = new Set<Promise<unknown>>();
   private readonly startingWorktrees = new Set<string>();
   private closing = false;
@@ -107,7 +109,9 @@ class TestRunnerService {
   private get nativeOwnership(): boolean {
     return Boolean(this.runtime) && process.platform === 'linux';
   }
-  constructor(private readonly runtime?: LocalProcessPreflight) {}
+  constructor(private readonly runtime?: LocalProcessPreflight) {
+    this.hostEnvironment = Object.freeze({ ...(runtime?.hostEnvironment ?? process.env) });
+  }
 
   private sessions: Map<string, TestRunSession> = new Map();
   private emitter: EventEmitter | null = null;
@@ -211,7 +215,11 @@ class TestRunnerService {
     try {
       if (process.platform === 'win32') {
         // Windows: use taskkill to kill process tree
-        execSync(`taskkill /F /T /PID ${pid}`, { stdio: 'ignore' });
+        execSync(`taskkill /F /T /PID ${pid}`, {
+          stdio: 'ignore',
+          env: { ...this.hostEnvironment },
+          shell: localComspec(this.hostEnvironment) || 'cmd.exe',
+        });
       } else {
         // Unix: kill the process group
         try {
@@ -377,7 +385,7 @@ class TestRunnerService {
 
     // Spawn the test process using shell
     const env = {
-      ...process.env,
+      ...this.hostEnvironment,
       FORCE_COLOR: '1',
       COLORTERM: 'truecolor',
       TERM: 'xterm-256color',
@@ -387,7 +395,7 @@ class TestRunnerService {
     const testProcess = spawn(finalCommand, [], {
       cwd: canonicalCwd,
       env,
-      shell: true,
+      shell: process.platform === 'win32' ? localComspec(this.hostEnvironment) || 'cmd.exe' : true,
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: process.platform !== 'win32', // Use process groups on Unix for cleanup
     });

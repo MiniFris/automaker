@@ -3,6 +3,16 @@
 Статус: завершён 2026-10-23. Production composition root переведён на NestJS;
 legacy HTTP/WS API работает через один общий native HTTP server.
 
+## Сверка текущего прогресса — 2026-10-25
+
+Этап создания Nest composition root завершён; временный legacy bridge уже
+удалён последующим cutover вместе с `LegacyModule`, service container и всеми
+route factories. Пункты 2.2/2.3 описывают выполненный промежуточный переход,
+а не зависимости, которые нужно восстановить. См.
+[cutover](artifacts/native-cutover-checkpoint.md) и
+[окончательное route retirement](artifacts/legacy-retirement-logging-checkpoint.md).
+Свежий packaging после последних production изменений остаётся gate этапа 10.
+
 ## Цель
 
 Сделать NestJS production composition root, не меняя владельца бизнес-routes.

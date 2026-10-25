@@ -1,5 +1,14 @@
 # Этап 4. Периферийные HTTP-модули
 
+## Сверка текущего прогресса — 2026-10-25
+
+Перенос edge HTTP-модулей завершён; исторические результаты conveyor ниже
+сохраняются. Все legacy route sources впоследствии удалены:
+[retirement checkpoint](artifacts/legacy-retirement-logging-checkpoint.md).
+Template clone получил собственный admission, directory/process ownership и drain:
+[template audit](artifacts/templates-workflow-lifecycle-audit.md).
+Отсутствие маршрутов в legacy не заменяет final artifact/security gates этапа 10.
+
 ## Цель
 
 Проверить migration conveyor на сравнительно изолированных route groups и удалить

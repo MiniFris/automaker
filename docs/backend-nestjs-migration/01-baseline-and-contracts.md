@@ -4,6 +4,15 @@
 SSH/Docker/browser suites; результаты и известные lifecycle handles зафиксированы
 в [`artifacts/performance-baseline.md`](artifacts/performance-baseline.md).
 
+## Сверка текущего прогресса — 2026-10-25
+
+Baseline и разделение test tiers завершены. Legacy factory этого исторического
+этапа уже удалена; characterization переведена на native HTTP. Последний завершённый
+[source checkpoint](artifacts/local-runtime-http-errors-checkpoint.md) фиксирует
+полные unit/contract/package и SSH suites; [artifact acceptance](artifacts/current-artifact-acceptance-checkpoint.md)
+отдельно фиксирует Web/Docker/Linux Electron и private upgrade/rollback. Эти
+проверки не являются paid vendor, Windows/macOS или внешним staging acceptance.
+
 ## Цель
 
 Зафиксировать наблюдаемое поведение текущего backend так, чтобы перенос route group

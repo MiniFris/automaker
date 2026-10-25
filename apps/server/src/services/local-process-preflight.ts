@@ -3,6 +3,7 @@ import type { OwnedLocalChild } from './owned-local-child.js';
 import type * as Filesystem from '../lib/secure-fs.js';
 
 export interface LocalProcessPreflight {
+  hostEnvironment?: Readonly<NodeJS.ProcessEnv>;
   filesystem: Pick<typeof Filesystem, 'access' | 'stat'>;
   resolvePath: (candidate: string) => string;
   supervise?: (child: ChildProcess) => OwnedLocalChild;

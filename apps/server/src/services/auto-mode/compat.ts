@@ -22,6 +22,7 @@ import type { ToolPolicyService } from '../../modules/providers/tool-policy.serv
 import type { PipelineService } from '../pipeline-service.js';
 import { ProjectRunContextRegistry } from '../../modules/auto-mode/project-run-context.registry.js';
 import type { FeatureRunCoordinator } from '../../modules/orchestration/feature-run-coordinator.service.js';
+import type { WorkspaceAccessPolicy } from '../../providers/openai-compatible/workspace.js';
 
 /**
  * AutoModeServiceCompat wraps GlobalAutoModeService and facades to provide
@@ -44,6 +45,7 @@ export class AutoModeServiceCompat {
     filesystem: import('../execution-filesystem.js').ExecutionFilesystem,
     runtime?: {
       contexts: ProjectRunContextRegistry;
+      directWorkspaceAccess?: WorkspaceAccessPolicy;
       coordinator?: FeatureRunCoordinator;
       hostEnvironment?: Readonly<NodeJS.ProcessEnv>;
       validateWorkingDirectory?: (cwd: string) => void;
@@ -73,12 +75,17 @@ export class AutoModeServiceCompat {
       validateWorkingDirectory: runtime?.validateWorkingDirectory,
       hostEnvironment: Object.freeze({ ...(runtime?.hostEnvironment ?? process.env) }),
       filesystem,
+      directWorkspaceAccess: runtime?.directWorkspaceAccess,
     };
   }
 
   /**
    * Get the global service for direct access
    */
+  onModuleDestroy(): Promise<void> {
+    return this.globalService.onModuleDestroy();
+  }
+
   getGlobalService(): GlobalAutoModeService {
     return this.globalService;
   }

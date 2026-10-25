@@ -1,5 +1,17 @@
 # Этап 6. Execution environments, Git и worktrees
 
+## Сверка текущего прогресса — 2026-10-25
+
+Native Execution/Git/Worktree transport и immutable binding ownership перенесены.
+[Native characterization](artifacts/legacy-retirement-logging-checkpoint.md)
+проверяет реальные Git операции и исправления target/pin guards. Последний
+[завершённый source checkpoint](artifacts/local-runtime-http-errors-checkpoint.md)
+включает 136 SSH cases и реальную pinned Local snapshot isolation. Linux процессные
+доказательства не заменяют Windows/macOS runs. Wave20 Dev/Test child environment
+и Direct legacy workspace policy fixes прошли
+[общий checkpoint](artifacts/fsm-direct-policy-process-checkpoint.md); final packaging
+остаётся в этапе 10.
+
 ## Цель
 
 Перевести наиболее чувствительную инфраструктурную область в явные Nest-модули,

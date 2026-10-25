@@ -1,5 +1,18 @@
 # Этап 9. WebSocket events и terminal
 
+## Сверка текущего прогресса — 2026-10-25
+
+Native WS/terminal lifecycle и wire parity подтверждены
+[audit этапа 9](artifacts/stage-9-completion-audit.md),
+[terminal host configuration](artifacts/terminal-host-configuration-audit.md) и
+[завершённым source checkpoint](artifacts/local-runtime-http-errors-checkpoint.md).
+Последний включает bounded local workload: 100 WS events, 11 PTY cycles,
+FD/child identity checks. Это не WAN slow-client stress или Windows/macOS ownership
+acceptance. [Linux packaged evidence](artifacts/current-artifact-acceptance-checkpoint.md)
+относится к указанному там artifact; после финальных изменений потребуется refresh.
+Открытый ниже composite item разделяется: host/RC port уже реализован, остаются
+полный platform helper audit и transport stress/conditional OS gates.
+
 ## Цель
 
 Передать Nest lifecycle владение WebSocket upgrade, authentication, connections,

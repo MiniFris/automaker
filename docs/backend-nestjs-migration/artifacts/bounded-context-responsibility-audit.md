@@ -139,15 +139,13 @@ admission и ожидает accepted starts и owned cleanup.
 `native-local-process-ownership.test.ts`, `dev-server-persistence.test.ts`,
 `dev-server-event-types.test.ts` и `dev-server-service.test.ts`.
 
-**Открытая проблема.** При построении `env` перед `spawn` остаётся spread
-`process.env`. Native factory в `LocalProcessRuntimeModule` не передаёт captured
-child environment. Это реальная ambient configuration dependency, в отличие от
-standalone fallback: позднее изменение окружения влияет на native child, возможна
-передача backend transport variables. Исправление — явный immutable environment
-port с сохранением allocated `PORT` и tool color flags; нужен двухприложенческий
-actual-child negative test. Wave19 LocalExecutionEnvironment сам этот путь не меняет. Соседний native
-`TestRunnerService` также строит child env из `process.env` перед `spawn`;
-его factory не передаёт captured environment.
+**Исправлено в wave20.** Native Dev/Test factories передают captured host environment;
+child spawn и compatibility cleanup используют snapshot. Dev сохраняет assigned PORT,
+Test — CI и color flags; backend transport variables исключены. Actual два приложения
+проверены private PATH executable после ambient/input mutations и закрытия соседа:
+[общий checkpoint](fsm-direct-policy-process-checkpoint.md),
+`tests/contract/local-process-host-environment.contract.test.ts`.
+Windows source wiring не заменяет OS acceptance.
 
 **Решение по размеру.** Не разносить reservation и process lifetime. State-file codec
 и output/URL parser можно выделить без создания новых process registries; это
@@ -210,7 +208,13 @@ subscription. `commitStatus` выполняет durable write до публик�
 `tests/unit/services/feature-state-manager.test.ts`,
 `tests/unit/modules/feature-run-state-machine.test.ts`.
 
-**Открытая проблема.** Constructor подписывает asynchronous notification handler,
+**Проблема среза wave19; исправлена в wave20.** См.
+[FSM notification ownership](fsm-notification-ownership-audit.md): actual native
+repro подтвердил три notifications от одного error после двух facades и late
+pre-storage lookup после close. Shared application FSM и accepted-job drain
+устраняют эти два дефекта. Ниже сохраняется исходное наблюдение аудита.
+
+Constructor подписывал asynchronous notification handler,
 не сохраняя его promise; `destroy()` только отписывается. Нет самостоятельного
 notification drain/admission boundary. Facade создаёт свой FeatureStateManager, но
 его shutdown path не вызывает `destroy()`. Это источник возможных оставшихся
@@ -273,11 +277,12 @@ edges, а чистый domain может импортировать узкий `
 
 ## Конкретный оставшийся объём
 
-1. Закрыть native dev/test child environment propagation фактическими child tests;
-   не засчитывать LocalExecutionEnvironment, TerminalHostPort или EventHooks как
-   покрытие других spawn sites.
-2. Закрыть FSM notification subscription lifetime и подтвердить отсутствие
-   duplicate/late notifications при повторных contexts и shutdown.
+1. Native Dev/Test child environment закрыт отдельным actual-child proof в wave20;
+   это не было засчитано за счёт LocalExecutionEnvironment или EventHooks.
+2. FSM notification subscription lifetime закрыт в wave20; actual native
+   duplicate/held-lookup/held-write/two-app и standalone close proofs описаны
+   [отдельно](fsm-notification-ownership-audit.md). Не повторять это выделение
+   как незавершённую работу над крупным facade.
 3. Для строгого application→ports слоя определить узкие execution/merge/context
    ports в AgentExecutor/PipelineOrchestrator, вынести facade composition из API,
    затем закрепить runtime dependency rules. Уже разделённые agent storage/queue,

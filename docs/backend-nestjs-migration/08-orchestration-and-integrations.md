@@ -1,5 +1,18 @@
 # Этап 8. Оркестрация и интеграции
 
+## Сверка текущего прогресса — 2026-10-25
+
+Native coordinator, incarnation guards, project contexts, planning registries,
+pipeline configuration repository и durable idea conversion уже работают в
+production path. Старые промежуточные описания ниже сохраняются как история,
+а не текущий remaining inventory. См. [run ownership](artifacts/stage-8-run-incarnation-audit.md),
+[verification](artifacts/stage-8-verification-testing-audit.md) и
+[planning/ideation checkpoint](artifacts/planning-ideation-singletons-checkpoint.md).
+Открыты template/step decomposition и полный pipeline cancel/restart matrix,
+остаточная Compat/facade boundary, ideation streaming decomposition, MCP SSE/HTTP
+и notification/event-loop review. Wave20 FSM subscriber/drain исправления имеют
+целевые tests и [общий checkpoint](artifacts/fsm-direct-policy-process-checkpoint.md). Этап 8 целиком не закрыт.
+
 ## Цель
 
 Перенести сервисы, которые координируют несколько доменов: Auto Mode, pipelines,
@@ -70,14 +83,21 @@ wire payloads, IDs, persisted formats и execution binding semantics не мен
 
 ## 8.1. OrchestrationModule
 
-- [ ] Ввести явный `FeatureRunCoordinator`.
-- [ ] Перенести concurrency manager и project queues.
-- [ ] Зафиксировать state machine feature execution.
-- [ ] Перенести planning/approval lifecycle.
-- [ ] Перенести execution/pipeline orchestration.
-- [ ] Перенести resume/recovery и stale-state reconciliation.
+- [x] Ввести явный `FeatureRunCoordinator`.
+      [Production coordinator audit](artifacts/stage-8-run-incarnation-audit.md).
+- [x] Перенести concurrency manager и project queues.
+      Один per-app manager и canonical project contexts: [AutoMode audit](artifacts/stage-8-auto-mode-audit.md).
+- [x] Зафиксировать state machine feature execution.
+      Internal run phases и compatibility public statuses: [incarnation audit](artifacts/stage-8-run-incarnation-audit.md).
+- [x] Перенести planning/approval lifecycle.
+      [Run artifact/approval port](artifacts/stage-8-run-artifact-port-audit.md).
+- [x] Перенести execution/pipeline orchestration.
+      Native ownership и run-bound writes: [incarnation audit](artifacts/stage-8-run-incarnation-audit.md); дальнейшая step decomposition остаётся в 8.3.
+- [x] Перенести resume/recovery и stale-state reconciliation.
+      [Recovery checkpoint](artifacts/agent-storage-recovery-session-checkpoint.md) и [verification ownership](artifacts/stage-8-verification-testing-audit.md).
 - [ ] Разделить commands и emitted events.
-- [ ] Обеспечить idempotent handling повторного completion event.
+- [x] Обеспечить idempotent handling повторного completion event.
+      Completion key/dedup привязаны к incarnation: [audit](artifacts/stage-8-run-incarnation-audit.md).
 
 State machine должна явно описывать допустимые переходы:
 
@@ -91,31 +111,45 @@ UI contract не будет версионирован отдельно.
 
 ## 8.2. AutoModeModule
 
-- [ ] Заменить facade cache на project-scoped state внутри singleton coordinator.
-- [ ] Разделить global scheduler и per-project run context.
-- [ ] Явно инжектировать Features, Agents, Execution, Git, Settings и EventBus ports.
-- [ ] Сохранить dependency blocking и максимальную concurrency.
-- [ ] Запретить два одновременных owner одного feature.
-- [ ] Сохранить stop/pause/restart semantics.
+- [x] Заменить facade cache на project-scoped state внутри singleton coordinator.
+      `facadeCache` удалён; [ProjectRunContextRegistry audit](artifacts/stage-8-auto-mode-audit.md). Сам Compat/facade остаётся отдельным пунктом.
+- [x] Разделить global scheduler и per-project run context.
+      [Native AutoMode audit](artifacts/stage-8-auto-mode-audit.md).
+- [x] Явно инжектировать Features, Agents, Execution, Git, Settings и EventBus ports.
+      Native composition и execution/source ports: [checkpoint](artifacts/source-ports-and-locators-checkpoint.md); это не полная framework-free domain граница этапа 11.
+- [x] Сохранить dependency blocking и максимальную concurrency.
+      [AutoMode/lease evidence](artifacts/stage-8-run-incarnation-audit.md), native [contracts](../../apps/server/tests/contract/auto-mode-native.contract.test.ts).
+- [x] Запретить два одновременных owner одного feature.
+      Captured lease/incarnation и identity-aware release: [audit](artifacts/stage-8-run-incarnation-audit.md).
+- [x] Сохранить stop/pause/restart semantics.
+      [Native AutoMode contracts](../../apps/server/tests/contract/auto-mode-native.contract.test.ts) и [active verification stop](artifacts/stage-8-verification-testing-audit.md).
 - [ ] Удалить compatibility facade после переноса всех callers.
 
 ## 8.3. PipelineModule
 
-- [ ] Отделить pipeline configuration repository.
+- [x] Отделить pipeline configuration repository.
+      [Repository audit](artifacts/stage-8-completion-audit.md), [native contract](../../apps/server/tests/contract/pipeline-repository.contract.test.ts).
 - [ ] Отделить template expansion и validation.
 - [ ] Каждый step выполняется через закреплённый execution binding.
-- [ ] Сохранить exclusions, retries и failure summaries.
+- [x] Сохранить exclusions, retries и failure summaries.
+      [Orchestrator regression tests](../../apps/server/tests/unit/services/pipeline-orchestrator.test.ts), [summary tests](../../apps/server/tests/unit/services/pipeline-summary-accumulation.test.ts).
 - [ ] Не повторять unknown-outcome mutation.
 - [ ] Прерывание pipeline очищает child jobs с bounded deadline.
-- [ ] Перенести pipeline routes после service boundary.
+- [x] Перенести pipeline routes после service boundary.
+      Native PipelineController/repository; legacy source удалён: [pipeline checkpoint](artifacts/preview-planning-settings-pipeline-checkpoint.md).
 
 ## 8.4. PlanningModule
 
-- [ ] Plan approval как отдельный application service.
-- [ ] Pending approvals принадлежат lifecycle-managed registry.
-- [ ] Restart превращает неподтверждённое выполнение в безопасное состояние.
-- [ ] Backlog plan/spec generation использует provider port.
-- [ ] Approval token привязан к feature/run/version плана.
+- [x] Plan approval как отдельный application service.
+      [PlanApprovalService tests](../../apps/server/tests/unit/services/plan-approval-service.test.ts).
+- [x] Pending approvals принадлежат lifecycle-managed registry.
+      Run-bound approval/drain: [audit](artifacts/stage-8-run-artifact-port-audit.md).
+- [x] Restart превращает неподтверждённое выполнение в безопасное состояние.
+      Ticket recovery меняет token; [approval tests](../../apps/server/tests/unit/services/plan-approval-service.test.ts), [recovery checkpoint](artifacts/agent-storage-recovery-session-checkpoint.md).
+- [x] Backlog plan/spec generation использует provider port.
+      [Planning ownership audit](artifacts/planning-workflow-ownership-audit.md), [native provider-chain contract](../../apps/server/tests/contract/app-spec-provider-chain.contract.test.ts).
+- [x] Approval token привязан к feature/run/version плана.
+      [Approval tests](../../apps/server/tests/unit/services/plan-approval-service.test.ts) проверяют stale/replay/concurrent submissions.
 
 ### Промежуточная проверка approval workflow
 
@@ -150,19 +184,23 @@ Write недоступен, после решения используется �
 ## 8.5. IdeationModule
 
 - [ ] Разделить ideation session, analysis и idea repository.
-- [ ] Использовать общий provider selection и EventBus.
+- [x] Использовать общий provider selection и EventBus.
+      Native registry/event owner: [ideation audit](artifacts/stage-8-ideation-lifecycle-conversion-audit.md), [native contract](../../apps/server/tests/contract/ideation-native.contract.test.ts).
 - [ ] Удалить дублирование agent streaming logic.
-- [ ] Сохранить conversion idea -> feature как транзакционно понятную операцию.
+- [x] Сохранить conversion idea -> feature как транзакционно понятную операцию.
+      Durable intent, exclusive publication и retry-after-restart: [conversion audit](artifacts/stage-8-ideation-lifecycle-conversion-audit.md).
 - [ ] Разбить крупный legacy service после transport parity.
 
 ## 8.6. GitHubIntegrationModule
 
-- [ ] Обернуть `gh`/GitHub operations за port.
+- [x] Обернуть `gh`/GitHub operations за port.
+      Native discovery/review/runtime boundaries: [source-port checkpoint](artifacts/source-ports-and-locators-checkpoint.md), [GitHub review contract](../../apps/server/tests/contract/github-review.contract.test.ts).
 - [x] Перенести issues, PRs, comments, review threads и validation.
 - [x] Разделить read-only discovery и mutation.
 - [ ] Ввести rate/error mapping без утечки command output.
 - [x] Cleanup stale validations сделать lifecycle task.
-- [ ] PR creation использует Git/Worktree modules, а не shell из controller.
+- [x] PR creation использует Git/Worktree modules, а не shell из controller.
+      [Native Git/worktree characterization](artifacts/legacy-retirement-logging-checkpoint.md); controller shell imports запрещены [architecture tests](../../scripts/tests/server-architecture-rules.test.mjs).
 
 ### Срез 2026-10-24: native issue validation и per-application ownership
 
@@ -569,8 +607,10 @@ project dependencies/lockfile или системного Node. Эти резу�
 
 ## 8.7. MCPModule
 
-- [ ] Перенести server config lookup в SettingsModule.
-- [ ] Разделить list tools и test connection.
+- [x] Перенести server config lookup в SettingsModule.
+      Saved-ID lookup через injected SettingsService: [MCP native contract](../../apps/server/tests/contract/mcp-transport.contract.test.ts).
+- [x] Разделить list tools и test connection.
+      Handshake не ждёт discovery: [MCP contract](../../apps/server/tests/contract/mcp-transport.contract.test.ts), [boundary audit](artifacts/stage-8-completion-audit.md).
 - [ ] Ограничить timeout/output и redaction.
 - [x] Не сохранять live clients между несвязанными requests без owner lifecycle.
 - [x] Добавить fake MCP server integration tests.

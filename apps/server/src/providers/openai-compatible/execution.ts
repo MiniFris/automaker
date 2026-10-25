@@ -9,7 +9,7 @@ import {
 import type { SettingsService } from '../../services/settings-service.js';
 import { resolveOpenAICompatibleConnection } from './config.js';
 import { toolPolicy, ToolRegistry } from './tool-registry.js';
-import { ReadOnlyWorkspace } from './workspace.js';
+import { ReadOnlyWorkspace, type WorkspaceAccessPolicy } from './workspace.js';
 import { agentLimits } from './agent-loop.js';
 import { AgentCheckpointStore } from './checkpoint.js';
 import { OpenAICompatibleError } from './errors.js';
@@ -167,7 +167,8 @@ export async function runDirectShellCommand(
   command: string,
   abortSignal: AbortSignal,
   context?: { projectPath: string; runKey: string },
-  hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
+  hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env,
+  workspaceAccess?: WorkspaceAccessPolicy
 ): Promise<{ exitCode: number; output: string; truncated: boolean }> {
   if (!settings)
     throw new OpenAICompatibleError(
@@ -208,7 +209,7 @@ export async function runDirectShellCommand(
     abortSignal,
     AbortSignal.timeout(Math.min(limits.toolTimeoutMs, limits.maxDurationMs)),
   ]);
-  const workspace = await ReadOnlyWorkspace.create(cwd, signal);
+  const workspace = await ReadOnlyWorkspace.create(cwd, signal, workspaceAccess);
   const name = policy.shell.executable === 'pwsh' ? 'PowerShell' : 'Bash';
   const registry = new ToolRegistry(workspace, [name], policy.access === 'read-only', policy);
   // Await cooperative cleanup before returning an interrupted test result.

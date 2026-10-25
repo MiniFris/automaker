@@ -20,6 +20,8 @@ import type { NotificationService } from '../notification-service.js';
 import type { ProviderRegistry } from '../../modules/providers/provider-registry.service.js';
 import type { ToolPolicyService } from '../../modules/providers/tool-policy.service.js';
 import type { PipelineService } from '../pipeline-service.js';
+import type { FeatureStateManager } from '../feature-state-manager.js';
+import type { WorkspaceAccessPolicy } from '../../providers/openai-compatible/workspace.js';
 
 // Re-export types from extracted services for route consumption
 export type { AutoModeConfig, ProjectAutoLoopState } from '../auto-loop-coordinator.js';
@@ -38,6 +40,8 @@ export type { ExecutionState } from '../recovery-service.js';
  * Shared services that can be passed to facades to enable state sharing
  */
 export interface SharedServices {
+  /** Global application owner; direct standalone fixtures may omit this capability. */
+  featureStateManager?: FeatureStateManager;
   /** TypedEventBus for typed event emission */
   eventBus: TypedEventBus;
   /** ConcurrencyManager for tracking running features across all projects */
@@ -52,6 +56,8 @@ export interface SharedServices {
  * Options for creating an AutoModeServiceFacade instance
  */
 export interface FacadeOptions {
+  /** Native Direct execution uses the owning application filesystem policy. */
+  directWorkspaceAccess?: WorkspaceAccessPolicy;
   /** Native composition supplies a captured, sanitized Local child environment. */
   hostEnvironment?: Readonly<NodeJS.ProcessEnv>;
   /** Application-owned local output/context/memory IO. */

@@ -20,7 +20,8 @@ application/infra границ этапа 11. Результаты возобн�
 Предыдущий checkpoint: [transport contexts, binary contracts, terminal и workflow metrics](artifacts/transport-context-terminal-observability-checkpoint.md).
 Предыдущий checkpoint: [полное удаление legacy routes, native characterization и logging ownership](artifacts/legacy-retirement-logging-checkpoint.md).
 Проверенный artifact checkpoint: [Docker/Linux Electron и private upgrade/rollback](artifacts/current-artifact-acceptance-checkpoint.md).
-Последний source checkpoint: [Local runtime snapshot и HTTP error codes](artifacts/local-runtime-http-errors-checkpoint.md).
+Предыдущий source checkpoint: [Local runtime snapshot и HTTP error codes](artifacts/local-runtime-http-errors-checkpoint.md).
+Последний source checkpoint: [FSM ownership, Direct path policy и Dev/Test environment](artifacts/fsm-direct-policy-process-checkpoint.md).
 Полная миграция ещё не завершена; checklist и результаты проверок ведутся
 в документах соответствующих этапов.
 

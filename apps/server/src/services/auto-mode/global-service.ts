@@ -119,7 +119,12 @@ export class GlobalAutoModeService {
       concurrencyManager: this.concurrencyManager,
       autoLoopCoordinator: this.autoLoopCoordinator,
       worktreeResolver: this.worktreeResolver,
+      featureStateManager: this.featureStateManager,
     };
+  }
+
+  onModuleDestroy(): Promise<void> {
+    return this.featureStateManager.destroy();
   }
 
   // ===========================================================================

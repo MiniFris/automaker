@@ -13,6 +13,7 @@ import {
  */
 
 import { spawn, execSync, type ChildProcess } from 'child_process';
+import { localComspec } from './execution-environment/local.js';
 import * as secureFs from '../lib/secure-fs.js';
 import path from 'path';
 import net from 'net';
@@ -163,6 +164,7 @@ export interface DevServerRuntime extends LocalProcessPreflight {
 }
 
 export class DevServerService {
+  private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>;
   private readonly acceptedStarts = new Set<Promise<unknown>>();
   private closing = false;
   private cleanupPromise?: Promise<void>;
@@ -172,6 +174,7 @@ export class DevServerService {
     return Boolean(this.runtime) && process.platform === 'linux';
   }
   constructor(private readonly runtime?: DevServerRuntime) {
+    this.hostEnvironment = Object.freeze({ ...(runtime?.hostEnvironment ?? process.env) });
     if (runtime) this.dataDir = runtime.dataDirectory;
   }
 
@@ -658,7 +661,11 @@ export class DevServerService {
     try {
       if (process.platform === 'win32') {
         // Windows: find and kill process on port
-        const result = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf-8' });
+        const result = execSync(`netstat -ano | findstr :${port}`, {
+          encoding: 'utf-8',
+          env: { ...this.hostEnvironment },
+          shell: localComspec(this.hostEnvironment) || 'cmd.exe',
+        });
         const lines = result.trim().split('\n');
         const pids = new Set<string>();
         for (const line of lines) {
@@ -670,7 +677,11 @@ export class DevServerService {
         }
         for (const pid of pids) {
           try {
-            execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore' });
+            execSync(`taskkill /F /PID ${pid}`, {
+              stdio: 'ignore',
+              env: { ...this.hostEnvironment },
+              shell: localComspec(this.hostEnvironment) || 'cmd.exe',
+            });
             logger.debug(`Killed process ${pid} on port ${port}`);
           } catch {
             // Process may have already exited
@@ -679,11 +690,14 @@ export class DevServerService {
       } else {
         // macOS/Linux: use lsof to find and kill process
         try {
-          const result = execSync(`lsof -ti:${port}`, { encoding: 'utf-8' });
+          const result = execSync(`lsof -ti:${port}`, {
+            encoding: 'utf-8',
+            env: { ...this.hostEnvironment },
+          });
           const pids = result.trim().split('\n').filter(Boolean);
           for (const pid of pids) {
             try {
-              execSync(`kill -9 ${pid}`, { stdio: 'ignore' });
+              execSync(`kill -9 ${pid}`, { stdio: 'ignore', env: { ...this.hostEnvironment } });
               logger.debug(`Killed process ${pid} on port ${port}`);
             } catch {
               // Process may have already exited
@@ -1037,7 +1051,7 @@ export class DevServerService {
       // Spawn the dev process with PORT environment variable
       // FORCE_COLOR enables colored output even when not running in a TTY
       const env = {
-        ...process.env,
+        ...this.hostEnvironment,
         PORT: String(port),
         FORCE_COLOR: '1',
         // Some tools use these additional env vars for color detection

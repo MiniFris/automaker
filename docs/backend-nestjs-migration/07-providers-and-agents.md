@@ -1,5 +1,17 @@
 # Этап 7. AI providers и agents
 
+## Сверка текущего прогресса — 2026-10-25
+
+Native ProviderRegistry, семь adapters, agent decomposition, leases, persistence
+и setup/usage transport уже реализованы; исторические незакрытые маркеры ниже
+сверены с доказательствами. См. [agent stores](artifacts/agent-storage-recovery-session-checkpoint.md),
+[run ownership](artifacts/run-ownership-provider-filesystem-checkpoint.md) и
+[Local/provider snapshot checkpoint](artifacts/local-runtime-http-errors-checkpoint.md).
+Остаются полный per-adapter error/event/tool-policy review и conditional OS matrix;
+optional live vendor acceptance не выполнялась и не выдаётся за offline evidence.
+Wave20 scoped Direct workspace policy прошёл
+[полный checkpoint](artifacts/fsm-direct-policy-process-checkpoint.md). Весь этап 7 пока не объявлен завершённым.
+
 ## Цель
 
 Заменить side-effect provider registry и ручную композицию агентских сервисов на
@@ -82,10 +94,14 @@ HTTP API version остаётся 13: wire contracts в этом срезе не
 - [x] Зафиксировать общий interface: installation/auth status, models, capabilities,
       start, stream, follow-up, cancel и dispose.
 - [x] Разделить provider capability и model capability.
-- [ ] Явно описать vision, tools, thinking/reasoning, MCP и remote execution.
-- [ ] Не считать неизвестную capability автоматически доступной.
-- [ ] Стандартизировать provider events до передачи в application event bus.
-- [ ] Нормализовать cancellation и terminal reasons.
+- [x] Явно описать vision, tools, thinking/reasoning, MCP и remote execution.
+      См. capability matrix ниже и [adapter contracts](../../apps/server/tests/unit/providers/provider-adapter-contract.test.ts).
+- [x] Не считать неизвестную capability автоматически доступной.
+      Unknown model capabilities закрыты по умолчанию: [tests](../../apps/server/tests/unit/providers/provider-capabilities.test.ts).
+- [x] Стандартизировать provider events до передачи в application event bus.
+      [Agent stream normalizer](../../apps/server/tests/unit/services/agent-stream-normalizer.test.ts) проверяет application publication boundary; raw vendor payloads не объявляются одинаковыми.
+- [x] Нормализовать cancellation и terminal reasons.
+      Managed query scopes классифицируют completed/error/cancelled/unknown и удерживают неподтверждённый cleanup: [scope tests](../../apps/server/tests/unit/providers/provider-execution-scope.test.ts).
 
 ### Срез: managed provider execution scopes
 
@@ -332,16 +348,19 @@ UI typecheck, все три inventory checks и production SIGTERM/SIGINT smoke.
 6. Copilot.
 7. OpenAI-compatible agent loop и local tools.
 
-Для каждого provider:
+Для каждого provider (полная mode/platform matrix; незакрытый общий маркер
+не означает отсутствие уже реализованного adapter):
 
 - [ ] installation/auth detection;
-- [ ] model catalog;
+- [x] model catalog; [capability/catalog tests](../../apps/server/tests/unit/providers/provider-capabilities.test.ts)
+      проверяют explicit registrations и закрытые unknown models.
 - [ ] local and supported remote execution;
 - [ ] event normalization;
 - [ ] cancel/cleanup;
 - [ ] credentials redaction;
 - [ ] usage endpoint;
-- [ ] contract tests с fake SDK/CLI;
+- [x] contract tests с fake SDK/CLI; [adapter contracts](../../apps/server/tests/unit/providers/provider-adapter-contract.test.ts)
+      дополнены полным SSH tier в [checkpoint](artifacts/local-runtime-http-errors-checkpoint.md).
 - [ ] optional live acceptance test вне обычного CI.
 
 ## 7.4. AgentService decomposition
@@ -953,28 +972,35 @@ filesystem I/O и ошибки Nest hooks, также требует hardening �
 
 ## 7.5. Tool policy
 
-- [ ] Единый policy для read/write/search/shell/delete tools.
-- [ ] Учитывать provider capability и execution environment capability.
-- [ ] Сохранить plan/read-only ограничения.
+- [x] Единый policy для read/write/search/shell/delete tools.
+      [ToolPolicyService tests](../../apps/server/tests/unit/modules/tool-policy.test.ts) проверяют canonical effects; это не sandbox для произвольных vendor tools.
+- [x] Учитывать provider capability и execution environment capability.
+      [Policy tests](../../apps/server/tests/unit/modules/tool-policy.test.ts) проверяют обе capability gates.
+- [x] Сохранить plan/read-only ограничения.
+      [Run/approval audit](artifacts/stage-8-run-artifact-port-audit.md) и [Direct integration](../../apps/server/tests/unit/services/openai-compatible-integration.test.ts).
 - [ ] Не полагаться только на название tool от внешнего SDK.
 - [ ] Нормализовать tool calls и usage events.
-- [ ] Проверить command wrappers, redirects и destructive detection.
+- [x] Проверить command wrappers, redirects и destructive detection.
+      [Policy tests](../../apps/server/tests/unit/modules/tool-policy.test.ts) включают wrappers/redirects и обычные команды; эвристика не называется полной shell sandbox.
 
 ## 7.6. Models/setup/usage routes
 
-- [ ] Перенести provider status и setup endpoints, отложенные на этапе 4.
+- [x] Перенести provider status и setup endpoints, отложенные на этапе 4.
+      Native SetupController и shared responses подтверждены [coverage checkpoint](artifacts/json-response-coverage-checkpoint.md); command-specific consent сохранён.
 - [x] Перенести Claude/Codex/Gemini/ZAI usage endpoints: `ProviderUsageController`
       и native usage factories; HTTP cutover не закрывает оставшиеся consent,
       adapter redaction и platform cleanup gates.
 - [x] Перенести model discovery/cache refresh.
-- [ ] Status не должен выполнять дорогую авторизацию без явного запроса.
+- [x] Status не должен выполнять дорогую авторизацию без явного запроса.
+      [Passive discovery checkpoint](artifacts/run-ownership-provider-filesystem-checkpoint.md), [Cursor status](../../apps/server/tests/contract/cursor-status.contract.test.ts) и [Copilot status](../../apps/server/tests/contract/copilot-status.contract.test.ts).
   - [x] Cursor setup status: passive host key/file hints, без token reads,
         auth/version fallback и WSL auth probes; separate connection marker (API v13).
   - [x] Gemini/Copilot setup status: passive application hints, без auth commands
         и без продвижения file/token presence в verified authentication (API v11/v10).
   - [x] GitHub setup status: пассивный GET без API/auth probes, отдельный confirmed
         native check с hostname/CLI/host target, protocol gate и явным UI действием (API v8).
-- [ ] Setup mutation требует подтверждения и возвращает фактический target.
+- [x] Setup mutation требует подтверждения и возвращает фактический target.
+      Native verification/credential/connection commands ниже используют explicit confirmation; [credential transport](../../apps/server/tests/contract/credential-transport.contract.test.ts) и [Claude verification](../../apps/server/tests/contract/claude-verification.contract.test.ts).
   - [x] Disconnect всех шести CLI providers: shared schema, явное подтверждение,
         instance/provider/path target и native application-scoped command.
   - [x] Reconnect всех шести CLI providers: confirmed target, FIFO connection
@@ -2080,7 +2106,8 @@ Settings Save Anthropic/OpenAI также использует этот native c
 - [x] Running agents read model.
 - [x] Streaming через EventBus compatibility layer.
 - [x] Request завершение не отменяет долгоживущий agent job.
-- [ ] Shutdown отмечает jobs interrupted до закрытия provider processes.
+- [x] Shutdown отмечает jobs interrupted до закрытия provider processes.
+      [Active shutdown contract](../../apps/server/tests/contract/agent-active-shutdown.contract.test.ts) и [agent storage/recovery checkpoint](artifacts/agent-storage-recovery-session-checkpoint.md).
 
 ### Срез: Running Agents и chat execution leases
 

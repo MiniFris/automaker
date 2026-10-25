@@ -1,7 +1,115 @@
 import { defineConfig, globalIgnores } from 'eslint/config';
+import { dirname, relative, resolve } from 'node:path';
 import js from '@eslint/js';
 import ts from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
+
+const serverSource = resolve(import.meta.dirname, 'src');
+const pureKernels = new Set([
+  resolve(serverSource, 'modules/orchestration/feature-run-state-machine.ts'),
+  resolve(serverSource, 'core/errors/domain-errors.ts'),
+]);
+const domainDirectory = resolve(serverSource, 'domain');
+const ambientRuntime = new Set([
+  'process',
+  'globalThis',
+  'global',
+  'window',
+  'self',
+  'require',
+  'module',
+  '__dirname',
+  '__filename',
+  'fetch',
+  'XMLHttpRequest',
+  'WebSocket',
+  'EventSource',
+  'Worker',
+  'SharedWorker',
+  'navigator',
+  'setTimeout',
+  'clearTimeout',
+  'setInterval',
+  'clearInterval',
+  'setImmediate',
+  'clearImmediate',
+  'queueMicrotask',
+  'requestAnimationFrame',
+  'cancelAnimationFrame',
+  'requestIdleCallback',
+  'cancelIdleCallback',
+  'AbortSignal',
+  'console',
+  'performance',
+  'eval',
+  'Function',
+]);
+const pureKernelRule = {
+  meta: {
+    type: 'problem',
+    schema: [],
+    messages: {
+      dependency:
+        'Pure kernels may import only guarded domain helpers and type-only @automaker/types; pass infrastructure results as values.',
+      dynamic:
+        'Pure kernels cannot load modules dynamically or through require; use a guarded static dependency.',
+      ambient: 'Pure kernels cannot access ambient runtime {{name}}; supply values explicitly.',
+    },
+  },
+  create(context) {
+    const sourceCode = context.sourceCode;
+    function dependency(node) {
+      const name = node.source?.value;
+      const typeOnly =
+        node.importKind === 'type' ||
+        node.exportKind === 'type' ||
+        (node.specifiers?.length > 0 &&
+          node.specifiers.every(
+            (item) => item.importKind === 'type' || item.exportKind === 'type'
+          ));
+      if (name === '@automaker/types' && typeOnly) return;
+      let target;
+      if (typeof name === 'string' && name.startsWith('.'))
+        target = resolve(dirname(context.filename), name);
+      else if (typeof name === 'string' && name.startsWith('@/'))
+        target = resolve(serverSource, name.slice(2));
+      if (target) {
+        target = target.replace(/\.js$/, '.ts');
+        const withinDomain = relative(domainDirectory, target);
+        if (
+          pureKernels.has(target) ||
+          (withinDomain && !withinDomain.startsWith('..') && !withinDomain.startsWith('/'))
+        )
+          return;
+      }
+      context.report({ node, messageId: 'dependency' });
+    }
+    return {
+      ImportDeclaration: dependency,
+      ExportNamedDeclaration(node) {
+        if (node.source) dependency(node);
+      },
+      ExportAllDeclaration: dependency,
+      ImportExpression(node) {
+        context.report({ node, messageId: 'dynamic' });
+      },
+      TSImportEqualsDeclaration(node) {
+        context.report({ node, messageId: 'dynamic' });
+      },
+      Identifier(node) {
+        if (!ambientRuntime.has(node.name)) return;
+        let scope = sourceCode.getScope(node);
+        let reference;
+        while (scope && !reference) {
+          reference = scope.references.find((item) => item.identifier === node);
+          scope = scope.upper;
+        }
+        if (reference && !reference.resolved?.defs.length)
+          context.report({ node, messageId: 'ambient', data: { name: node.name } });
+      },
+    };
+  },
+};
 
 const eslintConfig = defineConfig([
   js.configs.recommended,
@@ -157,6 +265,15 @@ const eslintConfig = defineConfig([
         },
       ],
     },
+  },
+  {
+    files: [
+      'src/modules/orchestration/feature-run-state-machine.ts',
+      'src/core/errors/domain-errors.ts',
+      'src/domain/**/*.ts',
+    ],
+    plugins: { 'domain-boundaries': { rules: { 'pure-kernel': pureKernelRule } } },
+    rules: { 'domain-boundaries/pure-kernel': 'error' },
   },
   globalIgnores(['dist/**', 'node_modules/**']),
 ]);

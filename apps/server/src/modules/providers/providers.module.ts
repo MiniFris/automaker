@@ -1,3 +1,4 @@
+import { DirectWorkspaceAccess } from './direct-workspace-access.js';
 import { type DynamicModule, Global, Module } from '@nestjs/common';
 import { HOST_ENVIRONMENT, RuntimePathsService } from '../../core/config/index.js';
 import { EVENT_BUS, type EventBus } from '../../core/eventing/index.js';
@@ -68,6 +69,7 @@ import {
 @Module({
   controllers: [ProviderUsageController, SetupController],
   providers: [
+    DirectWorkspaceAccess,
     ProviderConnectionRepository,
     ProviderRegistry,
     ProviderDiscoveryService,
@@ -140,6 +142,7 @@ import {
     { provide: SetupStatusRuntime, useClass: NodeSetupStatusRuntime },
   ],
   exports: [
+    DirectWorkspaceAccess,
     ProviderRegistry,
     ProviderConnectionRepository,
     ToolPolicyService,
@@ -163,9 +166,17 @@ export class ProvidersModule {
           ? { provide: PROVIDER_REGISTRATIONS, useValue: Object.freeze([...registrations]) }
           : {
               provide: PROVIDER_REGISTRATIONS,
-              inject: [SettingsService, ApplicationCredentialsService],
-              useFactory: (settings: SettingsService, credentials: ApplicationCredentialsService) =>
-                createProviderRegistrations(settings, () => credentials.environment()),
+              inject: [SettingsService, ApplicationCredentialsService, DirectWorkspaceAccess],
+              useFactory: (
+                settings: SettingsService,
+                credentials: ApplicationCredentialsService,
+                workspaceAccess: DirectWorkspaceAccess
+              ) =>
+                createProviderRegistrations(
+                  settings,
+                  () => credentials.environment(),
+                  workspaceAccess
+                ),
             },
       ],
     };

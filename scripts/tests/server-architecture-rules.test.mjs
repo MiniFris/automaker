@@ -154,3 +154,110 @@ for (const folder of ['core', 'modules']) {
     assert.equal(result.errorCount, 0);
   });
 }
+
+const pureKernelPaths = [
+  'src/modules/orchestration/feature-run-state-machine.ts',
+  'src/core/errors/domain-errors.ts',
+  'src/domain/future/pure-kernel.ts',
+];
+async function pureBoundaryRejected(source) {
+  for (const filePath of pureKernelPaths) {
+    const [result] = await eslint.lintText(source, { filePath });
+    assert.ok(
+      result.messages.some(
+        (message) => message.ruleId === 'domain-boundaries/pure-kernel' && message.severity === 2
+      ),
+      `${filePath} must reject ${source}`
+    );
+  }
+}
+test('pure kernels reject framework, IO and application dependencies, including re-exports', async () => {
+  for (const source of [
+    "import { Injectable } from '@nestjs/common'; export const dependency = Injectable;",
+    "import express from 'express'; export const dependency = express;",
+    "import fs from 'node:fs/promises'; export const dependency = fs;",
+    "import { exec } from 'child_process'; export const dependency = exec;",
+    "export * from 'node:net';",
+    "export { request } from 'node:http';",
+    "export { ProviderRegistry } from '@/modules/providers/provider-registry.service.js';",
+    "import { SettingsService } from '@/services/settings-service.js'; export const dependency = SettingsService;",
+    "export * from '@/modules/features/features.controller.js';",
+    "export * from '@/lib/unreviewed-helper.js';",
+    "import { modelTimeout } from '@automaker/types'; export const dependency = modelTimeout;",
+    "import type { Injectable } from '@nestjs/common'; export type Dependency = Injectable;",
+  ])
+    await pureBoundaryRejected(source);
+});
+test('pure kernels reject dynamic imports and require even when a target looks like a pure helper', async () => {
+  for (const source of [
+    "export const dependency = import('node:fs');",
+    "export const dependency = import('@/domain/helper.js');",
+    "export const dependency = require('node:fs');",
+    "import dependency = require('node:fs'); export { dependency };",
+  ])
+    await pureBoundaryRejected(source);
+});
+test('pure kernels reject ambient process, network and timer access, including aliases via global objects', async () => {
+  for (const source of [
+    'export const environment = process.env;',
+    "export const request = () => fetch('https://example.invalid');",
+    'export const schedule = () => setTimeout(() => {}, 1);',
+    'export const schedule = () => setInterval(() => {}, 1);',
+    'export const schedule = () => queueMicrotask(() => {});',
+    'export const schedule = () => AbortSignal.timeout(1);',
+    'export const schedule = () => requestAnimationFrame(() => {});',
+    'export const request = globalThis.fetch;',
+    "export const environment = globalThis['process'];",
+    'const { fetch: request } = globalThis; export { request };',
+    'const runtime = globalThis; export const schedule = () => runtime.setTimeout(() => {}, 1);',
+    'export const write = () => console.log("IO");',
+    'export const load = Function("return import(\\"node:fs\\")");',
+  ])
+    await pureBoundaryRejected(source);
+});
+test('pure kernels allow explicit values, type-only contracts and guarded pure helpers', async () => {
+  for (const filePath of pureKernelPaths) {
+    const [result] = await eslint.lintText(
+      `
+      import type { Feature } from '@automaker/types';
+      import { type Feature as FeatureAlias } from '@automaker/types';
+      import { DomainError } from '@/core/errors/domain-errors.js';
+      import { canTransitionFeatureRun } from '@/modules/orchestration/feature-run-state-machine.js';
+      export { normalize } from '@/domain/normalize.js';
+      export type { Feature as PublicFeature } from '@automaker/types';
+      export function transition(from: 'queued', to: 'preparing', process: Feature | FeatureAlias) {
+        if (!canTransitionFeatureRun(from, to)) throw new DomainError('Invalid transition', 'CONFLICT', 409);
+        return { ...process, status: to };
+      }
+    `,
+      { filePath }
+    );
+    assert.equal(result.errorCount, 0, `${filePath}: ${JSON.stringify(result.messages)}`);
+  }
+});
+test('actual pure kernels and all current domain helpers satisfy the enforced boundary', async () => {
+  const sources = [pureKernelPaths[0], pureKernelPaths[1]];
+  if (ts.sys.directoryExists(path.join(cwd, 'src/domain'))) sources.push('src/domain/**/*.ts');
+  const results = await eslint.lintFiles(sources);
+  assert.ok(results.length >= 2);
+  for (const result of results)
+    assert.equal(result.errorCount, 0, `${result.filePath}: ${JSON.stringify(result.messages)}`);
+});
+
+test('pure-kernel overlay retains existing core/module import and ambient-environment guards', async () => {
+  for (const filePath of pureKernelPaths.slice(0, 2)) {
+    const [result] = await eslint.lintText(
+      "export * from '@/routes/legacy.js'; export const environment = process.env.PORT;",
+      { filePath }
+    );
+    for (const ruleId of [
+      'no-restricted-imports',
+      'no-restricted-syntax',
+      'domain-boundaries/pure-kernel',
+    ])
+      assert.ok(
+        result.messages.some((message) => message.ruleId === ruleId && message.severity === 2),
+        `${filePath} lost ${ruleId}`
+      );
+  }
+});

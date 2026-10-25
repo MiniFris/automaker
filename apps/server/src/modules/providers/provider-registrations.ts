@@ -1,3 +1,4 @@
+import type { WorkspaceAccessPolicy } from '../../providers/openai-compatible/workspace.js';
 import {
   isCodexModel,
   isCopilotModel,
@@ -19,14 +20,15 @@ import type { ProviderRegistration } from './provider-registry.service.js';
 
 export function createProviderRegistrations(
   settings: SettingsService,
-  environment?: () => Promise<Readonly<NodeJS.ProcessEnv>>
+  environment?: () => Promise<Readonly<NodeJS.ProcessEnv>>,
+  workspaceAccess?: WorkspaceAccessPolicy
 ): readonly ProviderRegistration[] {
   return Object.freeze([
     {
       name: 'openai-compatible',
       priority: 100,
       canHandleModel: isDirectModel,
-      create: () => new OpenAICompatibleProvider(),
+      create: () => new OpenAICompatibleProvider(workspaceAccess),
     },
     {
       name: 'claude',

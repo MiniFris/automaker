@@ -1,3 +1,4 @@
+import type { WorkspaceAccessPolicy } from '../providers/openai-compatible/workspace.js';
 /**
  * PipelineOrchestrator - Pipeline step execution and coordination
  */
@@ -82,7 +83,8 @@ export class PipelineOrchestrator {
     private readonly pipeline: PipelineService,
     private readonly filesystem: ExecutionFilesystem,
     private readonly directoryValidator: (cwd: string) => void = validateWorkingDirectory,
-    hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
+    hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env,
+    private readonly directWorkspaceAccess?: WorkspaceAccessPolicy
   ) {
     this.hostEnvironment = Object.freeze({ ...hostEnvironment });
   }
@@ -655,7 +657,8 @@ export class PipelineOrchestrator {
             testCommand,
             abortController.signal,
             { projectPath, runKey: `feature:${projectPath}:${featureId}` },
-            this.hostEnvironment
+            this.hostEnvironment,
+            this.directWorkspaceAccess
           );
           this.eventBus.emitAutoModeEvent('auto_mode_progress', {
             featureId,

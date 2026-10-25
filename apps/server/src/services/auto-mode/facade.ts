@@ -92,7 +92,8 @@ export class AutoModeServiceFacade {
     private readonly directoryValidator: (cwd: string) => void = validateWorkingDirectory,
     private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv> = Object.freeze({
       ...process.env,
-    })
+    }),
+    private readonly ownsFeatureStateManager = true
   ) {}
 
   /**
@@ -193,12 +194,9 @@ export class AutoModeServiceFacade {
     const concurrencyManager =
       sharedServices?.concurrencyManager ??
       new ConcurrencyManager((p) => worktreeResolver.getCurrentBranch(p));
-    const featureStateManager = new FeatureStateManager(
-      events,
-      featureLoader,
-      notificationService,
-      pipeline
-    );
+    const featureStateManager =
+      sharedServices?.featureStateManager ??
+      new FeatureStateManager(events, featureLoader, notificationService, pipeline);
     const planApprovalService = new PlanApprovalService(
       eventBus,
       featureStateManager,
@@ -462,7 +460,8 @@ export class AutoModeServiceFacade {
       pipeline,
       filesystem,
       options.validateWorkingDirectory,
-      hostEnvironment
+      hostEnvironment,
+      options.directWorkspaceAccess
     );
 
     // AutoLoopCoordinator - ALWAYS create new with proper execution callbacks
@@ -634,7 +633,8 @@ export class AutoModeServiceFacade {
       settingsService,
       filesystem,
       options.validateWorkingDirectory,
-      hostEnvironment
+      hostEnvironment,
+      !sharedServices?.featureStateManager
     );
 
     return facadeInstance;
@@ -1318,8 +1318,16 @@ export class AutoModeServiceFacade {
     this.concurrencyManager.stopAdmission();
   }
 
-  drainRecoveryState(): Promise<void> {
-    return this.recoveryService.close();
+  async drainRecoveryState(): Promise<void> {
+    await Promise.all([
+      this.recoveryService.close(),
+      ...(this.ownsFeatureStateManager ? [this.featureStateManager.destroy()] : []),
+    ]);
+  }
+
+  onModuleDestroy(): Promise<void> {
+    this.interruptForShutdown();
+    return this.drainRecoveryState();
   }
 
   interruptForShutdown(): void {

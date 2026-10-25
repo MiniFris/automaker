@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 447,
-    "internalEdges": 1610,
+    "files": 448,
+    "internalEdges": 1622,
     "stronglyConnectedComponents": 2
   },
   "layerEdges": {
@@ -13,11 +13,11 @@
     "core -> services": 8,
     "lib -> lib": 4,
     "lib -> services": 1,
-    "modules -> core": 212,
+    "modules -> core": 213,
     "modules -> lib": 53,
-    "modules -> modules": 387,
-    "modules -> providers": 35,
-    "modules -> services": 185,
+    "modules -> modules": 389,
+    "modules -> providers": 37,
+    "modules -> services": 186,
     "modules -> types": 2,
     "providers -> core": 1,
     "providers -> lib": 3,
@@ -30,8 +30,8 @@
     "services -> core": 35,
     "services -> lib": 67,
     "services -> modules": 17,
-    "services -> providers": 16,
-    "services -> services": 317,
+    "services -> providers": 19,
+    "services -> services": 320,
     "services -> types": 3,
     "tests -> lib": 2
   },
@@ -233,6 +233,7 @@
       "apps/server/src/services/execution-environment/terminal.ts",
       "apps/server/src/services/execution-environment/test-runner.ts",
       "apps/server/src/services/feature-loader.ts",
+      "apps/server/src/services/feature-state-manager.ts",
       "apps/server/src/services/local-process-preflight.ts",
       "apps/server/src/services/mcp-test-service.ts",
       "apps/server/src/services/ntfy-service.ts",
@@ -296,7 +297,7 @@
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 195,
+    "@nestjs/common": 196,
     "@nestjs/core": 8,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
@@ -325,7 +326,7 @@
     "node:net": 4,
     "node:os": 12,
     "node:path": 63,
-    "node:perf_hooks": 24,
+    "node:perf_hooks": 25,
     "node:stream": 6,
     "node:stream/web": 2,
     "node:string_decoder": 4,
@@ -1558,6 +1559,10 @@
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
+      "target": "apps/server/src/modules/providers/direct-workspace-access.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
       "target": "apps/server/src/modules/providers/provider-registry.service.ts"
     },
     {
@@ -2007,6 +2012,10 @@
     {
       "source": "apps/server/src/modules/execution/local-process-runtime.module.ts",
       "target": "apps/server/src/services/execution-environment/dev-server.ts"
+    },
+    {
+      "source": "apps/server/src/modules/execution/local-process-runtime.module.ts",
+      "target": "apps/server/src/services/execution-environment/local.ts"
     },
     {
       "source": "apps/server/src/modules/execution/local-process-runtime.module.ts",
@@ -3317,6 +3326,14 @@
       "target": "apps/server/src/modules/providers/provider-connection.repository.ts"
     },
     {
+      "source": "apps/server/src/modules/providers/direct-workspace-access.ts",
+      "target": "apps/server/src/core/security/security.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/direct-workspace-access.ts",
+      "target": "apps/server/src/providers/openai-compatible/workspace.ts"
+    },
+    {
       "source": "apps/server/src/modules/providers/github-authentication.service.ts",
       "target": "apps/server/src/core/config/index.ts"
     },
@@ -3427,6 +3444,10 @@
     {
       "source": "apps/server/src/modules/providers/provider-registrations.ts",
       "target": "apps/server/src/providers/openai-compatible-provider.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/provider-registrations.ts",
+      "target": "apps/server/src/providers/openai-compatible/workspace.ts"
     },
     {
       "source": "apps/server/src/modules/providers/provider-registrations.ts",
@@ -3587,6 +3608,10 @@
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
       "target": "apps/server/src/modules/providers/cursor-permissions.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/modules/providers/direct-workspace-access.ts"
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
@@ -5466,6 +5491,10 @@
     },
     {
       "source": "apps/server/src/services/auto-mode/compat.ts",
+      "target": "apps/server/src/providers/openai-compatible/workspace.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/compat.ts",
       "target": "apps/server/src/services/auto-mode/facade.ts"
     },
     {
@@ -5658,6 +5687,10 @@
     },
     {
       "source": "apps/server/src/services/auto-mode/types.ts",
+      "target": "apps/server/src/providers/openai-compatible/workspace.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/types.ts",
       "target": "apps/server/src/services/auto-loop-coordinator.ts"
     },
     {
@@ -5671,6 +5704,10 @@
     {
       "source": "apps/server/src/services/auto-mode/types.ts",
       "target": "apps/server/src/services/feature-loader.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/types.ts",
+      "target": "apps/server/src/services/feature-state-manager.ts"
     },
     {
       "source": "apps/server/src/services/auto-mode/types.ts",
@@ -5787,6 +5824,10 @@
     {
       "source": "apps/server/src/services/dev-server-service.ts",
       "target": "apps/server/src/lib/secure-fs.ts"
+    },
+    {
+      "source": "apps/server/src/services/dev-server-service.ts",
+      "target": "apps/server/src/services/execution-environment/local.ts"
     },
     {
       "source": "apps/server/src/services/dev-server-service.ts",
@@ -6482,6 +6523,10 @@
     },
     {
       "source": "apps/server/src/services/pipeline-orchestrator.ts",
+      "target": "apps/server/src/providers/openai-compatible/workspace.ts"
+    },
+    {
+      "source": "apps/server/src/services/pipeline-orchestrator.ts",
       "target": "apps/server/src/services/agent-executor.ts"
     },
     {
@@ -6731,6 +6776,10 @@
     {
       "source": "apps/server/src/services/test-runner-service.ts",
       "target": "apps/server/src/lib/secure-fs.ts"
+    },
+    {
+      "source": "apps/server/src/services/test-runner-service.ts",
+      "target": "apps/server/src/services/execution-environment/local.ts"
     },
     {
       "source": "apps/server/src/services/test-runner-service.ts",

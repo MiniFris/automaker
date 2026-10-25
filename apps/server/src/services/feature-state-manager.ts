@@ -16,6 +16,7 @@
 import type { Feature, FeatureStatusWithPipeline, ParsedTask, PlanSpec } from '@automaker/types';
 import { isPipelineStatus, isDirectModel } from '@automaker/types';
 import { createLogger } from '@automaker/utils';
+import { performance } from 'node:perf_hooks';
 import type { EventEmitter } from '../lib/events.js';
 import type { AutoModeEventType } from './typed-event-bus.js';
 import type { NotificationService } from './notification-service.js';
@@ -54,6 +55,13 @@ interface AutoModeEventPayload {
   status?: string;
 }
 
+export class FeatureStateNotificationCleanupError extends Error {
+  readonly code = 'FEATURE_STATE_NOTIFICATION_CLEANUP_FAILED';
+  constructor() {
+    super('Feature notification cleanup could not be confirmed.');
+  }
+}
+
 /**
  * FeatureStateManager handles feature status updates with persistence guarantees.
  *
@@ -63,7 +71,12 @@ interface AutoModeEventPayload {
  * 3. Resetting stuck features after server restarts
  * 4. Managing justFinishedAt timestamps for UI badges
  */
+
 export class FeatureStateManager {
+  private readonly notificationJobs = new Set<Promise<void>>();
+  private notificationStopping = false;
+  private notificationFailed = false;
+  private notificationShutdown?: Promise<void>;
   private events: EventEmitter;
   private featureLoader: FeatureLoader;
   private notificationService: NotificationService | null;
@@ -82,7 +95,7 @@ export class FeatureStateManager {
     // Subscribe to error events to create notifications
     this.unsubscribe = events.subscribe((type, payload) => {
       if (type === 'auto-mode:event') {
-        this.handleAutoModeEventError(payload as AutoModeEventPayload);
+        this.acceptNotification(payload as AutoModeEventPayload);
       }
     });
   }
@@ -90,11 +103,52 @@ export class FeatureStateManager {
   /**
    * Cleanup subscriptions
    */
-  destroy(): void {
-    if (this.unsubscribe) {
-      this.unsubscribe();
-      this.unsubscribe = null;
+  destroy(): Promise<void> {
+    if (this.notificationShutdown) return this.notificationShutdown;
+    this.notificationStopping = true;
+    this.unsubscribe?.();
+    this.unsubscribe = null;
+    const deadline = performance.now() + 5000;
+    let timer: NodeJS.Timeout | undefined;
+    this.notificationShutdown = Promise.race([
+      Promise.allSettled([...this.notificationJobs]).then((results) => {
+        if (
+          this.notificationFailed ||
+          performance.now() >= deadline ||
+          results.some((result) => result.status === 'rejected')
+        )
+          throw new FeatureStateNotificationCleanupError();
+      }),
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => reject(new FeatureStateNotificationCleanupError()), 5000);
+      }),
+    ]).finally(() => clearTimeout(timer));
+    return this.notificationShutdown;
+  }
+
+  private acceptNotification(payload: AutoModeEventPayload): void {
+    if (
+      this.notificationStopping ||
+      !this.notificationService ||
+      !payload?.projectPath ||
+      (payload.type !== 'auto_mode_error' &&
+        !(payload.type === 'auto_mode_feature_complete' && payload.passes === false))
+    )
+      return;
+    if (this.notificationJobs.size >= 256) {
+      logger.warn('Feature notification queue is busy.');
+      return;
     }
+    // Reserve before running async lookups, so close includes pre-storage work.
+    const accepted = { ...payload };
+    const task = Promise.resolve()
+      .then(() => this.handleAutoModeEventError(accepted))
+      .catch(() => {
+        this.notificationFailed = true;
+        logger.warn('Feature notification processing failed.');
+      })
+      .finally(() => this.notificationJobs.delete(task));
+    this.notificationJobs.add(task);
   }
 
   /**

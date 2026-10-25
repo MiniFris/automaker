@@ -14,7 +14,7 @@ import type { ChatCompletionRequest, ChatMessage } from './openai-compatible/tra
 import { AgentLoop, agentLimits } from './openai-compatible/agent-loop.js';
 import { AgentLimitError, abortable } from './openai-compatible/runtime.js';
 import { ToolRegistry, READ_TOOL_NAMES, toolPolicy } from './openai-compatible/tool-registry.js';
-import { ReadOnlyWorkspace } from './openai-compatible/workspace.js';
+import { ReadOnlyWorkspace, type WorkspaceAccessPolicy } from './openai-compatible/workspace.js';
 import {
   isIssuedEnvironment,
   type ExecutionEnvironment,
@@ -53,6 +53,9 @@ function outputValidator(options: ExecuteOptions): ValidateFunction | undefined 
  * Legacy settings retain the restricted workspace / pinned Docker-shell backend.
  */
 export class OpenAICompatibleProvider extends BaseProvider {
+  constructor(private readonly workspaceAccess?: WorkspaceAccessPolicy) {
+    super();
+  }
   protected featureCapabilities() {
     return { vision: false, tools: true, reasoning: false, mcp: false, remoteExecution: true };
   }
@@ -168,7 +171,11 @@ export class OpenAICompatibleProvider extends BaseProvider {
           ? AbortSignal.any([timeoutSignal, options.abortController.signal])
           : timeoutSignal;
         workspace =
-          local ?? (await abortable(ReadOnlyWorkspace.create(options.cwd, signal), signal));
+          local ??
+          (await abortable(
+            ReadOnlyWorkspace.create(options.cwd, signal, this.workspaceAccess),
+            signal
+          ));
         registry = new ToolRegistry(
           workspace,
           [...new Set(names)],

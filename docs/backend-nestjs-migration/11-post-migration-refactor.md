@@ -9,7 +9,7 @@
 ## Текущий статус и границы оставшейся работы
 
 Последний завершённый source checkpoint —
-[Local runtime snapshot и HTTP error codes](artifacts/local-runtime-http-errors-checkpoint.md).
+[FSM ownership, Direct path policy и Dev/Test environment](artifacts/fsm-direct-policy-process-checkpoint.md).
 Native startup/shutdown bridge, service locators и legacy composition удалены;
 в wave17 удалены последние 83 test-only route files. Полный build/test checkpoint wave17 прошёл. Приведённый ниже исторический срез сохраняет результаты того
 commit, а не перечень оставшихся в исходниках adapters.
@@ -32,7 +32,8 @@ coverage по каждому владельцу. См.
 - Завершить автоматические dependency rules: framework-free domain/application,
   public module exports, provider DI cycles и ambient config за пределами
   `core`/`modules`. Native Local runtime теперь получает application snapshot;
-  отдельные Dev/Test spawn sites ещё требуют исправления.
+  Dev/Test spawn sites затем получили отдельный native snapshot proof в wave20.
+  MCP/прочие helper boundaries оцениваются отдельно.
 - Сверить переходы/recovery всех перечисленных lifecycle owners, включая
   неизвестный cleanup outcome, с отдельными negative/concurrency tests.
   Feature/agent/pipeline mutations уже покрыты предыдущими срезами.
@@ -234,7 +235,9 @@ Application services тестируются на in-memory/fake ports; adapter c
 - Нет circular module dependencies. Явный Nest import graph автоматически проверяется:
   [audit](artifacts/nest-module-import-graph-audit.md); provider DI cycles требуют
   самостоятельной проверки.
-- Нет framework imports в domain layer.
+- Нет framework imports в domain layer. Два текущих pure kernels и будущий
+  `src/domain` защищены [enforced rules](artifacts/pure-kernel-boundary-audit.md);
+  это не объявление всех application adapters framework-free.
 - Mutation use cases имеют negative/recovery/concurrency tests.
 - Adapter contract suites работают для Local/Docker/SSH/provider variants.
 - Test setup не зависит от сети и внешних credentials по умолчанию.

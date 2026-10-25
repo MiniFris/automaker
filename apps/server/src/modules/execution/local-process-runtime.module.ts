@@ -1,6 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { APPLICATION_EVENTS } from '../../core/eventing/application-events.js';
-import { RuntimePathsService, PreviewPolicy } from '../../core/config/index.js';
+import { RuntimePathsService, PreviewPolicy, HOST_ENVIRONMENT } from '../../core/config/index.js';
+import { captureNativeLocalEnvironment } from '../../services/execution-environment/local.js';
 import { SECURE_FILESYSTEM, SecurityService } from '../../core/security/index.js';
 import type * as Filesystem from '../../lib/secure-fs.js';
 import type { EventEmitter } from '../../lib/events.js';
@@ -34,13 +35,15 @@ import { ManagedTestRunnerService } from '../../services/execution-environment/t
     },
     {
       provide: DevServerService,
-      inject: [SECURE_FILESYSTEM, SecurityService, RuntimePathsService],
+      inject: [SECURE_FILESYSTEM, SecurityService, RuntimePathsService, HOST_ENVIRONMENT],
       useFactory: (
         filesystem: typeof Filesystem,
         security: SecurityService,
-        paths: RuntimePathsService
+        paths: RuntimePathsService,
+        environment: Readonly<NodeJS.ProcessEnv>
       ) =>
         new DevServerService({
+          hostEnvironment: captureNativeLocalEnvironment(environment),
           filesystem,
           stateFilesystem: filesystem,
           dataDirectory: paths.dataDirectory,
@@ -53,14 +56,22 @@ import { ManagedTestRunnerService } from '../../services/execution-environment/t
     },
     {
       provide: TestRunnerService,
-      inject: [APPLICATION_EVENTS, SECURE_FILESYSTEM, SecurityService, RuntimePathsService],
+      inject: [
+        APPLICATION_EVENTS,
+        SECURE_FILESYSTEM,
+        SecurityService,
+        RuntimePathsService,
+        HOST_ENVIRONMENT,
+      ],
       useFactory: (
         events: EventEmitter,
         filesystem: typeof Filesystem,
         security: SecurityService,
-        paths: RuntimePathsService
+        paths: RuntimePathsService,
+        environment: Readonly<NodeJS.ProcessEnv>
       ) => {
         const tests = new TestRunnerService({
+          hostEnvironment: captureNativeLocalEnvironment(environment),
           filesystem,
           resolvePath: (candidate) =>
             security.validateLocalPath(

@@ -1,3 +1,4 @@
+import { DirectWorkspaceAccess } from '../providers/direct-workspace-access.js';
 import type { FactoryProvider } from '@nestjs/common';
 import { HOST_ENVIRONMENT } from '../../core/config/index.js';
 import { captureNativeLocalEnvironment } from '../../services/execution-environment/local.js';
@@ -31,6 +32,7 @@ export const autoModeProvider: FactoryProvider<AutoModeServiceCompat> = {
     SecurityService,
     FeatureRunCoordinator,
     HOST_ENVIRONMENT,
+    DirectWorkspaceAccess,
   ],
   useFactory: (
     events: EventEmitter,
@@ -44,7 +46,8 @@ export const autoModeProvider: FactoryProvider<AutoModeServiceCompat> = {
     contexts: ProjectRunContextRegistry,
     security: SecurityService,
     coordinator: FeatureRunCoordinator,
-    environment: Readonly<NodeJS.ProcessEnv>
+    environment: Readonly<NodeJS.ProcessEnv>,
+    directWorkspaceAccess: DirectWorkspaceAccess
   ) =>
     new AutoModeServiceCompat(
       events,
@@ -58,6 +61,7 @@ export const autoModeProvider: FactoryProvider<AutoModeServiceCompat> = {
       filesystem,
       {
         contexts,
+        directWorkspaceAccess,
         coordinator,
         hostEnvironment: captureNativeLocalEnvironment(environment),
         validateWorkingDirectory: (cwd) => {
