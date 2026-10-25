@@ -10,7 +10,8 @@ import { assertProductionServerArtifact } from '../../apps/server/scripts/check-
 const cwd = path.resolve(import.meta.dirname, '../../apps/server');
 const eslint = new ESLint({ cwd });
 
-test('production compiler roots and transitive imports exclude characterization routes', () => {
+test('legacy handlers are absent from source, compiler roots and transitive imports', () => {
+  assert.equal(ts.sys.directoryExists(path.join(cwd, 'src/routes')), false);
   const config = ts.readConfigFile(path.join(cwd, 'tsconfig.json'), ts.sys.readFile);
   assert.equal(config.error, undefined);
   const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, cwd);

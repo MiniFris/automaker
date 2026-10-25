@@ -59,6 +59,32 @@ const isBrowser = typeof (globalThis as any).window !== 'undefined';
 // Configuration state
 let currentLogLevel: LogLevel = LogLevel.INFO;
 
+export interface LoggerConfiguration {
+  level: LogLevel;
+  colorsEnabled: boolean;
+  timestampsEnabled: boolean;
+}
+
+// Runtime bridges are stateless lookups; application policies remain owned by their contexts.
+// No Node dependency is introduced into this browser-compatible module.
+const contextProviders = new Set<() => Readonly<LoggerConfiguration> | undefined>();
+export function registerLoggerContextProvider(
+  provider: () => Readonly<LoggerConfiguration> | undefined
+): () => void {
+  contextProviders.add(provider);
+  return () => {
+    contextProviders.delete(provider);
+  };
+}
+
+function contextualConfiguration(): Readonly<LoggerConfiguration> | undefined {
+  for (const provider of contextProviders) {
+    const configuration = provider();
+    if (configuration) return configuration;
+  }
+  return undefined;
+}
+
 // Get environment variable safely (works in both Node.js and browser)
 function getEnvVar(name: string): string | undefined {
   if (isBrowser) return undefined;
@@ -99,14 +125,17 @@ function formatShortTime(): string {
  */
 function formatNodeLog(level: string, context: string, levelColor: string): string {
   const parts: string[] = [];
+  const configuration = contextualConfiguration();
+  const colors = configuration?.colorsEnabled ?? colorsEnabled;
+  const timestamps = configuration?.timestampsEnabled ?? timestampsEnabled;
 
-  if (timestampsEnabled) {
-    parts.push(colorsEnabled ? `${ANSI.gray}${formatTimestamp()}${ANSI.reset}` : formatTimestamp());
+  if (timestamps) {
+    parts.push(colors ? `${ANSI.gray}${formatTimestamp()}${ANSI.reset}` : formatTimestamp());
   }
 
   const levelPadded = level.padEnd(5);
-  parts.push(colorsEnabled ? `${levelColor}${levelPadded}${ANSI.reset}` : levelPadded);
-  parts.push(colorsEnabled ? `${ANSI.blue}[${context}]${ANSI.reset}` : `[${context}]`);
+  parts.push(colors ? `${levelColor}${levelPadded}${ANSI.reset}` : levelPadded);
+  parts.push(colors ? `${ANSI.blue}[${context}]${ANSI.reset}` : `[${context}]`);
 
   return parts.join(' ');
 }
@@ -129,7 +158,7 @@ export function createLogger(context: string): Logger {
     // Browser implementation with CSS styling
     return {
       error: (...args: unknown[]): void => {
-        if (currentLogLevel >= LogLevel.ERROR) {
+        if (getLogLevel() >= LogLevel.ERROR) {
           console.error(
             `%cERROR%c %c${formatShortTime()}%c %c[${context}]%c`,
             BROWSER_STYLES.levels.ERROR,
@@ -144,7 +173,7 @@ export function createLogger(context: string): Logger {
       },
 
       warn: (...args: unknown[]): void => {
-        if (currentLogLevel >= LogLevel.WARN) {
+        if (getLogLevel() >= LogLevel.WARN) {
           console.warn(
             `%cWARN%c %c${formatShortTime()}%c %c[${context}]%c`,
             BROWSER_STYLES.levels.WARN,
@@ -159,7 +188,7 @@ export function createLogger(context: string): Logger {
       },
 
       info: (...args: unknown[]): void => {
-        if (currentLogLevel >= LogLevel.INFO) {
+        if (getLogLevel() >= LogLevel.INFO) {
           console.log(
             `%cINFO%c %c${formatShortTime()}%c %c[${context}]%c`,
             BROWSER_STYLES.levels.INFO,
@@ -174,7 +203,7 @@ export function createLogger(context: string): Logger {
       },
 
       debug: (...args: unknown[]): void => {
-        if (currentLogLevel >= LogLevel.DEBUG) {
+        if (getLogLevel() >= LogLevel.DEBUG) {
           console.log(
             `%cDEBUG%c %c${formatShortTime()}%c %c[${context}]%c`,
             BROWSER_STYLES.levels.DEBUG,
@@ -193,25 +222,25 @@ export function createLogger(context: string): Logger {
   // Node.js implementation with ANSI colors
   return {
     error: (...args: unknown[]): void => {
-      if (currentLogLevel >= LogLevel.ERROR) {
+      if (getLogLevel() >= LogLevel.ERROR) {
         console.error(formatNodeLog('ERROR', context, ANSI.red), ...args);
       }
     },
 
     warn: (...args: unknown[]): void => {
-      if (currentLogLevel >= LogLevel.WARN) {
+      if (getLogLevel() >= LogLevel.WARN) {
         console.log(formatNodeLog('WARN', context, ANSI.yellow), ...args);
       }
     },
 
     info: (...args: unknown[]): void => {
-      if (currentLogLevel >= LogLevel.INFO) {
+      if (getLogLevel() >= LogLevel.INFO) {
         console.log(formatNodeLog('INFO', context, ANSI.cyan), ...args);
       }
     },
 
     debug: (...args: unknown[]): void => {
-      if (currentLogLevel >= LogLevel.DEBUG) {
+      if (getLogLevel() >= LogLevel.DEBUG) {
         console.log(formatNodeLog('DEBUG', context, ANSI.magenta), ...args);
       }
     },
@@ -222,7 +251,7 @@ export function createLogger(context: string): Logger {
  * Get the current log level
  */
 export function getLogLevel(): LogLevel {
-  return currentLogLevel;
+  return contextualConfiguration()?.level ?? currentLogLevel;
 }
 
 /**

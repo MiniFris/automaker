@@ -118,7 +118,7 @@ In the Discord, you can:
 
 ### Prerequisites
 
-- **Node.js 22+** (required: >=22.0.0 <23.0.0)
+- **Node.js 22** (required: >=22.22.3 <23.0.0)
 - **npm** (comes with Node.js)
 - **[Claude Code CLI](https://code.claude.com/docs/en/overview)** - Install and authenticate with your Anthropic subscription. Automaker integrates with your authenticated Claude Code CLI to access Claude models.
 

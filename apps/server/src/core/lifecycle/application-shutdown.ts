@@ -2,6 +2,7 @@ import type { INestApplication } from '@nestjs/common';
 import { ShutdownSignal } from '@nestjs/common';
 import { ModulesContainer } from '@nestjs/core';
 import { constants as osConstants } from 'node:os';
+import type { ApplicationLoggingPolicy } from '../observability/logging-policy.js';
 
 export class ApplicationCleanupError extends Error {
   readonly code = 'APPLICATION_CLEANUP_FAILED';
@@ -11,7 +12,10 @@ export class ApplicationCleanupError extends Error {
 }
 
 /** Nest 12 logs hook failures and continues. Preserve cleanup attempts, but not a false success. */
-export function manageApplicationShutdown(app: INestApplication): { enableSignals(): void } {
+export function manageApplicationShutdown(
+  app: INestApplication,
+  logging?: ApplicationLoggingPolicy
+): { enableSignals(): void } {
   let failed = false;
   const seen = new Set<object>();
   for (const module of app.get(ModulesContainer).values()) {
@@ -60,7 +64,7 @@ export function manageApplicationShutdown(app: INestApplication): { enableSignal
   let signalled = false;
   const close = (signal?: string) => {
     closing ??= Promise.resolve()
-      .then(() => nativeClose(signal))
+      .then(() => (logging ? logging.run(() => nativeClose(signal)) : nativeClose(signal)))
       .then(() => {
         try {
           const adapter = app.getHttpAdapter?.() as

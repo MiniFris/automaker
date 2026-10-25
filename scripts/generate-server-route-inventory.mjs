@@ -8,9 +8,7 @@ import ts from 'typescript';
 const repositoryRoot = resolve(import.meta.dirname, '..');
 const routeRoot = join(repositoryRoot, 'apps/server/src/routes');
 const nestSourceRoot = join(repositoryRoot, 'apps/server/src');
-const serverEntry = join(repositoryRoot, 'apps/server/src/main.ts');
 const outputPath = join(repositoryRoot, 'docs/backend-nestjs-migration/artifacts/http-routes.json');
-const methods = new Set(['get', 'post', 'put', 'patch', 'delete']);
 const nestMethods = new Map([
   ['Get', 'GET'],
   ['Post', 'POST'],
@@ -20,45 +18,6 @@ const nestMethods = new Map([
   ['Options', 'OPTIONS'],
   ['Head', 'HEAD'],
 ]);
-
-const groupMounts = {
-  'app-spec': ['/api/spec-regeneration'],
-  'auto-mode': ['/api/auto-mode'],
-  'backlog-plan': ['/api/backlog-plan'],
-  'enhance-prompt': ['/api/enhance-prompt'],
-  'event-history': ['/api/event-history'],
-  'running-agents': ['/api/running-agents'],
-};
-
-const publicGroups = new Set(['auth', 'health', 'setup']);
-const middlewareOnlyEndpoints = [
-  {
-    method: 'POST',
-    path: '/api/git/environment',
-    group: 'git',
-    owner: 'legacy-express',
-    access: 'protected',
-    source: 'apps/server/src/routes/environment-git.ts',
-    line: 39,
-    middleware: ["environmentGitDispatcher(settings, 'git', isProjectBusy)"],
-    potentialMutation: true,
-    validatesProjectPath: false,
-    streamsResponse: false,
-  },
-  {
-    method: 'POST',
-    path: '/api/worktree/environment',
-    group: 'worktree',
-    owner: 'legacy-express',
-    access: 'protected',
-    source: 'apps/server/src/routes/environment-git.ts',
-    line: 39,
-    middleware: ["environmentGitDispatcher(settings, 'worktree', isProjectBusy)"],
-    potentialMutation: true,
-    validatesProjectPath: false,
-    streamsResponse: false,
-  },
-];
 
 async function walk(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -80,167 +39,6 @@ function joinUrl(base, routePath) {
   const normalizedRoute =
     routePath === '/' || routePath === '' ? '' : `/${routePath.replace(/^\//, '')}`;
   return `${normalizedBase}${normalizedRoute}` || '/';
-}
-
-function mountsFor(sourcePath) {
-  const relativePath = slash(relative(routeRoot, sourcePath));
-  const [group] = relativePath.split('/');
-  if (group === 'common.ts') return [];
-  if (relativePath === 'environment-dev-server.ts' || relativePath === 'environment-tests.ts') {
-    return ['/api/worktree'];
-  }
-  if (relativePath === 'environment-git.ts') return ['/api/git', '/api/worktree'];
-  if (group === 'settings') {
-    if (relativePath === 'settings/model-timeouts.ts') return ['/api/settings/model-timeouts'];
-    if (relativePath === 'settings/execution-environments.ts') {
-      return ['/api/settings/execution-environments'];
-    }
-    if (relativePath === 'settings/openai-compatible.ts') {
-      return ['/api/settings/openai-compatible'];
-    }
-  }
-  return groupMounts[group] ?? [`/api/${group}`];
-}
-
-function groupFor(sourcePath) {
-  const relativePath = slash(relative(routeRoot, sourcePath));
-  if (relativePath.startsWith('environment-')) return 'worktree';
-  return relativePath.split('/')[0];
-}
-
-function routePaths(node) {
-  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return [node.text];
-  if (!ts.isTemplateExpression(node) || node.templateSpans.length !== 1) return [];
-  const expression = node.templateSpans[0].expression;
-  if (!ts.isIdentifier(expression)) return [];
-  let parent = node.parent;
-  while (parent && !ts.isForOfStatement(parent)) parent = parent.parent;
-  if (
-    !parent ||
-    !ts.isVariableDeclarationList(parent.initializer) ||
-    parent.initializer.declarations.length !== 1 ||
-    !ts.isIdentifier(parent.initializer.declarations[0].name) ||
-    parent.initializer.declarations[0].name.text !== expression.text
-  ) {
-    return [];
-  }
-  const values = parent.expression;
-  if (!ts.isAsExpression(values) || !ts.isArrayLiteralExpression(values.expression)) return [];
-  return values.expression.elements.flatMap((element) => {
-    if (!ts.isStringLiteral(element)) return [];
-    return [`${node.head.text}${element.text}${node.templateSpans[0].literal.text}`];
-  });
-}
-
-function argumentSummary(call, sourceFile) {
-  return call.arguments.slice(1).map((argument) => {
-    const value = argument.getText(sourceFile).replace(/\s+/g, ' ').trim();
-    return value.length > 180 ? `${value.slice(0, 177)}...` : value;
-  });
-}
-
-function endpointFlags(method, middleware) {
-  const joined = middleware.join(' ');
-  return {
-    potentialMutation: method !== 'GET',
-    validatesProjectPath: joined.includes('validatePathParams'),
-    streamsResponse: /download|stream|raw/i.test(joined),
-  };
-}
-
-function parseRouterEndpoints(sourcePath, sourceText) {
-  const sourceFile = ts.createSourceFile(
-    sourcePath,
-    sourceText,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TS
-  );
-  const endpoints = [];
-  const mounts = mountsFor(sourcePath);
-  const source = slash(relative(repositoryRoot, sourcePath));
-  const group = groupFor(sourcePath);
-
-  function visit(node) {
-    if (
-      ts.isCallExpression(node) &&
-      ts.isPropertyAccessExpression(node.expression) &&
-      ts.isIdentifier(node.expression.expression) &&
-      node.expression.expression.text === 'router' &&
-      methods.has(node.expression.name.text) &&
-      node.arguments.length > 0
-    ) {
-      const paths = routePaths(node.arguments[0]);
-      if (paths.length > 0) {
-        const method = node.expression.name.text.toUpperCase();
-        const middleware = argumentSummary(node, sourceFile);
-        const line = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
-        for (const routePath of paths) {
-          for (const mount of mounts) {
-            endpoints.push({
-              method,
-              path: joinUrl(mount, routePath),
-              group,
-              owner: 'legacy-express',
-              access: publicGroups.has(group) ? 'public-before-global-auth' : 'protected',
-              source,
-              line,
-              middleware,
-              ...endpointFlags(method, middleware),
-            });
-          }
-        }
-      }
-    }
-    ts.forEachChild(node, visit);
-  }
-
-  visit(sourceFile);
-  return endpoints;
-}
-
-function parseDirectAppEndpoints(sourceText) {
-  const sourceFile = ts.createSourceFile(
-    serverEntry,
-    sourceText,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TS
-  );
-  const endpoints = [];
-
-  function visit(node) {
-    if (
-      ts.isCallExpression(node) &&
-      ts.isPropertyAccessExpression(node.expression) &&
-      ts.isIdentifier(node.expression.expression) &&
-      node.expression.expression.text === 'app' &&
-      methods.has(node.expression.name.text) &&
-      node.arguments.length > 0
-    ) {
-      const [path] = routePaths(node.arguments[0]);
-      if (path?.startsWith('/api/')) {
-        const method = node.expression.name.text.toUpperCase();
-        const middleware = argumentSummary(node, sourceFile);
-        const line = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
-        endpoints.push({
-          method,
-          path,
-          group: path.split('/')[2] || 'root',
-          owner: 'legacy-express',
-          access: line > 492 ? 'protected' : 'public-before-global-auth',
-          source: slash(relative(repositoryRoot, serverEntry)),
-          line,
-          middleware,
-          ...endpointFlags(method, middleware),
-        });
-      }
-    }
-    ts.forEachChild(node, visit);
-  }
-
-  visit(sourceFile);
-  return endpoints;
 }
 
 function decoratorsOf(node) {
@@ -342,27 +140,24 @@ function buildSummary(endpoints) {
 }
 
 async function generate() {
-  const files = await walk(routeRoot);
-  const nestControllerFiles = (await walk(nestSourceRoot)).filter((file) =>
-    file.endsWith('.controller.ts')
-  );
+  let legacy = [];
+  try {
+    legacy = await walk(routeRoot);
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
+  if (legacy.length) throw new Error('Legacy route sources must not be reintroduced.');
+  const files = (await walk(nestSourceRoot)).filter((file) => file.endsWith('.controller.ts'));
   const endpoints = [];
-  for (const file of files) {
-    endpoints.push(...parseRouterEndpoints(file, await readFile(file, 'utf8')));
-  }
-  endpoints.push(...parseDirectAppEndpoints(await readFile(serverEntry, 'utf8')));
-  for (const file of nestControllerFiles) {
+  for (const file of files)
     endpoints.push(...parseNestControllerEndpoints(file, await readFile(file, 'utf8')));
-  }
-  endpoints.push(...middlewareOnlyEndpoints);
-  const activeEndpoints = endpoints.filter((endpoint) => endpoint.owner !== 'legacy-express');
-  sortEndpoints(activeEndpoints);
+  sortEndpoints(endpoints);
   return {
     schemaVersion: 2,
     sourceRoot: 'apps/server/src',
-    total: activeEndpoints.length,
-    groups: buildSummary(activeEndpoints),
-    endpoints: activeEndpoints,
+    total: endpoints.length,
+    groups: buildSummary(endpoints),
+    endpoints,
   };
 }
 

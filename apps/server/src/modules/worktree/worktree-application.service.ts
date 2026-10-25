@@ -79,8 +79,10 @@ export class WorktreeApplicationService {
     return this.runFeature('diffs', input, signal);
   }
 
-  fileDiff(input: WorktreeFileRequest, signal: AbortSignal) {
+  async fileDiff(input: WorktreeFileRequest, signal: AbortSignal) {
     if (input.useWorktrees === false) {
+      const managed = await this.git.resolve(input.projectPath, input.featureId);
+      if (managed) return this.git.run(managed, 'file-diff', input, signal);
       return Promise.resolve({ success: true as const, diff: '', filePath: input.filePath });
     }
     return this.runFeature('file-diff', input, signal);
@@ -311,7 +313,20 @@ export class WorktreeApplicationService {
     return this.runPath('init-script-delete', input.projectPath, input, signal);
   }
 
-  runInitScript(input: WorktreeRunInitScriptRequest) {
+  async runInitScript(input: WorktreeRunInitScriptRequest) {
+    const target = await this.git.resolveOrLocal(input.worktreePath);
+    const legacyLocal =
+      target.runtime.type === 'local' && !target.binding && !input.environmentTargetId;
+    if (!legacyLocal && input.environmentTargetId !== target.environment.targetId)
+      throw new ExecutionEnvironmentError(
+        'GIT_TARGET_CHANGED',
+        'Inspect this workspace again before running its init script. No command was dispatched.'
+      );
+    if (await this.autoMode.isProjectRunning(target.environment.projectPath))
+      throw new ExecutionEnvironmentError(
+        'GIT_PROJECT_BUSY',
+        'Stop active project features before running its init script.'
+      );
     this.startInitScript(input);
     return { success: true as const, message: 'Init script started' };
   }
@@ -432,8 +447,12 @@ export class WorktreeApplicationService {
     input: WorktreeFeatureRequest & Record<string, unknown>,
     signal: AbortSignal
   ) {
+    const managed =
+      input.useWorktrees === false
+        ? await this.git.resolve(input.projectPath, input.featureId)
+        : undefined;
     const featureId = input.useWorktrees === false ? undefined : input.featureId;
-    const target = await this.git.resolveOrLocal(input.projectPath, featureId);
+    const target = managed ?? (await this.git.resolveOrLocal(input.projectPath, featureId));
     return this.git.run(target, action, input, signal);
   }
 
@@ -446,7 +465,10 @@ export class WorktreeApplicationService {
     const target = await this.git.resolveOrLocal(requested);
     const effectiveBody = {
       ...body,
-      ...(gitWriteActions.has(action) && !body.environmentTargetId
+      ...(gitWriteActions.has(action) &&
+      !body.environmentTargetId &&
+      target.runtime.type === 'local' &&
+      !target.binding
         ? { environmentTargetId: target.environment.targetId }
         : {}),
     };

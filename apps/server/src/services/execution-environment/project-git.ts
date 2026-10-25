@@ -14,7 +14,7 @@ import { nodeCommand } from './ssh-transport.js';
 import { PROJECT_GIT_WORKER } from './project-git-worker.js';
 
 const fail = (code: string, message: string): never => {
-  throw new ExecutionEnvironmentError(code, message);
+  throw new ExecutionEnvironmentError(code, message, code === 'GIT_REMOTE_ADD_FAILED' ? 500 : 400);
 };
 const identityHash = (value: unknown) =>
   createHash('sha256').update(JSON.stringify(value)).digest('hex');

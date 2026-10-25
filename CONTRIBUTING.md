@@ -70,7 +70,7 @@ For complete details on contribution terms and rights assignment, please review 
 
 Before contributing to Automaker, ensure you have the following installed on your system:
 
-- **Node.js 18+** (tested with Node.js 22)
+- **Node.js 22** (required: >=22.22.3 <23.0.0)
   - Download from [nodejs.org](https://nodejs.org/)
   - Verify installation: `node --version`
 - **npm** (comes with Node.js)
@@ -660,7 +660,7 @@ When creating a bug report, include:
 ### Environment
 
 - OS: Windows 11
-- Node.js: 22.11.0
+- Node.js: 22.22.3
 - Automaker: commit abc1234
 
 ### Steps to Reproduce

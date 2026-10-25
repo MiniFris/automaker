@@ -2,38 +2,31 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 528,
-    "internalEdges": 1863,
+    "files": 446,
+    "internalEdges": 1589,
     "stronglyConnectedComponents": 2
   },
   "layerEdges": {
-    "core -> core": 81,
-    "core -> lib": 7,
+    "core -> core": 86,
+    "core -> lib": 6,
     "core -> middleware": 1,
     "core -> services": 8,
     "lib -> lib": 4,
     "lib -> services": 1,
-    "modules -> core": 198,
-    "modules -> lib": 54,
+    "modules -> core": 201,
+    "modules -> lib": 53,
     "modules -> modules": 387,
-    "modules -> providers": 33,
-    "modules -> services": 179,
+    "modules -> providers": 35,
+    "modules -> services": 180,
     "modules -> types": 2,
     "providers -> core": 1,
     "providers -> lib": 3,
     "providers -> modules": 1,
     "providers -> providers": 93,
     "providers -> services": 24,
-    "root -> core": 16,
+    "root -> core": 18,
     "root -> modules": 28,
     "root -> root": 2,
-    "routes -> lib": 43,
-    "routes -> middleware": 4,
-    "routes -> modules": 3,
-    "routes -> providers": 6,
-    "routes -> routes": 145,
-    "routes -> services": 82,
-    "routes -> types": 2,
     "services -> core": 35,
     "services -> lib": 67,
     "services -> modules": 17,
@@ -80,10 +73,6 @@
       "apps/server/src/providers/openai-compatible/workspace.ts",
       "apps/server/src/providers/opencode-provider.ts",
       "apps/server/src/providers/remote-sdk-worker.ts",
-      "apps/server/src/routes/app-spec/common.ts",
-      "apps/server/src/routes/settings/openai-compatible.ts",
-      "apps/server/src/routes/worktree/common.ts",
-      "apps/server/src/routes/worktree/routes/continue-operation.ts",
       "apps/server/src/services/agent-executor.ts",
       "apps/server/src/services/claude-usage-service.ts",
       "apps/server/src/services/codex-usage-compat.ts",
@@ -151,24 +140,6 @@
       "apps/server/src/providers/gemini-provider.ts",
       "apps/server/src/providers/openai-compatible/shell-tool.ts",
       "apps/server/src/providers/opencode-provider.ts",
-      "apps/server/src/routes/git/routes/details.ts",
-      "apps/server/src/routes/git/routes/enhanced-status.ts",
-      "apps/server/src/routes/git/routes/file-diff.ts",
-      "apps/server/src/routes/github/routes/common.ts",
-      "apps/server/src/routes/worktree/common.ts",
-      "apps/server/src/routes/worktree/routes/add-remote.ts",
-      "apps/server/src/routes/worktree/routes/commit.ts",
-      "apps/server/src/routes/worktree/routes/create.ts",
-      "apps/server/src/routes/worktree/routes/delete.ts",
-      "apps/server/src/routes/worktree/routes/file-diff.ts",
-      "apps/server/src/routes/worktree/routes/generate-commit-message.ts",
-      "apps/server/src/routes/worktree/routes/generate-pr-description.ts",
-      "apps/server/src/routes/worktree/routes/info.ts",
-      "apps/server/src/routes/worktree/routes/init-git.ts",
-      "apps/server/src/routes/worktree/routes/list-branches.ts",
-      "apps/server/src/routes/worktree/routes/list-remotes.ts",
-      "apps/server/src/routes/worktree/routes/list.ts",
-      "apps/server/src/routes/worktree/routes/status.ts",
       "apps/server/src/services/claude-usage-service.ts",
       "apps/server/src/services/codex-app-server-service.ts",
       "apps/server/src/services/dev-server-service.ts",
@@ -223,15 +194,12 @@
       "apps/server/src/modules/templates/templates.service.ts",
       "apps/server/src/modules/terminal/terminal-access.service.ts",
       "apps/server/src/modules/terminal/websocket-transport.service.ts",
+      "apps/server/src/modules/worktree/worktree-text.service.ts",
       "apps/server/src/providers/openai-compatible/agent-loop.ts",
       "apps/server/src/providers/openai-compatible/shell-tool.ts",
       "apps/server/src/providers/openai-compatible/transport.ts",
       "apps/server/src/providers/provider-execution-scope.ts",
       "apps/server/src/providers/remote-sdk-worker.ts",
-      "apps/server/src/routes/worktree/routes/checkout-branch.ts",
-      "apps/server/src/routes/worktree/routes/create.ts",
-      "apps/server/src/routes/worktree/routes/generate-commit-message.ts",
-      "apps/server/src/routes/worktree/routes/generate-pr-description.ts",
       "apps/server/src/services/agent-executor.ts",
       "apps/server/src/services/agent/agent-execution-coordinator.ts",
       "apps/server/src/services/auto-loop-coordinator.ts",
@@ -272,7 +240,7 @@
   },
   "externalImports": {
     "@anthropic-ai/claude-agent-sdk": 3,
-    "@automaker/contracts": 25,
+    "@automaker/contracts": 24,
     "@automaker/contracts/domains/agent": 1,
     "@automaker/contracts/domains/auth": 1,
     "@automaker/contracts/domains/auto-mode-responses": 1,
@@ -302,12 +270,13 @@
     "@automaker/contracts/domains/workspace": 1,
     "@automaker/contracts/domains/worktree-responses": 1,
     "@automaker/dependency-resolver": 1,
-    "@automaker/git-utils": 12,
-    "@automaker/model-resolver": 20,
-    "@automaker/platform": 57,
-    "@automaker/prompts": 3,
-    "@automaker/types": 162,
-    "@automaker/utils": 139,
+    "@automaker/git-utils": 7,
+    "@automaker/model-resolver": 17,
+    "@automaker/platform": 51,
+    "@automaker/prompts": 2,
+    "@automaker/types": 152,
+    "@automaker/utils": 115,
+    "@automaker/utils/logger": 1,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
@@ -318,43 +287,43 @@
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
     "ajv": 4,
-    "child_process": 32,
+    "child_process": 14,
     "cookie": 1,
     "cookie-parser": 1,
     "cors": 1,
     "crypto": 2,
     "dotenv": 1,
     "events": 1,
-    "express": 99,
+    "express": 25,
     "fflate": 1,
-    "fs": 10,
-    "fs/promises": 12,
+    "fs": 7,
+    "fs/promises": 8,
     "net": 1,
     "node-pty": 2,
-    "node:async_hooks": 1,
+    "node:async_hooks": 2,
     "node:buffer": 1,
     "node:child_process": 16,
     "node:crypto": 41,
     "node:events": 1,
     "node:fs": 12,
-    "node:fs/promises": 21,
+    "node:fs/promises": 20,
     "node:http": 8,
     "node:net": 4,
     "node:os": 12,
-    "node:path": 64,
+    "node:path": 63,
     "node:perf_hooks": 24,
     "node:stream": 6,
     "node:stream/web": 2,
     "node:string_decoder": 4,
     "node:timers/promises": 6,
     "node:url": 4,
-    "node:util": 13,
+    "node:util": 12,
     "os": 11,
-    "path": 54,
+    "path": 34,
     "reflect-metadata": 1,
     "ssh2": 3,
     "url": 1,
-    "util": 22,
+    "util": 4,
     "vitest": 1,
     "ws": 1,
     "yaml": 1,
@@ -392,6 +361,10 @@
     {
       "source": "apps/server/src/app.module.ts",
       "target": "apps/server/src/core/lifecycle/lifecycle.module.ts"
+    },
+    {
+      "source": "apps/server/src/app.module.ts",
+      "target": "apps/server/src/core/observability/logging-policy.ts"
     },
     {
       "source": "apps/server/src/app.module.ts",
@@ -739,6 +712,10 @@
     },
     {
       "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
+      "target": "apps/server/src/core/observability/logging-policy.ts"
+    },
+    {
+      "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
       "target": "apps/server/src/core/observability/request-context.ts"
     },
     {
@@ -748,10 +725,6 @@
     {
       "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
       "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
-      "target": "apps/server/src/lib/request-logging-state.ts"
     },
     {
       "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
@@ -786,6 +759,10 @@
       "target": "apps/server/src/services/test-runner-service.ts"
     },
     {
+      "source": "apps/server/src/core/lifecycle/application-shutdown.ts",
+      "target": "apps/server/src/core/observability/logging-policy.ts"
+    },
+    {
       "source": "apps/server/src/core/lifecycle/lifecycle.module.ts",
       "target": "apps/server/src/core/lifecycle/readiness-state.service.ts"
     },
@@ -811,7 +788,15 @@
     },
     {
       "source": "apps/server/src/core/observability/observability.module.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/core/observability/observability.module.ts",
       "target": "apps/server/src/core/observability/application-metrics.ts"
+    },
+    {
+      "source": "apps/server/src/core/observability/observability.module.ts",
+      "target": "apps/server/src/core/observability/logging-policy.ts"
     },
     {
       "source": "apps/server/src/core/observability/observability.module.ts",
@@ -820,6 +805,10 @@
     {
       "source": "apps/server/src/core/observability/observability.module.ts",
       "target": "apps/server/src/core/observability/metrics.ts"
+    },
+    {
+      "source": "apps/server/src/core/observability/request-context.ts",
+      "target": "apps/server/src/core/observability/logging-policy.ts"
     },
     {
       "source": "apps/server/src/core/observability/request-context.ts",
@@ -944,6 +933,10 @@
     {
       "source": "apps/server/src/main.ts",
       "target": "apps/server/src/core/lifecycle/process-exception-handlers.ts"
+    },
+    {
+      "source": "apps/server/src/main.ts",
+      "target": "apps/server/src/core/observability/logging-policy.ts"
     },
     {
       "source": "apps/server/src/main.ts",
@@ -3919,7 +3912,7 @@
     },
     {
       "source": "apps/server/src/modules/settings/settings-runtime-effects.service.ts",
-      "target": "apps/server/src/lib/request-logging-state.ts"
+      "target": "apps/server/src/core/observability/logging-policy.ts"
     },
     {
       "source": "apps/server/src/modules/settings/settings-runtime-effects.service.ts",
@@ -4163,6 +4156,10 @@
     },
     {
       "source": "apps/server/src/modules/terminal/websocket-transport.service.ts",
+      "target": "apps/server/src/core/observability/logging-policy.ts"
+    },
+    {
+      "source": "apps/server/src/modules/terminal/websocket-transport.service.ts",
       "target": "apps/server/src/core/observability/request-context.ts"
     },
     {
@@ -4287,6 +4284,10 @@
     },
     {
       "source": "apps/server/src/modules/worktree/worktree-text.service.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/modules/worktree/worktree-text.service.ts",
       "target": "apps/server/src/core/errors/index.ts"
     },
     {
@@ -4303,7 +4304,19 @@
     },
     {
       "source": "apps/server/src/modules/worktree/worktree-text.service.ts",
+      "target": "apps/server/src/providers/provider-execution-scope.ts"
+    },
+    {
+      "source": "apps/server/src/modules/worktree/worktree-text.service.ts",
+      "target": "apps/server/src/providers/simple-query-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/worktree/worktree-text.service.ts",
       "target": "apps/server/src/services/execution-environment/project-git.ts"
+    },
+    {
+      "source": "apps/server/src/modules/worktree/worktree-text.service.ts",
+      "target": "apps/server/src/services/execution-environment/runtime.ts"
     },
     {
       "source": "apps/server/src/modules/worktree/worktree-text.service.ts",
@@ -4852,1146 +4865,6 @@
     {
       "source": "apps/server/src/providers/simple-query-service.ts",
       "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/app-spec/common.ts",
-      "target": "apps/server/src/routes/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/backlog-plan/common.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/backlog-plan/routes/apply.ts",
-      "target": "apps/server/src/routes/backlog-plan/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/backlog-plan/routes/apply.ts",
-      "target": "apps/server/src/services/feature-loader.ts"
-    },
-    {
-      "source": "apps/server/src/routes/backlog-plan/routes/apply.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/environment-dev-server.ts",
-      "target": "apps/server/src/routes/worktree/routes/dev-server-logs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/environment-dev-server.ts",
-      "target": "apps/server/src/routes/worktree/routes/stop-dev.ts"
-    },
-    {
-      "source": "apps/server/src/routes/environment-dev-server.ts",
-      "target": "apps/server/src/services/dev-server-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/environment-dev-server.ts",
-      "target": "apps/server/src/services/execution-environment/dev-server.ts"
-    },
-    {
-      "source": "apps/server/src/routes/environment-dev-server.ts",
-      "target": "apps/server/src/services/execution-environment/project-git.ts"
-    },
-    {
-      "source": "apps/server/src/routes/environment-dev-server.ts",
-      "target": "apps/server/src/services/execution-environment/runtime.ts"
-    },
-    {
-      "source": "apps/server/src/routes/environment-dev-server.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/environment-git.ts",
-      "target": "apps/server/src/services/execution-environment/project-git.ts"
-    },
-    {
-      "source": "apps/server/src/routes/environment-git.ts",
-      "target": "apps/server/src/services/execution-environment/runtime.ts"
-    },
-    {
-      "source": "apps/server/src/routes/environment-git.ts",
-      "target": "apps/server/src/services/execution-environment/ssh-state.ts"
-    },
-    {
-      "source": "apps/server/src/routes/environment-git.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/environment-tests.ts",
-      "target": "apps/server/src/routes/worktree/routes/test-logs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/environment-tests.ts",
-      "target": "apps/server/src/services/execution-environment/project-git.ts"
-    },
-    {
-      "source": "apps/server/src/routes/environment-tests.ts",
-      "target": "apps/server/src/services/execution-environment/runtime.ts"
-    },
-    {
-      "source": "apps/server/src/routes/environment-tests.ts",
-      "target": "apps/server/src/services/execution-environment/test-runner.ts"
-    },
-    {
-      "source": "apps/server/src/routes/environment-tests.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/environment-tests.ts",
-      "target": "apps/server/src/services/test-runner-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/git/common.ts",
-      "target": "apps/server/src/routes/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/git/index.ts",
-      "target": "apps/server/src/middleware/validate-paths.ts"
-    },
-    {
-      "source": "apps/server/src/routes/git/index.ts",
-      "target": "apps/server/src/routes/environment-git.ts"
-    },
-    {
-      "source": "apps/server/src/routes/git/index.ts",
-      "target": "apps/server/src/routes/git/routes/details.ts"
-    },
-    {
-      "source": "apps/server/src/routes/git/index.ts",
-      "target": "apps/server/src/routes/git/routes/diffs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/git/index.ts",
-      "target": "apps/server/src/routes/git/routes/enhanced-status.ts"
-    },
-    {
-      "source": "apps/server/src/routes/git/index.ts",
-      "target": "apps/server/src/routes/git/routes/file-diff.ts"
-    },
-    {
-      "source": "apps/server/src/routes/git/index.ts",
-      "target": "apps/server/src/routes/git/routes/stage-files.ts"
-    },
-    {
-      "source": "apps/server/src/routes/git/index.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/git/routes/details.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/git/routes/details.ts",
-      "target": "apps/server/src/routes/git/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/git/routes/diffs.ts",
-      "target": "apps/server/src/routes/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/git/routes/diffs.ts",
-      "target": "apps/server/src/routes/git/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/git/routes/enhanced-status.ts",
-      "target": "apps/server/src/routes/git/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/git/routes/file-diff.ts",
-      "target": "apps/server/src/routes/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/git/routes/file-diff.ts",
-      "target": "apps/server/src/routes/git/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/git/routes/stage-files.ts",
-      "target": "apps/server/src/routes/git/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/git/routes/stage-files.ts",
-      "target": "apps/server/src/services/stage-files-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/github/routes/check-github-remote.ts",
-      "target": "apps/server/src/routes/github/routes/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/common.ts",
-      "target": "apps/server/src/routes/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/execution-environments.ts",
-      "target": "apps/server/src/middleware/validate-paths.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/execution-environments.ts",
-      "target": "apps/server/src/services/execution-environment/bindings.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/execution-environments.ts",
-      "target": "apps/server/src/services/execution-environment/config.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/execution-environments.ts",
-      "target": "apps/server/src/services/execution-environment/docker-diagnostics.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/execution-environments.ts",
-      "target": "apps/server/src/services/execution-environment/docker.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/execution-environments.ts",
-      "target": "apps/server/src/services/execution-environment/provider-setup.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/execution-environments.ts",
-      "target": "apps/server/src/services/execution-environment/runtime.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/execution-environments.ts",
-      "target": "apps/server/src/services/execution-environment/ssh-feature.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/execution-environments.ts",
-      "target": "apps/server/src/services/execution-environment/ssh.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/execution-environments.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/index.ts",
-      "target": "apps/server/src/middleware/validate-paths.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/index.ts",
-      "target": "apps/server/src/routes/settings/execution-environments.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/index.ts",
-      "target": "apps/server/src/routes/settings/model-timeouts.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/index.ts",
-      "target": "apps/server/src/routes/settings/openai-compatible.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/index.ts",
-      "target": "apps/server/src/routes/settings/routes/discover-agents.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/index.ts",
-      "target": "apps/server/src/routes/settings/routes/get-credentials.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/index.ts",
-      "target": "apps/server/src/routes/settings/routes/get-global.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/index.ts",
-      "target": "apps/server/src/routes/settings/routes/get-project.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/index.ts",
-      "target": "apps/server/src/routes/settings/routes/migrate.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/index.ts",
-      "target": "apps/server/src/routes/settings/routes/status.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/index.ts",
-      "target": "apps/server/src/routes/settings/routes/update-credentials.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/index.ts",
-      "target": "apps/server/src/routes/settings/routes/update-global.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/index.ts",
-      "target": "apps/server/src/routes/settings/routes/update-project.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/index.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/index.ts",
-      "target": "apps/server/src/services/terminal-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/model-timeouts.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/openai-compatible.ts",
-      "target": "apps/server/src/providers/openai-compatible/config.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/openai-compatible.ts",
-      "target": "apps/server/src/providers/openai-compatible/errors.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/openai-compatible.ts",
-      "target": "apps/server/src/providers/openai-compatible/execution.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/openai-compatible.ts",
-      "target": "apps/server/src/providers/openai-compatible/transport.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/openai-compatible.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/routes/discover-agents.ts",
-      "target": "apps/server/src/lib/agent-discovery.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/routes/get-credentials.ts",
-      "target": "apps/server/src/routes/settings/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/routes/get-credentials.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/routes/get-global.ts",
-      "target": "apps/server/src/routes/settings/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/routes/get-global.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/routes/get-project.ts",
-      "target": "apps/server/src/routes/settings/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/routes/get-project.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/routes/migrate.ts",
-      "target": "apps/server/src/routes/settings/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/routes/migrate.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/routes/status.ts",
-      "target": "apps/server/src/routes/settings/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/routes/status.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/routes/update-global.ts",
-      "target": "apps/server/src/lib/request-logging-state.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/routes/update-global.ts",
-      "target": "apps/server/src/routes/settings/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/routes/update-global.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/routes/update-global.ts",
-      "target": "apps/server/src/services/terminal-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/routes/update-global.ts",
-      "target": "apps/server/src/types/settings.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/routes/update-project.ts",
-      "target": "apps/server/src/routes/settings/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/routes/update-project.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/settings/routes/update-project.ts",
-      "target": "apps/server/src/types/settings.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/common.ts",
-      "target": "apps/server/src/routes/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/middleware/validate-paths.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/environment-dev-server.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/environment-git.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/environment-tests.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/middleware.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/route-services.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/abort-operation.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/add-remote.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/branch-commit-log.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/check-changes.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/checkout-branch.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/cherry-pick.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/commit-log.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/commit.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/continue-operation.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/create-pr.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/create.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/delete.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/dev-server-logs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/diffs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/discard-changes.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/file-diff.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/generate-commit-message.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/generate-pr-description.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/info.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/init-git.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/init-script.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/list-branches.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/list-dev-servers.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/list-remotes.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/list.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/merge.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/migrate.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/open-in-editor.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/open-in-terminal.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/pr-info.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/pull.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/push.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/rebase.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/set-tracking.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/stage-files.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/start-dev.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/start-tests.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/stash-apply.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/stash-drop.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/stash-list.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/stash-push.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/status.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/stop-dev.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/stop-tests.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/switch-branch.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/sync.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/test-logs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/routes/worktree/routes/update-pr-number.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/services/feature-loader.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/index.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/middleware.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/route-services.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/route-services.ts",
-      "target": "apps/server/src/services/dev-server-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/route-services.ts",
-      "target": "apps/server/src/services/execution-environment/dev-server.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/route-services.ts",
-      "target": "apps/server/src/services/execution-environment/test-runner.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/route-services.ts",
-      "target": "apps/server/src/services/init-script-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/route-services.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/route-services.ts",
-      "target": "apps/server/src/services/test-runner-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/abort-operation.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/abort-operation.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/add-remote.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/branch-commit-log.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/branch-commit-log.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/branch-commit-log.ts",
-      "target": "apps/server/src/services/branch-commit-log-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/branch-tracking.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/check-changes.ts",
-      "target": "apps/server/src/lib/git.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/check-changes.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/checkout-branch.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/checkout-branch.ts",
-      "target": "apps/server/src/lib/git.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/checkout-branch.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/checkout-branch.ts",
-      "target": "apps/server/src/services/checkout-branch-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/cherry-pick.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/cherry-pick.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/cherry-pick.ts",
-      "target": "apps/server/src/services/cherry-pick-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/commit-log.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/commit-log.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/commit-log.ts",
-      "target": "apps/server/src/services/commit-log-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/commit.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/continue-operation.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/continue-operation.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/create-pr.ts",
-      "target": "apps/server/src/lib/git.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/create-pr.ts",
-      "target": "apps/server/src/lib/worktree-metadata.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/create-pr.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/create-pr.ts",
-      "target": "apps/server/src/services/pr-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/create.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/create.ts",
-      "target": "apps/server/src/lib/git.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/create.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/create.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/create.ts",
-      "target": "apps/server/src/routes/worktree/routes/branch-tracking.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/create.ts",
-      "target": "apps/server/src/services/branch-sync-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/create.ts",
-      "target": "apps/server/src/services/init-script-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/create.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/create.ts",
-      "target": "apps/server/src/services/worktree-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/delete.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/delete.ts",
-      "target": "apps/server/src/lib/git.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/delete.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/delete.ts",
-      "target": "apps/server/src/services/feature-loader.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/dev-server-logs.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/dev-server-logs.ts",
-      "target": "apps/server/src/services/dev-server-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/diffs.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/diffs.ts",
-      "target": "apps/server/src/routes/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/diffs.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/discard-changes.ts",
-      "target": "apps/server/src/lib/git.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/file-diff.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/file-diff.ts",
-      "target": "apps/server/src/routes/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/file-diff.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/generate-commit-message.ts",
-      "target": "apps/server/src/lib/settings-helpers.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/generate-commit-message.ts",
-      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/generate-commit-message.ts",
-      "target": "apps/server/src/providers/openai-compatible/execution.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/generate-commit-message.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/generate-commit-message.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/generate-pr-description.ts",
-      "target": "apps/server/src/lib/settings-helpers.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/generate-pr-description.ts",
-      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/generate-pr-description.ts",
-      "target": "apps/server/src/providers/openai-compatible/execution.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/generate-pr-description.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/generate-pr-description.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/info.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/info.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/init-git.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/init-git.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/init-script.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/init-script.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/init-script.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/init-script.ts",
-      "target": "apps/server/src/services/init-script-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/list-branches.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/list-branches.ts",
-      "target": "apps/server/src/services/worktree-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/list-dev-servers.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/list-dev-servers.ts",
-      "target": "apps/server/src/services/dev-server-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/list-remotes.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/list.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/list.ts",
-      "target": "apps/server/src/lib/worktree-metadata.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/list.ts",
-      "target": "apps/server/src/routes/github/routes/check-github-remote.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/list.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/merge.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/merge.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/merge.ts",
-      "target": "apps/server/src/services/merge-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/open-in-editor.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/open-in-terminal.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/pr-info.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/pull.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/pull.ts",
-      "target": "apps/server/src/services/pull-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/pull.ts",
-      "target": "apps/server/src/services/pull-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/push.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/push.ts",
-      "target": "apps/server/src/services/push-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/rebase.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/rebase.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/rebase.ts",
-      "target": "apps/server/src/services/rebase-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/set-tracking.ts",
-      "target": "apps/server/src/lib/git.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/set-tracking.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/stage-files.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/stage-files.ts",
-      "target": "apps/server/src/services/stage-files-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/start-dev.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/start-dev.ts",
-      "target": "apps/server/src/services/dev-server-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/start-dev.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/start-tests.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/start-tests.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/start-tests.ts",
-      "target": "apps/server/src/services/test-runner-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/stash-apply.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/stash-apply.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/stash-apply.ts",
-      "target": "apps/server/src/services/stash-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/stash-drop.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/stash-drop.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/stash-drop.ts",
-      "target": "apps/server/src/services/stash-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/stash-list.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/stash-list.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/stash-list.ts",
-      "target": "apps/server/src/services/stash-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/stash-push.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/stash-push.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/stash-push.ts",
-      "target": "apps/server/src/services/stash-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/status.ts",
-      "target": "apps/server/src/lib/secure-fs.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/status.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/stop-dev.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/stop-dev.ts",
-      "target": "apps/server/src/services/dev-server-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/stop-tests.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/stop-tests.ts",
-      "target": "apps/server/src/services/test-runner-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/switch-branch.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/switch-branch.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/switch-branch.ts",
-      "target": "apps/server/src/services/worktree-branch-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/sync.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/sync.ts",
-      "target": "apps/server/src/services/sync-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/test-logs.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/test-logs.ts",
-      "target": "apps/server/src/services/test-runner-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/update-pr-number.ts",
-      "target": "apps/server/src/lib/worktree-metadata.ts"
-    },
-    {
-      "source": "apps/server/src/routes/worktree/routes/update-pr-number.ts",
-      "target": "apps/server/src/routes/worktree/common.ts"
     },
     {
       "source": "apps/server/src/services/agent-executor-types.ts",

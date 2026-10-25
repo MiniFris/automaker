@@ -6,7 +6,48 @@
 модульные границы. Этот этап не является условием запуска Nest, но является частью
 полного backend refactor.
 
-## Срез: удаление legacy service composition
+## Текущий статус и границы оставшейся работы
+
+Последний завершённый checkpoint —
+[legacy route retirement и logging ownership](artifacts/legacy-retirement-logging-checkpoint.md).
+Native startup/shutdown bridge, service locators и legacy composition удалены;
+в wave17 удалены последние 83 test-only route files. Полный build/test checkpoint wave17 прошёл. Приведённый ниже исторический срез сохраняет результаты того
+commit, а не перечень оставшихся в исходниках adapters.
+
+Уже реализованы узкие native application services и ports для основных HTTP
+модулей, scoped filesystem repositories и сериализованные atomic mutations
+FeatureLoader/FeatureStateManager/settings/agent stores. Есть negative, recovery,
+concurrency и active-shutdown contracts. Поэтому общие checklist items ниже
+нельзя трактовать как отсутствие всей этой работы; они требуют итоговой проверки
+coverage по каждому владельцу. См.
+[state checkpoint](artifacts/state-execution-contract-checkpoint.md),
+[agent stores](artifacts/agent-storage-recovery-session-checkpoint.md) и
+[source-port checkpoint](artifacts/source-ports-and-locators-checkpoint.md).
+
+Оставшиеся конкретные проверки/работы:
+
+- Проверить ответственность крупных owners и направление зависимостей по каждому
+  bounded context; зафиксировать обоснованные исключения. Само наличие большого
+  файла не требует механического разделения.
+- Завершить автоматические dependency rules: framework-free domain/application,
+  public module exports, полный cycle check и ambient config за пределами
+  `core`/`modules`. В частности, Local execution ещё читает process environment.
+- Сверить переходы/recovery всех перечисленных lifecycle owners, включая
+  неизвестный cleanup outcome, с отдельными negative/concurrency tests.
+  Feature/agent/pipeline mutations уже покрыты предыдущими срезами.
+- Нормализовать stable machine-readable errors: полная shared schema coverage
+  не доказывает единые error codes для middleware/global и всех domain failures.
+- Завершить correlation HTTP → feature/orchestration → execution transport;
+  HTTP → agent coordinator → provider уже проверена. Startup/job/queue gauges
+  уже есть, но они не являются OS-wide leak census или persisted queue scan.
+- Проверить актуальные logging/config boundaries. Wave17 реализует application
+  logging policy и native HTTP/WS isolation; targeted evidence есть в
+  [logging audit](artifacts/application-logging-policy-audit.md) и завершённом
+  [общем checkpoint](artifacts/legacy-retirement-logging-checkpoint.md).
+- Выполнить sustained workload/resource и artifact/upgrade/rollback gates
+  [этапа 10](10-cutover-and-hardening.md) после итогового refactor.
+
+## Исторический срез: удаление legacy service composition
 
 Последние четыре сервиса получили native owners: `AutoModeServiceCompat` создаётся
 factory provider в AutoModeModule; `TerminalRuntimeModule` владеет TerminalService;
@@ -126,7 +167,10 @@ API v13, wire contracts, persisted formats и execution bindings не меняю
       Validation storage, dev/test preflight/state, settings agent discovery и
       worktree metadata затем переведены на явные native ports:
       [source-port checkpoint](artifacts/source-ports-and-locators-checkpoint.md).
-      Остальные terminal/platform/config helpers и coordination ещё требуют переноса;
+      Terminal shell/WSL/child environment и RC filesystem/lifecycle затем
+      переведены на application snapshot и scoped ports:
+      [terminal audit](artifacts/terminal-host-configuration-audit.md).
+      Остальные config/coordination boundaries требуют итогового аудита;
       общий checkbox пока не закрывается.
 - [ ] Filesystem repositories.
 - [ ] Git local/remote adapters.

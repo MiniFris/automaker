@@ -1,20 +1,15 @@
-import { createTestWorktreeRouteServices } from '../../helpers/worktree-route-services.js';
-import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
+import { createNativeWorktreeHttp } from '../../helpers/native-worktree-http.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { once } from 'node:events';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import express from 'express';
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
 import { SettingsService } from '@/services/settings-service.js';
 import { ManagedSSH } from '@/services/execution-environment/ssh.js';
 import { FeatureWorkspaceService } from '@/services/execution-environment/feature-workspace.js';
 import { ProjectGitService } from '@/services/execution-environment/project-git.js';
-import { createGitRoutes } from '@/routes/git/index.js';
-import { createWorktreeRoutes } from '@/routes/worktree/index.js';
-import { createEventEmitter } from '@/lib/events.js';
 import { sshPeer, testSSHKey } from '../../helpers/ssh-peer.js';
 import type { SSHEnvironmentProfile } from '@automaker/types';
 
@@ -28,7 +23,7 @@ describe.skipIf(process.platform !== 'linux')(
       remote: string,
       settings: SettingsService,
       peer: Awaited<ReturnType<typeof sshPeer>>,
-      server: ReturnType<ReturnType<typeof express>['listen']>,
+      native: Awaited<ReturnType<typeof createNativeWorktreeHttp>>,
       url: string,
       busy = false,
       peerClosed = false;
@@ -37,7 +32,7 @@ describe.skipIf(process.platform !== 'linux')(
     const post = async (scope: string, action: string, body: object) => {
       const response = await fetch(url + `/api/${scope}/${action}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': 'native-git-fixture' },
         body: JSON.stringify(body),
       });
       return { status: response.status, ...(await response.json()) };
@@ -95,30 +90,16 @@ describe.skipIf(process.platform !== 'linux')(
         { method: 'existing', remotePath: remote },
         active()
       );
-      const app = express();
-      app.use(express.json());
-      app.use(
-        '/api/git',
-        createGitRoutes(settings, () => busy)
-      );
-      app.use(
-        '/api/worktree',
-        createWorktreeRoutes(
-          createTestWorktreeRouteServices(),
-          createTestProviderRegistry(settings),
-          createEventEmitter(),
-          settings,
-          undefined,
-          () => busy
-        )
-      );
-      server = app.listen(0, '127.0.0.1');
-      await once(server, 'listening');
-      url = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+      native = await createNativeWorktreeHttp({
+        root: temporary,
+        settings,
+        busy: () => busy,
+        apiKey: 'native-git-fixture',
+      });
+      url = native.url;
     }, 20000);
     afterAll(async () => {
-      server?.closeAllConnections();
-      if (server) await new Promise<void>((resolve) => server.close(() => resolve()));
+      await native?.close();
       if (!peerClosed) await peer?.close();
       await fs.rm(temporary, { recursive: true, force: true });
     });
@@ -213,20 +194,25 @@ describe.skipIf(process.platform !== 'linux')(
       ['generate-commit-message', 'GIT_OPERATION_UNSUPPORTED'],
       ['start-dev', 'DEV_TARGET_CHANGED'],
       ['run-init-script', 'GIT_TARGET_CHANGED'],
-      ['open-in-editor', 'GIT_OPERATION_UNSUPPORTED'],
+      ['open-in-editor', 'HOST_INTEGRATION_UNSUPPORTED'],
     ])(
       'refuses uninspected remote %s without entering controller handlers',
       async (action, expectedCode) => {
         const before = peer.commands.length;
-        expect(
-          await post('worktree', action, {
-            projectPath: project,
-            worktreePath: project,
-            branchName: 'main',
-            message: 'x',
-            files: ['source.txt'],
-          })
-        ).toMatchObject({
+        const bodies: Record<string, object> = {
+          push: { worktreePath: project },
+          pull: { worktreePath: project },
+          delete: { projectPath: project, worktreePath: project },
+          merge: { projectPath: project, worktreePath: project, branchName: 'main' },
+          rebase: { worktreePath: project, ontoBranch: 'main' },
+          'cherry-pick': { worktreePath: project, commitHashes: ['abcd'] },
+          'create-pr': { worktreePath: project },
+          'generate-commit-message': { worktreePath: project },
+          'start-dev': { projectPath: project, worktreePath: project },
+          'run-init-script': { projectPath: project, worktreePath: project, branch: 'main' },
+          'open-in-editor': { worktreePath: project },
+        };
+        expect(await post('worktree', action, bodies[action])).toMatchObject({
           success: false,
           code: expectedCode,
         });
@@ -264,14 +250,11 @@ describe.skipIf(process.platform !== 'linux')(
       const before = peer.commands.length;
       expect(
         await post('git', 'commit', { projectPath: project, message: 'not a Git router endpoint' })
-      ).toMatchObject({ success: false, code: 'GIT_OPERATION_UNSUPPORTED' });
+      ).toMatchObject({ status: 404 });
       const response = await fetch(
         url + '/api/worktree/commit?worktreePath=' + encodeURIComponent(project)
       );
-      expect(await response.json()).toMatchObject({
-        success: false,
-        code: 'GIT_OPERATION_UNSUPPORTED',
-      });
+      expect(response.status).toBe(404);
       expect(peer.commands.length).toBe(before);
     });
     it('keeps a pinned feature on SSH after defaults change, ignores useWorktrees:false and lists it in Local UI', async () => {

@@ -9,7 +9,9 @@
 
 - [x] Route inventory показывает Nest owner для каждого endpoint.
 - [x] Удалить legacy router module/middleware.
-- [ ] Удалить Express route factories и неиспользуемые common helpers.
+- [x] Удалить Express route factories и неиспользуемые common helpers.
+      Все 83 оставшихся test-only файла `src/routes` и старый helper удалены
+      в [проверенном wave17 checkpoint](artifacts/legacy-retirement-logging-checkpoint.md).
 - [x] Удалить старый `src/index.ts` из production build.
 - [x] Удалить wrapper providers, которые только выдавали legacy instances.
 - [x] Удалить singleton getters и side-effect registration. Native providers
@@ -21,33 +23,26 @@
 Express остаётся transitive platform через `@nestjs/platform-express`; удаляется
 ручная Express composition, а не сам adapter.
 
-Актуальное продолжение: [native cutover checkpoint](artifacts/native-cutover-checkpoint.md).
-Боевые `LegacyModule`, factory и token удалены; startup/shutdown используют native
-DI owners. Удалены terminal/auto-mode и ещё 84 unreachable route files; последние
-managed service getters удалены. Оставшиеся 94 characterization route files
-ещё не объявлены удалёнными. Нижеследующие промежуточные срезы сохраняют историю
-проверок и не означают, что удалённый lifecycle bridge всё ещё используется.
+Актуальный исходный код: production `LegacyModule`, `src/index.ts`, service
+container/tokens, startup/shutdown bridge и каталог `src/routes` удалены.
+Все 318 HTTP operations принадлежат native controllers. Wave17 переводит последние
+характеризационные tests на настоящий Nest HTTP и удаляет 83 test-only route files.
+Генератор inventory больше не разбирает legacy routers; architecture guard
+проверяет отсутствие каталога и его transitive imports.
+[Общий build/test checkpoint wave17](artifacts/legacy-retirement-logging-checkpoint.md)
+прошёл; остальные acceptance gates остаются отдельными требованиями.
 
-Промежуточный срез composition: `application-service.providers.ts` создаёт каждый
-stateful service отдельным Nest factory provider с явным `inject`. Lifecycle adapter
-получает готовые зависимости и больше не создаёт services. Local dev/test runners
-и pipeline имеют отдельный экземпляр на приложение; их module-level signal handlers
-удалены, cleanup выполняет application lifecycle. Contract двух Nest applications
-подтверждает изоляцию экземпляров и shutdown. Compatibility tokens и startup/shutdown
-adapter пока остаются и подлежат дальнейшему удалению. Checkpoint среза: server build,
-lint, 2900 unit-тестов и 228 HTTP/WS contract-тестов.
-Production lifecycle smoke выполняется командой `npm run smoke:server:lifecycle`:
-реальные startup tasks, readiness, auth guard и завершение отдельных processes по
-SIGTERM/SIGINT. Текущий benchmark использует Nest entrypoint и завершается естественно.
-Числа и ограничения измерения записаны в `artifacts/performance-baseline.md`.
+Предыдущие проверенные срезы:
+[native cutover](artifacts/native-cutover-checkpoint.md),
+[native lifecycle](artifacts/native-lifecycle-cutover-audit.md),
+[source ports](artifacts/source-ports-and-locators-checkpoint.md) и
+[transport/terminal/metrics](artifacts/transport-context-terminal-observability-checkpoint.md).
+Их результаты относятся к указанным там commits. Исторические descriptions
+compatibility adapters и retained routes не описывают текущую composition.
 
-Последующий cleanup удалил неиспользуемые legacy routers context, enhance-prompt,
-features, setup, GitHub, backlog-plan и app-spec, а также их неиспользуемые generation
-handlers. Worktree router пока остаётся для adapter acceptance и получает registry
-явно. Статический provider factory и compatibility `src/index.ts` удалены. Server
-build очищает только генерируемый `apps/server/dist` перед `tsc`, поэтому удалённые
-entrypoints и adapters не остаются в production artifact. Остальные legacy handlers,
-service tokens и lifecycle adapter ещё требуют переноса.
+Production lifecycle smoke выполняется `npm run smoke:server:lifecycle`.
+Последний завершённый checkpoint подтверждает SIGTERM/SIGINT exit 0 и idle budget;
+это не свежая проверка Docker/Electron artifacts или sustained workload.
 
 ## 10.2. Dependency rules
 
@@ -62,16 +57,39 @@ service tokens и lifecycle adapter ещё требуют переноса.
 - нет shell execution в controllers;
 - нет циклических module imports без утверждённого ADR.
 
+Текущая автоматическая защита уже запрещает service/controller/route imports,
+controller shell/FS imports, service locator getters и module-level `*Service`
+instances; source/build guards запрещают возврат legacy handlers. Чтение ambient
+`process.env`/`process.cwd()` запрещено в `core`/`modules` (кроме config parser).
+Это **не** полный набор правил выше: ограничение не охватывает все `services` и
+`providers`; framework-free application/domain, public exports соседних модулей и
+проверка полного module dependency graph ещё требуют отдельного решения/проверки.
+Например, Local execution adapter всё ещё использует ambient process environment.
+
 ## 10.3. Production configuration
 
-- [ ] Fail-fast validation обязательных variables.
+- [x] Fail-fast validation обязательных variables. Runtime config разбирается
+      до создания Nest/HTTP resources; invalid ports, booleans и preview ranges
+      отклоняются. Provider credentials намеренно необязательны.
+      [Config tests](../../apps/server/tests/unit/core/runtime-config.test.ts).
 - [ ] Корректные proxy/trust settings для web deployments.
 - [ ] CORS allowlist и private-network behavior.
-- [ ] Cookie secure/same-site policy по deployment mode.
-- [ ] Request/body/download limits.
+- [ ] Cookie secure/same-site policy по deployment mode. Уже проверены
+      HttpOnly, SameSite=Lax и Secure при NODE_ENV=production:
+      [auth service](../../apps/server/tests/unit/core/auth-service.test.ts).
+      HTTPS/proxy и фактическая deployment matrix остаются открытыми.
+- [x] Request/body/download limits. Реальный HTTP body >50 MiB получает 413;
+      binary descriptors ограничивают stream size; download quota/invalid metadata
+      отклоняются до headers/pipe. См.
+      [HTTP middleware](../../apps/server/tests/contract/nest-shell.contract.test.ts),
+      [binary responses](../../apps/server/tests/contract/files-binary-responses.contract.test.ts)
+      и [download cancellation/cleanup](../../apps/server/tests/contract/download-filesystem.contract.test.ts).
+      Эти limits не являются sustained workload acceptance.
 - [ ] WebSocket origin/auth policy.
 - [ ] Secrets redaction и file permissions.
-- [ ] Liveness/readiness probes.
+- [x] Liveness/readiness probes. Native HTTP проверяет public live/ready,
+      protected detailed health и ready=503 при stopping; liveness остаётся 200.
+      [Core HTTP contract](../../apps/server/tests/contract/core-response-contracts.contract.test.ts).
 - [ ] Graceful shutdown в Docker stop timeout.
 
 ## 10.4. Performance
@@ -88,11 +106,40 @@ service tokens и lifecycle adapter ещё требуют переноса.
 - [ ] Auth bypass на public metadata и route inheritance.
 - [ ] Path traversal/symlink/remote alias boundary.
 - [ ] CSRF/content-type/cookie behavior.
-- [ ] WebSocket token reuse и expiry.
+- [x] WebSocket token reuse и expiry. Настоящий upgrade принимает one-time
+      token один раз, повторный/expired получает 401; app/restart isolation проверена.
+      [WebSocket contract](../../apps/server/tests/contract/websocket-transport.contract.test.ts),
+      [auth isolation](../../apps/server/tests/contract/auth-isolation.contract.test.ts).
 - [ ] Command injection в Git/provider/execution paths.
 - [ ] SSRF через preview/MCP/provider endpoints.
 - [ ] Secret leakage в DTO, exceptions и logs.
 - [ ] Cleanup ownership Docker/SSH/PTY resources.
+
+Уже существующие security evidence с более узким scope, чем общий review:
+
+- Protected HTTP inventory целиком получает 401 без credentials; public routes
+  сохраняют назначение. [Nest HTTP contract](../../apps/server/tests/contract/nest-shell.contract.test.ts).
+  Это не отдельный negative test inherited `@Public()` metadata; пункт auth review
+  остаётся открытым.
+- Canonical roots, sibling prefixes, revoked access, escaped/dangling symlinks и
+  queued parent retargeting покрыты [path-policy units](../../apps/server/tests/unit/core/native-path-policy.test.ts)
+  и [two-app HTTP/FS contract](../../apps/server/tests/contract/native-path-policy.contract.test.ts).
+  Native managed target tokens/pins и отсутствие Local fallback проверяются
+  [SSH Git acceptance](../../apps/server/tests/unit/routes/environment-git.test.ts).
+  Эти suites не заменяют аудит каждого command/transport path.
+- HTTP/WS preview-origin denial и malformed origins проверены
+  [preview contract](../../apps/server/tests/contract/preview-policy-isolation.contract.test.ts);
+  API key/cookie/token precedence — [request-context contract](../../apps/server/tests/contract/request-context.contract.test.ts).
+  Общие CORS/private-network и proxy/CSRF deployment combinations ещё не закрыты.
+- Unexpected exception diagnostics не пишут raw secret/prompt text:
+  [confidentiality units](../../apps/server/tests/unit/core/exception-log-secrets.test.ts).
+  Auth key/session/cache имеют private file modes на поддерживающей их OS:
+  [native storage contract](../../apps/server/tests/contract/native-auth-cache-filesystem.contract.test.ts).
+  Полный review всех DTO/provider/log paths остаётся отдельной задачей.
+
+В этом документальном аудите новые tests не запускались: ссылки ведут к уже
+существующим исполняемым проверкам и сопоставлены с текущей реализацией.
+Свежий общий checkpoint wave17 прошёл; его результаты приведены в ссылке выше.
 
 ## 10.6. Packaging acceptance
 
@@ -130,7 +177,7 @@ service tokens и lifecycle adapter ещё требуют переноса.
 Storage migrations должны быть backward-readable либо сопровождаться backup и
 отдельным downgrade warning. Nest cutover сам по себе не требует изменения storage.
 
-- [ ] Реализовать и проверить downgrade preflight для interrupted queue deliveries
+- [x] Реализовать и проверить downgrade preflight для interrupted queue deliveries
       и `agent-session-deletions` tombstones, а также pending `agent-executions`
       terminal intents/running records. Backend, игнорирующий эти markers,
       нельзя запускать против несовместимого DATA_DIR: незавершённый cleanup или
@@ -139,9 +186,30 @@ Storage migrations должны быть backward-readable либо сопров
       запуска и согласованный snapshot/явное преобразование перед downgrade.
 
       Реализованы standalone read-only preflight и offline full-snapshot restore
-      fixture: [audit](artifacts/downgrade-preflight-audit.md),
+      fixture: [исполняемые tests](../../scripts/tests/backend-downgrade.test.mjs),
+      [audit](artifacts/downgrade-preflight-audit.md),
       [операционная процедура](../backend-storage-downgrade.md).
       Проверка конкретного старого artifact на staging остаётся частью rollout.
+
+## Оставшиеся acceptance gates на текущем срезе
+
+- Свежие Web/Docker/Linux Electron artifacts и smoke после итоговых изменений;
+  предыдущий успешный packaged checkpoint не подтверждает текущий исходный код.
+- Upgrade с существующим изолированным DATA_DIR/volume, restart и проверка
+  согласованного rollback snapshot с конкретным выбранным старым artifact.
+  Read-only downgrade preflight и snapshot fixture уже реализованы, но не заменяют
+  эту acceptance проверку.
+- Sustained feature/event/provider/PTY workload и повторные workflows с проверкой
+  файловых дескрипторов и owned child processes. Idle budgets уже действуют,
+  sustained workload SLO ими не определяется.
+- Полная security/deployment matrix: proxy, cookie/CORS/CSRF и поддерживаемые
+  execution transports. Имеющиеся negative contracts закрывают конкретные paths,
+  но не позволяют автоматически отметить весь security review выполненным.
+- macOS/Windows packaged/process ownership acceptance на доступных OS runners;
+  Linux evidence не объявляется проверкой этих систем.
+- Сверка полного набора dependency rules, operational docs и rollout evidence.
+  Canary/prerelease/production rollout требуют соответствующей среды и отдельного
+  разрешения; локальная проверка не считается внешним deployment.
 
 ## 10.8. Документация
 

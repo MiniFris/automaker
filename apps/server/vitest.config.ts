@@ -16,6 +16,7 @@ export const serverResolveConfig = {
     '@/locales/ru.json': path.resolve(__dirname, '../ui/src/locales/ru.json'),
     '@/locales/ru-reviewed.json': path.resolve(__dirname, '../ui/src/locales/ru-reviewed.json'),
     '@': path.resolve(__dirname, './src'),
+    '@automaker/utils/logger': path.resolve(__dirname, '../../libs/utils/src/logger.ts'),
     '@automaker/utils': path.resolve(__dirname, '../../libs/utils/src/index.ts'),
     '@automaker/platform': path.resolve(__dirname, '../../libs/platform/src/index.ts'),
     '@automaker/types': path.resolve(__dirname, '../../libs/types/src/index.ts'),

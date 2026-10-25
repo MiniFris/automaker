@@ -53,7 +53,10 @@ export class GitApplicationService {
     const target = await this.git.resolveOrLocal(input.projectPath);
     const body = {
       ...input,
-      ...(action === 'stage-files' && !input.environmentTargetId
+      ...(action === 'stage-files' &&
+      !input.environmentTargetId &&
+      target.runtime.type === 'local' &&
+      !target.binding
         ? { environmentTargetId: target.environment.targetId }
         : {}),
     };

@@ -1,14 +1,15 @@
 import {
   Inject,
+  Optional,
   Injectable,
   type OnApplicationBootstrap,
   type OnModuleDestroy,
 } from '@nestjs/common';
-import { createLogger, LogLevel, setLogLevel } from '@automaker/utils';
+import { createLogger } from '@automaker/utils';
 import { RUNTIME_CONFIG, type RuntimeConfig } from '../config/index.js';
 import { APPLICATION_EVENTS } from '../eventing/application-events.js';
 import type { EventEmitter } from '../../lib/events.js';
-import { setRequestLoggingEnabled } from '../../lib/request-logging-state.js';
+import { ApplicationLoggingPolicy } from '../observability/logging-policy.js';
 import {
   createCorrelationId,
   runWithCorrelationContext,
@@ -28,13 +29,6 @@ import { performance } from 'node:perf_hooks';
 
 export const APPLICATION_STARTUP_TASKS = Symbol('APPLICATION_STARTUP_TASKS');
 const logger = createLogger('ApplicationRuntime');
-const LOG_LEVELS: Record<string, LogLevel> = {
-  error: LogLevel.ERROR,
-  warn: LogLevel.WARN,
-  info: LogLevel.INFO,
-  debug: LogLevel.DEBUG,
-};
-
 /** Coordinates native owners; never constructs services or installs process-global policy. */
 @Injectable()
 export class ApplicationRuntimeLifecycle implements OnApplicationBootstrap, OnModuleDestroy {
@@ -56,7 +50,10 @@ export class ApplicationRuntimeLifecycle implements OnApplicationBootstrap, OnMo
     @Inject(TerminalService) private readonly terminal: TerminalService,
     @Inject(ManagedDevServerService) private readonly managedDev: ManagedDevServerService,
     @Inject(ManagedTestRunnerService) private readonly managedTests: ManagedTestRunnerService,
-    @Inject(ApplicationMetrics) private readonly metrics: ApplicationMetrics
+    @Inject(ApplicationMetrics) private readonly metrics: ApplicationMetrics,
+    @Optional()
+    @Inject(ApplicationLoggingPolicy)
+    private readonly logging?: ApplicationLoggingPolicy
   ) {
     metrics.registerRuntimeGauge('terminal_sessions', () => this.terminal.getSessionCount());
     metrics.registerRuntimeGauge(
@@ -132,9 +129,10 @@ export class ApplicationRuntimeLifecycle implements OnApplicationBootstrap, OnMo
     }
     if (this.stopping) return;
     if (settings) {
-      const level = settings.serverLogLevel && LOG_LEVELS[settings.serverLogLevel];
-      if (level !== undefined) setLogLevel(level);
-      setRequestLoggingEnabled(settings.enableRequestLogging ?? true);
+      this.logging?.apply({
+        ...settings,
+        enableRequestLogging: settings.enableRequestLogging ?? true,
+      });
     }
     await this.agents.initialize();
     if (this.stopping || !settings?.projects?.length) return;

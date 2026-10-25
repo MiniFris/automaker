@@ -17,7 +17,8 @@ application/infra границ этапа 11. Результаты возобн�
 Предыдущий checkpoint: [preview configuration, planning/settings contracts и pipeline retirement](artifacts/preview-planning-settings-pipeline-checkpoint.md).
 Предыдущий checkpoint: [execution settings, AutoMode, integrations и usage contracts](artifacts/environment-automode-integrations-usage-checkpoint.md).
 Предыдущий checkpoint: [все JSON response schemas](artifacts/json-response-coverage-checkpoint.md).
-Последний checkpoint: [transport contexts, binary contracts, terminal и workflow metrics](artifacts/transport-context-terminal-observability-checkpoint.md).
+Предыдущий checkpoint: [transport contexts, binary contracts, terminal и workflow metrics](artifacts/transport-context-terminal-observability-checkpoint.md).
+Последний checkpoint: [полное удаление legacy routes, native characterization и logging ownership](artifacts/legacy-retirement-logging-checkpoint.md).
 Полная миграция ещё не завершена; checklist и результаты проверок ведутся
 в документах соответствующих этапов.
 

@@ -66,13 +66,21 @@ export class WorktreeProcessService {
   async stopDev(input: DevSessionRequest) {
     if (input.sessionId) {
       if (!this.managedDev.owns(input.sessionId))
-        throw new NotFoundDomainError('Unknown managed dev session ID.');
+        throw new ExecutionEnvironmentError(
+          'DEV_SESSION_GONE',
+          'Unknown managed dev session ID.',
+          404
+        );
       const session = this.managedDev.find(undefined, input.sessionId);
       if (
         !session ||
         (input.worktreePath && input.worktreePath !== session.target.environment.path)
       )
-        throw new NotFoundDomainError('Managed dev session expired or backend restarted.');
+        throw new ExecutionEnvironmentError(
+          'DEV_SESSION_GONE',
+          'Managed dev session expired or backend restarted.',
+          404
+        );
       return { success: true as const, result: await this.managedDev.stop(input.sessionId) };
     }
     const managed = this.managedDev.find(input.worktreePath);
@@ -100,9 +108,18 @@ export class WorktreeProcessService {
   devLogs(input: DevSessionRequest) {
     if (input.sessionId) {
       if (!this.managedDev.owns(input.sessionId))
-        throw new NotFoundDomainError('Unknown managed dev session ID.');
+        throw new ExecutionEnvironmentError(
+          'DEV_SESSION_GONE',
+          'Unknown managed dev session ID.',
+          404
+        );
       const session = this.managedDev.find(input.worktreePath, input.sessionId);
-      if (!session) throw new NotFoundDomainError('Managed dev session expired or moved.');
+      if (!session)
+        throw new ExecutionEnvironmentError(
+          'DEV_SESSION_GONE',
+          'Managed dev session expired or moved.',
+          404
+        );
       return { success: true as const, result: this.managedDev.describe(session) };
     }
     const managed = this.managedDev.find(input.worktreePath);
@@ -166,7 +183,12 @@ export class WorktreeProcessService {
   testLogs(input: TestLogsRequest) {
     if (input.sessionId && this.managedTests.owns(input.sessionId)) {
       const session = this.managedTests.find(input.worktreePath, input.sessionId);
-      if (!session) throw new NotFoundDomainError('Managed test session expired or moved.');
+      if (!session)
+        throw new ExecutionEnvironmentError(
+          'TEST_SESSION_GONE',
+          'Managed test session expired or moved.',
+          404
+        );
       return { success: true as const, result: this.managedTests.describe(session) };
     }
     const managed = input.worktreePath

@@ -15,6 +15,7 @@ import { createPlatformMiddleware } from './core/http/platform-middleware.js';
 import { LifecycleModule } from './core/lifecycle/lifecycle.module.js';
 import { RequestContextMiddleware } from './core/observability/request-context.js';
 import { ObservabilityModule } from './core/observability/observability.module.js';
+import { ApplicationLoggingPolicy } from './core/observability/logging-policy.js';
 import { SecurityModule } from './core/security/index.js';
 import { ValidationModule } from './core/validation/validation.module.js';
 import {
@@ -62,6 +63,7 @@ export class AppModule {
     serviceOptions: {
       runStartupTasks?: boolean;
       hostEnvironment?: NodeJS.ProcessEnv;
+      loggingPolicy?: ApplicationLoggingPolicy;
       providerRegistrations?: readonly ProviderRegistration[];
     }
   ): DynamicModule {
@@ -78,7 +80,7 @@ export class AppModule {
         LifecycleModule,
         ErrorsModule,
         EventingModule,
-        ObservabilityModule,
+        ObservabilityModule.register(serviceOptions.loggingPolicy),
         SecurityModule,
         AuthModule,
         ValidationModule,

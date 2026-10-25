@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { WorktreeApplicationService } from '../../../src/modules/worktree/worktree-application.service.js';
 
 const target = {
+  runtime: { type: 'local' },
   environment: { type: 'local', projectPath: '/project', targetId: 'target' },
 };
 
@@ -34,8 +35,9 @@ describe('WorktreeApplicationService', () => {
     );
   });
 
-  it('does not resolve a feature worktree when worktrees are disabled', async () => {
+  it('checks for a managed pin before using the local root when worktrees are disabled', async () => {
     const git = {
+      resolve: vi.fn().mockResolvedValue(null),
       resolveOrLocal: vi.fn().mockResolvedValue(target),
       run: vi.fn().mockResolvedValue({ success: true }),
     };
@@ -52,6 +54,7 @@ describe('WorktreeApplicationService', () => {
       new AbortController().signal
     );
 
+    expect(git.resolve).toHaveBeenCalledWith('/project', 'feature/one');
     expect(git.resolveOrLocal).toHaveBeenCalledWith('/project', undefined);
   });
 

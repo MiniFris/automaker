@@ -1,19 +1,18 @@
-import { Inject, Injectable, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
-import { createLogger, LogLevel, setLogLevel } from '@automaker/utils';
+import {
+  Inject,
+  Injectable,
+  Optional,
+  type OnModuleDestroy,
+  type OnModuleInit,
+} from '@nestjs/common';
+import { createLogger } from '@automaker/utils';
 
-import { setRequestLoggingEnabled } from '../../lib/request-logging-state.js';
+import { ApplicationLoggingPolicy } from '../../core/observability/logging-policy.js';
 import { TerminalService } from '../../services/terminal-service.js';
 import { SettingsService } from '../../services/settings-service.js';
 import { SettingsDomainEvents, type GlobalSettingsUpdatedEvent } from './settings-domain-events.js';
 
 const logger = createLogger('SettingsRuntimeEffects');
-const LOG_LEVELS: Record<string, LogLevel> = {
-  error: LogLevel.ERROR,
-  warn: LogLevel.WARN,
-  info: LogLevel.INFO,
-  debug: LogLevel.DEBUG,
-};
-
 @Injectable()
 export class SettingsRuntimeEffectsService implements OnModuleInit, OnModuleDestroy {
   private unsubscribe?: () => void;
@@ -21,7 +20,10 @@ export class SettingsRuntimeEffectsService implements OnModuleInit, OnModuleDest
   constructor(
     @Inject(SettingsDomainEvents) private readonly events: SettingsDomainEvents,
     @Inject(SettingsService) private readonly settings: SettingsService,
-    @Inject(TerminalService) private readonly terminal: TerminalService
+    @Inject(TerminalService) private readonly terminal: TerminalService,
+    @Optional()
+    @Inject(ApplicationLoggingPolicy)
+    private readonly logging?: ApplicationLoggingPolicy
   ) {}
 
   onModuleInit(): void {
@@ -33,16 +35,12 @@ export class SettingsRuntimeEffectsService implements OnModuleInit, OnModuleDest
   }
 
   private async apply(event: GlobalSettingsUpdatedEvent): Promise<void> {
-    if (event.changed.has('serverLogLevel') && event.current.serverLogLevel) {
-      const level = LOG_LEVELS[event.current.serverLogLevel];
-      if (level !== undefined) setLogLevel(level);
-    }
-    if (
-      event.changed.has('enableRequestLogging') &&
-      typeof event.current.enableRequestLogging === 'boolean'
-    ) {
-      setRequestLoggingEnabled(event.current.enableRequestLogging);
-    }
+    this.logging?.apply({
+      ...(event.changed.has('serverLogLevel') && { serverLogLevel: event.current.serverLogLevel }),
+      ...(event.changed.has('enableRequestLogging') && {
+        enableRequestLogging: event.current.enableRequestLogging,
+      }),
+    });
     if (!event.changed.has('theme') || event.previous.theme === event.current.theme) return;
 
     for (const project of event.current.projects ?? []) {

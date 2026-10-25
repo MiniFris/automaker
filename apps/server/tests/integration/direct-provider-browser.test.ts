@@ -7,10 +7,7 @@ import express from 'express';
 import { expect, it, vi } from 'vitest';
 import type { Browser } from 'playwright';
 import type { ViteDevServer } from 'vite';
-import { SettingsService } from '@/services/settings-service.js';
-import { createOpenAICompatibleSettingsRoutes } from '@/routes/settings/openai-compatible.js';
-import { createExecutionEnvironmentSettingsRoutes } from '@/routes/settings/execution-environments.js';
-import { ManagedDocker } from '@/services/execution-environment/docker.js';
+import { nativeSettings, diagnosticRunner } from '../helpers/native-settings.js';
 import { sshPeer, testSSHKey } from '../helpers/ssh-peer.js';
 
 // Explicit opt-in: no downloads, no shared app/settings server, no real model requests.
@@ -24,6 +21,7 @@ it.skipIf(!process.env.DIRECT_PROVIDER_BROWSER_EXECUTABLE)(
     let browser: Browser | undefined;
     let vite: ViteDevServer | undefined;
     let appServer: Server | undefined;
+    let backend: Awaited<ReturnType<typeof nativeSettings>> | undefined;
     let upstream: Server | undefined;
     let remotePeer: Awaited<ReturnType<typeof sshPeer>> | undefined;
     const calls: Array<{ path: string; auth?: string }> = [];
@@ -72,8 +70,13 @@ it.skipIf(!process.env.DIRECT_PROVIDER_BROWSER_EXECUTABLE)(
         });
       });
       const upstreamUrl = (await listen(upstream)) + '/v1/';
-      const settings = new SettingsService(path.join(temporary, 'data'));
-      const docker = new ManagedDocker(settings);
+      backend = await nativeSettings(temporary);
+      const docker = backend.docker;
+      diagnosticRunner(backend, async () => ({
+        code: 0,
+        stdout: JSON.stringify('29.1.0'),
+        stderr: '',
+      }));
       const prepare = vi.spyOn(docker, 'probe').mockResolvedValue({
         connection: 'available',
         containerLifecycle: 'verified',
@@ -83,15 +86,6 @@ it.skipIf(!process.env.DIRECT_PROVIDER_BROWSER_EXECUTABLE)(
       });
       const app = express();
       app.use(express.json());
-      app.use('/api/settings/openai-compatible', createOpenAICompatibleSettingsRoutes(settings));
-      app.use(
-        '/api/settings/execution-environments',
-        createExecutionEnvironmentSettingsRoutes(
-          settings,
-          async () => ({ code: 0, stdout: '"29.1.0"', stderr: '' }),
-          docker
-        )
-      );
       appServer = createServer(app);
       const origin = await listen(appServer);
       const uiRoot = path.resolve(import.meta.dirname, '../../../ui');
@@ -102,7 +96,7 @@ it.skipIf(!process.env.DIRECT_PROVIDER_BROWSER_EXECUTABLE)(
         cacheDir: path.join(temporary, 'vite-cache'),
         logLevel: 'error',
         resolve: { alias: { '@': path.join(uiRoot, 'src') }, dedupe: ['react', 'react-dom'] },
-        define: { 'import.meta.env.VITE_SERVER_URL': JSON.stringify(origin) },
+        define: { 'import.meta.env.VITE_SERVER_URL': JSON.stringify(backend.origin) },
         optimizeDeps: {
           entries: [path.join(uiRoot, 'tests/browser-fixtures/direct-provider.tsx')],
         },
@@ -281,6 +275,7 @@ it.skipIf(!process.env.DIRECT_PROVIDER_BROWSER_EXECUTABLE)(
     } finally {
       await browser?.close();
       await vite?.close();
+      await backend?.close();
       await remotePeer?.close();
       for (const server of [appServer, upstream])
         if (server) {

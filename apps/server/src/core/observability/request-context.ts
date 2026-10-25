@@ -1,9 +1,10 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
-import { Inject, Injectable, type NestMiddleware } from '@nestjs/common';
+import { Inject, Injectable, Optional, type NestMiddleware } from '@nestjs/common';
 import type { NextFunction, Request, Response } from 'express';
 import { createLogger } from '@automaker/utils';
+import { ApplicationLoggingPolicy } from './logging-policy.js';
 import { METRICS, type Metrics } from './metrics.js';
 
 const logger = createLogger('HTTP');
@@ -24,7 +25,12 @@ export function runWithCorrelationContext<T>(correlationId: string, callback: ()
 
 @Injectable()
 export class RequestContextMiddleware implements NestMiddleware {
-  constructor(@Inject(METRICS) private readonly metrics: Metrics) {}
+  constructor(
+    @Inject(METRICS) private readonly metrics: Metrics,
+    @Optional()
+    @Inject(ApplicationLoggingPolicy)
+    private readonly logging?: ApplicationLoggingPolicy
+  ) {}
   use(request: Request, response: Response, next: NextFunction): void {
     const supplied = request.header('x-request-id');
     const correlationId = createCorrelationId(supplied);
@@ -50,18 +56,24 @@ export class RequestContextMiddleware implements NestMiddleware {
       };
       this.metrics.increment('http_requests_total', labels);
       this.metrics.observe('http_request_duration_ms', durationMs, labels);
-      logger.debug('request completed', {
-        correlationId,
-        method: request.method,
-        route,
-        status: response.statusCode,
-        durationMs: Math.round(durationMs * 100) / 100,
-        outcome,
-      });
+      if (this.logging?.requestLogging ?? true)
+        this.runLogging(() =>
+          logger.debug('request completed', {
+            correlationId,
+            method: request.method,
+            route,
+            status: response.statusCode,
+            durationMs: Math.round(durationMs * 100) / 100,
+            outcome,
+          })
+        );
     };
     response.once('finish', () => record('completed'));
     response.once('close', () => record(response.writableFinished ? 'completed' : 'aborted'));
-    runWithCorrelationContext(correlationId, next);
+    this.runLogging(() => runWithCorrelationContext(correlationId, next));
+  }
+  private runLogging<T>(operation: () => T): T {
+    return this.logging ? this.logging.run(operation) : operation();
   }
 }
 

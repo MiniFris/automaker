@@ -3,7 +3,10 @@ import { GitApplicationService } from '@/modules/git/git-application.service.js'
 
 describe('GitApplicationService', () => {
   it('dispatches reads to the resolved runtime without mutation serialization', async () => {
-    const target = { environment: { projectPath: '/project', targetId: 'target' } };
+    const target = {
+      runtime: { type: 'local' },
+      environment: { projectPath: '/project', targetId: 'target' },
+    };
     const git = {
       resolveOrLocal: vi.fn().mockResolvedValue(target),
       run: vi.fn().mockResolvedValue({ success: true }),
@@ -23,7 +26,10 @@ describe('GitApplicationService', () => {
   });
 
   it('pins local writes to the resolved target and rejects a busy project', async () => {
-    const target = { environment: { projectPath: '/project', targetId: 'local-target' } };
+    const target = {
+      runtime: { type: 'local' },
+      environment: { projectPath: '/project', targetId: 'local-target' },
+    };
     const git = {
       resolveOrLocal: vi.fn().mockResolvedValue(target),
       run: vi.fn(),

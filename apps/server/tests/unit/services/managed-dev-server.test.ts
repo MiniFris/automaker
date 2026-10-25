@@ -1,5 +1,4 @@
-import { createTestWorktreeRouteServices } from '../../helpers/worktree-route-services.js';
-import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
+import { createNativeWorktreeHttp } from '../../helpers/native-worktree-http.js';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -17,19 +16,13 @@ import { ManagedSSH } from '@/services/execution-environment/ssh.js';
 import { ProjectGitService, workspaceAlias } from '@/services/execution-environment/project-git.js';
 import { FeatureWorkspaceService } from '@/services/execution-environment/feature-workspace.js';
 import { ManagedDevServerService } from '@/services/execution-environment/dev-server.js';
-import {
-  previewApiGuard,
-  isPreviewApiRequest,
-} from '@/services/execution-environment/preview-policy.js';
-import { createWorktreeRoutes } from '@/routes/worktree/index.js';
 import { createEventEmitter } from '@/lib/events.js';
-import { createTestAuth } from '../../helpers/auth-context.js';
 import { sshPeer, testSSHKey } from '../../helpers/ssh-peer.js';
 
 const exec = promisify(execFile),
   require = createRequire(import.meta.url);
 describe.skipIf(process.platform !== 'linux')('managed dev/preview on real SSH', () => {
-  let auth: Awaited<ReturnType<typeof createTestAuth>>;
+  let native: Awaited<ReturnType<typeof createNativeWorktreeHttp>>;
   let root: string, project: string, checkout: string, settings: SettingsService;
   let peer: Awaited<ReturnType<typeof sshPeer>>, service: ManagedDevServerService;
   let server: ReturnType<typeof createServer>, api: string;
@@ -125,40 +118,23 @@ const wss=new WebSocketServer({server});wss.on('connection',ws=>ws.on('message',
       { method: 'existing', remotePath: checkout },
       active()
     );
-    service = new ManagedDevServerService(settings, createEventEmitter());
     vi.stubEnv('AUTOMAKER_API_KEY', 'preview-fixture-secret');
-    const app = express();
-    app.use(express.json());
-    auth = await createTestAuth(path.join(root, 'auth'), {
-      AUTOMAKER_API_KEY: 'preview-fixture-secret',
-    });
-    app.use('/api', previewApiGuard, auth.middleware);
-    app.use(
-      '/api/worktree',
-      createWorktreeRoutes(
-        createTestWorktreeRouteServices({ managedDev: service }),
-        createTestProviderRegistry(settings),
-        createEventEmitter(),
-        settings
-      )
-    );
-    server = createServer(app);
-    server.listen(0, '127.0.0.1');
-    await once(server, 'listening');
-    api = `http://127.0.0.1:${(server.address() as { port: number }).port}/api`;
+    native = await createNativeWorktreeHttp({ root, settings, apiKey: 'preview-fixture-secret' });
+    service = native.managedDev;
+    server = native.server;
+    api = native.url + '/api';
   }, 15000);
   afterEach(async () => {
-    await auth?.close();
-    await service?.cleanup();
-    server?.closeAllConnections();
-    if (server) await new Promise<void>((resolve) => server.close(() => resolve()));
+    await native?.close();
     await peer?.close();
     await fs.rm(root, { recursive: true, force: true });
     vi.unstubAllEnvs();
   });
   it('requires an inspected identity before dispatch and never recreates missing managed IDs', async () => {
     const before = peer.commands.length;
-    expect((await post('start-dev', { worktreePath: project })).code).toBe('DEV_TARGET_CHANGED');
+    expect((await post('start-dev', { projectPath: project, worktreePath: project })).code).toBe(
+      'DEV_TARGET_CHANGED'
+    );
     expect(
       (await post('stop-dev', { worktreePath: project, sessionId: 'managed-dev-missing' })).code
     ).toBe('DEV_SESSION_GONE');
@@ -305,13 +281,13 @@ const wss=new WebSocketServer({server});wss.on('connection',ws=>ws.on('message',
         });
         res.send('Controller');
       });
-      controller.use('/api', previewApiGuard, (_req, res) => {
+      controller.use('/api', native.policy.apiGuard, (_req, res) => {
         protectedRequests++;
         res.send('CONTROLLER_SECRET');
       });
       const main = createServer(controller);
       main.on('upgrade', (req, socket) => {
-        if (!isPreviewApiRequest(req)) protectedSockets++;
+        if (!native.policy.isApiRequest(req)) protectedSockets++;
         socket.destroy();
       });
       main.listen(0, '127.0.0.1');

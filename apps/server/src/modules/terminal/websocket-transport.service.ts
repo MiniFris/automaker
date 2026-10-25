@@ -1,5 +1,6 @@
 import {
   Inject,
+  Optional,
   Injectable,
   type OnApplicationBootstrap,
   type OnApplicationShutdown,
@@ -10,6 +11,7 @@ import type { IncomingMessage, Server } from 'node:http';
 import type { Duplex } from 'node:stream';
 import { WebSocket, WebSocketServer } from 'ws';
 import { createLogger } from '@automaker/utils';
+import { ApplicationLoggingPolicy } from '../../core/observability/logging-policy.js';
 import { AuthService } from '../../core/auth/auth.service.js';
 import { createCorrelationId } from '../../core/observability/request-context.js';
 import { EVENT_BUS, type EventBus } from '../../core/eventing/event-bus.js';
@@ -51,7 +53,10 @@ export class WebSocketTransportService
     @Inject(TerminalAccessService) private readonly terminalAccess: TerminalAccessService,
     @Inject(EVENT_BUS) private readonly events: EventBus,
     @Inject(TerminalService) private readonly terminal: TerminalService,
-    @Inject(PreviewPolicy) private readonly preview: PreviewPolicy
+    @Inject(PreviewPolicy) private readonly preview: PreviewPolicy,
+    @Optional()
+    @Inject(ApplicationLoggingPolicy)
+    private readonly logging?: ApplicationLoggingPolicy
   ) {
     this.heartbeat.unref();
     this.unsubscribeTerminalExit = this.terminal.onExit((sessionId) => {
@@ -59,9 +64,11 @@ export class WebSocketTransportService
       this.lastResizeTime.delete(sessionId);
       this.terminalConnections.delete(sessionId);
     });
-    this.eventsServer.on('connection', (socket, request) => this.connectEvents(socket, request));
+    this.eventsServer.on('connection', (socket, request) =>
+      this.runLogging(() => this.connectEvents(socket, request))
+    );
     this.terminalServer.on('connection', (socket, request) =>
-      this.connectTerminal(socket, request)
+      this.runLogging(() => this.connectTerminal(socket, request))
     );
   }
 
@@ -107,6 +114,12 @@ export class WebSocketTransportService
   }
 
   private readonly upgrade = (request: IncomingMessage, socket: Duplex, head: Buffer): void => {
+    this.runLogging(() => this.handleUpgrade(request, socket, head));
+  };
+  private runLogging<T>(operation: () => T): T {
+    return this.logging ? this.logging.run(operation) : operation();
+  }
+  private handleUpgrade(request: IncomingMessage, socket: Duplex, head: Buffer): void {
     if (this.isClosing()) {
       socket.end('HTTP/1.1 503 Service Unavailable\r\nConnection: close\r\n\r\n');
       return;
@@ -150,7 +163,7 @@ export class WebSocketTransportService
     target.handleUpgrade(request, socket, head, (webSocket) => {
       target.emit('connection', webSocket, request);
     });
-  };
+  }
 
   private connectEvents(socket: WebSocket, request: IncomingMessage): void {
     const connectionId = createCorrelationId(
@@ -161,7 +174,7 @@ export class WebSocketTransportService
     this.trackHeartbeat(socket);
     logger.info('Events client connected', { connectionId });
     const unsubscribe = this.events.subscribeAll((type, payload) => {
-      this.send(socket, { type, payload }, 'events');
+      this.runLogging(() => this.send(socket, { type, payload }, 'events'));
     });
     const cleanup = () => unsubscribe();
     socket.once('close', cleanup);
@@ -228,7 +241,7 @@ export class WebSocketTransportService
 
     const unsubscribeData = this.terminal.onData((id, data) => {
       if (id !== sessionId || socket.readyState !== WebSocket.OPEN) return;
-      this.send(socket, { type: 'data', data }, 'terminal');
+      this.runLogging(() => this.send(socket, { type: 'data', data }, 'terminal'));
     });
     const unsubscribeExit = this.terminal.onExit((id, exitCode) => {
       if (id === sessionId && socket.readyState === WebSocket.OPEN) {
@@ -244,7 +257,9 @@ export class WebSocketTransportService
     };
     socket.once('close', cleanup);
     socket.once('error', cleanup);
-    socket.on('message', (message) => this.handleTerminalMessage(socket, sessionId, message));
+    socket.on('message', (message) =>
+      this.runLogging(() => this.handleTerminalMessage(socket, sessionId, message))
+    );
   }
 
   private handleTerminalMessage(

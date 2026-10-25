@@ -704,7 +704,7 @@ export class WorktreeController {
 
   @Post('update-pr-number')
   @HttpCode(200)
-  @AllowedPathFields('worktreePath', 'projectPath')
+  @AllowedPathFields('worktreePath', 'projectPath?')
   async updatePrNumber(
     @Body(new ZodValidationPipe(WorktreeUpdatePrNumberSchema)) body: WorktreeUpdatePrNumberRequest,
     @Res({ passthrough: true }) response: Response
@@ -716,7 +716,7 @@ export class WorktreeController {
 
   @Post('create-pr')
   @HttpCode(200)
-  @AllowedPathFields('worktreePath', 'projectPath')
+  @AllowedPathFields('worktreePath', 'projectPath?')
   async createPr(
     @Body(new ZodValidationPipe(WorktreeCreatePrSchema)) body: WorktreeCreatePrRequest,
     @Res({ passthrough: true }) response: Response
@@ -760,7 +760,7 @@ export class WorktreeController {
 
   @Post('stop-dev')
   @HttpCode(200)
-  @AllowedPathFields('worktreePath')
+  @AllowedPathFields('worktreePath?')
   async stopDev(@Body(new ZodValidationPipe(DevSessionSchema)) body: DevSessionRequest) {
     return WorktreeStopDevResponseSchema.parse(await this.processes.stopDev(body));
   }
@@ -772,14 +772,14 @@ export class WorktreeController {
   }
 
   @Get('dev-server-logs')
-  @AllowedPathFields('worktreePath')
+  @AllowedPathFields('worktreePath?')
   async devServerLogs(@Query(new ZodValidationPipe(DevSessionSchema)) query: DevSessionRequest) {
     return WorktreeDevLogsResponseSchema.parse(await this.processes.devLogs(query));
   }
 
   @Post('start-tests')
   @HttpCode(200)
-  @AllowedPathFields('worktreePath', 'projectPath')
+  @AllowedPathFields('worktreePath', 'projectPath?')
   async startTests(@Body(new ZodValidationPipe(StartTestsSchema)) body: StartTestsRequest) {
     return WorktreeStartTestsResponseSchema.parse(await this.processes.startTests(body));
   }
@@ -791,7 +791,7 @@ export class WorktreeController {
   }
 
   @Get('test-logs')
-  @AllowedPathFields('worktreePath')
+  @AllowedPathFields('worktreePath?')
   async testLogs(@Query(new ZodValidationPipe(TestLogsSchema)) query: TestLogsRequest) {
     return WorktreeTestLogsResponseSchema.parse(await this.processes.testLogs(query));
   }

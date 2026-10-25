@@ -23,6 +23,13 @@ database or a cross-process exporter.
   cancellation. Normal failures remain errors even when cleanup aborts the
   internal controller.
 - `uptimeMs`: monotonic time since this collector was created.
+- `runtimeGauges`: optional application-owned readers for agent executions, loaded
+  sessions/queues, mutation lanes, terminal sessions, managed/local process state
+  and startup/resume jobs. Readers inspect current in-memory owners; they are not
+  an OS process census or a scan of all persisted queues. A failed reader yields
+  `null`. At most 32 readers can be registered.
+- Startup duration and agent execution/mutation operations are observed with the
+  current correlation context; session identifiers are kept out of metric labels.
 
 There are at most 2048 aggregate series, with 16 reserved for provider outcomes so
 HTTP cardinality cannot starve them. Invalid/excess measurements increment
@@ -67,6 +74,11 @@ SLO or a reason to restart an application automatically:
   alert window. Cancellation is a separate outcome, not a provider error.
 
 Startup/idle resource limits remain in `scripts/server-performance-budget.mjs` and
-the dedicated CI job. The collector does not yet expose filesystem queue depth,
-PTY/process leak gauges, scheduler/job metrics or startup phase histograms. Full
-orchestration/execution tracing and production load acceptance remain open.
+the dedicated CI job. The collector does not supply an OS-level FD/child leak census or detailed startup
+phase histograms. Full orchestration/execution tracing and production workload
+acceptance remain separate gates.
+
+Each native application owns its mutable log level and HTTP request logging policy.
+Async HTTP, startup, shutdown and WebSocket callbacks use that owner’s context;
+changing settings in one application does not reconfigure another application.
+Disabling HTTP request logging preserves metrics and correlation IDs.

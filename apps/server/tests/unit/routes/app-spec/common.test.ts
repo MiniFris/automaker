@@ -1,68 +1,102 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import {
-  setRunningState,
-  getErrorMessage,
-  getSpecRegenerationStatus,
-} from '@/routes/app-spec/common.js';
+import { describe, it, expect, vi } from 'vitest';
+import { getErrorMessage } from '@automaker/utils';
+import { AppSpecJobRegistry } from '@/modules/app-spec/app-spec-job.registry.js';
 
-const TEST_PROJECT_PATH = '/tmp/automaker-test-project';
-
-describe('app-spec/common.ts', () => {
-  beforeEach(() => {
-    // Reset state before each test
-    setRunningState(TEST_PROJECT_PATH, false, null);
+function deferred() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((done) => {
+    resolve = done;
   });
-
-  describe('setRunningState', () => {
-    it('should set isRunning to true when running is true', () => {
-      setRunningState(TEST_PROJECT_PATH, true);
-      expect(getSpecRegenerationStatus(TEST_PROJECT_PATH).isRunning).toBe(true);
-    });
-
-    it('should set isRunning to false when running is false', () => {
-      setRunningState(TEST_PROJECT_PATH, true);
-      setRunningState(TEST_PROJECT_PATH, false);
-      expect(getSpecRegenerationStatus(TEST_PROJECT_PATH).isRunning).toBe(false);
-    });
-
-    it('should set currentAbortController when provided', () => {
-      const controller = new AbortController();
-      setRunningState(TEST_PROJECT_PATH, true, controller);
-      expect(getSpecRegenerationStatus(TEST_PROJECT_PATH).currentAbortController).toBe(controller);
-    });
-
-    it('should set currentAbortController to null when not provided', () => {
-      const controller = new AbortController();
-      setRunningState(TEST_PROJECT_PATH, true, controller);
-      setRunningState(TEST_PROJECT_PATH, false);
-      expect(getSpecRegenerationStatus(TEST_PROJECT_PATH).currentAbortController).toBe(null);
-    });
-
-    it('should keep currentAbortController when explicitly passed null while running', () => {
-      const controller = new AbortController();
-      setRunningState(TEST_PROJECT_PATH, true, controller);
-      setRunningState(TEST_PROJECT_PATH, true, null);
-      expect(getSpecRegenerationStatus(TEST_PROJECT_PATH).currentAbortController).toBe(controller);
-    });
-
-    it('should update state multiple times correctly', () => {
-      const controller1 = new AbortController();
-      const controller2 = new AbortController();
-
-      setRunningState(TEST_PROJECT_PATH, true, controller1);
-      expect(getSpecRegenerationStatus(TEST_PROJECT_PATH).isRunning).toBe(true);
-      expect(getSpecRegenerationStatus(TEST_PROJECT_PATH).currentAbortController).toBe(controller1);
-
-      setRunningState(TEST_PROJECT_PATH, true, controller2);
-      expect(getSpecRegenerationStatus(TEST_PROJECT_PATH).isRunning).toBe(true);
-      expect(getSpecRegenerationStatus(TEST_PROJECT_PATH).currentAbortController).toBe(controller2);
-
-      setRunningState(TEST_PROJECT_PATH, false, null);
-      expect(getSpecRegenerationStatus(TEST_PROJECT_PATH).isRunning).toBe(false);
-      expect(getSpecRegenerationStatus(TEST_PROJECT_PATH).currentAbortController).toBe(null);
-    });
+  return { resolve, promise };
+}
+const registry = () =>
+  new AppSpecJobRegistry({
+    validateLocalPath: (value: string) => value.replace('/alias', '/project'),
+  } as never);
+describe('native app-spec project-scoped job ownership', () => {
+  it('publishes running admission immediately and clears only after the accepted operation settles', async () => {
+    const jobs = registry(),
+      held = deferred();
+    expect(jobs.run('/project', 'spec_regeneration', () => held.promise)).toBe(true);
+    expect(jobs.status('/project').isRunning).toBe(true);
+    expect(jobs.status().isRunning).toBe(true);
+    held.resolve();
+    await jobs.onModuleDestroy();
+    expect(jobs.status('/project').isRunning).toBe(false);
   });
-
+  it('keeps the original abort controller while a duplicate/alias admission is rejected', async () => {
+    const jobs = registry(),
+      held = deferred();
+    let original!: AbortController;
+    jobs.run('/project', 'spec_regeneration', async (controller) => {
+      original = controller;
+      await held.promise;
+    });
+    await Promise.resolve();
+    expect(jobs.run('/alias', 'feature_generation', async () => {})).toBe(false);
+    jobs.stop('/alias');
+    expect(original.signal.aborted).toBe(true);
+    expect(jobs.status('/project').isRunning).toBe(true);
+    held.resolve();
+    await jobs.onModuleDestroy();
+    expect(jobs.snapshot()).toEqual([]);
+  });
+  it('cancels only the selected project while other scoped work remains admitted', async () => {
+    const jobs = registry(),
+      one = deferred(),
+      two = deferred();
+    let a!: AbortSignal, b!: AbortSignal;
+    jobs.run('/project', 'spec_regeneration', async (c) => {
+      a = c.signal;
+      await one.promise;
+    });
+    jobs.run('/other', 'sync', async (c) => {
+      b = c.signal;
+      await two.promise;
+    });
+    await Promise.resolve();
+    jobs.stop('/project');
+    expect(a.aborted).toBe(true);
+    expect(b.aborted).toBe(false);
+    expect(jobs.status('/other').isRunning).toBe(true);
+    one.resolve();
+    two.resolve();
+    await jobs.onModuleDestroy();
+  });
+  it('isolates identical project names across separate application registries', async () => {
+    const one = registry(),
+      two = registry(),
+      a = deferred(),
+      b = deferred();
+    let signal!: AbortSignal;
+    one.run('/project', 'spec_regeneration', () => a.promise);
+    two.run('/project', 'feature_generation', async (c) => {
+      signal = c.signal;
+      await b.promise;
+    });
+    await Promise.resolve();
+    one.stop();
+    expect(signal.aborted).toBe(false);
+    expect(two.status('/project').isRunning).toBe(true);
+    a.resolve();
+    b.resolve();
+    await Promise.all([one.onModuleDestroy(), two.onModuleDestroy()]);
+  });
+  it('allows a later incarnation after completion and rejects admission after close', async () => {
+    const jobs = registry();
+    const first = deferred();
+    jobs.run('/project', 'sync', () => first.promise);
+    first.resolve();
+    await vi.waitFor(() => expect(jobs.status('/project').isRunning).toBe(false));
+    const second = deferred();
+    expect(jobs.run('/project', 'feature_generation', () => second.promise)).toBe(true);
+    const close = jobs.onModuleDestroy();
+    second.resolve();
+    await close;
+    expect(() => jobs.run('/project', 'sync', async () => {})).toThrow('unavailable');
+  });
+});
+describe('shared error message utility', () => {
   describe('getErrorMessage', () => {
     it('should return message from Error instance', () => {
       const error = new Error('Test error message');

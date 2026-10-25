@@ -4,8 +4,9 @@ The server starts at `apps/server/src/main.ts`; `AppModule` composes Nest module
 HTTP controllers use the Express platform adapter. `/api/events` and
 `/api/terminal/ws` retain raw WebSocket protocols and have an application-owned
 transport lifecycle. There is no production `LegacyModule` or manual Express
-router registration. Old route files still referenced by characterization tests
-are excluded from production compilation; new code must not import them.
+router registration. The old `src/routes` tree has been removed; characterization
+tests exercise native modules and HTTP boundaries. The architecture check prevents
+reintroducing that tree or imports from it.
 
 ## Adding behavior
 
