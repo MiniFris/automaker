@@ -52,7 +52,7 @@ export class FilePipelineConfigurationRepository extends PipelineConfigurationRe
 
   update<T>(projectPath: string, mutation: (config: PipelineConfig) => T): Promise<T> {
     return this.run(projectPath, async (canonical) => {
-      const config = await this.readUnlocked(canonical);
+      const config = await this.readUnlocked(canonical, true);
       const result = await mutation(config);
       await this.writeUnlocked(canonical, config);
       return result;
@@ -77,7 +77,7 @@ export class FilePipelineConfigurationRepository extends PipelineConfigurationRe
     return task;
   }
 
-  private async readUnlocked(projectPath: string): Promise<PipelineConfig> {
+  private async readUnlocked(projectPath: string, mutation = false): Promise<PipelineConfig> {
     let content: string;
     try {
       content = (await this.filesystem.readFile(
@@ -89,13 +89,34 @@ export class FilePipelineConfigurationRepository extends PipelineConfigurationRe
         return { version: 1, steps: [] };
       throw error;
     }
+    let config: Partial<PipelineConfig>;
     try {
-      const config = JSON.parse(content) as Partial<PipelineConfig>;
-      return { version: 1, steps: [], ...config };
+      config = JSON.parse(content) as Partial<PipelineConfig>;
     } catch {
-      // Retain the existing missing/malformed-file compatibility behavior.
+      if (mutation && this.options.strictRead)
+        throw new UnavailableDomainError(
+          'Pipeline configuration is unreadable; no mutation was applied.'
+        );
+      // Query-only compatibility must not turn a mutation's unknown state into empty data.
       return { version: 1, steps: [] };
     }
+    const normalized: PipelineConfig = { version: 1, steps: [], ...config };
+    if (
+      mutation &&
+      this.options.strictRead &&
+      (!config ||
+        typeof config !== 'object' ||
+        Array.isArray(config) ||
+        normalized.version !== 1 ||
+        !Array.isArray(normalized.steps) ||
+        normalized.steps.some(
+          (step) => !step || typeof step !== 'object' || typeof step.id !== 'string'
+        ))
+    )
+      throw new UnavailableDomainError(
+        'Pipeline configuration is unsupported; no mutation was applied.'
+      );
+    return normalized;
   }
 
   private async writeUnlocked(projectPath: string, config: PipelineConfig): Promise<void> {

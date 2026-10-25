@@ -9,12 +9,8 @@ import {
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import type { Duplex } from 'node:stream';
 import type { Socket } from 'node:net';
-import {
-  PREVIEW_BOOTSTRAP,
-  PREVIEW_PORT_FIRST,
-  PREVIEW_PORT_LAST,
-  previewOrigin,
-} from './preview-policy.js';
+import { PREVIEW_BOOTSTRAP, PreviewPolicy } from '../../core/config/preview-policy.js';
+import { legacyPreviewPolicy } from './preview-policy.compat.js';
 
 const policy =
   "sandbox allow-scripts allow-same-origin allow-forms allow-modals allow-downloads; worker-src 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'";
@@ -74,7 +70,7 @@ export class PreviewGateway {
   private requests = 0;
   private readonly agent = new Agent({ keepAlive: false, maxSockets: 16 });
   private readonly server = createServer((req, res) => void this.handle(req, res));
-  constructor() {
+  constructor(private readonly preview: PreviewPolicy = legacyPreviewPolicy()) {
     this.agent.createConnection = (_options, callback) => {
       void this.open().then(
         (socket) => callback?.(null, socket),
@@ -94,9 +90,7 @@ export class PreviewGateway {
   }
 
   async listen(port: number) {
-    if (port < PREVIEW_PORT_FIRST || port > PREVIEW_PORT_LAST)
-      throw new Error('Port is outside the reserved preview range.');
-    previewOrigin(port); // reject bad public URL configuration before any command dispatch
+    this.preview.origin(port);
     await new Promise<void>((resolve, reject) => {
       const failed = (error: Error) => {
         this.server.off('listening', ready);
@@ -108,11 +102,7 @@ export class PreviewGateway {
       };
       this.server.once('error', failed);
       this.server.once('listening', ready);
-      this.server.listen(
-        port,
-        process.env.AUTOMAKER_PREVIEW_BIND ??
-          (process.env.IS_CONTAINERIZED === 'true' ? '0.0.0.0' : '127.0.0.1')
-      );
+      this.server.listen(port, this.preview.config.bindAddress);
     });
     this.server.on('error', () => {});
     this.port = port;
@@ -121,7 +111,7 @@ export class PreviewGateway {
     this.connector = connector;
   }
   get url() {
-    return `${previewOrigin(this.port)}${PREVIEW_BOOTSTRAP}#${this.key}`;
+    return `${this.preview.origin(this.port)}${PREVIEW_BOOTSTRAP}#${this.key}`;
   }
   private sameOrigin(req: IncomingMessage) {
     try {
@@ -129,8 +119,8 @@ export class PreviewGateway {
       if (!host) return false;
       if (!/^[a-zA-Z0-9.[\]:_-]+$/.test(host)) return false;
       const url = new URL(`http://${host}`);
-      if (process.env.AUTOMAKER_PREVIEW_PUBLIC_URL) {
-        if (host !== new URL(previewOrigin(this.port)).host) return false;
+      if (this.preview.config.publicUrl) {
+        if (host !== new URL(this.preview.origin(this.port)).host) return false;
       } else if (
         Number(url.port) !== this.port ||
         url.username ||
@@ -138,7 +128,19 @@ export class PreviewGateway {
         url.pathname !== '/'
       )
         return false;
-      if (req.headers.origin && new URL(req.headers.origin).host !== host) return false;
+      if (req.headers.origin) {
+        const origin = new URL(req.headers.origin);
+        if (
+          !['http:', 'https:'].includes(origin.protocol) ||
+          origin.host !== host ||
+          origin.username ||
+          origin.password ||
+          origin.pathname !== '/' ||
+          origin.search ||
+          origin.hash
+        )
+          return false;
+      }
       return true;
     } catch {
       return false;
@@ -185,7 +187,7 @@ export class PreviewGateway {
       }
       res.setHeader(
         'Set-Cookie',
-        `automaker_preview_${this.port}=${this.key}; HttpOnly; SameSite=Strict; Path=/${previewOrigin(this.port).startsWith('https:') ? '; Secure' : ''}`
+        `automaker_preview_${this.port}=${this.key}; HttpOnly; SameSite=Strict; Path=/${this.preview.origin(this.port).startsWith('https:') ? '; Secure' : ''}`
       );
       res.writeHead(204).end();
       req.resume();

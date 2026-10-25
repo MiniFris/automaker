@@ -2,22 +2,22 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 530,
-    "internalEdges": 1856,
+    "files": 525,
+    "internalEdges": 1850,
     "stronglyConnectedComponents": 2
   },
   "layerEdges": {
-    "core -> core": 73,
+    "core -> core": 76,
     "core -> lib": 6,
     "core -> middleware": 1,
-    "core -> services": 9,
+    "core -> services": 8,
     "lib -> lib": 4,
     "lib -> services": 1,
-    "modules -> core": 192,
+    "modules -> core": 193,
     "modules -> lib": 54,
     "modules -> modules": 387,
     "modules -> providers": 33,
-    "modules -> services": 180,
+    "modules -> services": 179,
     "modules -> types": 2,
     "providers -> core": 1,
     "providers -> lib": 3,
@@ -31,14 +31,14 @@
     "routes -> middleware": 4,
     "routes -> modules": 3,
     "routes -> providers": 6,
-    "routes -> routes": 152,
-    "routes -> services": 88,
+    "routes -> routes": 145,
+    "routes -> services": 82,
     "routes -> types": 2,
-    "services -> core": 29,
+    "services -> core": 33,
     "services -> lib": 67,
     "services -> modules": 17,
     "services -> providers": 16,
-    "services -> services": 314,
+    "services -> services": 315,
     "services -> types": 3,
     "tests -> lib": 2
   },
@@ -90,14 +90,12 @@
       "apps/server/src/services/cursor-config-service.ts",
       "apps/server/src/services/dev-server-service.ts",
       "apps/server/src/services/execution-environment/bindings.ts",
-      "apps/server/src/services/execution-environment/dev-server.ts",
       "apps/server/src/services/execution-environment/docker-command.ts",
       "apps/server/src/services/execution-environment/docker-diagnostics.ts",
       "apps/server/src/services/execution-environment/docker-worker.ts",
       "apps/server/src/services/execution-environment/docker.ts",
       "apps/server/src/services/execution-environment/local.ts",
-      "apps/server/src/services/execution-environment/preview-gateway.ts",
-      "apps/server/src/services/execution-environment/preview-policy.ts",
+      "apps/server/src/services/execution-environment/preview-policy.compat.ts",
       "apps/server/src/services/execution-environment/project-git-worker.ts",
       "apps/server/src/services/execution-environment/provider-catalog.ts",
       "apps/server/src/services/execution-environment/ssh-state.ts",
@@ -128,6 +126,7 @@
       "apps/server/src/services/execution-environment/docker-worker.ts",
       "apps/server/src/services/execution-environment/feature-workspace.ts",
       "apps/server/src/services/execution-environment/managed-feature-workspace.ts",
+      "apps/server/src/services/execution-environment/preview-policy.compat.ts",
       "apps/server/src/services/execution-environment/ssh.ts",
       "apps/server/src/services/gemini-usage-service.ts"
     ],
@@ -280,8 +279,12 @@
     "@automaker/contracts/domains/event-history": 1,
     "@automaker/contracts/domains/feature-responses": 1,
     "@automaker/contracts/domains/ideation": 1,
+    "@automaker/contracts/domains/ideation-responses": 1,
     "@automaker/contracts/domains/notifications": 1,
+    "@automaker/contracts/domains/pipeline": 1,
+    "@automaker/contracts/domains/planning-responses": 2,
     "@automaker/contracts/domains/running-agents": 1,
+    "@automaker/contracts/domains/settings": 1,
     "@automaker/contracts/domains/setup-query": 5,
     "@automaker/contracts/domains/templates": 1,
     "@automaker/contracts/domains/terminal": 2,
@@ -291,8 +294,8 @@
     "@automaker/model-resolver": 20,
     "@automaker/platform": 56,
     "@automaker/prompts": 3,
-    "@automaker/types": 164,
-    "@automaker/utils": 140,
+    "@automaker/types": 161,
+    "@automaker/utils": 139,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
@@ -310,7 +313,7 @@
     "crypto": 2,
     "dotenv": 1,
     "events": 1,
-    "express": 104,
+    "express": 99,
     "fflate": 1,
     "fs": 10,
     "fs/promises": 12,
@@ -323,8 +326,8 @@
     "node:events": 1,
     "node:fs": 11,
     "node:fs/promises": 21,
-    "node:http": 7,
-    "node:net": 3,
+    "node:http": 8,
+    "node:net": 4,
     "node:os": 11,
     "node:path": 62,
     "node:perf_hooks": 23,
@@ -600,6 +603,10 @@
     },
     {
       "source": "apps/server/src/core/config/runtime-config.module.ts",
+      "target": "apps/server/src/core/config/preview-policy.ts"
+    },
+    {
+      "source": "apps/server/src/core/config/runtime-config.module.ts",
       "target": "apps/server/src/core/config/runtime-config.tokens.ts"
     },
     {
@@ -609,6 +616,10 @@
     {
       "source": "apps/server/src/core/config/runtime-config.module.ts",
       "target": "apps/server/src/core/config/runtime-paths.service.ts"
+    },
+    {
+      "source": "apps/server/src/core/config/runtime-config.ts",
+      "target": "apps/server/src/core/config/preview-policy.ts"
     },
     {
       "source": "apps/server/src/core/config/runtime-paths.service.ts",
@@ -680,11 +691,11 @@
     },
     {
       "source": "apps/server/src/core/http/platform-middleware.ts",
-      "target": "apps/server/src/middleware/require-json-content-type.ts"
+      "target": "apps/server/src/core/config/preview-policy.ts"
     },
     {
       "source": "apps/server/src/core/http/platform-middleware.ts",
-      "target": "apps/server/src/services/execution-environment/preview-policy.ts"
+      "target": "apps/server/src/middleware/require-json-content-type.ts"
     },
     {
       "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
@@ -4088,6 +4099,10 @@
     },
     {
       "source": "apps/server/src/modules/terminal/websocket-transport.service.ts",
+      "target": "apps/server/src/core/config/preview-policy.ts"
+    },
+    {
+      "source": "apps/server/src/modules/terminal/websocket-transport.service.ts",
       "target": "apps/server/src/core/eventing/event-bus.ts"
     },
     {
@@ -4097,10 +4112,6 @@
     {
       "source": "apps/server/src/modules/terminal/websocket-transport.service.ts",
       "target": "apps/server/src/modules/terminal/terminal-access.service.ts"
-    },
-    {
-      "source": "apps/server/src/modules/terminal/websocket-transport.service.ts",
-      "target": "apps/server/src/services/execution-environment/preview-policy.ts"
     },
     {
       "source": "apps/server/src/modules/terminal/websocket-transport.service.ts",
@@ -4949,58 +4960,6 @@
     {
       "source": "apps/server/src/routes/github/routes/check-github-remote.ts",
       "target": "apps/server/src/routes/github/routes/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/pipeline/common.ts",
-      "target": "apps/server/src/routes/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/pipeline/routes/add-step.ts",
-      "target": "apps/server/src/routes/pipeline/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/pipeline/routes/add-step.ts",
-      "target": "apps/server/src/services/pipeline-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/pipeline/routes/delete-step.ts",
-      "target": "apps/server/src/routes/pipeline/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/pipeline/routes/delete-step.ts",
-      "target": "apps/server/src/services/pipeline-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/pipeline/routes/get-config.ts",
-      "target": "apps/server/src/routes/pipeline/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/pipeline/routes/get-config.ts",
-      "target": "apps/server/src/services/pipeline-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/pipeline/routes/reorder-steps.ts",
-      "target": "apps/server/src/routes/pipeline/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/pipeline/routes/reorder-steps.ts",
-      "target": "apps/server/src/services/pipeline-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/pipeline/routes/save-config.ts",
-      "target": "apps/server/src/routes/pipeline/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/pipeline/routes/save-config.ts",
-      "target": "apps/server/src/services/pipeline-service.ts"
-    },
-    {
-      "source": "apps/server/src/routes/pipeline/routes/update-step.ts",
-      "target": "apps/server/src/routes/pipeline/common.ts"
-    },
-    {
-      "source": "apps/server/src/routes/pipeline/routes/update-step.ts",
-      "target": "apps/server/src/services/pipeline-service.ts"
     },
     {
       "source": "apps/server/src/routes/settings/common.ts",
@@ -6904,6 +6863,10 @@
     },
     {
       "source": "apps/server/src/services/execution-environment/dev-server.ts",
+      "target": "apps/server/src/core/config/preview-policy.ts"
+    },
+    {
+      "source": "apps/server/src/services/execution-environment/dev-server.ts",
       "target": "apps/server/src/lib/events.ts"
     },
     {
@@ -6912,7 +6875,7 @@
     },
     {
       "source": "apps/server/src/services/execution-environment/dev-server.ts",
-      "target": "apps/server/src/services/execution-environment/preview-policy.ts"
+      "target": "apps/server/src/services/execution-environment/preview-policy.compat.ts"
     },
     {
       "source": "apps/server/src/services/execution-environment/dev-server.ts",
@@ -7036,7 +6999,23 @@
     },
     {
       "source": "apps/server/src/services/execution-environment/preview-gateway.ts",
-      "target": "apps/server/src/services/execution-environment/preview-policy.ts"
+      "target": "apps/server/src/core/config/preview-policy.ts"
+    },
+    {
+      "source": "apps/server/src/services/execution-environment/preview-gateway.ts",
+      "target": "apps/server/src/services/execution-environment/preview-policy.compat.ts"
+    },
+    {
+      "source": "apps/server/src/services/execution-environment/preview-policy.compat.ts",
+      "target": "apps/server/src/core/config/preview-policy.ts"
+    },
+    {
+      "source": "apps/server/src/services/execution-environment/preview-policy.ts",
+      "target": "apps/server/src/services/execution-environment/preview-policy.compat.ts"
+    },
+    {
+      "source": "apps/server/src/services/execution-environment/preview-tunnel.ts",
+      "target": "apps/server/src/core/config/preview-policy.ts"
     },
     {
       "source": "apps/server/src/services/execution-environment/preview-tunnel.ts",
@@ -7048,7 +7027,7 @@
     },
     {
       "source": "apps/server/src/services/execution-environment/preview-tunnel.ts",
-      "target": "apps/server/src/services/execution-environment/preview-policy.ts"
+      "target": "apps/server/src/services/execution-environment/preview-policy.compat.ts"
     },
     {
       "source": "apps/server/src/services/execution-environment/preview-tunnel.ts",

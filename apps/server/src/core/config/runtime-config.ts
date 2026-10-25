@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { z } from 'zod';
+import { validatePreviewConfig, type PreviewConfig } from './preview-policy.js';
 
 const booleanValue = (defaultValue: boolean) =>
   z
@@ -35,7 +36,8 @@ const RuntimeEnvironmentSchema = z.object({
   AUTOMAKER_DOCKER_CONTROLLER: optionalString,
   AUTOMAKER_PREVIEW_PORT_FIRST: z.coerce.number().int().min(1).max(65_535).default(3100),
   AUTOMAKER_PREVIEW_PORT_LAST: z.coerce.number().int().min(1).max(65_535).default(3119),
-  AUTOMAKER_PREVIEW_PUBLIC_URL: z.url().optional(),
+  AUTOMAKER_PREVIEW_PUBLIC_URL: optionalString,
+  AUTOMAKER_PREVIEW_BIND: optionalString,
 });
 
 export interface RuntimeConfig {
@@ -72,11 +74,7 @@ export interface RuntimeConfig {
     skipSandboxWarning: boolean;
     dockerController?: string;
   };
-  preview: {
-    firstPort: number;
-    lastPort: number;
-    publicUrl?: string;
-  };
+  preview: Readonly<PreviewConfig>;
 }
 
 export class RuntimeConfigError extends Error {
@@ -108,6 +106,20 @@ export function parseRuntimeConfig(
     ]);
   }
 
+  let preview: Readonly<PreviewConfig>;
+  try {
+    preview = validatePreviewConfig({
+      firstPort: value.AUTOMAKER_PREVIEW_PORT_FIRST,
+      lastPort: value.AUTOMAKER_PREVIEW_PORT_LAST,
+      publicUrl: value.AUTOMAKER_PREVIEW_PUBLIC_URL,
+      bindAddress:
+        value.AUTOMAKER_PREVIEW_BIND ?? (value.IS_CONTAINERIZED ? '0.0.0.0' : '127.0.0.1'),
+    });
+  } catch (error) {
+    throw new RuntimeConfigError([
+      error instanceof Error ? error.message : 'Invalid preview configuration.',
+    ]);
+  }
   return {
     environment: value.NODE_ENV,
     server: {
@@ -151,10 +163,6 @@ export function parseRuntimeConfig(
       skipSandboxWarning: value.AUTOMAKER_SKIP_SANDBOX_WARNING,
       dockerController: value.AUTOMAKER_DOCKER_CONTROLLER,
     },
-    preview: {
-      firstPort: value.AUTOMAKER_PREVIEW_PORT_FIRST,
-      lastPort: value.AUTOMAKER_PREVIEW_PORT_LAST,
-      publicUrl: value.AUTOMAKER_PREVIEW_PUBLIC_URL,
-    },
+    preview,
   };
 }

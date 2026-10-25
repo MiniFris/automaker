@@ -509,7 +509,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/backlog-plan/backlog-plan.controller.ts",
-      "line": 40,
+      "line": 48,
       "middleware": [
         "BacklogPlanController.apply"
       ],
@@ -524,7 +524,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/backlog-plan/backlog-plan.controller.ts",
-      "line": 47,
+      "line": 55,
       "middleware": [
         "BacklogPlanController.clear"
       ],
@@ -539,7 +539,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/backlog-plan/backlog-plan.controller.ts",
-      "line": 21,
+      "line": 27,
       "middleware": [
         "BacklogPlanController.generate"
       ],
@@ -554,7 +554,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/backlog-plan/backlog-plan.controller.ts",
-      "line": 34,
+      "line": 42,
       "middleware": [
         "BacklogPlanController.status"
       ],
@@ -569,7 +569,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/backlog-plan/backlog-plan.controller.ts",
-      "line": 28,
+      "line": 36,
       "middleware": [
         "BacklogPlanController.stop"
       ],
@@ -1649,7 +1649,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/ideation/ideation.controller.ts",
-      "line": 99,
+      "line": 112,
       "middleware": [
         "IdeationController.addSuggestion"
       ],
@@ -1664,7 +1664,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/ideation/ideation.controller.ts",
-      "line": 87,
+      "line": 100,
       "middleware": [
         "IdeationController.analysis"
       ],
@@ -1679,7 +1679,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/ideation/ideation.controller.ts",
-      "line": 81,
+      "line": 94,
       "middleware": [
         "IdeationController.analyze"
       ],
@@ -1694,7 +1694,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/ideation/ideation.controller.ts",
-      "line": 93,
+      "line": 106,
       "middleware": [
         "IdeationController.convert"
       ],
@@ -1709,7 +1709,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/ideation/ideation.controller.ts",
-      "line": 56,
+      "line": 69,
       "middleware": [
         "IdeationController.create"
       ],
@@ -1724,7 +1724,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/ideation/ideation.controller.ts",
-      "line": 74,
+      "line": 87,
       "middleware": [
         "IdeationController.delete"
       ],
@@ -1739,7 +1739,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/ideation/ideation.controller.ts",
-      "line": 62,
+      "line": 75,
       "middleware": [
         "IdeationController.get"
       ],
@@ -1754,7 +1754,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/ideation/ideation.controller.ts",
-      "line": 50,
+      "line": 63,
       "middleware": [
         "IdeationController.list"
       ],
@@ -1769,7 +1769,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/ideation/ideation.controller.ts",
-      "line": 68,
+      "line": 81,
       "middleware": [
         "IdeationController.update"
       ],
@@ -1784,7 +1784,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/ideation/ideation.controller.ts",
-      "line": 109,
+      "line": 122,
       "middleware": [
         "IdeationController.promptsByCategory"
       ],
@@ -1799,7 +1799,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/ideation/ideation.controller.ts",
-      "line": 106,
+      "line": 119,
       "middleware": [
         "IdeationController.prompts"
       ],
@@ -1814,7 +1814,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/ideation/ideation.controller.ts",
-      "line": 43,
+      "line": 56,
       "middleware": [
         "IdeationController.session"
       ],
@@ -1829,7 +1829,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/ideation/ideation.controller.ts",
-      "line": 33,
+      "line": 46,
       "middleware": [
         "IdeationController.message"
       ],
@@ -1844,7 +1844,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/ideation/ideation.controller.ts",
-      "line": 27,
+      "line": 40,
       "middleware": [
         "IdeationController.start"
       ],
@@ -1859,7 +1859,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/ideation/ideation.controller.ts",
-      "line": 38,
+      "line": 51,
       "middleware": [
         "IdeationController.stop"
       ],
@@ -1874,7 +1874,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/ideation/ideation.controller.ts",
-      "line": 114,
+      "line": 129,
       "middleware": [
         "IdeationController.suggestions"
       ],
@@ -2024,7 +2024,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/pipeline/pipeline.controller.ts",
-      "line": 34,
+      "line": 40,
       "middleware": [
         "PipelineController.save"
       ],
@@ -2039,7 +2039,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/pipeline/pipeline.controller.ts",
-      "line": 27,
+      "line": 33,
       "middleware": [
         "PipelineController.get"
       ],
@@ -2054,7 +2054,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/pipeline/pipeline.controller.ts",
-      "line": 41,
+      "line": 47,
       "middleware": [
         "PipelineController.add"
       ],
@@ -2069,7 +2069,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/pipeline/pipeline.controller.ts",
-      "line": 55,
+      "line": 61,
       "middleware": [
         "PipelineController.delete"
       ],
@@ -2084,7 +2084,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/pipeline/pipeline.controller.ts",
-      "line": 62,
+      "line": 68,
       "middleware": [
         "PipelineController.reorder"
       ],
@@ -2099,7 +2099,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/pipeline/pipeline.controller.ts",
-      "line": 48,
+      "line": 54,
       "middleware": [
         "PipelineController.update"
       ],
@@ -2249,7 +2249,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 69,
+      "line": 81,
       "middleware": [
         "SettingsController.discoverAgents"
       ],
@@ -2264,7 +2264,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 56,
+      "line": 68,
       "middleware": [
         "SettingsController.credentials"
       ],
@@ -2279,7 +2279,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 102,
+      "line": 114,
       "middleware": [
         "SettingsController.retiredCredentialsWrite"
       ],
@@ -2594,7 +2594,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 51,
+      "line": 63,
       "middleware": [
         "SettingsController.global"
       ],
@@ -2609,7 +2609,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 95,
+      "line": 107,
       "middleware": [
         "SettingsController.updateGlobal"
       ],
@@ -2624,7 +2624,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 115,
+      "line": 127,
       "middleware": [
         "SettingsController.migrate"
       ],
@@ -2639,7 +2639,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 82,
+      "line": 94,
       "middleware": [
         "SettingsController.providerModelTimeouts"
       ],
@@ -2654,7 +2654,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 131,
+      "line": 143,
       "middleware": [
         "SettingsController.updateProviderModelTimeouts"
       ],
@@ -2669,7 +2669,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 77,
+      "line": 89,
       "middleware": [
         "SettingsController.modelTimeouts"
       ],
@@ -2684,7 +2684,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 124,
+      "line": 136,
       "middleware": [
         "SettingsController.updateModelTimeouts"
       ],
@@ -2699,7 +2699,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 155,
+      "line": 169,
       "middleware": [
         "SettingsController.updateDirectAgent"
       ],
@@ -2714,7 +2714,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 140,
+      "line": 154,
       "middleware": [
         "SettingsController.updateDirectEndpoint"
       ],
@@ -2729,7 +2729,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 162,
+      "line": 176,
       "middleware": [
         "SettingsController.discoverDirectModels"
       ],
@@ -2744,7 +2744,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 147,
+      "line": 161,
       "middleware": [
         "SettingsController.removeDirectEndpoint"
       ],
@@ -2759,7 +2759,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 174,
+      "line": 190,
       "middleware": [
         "SettingsController.testDirectConnection"
       ],
@@ -2774,7 +2774,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 90,
+      "line": 102,
       "middleware": [
         "SettingsController.openAICompatible"
       ],
@@ -2789,7 +2789,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 61,
+      "line": 73,
       "middleware": [
         "SettingsController.project"
       ],
@@ -2804,7 +2804,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 108,
+      "line": 120,
       "middleware": [
         "SettingsController.updateProject"
       ],
@@ -2819,7 +2819,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 46,
+      "line": 58,
       "middleware": [
         "SettingsController.status"
       ],
@@ -3584,7 +3584,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/app-spec/app-spec.controller.ts",
-      "line": 27,
+      "line": 32,
       "middleware": [
         "AppSpecController.create"
       ],
@@ -3599,7 +3599,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/app-spec/app-spec.controller.ts",
-      "line": 41,
+      "line": 48,
       "middleware": [
         "AppSpecController.generateFeatures"
       ],
@@ -3614,7 +3614,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/app-spec/app-spec.controller.ts",
-      "line": 34,
+      "line": 39,
       "middleware": [
         "AppSpecController.generate"
       ],
@@ -3629,7 +3629,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/app-spec/app-spec.controller.ts",
-      "line": 63,
+      "line": 70,
       "middleware": [
         "AppSpecController.status"
       ],
@@ -3644,7 +3644,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/app-spec/app-spec.controller.ts",
-      "line": 57,
+      "line": 64,
       "middleware": [
         "AppSpecController.stop"
       ],
@@ -3659,7 +3659,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/app-spec/app-spec.controller.ts",
-      "line": 50,
+      "line": 57,
       "middleware": [
         "AppSpecController.sync"
       ],

@@ -6,7 +6,7 @@ import { API_CONTRACT_VERSION, API_CONTRACT_VERSION_HEADER } from '@automaker/co
 
 import type { RuntimeConfig } from '../config/index.js';
 import { requireJsonContentType } from '../../middleware/require-json-content-type.js';
-import { previewApiGuard } from '../../services/execution-environment/preview-policy.js';
+import { PreviewPolicy } from '../config/preview-policy.js';
 
 function isLocalOrigin(origin: string): boolean {
   try {
@@ -25,7 +25,10 @@ function isLocalOrigin(origin: string): boolean {
   }
 }
 
-export function createPlatformMiddleware(config: RuntimeConfig): RequestHandler[] {
+export function createPlatformMiddleware(
+  config: RuntimeConfig,
+  preview = new PreviewPolicy(config.preview)
+): RequestHandler[] {
   const allowedOrigins = config.server.corsOrigins;
   const json = express.json({ limit: '50mb' });
   return [
@@ -33,7 +36,7 @@ export function createPlatformMiddleware(config: RuntimeConfig): RequestHandler[
       response.setHeader(API_CONTRACT_VERSION_HEADER, API_CONTRACT_VERSION);
       next();
     },
-    previewApiGuard,
+    preview.apiGuard,
     cors({
       credentials: true,
       origin(origin, callback) {

@@ -1,6 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { APPLICATION_EVENTS } from '../../core/eventing/application-events.js';
-import { RuntimePathsService } from '../../core/config/index.js';
+import { RuntimePathsService, PreviewPolicy } from '../../core/config/index.js';
 import { SECURE_FILESYSTEM, SecurityService } from '../../core/security/index.js';
 import type * as Filesystem from '../../lib/secure-fs.js';
 import type { EventEmitter } from '../../lib/events.js';
@@ -15,9 +15,16 @@ import { ManagedTestRunnerService } from '../../services/execution-environment/t
   providers: [
     {
       provide: ManagedDevServerService,
-      inject: [SettingsService, APPLICATION_EVENTS],
-      useFactory: (settings: SettingsService, events: EventEmitter) =>
-        new ManagedDevServerService(settings, events),
+      inject: [SettingsService, APPLICATION_EVENTS, PreviewPolicy, RuntimePathsService],
+      useFactory: (
+        settings: SettingsService,
+        events: EventEmitter,
+        preview: PreviewPolicy,
+        paths: RuntimePathsService
+      ) =>
+        new ManagedDevServerService(settings, events, preview, (alias) =>
+          paths.resolveFromWorkingDirectory(alias ?? '.')
+        ),
     },
     {
       provide: ManagedTestRunnerService,

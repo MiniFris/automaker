@@ -146,10 +146,11 @@ Application services тестируются на in-memory/fake ports; adapter c
       compatibility bridges. См. [domain audit](artifacts/shared-inputs-openapi-client-audit.md)
       и [setup extraction](artifacts/setup-client-extraction-audit.md).
 - [x] Добавить generated/verified OpenAPI artifact. Проверяются все 318 native
-      operations и ссылки на shared inputs; 22 incomplete inputs, 60 runtime
-      success response schemas и 258 unverified responses явно отмечены.
+      operations и ссылки на shared inputs; 22 incomplete inputs, 112 runtime
+      response schemas и 206 unverified responses явно отмечены (включая typed
+      HTTP 410 retirement response в числе runtime schemas).
       Это не закрывает отдельный пункт полной coverage.
-      См. [актуальный checkpoint](artifacts/template-coverage-retirement-checkpoint.md).
+      См. [актуальный checkpoint](artifacts/preview-planning-settings-pipeline-checkpoint.md).
 - [x] Ввести deprecation policy и API versioning до intentional breaking changes.
       [API policy](../backend-api-contracts.md) сохраняет текущую v13 и требует
       явного решения о версии/переходе до нарушения совместимости.

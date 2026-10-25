@@ -13,7 +13,8 @@ application/infra границ этапа 11. Результаты возобн�
 Предыдущий checkpoint: [native stores, terminal cleanup и retired routes](artifacts/native-stores-terminal-cleanup-checkpoint.md).
 Предыдущий checkpoint: [source ports и service locator retirement](artifacts/source-ports-and-locators-checkpoint.md).
 Предыдущий checkpoint: [owned local processes и response contracts](artifacts/owned-process-response-checkpoint.md).
-Последний checkpoint: [template lifecycle, contract coverage и route retirement](artifacts/template-coverage-retirement-checkpoint.md).
+Предыдущий checkpoint: [template lifecycle, contract coverage и route retirement](artifacts/template-coverage-retirement-checkpoint.md).
+Последний checkpoint: [preview configuration, planning/settings contracts и pipeline retirement](artifacts/preview-planning-settings-pipeline-checkpoint.md).
 Полная миграция ещё не завершена; checklist и результаты проверок ведутся
 в документах соответствующих этапов.
 

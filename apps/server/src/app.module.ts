@@ -6,6 +6,7 @@ import {
   RuntimeConfigModule,
   type RuntimeConfig,
   assertNoLegacyServiceOverrides,
+  PreviewPolicy,
 } from './core/config/index.js';
 import { ErrorsModule } from './core/errors/index.js';
 import { EventingModule } from './core/eventing/index.js';
@@ -50,7 +51,10 @@ import { OrchestrationModule } from './modules/orchestration/orchestration.modul
 
 @Module({})
 export class AppModule {
-  constructor(@Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig) {}
+  constructor(
+    @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig,
+    @Inject(PreviewPolicy) private readonly preview: PreviewPolicy
+  ) {}
 
   static register(
     config: RuntimeConfig,
@@ -112,7 +116,7 @@ export class AppModule {
   configure(consumer: MiddlewareConsumer): void {
     // Nest adds the global /api prefix to middleware routes as well.
     consumer
-      .apply(RequestContextMiddleware, ...createPlatformMiddleware(this.config))
+      .apply(RequestContextMiddleware, ...createPlatformMiddleware(this.config, this.preview))
       .forRoutes({ path: '{*splat}', method: RequestMethod.ALL });
   }
 }

@@ -1,4 +1,16 @@
 import {
+  SettingsStatusResponseSchema,
+  SettingsDocumentResponseSchema,
+  SettingsCredentialsResponseSchema,
+  SettingsAgentsResponseSchema,
+  SettingsTimeoutsResponseSchema,
+  SettingsDirectResponseSchema,
+  SettingsRetiredCredentialsResponseSchema,
+  SettingsMigrationResponseSchema,
+  SettingsDirectModelsResponseSchema,
+  SettingsDirectTestResponseSchema,
+} from '@automaker/contracts/domains/settings';
+import {
   Body,
   Controller,
   Get,
@@ -44,142 +56,148 @@ export class SettingsController {
   ) {}
 
   @Get('status')
-  status(): Promise<Record<string, unknown>> {
-    return this.queries.status();
+  async status() {
+    return SettingsStatusResponseSchema.parse(await this.queries.status());
   }
 
   @Get('global')
-  global(): Promise<Record<string, unknown>> {
-    return this.queries.global();
+  async global() {
+    return SettingsDocumentResponseSchema.parse(await this.queries.global());
   }
 
   @Get('credentials')
-  credentials(): Promise<Record<string, unknown>> {
-    return this.queries.credentials();
+  async credentials() {
+    return SettingsCredentialsResponseSchema.parse(await this.queries.credentials());
   }
 
   @Post('project')
   @HttpCode(200)
-  project(
+  async project(
     @Body(new ZodValidationPipe(ProjectSettingsReadSchema)) input: ProjectSettingsRead
-  ): Promise<Record<string, unknown>> {
-    return this.queries.project(input);
+  ) {
+    return SettingsDocumentResponseSchema.parse(await this.queries.project(input));
   }
 
   @Post('agents/discover')
   @HttpCode(200)
-  discoverAgents(
+  async discoverAgents(
     @Body(new ZodValidationPipe(DiscoverAgentsSchema)) input: DiscoverAgentsRequest
-  ): Promise<Record<string, unknown>> {
-    return this.queries.discoverAgents(input);
+  ) {
+    return SettingsAgentsResponseSchema.parse(await this.queries.discoverAgents(input));
   }
 
   @Get('model-timeouts')
-  modelTimeouts(): Promise<Record<string, unknown>> {
-    return this.queries.modelTimeouts();
+  async modelTimeouts() {
+    return SettingsTimeoutsResponseSchema.parse(await this.queries.modelTimeouts());
   }
 
   @Get('model-timeouts/:provider')
-  providerModelTimeouts(
+  async providerModelTimeouts(
     @Param('provider', new ZodValidationPipe(ModelTimeoutProviderSchema))
     provider: ModelTimeoutProvider
-  ): Promise<Record<string, unknown>> {
-    return this.queries.providerModelTimeouts(provider);
+  ) {
+    return SettingsTimeoutsResponseSchema.parse(await this.queries.providerModelTimeouts(provider));
   }
 
   @Get('openai-compatible')
-  openAICompatible(): Promise<Record<string, unknown>> {
-    return this.queries.openAICompatible();
+  async openAICompatible() {
+    return SettingsDirectResponseSchema.parse(await this.queries.openAICompatible());
   }
 
   @Put('global')
-  updateGlobal(
+  async updateGlobal(
     @Body(new ZodValidationPipe(GlobalSettingsUpdateSchema)) updates: Record<string, unknown>
-  ): Promise<Record<string, unknown>> {
-    return this.commands.updateGlobal(updates);
+  ) {
+    return SettingsDocumentResponseSchema.parse(await this.commands.updateGlobal(updates));
   }
 
   @Put('credentials')
   @HttpCode(410)
   retiredCredentialsWrite() {
-    return RETIRED_CREDENTIAL_WRITE;
+    return SettingsRetiredCredentialsResponseSchema.parse(RETIRED_CREDENTIAL_WRITE);
   }
 
   @Put('project')
-  updateProject(
+  async updateProject(
     @Body(new ZodValidationPipe(ProjectSettingsUpdateSchema)) input: ProjectSettingsUpdate
-  ): Promise<Record<string, unknown>> {
-    return this.commands.updateProject(input);
+  ) {
+    return SettingsDocumentResponseSchema.parse(await this.commands.updateProject(input));
   }
 
   @Post('migrate')
   @HttpCode(200)
-  migrate(
+  async migrate(
     @Body(new ZodValidationPipe(LocalStorageMigrationRequestSchema))
     input: LocalStorageMigrationRequest
-  ): Promise<Record<string, unknown>> {
-    return this.commands.migrate(input);
+  ) {
+    return SettingsMigrationResponseSchema.parse(await this.commands.migrate(input));
   }
 
   @Put('model-timeouts')
-  updateModelTimeouts(
+  async updateModelTimeouts(
     @Body(new ZodValidationPipe(ModelTimeoutUpdateSchema)) input: ModelTimeoutUpdate
-  ): Promise<Record<string, unknown>> {
-    return this.commands.updateModelTimeouts(input);
+  ) {
+    return SettingsTimeoutsResponseSchema.parse(await this.commands.updateModelTimeouts(input));
   }
 
   @Put('model-timeouts/:provider')
-  updateProviderModelTimeouts(
+  async updateProviderModelTimeouts(
     @Param('provider', new ZodValidationPipe(ModelTimeoutProviderSchema))
     provider: ModelTimeoutProvider,
     @Body(new ZodValidationPipe(ModelTimeoutUpdateSchema)) input: ModelTimeoutUpdate
-  ): Promise<Record<string, unknown>> {
-    return this.commands.updateProviderModelTimeouts(provider, input);
+  ) {
+    return SettingsTimeoutsResponseSchema.parse(
+      await this.commands.updateProviderModelTimeouts(provider, input)
+    );
   }
 
   @Put('openai-compatible/endpoint')
-  updateDirectEndpoint(
+  async updateDirectEndpoint(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) input: Record<string, unknown>
-  ): Promise<Record<string, unknown>> {
-    return this.directCommands.updateEndpoint(input);
+  ) {
+    return SettingsDirectResponseSchema.parse(await this.directCommands.updateEndpoint(input));
   }
 
   @Post('openai-compatible/remove')
   @HttpCode(200)
-  removeDirectEndpoint(
+  async removeDirectEndpoint(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) input: Record<string, unknown>
-  ): Promise<Record<string, unknown>> {
-    return this.directCommands.remove(input);
+  ) {
+    return SettingsDirectResponseSchema.parse(await this.directCommands.remove(input));
   }
 
   @Put('openai-compatible/agent')
-  updateDirectAgent(
+  async updateDirectAgent(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) input: Record<string, unknown>
-  ): Promise<Record<string, unknown>> {
-    return this.directCommands.updateAgent(input);
+  ) {
+    return SettingsDirectResponseSchema.parse(await this.directCommands.updateAgent(input));
   }
 
   @Post('openai-compatible/models')
   @HttpCode(200)
-  discoverDirectModels(
+  async discoverDirectModels(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) input: Record<string, unknown>,
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response
-  ): Promise<Record<string, unknown>> {
-    return this.abortable(request, response, (signal) =>
-      this.directCommands.discoverModels(input, signal)
+  ) {
+    return SettingsDirectModelsResponseSchema.parse(
+      await this.abortable(request, response, (signal) =>
+        this.directCommands.discoverModels(input, signal)
+      )
     );
   }
 
   @Post('openai-compatible/test')
   @HttpCode(200)
-  testDirectConnection(
+  async testDirectConnection(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) input: Record<string, unknown>,
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response
-  ): Promise<Record<string, unknown>> {
-    return this.abortable(request, response, (signal) =>
-      this.directCommands.testConnection(input, signal)
+  ) {
+    return SettingsDirectTestResponseSchema.parse(
+      await this.abortable(request, response, (signal) =>
+        this.directCommands.testConnection(input, signal)
+      )
     );
   }
 

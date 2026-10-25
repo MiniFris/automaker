@@ -6,6 +6,7 @@ import { WebSocket, type WebSocketServer } from 'ws';
 import { WebSocketTransportService } from '../../../src/modules/terminal/websocket-transport.service.js';
 import { ApplicationEventBusAdapter } from '../../../src/core/eventing/application-event-bus.adapter.js';
 import { createEventEmitter } from '../../../src/lib/events.js';
+import { PreviewPolicy, parseRuntimeConfig } from '../../../src/core/config/index.js';
 
 class Client extends EventEmitter {
   readyState: number = WebSocket.OPEN;
@@ -69,7 +70,8 @@ describe('native WebSocket lifecycle and bounded transport', () => {
       auth as never,
       { enabled: true, passwordRequired: false } as never,
       bus,
-      terminal as never
+      terminal as never,
+      new PreviewPolicy(parseRuntimeConfig({}).preview)
     );
   });
   afterEach(async () => {

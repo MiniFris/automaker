@@ -9,8 +9,8 @@
     "operations": 318,
     "sharedOrNoInput": 296,
     "incompleteInput": 22,
-    "sharedRuntimeResponses": 60,
-    "unverifiedResponses": 258
+    "sharedRuntimeResponses": 112,
+    "unverifiedResponses": 206
   },
   "paths": {
     "/api/agent/clear": {
@@ -1035,10 +1035,10 @@
         "tags": [
           "backlog-plan"
         ],
-        "x-source": "apps/server/src/modules/backlog-plan/backlog-plan.controller.ts:40",
+        "x-source": "apps/server/src/modules/backlog-plan/backlog-plan.controller.ts:48",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1051,7 +1051,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/planning-responses.BacklogApplyResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -1065,10 +1072,10 @@
         "tags": [
           "backlog-plan"
         ],
-        "x-source": "apps/server/src/modules/backlog-plan/backlog-plan.controller.ts:47",
+        "x-source": "apps/server/src/modules/backlog-plan/backlog-plan.controller.ts:55",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1081,7 +1088,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/planning-responses.PlanningSuccessResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -1095,10 +1109,10 @@
         "tags": [
           "backlog-plan"
         ],
-        "x-source": "apps/server/src/modules/backlog-plan/backlog-plan.controller.ts:21",
+        "x-source": "apps/server/src/modules/backlog-plan/backlog-plan.controller.ts:27",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1111,7 +1125,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/planning-responses.PlanningAcceptedResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -1125,10 +1146,10 @@
         "tags": [
           "backlog-plan"
         ],
-        "x-source": "apps/server/src/modules/backlog-plan/backlog-plan.controller.ts:34",
+        "x-source": "apps/server/src/modules/backlog-plan/backlog-plan.controller.ts:42",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "parameters": [
           {
             "name": "projectPath",
@@ -1143,7 +1164,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/planning-responses.BacklogStatusResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -1157,13 +1185,20 @@
         "tags": [
           "backlog-plan"
         ],
-        "x-source": "apps/server/src/modules/backlog-plan/backlog-plan.controller.ts:28",
+        "x-source": "apps/server/src/modules/backlog-plan/backlog-plan.controller.ts:36",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/planning-responses.PlanningSuccessResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -3411,10 +3446,10 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:99",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:112",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -3427,7 +3462,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ideation-responses.IdeationFeatureResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -3441,10 +3483,10 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:87",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:100",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -3457,7 +3499,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ideation-responses.IdeationAnalysisResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -3471,10 +3520,10 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:81",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:94",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -3487,7 +3536,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ideation-responses.IdeationAnalysisAcceptedResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -3501,10 +3557,10 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:93",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:106",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -3517,7 +3573,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ideation-responses.IdeationFeatureResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -3531,10 +3594,10 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:56",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:69",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -3547,7 +3610,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ideation-responses.IdeationIdeaResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -3561,10 +3631,10 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:74",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:87",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -3577,7 +3647,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ideation-responses.IdeationSuccessResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -3591,10 +3668,10 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:62",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:75",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -3607,7 +3684,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ideation-responses.IdeationIdeaResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -3621,10 +3705,10 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:50",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:63",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -3637,7 +3721,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ideation-responses.IdeationIdeaListResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -3651,10 +3742,10 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:68",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:81",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -3667,7 +3758,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ideation-responses.IdeationIdeaResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -3681,10 +3779,10 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:109",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:122",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "parameters": [
           {
             "name": "category",
@@ -3697,7 +3795,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ideation-responses.IdeationCategoryPromptsResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -3711,13 +3816,20 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:106",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:119",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ideation-responses.IdeationPromptsResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -3731,10 +3843,10 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:43",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:56",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -3747,7 +3859,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ideation-responses.IdeationSessionReadResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -3761,10 +3880,10 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:33",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:46",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -3777,7 +3896,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ideation-responses.IdeationSuccessResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -3791,10 +3917,10 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:27",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:40",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -3807,7 +3933,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ideation-responses.IdeationSessionStartResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -3821,10 +3954,10 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:38",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:51",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -3837,7 +3970,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ideation-responses.IdeationSuccessResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -3851,10 +3991,10 @@
         "tags": [
           "ideation"
         ],
-        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:114",
+        "x-source": "apps/server/src/modules/ideation/ideation.controller.ts:129",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -3867,7 +4007,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ideation-responses.IdeationSuggestionsResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -4156,10 +4303,10 @@
         "tags": [
           "pipeline"
         ],
-        "x-source": "apps/server/src/modules/pipeline/pipeline.controller.ts:34",
+        "x-source": "apps/server/src/modules/pipeline/pipeline.controller.ts:40",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -4172,7 +4319,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/pipeline.PipelineMutationResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -4186,10 +4340,10 @@
         "tags": [
           "pipeline"
         ],
-        "x-source": "apps/server/src/modules/pipeline/pipeline.controller.ts:27",
+        "x-source": "apps/server/src/modules/pipeline/pipeline.controller.ts:33",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -4202,7 +4356,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/pipeline.PipelineConfigResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -4216,10 +4377,10 @@
         "tags": [
           "pipeline"
         ],
-        "x-source": "apps/server/src/modules/pipeline/pipeline.controller.ts:41",
+        "x-source": "apps/server/src/modules/pipeline/pipeline.controller.ts:47",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -4232,7 +4393,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/pipeline.PipelineCreatedStepResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -4246,10 +4414,10 @@
         "tags": [
           "pipeline"
         ],
-        "x-source": "apps/server/src/modules/pipeline/pipeline.controller.ts:55",
+        "x-source": "apps/server/src/modules/pipeline/pipeline.controller.ts:61",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -4262,7 +4430,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/pipeline.PipelineMutationResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -4276,10 +4451,10 @@
         "tags": [
           "pipeline"
         ],
-        "x-source": "apps/server/src/modules/pipeline/pipeline.controller.ts:62",
+        "x-source": "apps/server/src/modules/pipeline/pipeline.controller.ts:68",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -4292,7 +4467,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/pipeline.PipelineMutationResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -4306,10 +4488,10 @@
         "tags": [
           "pipeline"
         ],
-        "x-source": "apps/server/src/modules/pipeline/pipeline.controller.ts:48",
+        "x-source": "apps/server/src/modules/pipeline/pipeline.controller.ts:54",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -4322,7 +4504,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/pipeline.PipelineUpdatedStepResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -4673,10 +4862,10 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:69",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:81",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -4689,7 +4878,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/settings.SettingsAgentsResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -4703,13 +4899,20 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:56",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:68",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/settings.SettingsCredentialsResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -4721,13 +4924,20 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:102",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:114",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "responses": {
           "410": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/settings.SettingsRetiredCredentialsResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -5407,13 +5617,20 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:51",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:63",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/settings.SettingsDocumentResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -5425,10 +5642,10 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:95",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:107",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -5441,7 +5658,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/settings.SettingsDocumentResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -5455,10 +5679,10 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:115",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:127",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -5471,7 +5695,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/settings.SettingsMigrationResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -5485,10 +5716,10 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:82",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:94",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "parameters": [
           {
             "name": "provider",
@@ -5501,7 +5732,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/settings.SettingsTimeoutsResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -5513,10 +5751,10 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:131",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:143",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "parameters": [
           {
             "name": "provider",
@@ -5539,7 +5777,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/settings.SettingsTimeoutsResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -5553,13 +5798,20 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:77",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:89",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/settings.SettingsTimeoutsResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -5571,10 +5823,10 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:124",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:136",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -5587,7 +5839,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/settings.SettingsTimeoutsResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -5601,10 +5860,10 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:155",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:169",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -5617,7 +5876,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/settings.SettingsDirectResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -5631,10 +5897,10 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:140",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:154",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -5647,7 +5913,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/settings.SettingsDirectResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -5661,7 +5934,7 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:162",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:176",
         "x-access": "protected",
         "x-request-contract": "incomplete",
         "x-unresolved-inputs": [
@@ -5670,7 +5943,7 @@
             "reason": "Raw request access is not a shared input contract."
           }
         ],
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -5683,7 +5956,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/settings.SettingsDirectModelsResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -5697,10 +5977,10 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:147",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:161",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -5713,7 +5993,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/settings.SettingsDirectResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -5727,7 +6014,7 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:174",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:190",
         "x-access": "protected",
         "x-request-contract": "incomplete",
         "x-unresolved-inputs": [
@@ -5736,7 +6023,7 @@
             "reason": "Raw request access is not a shared input contract."
           }
         ],
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -5749,7 +6036,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/settings.SettingsDirectTestResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -5763,13 +6057,20 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:90",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:102",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/settings.SettingsDirectResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -5783,10 +6084,10 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:61",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:73",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -5799,7 +6100,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/settings.SettingsDocumentResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -5811,10 +6119,10 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:108",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:120",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -5827,7 +6135,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/settings.SettingsDocumentResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -5841,13 +6156,20 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:46",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:58",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/settings.SettingsStatusResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -7227,10 +7549,10 @@
         "tags": [
           "spec-regeneration"
         ],
-        "x-source": "apps/server/src/modules/app-spec/app-spec.controller.ts:27",
+        "x-source": "apps/server/src/modules/app-spec/app-spec.controller.ts:32",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -7243,7 +7565,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/planning-responses.PlanningAcceptedResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -7257,10 +7586,10 @@
         "tags": [
           "spec-regeneration"
         ],
-        "x-source": "apps/server/src/modules/app-spec/app-spec.controller.ts:41",
+        "x-source": "apps/server/src/modules/app-spec/app-spec.controller.ts:48",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -7273,7 +7602,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/planning-responses.PlanningAcceptedResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -7287,10 +7623,10 @@
         "tags": [
           "spec-regeneration"
         ],
-        "x-source": "apps/server/src/modules/app-spec/app-spec.controller.ts:34",
+        "x-source": "apps/server/src/modules/app-spec/app-spec.controller.ts:39",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -7303,7 +7639,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/planning-responses.PlanningAcceptedResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -7317,10 +7660,10 @@
         "tags": [
           "spec-regeneration"
         ],
-        "x-source": "apps/server/src/modules/app-spec/app-spec.controller.ts:63",
+        "x-source": "apps/server/src/modules/app-spec/app-spec.controller.ts:70",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "parameters": [
           {
             "name": "projectPath",
@@ -7335,7 +7678,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/planning-responses.AppSpecStatusResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -7349,10 +7699,10 @@
         "tags": [
           "spec-regeneration"
         ],
-        "x-source": "apps/server/src/modules/app-spec/app-spec.controller.ts:57",
+        "x-source": "apps/server/src/modules/app-spec/app-spec.controller.ts:64",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -7365,7 +7715,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/planning-responses.PlanningSuccessResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -7379,10 +7736,10 @@
         "tags": [
           "spec-regeneration"
         ],
-        "x-source": "apps/server/src/modules/app-spec/app-spec.controller.ts:50",
+        "x-source": "apps/server/src/modules/app-spec/app-spec.controller.ts:57",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -7395,7 +7752,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/planning-responses.PlanningAcceptedResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -12024,6 +12388,390 @@
           "prNumber"
         ]
       },
+      "ideation-responses.IdeationAnalysisAcceptedResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "success",
+          "message"
+        ],
+        "additionalProperties": {}
+      },
+      "ideation-responses.IdeationAnalysisResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "result": {
+            "anyOf": [
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "result"
+        ],
+        "additionalProperties": {}
+      },
+      "ideation-responses.IdeationCategoryPromptsResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "prompts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "category": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "prompt": {
+                  "type": "string"
+                },
+                "icon": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "category",
+                "title",
+                "description",
+                "prompt"
+              ],
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "success",
+          "prompts"
+        ],
+        "additionalProperties": {}
+      },
+      "ideation-responses.IdeationFeatureResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "featureId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "success",
+          "featureId"
+        ],
+        "additionalProperties": {}
+      },
+      "ideation-responses.IdeationIdeaListResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "ideas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "success",
+          "ideas"
+        ],
+        "additionalProperties": {}
+      },
+      "ideation-responses.IdeationIdeaResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "idea": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "success",
+          "idea"
+        ],
+        "additionalProperties": {}
+      },
+      "ideation-responses.IdeationPromptsResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "prompts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "category": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "prompt": {
+                  "type": "string"
+                },
+                "icon": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "category",
+                "title",
+                "description",
+                "prompt"
+              ],
+              "additionalProperties": {}
+            }
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "icon": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "icon",
+                "description"
+              ],
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "success",
+          "prompts",
+          "categories"
+        ],
+        "additionalProperties": {}
+      },
+      "ideation-responses.IdeationSessionReadResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "session": {
+            "type": "object",
+            "properties": {
+              "isRunning": {
+                "type": "boolean"
+              },
+              "messages": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "required": [
+              "isRunning",
+              "messages"
+            ],
+            "additionalProperties": {}
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "success",
+          "session",
+          "messages"
+        ],
+        "additionalProperties": {}
+      },
+      "ideation-responses.IdeationSessionStartResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "session": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "projectPath": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "createdAt": {
+                "type": "string"
+              },
+              "updatedAt": {
+                "type": "string"
+              },
+              "promptId": {
+                "type": "string"
+              },
+              "promptCategory": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "projectPath",
+              "status",
+              "createdAt",
+              "updatedAt"
+            ],
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "success",
+          "session"
+        ],
+        "additionalProperties": {}
+      },
+      "ideation-responses.IdeationSuccessResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "additionalProperties": {}
+      },
+      "ideation-responses.IdeationSuggestionsResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "suggestions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "category": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "category"
+              ],
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "success",
+          "suggestions"
+        ],
+        "additionalProperties": {}
+      },
       "ideation.AddSuggestionSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -12982,6 +13730,80 @@
           "step"
         ]
       },
+      "pipeline.PipelineConfigResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "config": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "success",
+          "config"
+        ],
+        "additionalProperties": {}
+      },
+      "pipeline.PipelineCreatedStepResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "step": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "order": {
+                "type": "number"
+              },
+              "instructions": {
+                "type": "string"
+              },
+              "colorClass": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "createdAt": {
+                "type": "string"
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "order",
+              "instructions",
+              "colorClass",
+              "id",
+              "createdAt",
+              "updatedAt"
+            ],
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "success",
+          "step"
+        ],
+        "additionalProperties": {}
+      },
       "pipeline.PipelineDeleteSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -12999,6 +13821,20 @@
           "projectPath",
           "stepId"
         ]
+      },
+      "pipeline.PipelineMutationResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "additionalProperties": {}
       },
       "pipeline.PipelineProjectSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -13101,6 +13937,37 @@
           "config"
         ]
       },
+      "pipeline.PipelineUpdatedStepResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "step": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "updatedAt"
+            ],
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "success",
+          "step"
+        ],
+        "additionalProperties": {}
+      },
       "pipeline.PipelineUpdateSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -13147,6 +14014,156 @@
           "stepId",
           "updates"
         ]
+      },
+      "planning-responses.AppSpecStatusResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "isRunning": {
+            "type": "boolean"
+          },
+          "projectPath": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "spec_regeneration",
+              "feature_generation",
+              "sync"
+            ]
+          },
+          "startedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "success",
+          "isRunning"
+        ],
+        "additionalProperties": {}
+      },
+      "planning-responses.BacklogApplyResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "appliedChanges": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "success",
+          "appliedChanges"
+        ],
+        "additionalProperties": {}
+      },
+      "planning-responses.BacklogStatusResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "isRunning": {
+            "type": "boolean"
+          },
+          "savedPlan": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "result": {
+                    "type": "object",
+                    "properties": {
+                      "changes": {
+                        "type": "array",
+                        "items": {}
+                      }
+                    },
+                    "required": [
+                      "changes"
+                    ],
+                    "additionalProperties": {}
+                  }
+                },
+                "required": [
+                  "result"
+                ],
+                "additionalProperties": {}
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "isRunning",
+          "savedPlan"
+        ],
+        "additionalProperties": {}
+      },
+      "planning-responses.PlanningAcceptedResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean",
+                "const": true
+              }
+            },
+            "required": [
+              "success"
+            ],
+            "additionalProperties": {}
+          },
+          {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean",
+                "const": false
+              },
+              "error": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "success",
+              "error"
+            ],
+            "additionalProperties": {}
+          }
+        ]
+      },
+      "planning-responses.PlanningSuccessResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "additionalProperties": {}
       },
       "prompt-enhancement.PromptEnhancementRequestSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -13329,6 +14346,635 @@
           "gemini",
           "copilot"
         ]
+      },
+      "settings.SettingsAgentsResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "agents": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "source": {
+                  "type": "string"
+                },
+                "filePath": {
+                  "type": "string"
+                },
+                "definition": {
+                  "type": "object",
+                  "properties": {
+                    "description": {
+                      "type": "string"
+                    },
+                    "prompt": {
+                      "type": "string"
+                    },
+                    "tools": {
+                      "anyOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "model": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "description",
+                    "prompt"
+                  ],
+                  "additionalProperties": {}
+                }
+              },
+              "required": [
+                "name",
+                "source",
+                "filePath",
+                "definition"
+              ],
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "success",
+          "agents"
+        ],
+        "additionalProperties": {}
+      },
+      "settings.SettingsCredentialsResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "credentials": {
+            "type": "object",
+            "properties": {
+              "anthropic": {
+                "type": "object",
+                "properties": {
+                  "configured": {
+                    "type": "boolean"
+                  },
+                  "masked": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "configured",
+                  "masked"
+                ],
+                "additionalProperties": {}
+              },
+              "google": {
+                "type": "object",
+                "properties": {
+                  "configured": {
+                    "type": "boolean"
+                  },
+                  "masked": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "configured",
+                  "masked"
+                ],
+                "additionalProperties": {}
+              },
+              "openai": {
+                "type": "object",
+                "properties": {
+                  "configured": {
+                    "type": "boolean"
+                  },
+                  "masked": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "configured",
+                  "masked"
+                ],
+                "additionalProperties": {}
+              },
+              "zai": {
+                "type": "object",
+                "properties": {
+                  "configured": {
+                    "type": "boolean"
+                  },
+                  "masked": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "configured",
+                  "masked"
+                ],
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "anthropic",
+              "google",
+              "openai",
+              "zai"
+            ],
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "success",
+          "credentials"
+        ],
+        "additionalProperties": {}
+      },
+      "settings.SettingsDirectModelsResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "success",
+          "models"
+        ],
+        "additionalProperties": {}
+      },
+      "settings.SettingsDirectResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "endpoints": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "endpoint": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "baseUrl": {
+                      "type": "string"
+                    },
+                    "protocol": {
+                      "type": "string"
+                    },
+                    "auth": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "variableName": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "credentialId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ],
+                      "additionalProperties": {}
+                    },
+                    "timeoutMs": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "timeouts": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "type": "number"
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "maxRetries": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "models": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "displayName": {
+                            "type": "string"
+                          },
+                          "capabilities": {
+                            "type": "object",
+                            "properties": {
+                              "tools": {
+                                "type": "boolean"
+                              },
+                              "streaming": {
+                                "type": "boolean"
+                              },
+                              "vision": {
+                                "anyOf": [
+                                  {
+                                    "type": "boolean"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "structuredOutput": {
+                                "anyOf": [
+                                  {
+                                    "type": "boolean"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "reasoning": {
+                                "anyOf": [
+                                  {
+                                    "type": "boolean"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "tools",
+                              "streaming"
+                            ],
+                            "additionalProperties": {}
+                          },
+                          "contextWindow": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "maxOutputTokens": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "displayName",
+                          "capabilities"
+                        ],
+                        "additionalProperties": {}
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "enabled",
+                    "baseUrl",
+                    "protocol",
+                    "auth",
+                    "models"
+                  ],
+                  "additionalProperties": {}
+                },
+                "keyConfigured": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "endpoint",
+                "keyConfigured"
+              ],
+              "additionalProperties": {}
+            }
+          },
+          "agentSettings": {
+            "type": "object",
+            "properties": {
+              "access": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "shell": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "backend": {
+                        "type": "string"
+                      },
+                      "image": {
+                        "type": "string"
+                      },
+                      "executable": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "backend",
+                      "image"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "limits": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "type": "number"
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "success",
+          "endpoints",
+          "agentSettings"
+        ],
+        "additionalProperties": {}
+      },
+      "settings.SettingsDirectTestResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "verified": {
+            "type": "boolean"
+          },
+          "tools": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "verified",
+          "tools"
+        ],
+        "additionalProperties": {}
+      },
+      "settings.SettingsDocumentResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "settings": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "success",
+          "settings"
+        ],
+        "additionalProperties": {}
+      },
+      "settings.SettingsMigrationResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "migratedGlobalSettings": {
+            "type": "boolean"
+          },
+          "migratedCredentials": {
+            "type": "boolean"
+          },
+          "credentialImportRequired": {
+            "type": "boolean"
+          },
+          "migratedProjectCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "success",
+          "migratedGlobalSettings",
+          "migratedCredentials",
+          "credentialImportRequired",
+          "migratedProjectCount",
+          "errors"
+        ],
+        "additionalProperties": {}
+      },
+      "settings.SettingsRetiredCredentialsResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "success",
+          "errorCode",
+          "error"
+        ],
+        "additionalProperties": {}
+      },
+      "settings.SettingsStatusResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "hasGlobalSettings": {
+            "type": "boolean"
+          },
+          "hasCredentials": {
+            "type": "boolean"
+          },
+          "dataDir": {
+            "type": "string"
+          },
+          "needsMigration": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "hasGlobalSettings",
+          "hasCredentials",
+          "dataDir",
+          "needsMigration"
+        ],
+        "additionalProperties": {}
+      },
+      "settings.SettingsTimeoutsResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "timeouts": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "number"
+            }
+          }
+        },
+        "required": [
+          "success",
+          "timeouts"
+        ],
+        "additionalProperties": {}
       },
       "setup-query.ProviderRefreshQuerySchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",

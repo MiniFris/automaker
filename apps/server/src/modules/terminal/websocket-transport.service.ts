@@ -13,7 +13,7 @@ import { createLogger } from '@automaker/utils';
 import { AuthService } from '../../core/auth/auth.service.js';
 import { createCorrelationId } from '../../core/observability/request-context.js';
 import { EVENT_BUS, type EventBus } from '../../core/eventing/event-bus.js';
-import { isPreviewApiRequest } from '../../services/execution-environment/preview-policy.js';
+import { PreviewPolicy } from '../../core/config/preview-policy.js';
 import { claimTerminalStartup, TerminalService } from '../../services/terminal-service.js';
 import { TerminalAccessService } from './terminal-access.service.js';
 
@@ -50,7 +50,8 @@ export class WebSocketTransportService
     @Inject(AuthService) private readonly auth: AuthService,
     @Inject(TerminalAccessService) private readonly terminalAccess: TerminalAccessService,
     @Inject(EVENT_BUS) private readonly events: EventBus,
-    @Inject(TerminalService) private readonly terminal: TerminalService
+    @Inject(TerminalService) private readonly terminal: TerminalService,
+    @Inject(PreviewPolicy) private readonly preview: PreviewPolicy
   ) {
     this.heartbeat.unref();
     this.unsubscribeTerminalExit = this.terminal.onExit((sessionId) => {
@@ -122,7 +123,7 @@ export class WebSocketTransportService
     let authenticated: boolean;
     try {
       pathname = new URL(request.url || '', 'http://localhost').pathname;
-      if (isPreviewApiRequest(request)) {
+      if (this.preview.isApiRequest(request)) {
         socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
         return;
       }
