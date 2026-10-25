@@ -365,7 +365,10 @@ it('keeps plan approval distinct from final review in the native workflow', asyn
 });
 
 async function verificationFixture(name: string, hold = false, fail = false) {
-  const owner = await start(name);
+  const owner = await start(name, undefined, {
+    HOME: root,
+    PATH: [path.dirname(process.execPath), process.env.PATH].filter(Boolean).join(path.delimiter),
+  });
   await owner.app.get(FeatureLoader).create(owner.project, {
     id: 'verify-fixture',
     title: 'Verify fixture',
@@ -386,7 +389,7 @@ async function verificationFixture(name: string, hold = false, fail = false) {
   );
   await writeFile(
     path.join(owner.project, 'verify.cjs'),
-    `const fs=require('node:fs');fs.appendFileSync('checks.jsonl',process.argv[2]+'\\n');if(${hold}&&process.argv[2]==='lint'){fs.writeFileSync('verification.pid',String(process.pid));setInterval(()=>{},1000)}else if(${fail})process.exit(1);`
+    `const fs=require('node:fs');fs.writeFileSync('verification-runtime.json',JSON.stringify({execPath:process.execPath,home:process.env.HOME}));fs.appendFileSync('checks.jsonl',process.argv[2]+'\\n');if(${hold}&&process.argv[2]==='lint'){fs.writeFileSync('verification.pid',String(process.pid));setInterval(()=>{},1000)}else if(${fail})process.exit(1);`
   );
   return { ...owner, input: { projectPath: owner.project, featureId: 'verify-fixture' } };
 }
@@ -395,14 +398,18 @@ it('runs the four existing verification commands under one testing lease and pre
   const owner = await verificationFixture('verification-checks');
   const manager = owner.runtime.getGlobalService().getSharedServices().concurrencyManager;
   const verifying = owner.post('verify-feature', owner.input);
-  await vi.waitFor(() =>
-    expect(manager.getRunningFeature(owner.input.featureId)?.state).toBe('testing')
-  );
-  const lease = manager.getRunningFeature(owner.input.featureId)!;
+  const lease = await vi.waitFor(() => {
+    const running = manager.getRunningFeature(owner.input.featureId);
+    expect(running?.state).toBe('testing');
+    return running!;
+  });
   expect(await verifying).toEqual({ status: 200, body: { success: true, passes: true } });
   expect(
     (await readFile(path.join(owner.project, 'checks.jsonl'), 'utf8')).trim().split('\n')
   ).toEqual(['lint', 'typecheck', 'test', 'build']);
+  expect(
+    JSON.parse(await readFile(path.join(owner.project, 'verification-runtime.json'), 'utf8'))
+  ).toEqual({ execPath: process.execPath, home: root });
   expect(lease.state).toBe('awaiting_review');
   expect(lease.completedEvents.has('verification-complete')).toBe(true);
   expect(manager.getRunningFeature(owner.input.featureId)).toBeUndefined();

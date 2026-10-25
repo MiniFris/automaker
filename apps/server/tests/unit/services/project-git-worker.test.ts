@@ -17,7 +17,7 @@ describe.skipIf(process.platform !== 'linux')('fixed target-side Git worker with
     expect(
       (
         await environment.exec(
-          'git init -qb main && git add . && git -c user.name=Fixture -c user.email=fixture@example.invalid commit -qm base',
+          'git init -qb main && git config --local user.name Fixture && git config --local user.email fixture@example.invalid && git add . && git commit -qm base',
           active()
         )
       ).exitCode

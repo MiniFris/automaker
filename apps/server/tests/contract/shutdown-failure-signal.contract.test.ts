@@ -8,6 +8,7 @@ it('exits nonzero on SIGTERM cleanup failure only after later owners have been a
   const directory = await mkdtemp(path.join(os.tmpdir(), 'automaker-failed-signal-'));
   const marker = path.join(directory, 'providers.closed');
   const child = fork(path.resolve(import.meta.dirname, '../fixtures/failed-shutdown-server.ts'), {
+    cwd: path.resolve(import.meta.dirname, '../..'),
     silent: true,
     execArgv: ['--import', 'tsx'],
     env: {
@@ -31,7 +32,7 @@ it('exits nonzero on SIGTERM cleanup failure only after later owners have been a
     await Promise.race([
       new Promise<void>((resolve) => child.once('message', () => resolve())),
       exited.then(() => {
-        throw new Error('Shutdown fixture exited before readiness');
+        throw new Error(`Shutdown fixture exited before readiness: ${stderr}`);
       }),
     ]);
     child.kill('SIGTERM');

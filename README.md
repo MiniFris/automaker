@@ -432,8 +432,9 @@ npm run test:headed     # Browser visible E2E tests
 #### Unit Tests (Vitest)
 
 ```bash
-npm run test:server              # Server unit tests
-npm run test:server:coverage     # Server tests with coverage
+npm run test:server              # Server unit and contract tests
+npm run test:server:coverage     # Unit, contract and integration coverage
+npm run test:server:ssh          # SSH/target-process fixtures (Linux, separate CI job)
 npm run test:packages            # All shared package tests
 npm run test:all                 # Packages + server tests
 ```

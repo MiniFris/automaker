@@ -51,3 +51,20 @@ jobs:
       #     name: server-coverage
       #   env:
       #     CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  ssh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup project
+        uses: ./.github/actions/setup-project
+        with:
+          check-lockfile: 'true'
+          rebuild-node-pty-path: 'apps/server'
+
+      - name: Run isolated SSH and target-process tests
+        run: npm run test:server:ssh
+        env:
+          NODE_ENV: test

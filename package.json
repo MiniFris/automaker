@@ -57,7 +57,7 @@
     "test:server:ssh": "npm run test:ssh --workspace=apps/server",
     "test:server:docker": "npm run test:docker --workspace=apps/server",
     "test:server:e2e": "npm run test:e2e --workspace=apps/server",
-    "test:server:coverage": "vitest run --project=server --coverage",
+    "test:server:coverage": "npm run test:coverage --workspace=apps/server",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "test:all": "vitest run",
