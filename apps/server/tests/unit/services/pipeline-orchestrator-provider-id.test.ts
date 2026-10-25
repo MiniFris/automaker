@@ -2,7 +2,7 @@ import * as executionFilesystem from '../../../src/lib/secure-fs.js';
 /**
  * Tests for providerId passthrough in PipelineOrchestrator
  * Verifies that feature.providerId is forwarded to runAgentFn in both
- * executePipeline (step execution) and executeTestStep (test fix) contexts.
+ * actual custom executePipeline step contexts.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -17,11 +17,9 @@ import {
 } from '../../../src/services/pipeline-orchestrator.js';
 import type { TypedEventBus } from '../../../src/services/typed-event-bus.js';
 import type { FeatureStateManager } from '../../../src/services/feature-state-manager.js';
-import type { AgentExecutor } from '../../../src/services/agent-executor.js';
 import type { WorktreeResolver } from '../../../src/services/worktree-resolver.js';
 import type { SettingsService } from '../../../src/services/settings-service.js';
 import type { ConcurrencyManager } from '../../../src/services/concurrency-manager.js';
-import type { TestRunnerService } from '../../../src/services/test-runner-service.js';
 import * as secureFs from '../../../src/lib/secure-fs.js';
 import { getFeatureDir } from '@automaker/platform';
 import {
@@ -85,8 +83,6 @@ vi.mock('@automaker/model-resolver', () => ({
 describe('PipelineOrchestrator - providerId passthrough', () => {
   let mockEventBus: TypedEventBus;
   let mockFeatureStateManager: FeatureStateManager;
-  let mockAgentExecutor: AgentExecutor;
-  let mockTestRunnerService: TestRunnerService;
   let mockWorktreeResolver: WorktreeResolver;
   let mockConcurrencyManager: ConcurrencyManager;
   let mockUpdateFeatureStatusFn: UpdateFeatureStatusFn;
@@ -130,25 +126,6 @@ describe('PipelineOrchestrator - providerId passthrough', () => {
       updateFeatureStatus: vi.fn().mockResolvedValue(undefined),
       loadFeature: vi.fn().mockResolvedValue(createFeatureWithProvider()),
     } as unknown as FeatureStateManager;
-
-    mockAgentExecutor = {
-      execute: vi.fn().mockResolvedValue({ success: true }),
-    } as unknown as AgentExecutor;
-
-    mockTestRunnerService = {
-      startTests: vi
-        .fn()
-        .mockResolvedValue({ success: true, result: { sessionId: 'test-session-1' } }),
-      getSession: vi.fn().mockReturnValue({
-        status: 'passed',
-        exitCode: 0,
-        startedAt: new Date(),
-        finishedAt: new Date(),
-      }),
-      getSessionOutput: vi
-        .fn()
-        .mockReturnValue({ success: true, result: { output: 'All tests passed' } }),
-    } as unknown as TestRunnerService;
 
     mockWorktreeResolver = {
       findWorktreeForBranch: vi.fn().mockResolvedValue('/test/worktree'),
@@ -206,8 +183,6 @@ describe('PipelineOrchestrator - providerId passthrough', () => {
     orchestrator = new PipelineOrchestrator(
       mockEventBus,
       mockFeatureStateManager,
-      mockAgentExecutor,
-      mockTestRunnerService,
       mockWorktreeResolver,
       mockConcurrencyManager,
       null,
@@ -234,8 +209,6 @@ describe('PipelineOrchestrator - providerId passthrough', () => {
         branchName: 'feature/test-1',
         abortController: new AbortController(),
         autoLoadClaudeMd: true,
-        testAttempts: 0,
-        maxTestAttempts: 5,
       };
 
       await orchestrator.executePipeline(context);
@@ -257,8 +230,6 @@ describe('PipelineOrchestrator - providerId passthrough', () => {
         branchName: 'feature/test-1',
         abortController: new AbortController(),
         autoLoadClaudeMd: true,
-        testAttempts: 0,
-        maxTestAttempts: 5,
       };
 
       await orchestrator.executePipeline(context);
@@ -280,8 +251,6 @@ describe('PipelineOrchestrator - providerId passthrough', () => {
         branchName: 'feature/test-1',
         abortController: new AbortController(),
         autoLoadClaudeMd: true,
-        testAttempts: 0,
-        maxTestAttempts: 5,
       };
 
       await orchestrator.executePipeline(context);
@@ -290,83 +259,5 @@ describe('PipelineOrchestrator - providerId passthrough', () => {
       expect(options).toHaveProperty('providerId', 'zhipu');
       expect(options).toHaveProperty('status');
     });
-  });
-
-  describe('executeTestStep', () => {
-    it('should pass providerId in test fix agent options when tests fail', async () => {
-      vi.mocked(mockTestRunnerService.getSession)
-        .mockReturnValueOnce({
-          status: 'failed',
-          exitCode: 1,
-          startedAt: new Date(),
-          finishedAt: new Date(),
-        } as never)
-        .mockReturnValueOnce({
-          status: 'passed',
-          exitCode: 0,
-          startedAt: new Date(),
-          finishedAt: new Date(),
-        } as never);
-
-      const feature = createFeatureWithProvider('custom-provider');
-      const context: PipelineContext = {
-        projectPath: '/test/project',
-        featureId: 'feature-1',
-        feature,
-        steps: testSteps,
-        workDir: '/test/project',
-        worktreePath: null,
-        branchName: 'feature/test-1',
-        abortController: new AbortController(),
-        autoLoadClaudeMd: true,
-        testAttempts: 0,
-        maxTestAttempts: 5,
-      };
-
-      await orchestrator.executeTestStep(context, 'npm test');
-
-      // The fix agent should receive providerId
-      expect(mockRunAgentFn).toHaveBeenCalledTimes(1);
-      const options = mockRunAgentFn.mock.calls[0][7];
-      expect(options).toHaveProperty('providerId', 'custom-provider');
-    }, 15000);
-
-    it('should pass thinkingLevel in test fix agent options', async () => {
-      vi.mocked(mockTestRunnerService.getSession)
-        .mockReturnValueOnce({
-          status: 'failed',
-          exitCode: 1,
-          startedAt: new Date(),
-          finishedAt: new Date(),
-        } as never)
-        .mockReturnValueOnce({
-          status: 'passed',
-          exitCode: 0,
-          startedAt: new Date(),
-          finishedAt: new Date(),
-        } as never);
-
-      const feature = createFeatureWithProvider('moonshot-ai');
-      feature.thinkingLevel = 'high';
-      const context: PipelineContext = {
-        projectPath: '/test/project',
-        featureId: 'feature-1',
-        feature,
-        steps: testSteps,
-        workDir: '/test/project',
-        worktreePath: null,
-        branchName: 'feature/test-1',
-        abortController: new AbortController(),
-        autoLoadClaudeMd: true,
-        testAttempts: 0,
-        maxTestAttempts: 5,
-      };
-
-      await orchestrator.executeTestStep(context, 'npm test');
-
-      const options = mockRunAgentFn.mock.calls[0][7];
-      expect(options).toHaveProperty('thinkingLevel', 'high');
-      expect(options).toHaveProperty('providerId', 'moonshot-ai');
-    }, 15000);
   });
 });

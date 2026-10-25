@@ -37,8 +37,6 @@ import { FeatureWorkspaceService } from '@/services/execution-environment/featur
 import { FeatureLoader } from '@/services/feature-loader.js';
 import { AutoModeServiceFacade } from '@/services/auto-mode/facade.js';
 import { WorktreeResolver } from '@/services/worktree-resolver.js';
-import { PipelineOrchestrator } from '@/services/pipeline-orchestrator.js';
-import { TypedEventBus } from '@/services/typed-event-bus.js';
 import { EventHookService } from '@/services/event-hook-service.js';
 import { ApplicationEventBusAdapter } from '@/core/eventing/application-event-bus.adapter.js';
 import { createEventEmitter } from '@/lib/events.js';
@@ -665,42 +663,7 @@ process.stdout.write(JSON.stringify({type:'result',subtype:'success'})+'\\n');
           )
         ).metadata.usageStats
       ).toEqual({ loaded: 1, referenced: 1, successfulFeatures: 0 });
-      const hostRunner = { startTests: vi.fn() };
-      const pipeline = new PipelineOrchestrator(
-        new TypedEventBus(events),
-        {} as never,
-        {} as never,
-        hostRunner as never,
-        new WorktreeResolver(settings),
-        {} as never,
-        settings,
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        new PipelineService(),
-        executionFilesystem
-      );
-      expect(
-        await pipeline.executeTestStep(
-          {
-            projectPath: featureProject,
-            featureId: feature.id,
-            feature,
-            steps: [],
-            workDir: featureProject,
-            worktreePath: null,
-            branchName: 'main',
-            abortController: new AbortController(),
-            autoLoadClaudeMd: false,
-            testAttempts: 0,
-            maxTestAttempts: 1,
-          },
-          'npm test'
-        )
-      ).toMatchObject({ success: true, testsPassed: true });
-      expect(hostRunner.startTests).not.toHaveBeenCalled();
+
       expect(await facade.verifyFeature(feature.id)).toBe(true);
       for (const name of ['lint', 'typecheck', 'test', 'build'])
         expect(await fs.readFile(path.join(run.environment.cwd, `verified-${name}`), 'utf8')).toBe(

@@ -203,15 +203,20 @@ Application services тестируются на in-memory/fake ports; adapter c
 - [x] Ввести deprecation policy и API versioning до intentional breaking changes.
       [API policy](../backend-api-contracts.md) сохраняет текущую v13 и требует
       явного решения о версии/переходе до нарушения совместимости.
-- [ ] Добавить stable machine-readable error codes.
+- [x] Добавить stable machine-readable error codes. Native global HTTP errors
+      получают additive `errorCode`; существующие domain/infrastructure codes
+      сохраняются. Исторические HTTP-200 business envelopes не унифицируются
+      скрытым breaking change. См. [API policy](../backend-api-contracts.md).
 
 ## 11.5. Observability
 
 - [ ] Structured logs с request/job/session ids.
 - [ ] Metrics startup, active jobs, queue depth, provider errors, process leaks.
 - [ ] Traces через HTTP -> orchestration -> provider/execution boundaries.
-- [ ] Health не подменяет metrics и не выполняет destructive probes.
-- [ ] Alerting thresholds документированы отдельно от framework.
+- [x] Health не подменяет metrics и не выполняет destructive probes.
+      Health/live/ready и protected passive metrics проверены раздельными contracts.
+- [x] Alerting thresholds документированы отдельно от framework:
+      [operational thresholds](../backend-observability.md#initial-operational-thresholds).
 
 ## 11.6. Масштабирование — только при необходимости
 
@@ -252,3 +257,24 @@ Application services тестируются на in-memory/fake ports; adapter c
   последующих коммитах.
 - Полный checkpoint этапа 11 успешно выполнен после глубокого рефакторинга и
   зафиксирован завершающим коммитом в единственной migration-ветке.
+
+## Конкретный остаток после source freeze wave22
+
+Повторный bounded review не вводит новые общие acceptance требования. Следующий
+срез должен закрыть три проверяемые границы:
+
+1. Семь native consumers ещё зависят от широкого `AutoModeServiceCompat`:
+   AutoMode/Git/Worktree application services, RunningAgents, FeatureQuery,
+   ProjectOverview и ApplicationRuntimeLifecycle. Перевести их на узкие публичные
+   capability/query/lifecycle ports, сохранив один project-context/run owner.
+2. `AgentExecutor` читает `AUTOMAKER_DEBUG_RAW_OUTPUT` из ambient `process.env`
+   во время выполнения. Передать captured application flag и проверить два
+   приложения после изменения глобального окружения; filesystem contract должен
+   конфигурировать приложение, а не включать поведение через `vi.stubEnv`.
+3. Проверить и закрепить pipeline state/ownership при cleanup-failed или
+   unknown-outcome custom step/merge. Нижние provider/SSH guards уже fail closed,
+   но общий catch `resumeFromStep` и release в finally требуют отдельного proof:
+   unknown mutation нельзя превращать в разрешённый повтор или успешный merge.
+
+Это оставшийся source scope, а не утверждение о воспроизведённом replay. Удалённый
+недостижимый generic test-step helper не возвращается ради этих проверок.

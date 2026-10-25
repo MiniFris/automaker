@@ -244,8 +244,12 @@ test runner, pipeline и callbacks с поздним связыванием `fac
 обоснованный кандидат на отдельную factory/composition class, без второго run owner.
 Важнее закрыть жизненный цикл FSM subscription из пункта 8. Метод `analyzeProject()`
 по-прежнему намеренно throws «use AutoModeService instead»; не считать его готовым
-use case. Перед удалением/реализацией сверить native callers: HTTP analysis уже
-имеет отдельный application path, автоматически дублировать анализ здесь не нужно.
+use case. **Исправление этого вывода в wave22:** прежняя фраза о готовом отдельном
+HTTP analysis path была ошибкой аудита. AutoMode endpoint реально вызывал этот
+stub; отдельный Ideation analysis его не заменял. Native workflow, сохранение
+`project-analysis.md`, events и accepted-job ownership теперь восстановлены,
+stub/forwarding удалены после переключения маршрута. См.
+[реальные HTTP/SSH и no-start proofs](project-analysis-restoration-audit.md).
 
 ## Framework-free правила и shared DTO
 

@@ -1,3 +1,4 @@
+import type { HostCliDiscovery } from '../core/platform/host-cli-discovery.js';
 /**
  * Codex Provider - Executes queries using Codex CLI
  *
@@ -195,10 +196,13 @@ function isSdkEligibleWithApiKey(options: ExecuteOptions): boolean {
 async function resolveCodexExecutionPlan(
   options: ExecuteOptions,
   settingsService: SettingsService | undefined,
-  environment: Readonly<NodeJS.ProcessEnv>
+  environment: Readonly<NodeJS.ProcessEnv>,
+  hostDiscovery?: HostCliDiscovery
 ): Promise<CodexExecutionPlan> {
-  const cliPath = await findCodexCliPath();
-  const authIndicators = await getCodexAuthIndicators();
+  const cliPath = hostDiscovery ? hostDiscovery.codexPath() : await findCodexCliPath();
+  const authIndicators = hostDiscovery
+    ? await hostDiscovery.codexIndicators()
+    : await getCodexAuthIndicators();
   const openAiApiKey = await resolveOpenAiApiKey(settingsService, environment);
   const hasApiKey = Boolean(openAiApiKey);
   const cliAvailable = Boolean(cliPath);
@@ -663,14 +667,23 @@ async function readCodexInstructionFile(filePath: string): Promise<string | null
   }
 }
 
-async function loadCodexInstructions(cwd: string, enabled: boolean): Promise<string | null> {
+async function loadCodexInstructions(
+  cwd: string,
+  enabled: boolean,
+  hostDiscovery?: HostCliDiscovery
+): Promise<string | null> {
   if (!enabled) {
     return null;
   }
 
   const sources: Array<{ path: string; content: string; sourceLabel: string }> = [];
-  const userInstructionsPath = path.join(getCodexConfigDir(), CODEX_USER_INSTRUCTIONS_FILE);
-  const userContent = await readCodexInstructionFile(userInstructionsPath);
+  const userInstructionsPath = path.join(
+    hostDiscovery?.codexDirectory ?? getCodexConfigDir(),
+    CODEX_USER_INSTRUCTIONS_FILE
+  );
+  const userContent = hostDiscovery
+    ? (await hostDiscovery.readText(userInstructionsPath))?.trim()
+    : await readCodexInstructionFile(userInstructionsPath);
   if (userContent) {
     sources.push({
       path: userInstructionsPath,
@@ -720,7 +733,8 @@ export class CodexProvider extends BaseProvider {
     private readonly settingsService?: SettingsService,
     private readonly environment:
       | Readonly<NodeJS.ProcessEnv>
-      | (() => Promise<Readonly<NodeJS.ProcessEnv>>) = process.env
+      | (() => Promise<Readonly<NodeJS.ProcessEnv>>) = process.env,
+    private readonly hostDiscovery?: HostCliDiscovery
   ) {
     super();
   }
@@ -730,9 +744,10 @@ export class CodexProvider extends BaseProvider {
   }
 
   private async readEnvironment(): Promise<Readonly<NodeJS.ProcessEnv>> {
-    return {
+    const environment = {
       ...(typeof this.environment === 'function' ? await this.environment() : this.environment),
     };
+    return this.hostDiscovery ? this.hostDiscovery.codexEnvironment(environment) : environment;
   }
 
   protected async *execute(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
@@ -751,7 +766,8 @@ export class CodexProvider extends BaseProvider {
       const codexSettings = await loadCodexCliSettings(options.codexSettings, this.settingsService);
       const codexInstructions = await loadCodexInstructions(
         options.cwd,
-        codexSettings.autoLoadAgents
+        codexSettings.autoLoadAgents,
+        this.hostDiscovery
       );
       const baseSystemPrompt = resolveSystemPrompt(options.systemPrompt);
       const resolvedMaxTurns = resolveMaxTurns(options.maxTurns);
@@ -786,7 +802,8 @@ export class CodexProvider extends BaseProvider {
       const executionPlan = await resolveCodexExecutionPlan(
         options,
         typeof this.environment === 'function' ? undefined : this.settingsService,
-        environment
+        environment,
+        this.hostDiscovery
       );
       if (executionPlan.mode === CODEX_EXECUTION_MODE_SDK) {
         yield* executeCodexSdkQuery(options, combinedSystemPrompt, {
@@ -919,6 +936,7 @@ export class CodexProvider extends BaseProvider {
         args,
         cwd: options.cwd,
         env: envOverrides,
+        ...(this.hostDiscovery?.shell ? { shell: this.hostDiscovery.shell } : {}),
         inheritEnv: false,
         abortController: options.abortController,
         timeout,
@@ -1125,7 +1143,7 @@ export class CodexProvider extends BaseProvider {
   }
 
   async detectInstallation(): Promise<InstallationStatus> {
-    const cliPath = await findCodexCliPath();
+    const cliPath = this.hostDiscovery ? this.hostDiscovery.codexPath() : await findCodexCliPath();
     const hasApiKey = Boolean(
       await resolveOpenAiApiKey(
         typeof this.environment === 'function' ? undefined : this.settingsService,
@@ -1140,7 +1158,14 @@ export class CodexProvider extends BaseProvider {
         const result = await spawnProcess({
           command: cliPath || CODEX_COMMAND,
           args: [CODEX_VERSION_FLAG],
-          cwd: process.cwd(),
+          cwd: this.hostDiscovery?.workingDirectory ?? process.cwd(),
+          ...(this.hostDiscovery
+            ? {
+                env: buildEnv(await this.readEnvironment()),
+                inheritEnv: false,
+                ...(this.hostDiscovery.shell ? { shell: this.hostDiscovery.shell } : {}),
+              }
+            : {}),
         });
         version = result.stdout.trim();
       } catch {
@@ -1149,7 +1174,9 @@ export class CodexProvider extends BaseProvider {
     }
 
     // Determine auth status - always verify with CLI, never assume authenticated
-    const authCheck = await checkCodexAuthentication(cliPath);
+    const authCheck = this.hostDiscovery
+      ? await this.checkAuth()
+      : await checkCodexAuthentication(cliPath);
     const authenticated = authCheck.authenticated;
 
     return {
@@ -1171,7 +1198,7 @@ export class CodexProvider extends BaseProvider {
    * Check authentication status for Codex CLI
    */
   async checkAuth(): Promise<CodexAuthStatus> {
-    const cliPath = await findCodexCliPath();
+    const cliPath = this.hostDiscovery ? this.hostDiscovery.codexPath() : await findCodexCliPath();
     const environment = await this.readEnvironment();
     const hasApiKey = Boolean(
       await resolveOpenAiApiKey(
@@ -1179,7 +1206,9 @@ export class CodexProvider extends BaseProvider {
         environment
       )
     );
-    const authIndicators = await getCodexAuthIndicators();
+    const authIndicators = this.hostDiscovery
+      ? await this.hostDiscovery.codexIndicators()
+      : await getCodexAuthIndicators();
 
     // Check for API key in environment
     if (hasApiKey) {
@@ -1198,12 +1227,13 @@ export class CodexProvider extends BaseProvider {
         const result = await spawnProcess({
           command: cliPath || CODEX_COMMAND,
           args: ['login', 'status'],
-          cwd: process.cwd(),
+          cwd: this.hostDiscovery?.workingDirectory ?? process.cwd(),
           env: {
             ...buildEnv(environment),
             TERM: 'dumb',
           },
           inheritEnv: false,
+          ...(this.hostDiscovery?.shell ? { shell: this.hostDiscovery.shell } : {}),
         });
 
         // Check both stdout and stderr - Codex CLI outputs to stderr
@@ -1225,7 +1255,7 @@ export class CodexProvider extends BaseProvider {
    * Get the detected CLI path (public accessor for status endpoints)
    */
   async getCliPath(): Promise<string | null> {
-    const path = await findCodexCliPath();
+    const path = this.hostDiscovery ? this.hostDiscovery.codexPath() : await findCodexCliPath();
     return path || null;
   }
 

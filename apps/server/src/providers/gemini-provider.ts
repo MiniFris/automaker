@@ -1,3 +1,4 @@
+import type { HostCliDiscovery } from '../core/platform/host-cli-discovery.js';
 /**
  * Gemini Provider - Executes queries using the Gemini CLI
  *
@@ -13,7 +14,6 @@ import { execSync, execFile } from 'child_process';
 import { promisify } from 'node:util';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import * as os from 'os';
 import { CliProvider, type CliSpawnConfig, type CliErrorInfo } from './cli-provider.js';
 import type {
   ProviderConfig,
@@ -193,9 +193,10 @@ export class GeminiProvider extends CliProvider {
   }
   constructor(
     config: ProviderConfig = {},
-    environment?: import('./cli-provider.js').CliEnvironmentReader
+    environment?: import('./cli-provider.js').CliEnvironmentReader,
+    hostDiscovery?: HostCliDiscovery
   ) {
-    super(config, environment);
+    super(config, environment, hostDiscovery);
   }
 
   // ==========================================================================
@@ -216,19 +217,19 @@ export class GeminiProvider extends CliProvider {
       npxPackage: '@google/gemini-cli', // Official Google Gemini CLI package
       commonPaths: {
         linux: [
-          path.join(os.homedir(), '.local/bin/gemini'),
+          path.join(this.hostHome(), '.local/bin/gemini'),
           '/usr/local/bin/gemini',
-          path.join(os.homedir(), '.npm-global/bin/gemini'),
+          path.join(this.hostHome(), '.npm-global/bin/gemini'),
         ],
         darwin: [
-          path.join(os.homedir(), '.local/bin/gemini'),
+          path.join(this.hostHome(), '.local/bin/gemini'),
           '/usr/local/bin/gemini',
           '/opt/homebrew/bin/gemini',
-          path.join(os.homedir(), '.npm-global/bin/gemini'),
+          path.join(this.hostHome(), '.npm-global/bin/gemini'),
         ],
         win32: [
-          path.join(os.homedir(), 'AppData', 'Roaming', 'npm', 'gemini.cmd'),
-          path.join(os.homedir(), '.npm-global', 'gemini.cmd'),
+          path.join(this.hostHome(), 'AppData', 'Roaming', 'npm', 'gemini.cmd'),
+          path.join(this.hostHome(), '.npm-global', 'gemini.cmd'),
         ],
       },
     };
@@ -543,7 +544,7 @@ export class GeminiProvider extends CliProvider {
 
     return {
       code: GeminiErrorCode.UNKNOWN,
-      message: stderr || `Gemini CLI exited with code ${exitCode}`,
+      message: `Gemini CLI failed (exit code ${exitCode ?? 'unknown'}). Check the provider configuration and retry.`,
       recoverable: false,
     };
   }
@@ -607,9 +608,11 @@ export class GeminiProvider extends CliProvider {
 
       // Explicit tools: [] has already been enforced by the per-run admin policy.
       // The generic remote CLI guard must not replace that policy with a blanket rejection.
-      const subprocessOptions = this.buildSubprocessOptions(
-        policy ? { ...effectiveOptions, tools: undefined } : effectiveOptions,
-        cliArgs
+      const subprocessOptions = this.controlledFailureOptions(
+        this.buildSubprocessOptions(
+          policy ? { ...effectiveOptions, tools: undefined } : effectiveOptions,
+          cliArgs
+        )
       );
 
       let sessionId: string | undefined;
@@ -734,6 +737,10 @@ export class GeminiProvider extends CliProvider {
     if (!this.cliPath) return null;
 
     try {
+      if (this.hostDiscovery)
+        return this.hostDiscovery
+          .runSync(this.cliPath, ['--version'], await this.readEnvironment())
+          .trim();
       const result = execSync(`"${this.cliPath}" --version`, {
         encoding: 'utf8',
         timeout: 5000,
@@ -760,7 +767,7 @@ export class GeminiProvider extends CliProvider {
     );
     let hasConfigFile = false;
     let error: string | undefined;
-    const home = environment.HOME || environment.USERPROFILE || os.homedir();
+    const home = environment.HOME || environment.USERPROFILE || this.hostHome();
     try {
       hasConfigFile = (await fs.stat(path.join(home, '.gemini', 'settings.json'))).isFile();
     } catch (failure) {

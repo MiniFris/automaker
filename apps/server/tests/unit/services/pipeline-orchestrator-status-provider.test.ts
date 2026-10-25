@@ -7,7 +7,7 @@ import * as executionFilesystem from '../../../src/lib/secure-fs.js';
  * `providerId: feature.providerId`. The conflict resolution kept BOTH fields.
  *
  * This test validates that both fields coexist correctly in the options
- * object passed to runAgentFn in both executePipeline and executeTestStep.
+ * object passed to runAgentFn in executePipeline.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -22,10 +22,8 @@ import {
 } from '../../../src/services/pipeline-orchestrator.js';
 import type { TypedEventBus } from '../../../src/services/typed-event-bus.js';
 import type { FeatureStateManager } from '../../../src/services/feature-state-manager.js';
-import type { AgentExecutor } from '../../../src/services/agent-executor.js';
 import type { WorktreeResolver } from '../../../src/services/worktree-resolver.js';
 import type { ConcurrencyManager } from '../../../src/services/concurrency-manager.js';
-import type { TestRunnerService } from '../../../src/services/test-runner-service.js';
 import * as secureFs from '../../../src/lib/secure-fs.js';
 import { getFeatureDir } from '@automaker/platform';
 import {
@@ -118,8 +116,6 @@ describe('PipelineOrchestrator - status and providerId coexistence', () => {
     branchName: feature.branchName ?? 'main',
     abortController: new AbortController(),
     autoLoadClaudeMd: true,
-    testAttempts: 0,
-    maxTestAttempts: 5,
   });
 
   beforeEach(() => {
@@ -150,26 +146,9 @@ describe('PipelineOrchestrator - status and providerId coexistence', () => {
       loadFeature: vi.fn().mockResolvedValue(createFeature()),
     } as unknown as FeatureStateManager;
 
-    const mockTestRunnerService = {
-      startTests: vi
-        .fn()
-        .mockResolvedValue({ success: true, result: { sessionId: 'test-session-1' } }),
-      getSession: vi.fn().mockReturnValue({
-        status: 'passed',
-        exitCode: 0,
-        startedAt: new Date(),
-        finishedAt: new Date(),
-      }),
-      getSessionOutput: vi
-        .fn()
-        .mockReturnValue({ success: true, result: { output: 'All tests passed' } }),
-    } as unknown as TestRunnerService;
-
     orchestrator = new PipelineOrchestrator(
       mockEventBus,
       mockFeatureStateManager,
-      {} as AgentExecutor,
-      mockTestRunnerService,
       {
         findWorktreeForBranch: vi.fn().mockResolvedValue('/test/worktree'),
         getCurrentBranch: vi.fn().mockResolvedValue('main'),
@@ -252,67 +231,5 @@ describe('PipelineOrchestrator - status and providerId coexistence', () => {
       expect(options).toHaveProperty('thinkingLevel', 'high');
       expect(options).toHaveProperty('reasoningEffort', 'medium');
     });
-  });
-
-  describe('executeTestStep - options object', () => {
-    it('should pass both status and providerId in test fix agent options', async () => {
-      const feature = createFeature({
-        status: 'running',
-        providerId: 'custom-provider',
-      });
-      const context = createContext(feature);
-
-      const mockTestRunner = orchestrator['testRunnerService'] as any;
-      vi.mocked(mockTestRunner.getSession)
-        .mockReturnValueOnce({
-          status: 'failed',
-          exitCode: 1,
-          startedAt: new Date(),
-          finishedAt: new Date(),
-        })
-        .mockReturnValueOnce({
-          status: 'passed',
-          exitCode: 0,
-          startedAt: new Date(),
-          finishedAt: new Date(),
-        });
-
-      await orchestrator.executeTestStep(context, 'npm test');
-
-      expect(mockRunAgentFn).toHaveBeenCalledTimes(1);
-      const options = mockRunAgentFn.mock.calls[0][7];
-      expect(options).toHaveProperty('status', 'running');
-      expect(options).toHaveProperty('providerId', 'custom-provider');
-    }, 15000);
-
-    it('should pass feature.status (not currentStatus) in test fix context', async () => {
-      const feature = createFeature({
-        status: 'pipeline_test',
-        providerId: 'moonshot-ai',
-      });
-      const context = createContext(feature);
-
-      const mockTestRunner = orchestrator['testRunnerService'] as any;
-      vi.mocked(mockTestRunner.getSession)
-        .mockReturnValueOnce({
-          status: 'failed',
-          exitCode: 1,
-          startedAt: new Date(),
-          finishedAt: new Date(),
-        })
-        .mockReturnValueOnce({
-          status: 'passed',
-          exitCode: 0,
-          startedAt: new Date(),
-          finishedAt: new Date(),
-        });
-
-      await orchestrator.executeTestStep(context, 'npm test');
-
-      const options = mockRunAgentFn.mock.calls[0][7];
-      // In test fix context, status should come from context.feature.status
-      expect(options).toHaveProperty('status', 'pipeline_test');
-      expect(options).toHaveProperty('providerId', 'moonshot-ai');
-    }, 15000);
   });
 });

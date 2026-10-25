@@ -13,7 +13,9 @@ describe('explicit SSH feature merge endpoint', () => {
     const parsed = AutoModeMergeSchema.safeParse(body);
     if (!parsed.success) response.status(400);
     else {
-      const application = new AutoModeApplicationService(service, new ProjectRunContextRegistry());
+      const application = new AutoModeApplicationService(service, new ProjectRunContextRegistry(), {
+        launch: vi.fn(),
+      } as never);
       try {
         response.json(await application.mergeFeature(parsed.data, false));
       } catch (error) {
@@ -62,7 +64,9 @@ describe('explicit SSH feature merge endpoint', () => {
       mergeEnvironmentFeature,
       mergeSSHFeature: vi.fn(),
     } as unknown as AutoModeServiceCompat;
-    const application = new AutoModeApplicationService(service, new ProjectRunContextRegistry());
+    const application = new AutoModeApplicationService(service, new ProjectRunContextRegistry(), {
+      launch: vi.fn(),
+    } as never);
     const result = await application.mergeFeature(
       { projectPath: '/project', featureId: 'task', accepted: true },
       true

@@ -26,8 +26,6 @@ import { createEventEmitter } from '@/lib/events.js';
 import { AutoModeServiceFacade } from '@/services/auto-mode/facade.js';
 import { FeatureLoader } from '@/services/feature-loader.js';
 import { WorktreeResolver } from '@/services/worktree-resolver.js';
-import { PipelineOrchestrator } from '@/services/pipeline-orchestrator.js';
-import { TypedEventBus } from '@/services/typed-event-bus.js';
 import { SSH_WORKER } from '@/services/execution-environment/ssh-worker.js';
 import { sshDigest } from '@/services/execution-environment/ssh-state.js';
 import { SSHTransportError } from '@/services/execution-environment/ssh-transport.js';
@@ -254,7 +252,7 @@ const send=event=>process.stdout.write(JSON.stringify(event)+'\\n');
       expect(await fs.readFile(path.join(checkout, 'cli-result.txt'), 'utf8')).toBe('remote-only');
       await expect(fs.stat(path.join(project, '.git'))).rejects.toThrow();
     }, 20000);
-    it('runs the real Kanban facade and pipeline tests without invoking controller worktree/test services', async () => {
+    it('runs the real Kanban facade and pinned SSH command without invoking controller worktree services', async () => {
       const loader = new FeatureLoader();
       const feature = await loader.create(project, {
         id: 'facade-cli',
@@ -294,42 +292,13 @@ const send=event=>process.stdout.write(JSON.stringify(event)+'\\n');
       expect(invocation).toContain('REMOTE_CONTEXT');
       expect(invocation).not.toContain('STALE_CONTROLLER_CONTEXT_MUST_NOT_LEAK');
       expect(localWorktrees).not.toHaveBeenCalled();
-      const hostRunner = { startTests: vi.fn() };
-      const pipeline = new PipelineOrchestrator(
-        new TypedEventBus(events),
-        {} as never,
-        {} as never,
-        hostRunner as never,
-        new WorktreeResolver(settings),
-        {} as never,
-        settings,
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        new PipelineService(),
-        executionFilesystem
-      );
+      expect(run.environment.type).toBe('ssh');
       expect(
-        await pipeline.executeTestStep(
-          {
-            projectPath: project,
-            featureId: feature.id,
-            feature,
-            steps: [],
-            workDir: project,
-            worktreePath: null,
-            branchName: 'main',
-            abortController: new AbortController(),
-            autoLoadClaudeMd: false,
-            testAttempts: 0,
-            maxTestAttempts: 1,
-          },
-          'test "$(cat cli-result.txt)" = remote-only'
-        )
-      ).toMatchObject({ success: true, testsPassed: true });
-      expect(hostRunner.startTests).not.toHaveBeenCalled();
+        (await run.environment.exec('test "$(cat cli-result.txt)" = remote-only', active()))
+          .exitCode
+      ).toBe(0);
+      expect(localWorktrees).not.toHaveBeenCalled();
+
       const commit = await facade.commitFeature(feature.id);
       expect(commit).toMatch(/^[a-f0-9]{40,64}$/);
       await facade.mergeSSHFeature(feature.id);

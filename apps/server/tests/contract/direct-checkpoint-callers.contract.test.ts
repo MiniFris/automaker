@@ -21,13 +21,13 @@ import { AgentEnvironmentPreparer } from '../../src/services/agent/agent-environ
 import { AutoModeServiceCompat } from '../../src/services/auto-mode/index.js';
 import { SettingsService } from '../../src/services/settings-service.js';
 import { FeatureLoader } from '../../src/services/feature-loader.js';
-import type { AgentExecutor } from '../../src/services/agent-executor.js';
+import { AgentExecutor } from '../../src/services/agent-executor.js';
 import type { AgentExecutionOptions } from '../../src/services/agent-executor-types.js';
-import type { FeatureStateManager } from '../../src/services/feature-state-manager.js';
 import { MockProvider } from '../helpers/mock-provider.js';
 import type { ProviderMessage } from '../../src/providers/types.js';
 
 class WiringProvider extends MockProvider {
+  featureReply = false;
   protected override async *execute(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
     const properties = (
       options.outputFormat as { schema?: { properties?: Record<string, unknown> } } | undefined
@@ -35,11 +35,14 @@ class WiringProvider extends MockProvider {
     const result = properties?.verdict
       ? { verdict: 'valid', confidence: 'high', reasoning: 'Offline fixture', relatedFiles: [] }
       : { changes: [], summary: 'Offline fixture' };
+    const text = this.featureReply
+      ? `<summary>\n${'Explicit offline feature implementation evidence. '.repeat(12)}\n</summary>`
+      : JSON.stringify(result);
     yield {
       type: 'assistant',
-      message: { role: 'assistant', content: [{ type: 'text', text: JSON.stringify(result) }] },
+      message: { role: 'assistant', content: [{ type: 'text', text }] },
     };
-    yield { type: 'result', subtype: 'success', result: JSON.stringify(result) };
+    yield { type: 'result', subtype: 'success', result: text };
   }
 }
 
@@ -77,6 +80,7 @@ async function fixture() {
     providers: owner.app.get(ProviderRegistry),
     settings: owner.app.get(SettingsService),
     direct,
+    claude,
   };
 }
 
@@ -150,13 +154,17 @@ it('passes the native repository through query, planning, ideation, issue valida
     id: 'checkpoint-feature',
     title: 'Checkpoint',
     description: 'fixture',
-    status: 'in_progress',
+    status: 'backlog',
+    model: 'claude-sonnet',
+    planningMode: 'skip',
+    skipTests: true,
   });
+  owner.claude.featureReply = true;
+  const execute = vi.spyOn(AgentExecutor.prototype, 'execute');
   const facade = owner.app.get(AutoModeServiceCompat).createFacade(owner.root);
-  const executor = (facade as unknown as { pipelineOrchestrator: { agentExecutor: AgentExecutor } })
-    .pipelineOrchestrator.agentExecutor;
-  const state = (facade as unknown as { featureStateManager: FeatureStateManager })
-    .featureStateManager;
+  await check('feature execute', () => facade.executeFeature('checkpoint-feature', false, false));
+  const executor = execute.mock.contexts[0];
+  expect(executor).toBeInstanceOf(AgentExecutor);
   const execution: AgentExecutionOptions = {
     workDir: owner.root,
     featureId: 'checkpoint-feature',
@@ -168,16 +176,6 @@ it('passes the native repository through query, planning, ideation, issue valida
     provider: owner.providers.providerForModel('claude-sonnet'),
     planningMode: 'skip',
   };
-  await check('feature execute', () =>
-    executor.execute(execution, {
-      saveFeatureSummary: (project, id, text) => state.saveFeatureSummary(project, id, text),
-      updateFeatureSummary: (project, id, text) => state.saveFeatureSummary(project, id, text),
-      waitForApproval: async () => {
-        throw new Error('Unexpected approval in skip planning fixture');
-      },
-      buildTaskPrompt: () => 'fixture task',
-    })
-  );
   await check('feature continuation', () =>
     (
       executor as unknown as {

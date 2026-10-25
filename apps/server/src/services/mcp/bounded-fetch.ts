@@ -32,7 +32,15 @@ export class MCPBoundedFetch {
       this.owner.signal,
       ...(init?.signal ? [init.signal] : []),
     ]);
-    const response = await this.fetchImpl(input, { ...init, signal });
+    const response = await this.fetchImpl(input, { ...init, signal, redirect: 'manual' });
+    if (response.status >= 300 && response.status < 400) {
+      await response.body?.cancel();
+      const error = new MCPOperationError(
+        'MCP redirects are not allowed. Configure the final endpoint explicitly.'
+      );
+      this.owner.abort(error);
+      throw error;
+    }
     if (this.closed || signal.aborted) {
       await response.body?.cancel();
       throw new MCPOperationError('MCP operation cancelled');

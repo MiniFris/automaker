@@ -1,3 +1,4 @@
+import type { HostCliDiscovery } from '../../core/platform/host-cli-discovery.js';
 import type { WorkspaceAccessPolicy } from '../../providers/openai-compatible/workspace.js';
 import {
   isCodexModel,
@@ -21,7 +22,8 @@ import type { ProviderRegistration } from './provider-registry.service.js';
 export function createProviderRegistrations(
   settings: SettingsService,
   environment?: () => Promise<Readonly<NodeJS.ProcessEnv>>,
-  workspaceAccess?: WorkspaceAccessPolicy
+  workspaceAccess?: WorkspaceAccessPolicy,
+  hostDiscovery?: HostCliDiscovery
 ): readonly ProviderRegistration[] {
   return Object.freeze([
     {
@@ -42,34 +44,34 @@ export function createProviderRegistrations(
       name: 'cursor',
       priority: 10,
       canHandleModel: isCursorModel,
-      create: () => new CursorProvider({}, environment),
+      create: () => new CursorProvider({}, environment, hostDiscovery),
     },
     {
       name: 'codex',
       aliases: ['openai'],
       priority: 5,
       canHandleModel: isCodexModel,
-      create: () => new CodexProvider(settings, environment),
+      create: () => new CodexProvider(settings, environment, hostDiscovery),
     },
     {
       name: 'opencode',
       priority: 3,
       canHandleModel: isOpencodeModel,
-      create: () => new OpencodeProvider({}, environment),
+      create: () => new OpencodeProvider({}, environment, hostDiscovery),
     },
     {
       name: 'gemini',
       aliases: ['google'],
       priority: 4,
       canHandleModel: isGeminiModel,
-      create: () => new GeminiProvider({}, environment),
+      create: () => new GeminiProvider({}, environment, hostDiscovery),
     },
     {
       name: 'copilot',
       aliases: ['github-copilot', 'github'],
       priority: 6,
       canHandleModel: isCopilotModel,
-      create: () => new CopilotProvider({}, environment),
+      create: () => new CopilotProvider({}, environment, hostDiscovery),
     },
   ]);
 }

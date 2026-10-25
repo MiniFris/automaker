@@ -13,7 +13,8 @@ describe('typed auto mode application service', () => {
     };
     const service = new AutoModeApplicationService(
       runtime as never,
-      new ProjectRunContextRegistry()
+      new ProjectRunContextRegistry(),
+      { launch: vi.fn() } as never
     );
     expect(await service.status({})).toEqual({
       success: true,
@@ -38,7 +39,9 @@ describe('typed auto mode application service', () => {
       }),
     };
     const contexts = new ProjectRunContextRegistry(),
-      service = new AutoModeApplicationService(runtime as never, contexts);
+      service = new AutoModeApplicationService(runtime as never, contexts, {
+        launch: vi.fn(),
+      } as never);
     expect(await service.start({ projectPath: '/project' })).toMatchObject({
       success: true,
       branchName: null,

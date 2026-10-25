@@ -24,8 +24,6 @@ import { FeatureLoader } from '@/services/feature-loader.js';
 import { createEventEmitter } from '@/lib/events.js';
 import { EventHookService } from '@/services/event-hook-service.js';
 import { ApplicationEventBusAdapter } from '@/core/eventing/application-event-bus.adapter.js';
-import { PipelineOrchestrator } from '@/services/pipeline-orchestrator.js';
-import { TypedEventBus } from '@/services/typed-event-bus.js';
 import { sshPeer, testSSHKey } from '../../helpers/ssh-peer.js';
 
 const execute = promisify(execFile);
@@ -421,42 +419,7 @@ describe.skipIf(process.platform !== 'linux')(
         expect(parseFrontmatter(await fs.readFile(memoryFile, 'utf8')).metadata.usageStats).toEqual(
           { loaded: 1, referenced: 1, successfulFeatures: 0 }
         );
-        const hostRunner = { startTests: vi.fn() };
-        const pipeline = new PipelineOrchestrator(
-          new TypedEventBus(events),
-          {} as never,
-          {} as never,
-          hostRunner as never,
-          new WorktreeResolver(settings),
-          {} as never,
-          settings,
-          vi.fn(),
-          vi.fn(),
-          vi.fn(),
-          vi.fn(),
-          vi.fn(),
-          pipelineService as never,
-          executionFilesystem
-        );
-        expect(
-          await pipeline.executeTestStep(
-            {
-              projectPath: project,
-              featureId: feature.id,
-              feature,
-              steps: [],
-              workDir: project,
-              worktreePath: null,
-              branchName: feature.branchName ?? null,
-              abortController: new AbortController(),
-              autoLoadClaudeMd: false,
-              testAttempts: 0,
-              maxTestAttempts: 1,
-            },
-            'npm test'
-          )
-        ).toMatchObject({ success: true, testsPassed: true });
-        expect(hostRunner.startTests).not.toHaveBeenCalled();
+
         expect(await facade.verifyFeature(feature.id)).toBe(true);
         for (const script of ['lint', 'typecheck', 'test', 'build'])
           expect(

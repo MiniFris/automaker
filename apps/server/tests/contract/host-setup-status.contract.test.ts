@@ -152,7 +152,7 @@ it.skipIf(process.platform === 'win32')(
           success: true,
           platform: os.platform(),
           arch: os.arch(),
-          homeDir: os.homedir(),
+          homeDir: state.workingDirectory,
           isWindows: false,
           isMac: os.platform() === 'darwin',
           isLinux: os.platform() === 'linux',

@@ -19,17 +19,15 @@ describe('PipelineOrchestrator Prompts', () => {
 
   it('should include mandatory summary requirement in pipeline step prompt', () => {
     const orchestrator = new PipelineOrchestrator(
-      null as any, // eventBus
-      null as any, // featureStateManager
-      null as any, // agentExecutor
-      null as any, // testRunnerService
-      null as any, // worktreeResolver
-      null as any, // concurrencyManager
-      null as any, // settingsService
-      null as any, // updateFeatureStatusFn
-      null as any, // loadContextFilesFn
+      null as any,
+      null as any,
+      null as any,
+      null as any,
+      null as any,
+      null as any,
+      null as any,
       mockBuildFeaturePrompt,
-      null as any, // executeFeatureFn
+      null as any,
       null as any,
       new PipelineService(),
       executionFilesystem // runAgentFn

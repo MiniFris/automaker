@@ -15,11 +15,9 @@ import {
 } from '../../../src/services/pipeline-orchestrator.js';
 import type { TypedEventBus } from '../../../src/services/typed-event-bus.js';
 import type { FeatureStateManager } from '../../../src/services/feature-state-manager.js';
-import type { AgentExecutor } from '../../../src/services/agent-executor.js';
 import type { WorktreeResolver } from '../../../src/services/worktree-resolver.js';
 import type { SettingsService } from '../../../src/services/settings-service.js';
 import type { ConcurrencyManager } from '../../../src/services/concurrency-manager.js';
-import type { TestRunnerService } from '../../../src/services/test-runner-service.js';
 
 import * as secureFs from '../../../src/lib/secure-fs.js';
 import { getFeatureDir } from '@automaker/platform';
@@ -91,8 +89,6 @@ describe('PipelineOrchestrator', () => {
   // Mock dependencies
   let mockEventBus: TypedEventBus;
   let mockFeatureStateManager: FeatureStateManager;
-  let mockAgentExecutor: AgentExecutor;
-  let mockTestRunnerService: TestRunnerService;
   let mockWorktreeResolver: WorktreeResolver;
   let mockConcurrencyManager: ConcurrencyManager;
   let mockSettingsService: SettingsService | null;
@@ -151,25 +147,6 @@ describe('PipelineOrchestrator', () => {
       updateFeatureStatus: vi.fn().mockResolvedValue(undefined),
       loadFeature: vi.fn().mockResolvedValue(testFeature),
     } as unknown as FeatureStateManager;
-
-    mockAgentExecutor = {
-      execute: vi.fn().mockResolvedValue({ success: true }),
-    } as unknown as AgentExecutor;
-
-    mockTestRunnerService = {
-      startTests: vi
-        .fn()
-        .mockResolvedValue({ success: true, result: { sessionId: 'test-session-1' } }),
-      getSession: vi.fn().mockReturnValue({
-        status: 'passed',
-        exitCode: 0,
-        startedAt: new Date(),
-        finishedAt: new Date(),
-      }),
-      getSessionOutput: vi
-        .fn()
-        .mockReturnValue({ success: true, result: { output: 'All tests passed' } }),
-    } as unknown as TestRunnerService;
 
     mockWorktreeResolver = {
       findWorktreeForBranch: vi.fn().mockResolvedValue('/test/worktree'),
@@ -237,8 +214,6 @@ describe('PipelineOrchestrator', () => {
     orchestrator = new PipelineOrchestrator(
       mockEventBus,
       mockFeatureStateManager,
-      mockAgentExecutor,
-      mockTestRunnerService,
       mockWorktreeResolver,
       mockConcurrencyManager,
       mockSettingsService,
@@ -294,8 +269,6 @@ describe('PipelineOrchestrator', () => {
     const guarded = new PipelineOrchestrator(
       mockEventBus,
       mockFeatureStateManager,
-      mockAgentExecutor,
-      mockTestRunnerService,
       mockWorktreeResolver,
       mockConcurrencyManager,
       settings,
@@ -319,8 +292,6 @@ describe('PipelineOrchestrator', () => {
       abortController: new AbortController(),
       autoLoadClaudeMd: false,
       useClaudeCodeSystemPrompt: false,
-      testAttempts: 0,
-      maxTestAttempts: 1,
     } satisfies PipelineContext;
     await expect(guarded.executePipeline(context)).rejects.toThrow('SSH fixture unavailable');
     await expect(
@@ -349,8 +320,6 @@ describe('PipelineOrchestrator', () => {
       const orch = new PipelineOrchestrator(
         mockEventBus,
         mockFeatureStateManager,
-        mockAgentExecutor,
-        mockTestRunnerService,
         mockWorktreeResolver,
         mockConcurrencyManager,
         null,
@@ -468,116 +437,6 @@ describe('PipelineOrchestrator', () => {
     });
   });
 
-  describe('executeTestStep', () => {
-    const createTestContext = (): PipelineContext => ({
-      projectPath: '/test/project',
-      featureId: 'feature-1',
-      feature: testFeature,
-      steps: testSteps,
-      workDir: '/test/project',
-      worktreePath: null,
-      branchName: 'feature/test-1',
-      abortController: new AbortController(),
-      autoLoadClaudeMd: true,
-      testAttempts: 0,
-      maxTestAttempts: 5,
-    });
-
-    it('should return success when tests pass on first attempt', async () => {
-      const context = createTestContext();
-      const result = await orchestrator.executeTestStep(context, 'npm test');
-
-      expect(result.success).toBe(true);
-      expect(result.testsPassed).toBe(true);
-      expect(mockTestRunnerService.startTests).toHaveBeenCalledTimes(1);
-    }, 10000);
-
-    it('should retry with agent fix when tests fail', async () => {
-      vi.mocked(mockTestRunnerService.getSession)
-        .mockReturnValueOnce({
-          status: 'failed',
-          exitCode: 1,
-          startedAt: new Date(),
-          finishedAt: new Date(),
-        } as never)
-        .mockReturnValueOnce({
-          status: 'passed',
-          exitCode: 0,
-          startedAt: new Date(),
-          finishedAt: new Date(),
-        } as never);
-
-      const context = createTestContext();
-      const result = await orchestrator.executeTestStep(context, 'npm test');
-
-      expect(result.success).toBe(true);
-      expect(mockRunAgentFn).toHaveBeenCalledTimes(1);
-      expect(mockTestRunnerService.startTests).toHaveBeenCalledTimes(2);
-    }, 15000);
-
-    it('should fail after max attempts', async () => {
-      vi.mocked(mockTestRunnerService.getSession).mockReturnValue({
-        status: 'failed',
-        exitCode: 1,
-        startedAt: new Date(),
-        finishedAt: new Date(),
-      } as never);
-
-      // Use smaller maxTestAttempts to speed up test
-      const context = { ...createTestContext(), maxTestAttempts: 2 };
-      const result = await orchestrator.executeTestStep(context, 'npm test');
-
-      expect(result.success).toBe(false);
-      expect(result.testsPassed).toBe(false);
-      expect(mockTestRunnerService.startTests).toHaveBeenCalledTimes(2);
-      expect(mockRunAgentFn).toHaveBeenCalledTimes(1);
-    }, 15000);
-
-    it('should emit pipeline_test_failed event on each failure', async () => {
-      vi.mocked(mockTestRunnerService.getSession).mockReturnValue({
-        status: 'failed',
-        exitCode: 1,
-        startedAt: new Date(),
-        finishedAt: new Date(),
-      } as never);
-
-      // Use smaller maxTestAttempts to speed up test
-      const context = { ...createTestContext(), maxTestAttempts: 2 };
-      await orchestrator.executeTestStep(context, 'npm test');
-
-      const testFailedCalls = vi
-        .mocked(mockEventBus.emitAutoModeEvent)
-        .mock.calls.filter((call) => call[0] === 'pipeline_test_failed');
-      expect(testFailedCalls.length).toBe(2);
-    }, 15000);
-
-    it('should build test failure summary for agent', async () => {
-      vi.mocked(mockTestRunnerService.getSession)
-        .mockReturnValueOnce({
-          status: 'failed',
-          exitCode: 1,
-          startedAt: new Date(),
-          finishedAt: new Date(),
-        } as never)
-        .mockReturnValueOnce({
-          status: 'passed',
-          exitCode: 0,
-          startedAt: new Date(),
-          finishedAt: new Date(),
-        } as never);
-      vi.mocked(mockTestRunnerService.getSessionOutput).mockReturnValue({
-        success: true,
-        result: { output: 'FAIL test.spec.ts\nExpected 1 to be 2' },
-      } as never);
-
-      const context = createTestContext();
-      await orchestrator.executeTestStep(context, 'npm test');
-
-      const fixPromptCall = vi.mocked(mockRunAgentFn).mock.calls[0];
-      expect(fixPromptCall[2]).toContain('Test Failures');
-    }, 15000);
-  });
-
   describe('attemptMerge', () => {
     const createMergeContext = (): PipelineContext => ({
       projectPath: '/test/project',
@@ -589,8 +448,6 @@ describe('PipelineOrchestrator', () => {
       branchName: 'feature/test-1',
       abortController: new AbortController(),
       autoLoadClaudeMd: true,
-      testAttempts: 0,
-      maxTestAttempts: 5,
     });
 
     beforeEach(() => {
@@ -705,39 +562,6 @@ describe('PipelineOrchestrator', () => {
       const result = await orchestrator.attemptMerge(context);
 
       expect(result.needsAgentResolution).toBe(true);
-    });
-  });
-
-  describe('buildTestFailureSummary', () => {
-    it('should extract pass/fail counts from test output', () => {
-      const scrollback = `
-        PASS tests/passing.test.ts
-        FAIL tests/failing.test.ts
-        FAIL tests/another.test.ts
-      `;
-
-      const summary = orchestrator.buildTestFailureSummary(scrollback);
-      expect(summary).toContain('1 passed');
-      expect(summary).toContain('2 failed');
-    });
-
-    it('should extract failed test names from output', () => {
-      const scrollback = `
-        FAIL tests/auth.test.ts
-        FAIL tests/user.test.ts
-      `;
-
-      const summary = orchestrator.buildTestFailureSummary(scrollback);
-      expect(summary).toContain('tests/auth.test.ts');
-      expect(summary).toContain('tests/user.test.ts');
-    });
-
-    it('should return concise summary for agent', () => {
-      const longOutput = 'x'.repeat(5000);
-      const summary = orchestrator.buildTestFailureSummary(longOutput);
-
-      expect(summary.length).toBeLessThan(5000);
-      expect(summary).toContain('Output (last 2000 chars)');
     });
   });
 
@@ -914,8 +738,6 @@ describe('PipelineOrchestrator', () => {
       branchName: 'feature/test-1',
       abortController: new AbortController(),
       autoLoadClaudeMd: true,
-      testAttempts: 0,
-      maxTestAttempts: 5,
     });
 
     beforeEach(() => {
@@ -1003,8 +825,6 @@ describe('PipelineOrchestrator', () => {
         branchName: 'feature/test-1',
         abortController: new AbortController(),
         autoLoadClaudeMd: true,
-        testAttempts: 0,
-        maxTestAttempts: 5,
       });
 
       beforeEach(() => {
@@ -1023,8 +843,6 @@ describe('PipelineOrchestrator', () => {
         expect(context.worktreePath).toBe('/test/worktree');
         expect(context.branchName).toBe('feature/test-1');
         expect(context.autoLoadClaudeMd).toBe(true);
-        expect(context.testAttempts).toBe(0);
-        expect(context.maxTestAttempts).toBe(5);
       });
 
       it('passes worktreePath when worktree exists', async () => {
@@ -1059,16 +877,6 @@ describe('PipelineOrchestrator', () => {
           { deleteWorktreeAndBranch: false },
           expect.anything()
         );
-      });
-
-      it('passes testAttempts and maxTestAttempts', async () => {
-        const context = createPipelineContext();
-        context.testAttempts = 2;
-        context.maxTestAttempts = 10;
-
-        // These values would be used by executeTestStep if called
-        expect(context.testAttempts).toBe(2);
-        expect(context.maxTestAttempts).toBe(10);
       });
     });
 
@@ -1139,14 +947,6 @@ describe('PipelineOrchestrator', () => {
           'feature/test-1'
         );
       });
-
-      it('sets maxTestAttempts to 5', async () => {
-        // The default maxTestAttempts is 5 as per CONTEXT.md
-        await orchestrator.resumeFromStep('/test/project', testFeature, true, 0, testConfig);
-
-        // Execution should proceed with maxTestAttempts = 5
-        expect(mockRunAgentFn).toHaveBeenCalled();
-      });
     });
   });
 
@@ -1163,8 +963,6 @@ describe('PipelineOrchestrator', () => {
           branchName: 'feature/test-1',
           abortController: new AbortController(),
           autoLoadClaudeMd: true,
-          testAttempts: 0,
-          maxTestAttempts: 5,
         };
 
         // Abort during first step

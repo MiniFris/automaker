@@ -15,6 +15,10 @@ import {
   type ExecutionFilesystem,
 } from '../../src/services/execution-filesystem.js';
 import { MockProvider } from '../helpers/mock-provider.js';
+import { PipelineOrchestrator } from '../../src/services/pipeline-orchestrator.js';
+import { PipelineService } from '../../src/services/pipeline-service.js';
+import { FeatureLoader } from '../../src/services/feature-loader.js';
+import type { ExecuteOptions } from '@automaker/types';
 
 let root: string;
 const apps: Awaited<ReturnType<typeof createNestApplication>>[] = [];
@@ -27,7 +31,19 @@ afterEach(async () => {
   vi.unstubAllEnvs();
   await fs.rm(root, { recursive: true, force: true });
 });
-async function owner(name: string) {
+class OfflineExecutionProvider extends MockProvider {
+  protected async *execute(_options: ExecuteOptions) {
+    yield {
+      type: 'assistant' as const,
+      message: {
+        role: 'assistant' as const,
+        content: [{ type: 'text' as const, text: 'Mock agent output for testing. '.repeat(16) }],
+      },
+    };
+    yield { type: 'result' as const, subtype: 'success' as const };
+  }
+}
+async function owner(name: string, discoverExecutionOwners = false) {
   const project = path.join(root, name);
   await fs.mkdir(project);
   const runtime = await createNestApplication({
@@ -35,13 +51,53 @@ async function owner(name: string) {
     dataDir: path.join(project, 'data'),
     runStartupTasks: false,
     enableShutdownHooks: false,
-    providerRegistrations: [],
+    providerRegistrations: [
+      { name: 'claude', create: () => new OfflineExecutionProvider('claude') },
+    ],
     environment: { NODE_ENV: 'test', ALLOWED_ROOT_DIRECTORY: project },
   });
   apps.push(runtime);
   const filesystem = runtime.app.get<ExecutionFilesystem>(SECURE_FILESYSTEM);
   const facade = runtime.app.get(AutoModeServiceCompat).createFacade(project) as any;
-  return { ...runtime, project, filesystem, facade };
+  let executor: AgentExecutor | undefined, pipeline: PipelineOrchestrator | undefined;
+  if (discoverExecutionOwners) {
+    const execute = vi.spyOn(AgentExecutor.prototype, 'execute');
+    const runPipeline = vi.spyOn(PipelineOrchestrator.prototype, 'executePipeline');
+    try {
+      await runtime.app.get(PipelineService).savePipelineConfig(project, {
+        version: 1,
+        steps: [
+          {
+            id: 'scope-probe',
+            name: 'Scope probe',
+            order: 0,
+            instructions: 'Offline owner identity probe',
+            colorClass: 'blue',
+            createdAt: '',
+            updatedAt: '',
+          },
+        ],
+      });
+      await runtime.app.get(FeatureLoader).create(project, {
+        id: 'scope-probe',
+        title: 'Scope probe',
+        description: 'Offline fixture',
+        model: 'claude-sonnet',
+        status: 'backlog',
+        planningMode: 'skip',
+        skipTests: true,
+      });
+      await facade.executeFeature('scope-probe', false, false);
+      executor = execute.mock.contexts[0];
+      pipeline = runPipeline.mock.contexts[0];
+      expect(executor).toBeInstanceOf(AgentExecutor);
+      expect(pipeline).toBeInstanceOf(PipelineOrchestrator);
+    } finally {
+      execute.mockRestore();
+      runPipeline.mockRestore();
+    }
+  }
+  return { ...runtime, project, filesystem, facade, executor, pipeline };
 }
 function recovery(filesystem: ExecutionFilesystem) {
   const manager = new ConcurrencyManager();
@@ -63,14 +119,14 @@ function recovery(filesystem: ExecutionFilesystem) {
 }
 
 it('injects one native filesystem into every execution owner and isolates state/context after another app closes', async () => {
-  const first = await owner('first'),
-    second = await owner('second');
+  const first = await owner('first', true),
+    second = await owner('second', true);
   for (const runtime of [first, second]) {
     for (const service of [
       runtime.facade,
       runtime.facade.executionService,
-      runtime.facade.pipelineOrchestrator,
-      runtime.facade.pipelineOrchestrator.agentExecutor,
+      runtime.pipeline,
+      runtime.executor,
       runtime.facade.recoveryService,
     ]) {
       expect(service.filesystem).toBe(runtime.filesystem);
@@ -93,7 +149,7 @@ it('injects one native filesystem into every execution owner and isolates state/
 
 it('writes actual output through the native executor and rejects captured memory writes after replacement', async () => {
   vi.stubEnv('AUTOMAKER_DEBUG_RAW_OUTPUT', 'true');
-  const runtime = await owner('output');
+  const runtime = await owner('output', true);
   const manager = new ConcurrencyManager();
   const input = { projectPath: runtime.project, featureId: 'feature', isAutoMode: false };
   const run = manager.acquire(input);
@@ -101,7 +157,7 @@ it('writes actual output through the native executor and rejects captured memory
   const local = capturedExecutionFilesystem(runtime.filesystem, port);
   const memory = path.join(runtime.project, 'memory.md');
   await local.writeFile(memory, 'owned memory');
-  await runtime.facade.pipelineOrchestrator.agentExecutor.execute(
+  await runtime.executor!.execute(
     {
       workDir: runtime.project,
       projectPath: runtime.project,

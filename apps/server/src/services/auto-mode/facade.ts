@@ -54,7 +54,6 @@ import { ConflictDomainError } from '../../core/errors/domain-errors.js';
 import { RecoveryService } from '../recovery-service.js';
 import { PipelineOrchestrator } from '../pipeline-orchestrator.js';
 import { AgentExecutor } from '../agent-executor.js';
-import { TestRunnerService } from '../test-runner-service.js';
 import { FeatureLoader } from '../feature-loader.js';
 import type { SettingsService } from '../settings-service.js';
 import type { EventEmitter } from '../../lib/events.js';
@@ -90,7 +89,6 @@ export class AutoModeServiceFacade {
     private readonly autoLoopCoordinator: AutoLoopCoordinator,
     private readonly executionService: ExecutionService,
     private readonly recoveryService: RecoveryService,
-    private readonly pipelineOrchestrator: PipelineOrchestrator,
     private readonly settingsService: SettingsService | null,
     private readonly filesystem: ExecutionFilesystem,
     private readonly directoryValidator: (cwd: string) => void = validateWorkingDirectory,
@@ -217,7 +215,6 @@ export class AutoModeServiceFacade {
       hostEnvironment,
       options.checkpointRepository
     );
-    const testRunnerService = new TestRunnerService();
 
     // Helper for building feature prompts (used by pipeline orchestrator)
     const buildFeaturePrompt = (
@@ -463,12 +460,9 @@ export class AutoModeServiceFacade {
     const pipelineOrchestrator = new PipelineOrchestrator(
       eventBus,
       featureStateManager,
-      agentExecutor,
-      testRunnerService,
       worktreeResolver,
       concurrencyManager,
       settingsService,
-      // Callbacks
       (pPath, featureId, status) =>
         featureStateManager.updateFeatureStatus(pPath, featureId, status),
       loadContextFiles,
@@ -479,9 +473,7 @@ export class AutoModeServiceFacade {
       pipeline,
       filesystem,
       options.validateWorkingDirectory,
-      hostEnvironment,
-      options.directWorkspaceAccess,
-      observeOperation
+      hostEnvironment
     );
 
     // AutoLoopCoordinator - ALWAYS create new with proper execution callbacks
@@ -649,7 +641,6 @@ export class AutoModeServiceFacade {
       autoLoopCoordinator,
       executionService,
       recoveryService,
-      pipelineOrchestrator,
       settingsService,
       filesystem,
       options.validateWorkingDirectory,
@@ -1370,25 +1361,6 @@ export class AutoModeServiceFacade {
    */
   cancelPlanApproval(featureId: string): void {
     this.planApprovalService.cancelApproval(featureId, this.projectPath);
-  }
-
-  // ===========================================================================
-  // ANALYSIS AND RECOVERY (3 methods)
-  // ===========================================================================
-
-  /**
-   * Analyze project to gather context
-   *
-   * NOTE: This method requires complex provider integration that is only available
-   * in AutoModeService. The facade exposes the method signature for API compatibility,
-   * but routes should use AutoModeService.analyzeProject() until migration is complete.
-   */
-  async analyzeProject(): Promise<void> {
-    // analyzeProject requires provider.execute which is complex to wire up
-    // For now, throw to indicate routes should use AutoModeService
-    throw new Error(
-      'analyzeProject not fully implemented in facade - use AutoModeService.analyzeProject instead'
-    );
   }
 
   /**

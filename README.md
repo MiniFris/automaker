@@ -464,7 +464,7 @@ npm run lint
 
 - `AUTOMAKER_API_KEY` - Optional API authentication for the server
 - `ALLOWED_ROOT_DIRECTORY` - Restrict file operations to specific directory
-- `CORS_ORIGIN` - CORS allowed origins (comma-separated list; defaults to localhost only)
+- `CORS_ORIGIN` - additional CORS allowed origins (comma-separated; localhost, loopback and private IPv4 origins remain allowed)
 
 #### Optional - Development
 

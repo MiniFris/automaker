@@ -23,6 +23,18 @@ if (mode === 'oversize-frame' || mode === 'stderr-flood') {
     }
   );
   server.setRequestHandler(ListToolsRequestSchema, async () => {
+    if (mode === 'empty') return { tools: [] };
+    if (mode === 'malformed-tools') return {};
+    if (mode === 'rich-tools')
+      return {
+        tools: [
+          {
+            name: 'complex-tool',
+            description: 'A complex tool',
+            inputSchema: { type: 'object', properties: { arg1: { type: 'string' } } },
+          },
+        ],
+      };
     if (mode === 'hang-list') return new Promise(() => {});
     if (mode === 'tree') {
       const child = spawn(

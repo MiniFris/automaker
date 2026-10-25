@@ -17,8 +17,6 @@ export interface PipelineContext {
   abortController: AbortController;
   autoLoadClaudeMd: boolean;
   useClaudeCodeSystemPrompt?: boolean;
-  testAttempts: number;
-  maxTestAttempts: number;
   /** Only supplied by the prepared immutable feature workspace, never a transport DTO. */
   boundTargetCwd?: string;
 }
@@ -30,12 +28,6 @@ export interface PipelineStatusInfo {
   totalSteps: number;
   step: PipelineStep | null;
   config: PipelineConfig | null;
-}
-
-export interface StepResult {
-  success: boolean;
-  testsPassed?: boolean;
-  message?: string;
 }
 
 export interface MergeResult {

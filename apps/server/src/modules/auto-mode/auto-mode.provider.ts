@@ -1,6 +1,5 @@
 import { DirectCheckpointRepository } from '../providers/direct-checkpoint.repository.js';
 import { ApplicationMetrics } from '../../core/observability/application-metrics.js';
-import { DirectWorkspaceAccess } from '../providers/direct-workspace-access.js';
 import type { FactoryProvider } from '@nestjs/common';
 import { HOST_ENVIRONMENT } from '../../core/config/index.js';
 import { captureNativeLocalEnvironment } from '../../services/execution-environment/local.js';
@@ -34,7 +33,6 @@ export const autoModeProvider: FactoryProvider<AutoModeServiceCompat> = {
     SecurityService,
     FeatureRunCoordinator,
     HOST_ENVIRONMENT,
-    DirectWorkspaceAccess,
     DirectCheckpointRepository,
     ApplicationMetrics,
   ],
@@ -51,7 +49,6 @@ export const autoModeProvider: FactoryProvider<AutoModeServiceCompat> = {
     security: SecurityService,
     coordinator: FeatureRunCoordinator,
     environment: Readonly<NodeJS.ProcessEnv>,
-    directWorkspaceAccess: DirectWorkspaceAccess,
     checkpointRepository: DirectCheckpointRepository,
     metrics: ApplicationMetrics
   ) =>
@@ -67,7 +64,6 @@ export const autoModeProvider: FactoryProvider<AutoModeServiceCompat> = {
       filesystem,
       {
         contexts,
-        directWorkspaceAccess,
         checkpointRepository,
         observeOperation: (kind, task, identity, signal, classify) =>
           metrics.operation(kind, task, identity, signal, classify),

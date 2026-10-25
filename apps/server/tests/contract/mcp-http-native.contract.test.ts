@@ -1,3 +1,5 @@
+import { createServer } from 'node:http';
+import { once } from 'node:events';
 import { SECURE_FILESYSTEM } from '../../src/core/security/index.js';
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -208,3 +210,55 @@ it('native shutdown drains an accepted saved-config lookup before the filesystem
   expect(barrier).toHaveBeenCalledOnce();
   expect(remote.requests).toHaveLength(0);
 });
+
+for (const type of ['http', 'sse'] as const) {
+  it.each([301, 302, 307, 308])(
+    `native ${type} rejects redirect %s before configured credentials reach its peer`,
+    async (status) => {
+      const target = await peer(type);
+      const received: Array<Record<string, unknown>> = [];
+      const entry = createServer((request, response) => {
+        received.push({
+          authorization: request.headers.authorization,
+          custom: request.headers['x-private-key'],
+        });
+        response.writeHead(status, { location: target.url + '?private-location-secret' });
+        response.end('private-redirect-body');
+      });
+      entry.listen(0, '127.0.0.1');
+      await once(entry, 'listening');
+      try {
+        const address = entry.address() as { port: number };
+        const f = await fixture({
+          id: 'saved',
+          name: 'Private redirect',
+          type,
+          url: `http://127.0.0.1:${address.port}/configured`,
+          headers: {
+            Authorization: 'configured-auth-secret',
+            'X-Private-Key': 'configured-custom-secret',
+          },
+        });
+        const result = (await f.post('tools')).body;
+        expect(result.success).toBe(false);
+        expect(JSON.stringify(result)).not.toMatch(
+          /configured-auth-secret|configured-custom-secret|private-location-secret|private-redirect-body/
+        );
+        expect(received).toEqual([
+          { authorization: 'configured-auth-secret', custom: 'configured-custom-secret' },
+        ]);
+        expect(target.requests).toHaveLength(0);
+        await f.runtime.app.close();
+        await new Promise<void>((resolve) => setImmediate(resolve));
+        expect(received).toHaveLength(1);
+        expect(target.requests).toHaveLength(0);
+      } finally {
+        const closed = new Promise<void>((resolve, reject) =>
+          entry.close((error) => (error ? reject(error) : resolve()))
+        );
+        entry.closeAllConnections();
+        await closed;
+      }
+    }
+  );
+}

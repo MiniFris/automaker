@@ -1,23 +1,10 @@
-import {
-  unobservedOperation,
-  type ObserveOperation,
-} from '../core/observability/operation-observer.js';
-import type { WorkspaceAccessPolicy } from '../providers/openai-compatible/workspace.js';
 /**
  * PipelineOrchestrator - Pipeline step execution and coordination
  */
 
 import path from 'path';
-import {
-  isDirectModel,
-  modelTimeout,
-  providerModelTimeouts,
-  getModelProvider,
-} from '@automaker/types';
-import { runDirectShellCommand } from '../providers/openai-compatible/execution.js';
+import { isDirectModel } from '@automaker/types';
 import { FeatureWorkspaceService } from './execution-environment/feature-workspace.js';
-import { hasRemoteEnvironment } from '../providers/environment-execution.js';
-import { EnvironmentBindingStore } from './execution-environment/bindings.js';
 import type {
   Feature,
   PipelineStep,
@@ -37,17 +24,14 @@ import {
 import { validateWorkingDirectory } from '../lib/sdk-options.js';
 import type { TypedEventBus } from './typed-event-bus.js';
 import type { FeatureStateManager } from './feature-state-manager.js';
-import type { AgentExecutor } from './agent-executor.js';
 import type { WorktreeResolver } from './worktree-resolver.js';
 import type { SettingsService } from './settings-service.js';
 import type { ConcurrencyManager, RunningFeature } from './concurrency-manager.js';
 import type { PipelineService } from './pipeline-service.js';
-import type { TestRunnerService, TestRunStatus } from './test-runner-service.js';
 import { performMerge } from './merge-service.js';
 import type {
   PipelineContext,
   PipelineStatusInfo,
-  StepResult,
   MergeResult,
   UpdateFeatureStatusFn,
   BuildFeaturePromptFn,
@@ -59,7 +43,6 @@ import type {
 export type {
   PipelineContext,
   PipelineStatusInfo,
-  StepResult,
   MergeResult,
   UpdateFeatureStatusFn,
   BuildFeaturePromptFn,
@@ -74,8 +57,6 @@ export class PipelineOrchestrator {
   constructor(
     private eventBus: TypedEventBus,
     private featureStateManager: FeatureStateManager,
-    private agentExecutor: AgentExecutor,
-    private testRunnerService: TestRunnerService,
     private worktreeResolver: WorktreeResolver,
     private concurrencyManager: ConcurrencyManager,
     private settingsService: SettingsService | null,
@@ -87,9 +68,7 @@ export class PipelineOrchestrator {
     private readonly pipeline: PipelineService,
     private readonly filesystem: ExecutionFilesystem,
     private readonly directoryValidator: (cwd: string) => void = validateWorkingDirectory,
-    hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env,
-    private readonly directWorkspaceAccess?: WorkspaceAccessPolicy,
-    private readonly observeOperation: ObserveOperation = unobservedOperation
+    hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
   ) {
     this.hostEnvironment = Object.freeze({ ...hostEnvironment });
   }
@@ -546,8 +525,6 @@ export class PipelineOrchestrator {
         abortController,
         autoLoadClaudeMd,
         useClaudeCodeSystemPrompt,
-        testAttempts: 0,
-        maxTestAttempts: 5,
       };
 
       await this.executePipeline(context);
@@ -620,187 +597,6 @@ export class PipelineOrchestrator {
     } finally {
       this.concurrencyManager.release(featureId, { expected: runningEntry });
     }
-  }
-
-  /** Execute test step with agent fix loop (REQ-F07) */
-  async executeTestStep(context: PipelineContext, testCommand: string): Promise<StepResult> {
-    return this.observeOperation(
-      'execution_command',
-      () => this.executeObservedTestStep(context, testCommand),
-      { featureId: context.featureId },
-      context.abortController.signal,
-      (value) =>
-        context.abortController.signal.aborted ? 'cancelled' : value.success ? 'completed' : 'error'
-    );
-  }
-
-  private async executeObservedTestStep(
-    context: PipelineContext,
-    testCommand: string
-  ): Promise<StepResult> {
-    const runPort = context.run
-      ? this.concurrencyManager.coordinator.bind(this.concurrencyManager, context.run)
-      : undefined;
-    runPort?.transition('testing');
-    const { featureId, projectPath, workDir, abortController, maxTestAttempts } = context;
-
-    for (let attempt = 1; attempt <= maxTestAttempts; attempt++) {
-      runPort?.transition('testing');
-      if (abortController.signal.aborted)
-        return { success: false, message: 'Test execution aborted' };
-      logger.info(`Running tests for ${featureId} (attempt ${attempt}/${maxTestAttempts})`);
-
-      let scrollback: string;
-      if (
-        isDirectModel(context.feature.model) ||
-        (this.settingsService &&
-          ((await hasRemoteEnvironment(
-            this.settingsService,
-            projectPath,
-            `feature:${projectPath}:${featureId}`,
-            this.hostEnvironment
-          )) ||
-            !!(
-              await new EnvironmentBindingStore(
-                this.settingsService,
-                undefined,
-                undefined,
-                this.hostEnvironment
-              ).peek(projectPath, `feature:${projectPath}:${featureId}`)
-            )?.featureWorkspace))
-      ) {
-        try {
-          const sandbox = await runDirectShellCommand(
-            this.settingsService,
-            workDir,
-            testCommand,
-            abortController.signal,
-            { projectPath, runKey: `feature:${projectPath}:${featureId}` },
-            this.hostEnvironment,
-            this.directWorkspaceAccess
-          );
-          this.eventBus.emitAutoModeEvent('auto_mode_progress', {
-            featureId,
-            projectPath,
-            content: sandbox.output,
-          });
-          if (sandbox.exitCode === 0) return { success: true, testsPassed: true };
-          scrollback = sandbox.output;
-        } catch (error) {
-          return {
-            success: false,
-            testsPassed: false,
-            message: error instanceof Error ? error.message : 'Direct sandbox tests failed.',
-          };
-        }
-      } else {
-        const testResult = await this.testRunnerService.startTests(workDir, {
-          command: testCommand,
-        });
-        if (!testResult.success || !testResult.result?.sessionId)
-          return {
-            success: false,
-            testsPassed: false,
-            message: testResult.error || 'Failed to start tests',
-          };
-        const completionResult = await this.waitForTestCompletion(
-          testResult.result.sessionId,
-          abortController.signal,
-          context.feature.model
-        );
-        if (completionResult.status === 'passed') return { success: true, testsPassed: true };
-        const sessionOutput = this.testRunnerService.getSessionOutput(testResult.result.sessionId);
-        scrollback = sessionOutput.result?.output || '';
-      }
-      this.eventBus.emitAutoModeEvent('pipeline_test_failed', {
-        featureId,
-        attempt,
-        maxAttempts: maxTestAttempts,
-        failedTests: this.extractFailedTestNames(scrollback),
-        projectPath,
-      });
-
-      if (attempt < maxTestAttempts) {
-        const fixPrompt = `## Test Failures - Please Fix\n\n${this.buildTestFailureSummary(scrollback)}\n\nFix the failing tests without modifying test code unless clearly wrong.`;
-        await this.runAgentFn(
-          workDir,
-          featureId,
-          fixPrompt,
-          abortController,
-          projectPath,
-          undefined,
-          resolveModelString(context.feature.model, DEFAULT_MODELS.claude),
-          {
-            projectPath,
-            planningMode: 'skip',
-            runPort,
-            requirePlanApproval: false,
-            useClaudeCodeSystemPrompt: context.useClaudeCodeSystemPrompt,
-            autoLoadClaudeMd: context.autoLoadClaudeMd,
-            thinkingLevel: context.feature.thinkingLevel,
-            reasoningEffort: context.feature.reasoningEffort,
-            status: context.feature.status,
-            providerId: context.feature.providerId,
-            boundTargetCwd: context.boundTargetCwd,
-            branchName: context.feature.branchName,
-          }
-        );
-      }
-    }
-    return {
-      success: false,
-      testsPassed: false,
-      message: `Tests failed after ${maxTestAttempts} attempts`,
-    };
-  }
-
-  /** Wait for test completion */
-  private async waitForTestCompletion(
-    sessionId: string,
-    signal: AbortSignal,
-    model?: string
-  ): Promise<{ status: TestRunStatus; exitCode: number | null; duration: number }> {
-    const timeoutMs = modelTimeout(
-      providerModelTimeouts(
-        await this.settingsService?.getGlobalSettings(),
-        getModelProvider(model)
-      ),
-      'pipelineTestTimeoutMs'
-    );
-    return new Promise((resolve) => {
-      const checkInterval = setInterval(() => {
-        // Check for abort
-        if (signal.aborted) {
-          clearInterval(checkInterval);
-          clearTimeout(timeoutId);
-          resolve({ status: 'failed', exitCode: null, duration: 0 });
-          return;
-        }
-
-        const session = this.testRunnerService.getSession(sessionId);
-        if (session && session.status !== 'running' && session.status !== 'pending') {
-          clearInterval(checkInterval);
-          clearTimeout(timeoutId);
-          resolve({
-            status: session.status,
-            exitCode: session.exitCode,
-            duration: session.finishedAt
-              ? session.finishedAt.getTime() - session.startedAt.getTime()
-              : 0,
-          });
-        }
-      }, 1000);
-      const timeoutId = setTimeout(() => {
-        // Check for abort before timeout resolution
-        if (signal.aborted) {
-          clearInterval(checkInterval);
-          resolve({ status: 'failed', exitCode: null, duration: 0 });
-          return;
-        }
-        clearInterval(checkInterval);
-        resolve({ status: 'failed', exitCode: null, duration: timeoutMs });
-      }, timeoutMs);
-    });
   }
 
   /** Attempt to merge feature branch (REQ-F05) */
@@ -882,64 +678,5 @@ export class PipelineOrchestrator {
       logger.error(`Merge failed for ${featureId}:`, error);
       return { success: false, error: (error as Error).message };
     }
-  }
-
-  /** Shared helper to parse test output lines and extract failure information */
-  private parseTestLines(scrollback: string): {
-    failedTests: string[];
-    passCount: number;
-    failCount: number;
-  } {
-    const lines = scrollback.split('\n');
-    const failedTests: string[] = [];
-    let passCount = 0;
-    let failCount = 0;
-
-    let inFailureContext = false;
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (trimmed.includes('FAIL') || trimmed.includes('FAILED')) {
-        const match = trimmed.match(/(?:FAIL|FAILED)\s+(.+)/);
-        if (match) failedTests.push(match[1].trim());
-        failCount++;
-        inFailureContext = true;
-      } else if (trimmed.includes('PASS') || trimmed.includes('PASSED')) {
-        passCount++;
-        inFailureContext = false;
-      }
-      if (trimmed.match(/^>\s+.*\.(test|spec)\./)) {
-        failedTests.push(trimmed.replace(/^>\s+/, ''));
-      }
-      // Only capture assertion details when they appear in failure context
-      // or match explicit assertion error / expect patterns
-      if (trimmed.includes('AssertionError')) {
-        failedTests.push(trimmed);
-      } else if (
-        inFailureContext &&
-        /expect\(.+\)\.(toBe|toEqual|toMatch|toThrow|toContain)\s*\(/.test(trimmed)
-      ) {
-        failedTests.push(trimmed);
-      } else if (
-        inFailureContext &&
-        (trimmed.startsWith('Expected') || trimmed.startsWith('Received'))
-      ) {
-        failedTests.push(trimmed);
-      }
-    }
-
-    return { failedTests, passCount, failCount };
-  }
-
-  /** Build a concise test failure summary for the agent */
-  buildTestFailureSummary(scrollback: string): string {
-    const { failedTests, passCount, failCount } = this.parseTestLines(scrollback);
-    const unique = [...new Set(failedTests)].slice(0, 10);
-    return `Test Results: ${passCount} passed, ${failCount} failed.\n\nFailed tests:\n${unique.map((t) => `- ${t}`).join('\n')}\n\nOutput (last 2000 chars):\n${scrollback.slice(-2000)}`;
-  }
-
-  /** Extract failed test names from scrollback */
-  private extractFailedTestNames(scrollback: string): string[] {
-    const { failedTests } = this.parseTestLines(scrollback);
-    return [...new Set(failedTests)].slice(0, 20);
   }
 }

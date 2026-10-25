@@ -2,36 +2,36 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 453,
-    "internalEdges": 1664,
+    "files": 457,
+    "internalEdges": 1697,
     "stronglyConnectedComponents": 2
   },
   "layerEdges": {
-    "core -> core": 88,
+    "core -> core": 90,
     "core -> lib": 6,
     "core -> middleware": 1,
-    "core -> services": 8,
+    "core -> services": 9,
     "lib -> lib": 4,
     "lib -> services": 1,
-    "modules -> core": 218,
-    "modules -> lib": 53,
-    "modules -> modules": 399,
-    "modules -> providers": 43,
-    "modules -> services": 186,
+    "modules -> core": 227,
+    "modules -> lib": 56,
+    "modules -> modules": 407,
+    "modules -> providers": 48,
+    "modules -> services": 190,
     "modules -> types": 2,
-    "providers -> core": 1,
+    "providers -> core": 7,
     "providers -> lib": 3,
     "providers -> modules": 1,
     "providers -> providers": 94,
-    "providers -> services": 26,
+    "providers -> services": 31,
     "root -> core": 18,
     "root -> modules": 28,
     "root -> root": 2,
-    "services -> core": 42,
+    "services -> core": 41,
     "services -> lib": 67,
     "services -> modules": 17,
-    "services -> providers": 24,
-    "services -> services": 327,
+    "services -> providers": 19,
+    "services -> services": 323,
     "services -> types": 3,
     "tests -> lib": 2
   },
@@ -46,6 +46,7 @@
       "apps/server/src/services/execution-environment/bindings.ts",
       "apps/server/src/services/execution-environment/bound-runtime.ts",
       "apps/server/src/services/execution-environment/docker.ts",
+      "apps/server/src/services/execution-environment/project-git.ts",
       "apps/server/src/services/execution-environment/ssh-state.ts",
       "apps/server/src/services/execution-environment/ssh-worker.ts",
       "apps/server/src/services/execution-environment/ssh.ts",
@@ -69,12 +70,10 @@
       "apps/server/src/providers/cli-provider.ts",
       "apps/server/src/providers/codex-provider.ts",
       "apps/server/src/providers/codex-sdk-client.ts",
-      "apps/server/src/providers/cursor-provider.ts",
       "apps/server/src/providers/environment-execution.ts",
       "apps/server/src/providers/openai-compatible/config.ts",
       "apps/server/src/providers/openai-compatible/execution.ts",
       "apps/server/src/providers/openai-compatible/workspace.ts",
-      "apps/server/src/providers/opencode-provider.ts",
       "apps/server/src/providers/remote-sdk-worker.ts",
       "apps/server/src/providers/simple-query-service.ts",
       "apps/server/src/services/agent-executor.ts",
@@ -143,6 +142,7 @@
     ],
     "childProcess": [
       "apps/server/src/core/platform/codex-credential.runtime.ts",
+      "apps/server/src/core/platform/host-cli-discovery.ts",
       "apps/server/src/core/platform/owned-local-child.runtime.ts",
       "apps/server/src/core/platform/setup-status.runtime.ts",
       "apps/server/src/lib/auth-utils.ts",
@@ -191,6 +191,7 @@
       "apps/server/src/lib/error-handler.ts",
       "apps/server/src/lib/git.ts",
       "apps/server/src/modules/app-spec/app-spec-job.registry.ts",
+      "apps/server/src/modules/auto-mode/project-analysis.service.ts",
       "apps/server/src/modules/auto-mode/project-run-context.registry.ts",
       "apps/server/src/modules/backlog-plan/backlog-plan-job.registry.ts",
       "apps/server/src/modules/event-history/event-replay.service.ts",
@@ -243,7 +244,6 @@
       "apps/server/src/services/ntfy-service.ts",
       "apps/server/src/services/owned-local-child.ts",
       "apps/server/src/services/pipeline-config.repository.ts",
-      "apps/server/src/services/pipeline-orchestrator.ts",
       "apps/server/src/services/plan-approval-service.ts",
       "apps/server/src/services/project-event-storage.ts",
       "apps/server/src/services/recovery-service.ts",
@@ -290,11 +290,11 @@
     "@automaker/contracts/domains/worktree-responses": 1,
     "@automaker/dependency-resolver": 1,
     "@automaker/git-utils": 7,
-    "@automaker/model-resolver": 17,
+    "@automaker/model-resolver": 18,
     "@automaker/platform": 51,
     "@automaker/prompts": 2,
-    "@automaker/types": 153,
-    "@automaker/utils": 115,
+    "@automaker/types": 155,
+    "@automaker/utils": 116,
     "@automaker/utils/logger": 1,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
@@ -304,7 +304,7 @@
     "@modelcontextprotocol/sdk/shared/stdio.js": 1,
     "@modelcontextprotocol/sdk/shared/transport.js": 2,
     "@modelcontextprotocol/sdk/types.js": 1,
-    "@nestjs/common": 197,
+    "@nestjs/common": 198,
     "@nestjs/core": 8,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
@@ -324,24 +324,24 @@
     "node-pty": 2,
     "node:async_hooks": 2,
     "node:buffer": 1,
-    "node:child_process": 17,
-    "node:crypto": 41,
+    "node:child_process": 18,
+    "node:crypto": 43,
     "node:events": 2,
-    "node:fs": 12,
+    "node:fs": 13,
     "node:fs/promises": 20,
     "node:http": 8,
     "node:module": 1,
     "node:net": 4,
     "node:os": 12,
-    "node:path": 64,
-    "node:perf_hooks": 25,
+    "node:path": 67,
+    "node:perf_hooks": 26,
     "node:stream": 7,
     "node:stream/web": 3,
     "node:string_decoder": 4,
     "node:timers/promises": 6,
     "node:url": 4,
     "node:util": 13,
-    "os": 11,
+    "os": 7,
     "path": 34,
     "reflect-metadata": 1,
     "ssh2": 3,
@@ -858,6 +858,14 @@
       "target": "apps/server/src/core/platform/codex-credential.runtime.ts"
     },
     {
+      "source": "apps/server/src/core/platform/host-cli-discovery.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/core/platform/host-cli-discovery.ts",
+      "target": "apps/server/src/services/execution-environment/local.ts"
+    },
+    {
       "source": "apps/server/src/core/platform/legacy-electron-profile.source.ts",
       "target": "apps/server/src/core/config/index.ts"
     },
@@ -872,6 +880,10 @@
     {
       "source": "apps/server/src/core/platform/setup-status.runtime.ts",
       "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/core/platform/setup-status.runtime.ts",
+      "target": "apps/server/src/core/platform/host-cli-discovery.ts"
     },
     {
       "source": "apps/server/src/core/platform/terminal-rc-files.adapter.ts",
@@ -1503,7 +1515,15 @@
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode-application.service.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode-application.service.ts",
       "target": "apps/server/src/modules/auto-mode/auto-mode.schemas.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode-application.service.ts",
+      "target": "apps/server/src/modules/auto-mode/project-analysis.service.ts"
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode-application.service.ts",
@@ -1531,6 +1551,26 @@
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
+      "target": "apps/server/src/core/eventing/application-events.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
+      "target": "apps/server/src/core/observability/application-metrics.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
+      "target": "apps/server/src/core/security/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
+      "target": "apps/server/src/lib/events.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
       "target": "apps/server/src/modules/auto-mode/auto-mode-application.service.ts"
     },
     {
@@ -1543,6 +1583,18 @@
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
+      "target": "apps/server/src/modules/auto-mode/project-analysis-files.adapter.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
+      "target": "apps/server/src/modules/auto-mode/project-analysis-query.adapter.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
+      "target": "apps/server/src/modules/auto-mode/project-analysis.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
       "target": "apps/server/src/modules/auto-mode/project-run-context.registry.ts"
     },
     {
@@ -1551,7 +1603,19 @@
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
+      "target": "apps/server/src/modules/providers/direct-checkpoint.repository.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
+      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
       "target": "apps/server/src/services/auto-mode/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
+      "target": "apps/server/src/services/settings-service.ts"
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
@@ -1591,10 +1655,6 @@
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
-      "target": "apps/server/src/modules/providers/direct-workspace-access.ts"
-    },
-    {
-      "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
       "target": "apps/server/src/modules/providers/provider-registry.service.ts"
     },
     {
@@ -1627,6 +1687,66 @@
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
+      "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/project-analysis-files.adapter.ts",
+      "target": "apps/server/src/lib/secure-fs.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/project-analysis-files.adapter.ts",
+      "target": "apps/server/src/modules/auto-mode/project-analysis.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/project-analysis-query.adapter.ts",
+      "target": "apps/server/src/modules/auto-mode/project-analysis.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/project-analysis-query.adapter.ts",
+      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/project-analysis-query.adapter.ts",
+      "target": "apps/server/src/providers/openai-compatible/checkpoint.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/project-analysis-query.adapter.ts",
+      "target": "apps/server/src/providers/openai-compatible/execution.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/project-analysis-query.adapter.ts",
+      "target": "apps/server/src/providers/simple-query-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/project-analysis-query.adapter.ts",
+      "target": "apps/server/src/services/execution-environment/local.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/project-analysis-query.adapter.ts",
+      "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/project-analysis.service.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/project-analysis.service.ts",
+      "target": "apps/server/src/core/observability/operation-observer.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/project-analysis.service.ts",
+      "target": "apps/server/src/lib/settings-helpers.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/project-analysis.service.ts",
+      "target": "apps/server/src/providers/provider-execution-scope.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/project-analysis.service.ts",
+      "target": "apps/server/src/providers/simple-query-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/project-analysis.service.ts",
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
@@ -3511,6 +3631,10 @@
     },
     {
       "source": "apps/server/src/modules/providers/provider-registrations.ts",
+      "target": "apps/server/src/core/platform/host-cli-discovery.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/provider-registrations.ts",
       "target": "apps/server/src/modules/providers/provider-registry.service.ts"
     },
     {
@@ -3664,6 +3788,10 @@
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
       "target": "apps/server/src/core/platform/codex-verification.runtime.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/core/platform/host-cli-discovery.ts"
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
@@ -4611,6 +4739,10 @@
     },
     {
       "source": "apps/server/src/providers/cli-provider.ts",
+      "target": "apps/server/src/core/platform/host-cli-discovery.ts"
+    },
+    {
+      "source": "apps/server/src/providers/cli-provider.ts",
       "target": "apps/server/src/providers/base-provider.ts"
     },
     {
@@ -4636,6 +4768,10 @@
     {
       "source": "apps/server/src/providers/codex-models.ts",
       "target": "apps/server/src/providers/types.ts"
+    },
+    {
+      "source": "apps/server/src/providers/codex-provider.ts",
+      "target": "apps/server/src/core/platform/host-cli-discovery.ts"
     },
     {
       "source": "apps/server/src/providers/codex-provider.ts",
@@ -4687,6 +4823,10 @@
     },
     {
       "source": "apps/server/src/providers/copilot-provider.ts",
+      "target": "apps/server/src/core/platform/host-cli-discovery.ts"
+    },
+    {
+      "source": "apps/server/src/providers/copilot-provider.ts",
       "target": "apps/server/src/providers/cli-provider.ts"
     },
     {
@@ -4708,6 +4848,10 @@
     {
       "source": "apps/server/src/providers/copilot-provider.ts",
       "target": "apps/server/src/providers/types.ts"
+    },
+    {
+      "source": "apps/server/src/providers/cursor-provider.ts",
+      "target": "apps/server/src/core/platform/host-cli-discovery.ts"
     },
     {
       "source": "apps/server/src/providers/cursor-provider.ts",
@@ -4752,6 +4896,10 @@
     {
       "source": "apps/server/src/providers/environment-jsonl.ts",
       "target": "apps/server/src/services/execution-environment/runtime.ts"
+    },
+    {
+      "source": "apps/server/src/providers/gemini-provider.ts",
+      "target": "apps/server/src/core/platform/host-cli-discovery.ts"
     },
     {
       "source": "apps/server/src/providers/gemini-provider.ts",
@@ -4907,7 +5055,15 @@
     },
     {
       "source": "apps/server/src/providers/openai-compatible/execution.ts",
+      "target": "apps/server/src/services/execution-environment/bindings.ts"
+    },
+    {
+      "source": "apps/server/src/providers/openai-compatible/execution.ts",
       "target": "apps/server/src/services/execution-environment/bound-runtime.ts"
+    },
+    {
+      "source": "apps/server/src/providers/openai-compatible/execution.ts",
+      "target": "apps/server/src/services/execution-environment/docker.ts"
     },
     {
       "source": "apps/server/src/providers/openai-compatible/execution.ts",
@@ -4915,7 +5071,19 @@
     },
     {
       "source": "apps/server/src/providers/openai-compatible/execution.ts",
+      "target": "apps/server/src/services/execution-environment/project-git.ts"
+    },
+    {
+      "source": "apps/server/src/providers/openai-compatible/execution.ts",
       "target": "apps/server/src/services/execution-environment/runtime.ts"
+    },
+    {
+      "source": "apps/server/src/providers/openai-compatible/execution.ts",
+      "target": "apps/server/src/services/execution-environment/runtime.ts"
+    },
+    {
+      "source": "apps/server/src/providers/openai-compatible/execution.ts",
+      "target": "apps/server/src/services/execution-environment/ssh.ts"
     },
     {
       "source": "apps/server/src/providers/openai-compatible/execution.ts",
@@ -5020,6 +5188,10 @@
     {
       "source": "apps/server/src/providers/openai-compatible/write-tools.ts",
       "target": "apps/server/src/providers/openai-compatible/workspace.ts"
+    },
+    {
+      "source": "apps/server/src/providers/opencode-provider.ts",
+      "target": "apps/server/src/core/platform/host-cli-discovery.ts"
     },
     {
       "source": "apps/server/src/providers/opencode-provider.ts",
@@ -5607,10 +5779,6 @@
     },
     {
       "source": "apps/server/src/services/auto-mode/compat.ts",
-      "target": "apps/server/src/providers/openai-compatible/workspace.ts"
-    },
-    {
-      "source": "apps/server/src/services/auto-mode/compat.ts",
       "target": "apps/server/src/services/auto-mode/facade.ts"
     },
     {
@@ -5727,10 +5895,6 @@
     },
     {
       "source": "apps/server/src/services/auto-mode/facade.ts",
-      "target": "apps/server/src/services/test-runner-service.ts"
-    },
-    {
-      "source": "apps/server/src/services/auto-mode/facade.ts",
       "target": "apps/server/src/services/typed-event-bus.ts"
     },
     {
@@ -5812,10 +5976,6 @@
     {
       "source": "apps/server/src/services/auto-mode/types.ts",
       "target": "apps/server/src/providers/openai-compatible/checkpoint.ts"
-    },
-    {
-      "source": "apps/server/src/services/auto-mode/types.ts",
-      "target": "apps/server/src/providers/openai-compatible/workspace.ts"
     },
     {
       "source": "apps/server/src/services/auto-mode/types.ts",
@@ -6679,10 +6839,6 @@
     },
     {
       "source": "apps/server/src/services/pipeline-orchestrator.ts",
-      "target": "apps/server/src/core/observability/operation-observer.ts"
-    },
-    {
-      "source": "apps/server/src/services/pipeline-orchestrator.ts",
       "target": "apps/server/src/lib/sdk-options.ts"
     },
     {
@@ -6691,27 +6847,7 @@
     },
     {
       "source": "apps/server/src/services/pipeline-orchestrator.ts",
-      "target": "apps/server/src/providers/environment-execution.ts"
-    },
-    {
-      "source": "apps/server/src/services/pipeline-orchestrator.ts",
-      "target": "apps/server/src/providers/openai-compatible/execution.ts"
-    },
-    {
-      "source": "apps/server/src/services/pipeline-orchestrator.ts",
-      "target": "apps/server/src/providers/openai-compatible/workspace.ts"
-    },
-    {
-      "source": "apps/server/src/services/pipeline-orchestrator.ts",
-      "target": "apps/server/src/services/agent-executor.ts"
-    },
-    {
-      "source": "apps/server/src/services/pipeline-orchestrator.ts",
       "target": "apps/server/src/services/concurrency-manager.ts"
-    },
-    {
-      "source": "apps/server/src/services/pipeline-orchestrator.ts",
-      "target": "apps/server/src/services/execution-environment/bindings.ts"
     },
     {
       "source": "apps/server/src/services/pipeline-orchestrator.ts",
@@ -6740,10 +6876,6 @@
     {
       "source": "apps/server/src/services/pipeline-orchestrator.ts",
       "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
-      "source": "apps/server/src/services/pipeline-orchestrator.ts",
-      "target": "apps/server/src/services/test-runner-service.ts"
     },
     {
       "source": "apps/server/src/services/pipeline-orchestrator.ts",

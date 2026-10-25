@@ -1,3 +1,4 @@
+import { HostCliDiscovery } from '../../core/platform/host-cli-discovery.js';
 import { DirectCheckpointRepository } from './direct-checkpoint.repository.js';
 import { DirectWorkspaceAccess } from './direct-workspace-access.js';
 import { type DynamicModule, Global, Module } from '@nestjs/common';
@@ -70,6 +71,7 @@ import {
 @Module({
   controllers: [ProviderUsageController, SetupController],
   providers: [
+    HostCliDiscovery,
     DirectCheckpointRepository,
     DirectWorkspaceAccess,
     ProviderConnectionRepository,
@@ -169,16 +171,23 @@ export class ProvidersModule {
           ? { provide: PROVIDER_REGISTRATIONS, useValue: Object.freeze([...registrations]) }
           : {
               provide: PROVIDER_REGISTRATIONS,
-              inject: [SettingsService, ApplicationCredentialsService, DirectWorkspaceAccess],
+              inject: [
+                SettingsService,
+                ApplicationCredentialsService,
+                DirectWorkspaceAccess,
+                HostCliDiscovery,
+              ],
               useFactory: (
                 settings: SettingsService,
                 credentials: ApplicationCredentialsService,
-                workspaceAccess: DirectWorkspaceAccess
+                workspaceAccess: DirectWorkspaceAccess,
+                hostDiscovery: HostCliDiscovery
               ) =>
                 createProviderRegistrations(
                   settings,
                   () => credentials.environment(),
-                  workspaceAccess
+                  workspaceAccess,
+                  hostDiscovery
                 ),
             },
       ],

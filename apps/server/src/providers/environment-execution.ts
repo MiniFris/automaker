@@ -9,7 +9,10 @@ import {
   type ExecuteOptions,
 } from '@automaker/types';
 import type { SettingsService } from '../services/settings-service.js';
-import { EnvironmentBindingStore } from '../services/execution-environment/bindings.js';
+import {
+  type ExistingEnvironmentPreparation,
+  EnvironmentBindingStore,
+} from '../services/execution-environment/bindings.js';
 import {
   ExecutionEnvironmentError,
   isIssuedEnvironment,
@@ -64,15 +67,23 @@ export async function prepareCliExecution(
     runKey?: string;
     feature?: { targetBranch?: string | null };
   },
-  hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
+  hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env,
+  existingPreparation?: ExistingEnvironmentPreparation
 ): Promise<ExecuteOptions> {
   if (!settings) return options;
   const environmentSnapshot = captureNativeLocalEnvironment(hostEnvironment);
-  const store = new EnvironmentBindingStore(settings, undefined, undefined, environmentSnapshot);
+  const store = new EnvironmentBindingStore(
+    settings,
+    existingPreparation?.dockerManager,
+    undefined,
+    environmentSnapshot
+  );
   const projectPath = selection.projectPath ?? options.cwd;
-  const pinned = selection.runKey ? await store.peek(projectPath, selection.runKey) : undefined;
+  const pinned =
+    existingPreparation?.binding ??
+    (selection.runKey ? await store.peek(projectPath, selection.runKey) : undefined);
   const state = await store.configuration(projectPath);
-  if (!pinned && !state.explicit) return options; // Preserve unconfigured legacy installations.
+  if (!existingPreparation && !pinned && !state.explicit) return options; // Preserve unconfigured legacy installations.
   const type = pinned?.type ?? state.resolved.type;
   const remote = ['ssh', 'docker', 'auto'].includes(type);
   if (remote && !isRemoteCliModel(selection.model) && !isRemoteSdkModel(selection.model))
@@ -121,11 +132,28 @@ export async function prepareCliExecution(
     signal: options.abortController?.signal,
     sshFeature: selection.feature,
     feature: selection.feature,
+    ...(existingPreparation && {
+      existingOnly: true,
+      existingTarget: existingPreparation,
+      existingId: existingPreparation.binding?.id,
+    }),
   });
   const environment =
     binding.type === 'legacy'
       ? undefined
-      : await boundRuntime(binding, settings, environmentSnapshot);
+      : (existingPreparation?.runtime ??
+        (await boundRuntime(binding, settings, environmentSnapshot)));
+  if (
+    existingPreparation &&
+    environment &&
+    (!isIssuedEnvironment(environment) ||
+      environment.type !== binding.type ||
+      environment.cwd !== (binding.runtimeCwd ?? binding.cwd))
+  )
+    throw new ExecutionEnvironmentError(
+      'INVALID_RUNTIME',
+      'Existing analysis runtime does not match the saved binding.'
+    );
   const codexDefaults =
     remote && isCodexModel(selection.model) ? await settings.getGlobalSettings() : undefined;
   return {

@@ -17,8 +17,10 @@
 - [x] Удалить singleton getters и side-effect registration. Native providers
       регистрируются явно; последние managed dev/test getters и WeakMaps удалены.
       См. [source-port checkpoint](artifacts/source-ports-and-locators-checkpoint.md).
-- [ ] Удалить временные feature flags/route ownership registry.
-- [ ] Проверить отсутствие imports из удалённых paths.
+- [x] Удалить временные feature flags/route ownership registry. В runtime config,
+      bootstrap и module composition переключателей legacy ownership нет;
+      generated inventory остаётся проверяемой документацией.
+- [x] Проверить отсутствие imports из удалённых paths.
 
 Express остаётся transitive platform через `@nestjs/platform-express`; удаляется
 ручная Express composition, а не сам adapter.
@@ -80,12 +82,19 @@ legacy Direct workspace policy и FSM notification ownership затем испр
       до создания Nest/HTTP resources; invalid ports, booleans и preview ranges
       отклоняются. Provider credentials намеренно необязательны.
       [Config tests](../../apps/server/tests/unit/core/runtime-config.test.ts).
-- [ ] Корректные proxy/trust settings для web deployments.
-- [ ] CORS allowlist и private-network behavior.
-- [ ] Cookie secure/same-site policy по deployment mode. Уже проверены
+- [x] Зафиксировать proxy/trust policy: `trust proxy=false`, forwarding headers
+      не меняют peer identity; HTTPS termination и ingress rate limits описаны
+      в [deployment policy](../backend-architecture.md#deployment-http-policy).
+      Настройка конкретного внешнего ingress остаётся deployment acceptance.
+- [x] Проверить текущие CORS/local-origin и private-network semantics:
+      11 actual HTTP cases в `deployment-http-policy.contract.test.ts`;
+      private-network permission header не выдаётся, private IPv4 origins
+      сохраняют историческое разрешение. Это не exclusive allowlist.
+- [x] Cookie secure/same-site policy по deployment mode. Уже проверены
       HttpOnly, SameSite=Lax и Secure при NODE_ENV=production:
       [auth service](../../apps/server/tests/unit/core/auth-service.test.ts).
-      HTTPS/proxy и фактическая deployment matrix остаются открытыми.
+      Actual HTTP проверяет production cookie при spoofed forwarding headers;
+      внешний HTTPS proxy/browser остаётся отдельным deployment acceptance.
 - [x] Request/body/download limits. Реальный HTTP body >50 MiB получает 413;
       binary descriptors ограничивают stream size; download quota/invalid metadata
       отклоняются до headers/pipe. См.
@@ -93,7 +102,10 @@ legacy Direct workspace policy и FSM notification ownership затем испр
       [binary responses](../../apps/server/tests/contract/files-binary-responses.contract.test.ts)
       и [download cancellation/cleanup](../../apps/server/tests/contract/download-filesystem.contract.test.ts).
       Эти limits не являются sustained workload acceptance.
-- [ ] WebSocket origin/auth policy.
+- [x] WebSocket origin/auth policy. Preview origins отклоняются; одноразовые
+      tokens/auth проверяются отдельно от HTTP CORS. Историческая совместимость
+      не вводит exclusive allowlist для остальных WS Origins; policy явно
+      описана в [deployment policy](../backend-architecture.md#deployment-http-policy).
 - [ ] Secrets redaction и file permissions.
 - [x] Liveness/readiness probes. Native HTTP проверяет public live/ready,
       protected detailed health и ready=503 при stopping; liveness остаётся 200.
@@ -102,12 +114,13 @@ legacy Direct workspace policy и FSM notification ownership затем испр
 
 ## 10.4. Performance
 
-- [ ] Сравнить startup/RSS/latency с baseline.
-- [ ] Проверить large feature lists, event streams и terminal output.
+- [x] Сравнить startup/RSS/latency с baseline.
+- [x] Проверить large feature lists, event streams и terminal output.
 - [ ] Проверить provider streaming без двойной serialization.
-- [ ] Найти случайные request-scoped heavy dependencies.
-- [ ] Проверить file descriptors и child processes после repeated workflows.
-- [ ] Установить budgets и regression thresholds в CI/benchmark job.
+- [x] Найти случайные request-scoped heavy dependencies. В native composition
+      нет `Scope.REQUEST`/request-scoped providers; owners остаются application-scoped.
+- [x] Проверить file descriptors и child processes после repeated workflows.
+- [x] Установить budgets и regression thresholds в CI/benchmark job.
 
 ## 10.5. Security review
 
@@ -116,7 +129,9 @@ legacy Direct workspace policy и FSM notification ownership затем испр
       и текущий production public inventory без controller inheritance:
       [contract](../../apps/server/tests/contract/auth-metadata-inheritance.contract.test.ts).
 - [ ] Path traversal/symlink/remote alias boundary.
-- [ ] CSRF/content-type/cookie behavior.
+- [x] CSRF/content-type/cookie behavior. Actual HTTP проверяет credentialed
+      preflight, production cookie и 415 для form/multipart/text; новый token
+      protocol не вводится при сохранении существующего API.
 - [x] WebSocket token reuse и expiry. Настоящий upgrade принимает one-time
       token один раз, повторный/expired получает 401; app/restart isolation проверена.
       [WebSocket contract](../../apps/server/tests/contract/websocket-transport.contract.test.ts),
@@ -130,8 +145,7 @@ legacy Direct workspace policy и FSM notification ownership затем испр
 
 - Protected HTTP inventory целиком получает 401 без credentials; public routes
   сохраняют назначение. [Nest HTTP contract](../../apps/server/tests/contract/nest-shell.contract.test.ts).
-  Это не отдельный negative test inherited `@Public()` metadata; пункт auth review
-  остаётся открытым.
+  Inherited `@Public()` metadata отдельно проверена в указанном выше contract.
 - Canonical roots, sibling prefixes, revoked access, escaped/dangling symlinks и
   queued parent retargeting покрыты [path-policy units](../../apps/server/tests/unit/core/native-path-policy.test.ts)
   и [two-app HTTP/FS contract](../../apps/server/tests/contract/native-path-policy.contract.test.ts).
@@ -148,7 +162,7 @@ legacy Direct workspace policy и FSM notification ownership затем испр
   [native storage contract](../../apps/server/tests/contract/native-auth-cache-filesystem.contract.test.ts).
   Полный review всех DTO/provider/log paths остаётся отдельной задачей.
 
-В этом документальном аудите новые tests не запускались: ссылки ведут к уже
+В первоначальном документальном аудите новые tests не запускались: ссылки ведут к уже
 существующим исполняемым проверкам и сопоставлены с текущей реализацией.
 Свежий общий checkpoint wave17 прошёл; его результаты приведены в ссылке выше.
 
@@ -224,16 +238,19 @@ Storage migrations должны быть backward-readable либо сопров
 
 ## 10.8. Документация
 
-- [ ] README commands и prerequisites.
-- [ ] Backend module architecture.
-- [ ] Добавление controller/provider/module.
-- [ ] Contracts и error format.
-- [ ] Config/environment reference.
-- [ ] Testing tiers.
-- [ ] WebSocket protocols.
-- [ ] Startup/shutdown lifecycle.
+- [x] README commands и prerequisites.
+- [x] Backend module architecture.
+- [x] Добавление controller/provider/module. См. «Adding behavior» в
+      [архитектуре backend](../backend-architecture.md).
+- [x] Contracts и error format.
+- [x] Config/environment reference. Таблица typed bootstrap variables и defaults
+      в [runtime reference](../backend-architecture.md#runtime-configuration-reference).
+- [x] Testing tiers.
+- [x] WebSocket protocols.
+- [x] Startup/shutdown lifecycle. Admission/drain/FS barrier и unknown outcomes
+      описаны в [lifecycle](../backend-architecture.md#lifecycle).
 - [ ] Electron/Docker packaging.
-- [ ] Troubleshooting и rollback.
+- [x] Troubleshooting и rollback.
 
 ## Срез hardening: recovery при ошибке загрузки UI до React bootstrap
 
@@ -311,3 +328,15 @@ packaging и stage gates остаются обязательными.
 - Operations/development documentation соответствует коду.
 - Финальный checkpoint этапа 10 успешно выполнен для Web, Docker и Electron;
   результаты зафиксированы завершающим cutover-коммитом в migration-ветке.
+
+## Сверка evidence после source checkpoint wave21
+
+Workload/performance пункты выше подтверждены
+[реальными repeated workflows](artifacts/workload-acceptance.md) и
+[последним source checkpoint](artifacts/mcp-checkpoints-correlation-checkpoint.md):
+100 features, 300 mutations, 100 events/5 connections, 11 PTY cycles, стабильные
+FD и отсутствие owned children; startup/RSS/latency budgets выполняются. Это
+ограниченный воспроизводимый workload, а не новый production SLO. Документация
+API, архитектуры, testing tiers, WebSocket и downgrade уже существует и сверена
+с соответствующими checkpoint. Packaging снова проверяется после последнего
+production изменения; старые артефакты не объявляются текущими.

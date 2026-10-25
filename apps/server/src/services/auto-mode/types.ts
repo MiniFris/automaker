@@ -23,7 +23,6 @@ import type { ProviderRegistry } from '../../modules/providers/provider-registry
 import type { ToolPolicyService } from '../../modules/providers/tool-policy.service.js';
 import type { PipelineService } from '../pipeline-service.js';
 import type { FeatureStateManager } from '../feature-state-manager.js';
-import type { WorkspaceAccessPolicy } from '../../providers/openai-compatible/workspace.js';
 
 // Re-export types from extracted services for route consumption
 export type { AutoModeConfig, ProjectAutoLoopState } from '../auto-loop-coordinator.js';
@@ -61,8 +60,6 @@ export interface FacadeOptions {
   observeOperation?: ObserveOperation;
   /** Trusted application checkpoint storage, never a wire option. */
   checkpointRepository?: AgentCheckpointRepository;
-  /** Native Direct execution uses the owning application filesystem policy. */
-  directWorkspaceAccess?: WorkspaceAccessPolicy;
   /** Native composition supplies a captured, sanitized Local child environment. */
   hostEnvironment?: Readonly<NodeJS.ProcessEnv>;
   /** Application-owned local output/context/memory IO. */

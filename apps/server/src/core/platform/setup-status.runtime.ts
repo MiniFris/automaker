@@ -1,3 +1,4 @@
+import { HostCliDiscovery } from './host-cli-discovery.js';
 import {
   Inject,
   Injectable,
@@ -65,14 +66,19 @@ export class NodeSetupStatusRuntime extends SetupStatusRuntime implements OnAppl
 
   constructor(
     @Inject(HOST_ENVIRONMENT) private readonly environment: Readonly<NodeJS.ProcessEnv>,
-    @Inject(RuntimePathsService) private readonly paths: RuntimePathsService
+    @Inject(RuntimePathsService) private readonly paths: RuntimePathsService,
+    @Inject(HostCliDiscovery) private readonly hostDiscovery?: HostCliDiscovery
   ) {
     super();
   }
 
   platformInfo() {
     this.assertAccepting();
-    return { platform: os.platform(), arch: os.arch(), homeDir: os.homedir() };
+    return {
+      platform: os.platform(),
+      arch: os.arch(),
+      homeDir: this.hostDiscovery?.homeDirectory ?? os.homedir(),
+    };
   }
 
   detect(name: HostCliName): Promise<HostCliInstallation> {
@@ -83,7 +89,18 @@ export class NodeSetupStatusRuntime extends SetupStatusRuntime implements OnAppl
         path: '',
         method: 'none',
       };
+      if (this.hostDiscovery) {
+        status.path =
+          name === 'codex'
+            ? (this.hostDiscovery.codexPath() ?? '')
+            : (this.hostDiscovery.findInPath(name) ?? '');
+        if (status.path) {
+          status.installed = true;
+          status.method = 'path';
+        }
+      }
       try {
+        if (this.hostDiscovery) throw new Error('Native PATH already inspected');
         const found = await this.run(os.platform() === 'win32' ? 'where' : 'which', [name]);
         status.path = found.trim().split(/\r?\n/)[0];
         if (status.path) {
@@ -95,8 +112,9 @@ export class NodeSetupStatusRuntime extends SetupStatusRuntime implements OnAppl
       }
       if (!status.installed) {
         const home = this.environment.HOME || this.environment.USERPROFILE;
-        const candidates =
-          name === 'claude'
+        const candidates = this.hostDiscovery
+          ? this.hostDiscovery.commonPaths(name)
+          : name === 'claude'
             ? getClaudeCliPaths()
             : name === 'gh'
               ? getGitHubCliPaths()
@@ -111,7 +129,11 @@ export class NodeSetupStatusRuntime extends SetupStatusRuntime implements OnAppl
                 : [];
         for (const candidate of candidates) {
           try {
-            if (await systemPathAccess(candidate)) {
+            if (
+              this.hostDiscovery
+                ? this.hostDiscovery.existing(candidate)
+                : await systemPathAccess(candidate)
+            ) {
               status.path = candidate;
               status.installed = true;
               status.method = 'local';
@@ -183,16 +205,34 @@ export class NodeSetupStatusRuntime extends SetupStatusRuntime implements OnAppl
   }
 
   codexIndicators() {
-    return this.track(() => getCodexAuthIndicators());
+    return this.track(async () =>
+      this.hostDiscovery ? this.hostDiscovery.codexIndicators() : getCodexAuthIndicators()
+    );
   }
 
   cursorCredentials(): Promise<boolean> {
     return this.track(async () => {
-      const home = os.homedir();
-      for (const file of [
-        path.join(home, '.cursor', 'credentials.json'),
-        path.join(home, '.config', 'cursor', 'credentials.json'),
-      ]) {
+      const home = this.hostDiscovery?.homeDirectory ?? os.homedir();
+      const candidates = this.hostDiscovery?.value('CURSOR_CONFIG_DIR')
+        ? [
+            path.join(
+              this.hostDiscovery.resolve(this.hostDiscovery.value('CURSOR_CONFIG_DIR')!),
+              'credentials.json'
+            ),
+          ]
+        : [
+            path.join(home, '.cursor', 'credentials.json'),
+            path.join(
+              this.hostDiscovery
+                ? this.hostDiscovery.resolve(
+                    this.hostDiscovery.value('XDG_CONFIG_HOME') || path.join(home, '.config')
+                  )
+                : path.join(home, '.config'),
+              'cursor',
+              'credentials.json'
+            ),
+          ];
+      for (const file of candidates) {
         let text: string;
         try {
           text = await readFile(file, 'utf8');
@@ -237,7 +277,7 @@ export class NodeSetupStatusRuntime extends SetupStatusRuntime implements OnAppl
   private run(command: string, args: string[]): Promise<string> {
     const platform = os.platform();
     const home = this.environment.HOME;
-    const env = { ...this.environment };
+    const env = { ...(this.hostDiscovery?.environment ?? this.environment) };
     // Preserve the previous GH extended PATH behavior, using this app's snapshot.
     env.PATH = [
       env.PATH ?? env.Path,
@@ -264,7 +304,10 @@ export class NodeSetupStatusRuntime extends SetupStatusRuntime implements OnAppl
           timeout: 10_000,
           maxBuffer: 128 * 1024,
           windowsHide: true,
-          shell: false,
+          shell:
+            platform === 'win32' && /\.(cmd|bat)$/i.test(command)
+              ? (this.hostDiscovery?.shell ?? true)
+              : false,
         },
         (error, stdout) => {
           if (error) reject(error);

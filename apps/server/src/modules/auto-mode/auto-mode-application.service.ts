@@ -1,3 +1,5 @@
+import { ProjectAnalysisService } from './project-analysis.service.js';
+import { UnavailableDomainError } from '../../core/errors/domain-errors.js';
 import { HttpException, Inject, Injectable } from '@nestjs/common';
 import { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
 import { ProjectRunContextRegistry } from './project-run-context.registry.js';
@@ -20,7 +22,8 @@ import { ConflictDomainError } from '../../core/errors/domain-errors.js';
 export class AutoModeApplicationService {
   constructor(
     @Inject(AutoModeServiceCompat) private readonly autoMode: AutoModeServiceCompat,
-    @Inject(ProjectRunContextRegistry) private readonly contexts: ProjectRunContextRegistry
+    @Inject(ProjectRunContextRegistry) private readonly contexts: ProjectRunContextRegistry,
+    @Inject(ProjectAnalysisService) private readonly analysis: ProjectAnalysisService
   ) {}
 
   async start(input: AutoModeStartRequest) {
@@ -120,7 +123,9 @@ export class AutoModeApplicationService {
   }
   analyzeProject(input: AutoModeProjectRequest) {
     const project = this.contexts.canonicalProject(input.projectPath);
-    this.contexts.launch(project, () => this.autoMode.analyzeProject(project));
+    if (this.contexts.isStopping())
+      throw new UnavailableDomainError('Project analysis is unavailable.');
+    this.analysis.launch(project);
     return { success: true, message: 'Project analysis started' };
   }
   async verifyFeature(input: AutoModeFeatureRequest) {

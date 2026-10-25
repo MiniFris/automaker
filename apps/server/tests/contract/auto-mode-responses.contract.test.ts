@@ -1,3 +1,4 @@
+import { ProjectAnalysisService } from '../../src/modules/auto-mode/project-analysis.service.js';
 import { mkdtemp, mkdir, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -71,7 +72,7 @@ it('preserves all 17 endpoint success contracts, HTTP 200 and background acknowl
   vi.spyOn(runtime, 'commitFeature').mockResolvedValue('fixture-commit');
   vi.spyOn(runtime, 'mergeEnvironmentFeature').mockResolvedValue(undefined);
   vi.spyOn(runtime, 'mergeSSHFeature').mockResolvedValue(undefined);
-  vi.spyOn(runtime, 'analyzeProject').mockResolvedValue(undefined);
+  vi.spyOn(owner.app.get(ProjectAnalysisService), 'launch').mockReturnValue(undefined);
   vi.spyOn(runtime, 'followUpFeature').mockResolvedValue(undefined);
   vi.spyOn(runtime, 'resumeFeature').mockResolvedValue(undefined);
   vi.spyOn(runtime, 'resumeInterruptedFeatures').mockResolvedValue(undefined);

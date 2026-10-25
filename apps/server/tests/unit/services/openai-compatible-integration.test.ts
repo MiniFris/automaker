@@ -17,7 +17,11 @@ import { toDirectModelId } from '@automaker/types';
 import { SettingsService } from '@/services/settings-service.js';
 import { AgentService } from '@/services/agent-service.js';
 import { AgentExecutor } from '@/services/agent-executor.js';
-import { prepareDirectExecution } from '@/providers/openai-compatible/execution.js';
+import {
+  prepareDirectExecution,
+  runDirectShellCommand,
+} from '@/providers/openai-compatible/execution.js';
+import { LocalExecutionEnvironment } from '@/services/execution-environment/local.js';
 import { simpleQuery, streamingQuery } from '@/providers/simple-query-service.js';
 import { getPhaseModelWithOverrides } from '@/lib/settings-helpers.js';
 import { createEventEmitter } from '@/lib/events.js';
@@ -674,8 +678,6 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     const pipeline = new PipelineOrchestrator(
       bus,
       state,
-      executor,
-      {} as never,
       {} as never,
       manager,
       settings,
@@ -714,8 +716,6 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       branchName: null,
       abortController: run.abortController,
       autoLoadClaudeMd: true,
-      testAttempts: 0,
-      maxTestAttempts: 1,
     });
     expect(routed).toHaveBeenCalledTimes(1);
     expect(requests).toHaveLength(1);
@@ -860,58 +860,30 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     expect(requests).toHaveLength(2);
   });
 
-  function testPipeline() {
-    const hostRunner = { startTests: vi.fn() };
-    const pipeline = new PipelineOrchestrator(
-      new TypedEventBus(createEventEmitter()),
-      {} as never,
-      {} as never,
-      hostRunner as never,
-      {} as never,
-      {} as never,
-      settings,
-      vi.fn(),
-      vi.fn(),
-      vi.fn(),
-      vi.fn(),
-      vi.fn(),
-      new PipelineService(),
-      executionFilesystem
-    );
-    const context = {
+  const standaloneShell = (command: string) =>
+    runDirectShellCommand(settings, root, command, new AbortController().signal, {
       projectPath: root,
-      featureId: 'sandbox-tests',
-      feature: { id: 'sandbox-tests', model, providerId: 'first' },
-      workDir: root,
-      abortController: new AbortController(),
-      maxTestAttempts: 1,
-    } as never;
-    return { pipeline, hostRunner, context };
-  }
-
-  it('fails closed rather than running direct pipeline tests on the host without a sandbox', async () => {
-    const { pipeline, hostRunner, context } = testPipeline();
-    expect(await pipeline.executeTestStep(context, 'must-not-run-on-host')).toMatchObject({
-      success: false,
-      testsPassed: false,
-      message: expect.stringContaining('Host execution is disabled'),
+      runKey: 'feature:' + root + ':sandbox-tests',
     });
-    expect(hostRunner.startTests).not.toHaveBeenCalled();
-    expect(requests).toHaveLength(0);
+  it('keeps standalone Direct shell compatibility fail-closed without a configured sandbox', async () => {
+    const host = vi.spyOn(LocalExecutionEnvironment.prototype, 'exec');
+    try {
+      await expect(standaloneShell('must-not-run-on-host')).rejects.toThrow(
+        'Host execution is disabled'
+      );
+      expect(host).not.toHaveBeenCalled();
+      expect(requests).toHaveLength(0);
+    } finally {
+      host.mockRestore();
+    }
   });
-  it('uses the confirmed Local backend for direct pipeline tests, not the legacy test runner', async () => {
+  it('executes the standalone shell helper in the confirmed Local runtime', async () => {
     await new EnvironmentBindingStore(settings).confirm(root);
-    const { pipeline, hostRunner, context } = testPipeline();
-    expect(await pipeline.executeTestStep(context, 'test "$(cat answer.txt)" = "41"')).toEqual({
-      success: true,
-      testsPassed: true,
-    });
-    expect(hostRunner.startTests).not.toHaveBeenCalled();
+    expect((await standaloneShell('test "$(cat answer.txt)" = "41"')).exitCode).toBe(0);
     expect(requests).toHaveLength(0);
   });
-
   it.skipIf(!process.env.DIRECT_AGENT_DOCKER_TEST_IMAGE)(
-    'executes automatic direct pipeline tests only inside the configured real Docker sandbox',
+    'executes the standalone shell helper inside its configured real Docker sandbox',
     async () => {
       await settings.updateGlobalSettings({
         openaiCompatibleAgentSettings: {
@@ -919,12 +891,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
           shell: { backend: 'docker', image: process.env.DIRECT_AGENT_DOCKER_TEST_IMAGE! },
         },
       });
-      const { pipeline, hostRunner, context } = testPipeline();
-      expect(await pipeline.executeTestStep(context, 'test "$(cat answer.txt)" = "41"')).toEqual({
-        success: true,
-        testsPassed: true,
-      });
-      expect(hostRunner.startTests).not.toHaveBeenCalled();
+      expect((await standaloneShell('test "$(cat answer.txt)" = "41"')).exitCode).toBe(0);
       expect(requests).toHaveLength(0);
     },
     20_000

@@ -8,10 +8,21 @@ production path. Старые промежуточные описания ниж
 а не текущий remaining inventory. См. [run ownership](artifacts/stage-8-run-incarnation-audit.md),
 [verification](artifacts/stage-8-verification-testing-audit.md) и
 [planning/ideation checkpoint](artifacts/planning-ideation-singletons-checkpoint.md).
-Открыты template/step decomposition и полный pipeline cancel/restart matrix,
-остаточная Compat/facade boundary, ideation streaming decomposition, MCP SSE/HTTP
-и notification/event-loop review. Wave20 FSM subscriber/drain исправления имеют
-целевые tests и [общий checkpoint](artifacts/fsm-direct-policy-process-checkpoint.md). Этап 8 целиком не закрыт.
+Wave22 проверяет фактический custom-step path через native HTTP/WS, Local Git merge,
+SSH и Docker. Недостижимый generic test-step retry/poll/parser branch и его лишний
+unscoped TestRunner owner удалены; [аудит и test map](artifacts/pipeline-live-path-retirement-audit.md)
+отличают этот код от действующего pipeline execution/resume/merge. Остаточная
+Compat/facade boundary, итоговый unknown-outcome pipeline recovery/drain matrix,
+ideation streaming decomposition и notification/event-loop review остаются
+отдельными пунктами. MCP transport ownership и checkpoint storage имеют
+[последующий проверенный срез](artifacts/mcp-checkpoints-correlation-checkpoint.md).
+Действующий `/auto-mode/analyze-project` также восстановлен: прежний background ack
+вёл в бросающий ошибку facade stub. Native job owner теперь выполняет реальный
+analysis и сохраняет прежний `project-analysis.md`; проверены actual HTTP effects,
+отмена/drain, два приложения и SSH Direct Read с poisoned controller. Отдельно
+исправлен no-start hole во внутреннем Docker storage probe/runtime:
+[analysis restoration audit](artifacts/project-analysis-restoration-audit.md).
+Этап 8 целиком не закрыт.
 
 ## Цель
 
@@ -130,11 +141,27 @@ UI contract не будет версионирован отдельно.
 - [x] Отделить pipeline configuration repository.
       [Repository audit](artifacts/stage-8-completion-audit.md), [native contract](../../apps/server/tests/contract/pipeline-repository.contract.test.ts).
 - [ ] Отделить template expansion и validation.
+      Input/config validation уже выделена в shared schemas и configuration
+      repository; live prompt expansion — `buildPipelineStepPrompt`. Generic
+      step-kind/test dispatcher в публичной модели отсутствует; удаление dead
+      helper не является созданием нового template engine.
 - [ ] Каждый step выполняется через закреплённый execution binding.
+      Для явно выбранных managed targets подтверждены Local fallback pin,
+      SSH/Docker execution и resume: [live-path audit](artifacts/pipeline-live-path-retirement-audit.md).
+      Не следует объявлять unconfigured legacy Local installations новым
+      обязательным consent/pinning protocol без отдельного compatibility решения.
 - [x] Сохранить exclusions, retries и failure summaries.
-      [Orchestrator regression tests](../../apps/server/tests/unit/services/pipeline-orchestrator.test.ts), [summary tests](../../apps/server/tests/unit/services/pipeline-summary-accumulation.test.ts).
+      Exclusions, существующее execution/recovery поведение и накопление phase
+      summaries сохранены; [native HTTP/WS proof](../../apps/server/tests/contract/native-custom-pipeline.contract.test.ts)
+      и [summary tests](../../apps/server/tests/unit/services/pipeline-summary-accumulation.test.ts).
+      Исторический generic test retry/failure parser не имел production callers
+      и удалён; этот пункт не обещает несуществующий автоматический custom-step retry.
 - [ ] Не повторять unknown-outcome mutation.
+      Нижние provider/transport owners имеют fail-closed guards; итоговый
+      custom-pipeline negative/recovery matrix требует отдельной сверки.
 - [ ] Прерывание pipeline очищает child jobs с bounded deadline.
+      Native HTTP stop/supersession и real SSH cancellation проверены в live-path
+      audit; это не полная матрица всех cleanup-uncertain branches.
 - [x] Перенести pipeline routes после service boundary.
       Native PipelineController/repository; legacy source удалён: [pipeline checkpoint](artifacts/preview-planning-settings-pipeline-checkpoint.md).
 

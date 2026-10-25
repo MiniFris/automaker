@@ -1,3 +1,4 @@
+import type { HostCliDiscovery } from '../core/platform/host-cli-discovery.js';
 /**
  * CliProvider - Abstract base class for CLI-based AI providers
  *
@@ -135,14 +136,24 @@ export abstract class CliProvider extends BaseProvider {
 
   constructor(
     config: ProviderConfig = {},
-    private readonly environmentReader: CliEnvironmentReader = async () => ({ ...process.env })
+    private readonly environmentReader: CliEnvironmentReader = async () => ({ ...process.env }),
+    protected readonly hostDiscovery?: HostCliDiscovery
   ) {
     super(config);
     // Detection happens lazily on first use
   }
 
+  protected hostHome(): string {
+    return this.hostDiscovery?.homeDirectory ?? os.homedir();
+  }
+  protected hostValue(name: string): string | undefined {
+    return this.hostDiscovery ? this.hostDiscovery.value(name) : process.env[name];
+  }
   protected async readEnvironment(): Promise<NodeJS.ProcessEnv> {
-    return { ...(await this.environmentReader()) };
+    const environment = await this.environmentReader();
+    return {
+      ...(this.hostDiscovery ? this.hostDiscovery.toolEnvironment(environment) : environment),
+    };
   }
 
   // ==========================================================================
@@ -240,7 +251,7 @@ export abstract class CliProvider extends BaseProvider {
     // Generic error
     return {
       code: 'UNKNOWN_ERROR',
-      message: stderr || `Process exited with code ${exitCode}`,
+      message: `CLI process failed (exit code ${exitCode ?? 'unknown'}). Check the provider configuration and retry.`,
       recoverable: false,
     };
   }
@@ -277,7 +288,7 @@ export abstract class CliProvider extends BaseProvider {
    */
   private expandPath(p: string): string {
     if (p.startsWith('~')) {
-      return path.join(os.homedir(), p.slice(1));
+      return path.join(this.hostHome(), p.slice(1));
     }
     return p;
   }
@@ -287,6 +298,7 @@ export abstract class CliProvider extends BaseProvider {
    */
   private findCliInPath(): string | null {
     const cliName = this.getCliName();
+    if (this.hostDiscovery) return this.hostDiscovery.findInPath(cliName);
 
     try {
       const command = process.platform === 'win32' ? 'where' : 'which';
@@ -343,17 +355,23 @@ export abstract class CliProvider extends BaseProvider {
       switch (config.windowsStrategy) {
         case 'wsl': {
           // Check WSL for CLI
-          if (isWslAvailable({ logger: wslLogger })) {
-            const wslResult: WslCliResult | null = findCliInWsl(cliName, {
-              logger: wslLogger,
-              distribution: config.wslDistribution,
-            });
+          if (
+            this.hostDiscovery
+              ? this.hostDiscovery.wslAvailable()
+              : isWslAvailable({ logger: wslLogger })
+          ) {
+            const wslResult: WslCliResult | null = this.hostDiscovery
+              ? this.hostDiscovery.findWsl(cliName, config.wslDistribution)
+              : findCliInWsl(cliName, {
+                  logger: wslLogger,
+                  distribution: config.wslDistribution,
+                });
             if (wslResult) {
               cliLogger.debug(
                 `Using ${cliName} via WSL (${wslResult.distribution || 'default'}): ${wslResult.wslPath}`
               );
               return {
-                cliPath: 'wsl.exe',
+                cliPath: this.hostDiscovery?.wslExecutable() ?? 'wsl.exe',
                 useWsl: true,
                 wslCliPath: wslResult.wslPath,
                 wslDistribution: wslResult.distribution,
@@ -507,7 +525,7 @@ export abstract class CliProvider extends BaseProvider {
       cliLogger.debug(`WSL spawn: ${wslCmd.command} ${args.slice(0, 6).join(' ')}...`);
 
       return {
-        command: wslCmd.command,
+        command: this.hostDiscovery?.wslExecutable() ?? wslCmd.command,
         args,
         cwd, // Windows cwd for spawn
         env: filteredEnv,
@@ -554,6 +572,15 @@ export abstract class CliProvider extends BaseProvider {
    *
    * Subclasses can override for custom behavior.
    */
+  protected controlledFailureOptions(options: SubprocessOptions): SubprocessOptions {
+    return {
+      ...options,
+      ...{
+        processFailureMessage: (stderr: string, exitCode: number | null) =>
+          this.mapError(stderr, exitCode).message,
+      },
+    };
+  }
   protected async *execute(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
     const runtime = remoteCliRuntime(options);
     if (!runtime) this.ensureCliDetected();
@@ -568,7 +595,9 @@ export abstract class CliProvider extends BaseProvider {
     const effectiveOptions = this.embedSystemPromptIntoPrompt(options);
 
     const cliArgs = this.buildCliArgs(effectiveOptions);
-    const subprocessOptions = this.buildSubprocessOptions(effectiveOptions, cliArgs);
+    const subprocessOptions = this.controlledFailureOptions(
+      this.buildSubprocessOptions(effectiveOptions, cliArgs)
+    );
 
     try {
       for await (const rawEvent of this.streamProcess(options, subprocessOptions)) {
@@ -623,6 +652,7 @@ export abstract class CliProvider extends BaseProvider {
     yield* spawnJSONLProcess({
       ...subprocess,
       env: { ...env, ...subprocess.env },
+      ...(this.hostDiscovery?.shell ? { shell: this.hostDiscovery.shell } : {}),
       inheritEnv: false,
     });
   }

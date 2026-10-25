@@ -497,8 +497,6 @@ Please continue from where you left off and complete all remaining tasks. Use th
           abortController,
           autoLoadClaudeMd,
           useClaudeCodeSystemPrompt,
-          testAttempts: 0,
-          maxTestAttempts: 5,
           boundTargetCwd: remote?.binding.cwd,
         });
         pipelineCompleted = true;

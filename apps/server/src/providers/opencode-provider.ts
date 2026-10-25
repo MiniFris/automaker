@@ -1,3 +1,4 @@
+import type { HostCliDiscovery } from '../core/platform/host-cli-discovery.js';
 /**
  * OpenCode Provider - Executes queries using opencode CLI
  *
@@ -11,10 +12,9 @@
  */
 
 import * as path from 'path';
-import * as os from 'os';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
-import { CliProvider, type CliSpawnConfig } from './cli-provider.js';
+import { CliProvider, type CliSpawnConfig, type CliErrorInfo } from './cli-provider.js';
 
 const execFileAsync = promisify(execFile);
 import type {
@@ -288,9 +288,10 @@ export class OpencodeProvider extends CliProvider {
 
   constructor(
     config: ProviderConfig = {},
-    environment?: import('./cli-provider.js').CliEnvironmentReader
+    environment?: import('./cli-provider.js').CliEnvironmentReader,
+    hostDiscovery?: HostCliDiscovery
   ) {
-    super(config, environment);
+    super(config, environment, hostDiscovery);
   }
 
   // ==========================================================================
@@ -311,24 +312,24 @@ export class OpencodeProvider extends CliProvider {
       npxPackage: 'opencode-ai@latest',
       commonPaths: {
         linux: [
-          path.join(os.homedir(), '.opencode/bin/opencode'),
-          path.join(os.homedir(), '.npm-global/bin/opencode'),
+          path.join(this.hostHome(), '.opencode/bin/opencode'),
+          path.join(this.hostHome(), '.npm-global/bin/opencode'),
           '/usr/local/bin/opencode',
           '/usr/bin/opencode',
-          path.join(os.homedir(), '.local/bin/opencode'),
+          path.join(this.hostHome(), '.local/bin/opencode'),
         ],
         darwin: [
-          path.join(os.homedir(), '.opencode/bin/opencode'),
-          path.join(os.homedir(), '.npm-global/bin/opencode'),
+          path.join(this.hostHome(), '.opencode/bin/opencode'),
+          path.join(this.hostHome(), '.npm-global/bin/opencode'),
           '/usr/local/bin/opencode',
           '/opt/homebrew/bin/opencode',
-          path.join(os.homedir(), '.local/bin/opencode'),
+          path.join(this.hostHome(), '.local/bin/opencode'),
         ],
         win32: [
-          path.join(os.homedir(), '.opencode', 'bin', 'opencode.exe'),
-          path.join(os.homedir(), 'AppData', 'Roaming', 'npm', 'opencode.cmd'),
-          path.join(os.homedir(), 'AppData', 'Roaming', 'npm', 'opencode'),
-          path.join(process.env.APPDATA || '', 'npm', 'opencode.cmd'),
+          path.join(this.hostHome(), '.opencode', 'bin', 'opencode.exe'),
+          path.join(this.hostHome(), 'AppData', 'Roaming', 'npm', 'opencode.cmd'),
+          path.join(this.hostHome(), 'AppData', 'Roaming', 'npm', 'opencode'),
+          path.join(this.hostValue('APPDATA') || '', 'npm', 'opencode.cmd'),
         ],
       },
     };
@@ -451,6 +452,19 @@ export class OpencodeProvider extends CliProvider {
    * @param errorText - Raw error text (may contain ANSI codes)
    * @returns true if the error indicates the session was not found
    */
+  protected override mapError(stderr: string, exitCode: number | null): CliErrorInfo {
+    // Classify privately before discarding diagnostics: the retry loop only needs
+    // this stable session marker, never the raw profile/credential-bearing text.
+    if (OpencodeProvider.isSessionNotFoundError(stderr)) {
+      return {
+        code: 'SESSION_NOT_FOUND',
+        message: 'OpenCode session not found',
+        recoverable: true,
+      };
+    }
+    return super.mapError(stderr, exitCode);
+  }
+
   private static isSessionNotFoundError(errorText: string): boolean {
     const cleaned = OpencodeProvider.stripAnsiCodes(errorText).toLowerCase();
 
@@ -1079,8 +1093,13 @@ export class OpencodeProvider extends CliProvider {
         encoding: 'utf-8',
         timeout: 30000,
         windowsHide: true,
-        // Use shell on Windows for .cmd files
-        shell: process.platform === 'win32' && command.endsWith('.cmd'),
+        env: await this.readEnvironment(),
+        cwd: this.hostDiscovery?.workingDirectory,
+        // Preserve .cmd argv handling while selecting the owning app's shell.
+        shell:
+          process.platform === 'win32' && command.endsWith('.cmd')
+            ? (this.hostDiscovery?.shell ?? true)
+            : false,
       });
 
       opencodeLogger.debug(
@@ -1332,8 +1351,13 @@ export class OpencodeProvider extends CliProvider {
         encoding: 'utf-8',
         timeout: 15000,
         windowsHide: true,
-        // Use shell on Windows for .cmd files
-        shell: process.platform === 'win32' && command.endsWith('.cmd'),
+        env: await this.readEnvironment(),
+        cwd: this.hostDiscovery?.workingDirectory,
+        // Preserve .cmd argv handling while selecting the owning app's shell.
+        shell:
+          process.platform === 'win32' && command.endsWith('.cmd')
+            ? (this.hostDiscovery?.shell ?? true)
+            : false,
       });
 
       opencodeLogger.debug(

@@ -1,3 +1,4 @@
+import type { HostCliDiscovery } from '../core/platform/host-cli-discovery.js';
 /**
  * Copilot Provider - Executes queries using the GitHub Copilot SDK
  *
@@ -16,7 +17,6 @@ import { executeRemoteSdk } from './remote-sdk.js';
 import { ProviderCleanupError } from './provider-execution-scope.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import * as os from 'os';
 import { CliProvider, type CliSpawnConfig, type CliErrorInfo } from './cli-provider.js';
 import type {
   ProviderConfig,
@@ -257,9 +257,10 @@ export class CopilotProvider extends CliProvider {
 
   constructor(
     config: ProviderConfig = {},
-    environment?: import('./cli-provider.js').CliEnvironmentReader
+    environment?: import('./cli-provider.js').CliEnvironmentReader,
+    hostDiscovery?: HostCliDiscovery
   ) {
-    super(config, environment);
+    super(config, environment, hostDiscovery);
   }
 
   // ==========================================================================
@@ -280,19 +281,19 @@ export class CopilotProvider extends CliProvider {
       npxPackage: '@github/copilot', // Official GitHub Copilot CLI package
       commonPaths: {
         linux: [
-          path.join(os.homedir(), '.local/bin/copilot'),
+          path.join(this.hostHome(), '.local/bin/copilot'),
           '/usr/local/bin/copilot',
-          path.join(os.homedir(), '.npm-global/bin/copilot'),
+          path.join(this.hostHome(), '.npm-global/bin/copilot'),
         ],
         darwin: [
-          path.join(os.homedir(), '.local/bin/copilot'),
+          path.join(this.hostHome(), '.local/bin/copilot'),
           '/usr/local/bin/copilot',
           '/opt/homebrew/bin/copilot',
-          path.join(os.homedir(), '.npm-global/bin/copilot'),
+          path.join(this.hostHome(), '.npm-global/bin/copilot'),
         ],
         win32: [
-          path.join(os.homedir(), 'AppData', 'Roaming', 'npm', 'copilot.cmd'),
-          path.join(os.homedir(), '.npm-global', 'copilot.cmd'),
+          path.join(this.hostHome(), 'AppData', 'Roaming', 'npm', 'copilot.cmd'),
+          path.join(this.hostHome(), '.npm-global', 'copilot.cmd'),
         ],
       },
     };
@@ -515,7 +516,7 @@ export class CopilotProvider extends CliProvider {
 
     return {
       code: CopilotErrorCode.UNKNOWN,
-      message: stderr || `Copilot CLI exited with code ${exitCode}`,
+      message: `Copilot CLI failed (exit code ${exitCode ?? 'unknown'}). Check the provider configuration and retry.`,
       recoverable: false,
     };
   }
@@ -575,6 +576,7 @@ export class CopilotProvider extends CliProvider {
 
     // Create a client for this execution with the correct working directory
     const client = new CopilotClient({
+      cliPath: this.cliPath,
       logLevel: 'warning',
       autoRestart: false,
       cwd: workingDirectory,
@@ -673,10 +675,8 @@ export class CopilotProvider extends CliProvider {
           session = await resumableClient.resumeSession(options.sdkSessionId, sessionOptions);
           sessionResumed = true;
           logger.debug(`Resumed Copilot session: ${session.sessionId}`);
-        } catch (resumeError) {
-          logger.warn(
-            `Failed to resume Copilot session "${options.sdkSessionId}", creating a new session: ${resumeError}`
-          );
+        } catch {
+          logger.warn('Failed to resume Copilot session; creating a new session');
           session = await client.createSession(sessionOptions);
         }
       } else {
@@ -743,8 +743,8 @@ export class CopilotProvider extends CliProvider {
 
       // Map errors to CopilotError
       if (error instanceof Error) {
-        logger.error(`Copilot SDK error: ${error.message}`);
         const errorInfo = this.mapError(error.message, null);
+        logger.error('Copilot SDK error', { code: errorInfo.code });
         throw this.createError(
           errorInfo.code as CopilotErrorCode,
           errorInfo.message,
@@ -788,6 +788,10 @@ export class CopilotProvider extends CliProvider {
     if (!this.cliPath) return null;
 
     try {
+      if (this.hostDiscovery)
+        return this.hostDiscovery
+          .runSync(this.cliPath, ['--version'], await this.readEnvironment())
+          .trim();
       const result = execSync(`"${this.cliPath}" --version`, {
         encoding: 'utf8',
         timeout: 5000,
@@ -811,7 +815,7 @@ export class CopilotProvider extends CliProvider {
       environment.GH_CONFIG_DIR ||
       path.join(
         environment.XDG_CONFIG_HOME ||
-          path.join(environment.HOME || environment.USERPROFILE || os.homedir(), '.config'),
+          path.join(environment.HOME || environment.USERPROFILE || this.hostHome(), '.config'),
         'gh'
       );
     let hasConfigFile = false;
@@ -846,12 +850,19 @@ export class CopilotProvider extends CliProvider {
 
     try {
       // Try to list models using the CLI
-      const result = execSync(`"${this.cliPath}" models list --format json`, {
-        encoding: 'utf8',
-        timeout: 15000,
-        stdio: 'pipe',
-        env: await this.readEnvironment(),
-      });
+      const result = this.hostDiscovery
+        ? this.hostDiscovery.runSync(
+            this.cliPath,
+            ['models', 'list', '--format', 'json'],
+            await this.readEnvironment(),
+            15000
+          )
+        : execSync(`"${this.cliPath}" models list --format json`, {
+            encoding: 'utf8',
+            timeout: 15000,
+            stdio: 'pipe',
+            env: await this.readEnvironment(),
+          });
 
       const models = JSON.parse(result) as CopilotRuntimeModel[];
       this.runtimeModels = models;
