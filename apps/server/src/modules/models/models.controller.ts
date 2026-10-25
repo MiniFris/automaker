@@ -1,17 +1,21 @@
 import { Controller, Get, Inject } from '@nestjs/common';
 import { ModelsCatalogService } from './models-catalog.service.js';
+import {
+  AvailableModelsResponseSchema,
+  ModelProvidersResponseSchema,
+} from '@automaker/contracts/domains/model-responses';
 
 @Controller('models')
 export class ModelsController {
   constructor(@Inject(ModelsCatalogService) private readonly catalog: ModelsCatalogService) {}
 
   @Get('available')
-  listAvailable(): Promise<Record<string, unknown>> {
-    return this.catalog.listAvailable();
+  async listAvailable() {
+    return AvailableModelsResponseSchema.parse(await this.catalog.listAvailable());
   }
 
   @Get('providers')
-  getProviders(): Promise<Record<string, unknown>> {
-    return this.catalog.getProviders();
+  async getProviders() {
+    return ModelProvidersResponseSchema.parse(await this.catalog.getProviders());
   }
 }

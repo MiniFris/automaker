@@ -1,3 +1,11 @@
+import {
+  GitDetailsResponseSchema,
+  GitDiffsResponseSchema,
+  GitEnhancedStatusResponseSchema,
+  GitEnvironmentResponseSchema,
+  GitFileDiffResponseSchema,
+  GitStageFilesResponseSchema,
+} from '@automaker/contracts/domains/git-responses';
 import { Body, Controller, HttpCode, Inject, Post, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { AllowedPathFields, AllowedPathGuard } from '../../core/security/index.js';
@@ -22,58 +30,68 @@ export class GitController {
   @Post('environment')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  environment(@Body(new ZodValidationPipe(GitProjectSchema)) body: GitProjectRequest) {
-    return this.git.environment(body);
+  async environment(@Body(new ZodValidationPipe(GitProjectSchema)) body: GitProjectRequest) {
+    return GitEnvironmentResponseSchema.parse(await this.git.environment(body));
   }
 
   @Post('diffs')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  diffs(
+  async diffs(
     @Body(new ZodValidationPipe(GitProjectSchema)) body: GitProjectRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.git.diffs(body, signal));
+    return GitDiffsResponseSchema.parse(
+      await this.cancel(response, (signal) => this.git.diffs(body, signal))
+    );
   }
 
   @Post('file-diff')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  fileDiff(
+  async fileDiff(
     @Body(new ZodValidationPipe(GitFileSchema)) body: GitFileRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.git.fileDiff(body, signal));
+    return GitFileDiffResponseSchema.parse(
+      await this.cancel(response, (signal) => this.git.fileDiff(body, signal))
+    );
   }
 
   @Post('stage-files')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  stageFiles(
+  async stageFiles(
     @Body(new ZodValidationPipe(GitStageFilesSchema)) body: GitStageFilesRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.git.stageFiles(body, signal));
+    return GitStageFilesResponseSchema.parse(
+      await this.cancel(response, (signal) => this.git.stageFiles(body, signal))
+    );
   }
 
   @Post('details')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  details(
+  async details(
     @Body(new ZodValidationPipe(GitDetailsSchema)) body: GitDetailsRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.git.details(body, signal));
+    return GitDetailsResponseSchema.parse(
+      await this.cancel(response, (signal) => this.git.details(body, signal))
+    );
   }
 
   @Post('enhanced-status')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  enhancedStatus(
+  async enhancedStatus(
     @Body(new ZodValidationPipe(GitProjectSchema)) body: GitProjectRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.git.enhancedStatus(body, signal));
+    return GitEnhancedStatusResponseSchema.parse(
+      await this.cancel(response, (signal) => this.git.enhancedStatus(body, signal))
+    );
   }
 
   private async cancel<T>(response: Response, operation: (signal: AbortSignal) => Promise<T>) {

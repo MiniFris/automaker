@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import ts from 'typescript';
-import { ownsResponseBody } from '../generate-backend-openapi.mjs';
+import { ownsResponseBody, manuallyParsedResponseSchema } from '../generate-backend-openapi.mjs';
 
 function owns(body, helper = '', allowStatus = false) {
   const ast = ts.createSourceFile(
@@ -73,4 +73,37 @@ test('same-class helper forwarding must prove the entire response path', () => {
     "private cancel(reply: Response) { reply.on('close', () => reply.send(value)); }",
   ])
     assert.equal(owns('return Schema.parse(await this.cancel(response));', helper), true, helper);
+});
+
+function manual(body, decorator = '@Res()') {
+  const ast = ts.createSourceFile(
+    'fixture.ts',
+    `class Controller { endpoint(${decorator} response: Response) { ${body} } }`,
+    ts.ScriptTarget.Latest,
+    true
+  );
+  const method = ast.statements[0].members[0],
+    parameter = method.parameters[0];
+  return manuallyParsedResponseSchema(method, parameter, ts.getDecorators(parameter)[0].expression);
+}
+test('manual JSON ownership requires the same shared parser on every body path', () => {
+  assert.equal(
+    manual(
+      'if (response.destroyed) return; if (failed) { response.status(503).json(Schema.parse(error)); return; } response.json(Schema.parse(value));'
+    ),
+    'Schema'
+  );
+  for (const body of [
+    'response.json(Schema.parse(value)); response.status(500).json(error);',
+    'response.json(Schema.parse(value)); response.json(OtherSchema.parse(error));',
+    'response.status(200).json(Schema.parse(value)).end();',
+    'const alias = response; alias.json(Schema.parse(value));',
+    'response.status(external(response)).json(Schema.parse(value));',
+    'response.destroyed = true; response.json(Schema.parse(value));',
+    'response.status(200).send(Schema.parse(value));',
+    'response.json(Schema.safeParse(value));',
+    'response.json(Schema.parse(value)); external(response);',
+  ])
+    assert.equal(manual(body), undefined, body);
+  assert.equal(manual('return Schema.parse(value);', '@Res({passthrough:true})'), undefined);
 });

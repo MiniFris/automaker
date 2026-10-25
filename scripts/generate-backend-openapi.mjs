@@ -332,10 +332,18 @@ async function operation(endpoint) {
     ts.isIdentifier(returned.expression.expression)
       ? returned.expression.expression.text
       : undefined;
-  const responseSchema =
-    !ownsResponse && parsed
-      ? await resolveSchema(resolve(root, endpoint.source), parsed, new Set(), 'output')
+  const manualSchema =
+    ownsResponse && responseParameters.length === 1
+      ? manuallyParsedResponseSchema(
+          method,
+          responseParameters[0].parameter,
+          responseParameters[0].decorator
+        )
       : undefined;
+  const schemaName = !ownsResponse ? parsed : manualSchema;
+  const responseSchema = schemaName
+    ? await resolveSchema(resolve(root, endpoint.source), schemaName, new Set(), 'output')
+    : undefined;
   return {
     operationId: handler.replace('.', '_'),
     tags: [endpoint.group],
@@ -347,40 +355,123 @@ async function operation(endpoint) {
     'x-response-contract': responseSchema ? 'shared-runtime' : 'unverified',
     ...(parameters.length && { parameters }),
     ...(requestBody && { requestBody }),
-    responses: ownsResponse
-      ? {
-          default: {
-            description:
-              'Status and body controlled by the handler; response contract not yet shared.',
-          },
-        }
-      : dynamicStatus
+    responses:
+      ownsResponse && !manualSchema
         ? {
             default: {
-              description: responseSchema
-                ? 'Handler selects the status; Nest serializes the shared validated response body.'
-                : 'Handler selects the status; response schema not yet verified.',
-              ...(responseSchema && {
-                content: { 'application/json': { schema: responseSchema } },
-              }),
-            },
-            '4XX': {
-              description: 'Handler or middleware error; full error schema not yet verified.',
-            },
-            '5XX': {
-              description: 'Handler or middleware error; full error schema not yet verified.',
+              description:
+                'Status and body controlled by the handler; response contract not yet shared.',
             },
           }
-        : {
-            [status]: responseSchema
-              ? {
-                  description: 'Response validated by the shared runtime schema.',
+        : dynamicStatus || manualSchema
+          ? {
+              default: {
+                description: responseSchema
+                  ? 'Handler selects the status; Nest serializes the shared validated response body.'
+                  : 'Handler selects the status; response schema not yet verified.',
+                ...(responseSchema && {
                   content: { 'application/json': { schema: responseSchema } },
-                }
-              : { description: 'Successful response; response schema not yet verified.' },
-            default: { description: 'Error response; see endpoint implementation.' },
-          },
+                }),
+              },
+              '4XX': {
+                description: 'Handler or middleware error; full error schema not yet verified.',
+              },
+              '5XX': {
+                description: 'Handler or middleware error; full error schema not yet verified.',
+              },
+            }
+          : {
+              [status]: responseSchema
+                ? {
+                    description: 'Response validated by the shared runtime schema.',
+                    content: { 'application/json': { schema: responseSchema } },
+                  }
+                : { description: 'Successful response; response schema not yet verified.' },
+              default: { description: 'Error response; see endpoint implementation.' },
+            },
   };
+}
+
+export function manuallyParsedResponseSchema(method, parameter, decorator) {
+  // Explicit manual JSON only. Passthrough can also serialize return values and
+  // therefore needs the separate return/ownership analysis above.
+  if (decorator.arguments.length || !ts.isIdentifier(parameter.name)) return undefined;
+  const name = parameter.name.text;
+  let schema,
+    writes = 0,
+    unsafe = false;
+  function visit(node) {
+    if (ts.isIdentifier(node) && node.text === name) {
+      let expression = node;
+      const read = node.parent;
+      if (
+        ts.isPropertyAccessExpression(read) &&
+        read.expression === node &&
+        ['destroyed', 'writableEnded', 'writableFinished', 'headersSent'].includes(read.name.text)
+      ) {
+        const use = read.parent;
+        if (
+          (ts.isBinaryExpression(use) &&
+            use.left === read &&
+            use.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
+            use.operatorToken.kind <= ts.SyntaxKind.LastAssignment) ||
+          ts.isDeleteExpression(use) ||
+          (ts.isPrefixUnaryExpression(use) &&
+            [ts.SyntaxKind.PlusPlusToken, ts.SyntaxKind.MinusMinusToken].includes(use.operator)) ||
+          ts.isPostfixUnaryExpression(use)
+        )
+          unsafe = true;
+        return;
+      }
+      let body = false;
+      while (
+        ts.isPropertyAccessExpression(expression.parent) &&
+        expression.parent.expression === expression
+      ) {
+        const access = expression.parent,
+          call = access.parent;
+        if (
+          !ts.isCallExpression(call) ||
+          call.expression !== access ||
+          call.arguments.length !== 1 ||
+          body
+        ) {
+          unsafe = true;
+          return;
+        }
+        if (access.name.text === 'json') {
+          const parsed = call.arguments[0];
+          if (
+            !ts.isCallExpression(parsed) ||
+            parsed.arguments.length !== 1 ||
+            !ts.isPropertyAccessExpression(parsed.expression) ||
+            parsed.expression.name.text !== 'parse' ||
+            !ts.isIdentifier(parsed.expression.expression)
+          ) {
+            unsafe = true;
+            return;
+          }
+          const found = parsed.expression.expression.text;
+          if (schema && schema !== found) {
+            unsafe = true;
+            return;
+          }
+          schema = found;
+          writes++;
+          body = true;
+        } else if (access.name.text !== 'status') {
+          unsafe = true;
+          return;
+        }
+        expression = call;
+      }
+      if (expression === node || !ts.isExpressionStatement(expression.parent)) unsafe = true;
+      return;
+    }
+    ts.forEachChild(node, visit);
+  }
+  if (method.body) visit(method.body);
+  return !unsafe && writes ? schema : undefined;
 }
 
 export async function generateDocument() {

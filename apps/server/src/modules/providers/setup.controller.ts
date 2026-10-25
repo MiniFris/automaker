@@ -1,4 +1,37 @@
 import {
+  SetupClaudeStatusResponseSchema,
+  SetupGithubStatusResponseSchema,
+  SetupInstallationStatusResponseSchema,
+  CursorSetupStatusSchema,
+  GeminiSetupStatusSchema,
+  CopilotSetupStatusSchema,
+  ProviderInstallGuidanceSchema,
+  ProviderConnectionTargetResponseSchema,
+  SetupCredentialTargetResponseSchema,
+  SetupCredentialMutationResponseSchema,
+  SetupKeyPresenceResponseSchema,
+  SetupPlatformResponseSchema,
+  ClaudeVerificationTargetResponseSchema,
+  ClaudeVerificationResponseSchema,
+  CodexVerificationTargetResponseSchema,
+  CodexVerificationResponseSchema,
+  GithubAuthenticationTargetResponseSchema,
+  GithubAuthenticationResponseSchema,
+  SetupModelsResponseSchema,
+  SetupCacheClearResponseSchema,
+  SetupAuthenticatedProvidersResponseSchema,
+  CursorModelConfigTargetResponseSchema,
+  CursorModelConfigResponseSchema,
+  CursorDefaultModelResponseSchema,
+  CursorEnabledModelsResponseSchema,
+  CursorPermissionsTargetResponseSchema,
+  SetupCursorPermissionsReadResponseSchema,
+  CursorPermissionsMutationResponseSchema,
+  SetupCursorPermissionsExampleResponseSchema,
+  ProviderReconnectResponseSchema,
+  ProviderDisconnectResponseSchema,
+} from '@automaker/contracts/domains/setup-responses';
+import {
   ProviderRefreshQuerySchema,
   SetupQueryValueSchema,
 } from '@automaker/contracts/domains/setup-query';
@@ -67,248 +100,286 @@ export class SetupController {
     private readonly githubAuthentication: GithubAuthenticationService
   ) {}
 
-  @Get('claude-status') claudeStatus() {
-    return this.hostStatus.claude();
+  @Get('claude-status') async claudeStatus() {
+    return SetupClaudeStatusResponseSchema.parse(await this.hostStatus.claude());
   }
-  @Post('install-claude') @HttpCode(200) installClaude() {
-    return this.installation.instructions('claude');
+  @Post('install-claude') @HttpCode(200) async installClaude() {
+    return ProviderInstallGuidanceSchema.parse(await this.installation.instructions('claude'));
   }
-  @Post('auth-claude') @HttpCode(200) authClaude(
+  @Post('auth-claude') @HttpCode(200) async authClaude(
     @Body(new ZodValidationPipe(ProviderReconnectRequestSchema)) body: ProviderReconnectRequest
   ) {
-    return this.connections.reconnect('claude', body);
+    return ProviderReconnectResponseSchema.parse(await this.connections.reconnect('claude', body));
   }
-  @Get('connection-target') connectionTarget(
+  @Get('connection-target') async connectionTarget(
     @Query('provider', new ZodValidationPipe(CliConnectionProviderSchema))
     provider: CliConnectionProvider
   ) {
-    return this.connections.target(provider);
+    return ProviderConnectionTargetResponseSchema.parse(await this.connections.target(provider));
   }
-  @Post('deauth-claude') @HttpCode(200) deauthClaude(
+  @Post('deauth-claude') @HttpCode(200) async deauthClaude(
     @Body(new ZodValidationPipe(ProviderDisconnectRequestSchema)) body: ProviderDisconnectRequest
   ) {
-    return this.connections.disconnect('claude', body);
+    return ProviderDisconnectResponseSchema.parse(
+      await this.connections.disconnect('claude', body)
+    );
   }
-  @Get('credential-target') credentialTarget(
+  @Get('credential-target') async credentialTarget(
     @Query('provider', new ZodValidationPipe(SetupQueryValueSchema)) provider: string
   ) {
-    return this.credentials.target(provider);
+    return SetupCredentialTargetResponseSchema.parse(await this.credentials.target(provider));
   }
-  @Post('store-api-key') @HttpCode(200) storeApiKey(
+  @Post('store-api-key') @HttpCode(200) async storeApiKey(
     @Body(new ZodValidationPipe(SetupCredentialStoreRequestSchema))
     body: SetupCredentialStoreRequest,
     @Req() request: Request
   ) {
-    return this.credentials.change(
-      'store',
-      body,
-      request.ip || request.socket.remoteAddress || 'unknown'
+    return SetupCredentialMutationResponseSchema.parse(
+      await this.credentials.change(
+        'store',
+        body,
+        request.ip || request.socket.remoteAddress || 'unknown'
+      )
     );
   }
-  @Post('delete-api-key') @HttpCode(200) deleteApiKey(
+  @Post('delete-api-key') @HttpCode(200) async deleteApiKey(
     @Body(new ZodValidationPipe(SetupCredentialDeleteRequestSchema))
     body: SetupCredentialDeleteRequest,
     @Req() request: Request
   ) {
-    return this.credentials.change(
-      'delete',
-      body,
-      request.ip || request.socket.remoteAddress || 'unknown'
+    return SetupCredentialMutationResponseSchema.parse(
+      await this.credentials.change(
+        'delete',
+        body,
+        request.ip || request.socket.remoteAddress || 'unknown'
+      )
     );
   }
-  @Get('api-keys') apiKeys() {
-    return this.hostStatus.apiKeys();
+  @Get('api-keys') async apiKeys() {
+    return SetupKeyPresenceResponseSchema.parse(await this.hostStatus.apiKeys());
   }
-  @Get('platform') platform() {
-    return this.hostStatus.platform();
+  @Get('platform') async platform() {
+    return SetupPlatformResponseSchema.parse(await this.hostStatus.platform());
   }
-  @Get('claude-verification-target') claudeVerificationTarget(
+  @Get('claude-verification-target') async claudeVerificationTarget(
     @Query('authMethod', new ZodValidationPipe(SetupQueryValueSchema)) authMethod: string
   ) {
-    return this.verification.target(authMethod);
+    return ClaudeVerificationTargetResponseSchema.parse(await this.verification.target(authMethod));
   }
-  @Post('verify-claude-auth') @HttpCode(200) verifyClaudeAuth(
+  @Post('verify-claude-auth') @HttpCode(200) async verifyClaudeAuth(
     @Body(new ZodValidationPipe(ClaudeVerificationRequestSchema)) body: ClaudeVerificationRequest,
     @Req() request: Request
   ) {
-    return this.verification.verify(body, request.ip || request.socket.remoteAddress || 'unknown');
+    return ClaudeVerificationResponseSchema.parse(
+      await this.verification.verify(body, request.ip || request.socket.remoteAddress || 'unknown')
+    );
   }
-  @Get('codex-verification-target') codexVerificationTarget(
+  @Get('codex-verification-target') async codexVerificationTarget(
     @Query('authMethod', new ZodValidationPipe(SetupQueryValueSchema)) authMethod: string
   ) {
-    return this.codexVerification.target(authMethod);
+    return CodexVerificationTargetResponseSchema.parse(
+      await this.codexVerification.target(authMethod)
+    );
   }
-  @Post('verify-codex-auth') @HttpCode(200) verifyCodexAuth(
+  @Post('verify-codex-auth') @HttpCode(200) async verifyCodexAuth(
     @Body(new ZodValidationPipe(CodexVerificationRequestSchema)) body: CodexVerificationRequest,
     @Req() request: Request
   ) {
-    return this.codexVerification.verify(
-      body,
-      request.ip || request.socket.remoteAddress || 'unknown'
+    return CodexVerificationResponseSchema.parse(
+      await this.codexVerification.verify(
+        body,
+        request.ip || request.socket.remoteAddress || 'unknown'
+      )
     );
   }
-  @Get('gh-status') ghStatus() {
-    return this.hostStatus.github();
+  @Get('gh-status') async ghStatus() {
+    return SetupGithubStatusResponseSchema.parse(await this.hostStatus.github());
   }
-  @Get('github-authentication-target') githubAuthenticationTarget() {
-    return this.githubAuthentication.target();
+  @Get('github-authentication-target') async githubAuthenticationTarget() {
+    return GithubAuthenticationTargetResponseSchema.parse(await this.githubAuthentication.target());
   }
-  @Post('verify-github-auth') @HttpCode(200) verifyGithubAuth(
+  @Post('verify-github-auth') @HttpCode(200) async verifyGithubAuth(
     @Body(new ZodValidationPipe(GithubAuthenticationRequestSchema))
     body: GithubAuthenticationRequest,
     @Req() request: Request
   ) {
-    return this.githubAuthentication.verify(
-      body,
-      request.ip || request.socket.remoteAddress || 'unknown'
+    return GithubAuthenticationResponseSchema.parse(
+      await this.githubAuthentication.verify(
+        body,
+        request.ip || request.socket.remoteAddress || 'unknown'
+      )
     );
   }
-  @Get('cursor-status') cursorStatus() {
-    return this.statuses.status('cursor');
+  @Get('cursor-status') async cursorStatus() {
+    return CursorSetupStatusSchema.parse(await this.statuses.status('cursor'));
   }
-  @Post('auth-cursor') @HttpCode(200) authCursor(
+  @Post('auth-cursor') @HttpCode(200) async authCursor(
     @Body(new ZodValidationPipe(ProviderReconnectRequestSchema)) body: ProviderReconnectRequest
   ) {
-    return this.connections.reconnect('cursor', body);
+    return ProviderReconnectResponseSchema.parse(await this.connections.reconnect('cursor', body));
   }
-  @Post('deauth-cursor') @HttpCode(200) deauthCursor(
+  @Post('deauth-cursor') @HttpCode(200) async deauthCursor(
     @Body(new ZodValidationPipe(ProviderDisconnectRequestSchema)) body: ProviderDisconnectRequest
   ) {
-    return this.connections.disconnect('cursor', body);
+    return ProviderDisconnectResponseSchema.parse(
+      await this.connections.disconnect('cursor', body)
+    );
   }
-  @Get('codex-status') codexStatus() {
-    return this.hostStatus.installationStatus('codex');
+  @Get('codex-status') async codexStatus() {
+    return SetupInstallationStatusResponseSchema.parse(
+      await this.hostStatus.installationStatus('codex')
+    );
   }
-  @Post('install-codex') @HttpCode(200) installCodex() {
-    return this.installation.instructions('codex');
+  @Post('install-codex') @HttpCode(200) async installCodex() {
+    return ProviderInstallGuidanceSchema.parse(await this.installation.instructions('codex'));
   }
-  @Post('auth-codex') @HttpCode(200) authCodex(
+  @Post('auth-codex') @HttpCode(200) async authCodex(
     @Body(new ZodValidationPipe(ProviderReconnectRequestSchema)) body: ProviderReconnectRequest
   ) {
-    return this.connections.reconnect('codex', body);
+    return ProviderReconnectResponseSchema.parse(await this.connections.reconnect('codex', body));
   }
-  @Post('deauth-codex') @HttpCode(200) deauthCodex(
+  @Post('deauth-codex') @HttpCode(200) async deauthCodex(
     @Body(new ZodValidationPipe(ProviderDisconnectRequestSchema)) body: ProviderDisconnectRequest
   ) {
-    return this.connections.disconnect('codex', body);
+    return ProviderDisconnectResponseSchema.parse(await this.connections.disconnect('codex', body));
   }
-  @Get('opencode-status') opencodeStatus() {
-    return this.hostStatus.installationStatus('opencode');
+  @Get('opencode-status') async opencodeStatus() {
+    return SetupInstallationStatusResponseSchema.parse(
+      await this.hostStatus.installationStatus('opencode')
+    );
   }
-  @Post('auth-opencode') @HttpCode(200) authOpencode(
+  @Post('auth-opencode') @HttpCode(200) async authOpencode(
     @Body(new ZodValidationPipe(ProviderReconnectRequestSchema)) body: ProviderReconnectRequest
   ) {
-    return this.connections.reconnect('opencode', body);
+    return ProviderReconnectResponseSchema.parse(
+      await this.connections.reconnect('opencode', body)
+    );
   }
-  @Post('deauth-opencode') @HttpCode(200) deauthOpencode(
+  @Post('deauth-opencode') @HttpCode(200) async deauthOpencode(
     @Body(new ZodValidationPipe(ProviderDisconnectRequestSchema)) body: ProviderDisconnectRequest
   ) {
-    return this.connections.disconnect('opencode', body);
+    return ProviderDisconnectResponseSchema.parse(
+      await this.connections.disconnect('opencode', body)
+    );
   }
-  @Get('gemini-status') geminiStatus() {
-    return this.statuses.status('gemini');
+  @Get('gemini-status') async geminiStatus() {
+    return GeminiSetupStatusSchema.parse(await this.statuses.status('gemini'));
   }
-  @Post('auth-gemini') @HttpCode(200) authGemini(
+  @Post('auth-gemini') @HttpCode(200) async authGemini(
     @Body(new ZodValidationPipe(ProviderReconnectRequestSchema)) body: ProviderReconnectRequest
   ) {
-    return this.connections.reconnect('gemini', body);
+    return ProviderReconnectResponseSchema.parse(await this.connections.reconnect('gemini', body));
   }
-  @Post('deauth-gemini') @HttpCode(200) deauthGemini(
+  @Post('deauth-gemini') @HttpCode(200) async deauthGemini(
     @Body(new ZodValidationPipe(ProviderDisconnectRequestSchema)) body: ProviderDisconnectRequest
   ) {
-    return this.connections.disconnect('gemini', body);
+    return ProviderDisconnectResponseSchema.parse(
+      await this.connections.disconnect('gemini', body)
+    );
   }
-  @Get('copilot-status') copilotStatus() {
-    return this.statuses.status('copilot');
+  @Get('copilot-status') async copilotStatus() {
+    return CopilotSetupStatusSchema.parse(await this.statuses.status('copilot'));
   }
-  @Post('auth-copilot') @HttpCode(200) authCopilot(
+  @Post('auth-copilot') @HttpCode(200) async authCopilot(
     @Body(new ZodValidationPipe(ProviderReconnectRequestSchema)) body: ProviderReconnectRequest
   ) {
-    return this.connections.reconnect('copilot', body);
+    return ProviderReconnectResponseSchema.parse(await this.connections.reconnect('copilot', body));
   }
-  @Post('deauth-copilot') @HttpCode(200) deauthCopilot(
+  @Post('deauth-copilot') @HttpCode(200) async deauthCopilot(
     @Body(new ZodValidationPipe(ProviderDisconnectRequestSchema)) body: ProviderDisconnectRequest
   ) {
-    return this.connections.disconnect('copilot', body);
+    return ProviderDisconnectResponseSchema.parse(
+      await this.connections.disconnect('copilot', body)
+    );
   }
-  @Get('copilot/models') copilotModels(
+  @Get('copilot/models') async copilotModels(
     @Query('refresh', new ZodValidationPipe(ProviderRefreshQuerySchema))
     refresh: string | string[] | undefined
   ) {
-    return this.catalogs.models('copilot', refresh === 'true');
+    return SetupModelsResponseSchema.parse(
+      await this.catalogs.models('copilot', refresh === 'true')
+    );
   }
-  @Post('copilot/models/refresh') @HttpCode(200) refreshCopilotModels() {
-    return this.catalogs.models('copilot', true);
+  @Post('copilot/models/refresh') @HttpCode(200) async refreshCopilotModels() {
+    return SetupModelsResponseSchema.parse(await this.catalogs.models('copilot', true));
   }
-  @Post('copilot/cache/clear') @HttpCode(200) clearCopilotCache() {
-    return this.catalogs.clear('copilot');
+  @Post('copilot/cache/clear') @HttpCode(200) async clearCopilotCache() {
+    return SetupCacheClearResponseSchema.parse(await this.catalogs.clear('copilot'));
   }
-  @Get('opencode/models') opencodeModels(
+  @Get('opencode/models') async opencodeModels(
     @Query('refresh', new ZodValidationPipe(ProviderRefreshQuerySchema))
     refresh: string | string[] | undefined
   ) {
-    return this.catalogs.models('opencode', refresh === 'true');
+    return SetupModelsResponseSchema.parse(
+      await this.catalogs.models('opencode', refresh === 'true')
+    );
   }
-  @Post('opencode/models/refresh') @HttpCode(200) refreshOpencodeModels() {
-    return this.catalogs.models('opencode', true);
+  @Post('opencode/models/refresh') @HttpCode(200) async refreshOpencodeModels() {
+    return SetupModelsResponseSchema.parse(await this.catalogs.models('opencode', true));
   }
-  @Get('opencode/providers') opencodeProviders() {
-    return this.catalogs.authenticatedProviders();
+  @Get('opencode/providers') async opencodeProviders() {
+    return SetupAuthenticatedProvidersResponseSchema.parse(
+      await this.catalogs.authenticatedProviders()
+    );
   }
-  @Post('opencode/cache/clear') @HttpCode(200) clearOpencodeCache() {
-    return this.catalogs.clear('opencode');
+  @Post('opencode/cache/clear') @HttpCode(200) async clearOpencodeCache() {
+    return SetupCacheClearResponseSchema.parse(await this.catalogs.clear('opencode'));
   }
-  @Get('cursor-config/target') cursorConfigTarget(
+  @Get('cursor-config/target') async cursorConfigTarget(
     @Query('projectPath', new ZodValidationPipe(SetupQueryValueSchema)) projectPath: string
   ) {
-    return this.modelConfig.target(projectPath);
+    return CursorModelConfigTargetResponseSchema.parse(await this.modelConfig.target(projectPath));
   }
-  @Get('cursor-config') cursorConfig(
+  @Get('cursor-config') async cursorConfig(
     @Query('projectPath', new ZodValidationPipe(SetupQueryValueSchema)) projectPath: string
   ) {
-    return this.modelConfig.read(projectPath);
+    return CursorModelConfigResponseSchema.parse(await this.modelConfig.read(projectPath));
   }
-  @Post('cursor-config/default-model') @HttpCode(200) setCursorDefaultModel(
+  @Post('cursor-config/default-model') @HttpCode(200) async setCursorDefaultModel(
     @Body(new ZodValidationPipe(CursorDefaultModelRequestSchema)) body: CursorDefaultModelRequest
   ) {
-    return this.modelConfig.setDefaultModel(body);
+    return CursorDefaultModelResponseSchema.parse(await this.modelConfig.setDefaultModel(body));
   }
-  @Post('cursor-config/models') @HttpCode(200) setCursorModels(
+  @Post('cursor-config/models') @HttpCode(200) async setCursorModels(
     @Body(new ZodValidationPipe(CursorEnabledModelsRequestSchema)) body: CursorEnabledModelsRequest
   ) {
-    return this.modelConfig.setEnabledModels(body);
+    return CursorEnabledModelsResponseSchema.parse(await this.modelConfig.setEnabledModels(body));
   }
-  @Get('cursor-permissions/target') cursorPermissionsTarget(
+  @Get('cursor-permissions/target') async cursorPermissionsTarget(
     @Query('scope', new ZodValidationPipe(SetupQueryValueSchema)) scope: string,
     @Query('projectPath', new ZodValidationPipe(SetupQueryValueSchema)) projectPath?: string
   ) {
-    return this.permissions.target(scope, projectPath);
+    return CursorPermissionsTargetResponseSchema.parse(
+      await this.permissions.target(scope, projectPath)
+    );
   }
-  @Get('cursor-permissions') cursorPermissions(
+  @Get('cursor-permissions') async cursorPermissions(
     @Query('projectPath', new ZodValidationPipe(SetupQueryValueSchema)) projectPath?: string
   ) {
-    return this.permissions.read(projectPath);
+    return SetupCursorPermissionsReadResponseSchema.parse(await this.permissions.read(projectPath));
   }
-  @Post('cursor-permissions/profile') @HttpCode(200) applyPermissionProfile(
+  @Post('cursor-permissions/profile') @HttpCode(200) async applyPermissionProfile(
     @Body(new ZodValidationPipe(CursorProfileRequestSchema)) body: CursorProfileRequest
   ) {
-    return this.permissions.apply(body);
+    return CursorPermissionsMutationResponseSchema.parse(await this.permissions.apply(body));
   }
-  @Post('cursor-permissions/custom') @HttpCode(200) setCustomPermissions(
+  @Post('cursor-permissions/custom') @HttpCode(200) async setCustomPermissions(
     @Body(new ZodValidationPipe(CursorCustomPermissionsRequestSchema))
     body: CursorCustomPermissionsRequest
   ) {
-    return this.permissions.custom(body);
+    return CursorPermissionsMutationResponseSchema.parse(await this.permissions.custom(body));
   }
-  @Delete('cursor-permissions') deleteProjectPermissions(
+  @Delete('cursor-permissions') async deleteProjectPermissions(
     @Body(new ZodValidationPipe(CursorDeletePermissionsRequestSchema))
     body: CursorDeletePermissionsRequest
   ) {
-    return this.permissions.delete(body);
+    return CursorPermissionsMutationResponseSchema.parse(await this.permissions.delete(body));
   }
-  @Get('cursor-permissions/example') exampleCursorConfig(
+  @Get('cursor-permissions/example') async exampleCursorConfig(
     @Query('profileId', new ZodValidationPipe(SetupQueryValueSchema)) profileId?: string
   ) {
-    return this.permissions.example(profileId);
+    return SetupCursorPermissionsExampleResponseSchema.parse(
+      await this.permissions.example(profileId)
+    );
   }
 }

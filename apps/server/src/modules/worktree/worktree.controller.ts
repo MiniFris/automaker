@@ -1,4 +1,65 @@
 import {
+  WorktreeEnvironmentResponseSchema,
+  WorktreeListResponseSchema,
+  WorktreeInfoResponseSchema,
+  WorktreeStatusResponseSchema,
+  WorktreeDiffsResponseSchema,
+  WorktreeFileDiffResponseSchema,
+  WorktreeCheckChangesResponseSchema,
+  WorktreeListBranchesResponseSchema,
+  WorktreeListRemotesResponseSchema,
+  WorktreeStageFilesResponseSchema,
+  WorktreeCommitResponseSchema,
+  WorktreeAbortOperationResponseSchema,
+  WorktreeContinueOperationResponseSchema,
+  WorktreeAddRemoteResponseSchema,
+  WorktreeSetTrackingResponseSchema,
+  WorktreeStashListResponseSchema,
+  WorktreeStashPushResponseSchema,
+  WorktreeStashApplyResponseSchema,
+  WorktreeStashDropResponseSchema,
+  WorktreeCheckoutBranchResponseSchema,
+  WorktreeSwitchBranchResponseSchema,
+  WorktreeDiscardChangesResponseSchema,
+  WorktreePullResponseSchema,
+  WorktreePushResponseSchema,
+  WorktreeSyncResponseSchema,
+  WorktreeRebaseResponseSchema,
+  WorktreeCherryPickResponseSchema,
+  WorktreeMergeResponseSchema,
+  WorktreeCreateResponseSchema,
+  WorktreeDeleteResponseSchema,
+  WorktreeInitGitResponseSchema,
+  WorktreeGetInitScriptResponseSchema,
+  WorktreePutInitScriptResponseSchema,
+  WorktreeDeleteInitScriptResponseSchema,
+  WorktreeRunInitScriptResponseSchema,
+  WorktreeMigrateResponseSchema,
+  WorktreeAvailableEditorsResponseSchema,
+  WorktreeDefaultEditorResponseSchema,
+  WorktreeRefreshEditorsResponseSchema,
+  WorktreeOpenEditorResponseSchema,
+  WorktreeAvailableTerminalsResponseSchema,
+  WorktreeDefaultTerminalResponseSchema,
+  WorktreeRefreshTerminalsResponseSchema,
+  WorktreeOpenTerminalResponseSchema,
+  WorktreeOpenExternalTerminalResponseSchema,
+  WorktreeGenerateCommitMessageResponseSchema,
+  WorktreeGeneratePrDescriptionResponseSchema,
+  WorktreePrInfoResponseSchema,
+  WorktreeUpdatePrNumberResponseSchema,
+  WorktreeCreatePrResponseSchema,
+  WorktreeCommitLogResponseSchema,
+  WorktreeBranchCommitLogResponseSchema,
+  WorktreeStartDevResponseSchema,
+  WorktreeStopDevResponseSchema,
+  WorktreeListDevResponseSchema,
+  WorktreeDevLogsResponseSchema,
+  WorktreeStartTestsResponseSchema,
+  WorktreeStopTestsResponseSchema,
+  WorktreeTestLogsResponseSchema,
+} from '@automaker/contracts/domains/worktree-responses';
+import {
   Body,
   Controller,
   Delete,
@@ -120,535 +181,619 @@ export class WorktreeController {
   @Post('environment')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  environment(@Body(new ZodValidationPipe(WorktreeProjectSchema)) body: WorktreeProjectRequest) {
-    return this.worktrees.environment(body);
+  async environment(
+    @Body(new ZodValidationPipe(WorktreeProjectSchema)) body: WorktreeProjectRequest
+  ) {
+    return WorktreeEnvironmentResponseSchema.parse(await this.worktrees.environment(body));
   }
 
   @Post('list')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  list(
+  async list(
     @Body(new ZodValidationPipe(WorktreeProjectSchema)) body: WorktreeProjectRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.list(body, signal));
+    return WorktreeListResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.list(body, signal))
+    );
   }
 
   @Post('info')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  info(
+  async info(
     @Body(new ZodValidationPipe(WorktreeFeatureSchema)) body: WorktreeFeatureRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.info(body, signal));
+    return WorktreeInfoResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.info(body, signal))
+    );
   }
 
   @Post('status')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  status(
+  async status(
     @Body(new ZodValidationPipe(WorktreeFeatureSchema)) body: WorktreeFeatureRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.status(body, signal));
+    return WorktreeStatusResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.status(body, signal))
+    );
   }
 
   @Post('diffs')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  diffs(
+  async diffs(
     @Body(new ZodValidationPipe(WorktreeFeatureSchema)) body: WorktreeFeatureRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.diffs(body, signal));
+    return WorktreeDiffsResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.diffs(body, signal))
+    );
   }
 
   @Post('file-diff')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  fileDiff(
+  async fileDiff(
     @Body(new ZodValidationPipe(WorktreeFileSchema)) body: WorktreeFileRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.fileDiff(body, signal));
+    return WorktreeFileDiffResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.fileDiff(body, signal))
+    );
   }
 
   @Post('check-changes')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  checkChanges(
+  async checkChanges(
     @Body(new ZodValidationPipe(WorktreePathSchema)) body: WorktreePathRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.checkChanges(body, signal));
+    return WorktreeCheckChangesResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.checkChanges(body, signal))
+    );
   }
 
   @Post('list-branches')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  listBranches(
+  async listBranches(
     @Body(new ZodValidationPipe(WorktreeBranchesSchema)) body: WorktreeBranchesRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.listBranches(body, signal));
+    return WorktreeListBranchesResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.listBranches(body, signal))
+    );
   }
 
   @Post('list-remotes')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  listRemotes(
+  async listRemotes(
     @Body(new ZodValidationPipe(WorktreePathSchema)) body: WorktreePathRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.listRemotes(body, signal));
+    return WorktreeListRemotesResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.listRemotes(body, signal))
+    );
   }
 
   @Post('stage-files')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  stageFiles(
+  async stageFiles(
     @Body(new ZodValidationPipe(WorktreeStageFilesSchema)) body: WorktreeStageFilesRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.stageFiles(body, signal));
+    return WorktreeStageFilesResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.stageFiles(body, signal))
+    );
   }
 
   @Post('commit')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  commit(
+  async commit(
     @Body(new ZodValidationPipe(WorktreeCommitSchema)) body: WorktreeCommitRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.commit(body, signal));
+    return WorktreeCommitResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.commit(body, signal))
+    );
   }
 
   @Post('abort-operation')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  abortOperation(
+  async abortOperation(
     @Body(new ZodValidationPipe(WorktreeMutationSchema)) body: WorktreeMutationRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.abortOperation(body, signal));
+    return WorktreeAbortOperationResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.abortOperation(body, signal))
+    );
   }
 
   @Post('continue-operation')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  continueOperation(
+  async continueOperation(
     @Body(new ZodValidationPipe(WorktreeMutationSchema)) body: WorktreeMutationRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.continueOperation(body, signal));
+    return WorktreeContinueOperationResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.continueOperation(body, signal))
+    );
   }
 
   @Post('add-remote')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  addRemote(
+  async addRemote(
     @Body(new ZodValidationPipe(WorktreeRemoteAddSchema)) body: WorktreeRemoteAddRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.addRemote(body, signal));
+    return WorktreeAddRemoteResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.addRemote(body, signal))
+    );
   }
 
   @Post('set-tracking')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  setTracking(
+  async setTracking(
     @Body(new ZodValidationPipe(WorktreeTrackingSchema)) body: WorktreeTrackingRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.setTracking(body, signal));
+    return WorktreeSetTrackingResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.setTracking(body, signal))
+    );
   }
 
   @Post('stash-list')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  stashList(
+  async stashList(
     @Body(new ZodValidationPipe(WorktreePathSchema)) body: WorktreePathRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.stashList(body, signal));
+    return WorktreeStashListResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.stashList(body, signal))
+    );
   }
 
   @Post('stash-push')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  stashPush(
+  async stashPush(
     @Body(new ZodValidationPipe(WorktreeStashPushSchema)) body: WorktreeStashPushRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.stashPush(body, signal));
+    return WorktreeStashPushResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.stashPush(body, signal))
+    );
   }
 
   @Post('stash-apply')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  stashApply(
+  async stashApply(
     @Body(new ZodValidationPipe(WorktreeStashApplySchema)) body: WorktreeStashApplyRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.stashApply(body, signal));
+    return WorktreeStashApplyResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.stashApply(body, signal))
+    );
   }
 
   @Post('stash-drop')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  stashDrop(
+  async stashDrop(
     @Body(new ZodValidationPipe(WorktreeStashDropSchema)) body: WorktreeStashDropRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.stashDrop(body, signal));
+    return WorktreeStashDropResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.stashDrop(body, signal))
+    );
   }
 
   @Post('checkout-branch')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  checkoutBranch(
+  async checkoutBranch(
     @Body(new ZodValidationPipe(WorktreeCheckoutBranchSchema))
     body: WorktreeCheckoutBranchRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.checkoutBranch(body, signal));
+    return WorktreeCheckoutBranchResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.checkoutBranch(body, signal))
+    );
   }
 
   @Post('switch-branch')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  switchBranch(
+  async switchBranch(
     @Body(new ZodValidationPipe(WorktreeSwitchBranchSchema)) body: WorktreeSwitchBranchRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.switchBranch(body, signal));
+    return WorktreeSwitchBranchResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.switchBranch(body, signal))
+    );
   }
 
   @Post('discard-changes')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  discardChanges(
+  async discardChanges(
     @Body(new ZodValidationPipe(WorktreeDiscardSchema)) body: WorktreeDiscardRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.discardChanges(body, signal));
+    return WorktreeDiscardChangesResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.discardChanges(body, signal))
+    );
   }
 
   @Post('pull')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  pull(
+  async pull(
     @Body(new ZodValidationPipe(WorktreePullSchema)) body: WorktreePullRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.pull(body, signal));
+    return WorktreePullResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.pull(body, signal))
+    );
   }
 
   @Post('push')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  push(
+  async push(
     @Body(new ZodValidationPipe(WorktreePushSchema)) body: WorktreePushRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.push(body, signal));
+    return WorktreePushResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.push(body, signal))
+    );
   }
 
   @Post('sync')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  sync(
+  async sync(
     @Body(new ZodValidationPipe(WorktreeSyncSchema)) body: WorktreeSyncRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.sync(body, signal));
+    return WorktreeSyncResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.sync(body, signal))
+    );
   }
 
   @Post('rebase')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  rebase(
+  async rebase(
     @Body(new ZodValidationPipe(WorktreeRebaseSchema)) body: WorktreeRebaseRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.rebase(body, signal));
+    return WorktreeRebaseResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.rebase(body, signal))
+    );
   }
 
   @Post('cherry-pick')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  cherryPick(
+  async cherryPick(
     @Body(new ZodValidationPipe(WorktreeCherryPickSchema)) body: WorktreeCherryPickRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.cherryPick(body, signal));
+    return WorktreeCherryPickResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.cherryPick(body, signal))
+    );
   }
 
   @Post('merge')
   @HttpCode(200)
   @AllowedPathFields('projectPath', 'worktreePath')
-  merge(
+  async merge(
     @Body(new ZodValidationPipe(WorktreeMergeSchema)) body: WorktreeMergeRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.merge(body, signal));
+    return WorktreeMergeResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.merge(body, signal))
+    );
   }
 
   @Post('create')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  create(
+  async create(
     @Body(new ZodValidationPipe(WorktreeCreateSchema)) body: WorktreeCreateRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.create(body, signal));
+    return WorktreeCreateResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.create(body, signal))
+    );
   }
 
   @Post('delete')
   @HttpCode(200)
   @AllowedPathFields('projectPath', 'worktreePath')
-  delete(
+  async delete(
     @Body(new ZodValidationPipe(WorktreeDeleteSchema)) body: WorktreeDeleteRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.delete(body, signal));
+    return WorktreeDeleteResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.delete(body, signal))
+    );
   }
 
   @Post('init-git')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  initGit(
+  async initGit(
     @Body(new ZodValidationPipe(WorktreeInitGitSchema)) body: WorktreeInitGitRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.initGit(body, signal));
+    return WorktreeInitGitResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.initGit(body, signal))
+    );
   }
 
   @Get('init-script')
   @AllowedPathFields('projectPath')
-  getInitScript(
+  async getInitScript(
     @Query(new ZodValidationPipe(WorktreeInitScriptQuerySchema)) query: WorktreeInitScriptQuery,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.getInitScript(query, signal));
+    return WorktreeGetInitScriptResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.getInitScript(query, signal))
+    );
   }
 
   @Put('init-script')
   @AllowedPathFields('projectPath')
-  putInitScript(
+  async putInitScript(
     @Body(new ZodValidationPipe(WorktreeInitScriptWriteSchema))
     body: WorktreeInitScriptWriteRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.putInitScript(body, signal));
+    return WorktreePutInitScriptResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.putInitScript(body, signal))
+    );
   }
 
   @Delete('init-script')
   @AllowedPathFields('projectPath')
-  deleteInitScript(
+  async deleteInitScript(
     @Body(new ZodValidationPipe(WorktreeInitScriptDeleteSchema))
     body: WorktreeInitScriptDeleteRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.deleteInitScript(body, signal));
+    return WorktreeDeleteInitScriptResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.deleteInitScript(body, signal))
+    );
   }
 
   @Post('run-init-script')
   @HttpCode(200)
   @AllowedPathFields('projectPath', 'worktreePath')
-  runInitScript(
+  async runInitScript(
     @Body(new ZodValidationPipe(WorktreeRunInitScriptSchema)) body: WorktreeRunInitScriptRequest
   ) {
-    return this.worktrees.runInitScript(body);
+    return WorktreeRunInitScriptResponseSchema.parse(await this.worktrees.runInitScript(body));
   }
 
   @Post('migrate')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  migrate(@Body(new ZodValidationPipe(WorktreeInitGitSchema)) body: WorktreeInitGitRequest) {
-    return this.worktrees.migrate(body);
+  async migrate(@Body(new ZodValidationPipe(WorktreeInitGitSchema)) body: WorktreeInitGitRequest) {
+    return WorktreeMigrateResponseSchema.parse(await this.worktrees.migrate(body));
   }
 
   @Get('available-editors')
-  availableEditors() {
-    return this.host.availableEditors();
+  async availableEditors() {
+    return WorktreeAvailableEditorsResponseSchema.parse(await this.host.availableEditors());
   }
 
   @Get('default-editor')
-  defaultEditor() {
-    return this.host.defaultEditor();
+  async defaultEditor() {
+    return WorktreeDefaultEditorResponseSchema.parse(await this.host.defaultEditor());
   }
 
   @Post('refresh-editors')
   @HttpCode(200)
-  refreshEditors() {
-    return this.host.refreshEditors();
+  async refreshEditors() {
+    return WorktreeRefreshEditorsResponseSchema.parse(await this.host.refreshEditors());
   }
 
   @Post('open-in-editor')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  openInEditor(
+  async openInEditor(
     @Body(new ZodValidationPipe(WorktreeOpenEditorSchema)) body: WorktreeOpenEditorRequest
   ) {
-    return this.host.openEditor(body);
+    return WorktreeOpenEditorResponseSchema.parse(await this.host.openEditor(body));
   }
 
   @Get('available-terminals')
-  availableTerminals() {
-    return this.host.availableTerminals();
+  async availableTerminals() {
+    return WorktreeAvailableTerminalsResponseSchema.parse(await this.host.availableTerminals());
   }
 
   @Get('default-terminal')
-  defaultTerminal() {
-    return this.host.defaultTerminal();
+  async defaultTerminal() {
+    return WorktreeDefaultTerminalResponseSchema.parse(await this.host.defaultTerminal());
   }
 
   @Post('refresh-terminals')
   @HttpCode(200)
-  refreshTerminals() {
-    return this.host.refreshTerminals();
+  async refreshTerminals() {
+    return WorktreeRefreshTerminalsResponseSchema.parse(await this.host.refreshTerminals());
   }
 
   @Post('open-in-terminal')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  openInTerminal(
+  async openInTerminal(
     @Body(new ZodValidationPipe(WorktreeOpenTerminalSchema)) body: WorktreeOpenTerminalRequest
   ) {
-    return this.host.openTerminal(body, false);
+    return WorktreeOpenTerminalResponseSchema.parse(await this.host.openTerminal(body, false));
   }
 
   @Post('open-in-external-terminal')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  openInExternalTerminal(
+  async openInExternalTerminal(
     @Body(new ZodValidationPipe(WorktreeOpenTerminalSchema)) body: WorktreeOpenTerminalRequest
   ) {
-    return this.host.openTerminal(body, true);
+    return WorktreeOpenExternalTerminalResponseSchema.parse(
+      await this.host.openTerminal(body, true)
+    );
   }
 
   @Post('generate-commit-message')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  generateCommitMessage(
+  async generateCommitMessage(
     @Body(new ZodValidationPipe(WorktreeGenerateCommitMessageSchema))
     body: WorktreeGenerateCommitMessageRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancelController(response, (controller) =>
-      this.text.generateCommitMessage(body, controller)
+    return WorktreeGenerateCommitMessageResponseSchema.parse(
+      await this.cancelController(response, (controller) =>
+        this.text.generateCommitMessage(body, controller)
+      )
     );
   }
 
   @Post('generate-pr-description')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  generatePrDescription(
+  async generatePrDescription(
     @Body(new ZodValidationPipe(WorktreeGeneratePrDescriptionSchema))
     body: WorktreeGeneratePrDescriptionRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancelController(response, (controller) =>
-      this.text.generatePrDescription(body, controller)
+    return WorktreeGeneratePrDescriptionResponseSchema.parse(
+      await this.cancelController(response, (controller) =>
+        this.text.generatePrDescription(body, controller)
+      )
     );
   }
 
   @Post('pr-info')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  prInfo(
+  async prInfo(
     @Body(new ZodValidationPipe(WorktreePrInfoSchema)) body: WorktreePrInfoRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.prInfo(body, signal));
+    return WorktreePrInfoResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.prInfo(body, signal))
+    );
   }
 
   @Post('update-pr-number')
   @HttpCode(200)
   @AllowedPathFields('worktreePath', 'projectPath')
-  updatePrNumber(
+  async updatePrNumber(
     @Body(new ZodValidationPipe(WorktreeUpdatePrNumberSchema)) body: WorktreeUpdatePrNumberRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.updatePrNumber(body, signal));
+    return WorktreeUpdatePrNumberResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.updatePrNumber(body, signal))
+    );
   }
 
   @Post('create-pr')
   @HttpCode(200)
   @AllowedPathFields('worktreePath', 'projectPath')
-  createPr(
+  async createPr(
     @Body(new ZodValidationPipe(WorktreeCreatePrSchema)) body: WorktreeCreatePrRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.createPr(body, signal));
+    return WorktreeCreatePrResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.createPr(body, signal))
+    );
   }
 
   @Post('commit-log')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  commitLog(
+  async commitLog(
     @Body(new ZodValidationPipe(WorktreeCommitLogSchema)) body: WorktreeCommitLogRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.commitLog(body, signal));
+    return WorktreeCommitLogResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.commitLog(body, signal))
+    );
   }
 
   @Post('branch-commit-log')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  branchCommitLog(
+  async branchCommitLog(
     @Body(new ZodValidationPipe(WorktreeBranchCommitLogSchema))
     body: WorktreeBranchCommitLogRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.cancel(response, (signal) => this.worktrees.branchCommitLog(body, signal));
+    return WorktreeBranchCommitLogResponseSchema.parse(
+      await this.cancel(response, (signal) => this.worktrees.branchCommitLog(body, signal))
+    );
   }
 
   @Post('start-dev')
   @HttpCode(200)
   @AllowedPathFields('projectPath', 'worktreePath')
-  startDev(@Body(new ZodValidationPipe(StartDevSchema)) body: StartDevRequest) {
-    return this.processes.startDev(body);
+  async startDev(@Body(new ZodValidationPipe(StartDevSchema)) body: StartDevRequest) {
+    return WorktreeStartDevResponseSchema.parse(await this.processes.startDev(body));
   }
 
   @Post('stop-dev')
   @HttpCode(200)
   @AllowedPathFields('worktreePath')
-  stopDev(@Body(new ZodValidationPipe(DevSessionSchema)) body: DevSessionRequest) {
-    return this.processes.stopDev(body);
+  async stopDev(@Body(new ZodValidationPipe(DevSessionSchema)) body: DevSessionRequest) {
+    return WorktreeStopDevResponseSchema.parse(await this.processes.stopDev(body));
   }
 
   @Post('list-dev-servers')
   @HttpCode(200)
-  listDevServers() {
-    return this.processes.listDev();
+  async listDevServers() {
+    return WorktreeListDevResponseSchema.parse(await this.processes.listDev());
   }
 
   @Get('dev-server-logs')
   @AllowedPathFields('worktreePath')
-  devServerLogs(@Query(new ZodValidationPipe(DevSessionSchema)) query: DevSessionRequest) {
-    return this.processes.devLogs(query);
+  async devServerLogs(@Query(new ZodValidationPipe(DevSessionSchema)) query: DevSessionRequest) {
+    return WorktreeDevLogsResponseSchema.parse(await this.processes.devLogs(query));
   }
 
   @Post('start-tests')
   @HttpCode(200)
   @AllowedPathFields('worktreePath', 'projectPath')
-  startTests(@Body(new ZodValidationPipe(StartTestsSchema)) body: StartTestsRequest) {
-    return this.processes.startTests(body);
+  async startTests(@Body(new ZodValidationPipe(StartTestsSchema)) body: StartTestsRequest) {
+    return WorktreeStartTestsResponseSchema.parse(await this.processes.startTests(body));
   }
 
   @Post('stop-tests')
   @HttpCode(200)
-  stopTests(@Body(new ZodValidationPipe(StopTestsSchema)) body: StopTestsRequest) {
-    return this.processes.stopTests(body);
+  async stopTests(@Body(new ZodValidationPipe(StopTestsSchema)) body: StopTestsRequest) {
+    return WorktreeStopTestsResponseSchema.parse(await this.processes.stopTests(body));
   }
 
   @Get('test-logs')
   @AllowedPathFields('worktreePath')
-  testLogs(@Query(new ZodValidationPipe(TestLogsSchema)) query: TestLogsRequest) {
-    return this.processes.testLogs(query);
+  async testLogs(@Query(new ZodValidationPipe(TestLogsSchema)) query: TestLogsRequest) {
+    return WorktreeTestLogsResponseSchema.parse(await this.processes.testLogs(query));
   }
 
   private async cancel<T>(response: Response, operation: (signal: AbortSignal) => Promise<T>) {

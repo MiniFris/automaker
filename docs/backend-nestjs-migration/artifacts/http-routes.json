@@ -659,7 +659,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/prompt-enhancement/prompt-enhancement.controller.ts",
-      "line": 27,
+      "line": 28,
       "middleware": [
         "PromptEnhancementController.enhance"
       ],
@@ -1004,7 +1004,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 128,
+      "line": 147,
       "middleware": [
         "FilesController.browseProject"
       ],
@@ -1019,7 +1019,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 122,
+      "line": 141,
       "middleware": [
         "FilesController.browse"
       ],
@@ -1034,7 +1034,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 101,
+      "line": 116,
       "middleware": [
         "FilesController.copy"
       ],
@@ -1049,7 +1049,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 161,
+      "line": 180,
       "middleware": [
         "FilesController.deleteBoardBackground"
       ],
@@ -1064,7 +1064,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 94,
+      "line": 109,
       "middleware": [
         "FilesController.remove"
       ],
@@ -1079,7 +1079,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 181,
+      "line": 202,
       "middleware": [
         "FilesController.download"
       ],
@@ -1094,7 +1094,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 73,
+      "line": 84,
       "middleware": [
         "FilesController.exists"
       ],
@@ -1109,7 +1109,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 170,
+      "line": 191,
       "middleware": [
         "FilesController.image"
       ],
@@ -1124,7 +1124,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 87,
+      "line": 100,
       "middleware": [
         "FilesController.mkdir"
       ],
@@ -1139,7 +1139,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 108,
+      "line": 125,
       "middleware": [
         "FilesController.move"
       ],
@@ -1154,7 +1154,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 59,
+      "line": 70,
       "middleware": [
         "FilesController.list"
       ],
@@ -1169,7 +1169,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 52,
+      "line": 63,
       "middleware": [
         "FilesController.read"
       ],
@@ -1184,7 +1184,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 137,
+      "line": 156,
       "middleware": [
         "FilesController.resolveDirectory"
       ],
@@ -1199,7 +1199,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 152,
+      "line": 171,
       "middleware": [
         "FilesController.saveBoardBackground"
       ],
@@ -1214,7 +1214,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 145,
+      "line": 164,
       "middleware": [
         "FilesController.saveImage"
       ],
@@ -1229,7 +1229,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 66,
+      "line": 77,
       "middleware": [
         "FilesController.stat"
       ],
@@ -1244,7 +1244,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 115,
+      "line": 134,
       "middleware": [
         "FilesController.validatePath"
       ],
@@ -1259,7 +1259,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 80,
+      "line": 91,
       "middleware": [
         "FilesController.write"
       ],
@@ -1304,7 +1304,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/git/git.controller.ts",
-      "line": 59,
+      "line": 73,
       "middleware": [
         "GitController.details"
       ],
@@ -1319,7 +1319,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/git/git.controller.ts",
-      "line": 29,
+      "line": 37,
       "middleware": [
         "GitController.diffs"
       ],
@@ -1334,7 +1334,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/git/git.controller.ts",
-      "line": 69,
+      "line": 85,
       "middleware": [
         "GitController.enhancedStatus"
       ],
@@ -1349,7 +1349,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/git/git.controller.ts",
-      "line": 22,
+      "line": 30,
       "middleware": [
         "GitController.environment"
       ],
@@ -1364,7 +1364,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/git/git.controller.ts",
-      "line": 39,
+      "line": 49,
       "middleware": [
         "GitController.fileDiff"
       ],
@@ -1379,7 +1379,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/git/git.controller.ts",
-      "line": 49,
+      "line": 61,
       "middleware": [
         "GitController.stageFiles"
       ],
@@ -1934,7 +1934,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/models/models.controller.ts",
-      "line": 8,
+      "line": 12,
       "middleware": [
         "ModelsController.listAvailable"
       ],
@@ -1949,7 +1949,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/models/models.controller.ts",
-      "line": 13,
+      "line": 17,
       "middleware": [
         "ModelsController.getProviders"
       ],
@@ -2834,7 +2834,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 119,
+      "line": 158,
       "middleware": [
         "SetupController.apiKeys"
       ],
@@ -2849,7 +2849,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 76,
+      "line": 109,
       "middleware": [
         "SetupController.authClaude"
       ],
@@ -2864,7 +2864,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 185,
+      "line": 236,
       "middleware": [
         "SetupController.authCodex"
       ],
@@ -2879,7 +2879,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 224,
+      "line": 283,
       "middleware": [
         "SetupController.authCopilot"
       ],
@@ -2894,7 +2894,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 169,
+      "line": 216,
       "middleware": [
         "SetupController.authCursor"
       ],
@@ -2909,7 +2909,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 211,
+      "line": 268,
       "middleware": [
         "SetupController.authGemini"
       ],
@@ -2924,7 +2924,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 198,
+      "line": 251,
       "middleware": [
         "SetupController.authOpencode"
       ],
@@ -2939,7 +2939,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 70,
+      "line": 103,
       "middleware": [
         "SetupController.claudeStatus"
       ],
@@ -2954,7 +2954,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 125,
+      "line": 164,
       "middleware": [
         "SetupController.claudeVerificationTarget"
       ],
@@ -2969,7 +2969,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 179,
+      "line": 228,
       "middleware": [
         "SetupController.codexStatus"
       ],
@@ -2984,7 +2984,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 136,
+      "line": 177,
       "middleware": [
         "SetupController.codexVerificationTarget"
       ],
@@ -2999,7 +2999,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 81,
+      "line": 114,
       "middleware": [
         "SetupController.connectionTarget"
       ],
@@ -3014,7 +3014,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 221,
+      "line": 280,
       "middleware": [
         "SetupController.copilotStatus"
       ],
@@ -3029,7 +3029,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 243,
+      "line": 306,
       "middleware": [
         "SetupController.clearCopilotCache"
       ],
@@ -3044,7 +3044,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 240,
+      "line": 303,
       "middleware": [
         "SetupController.refreshCopilotModels"
       ],
@@ -3059,7 +3059,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 234,
+      "line": 295,
       "middleware": [
         "SetupController.copilotModels"
       ],
@@ -3074,7 +3074,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 92,
+      "line": 127,
       "middleware": [
         "SetupController.credentialTarget"
       ],
@@ -3089,7 +3089,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 271,
+      "line": 338,
       "middleware": [
         "SetupController.setCursorDefaultModel"
       ],
@@ -3104,7 +3104,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 276,
+      "line": 343,
       "middleware": [
         "SetupController.setCursorModels"
       ],
@@ -3119,7 +3119,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 261,
+      "line": 328,
       "middleware": [
         "SetupController.cursorConfigTarget"
       ],
@@ -3134,7 +3134,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 266,
+      "line": 333,
       "middleware": [
         "SetupController.cursorConfig"
       ],
@@ -3149,7 +3149,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 297,
+      "line": 366,
       "middleware": [
         "SetupController.setCustomPermissions"
       ],
@@ -3164,7 +3164,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 309,
+      "line": 378,
       "middleware": [
         "SetupController.exampleCursorConfig"
       ],
@@ -3179,7 +3179,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 292,
+      "line": 361,
       "middleware": [
         "SetupController.applyPermissionProfile"
       ],
@@ -3194,7 +3194,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 281,
+      "line": 348,
       "middleware": [
         "SetupController.cursorPermissionsTarget"
       ],
@@ -3209,7 +3209,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 303,
+      "line": 372,
       "middleware": [
         "SetupController.deleteProjectPermissions"
       ],
@@ -3224,7 +3224,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 287,
+      "line": 356,
       "middleware": [
         "SetupController.cursorPermissions"
       ],
@@ -3239,7 +3239,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 166,
+      "line": 213,
       "middleware": [
         "SetupController.cursorStatus"
       ],
@@ -3254,7 +3254,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 87,
+      "line": 120,
       "middleware": [
         "SetupController.deauthClaude"
       ],
@@ -3269,7 +3269,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 190,
+      "line": 241,
       "middleware": [
         "SetupController.deauthCodex"
       ],
@@ -3284,7 +3284,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 229,
+      "line": 288,
       "middleware": [
         "SetupController.deauthCopilot"
       ],
@@ -3299,7 +3299,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 174,
+      "line": 221,
       "middleware": [
         "SetupController.deauthCursor"
       ],
@@ -3314,7 +3314,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 216,
+      "line": 273,
       "middleware": [
         "SetupController.deauthGemini"
       ],
@@ -3329,7 +3329,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 203,
+      "line": 258,
       "middleware": [
         "SetupController.deauthOpencode"
       ],
@@ -3344,7 +3344,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 108,
+      "line": 145,
       "middleware": [
         "SetupController.deleteApiKey"
       ],
@@ -3359,7 +3359,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 208,
+      "line": 265,
       "middleware": [
         "SetupController.geminiStatus"
       ],
@@ -3374,7 +3374,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 150,
+      "line": 195,
       "middleware": [
         "SetupController.ghStatus"
       ],
@@ -3389,7 +3389,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 153,
+      "line": 198,
       "middleware": [
         "SetupController.githubAuthenticationTarget"
       ],
@@ -3404,7 +3404,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 73,
+      "line": 106,
       "middleware": [
         "SetupController.installClaude"
       ],
@@ -3419,7 +3419,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 182,
+      "line": 233,
       "middleware": [
         "SetupController.installCodex"
       ],
@@ -3434,7 +3434,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 195,
+      "line": 246,
       "middleware": [
         "SetupController.opencodeStatus"
       ],
@@ -3449,7 +3449,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 258,
+      "line": 325,
       "middleware": [
         "SetupController.clearOpencodeCache"
       ],
@@ -3464,7 +3464,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 252,
+      "line": 317,
       "middleware": [
         "SetupController.refreshOpencodeModels"
       ],
@@ -3479,7 +3479,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 246,
+      "line": 309,
       "middleware": [
         "SetupController.opencodeModels"
       ],
@@ -3494,7 +3494,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 255,
+      "line": 320,
       "middleware": [
         "SetupController.opencodeProviders"
       ],
@@ -3509,7 +3509,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 122,
+      "line": 161,
       "middleware": [
         "SetupController.platform"
       ],
@@ -3524,7 +3524,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 97,
+      "line": 132,
       "middleware": [
         "SetupController.storeApiKey"
       ],
@@ -3539,7 +3539,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 130,
+      "line": 169,
       "middleware": [
         "SetupController.verifyClaudeAuth"
       ],
@@ -3554,7 +3554,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 141,
+      "line": 184,
       "middleware": [
         "SetupController.verifyCodexAuth"
       ],
@@ -3569,7 +3569,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 156,
+      "line": 201,
       "middleware": [
         "SetupController.verifyGithubAuth"
       ],
@@ -3689,7 +3689,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 53,
+      "line": 62,
       "middleware": [
         "TerminalController.authenticate"
       ],
@@ -3704,7 +3704,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 63,
+      "line": 72,
       "middleware": [
         "TerminalController.logout"
       ],
@@ -3719,7 +3719,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 188,
+      "line": 226,
       "middleware": [
         "TerminalController.resize"
       ],
@@ -3734,7 +3734,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 168,
+      "line": 197,
       "middleware": [
         "TerminalController.deleteSession"
       ],
@@ -3749,7 +3749,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 80,
+      "line": 92,
       "middleware": [
         "TerminalController.session"
       ],
@@ -3764,7 +3764,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 74,
+      "line": 83,
       "middleware": [
         "TerminalController.sessions"
       ],
@@ -3779,7 +3779,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 113,
+      "line": 131,
       "middleware": [
         "TerminalController.createSession"
       ],
@@ -3794,7 +3794,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 210,
+      "line": 253,
       "middleware": [
         "TerminalController.settings"
       ],
@@ -3809,7 +3809,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 222,
+      "line": 265,
       "middleware": [
         "TerminalController.updateSettings"
       ],
@@ -3824,7 +3824,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 41,
+      "line": 50,
       "middleware": [
         "TerminalController.status"
       ],
@@ -3869,7 +3869,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 227,
+      "line": 310,
       "middleware": [
         "WorktreeController.abortOperation"
       ],
@@ -3884,7 +3884,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 247,
+      "line": 334,
       "middleware": [
         "WorktreeController.addRemote"
       ],
@@ -3899,7 +3899,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 473,
+      "line": 602,
       "middleware": [
         "WorktreeController.availableEditors"
       ],
@@ -3914,7 +3914,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 498,
+      "line": 627,
       "middleware": [
         "WorktreeController.availableTerminals"
       ],
@@ -3929,7 +3929,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 598,
+      "line": 741,
       "middleware": [
         "WorktreeController.branchCommitLog"
       ],
@@ -3944,7 +3944,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 177,
+      "line": 250,
       "middleware": [
         "WorktreeController.checkChanges"
       ],
@@ -3959,7 +3959,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 307,
+      "line": 406,
       "middleware": [
         "WorktreeController.checkoutBranch"
       ],
@@ -3974,7 +3974,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 378,
+      "line": 491,
       "middleware": [
         "WorktreeController.cherryPick"
       ],
@@ -3989,7 +3989,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 588,
+      "line": 729,
       "middleware": [
         "WorktreeController.commitLog"
       ],
@@ -4004,7 +4004,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 217,
+      "line": 298,
       "middleware": [
         "WorktreeController.commit"
       ],
@@ -4019,7 +4019,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 237,
+      "line": 322,
       "middleware": [
         "WorktreeController.continueOperation"
       ],
@@ -4034,7 +4034,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 578,
+      "line": 717,
       "middleware": [
         "WorktreeController.createPr"
       ],
@@ -4049,7 +4049,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 398,
+      "line": 515,
       "middleware": [
         "WorktreeController.create"
       ],
@@ -4064,7 +4064,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 478,
+      "line": 607,
       "middleware": [
         "WorktreeController.defaultEditor"
       ],
@@ -4079,7 +4079,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 503,
+      "line": 632,
       "middleware": [
         "WorktreeController.defaultTerminal"
       ],
@@ -4094,7 +4094,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 408,
+      "line": 527,
       "middleware": [
         "WorktreeController.delete"
       ],
@@ -4109,7 +4109,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 629,
+      "line": 774,
       "middleware": [
         "WorktreeController.devServerLogs"
       ],
@@ -4124,7 +4124,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 157,
+      "line": 226,
       "middleware": [
         "WorktreeController.diffs"
       ],
@@ -4139,7 +4139,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 328,
+      "line": 431,
       "middleware": [
         "WorktreeController.discardChanges"
       ],
@@ -4154,7 +4154,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 120,
+      "line": 181,
       "middleware": [
         "WorktreeController.environment"
       ],
@@ -4169,7 +4169,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 167,
+      "line": 238,
       "middleware": [
         "WorktreeController.fileDiff"
       ],
@@ -4184,7 +4184,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 532,
+      "line": 663,
       "middleware": [
         "WorktreeController.generateCommitMessage"
       ],
@@ -4199,7 +4199,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 545,
+      "line": 678,
       "middleware": [
         "WorktreeController.generatePrDescription"
       ],
@@ -4214,7 +4214,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 137,
+      "line": 202,
       "middleware": [
         "WorktreeController.info"
       ],
@@ -4229,7 +4229,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 418,
+      "line": 539,
       "middleware": [
         "WorktreeController.initGit"
       ],
@@ -4244,7 +4244,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 447,
+      "line": 574,
       "middleware": [
         "WorktreeController.deleteInitScript"
       ],
@@ -4259,7 +4259,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 428,
+      "line": 551,
       "middleware": [
         "WorktreeController.getInitScript"
       ],
@@ -4274,7 +4274,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 437,
+      "line": 562,
       "middleware": [
         "WorktreeController.putInitScript"
       ],
@@ -4289,7 +4289,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 187,
+      "line": 262,
       "middleware": [
         "WorktreeController.listBranches"
       ],
@@ -4304,7 +4304,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 623,
+      "line": 768,
       "middleware": [
         "WorktreeController.listDevServers"
       ],
@@ -4319,7 +4319,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 197,
+      "line": 274,
       "middleware": [
         "WorktreeController.listRemotes"
       ],
@@ -4334,7 +4334,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 127,
+      "line": 190,
       "middleware": [
         "WorktreeController.list"
       ],
@@ -4349,7 +4349,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 388,
+      "line": 503,
       "middleware": [
         "WorktreeController.merge"
       ],
@@ -4364,7 +4364,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 466,
+      "line": 595,
       "middleware": [
         "WorktreeController.migrate"
       ],
@@ -4379,7 +4379,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 489,
+      "line": 618,
       "middleware": [
         "WorktreeController.openInEditor"
       ],
@@ -4394,7 +4394,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 523,
+      "line": 652,
       "middleware": [
         "WorktreeController.openInExternalTerminal"
       ],
@@ -4409,7 +4409,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 514,
+      "line": 643,
       "middleware": [
         "WorktreeController.openInTerminal"
       ],
@@ -4424,7 +4424,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 558,
+      "line": 693,
       "middleware": [
         "WorktreeController.prInfo"
       ],
@@ -4439,7 +4439,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 338,
+      "line": 443,
       "middleware": [
         "WorktreeController.pull"
       ],
@@ -4454,7 +4454,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 348,
+      "line": 455,
       "middleware": [
         "WorktreeController.push"
       ],
@@ -4469,7 +4469,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 368,
+      "line": 479,
       "middleware": [
         "WorktreeController.rebase"
       ],
@@ -4484,7 +4484,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 483,
+      "line": 612,
       "middleware": [
         "WorktreeController.refreshEditors"
       ],
@@ -4499,7 +4499,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 508,
+      "line": 637,
       "middleware": [
         "WorktreeController.refreshTerminals"
       ],
@@ -4514,7 +4514,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 457,
+      "line": 586,
       "middleware": [
         "WorktreeController.runInitScript"
       ],
@@ -4529,7 +4529,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 257,
+      "line": 346,
       "middleware": [
         "WorktreeController.setTracking"
       ],
@@ -4544,7 +4544,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 207,
+      "line": 286,
       "middleware": [
         "WorktreeController.stageFiles"
       ],
@@ -4559,7 +4559,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 609,
+      "line": 754,
       "middleware": [
         "WorktreeController.startDev"
       ],
@@ -4574,7 +4574,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 635,
+      "line": 780,
       "middleware": [
         "WorktreeController.startTests"
       ],
@@ -4589,7 +4589,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 287,
+      "line": 382,
       "middleware": [
         "WorktreeController.stashApply"
       ],
@@ -4604,7 +4604,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 297,
+      "line": 394,
       "middleware": [
         "WorktreeController.stashDrop"
       ],
@@ -4619,7 +4619,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 267,
+      "line": 358,
       "middleware": [
         "WorktreeController.stashList"
       ],
@@ -4634,7 +4634,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 277,
+      "line": 370,
       "middleware": [
         "WorktreeController.stashPush"
       ],
@@ -4649,7 +4649,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 147,
+      "line": 214,
       "middleware": [
         "WorktreeController.status"
       ],
@@ -4664,7 +4664,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 616,
+      "line": 761,
       "middleware": [
         "WorktreeController.stopDev"
       ],
@@ -4679,7 +4679,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 642,
+      "line": 787,
       "middleware": [
         "WorktreeController.stopTests"
       ],
@@ -4694,7 +4694,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 318,
+      "line": 419,
       "middleware": [
         "WorktreeController.switchBranch"
       ],
@@ -4709,7 +4709,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 358,
+      "line": 467,
       "middleware": [
         "WorktreeController.sync"
       ],
@@ -4724,7 +4724,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 648,
+      "line": 793,
       "middleware": [
         "WorktreeController.testLogs"
       ],
@@ -4739,7 +4739,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/worktree/worktree.controller.ts",
-      "line": 568,
+      "line": 705,
       "middleware": [
         "WorktreeController.updatePrNumber"
       ],

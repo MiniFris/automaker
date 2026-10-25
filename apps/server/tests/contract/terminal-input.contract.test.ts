@@ -89,9 +89,12 @@ it('rejects invalid native HTTP inputs with the same errors before any PTY or li
 
 it('retains defaults, ignored fields, array no-op inputs, accepted boundaries and missing session status', async () => {
   const terminal = runtime.app.get(TerminalService);
-  const create = vi
-    .spyOn(terminal, 'createSession')
-    .mockResolvedValue({ id: 'fixture', cwd: directory, shell: '/bin/sh', createdAt: 1 } as never);
+  const create = vi.spyOn(terminal, 'createSession').mockResolvedValue({
+    id: 'fixture',
+    cwd: directory,
+    shell: '/bin/sh',
+    createdAt: new Date(1),
+  } as never);
   const resize = vi.spyOn(terminal, 'resize').mockReturnValue(false);
   const limits = vi.spyOn(terminal, 'setMaxSessions');
   for (const body of [{ ignored: 'kept-compatible' }, []]) {

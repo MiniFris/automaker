@@ -62,10 +62,17 @@ test('status-only passthrough documents a validated body without inventing a fix
   }
 });
 
-test('unknown responses and raw request access remain explicitly incomplete', () => {
+test('binary responses and raw request access retain their explicit coverage boundaries', () => {
   const operation = document.paths['/api/setup/verify-claude-auth'].post;
   assert.equal(operation['x-request-contract'], 'incomplete');
-  assert.equal(operation['x-response-contract'], 'unverified');
+  assert.equal(operation['x-response-contract'], 'shared-runtime');
+  for (const [path, method] of [
+    ['/api/fs/image', 'get'],
+    ['/api/fs/download', 'post'],
+  ]) {
+    assert.equal(document.paths[path][method]['x-response-contract'], 'unverified');
+    assert.equal(document.paths[path][method].responses.default.content, undefined);
+  }
   assert.ok(operation['x-unresolved-inputs'].some((input) => input.in === 'request'));
   assert.equal(
     document['x-coverage'].unverifiedResponses + document['x-coverage'].sharedRuntimeResponses,
@@ -74,7 +81,7 @@ test('unknown responses and raw request access remain explicitly incomplete', ()
   assert.ok(!JSON.stringify(document).includes('ZodValidationPipe'));
 });
 
-test('publishes an output schema only for a direct shared runtime parse response', () => {
+test('publishes shared runtime schemas for direct returns and proven manual JSON writes', () => {
   const operation = document.paths['/api/metrics'].get;
   assert.equal(operation['x-response-contract'], 'shared-runtime');
   const reference = operation.responses['200'].content['application/json'].schema.$ref;
@@ -83,7 +90,11 @@ test('publishes an output schema only for a direct shared runtime parse response
   assert.ok(schema.required.includes('providerActiveQueries'));
   assert.equal(
     document.paths['/api/terminal/sessions/{id}'].get['x-response-contract'],
-    'unverified'
+    'shared-runtime'
+  );
+  assert.ok(
+    document.paths['/api/terminal/sessions/{id}'].get.responses.default.content['application/json']
+      .schema.$ref
   );
 });
 
@@ -91,7 +102,7 @@ test('recognizes guarded whole-body validation without narrowing the terminal wi
   const operation = document.paths['/api/terminal/sessions'].post;
   assert.equal(operation['x-request-contract'], 'shared-or-no-input');
   assert.equal(operation.requestBody.required, false);
-  assert.equal(operation['x-response-contract'], 'unverified');
+  assert.equal(operation['x-response-contract'], 'shared-runtime');
   const reference = operation.requestBody.content['application/json'].schema.$ref;
   const schema = document.components.schemas[reference.split('/').at(-1)];
   assert.ok(schema.anyOf.some((variant) => variant.type === 'null'));

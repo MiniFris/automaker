@@ -1,4 +1,15 @@
 import {
+  FilesBrowseProjectResponseSchema,
+  FilesBrowseResponseSchema,
+  FilesExistsResponseSchema,
+  FilesListResponseSchema,
+  FilesPathResponseSchema,
+  FilesReadResponseSchema,
+  FilesStatResponseSchema,
+  FilesSuccessResponseSchema,
+  FilesValidatedPathResponseSchema,
+} from '@automaker/contracts/domains/files-responses';
+import {
   Body,
   Controller,
   Get,
@@ -52,119 +63,129 @@ export class FilesController {
   @Post('read')
   @HttpCode(200)
   @AllowedPathFields('filePath')
-  read(@Body(new ZodValidationPipe(FilePathRequestSchema)) input: FilePathRequest) {
-    return this.files.read(input.filePath);
+  async read(@Body(new ZodValidationPipe(FilePathRequestSchema)) input: FilePathRequest) {
+    return FilesReadResponseSchema.parse(await this.files.read(input.filePath));
   }
 
   @Post('readdir')
   @HttpCode(200)
   @AllowedPathFields('dirPath')
-  list(@Body(new ZodValidationPipe(DirectoryPathRequestSchema)) input: DirectoryPathRequest) {
-    return this.files.list(input.dirPath);
+  async list(@Body(new ZodValidationPipe(DirectoryPathRequestSchema)) input: DirectoryPathRequest) {
+    return FilesListResponseSchema.parse(await this.files.list(input.dirPath));
   }
 
   @Post('stat')
   @HttpCode(200)
   @AllowedPathFields('filePath')
-  stat(@Body(new ZodValidationPipe(FilePathRequestSchema)) input: FilePathRequest) {
-    return this.files.stat(input.filePath);
+  async stat(@Body(new ZodValidationPipe(FilePathRequestSchema)) input: FilePathRequest) {
+    return FilesStatResponseSchema.parse(await this.files.stat(input.filePath));
   }
 
   @Post('exists')
   @HttpCode(200)
   @AllowedPathFields('filePath')
-  exists(@Body(new ZodValidationPipe(FilePathRequestSchema)) input: FilePathRequest) {
-    return this.files.exists(input.filePath);
+  async exists(@Body(new ZodValidationPipe(FilePathRequestSchema)) input: FilePathRequest) {
+    return FilesExistsResponseSchema.parse(await this.files.exists(input.filePath));
   }
 
   @Post('write')
   @HttpCode(200)
   @AllowedPathFields('filePath')
-  write(@Body(new ZodValidationPipe(WriteFileRequestSchema)) input: WriteFileRequest) {
-    return this.commands.write(input.filePath, input.content);
+  async write(@Body(new ZodValidationPipe(WriteFileRequestSchema)) input: WriteFileRequest) {
+    return FilesSuccessResponseSchema.parse(
+      await this.commands.write(input.filePath, input.content)
+    );
   }
 
   @Post('mkdir')
   @HttpCode(200)
   @AllowedPathFields('dirPath')
-  mkdir(@Body(new ZodValidationPipe(DirectoryPathRequestSchema)) input: DirectoryPathRequest) {
-    return this.commands.mkdir(input.dirPath);
+  async mkdir(
+    @Body(new ZodValidationPipe(DirectoryPathRequestSchema)) input: DirectoryPathRequest
+  ) {
+    return FilesSuccessResponseSchema.parse(await this.commands.mkdir(input.dirPath));
   }
 
   @Post('delete')
   @HttpCode(200)
   @AllowedPathFields('filePath')
-  remove(@Body(new ZodValidationPipe(FilePathRequestSchema)) input: FilePathRequest) {
-    return this.commands.remove(input.filePath);
+  async remove(@Body(new ZodValidationPipe(FilePathRequestSchema)) input: FilePathRequest) {
+    return FilesSuccessResponseSchema.parse(await this.commands.remove(input.filePath));
   }
 
   @Post('copy')
   @HttpCode(200)
   @AllowedPathFields('sourcePath', 'destinationPath')
-  copy(@Body(new ZodValidationPipe(TransferFileRequestSchema)) input: TransferFileRequest) {
-    return this.commands.copy(input.sourcePath, input.destinationPath, input.overwrite);
+  async copy(@Body(new ZodValidationPipe(TransferFileRequestSchema)) input: TransferFileRequest) {
+    return FilesSuccessResponseSchema.parse(
+      await this.commands.copy(input.sourcePath, input.destinationPath, input.overwrite)
+    );
   }
 
   @Post('move')
   @HttpCode(200)
   @AllowedPathFields('sourcePath', 'destinationPath')
-  move(@Body(new ZodValidationPipe(TransferFileRequestSchema)) input: TransferFileRequest) {
-    return this.commands.move(input.sourcePath, input.destinationPath, input.overwrite);
+  async move(@Body(new ZodValidationPipe(TransferFileRequestSchema)) input: TransferFileRequest) {
+    return FilesSuccessResponseSchema.parse(
+      await this.commands.move(input.sourcePath, input.destinationPath, input.overwrite)
+    );
   }
 
   @Post('validate-path')
   @HttpCode(200)
   @AllowedPathFields('filePath')
-  validatePath(@Body(new ZodValidationPipe(FilePathRequestSchema)) input: FilePathRequest) {
-    return this.files.validatePath(input.filePath);
+  async validatePath(@Body(new ZodValidationPipe(FilePathRequestSchema)) input: FilePathRequest) {
+    return FilesValidatedPathResponseSchema.parse(await this.files.validatePath(input.filePath));
   }
 
   @Post('browse')
   @HttpCode(200)
-  browse(@Body(new ZodValidationPipe(BrowseRequestSchema)) input: BrowseRequest) {
-    return this.files.browse(input.dirPath);
+  async browse(@Body(new ZodValidationPipe(BrowseRequestSchema)) input: BrowseRequest) {
+    return FilesBrowseResponseSchema.parse(await this.files.browse(input.dirPath));
   }
 
   @Post('browse-project-files')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  browseProject(
+  async browseProject(
     @Body(new ZodValidationPipe(BrowseProjectRequestSchema)) input: BrowseProjectRequest
   ) {
-    return this.files.browseProject(input);
+    return FilesBrowseProjectResponseSchema.parse(await this.files.browseProject(input));
   }
 
   @Post('resolve-directory')
   @HttpCode(200)
-  resolveDirectory(
+  async resolveDirectory(
     @Body(new ZodValidationPipe(ResolveDirectoryRequestSchema)) input: ResolveDirectoryRequest
   ) {
-    return this.files.resolveDirectory(input);
+    return FilesPathResponseSchema.parse(await this.files.resolveDirectory(input));
   }
 
   @Post('save-image')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  saveImage(@Body(new ZodValidationPipe(SaveImageRequestSchema)) input: SaveImageRequest) {
-    return this.commands.saveImage(input);
+  async saveImage(@Body(new ZodValidationPipe(SaveImageRequestSchema)) input: SaveImageRequest) {
+    return FilesPathResponseSchema.parse(await this.commands.saveImage(input));
   }
 
   @Post('save-board-background')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  saveBoardBackground(
+  async saveBoardBackground(
     @Body(new ZodValidationPipe(SaveImageRequestSchema)) input: SaveImageRequest
   ) {
-    return this.commands.saveImage(input, true);
+    return FilesPathResponseSchema.parse(await this.commands.saveImage(input, true));
   }
 
   @Post('delete-board-background')
   @HttpCode(200)
   @AllowedPathFields('projectPath')
-  deleteBoardBackground(
+  async deleteBoardBackground(
     @Body(new ZodValidationPipe(ProjectPathRequestSchema)) input: ProjectPathRequest
   ) {
-    return this.commands.deleteBoardBackground(input.projectPath);
+    return FilesSuccessResponseSchema.parse(
+      await this.commands.deleteBoardBackground(input.projectPath)
+    );
   }
 
   @Get('image')

@@ -56,7 +56,7 @@ async function request(route: string, method = 'GET', body?: unknown) {
 it('keeps refresh true only for a scalar literal, accepting repeated and bracketed query keys', async () => {
   const catalogs = vi
     .spyOn(runtime.app.get(ProviderModelCatalogService), 'models')
-    .mockResolvedValue({ success: true } as never);
+    .mockResolvedValue({ success: true, models: [], count: 0, cached: false } as never);
   const usage = vi
     .spyOn(runtime.app.get(ProviderUsageService), 'codexModelCatalog')
     .mockResolvedValue({

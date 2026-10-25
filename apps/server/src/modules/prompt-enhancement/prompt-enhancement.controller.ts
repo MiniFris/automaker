@@ -12,6 +12,7 @@ import { AllowedPathFields, AllowedPathGuard } from '../../core/security/index.j
 import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
 import { PromptEnhancementService } from './prompt-enhancement.service.js';
 import { DomainError } from '../../core/errors/index.js';
+import { PromptEnhancementResponseSchema } from '@automaker/contracts/domains/model-responses';
 import {
   PromptEnhancementRequestSchema,
   type PromptEnhancementRequest,
@@ -31,7 +32,7 @@ export class PromptEnhancementController {
     @Body(new ZodValidationPipe(PromptEnhancementRequestSchema)) body: PromptEnhancementRequest
   ) {
     try {
-      return await this.enhancement.enhance(body);
+      return PromptEnhancementResponseSchema.parse(await this.enhancement.enhance(body));
     } catch (error) {
       if (error instanceof DomainError) throw error;
       const message = error instanceof Error ? error.message : 'Unknown error occurred';

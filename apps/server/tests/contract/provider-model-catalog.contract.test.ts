@@ -50,6 +50,7 @@ it('owns model discovery/cache per Nest app and preserves native catalog/status 
             name: application,
             modelString: application,
             provider: name,
+            description: 'Offline fixture model',
           },
         ]),
     }));
