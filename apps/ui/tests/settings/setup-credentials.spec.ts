@@ -4,7 +4,12 @@ import { authenticateForTests } from '../utils';
 test('cancels, stores and deletes an application key through confirmed native targets', async ({
   page,
 }) => {
-  await authenticateForTests(page);
+  // Cold auth may visit the UI; both server rendering hints and synchronous
+  // local settings must already describe this test's wizard state at that point.
+  await page.addInitScript(() => {
+    localStorage.removeItem('automaker-settings-cache');
+    localStorage.removeItem('automaker-setup');
+  });
   let setupComplete = false;
   await page.route('**/api/settings/global', async (route) => {
     if (route.request().method() !== 'GET') return route.continue();
@@ -33,6 +38,7 @@ test('cancels, stores and deletes an application key through confirmed native ta
       },
     })
   );
+  expect(await authenticateForTests(page)).toBe(true);
   const writes: unknown[] = [];
   page.on('request', (request) => {
     if (request.url().endsWith('/api/setup/store-api-key') && request.method() === 'POST')

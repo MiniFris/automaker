@@ -15022,6 +15022,10 @@
             "minLength": 1,
             "maxLength": 255
           },
+          "mimeType": {
+            "type": "string",
+            "maxLength": 255
+          },
           "projectPath": {
             "type": "string",
             "minLength": 1,

@@ -45,6 +45,8 @@ export const SaveImageRequestSchema = z
       .min(1)
       .max(28 * 1024 * 1024),
     filename: z.string().trim().min(1).max(255),
+    // Existing browser clients send this hint; storage validates the extension.
+    mimeType: z.string().max(255).optional(),
     projectPath: ProjectPathSchema,
   })
   .strict();

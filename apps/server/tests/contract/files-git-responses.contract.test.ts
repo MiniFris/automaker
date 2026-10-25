@@ -202,6 +202,37 @@ it('serves all 16 filesystem JSON operations with actual native files, dates and
   await expect(fs.stat(background.body.path)).rejects.toMatchObject({ code: 'ENOENT' });
 });
 
+it.each(['fs/save-image', 'fs/save-board-background'])(
+  'accepts the browser MIME hint and legacy requests at %s without changing saved bytes',
+  async (route) => {
+    const owner = await start();
+    const content = Buffer.from('browser-image-fixture');
+    const image = {
+      projectPath: owner.project,
+      filename: 'browser.png',
+      data: content.toString('base64'),
+    };
+    for (const body of [image, { ...image, mimeType: 'image/png' }]) {
+      const response = await owner.post(route, body);
+      expect(response).toMatchObject({
+        status: 200,
+        body: { success: true, path: expect.any(String) },
+      });
+      expect(await fs.readFile(response.body.path)).toEqual(content);
+    }
+    for (const body of [
+      { ...image, mimeType: 42 },
+      { ...image, mimeType: 'image/png', unexpected: true },
+      { ...image, mimeType: 'image/png', filename: 'browser.html' },
+    ]) {
+      expect(await owner.post(route, body)).toMatchObject({
+        status: 400,
+        body: { success: false },
+      });
+    }
+  }
+);
+
 it('preserves filesystem warnings and existing failure precedence', async () => {
   const owner = await start(),
     port = owner.app.get<ProjectFilePort>(PROJECT_FILE_PORT),

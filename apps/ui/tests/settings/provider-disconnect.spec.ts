@@ -7,9 +7,33 @@ import { authenticateForTests } from '../utils';
 test('inspects, cancels and confirms app-scoped provider disconnect and restores state after reload', async ({
   page,
 }) => {
-  await authenticateForTests(page);
+  // Routing state belongs to this browser fixture, not the shared backend's
+  // setup progress. Install it before auth, which may navigate on a cold session.
+  await page.addInitScript(() => {
+    localStorage.removeItem('automaker-settings-cache');
+    localStorage.removeItem('automaker-setup');
+  });
+  await page.route('**/api/settings/global', async (route) => {
+    if (route.request().method() !== 'GET') return route.continue();
+    const response = await route.fetch();
+    const body = await response.json();
+    await route.fulfill({
+      response,
+      json: {
+        ...body,
+        settings: { ...body.settings, setupComplete: true, isFirstRun: false, uiLocale: 'en' },
+      },
+    });
+  });
+  expect(await authenticateForTests(page)).toBe(true);
   await page.goto('/settings?view=cursor-provider');
   const disconnect = page.getByRole('button', { name: 'Disconnect from Automaker' });
+  const reconnect = page.getByRole('button', { name: 'Reconnect to Automaker' });
+  const passiveStatus = page.getByText('Authentication not checked', { exact: true });
+  const credentialsNotice = page.getByText(
+    'No local credentials or configuration detected. CLI login is performed separately.',
+    { exact: true }
+  );
   await expect(disconnect).toBeVisible();
   const mutations: unknown[] = [];
   page.on('request', (request) => {
@@ -53,11 +77,14 @@ test('inspects, cancels and confirms app-scoped provider disconnect and restores
     expect(await response.json()).toMatchObject({ success: true, connected: false, target });
     expect(mutations).toEqual([{ confirmed: true, target }]);
     await expect(disconnect).not.toBeVisible();
-    await expect(page.getByText('Not Authenticated', { exact: true })).toBeVisible();
+    await expect(passiveStatus).toBeVisible();
+    await expect(credentialsNotice).toBeVisible();
+    await expect(reconnect).toBeVisible();
     await page.reload();
-    await expect(page.getByText('Not Authenticated', { exact: true })).toBeVisible();
+    await expect(passiveStatus).toBeVisible();
+    await expect(credentialsNotice).toBeVisible();
+    await expect(reconnect).toBeVisible();
     await expect(disconnect).not.toBeVisible();
-    const reconnect = page.getByRole('button', { name: 'Reconnect to Automaker' });
     await reconnect.click();
     const reconnectDialog = page.getByRole('dialog', { name: 'Reconnect provider?' });
     await expect(reconnectDialog.getByTestId('provider-reconnect-target')).toContainText(ownedRoot);
@@ -65,7 +92,9 @@ test('inspects, cancels and confirms app-scoped provider disconnect and restores
       target.instanceId
     );
     await reconnectDialog.getByRole('button', { name: 'Cancel' }).click();
-    await expect(page.getByText('Not Authenticated', { exact: true })).toBeVisible();
+    await expect(passiveStatus).toBeVisible();
+    await expect(credentialsNotice).toBeVisible();
+    await expect(reconnect).toBeVisible();
     await reconnect.click();
     await expect(reconnectDialog.getByTestId('provider-reconnect-target')).toContainText(ownedRoot);
     const restored = page.waitForResponse(
