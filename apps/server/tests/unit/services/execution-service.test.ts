@@ -177,6 +177,8 @@ describe('execution-service.ts', () => {
 
     mockConcurrencyManager = {
       acquireAsync: vi.fn((options) => Promise.resolve(mockConcurrencyManager.acquire(options))),
+      executeOwned: vi.fn((_run, _phase, action) => action()),
+      markExecutionUncertain: vi.fn(),
       isCurrent: vi.fn().mockReturnValue(true),
       coordinator: {
         bind: vi.fn(() => ({

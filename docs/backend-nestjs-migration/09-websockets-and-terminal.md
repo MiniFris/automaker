@@ -10,8 +10,10 @@ Native WS/terminal lifecycle и wire parity подтверждены
 FD/child identity checks. Это не WAN slow-client stress или Windows/macOS ownership
 acceptance. [Linux packaged evidence](artifacts/current-artifact-acceptance-checkpoint.md)
 относится к указанному там artifact; после финальных изменений потребуется refresh.
-Открытый ниже composite item разделяется: host/RC port уже реализован, остаются
-полный platform helper audit и transport stress/conditional OS gates.
+Host/RC IO и bounded actual Linux backpressure теперь подтверждены отдельно:
+[20-секундный PTY/TCP workload](artifacts/terminal-backpressure-acceptance.md).
+Его dist — wave22 `67948aa8`; повтор после финального build принадлежит общему
+checkpoint. Actual Windows/macOS/WSL acceptance остаётся conditional.
 
 ## Цель
 
@@ -40,8 +42,10 @@ Nest `WsAdapter`, но `/api/terminal/ws` имеет собственные со
 
 Следующий срез реализовал подтверждение explicit stop/unknown и scoped native
 preflight рабочего каталога; см. [stop/preflight audit](artifacts/terminal-confirmed-stop-audit.md).
-Полный transport stress/backpressure и оставшиеся terminal environment/theme IO
-этим срезом не закрываются. Старые замечания audit о сохранённом
+В том историческом срезе transport stress и host/theme IO ещё оставались открыты.
+Последующие [host/RC contracts](artifacts/terminal-host-configuration-audit.md) и
+[actual output/backpressure probe](artifacts/terminal-backpressure-acceptance.md)
+закрывают конкретный native Linux scope; это не универсальный WAN/OS stress test. Старые замечания audit о сохранённом
 `getTerminalService` больше не описывают текущий source: getter удалён; боевой
 lifecycle bridge также удалён, см.
 [native cutover](artifacts/native-cutover-checkpoint.md).
@@ -101,9 +105,14 @@ lifecycle bridge также удалён, см.
       SecurityService, RuntimePaths и snapshot home. Даже fallback проверяется
       policy и stat; denied/EIO не запускают PTY. При отсутствующем/недоступном
       HOME выбирается разрешённый root/working directory, без ambient home.
-- [ ] Завершить остальные terminal environment/theme/profile IO boundaries и
-      transport stress/backpressure acceptance. Preflight port не означает,
-      что все platform helpers TerminalService уже application-owned.
+- [x] Передать native terminal environment/theme/profile IO application-owned
+      host/RC ports: captured environment, canonical cwd, scoped atomic RC/theme
+      generation и drain accepted IO; [host/RC evidence](artifacts/terminal-host-configuration-audit.md).
+- [x] Проверить actual sustained PTY output, медленного WS клиента, capped replay,
+      FD/owned-child cleanup и bounded shutdown на Linux;
+      [20-секундный actual TCP workload](artifacts/terminal-backpressure-acceptance.md)
+      использует dist `67948aa8`. Windows/macOS/WSL ownership acceptance conditional;
+      WAN benchmark и полная доставка stdout не являются результатом этой проверки.
 
 ## 9.5. Shutdown
 

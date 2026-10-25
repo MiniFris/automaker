@@ -112,3 +112,29 @@ Offline fixtures создают только собственные времен
 sibling с совпадающим hash/mode manifest и успешным preflight. Он не запускает
 старый production binary и не заменяет предусмотренную rollout-планом проверку
 конкретного artifact и rollback на staging.
+
+## Feature execution intents
+
+Native execution writes a private DATA_DIR ledger at
+`feature-execution-intents/<sha256>.json` before dispatching an implementation,
+custom pipeline step or merge. Version 1 stores canonical project/feature identity,
+an operation ID, kind, `pending`/`uncertain` phase and a fixed controlled reason.
+It stores no prompt, provider output or credentials. A pending record after a
+crash also requires inspection: restarting cannot establish whether its mutation
+completed. Normal confirmed settlement removes the record.
+
+Both phases block native asynchronous admission after restart and block downgrade
+to `legacy-no-agent-ledgers`. The stopped-profile preflight reports only the hashed
+artifact path and phase; malformed/unrecognized artifacts produce `unconfirmed`.
+Older binaries do not understand this gate. Do not delete a ledger to make
+preflight pass; use the full matched pre-upgrade snapshot and artifact procedure
+above. Restoring DATA_DIR does not undo workspace/remote effects.
+
+Recovery is deliberately an operator action with the controller stopped: retain
+a full profile/project snapshot, identify the affected private intent, verify the
+workspace outcome and that owned processes have stopped, then explicitly
+acknowledge that individual operation by archiving/removing its intent from the
+active profile. Unknown or unverifiable outcomes stay blocked. There is no HTTP
+"force resume" field, automatic replay or automatic clearing by a late completion.
+A new controller can then admit reviewed work. This is per-operation recovery for
+the current backend, not a downgrade conversion or a claim of power-loss durability.

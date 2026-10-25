@@ -1,15 +1,13 @@
-import { Injectable } from '@nestjs/common';
 import type { ConcurrencyManager, RunningFeature } from '../../services/concurrency-manager.js';
 import { ValidationDomainError } from '../../core/errors/index.js';
 import { canTransitionFeatureRun, type FeatureRunState } from './feature-run-state-machine.js';
 import type { FeatureRunPort } from '../../services/agent-executor-types.js';
 
 /** Stateless coordinator: ConcurrencyManager owns every run and its mutation lane. */
-@Injectable()
 export class FeatureRunCoordinator {
   bind(manager: ConcurrencyManager, run: RunningFeature): FeatureRunPort {
     const assertCurrent = () => {
-      if (!manager.isCurrent(run)) {
+      if (!manager.isCurrent(run) || run.executionUncertain) {
         const error = new Error('Feature run was superseded');
         error.name = 'AbortError';
         throw error;
@@ -31,7 +29,7 @@ export class FeatureRunCoordinator {
     };
   }
   transition(manager: ConcurrencyManager, run: RunningFeature, state: FeatureRunState): boolean {
-    if (!manager.isCurrent(run)) return false;
+    if (!manager.isCurrent(run) || run.executionUncertain) return false;
     if (!canTransitionFeatureRun(run.state, state))
       throw new ValidationDomainError(`Invalid feature run transition: ${run.state} -> ${state}`);
     run.state = state;
@@ -39,7 +37,8 @@ export class FeatureRunCoordinator {
   }
 
   acceptCompletion(manager: ConcurrencyManager, run: RunningFeature, eventId: string): boolean {
-    if (!manager.isCurrent(run) || run.completedEvents.has(eventId)) return false;
+    if (!manager.isCurrent(run) || run.executionUncertain || run.completedEvents.has(eventId))
+      return false;
     run.completedEvents.add(eventId);
     return true;
   }
@@ -49,11 +48,12 @@ export class FeatureRunCoordinator {
     run: RunningFeature,
     write: () => Promise<unknown>
   ): Promise<boolean> {
-    if (!manager.isCurrent(run)) return Promise.resolve(false);
+    if (!manager.isCurrent(run) || run.executionUncertain) return Promise.resolve(false);
     run.pendingMutations++;
     const accepted = run.mutationTail
       .catch(() => {})
       .then(async () => {
+        if (run.executionUncertain) return false;
         await write();
         return true;
       });

@@ -106,7 +106,15 @@ describe.skipIf(!base || process.platform !== 'linux')('real managed Docker Engi
       '{{.ID}}',
     ]);
     expect(remaining.stdout.trim()).toBe('');
-    expect((await runDocker(['image', 'rm', tag])).code).toBe(0);
+    const builtImage = await runDocker(['image', 'inspect', tag]);
+    if (builtImage.code === 0) {
+      expect(JSON.parse(builtImage.stdout)[0].Config.Labels['dev.automaker.worker']).toBe('1');
+      expect((await runDocker(['image', 'rm', tag])).code).toBe(0);
+    } else {
+      // A failed bootstrap may never create its image. That must not skip the
+      // independent owned volume/directory cleanup below; daemon errors still fail.
+      expect(builtImage.stderr).toMatch(/No such image:/i);
+    }
     if (volumeCreated) {
       const inspected = await runDocker(['volume', 'inspect', volume]);
       expect(JSON.parse(inspected.stdout)[0].Labels['dev.automaker.test']).toBe(tag);

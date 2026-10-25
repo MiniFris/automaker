@@ -1,3 +1,4 @@
+import { uncertainExecution, FEATURE_UNCERTAIN_REASON } from './feature-execution-uncertainty.js';
 /**
  * ExecutionService - Feature execution lifecycle coordination
  */
@@ -370,28 +371,30 @@ ${feature.spec}
       tempRunningFeature.model = model;
       tempRunningFeature.provider = this.providerRegistry.providerNameForModel(model);
 
-      await this.runAgentFn(
-        workDir,
-        featureId,
-        prompt,
-        abortController,
-        projectPath,
-        imagePaths,
-        model,
-        {
+      await this.concurrencyManager.executeOwned(tempRunningFeature, 'execution', () =>
+        this.runAgentFn(
+          workDir,
+          featureId,
+          prompt,
+          abortController,
           projectPath,
-          planningMode: feature.planningMode,
-          runPort,
-          boundTargetCwd: remote?.binding.cwd,
-          requirePlanApproval: feature.requirePlanApproval,
-          systemPrompt: combinedSystemPrompt || undefined,
-          autoLoadClaudeMd,
-          useClaudeCodeSystemPrompt,
-          thinkingLevel: feature.thinkingLevel,
-          reasoningEffort: feature.reasoningEffort,
-          providerId: feature.providerId,
-          branchName: feature.branchName ?? null,
-        }
+          imagePaths,
+          model,
+          {
+            projectPath,
+            planningMode: feature!.planningMode,
+            runPort,
+            boundTargetCwd: remote?.binding.cwd,
+            requirePlanApproval: feature!.requirePlanApproval,
+            systemPrompt: combinedSystemPrompt || undefined,
+            autoLoadClaudeMd,
+            useClaudeCodeSystemPrompt,
+            thinkingLevel: feature!.thinkingLevel,
+            reasoningEffort: feature!.reasoningEffort,
+            providerId: feature!.providerId,
+            branchName: feature!.branchName ?? null,
+          }
+        )
       );
 
       abortController.signal.throwIfAborted();
@@ -440,28 +443,30 @@ ${remainingTasksList}
 
 Please continue from where you left off and complete all remaining tasks. Use the same [TASK_START:ID] and [TASK_COMPLETE:ID] markers for each task.`;
 
-        await this.runAgentFn(
-          workDir,
-          featureId,
-          continuationPrompt,
-          abortController,
-          projectPath,
-          undefined,
-          model,
-          {
+        await this.concurrencyManager.executeOwned(tempRunningFeature, 'execution', () =>
+          this.runAgentFn(
+            workDir,
+            featureId,
+            continuationPrompt,
+            abortController,
             projectPath,
-            planningMode: 'skip',
-            runPort,
-            boundTargetCwd: remote?.binding.cwd,
-            requirePlanApproval: false,
-            systemPrompt: combinedSystemPrompt || undefined,
-            autoLoadClaudeMd,
-            useClaudeCodeSystemPrompt,
-            thinkingLevel: feature.thinkingLevel,
-            reasoningEffort: feature.reasoningEffort,
-            providerId: feature.providerId,
-            branchName: feature.branchName ?? null,
-          }
+            undefined,
+            model,
+            {
+              projectPath,
+              planningMode: 'skip',
+              runPort,
+              boundTargetCwd: remote?.binding.cwd,
+              requirePlanApproval: false,
+              systemPrompt: combinedSystemPrompt || undefined,
+              autoLoadClaudeMd,
+              useClaudeCodeSystemPrompt,
+              thinkingLevel: feature!.thinkingLevel,
+              reasoningEffort: feature!.reasoningEffort,
+              providerId: feature!.providerId,
+              branchName: feature!.branchName ?? null,
+            }
+          )
         );
       }
 
@@ -631,6 +636,16 @@ Please continue from where you left off and complete all remaining tasks. Use th
       }
     } catch (error) {
       if (!current()) return;
+      if (uncertainExecution(error) || tempRunningFeature.executionUncertain) {
+        await this.concurrencyManager.markExecutionUncertain(tempRunningFeature);
+        this.eventBus.emitAutoModeEvent('auto_mode_error', {
+          featureId,
+          projectPath,
+          error: FEATURE_UNCERTAIN_REASON,
+          errorType: 'unknown',
+        });
+        return;
+      }
       const errorInfo = classifyError(error);
       if (errorInfo.isAbort) {
         if (!(await updateStatus('interrupted'))) return;

@@ -38,6 +38,10 @@ const pipelineService = {
 
 // Mock merge-service
 vi.mock('../../../src/services/merge-service.js', () => ({
+  createLocalMergeExecutor: vi.fn(() => ({
+    execute: vi.fn().mockResolvedValue('main'),
+    signal: new AbortController().signal,
+  })),
   performMerge: vi.fn().mockResolvedValue({ success: true }),
 }));
 
@@ -133,6 +137,8 @@ describe('PipelineOrchestrator - providerId passthrough', () => {
     } as unknown as WorktreeResolver;
 
     mockConcurrencyManager = {
+      executeOwned: vi.fn((_run, _phase, action) => action()),
+      markExecutionUncertain: vi.fn(),
       isCurrent: vi.fn().mockReturnValue(true),
       coordinator: {
         bind: vi.fn(() => ({

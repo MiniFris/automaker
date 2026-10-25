@@ -3,13 +3,14 @@ import { Inject, Injectable } from '@nestjs/common';
 
 import { AppSpecJobRegistry } from '../app-spec/app-spec-job.registry.js';
 import { BacklogPlanJobRegistry } from '../backlog-plan/backlog-plan-job.registry.js';
-import { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
+import { FEATURE_RUN_READ_MODEL, type FeatureRunReadModel } from '../auto-mode/auto-mode.ports.js';
 import { ChatExecutionReadModel } from './chat-execution-read-model.js';
 
 @Injectable()
 export class RunningAgentsService {
   constructor(
-    @Inject(AutoModeServiceCompat) private readonly autoMode: AutoModeServiceCompat,
+    @Inject(FEATURE_RUN_READ_MODEL)
+    private readonly autoMode: Pick<FeatureRunReadModel, 'getRunningAgents'>,
     @Inject(ChatExecutionReadModel) private readonly chats: ChatExecutionReadModel,
     @Inject(AppSpecJobRegistry) private readonly specs: AppSpecJobRegistry,
     @Inject(BacklogPlanJobRegistry) private readonly backlog: BacklogPlanJobRegistry

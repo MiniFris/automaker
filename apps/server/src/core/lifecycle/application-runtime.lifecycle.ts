@@ -17,7 +17,10 @@ import {
 import { ReadinessStateService } from './readiness-state.service.js';
 import { SettingsService } from '../../services/settings-service.js';
 import { AgentService } from '../../services/agent-service.js';
-import { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
+import {
+  AUTO_MODE_LIFECYCLE,
+  type AutoModeLifecycle,
+} from '../../modules/auto-mode/auto-mode.ports.js';
 import { DevServerService } from '../../services/dev-server-service.js';
 import { TestRunnerService } from '../../services/test-runner-service.js';
 import { TerminalService } from '../../services/terminal-service.js';
@@ -44,7 +47,7 @@ export class ApplicationRuntimeLifecycle implements OnApplicationBootstrap, OnMo
     @Inject(ReadinessStateService) private readonly readiness: ReadinessStateService,
     @Inject(SettingsService) private readonly settings: SettingsService,
     @Inject(AgentService) private readonly agents: AgentService,
-    @Inject(AutoModeServiceCompat) private readonly autoMode: AutoModeServiceCompat,
+    @Inject(AUTO_MODE_LIFECYCLE) private readonly autoMode: AutoModeLifecycle,
     @Inject(DevServerService) private readonly devServer: DevServerService,
     @Inject(TestRunnerService) private readonly tests: TestRunnerService,
     @Inject(TerminalService) private readonly terminal: TerminalService,

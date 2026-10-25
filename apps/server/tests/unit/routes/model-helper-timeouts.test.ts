@@ -1,3 +1,4 @@
+import { createSetupCommandValidation } from '../../../src/modules/providers/setup-command.validation.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -89,7 +90,8 @@ it.each(['Claude', 'Codex'] as const)(
         ProviderConnectionRepository.forWorkingDirectory(project),
         {},
         keys,
-        settings
+        settings,
+        createSetupCommandValidation()
       );
       json(
         await service.verify(
@@ -104,7 +106,8 @@ it.each(['Claude', 'Codex'] as const)(
         ProviderConnectionRepository.forWorkingDirectory(project),
         {},
         keys,
-        settings
+        settings,
+        createSetupCommandValidation()
       );
       json(
         await service.verify(

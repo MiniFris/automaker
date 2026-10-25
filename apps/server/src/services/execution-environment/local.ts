@@ -239,8 +239,10 @@ export class LocalExecutionEnvironment implements ExecutionEnvironment {
       timeoutMs?: number;
       maxOutputBytes?: number;
       windowsShell?: 'cmd';
+      /** Trusted internal callers may preserve stdout/stderr separation. */
+      captureStderrSeparately?: boolean;
     } = {}
-  ): Promise<EnvironmentCommandResult> {
+  ): Promise<EnvironmentCommandResult & { stderr?: string }> {
     signal.throwIfAborted();
     const deadline = AbortSignal.timeout(options.timeoutMs ?? 180_000);
     const combined = AbortSignal.any([signal, deadline]);
@@ -263,6 +265,7 @@ export class LocalExecutionEnvironment implements ExecutionEnvironment {
         stdio: ['ignore', 'pipe', 'pipe'],
       });
       const chunks: Buffer[] = [];
+      const stderrChunks: Buffer[] = [];
       let bytes = 0;
       let truncated = false;
       let failure: Error | undefined;
@@ -318,14 +321,16 @@ export class LocalExecutionEnvironment implements ExecutionEnvironment {
         // Cleanup failures are awaited and reported by the close handler, never unhandled rejections.
         void cleanup.catch(() => {});
       };
-      const consume = (chunk: Buffer) => {
+      const consume = (chunk: Buffer, target = chunks) => {
         const remaining = Math.max(0, maximum - bytes);
         if (chunk.length > remaining) truncated = true;
-        if (remaining) chunks.push(chunk.subarray(0, remaining));
+        if (remaining) target.push(chunk.subarray(0, remaining));
         bytes += Math.min(chunk.length, remaining);
       };
-      child.stdout.on('data', consume);
-      child.stderr.on('data', consume);
+      child.stdout.on('data', (chunk: Buffer) => consume(chunk));
+      child.stderr.on('data', (chunk: Buffer) =>
+        consume(chunk, options.captureStderrSeparately ? stderrChunks : chunks)
+      );
       child.once('error', (error) => {
         failure = error;
       });
@@ -367,6 +372,9 @@ export class LocalExecutionEnvironment implements ExecutionEnvironment {
             exitCode: code ?? 1,
             output: Buffer.concat(chunks).toString('utf8'),
             truncated,
+            ...(options.captureStderrSeparately && {
+              stderr: Buffer.concat(stderrChunks).toString('utf8'),
+            }),
           });
         })().catch(reject);
       });

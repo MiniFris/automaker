@@ -1,3 +1,11 @@
+import type {
+  FeatureExecutionIntents,
+  FeatureExecutionPhase,
+} from './feature-execution-intents.js';
+import {
+  FeatureExecutionUncertainError,
+  uncertainExecution,
+} from './feature-execution-uncertainty.js';
 /**
  * ConcurrencyManager - Manages running feature slots with lease-based reference counting
  *
@@ -27,6 +35,8 @@ export type GetCurrentBranchFn = (projectPath: string) => Promise<string | null>
  * Represents a running feature execution with all tracking metadata
  */
 export interface RunningFeature {
+  executionUncertain?: boolean;
+  ownedOperations?: number;
   /** Local verification also retains ownership until process-group cleanup is confirmed. */
   retainUntilCleanup?: boolean;
   readonly incarnation: symbol;
@@ -78,7 +88,11 @@ export class ConcurrencyManager {
    * @param getCurrentBranch - Function to get the current branch for a project.
    *                           If not provided, defaults to returning 'main'.
    */
-  constructor(getCurrentBranch?: GetCurrentBranchFn, coordinator = new FeatureRunCoordinator()) {
+  constructor(
+    getCurrentBranch?: GetCurrentBranchFn,
+    coordinator = new FeatureRunCoordinator(),
+    private readonly executionIntents?: FeatureExecutionIntents
+  ) {
     this.coordinator = coordinator;
     this.getCurrentBranch = getCurrentBranch ?? (() => Promise.resolve('main'));
   }
@@ -105,6 +119,7 @@ export class ConcurrencyManager {
       throw error;
     }
     if (existing) {
+      if (existing.executionUncertain) throw new FeatureExecutionUncertainError();
       if (existing.projectPath !== params.projectPath) throw new Error('already running');
       if (existing.released) throw new Error('Feature status writes are still draining');
       if (!params.allowReuse) {
@@ -136,11 +151,69 @@ export class ConcurrencyManager {
     return entry;
   }
 
+  async executeOwned<T>(
+    run: RunningFeature,
+    phase: FeatureExecutionPhase,
+    action: () => Promise<T>
+  ): Promise<T> {
+    if (!this.isCurrent(run) || run.executionUncertain) throw new FeatureExecutionUncertainError();
+    const previousRetention = run.retainUntilCleanup;
+    run.retainUntilCleanup = true;
+    run.ownedOperations = (run.ownedOperations ?? 0) + 1;
+    let operationId: string | undefined;
+    let settled = false;
+    let actionFinished = false;
+    try {
+      operationId = await this.executionIntents?.begin(run, phase);
+      if (!this.isCurrent(run)) throw new FeatureExecutionUncertainError();
+      const value = await action();
+      if (!this.isCurrent(run) || run.executionUncertain)
+        throw new FeatureExecutionUncertainError();
+      actionFinished = true;
+      if (operationId) await this.executionIntents!.settle(run, operationId);
+      settled = true;
+      return value;
+    } catch (error) {
+      if (uncertainExecution(error) || actionFinished) {
+        run.executionUncertain = true;
+        if (operationId)
+          await this.executionIntents?.markUncertain(run, operationId).catch(() => {});
+        throw uncertainExecution(error) ? error : new FeatureExecutionUncertainError();
+      }
+      if (operationId && !settled) {
+        try {
+          await this.executionIntents!.settle(run, operationId);
+        } catch {
+          run.executionUncertain = true;
+          throw new FeatureExecutionUncertainError();
+        }
+      }
+      throw error;
+    } finally {
+      run.ownedOperations!--;
+      if (!run.executionUncertain) run.retainUntilCleanup = previousRetention;
+    }
+  }
+
+  async markExecutionUncertain(run: RunningFeature): Promise<void> {
+    run.executionUncertain = true;
+    run.retainUntilCleanup = true;
+    if (this.executionIntents) {
+      try {
+        const id = await this.executionIntents.begin(run, 'execution');
+        await this.executionIntents.markUncertain(run, id);
+      } catch {
+        /* Existing pending/uncertain intent is already a durable barrier. */
+      }
+    }
+  }
+
   stopAdmission(): void {
     this.stopping = true;
   }
 
   async acquireAsync(params: AcquireParams): Promise<RunningFeature> {
+    await this.executionIntents?.assertAllowed(params);
     let previous = this.runningFeatures.get(params.featureId);
     while (previous?.released && previous.pendingMutations) {
       await previous.mutationTail.catch(() => {});
@@ -167,7 +240,7 @@ export class ConcurrencyManager {
       return;
     }
     if (options?.expected && entry !== options.expected) return;
-    if (entry.released) return;
+    if (entry.released || entry.executionUncertain || entry.ownedOperations) return;
 
     if (options?.force) {
       entry.released = true;

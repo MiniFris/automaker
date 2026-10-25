@@ -37,6 +37,10 @@ const pipelineService = {
 
 // Mock merge-service
 vi.mock('../../../src/services/merge-service.js', () => ({
+  createLocalMergeExecutor: vi.fn(() => ({
+    execute: vi.fn().mockResolvedValue('main'),
+    signal: new AbortController().signal,
+  })),
   performMerge: vi.fn(),
 }));
 
@@ -155,6 +159,8 @@ describe('PipelineOrchestrator', () => {
 
     mockConcurrencyManager = {
       acquireAsync: vi.fn((options) => Promise.resolve(mockConcurrencyManager.acquire(options))),
+      executeOwned: vi.fn((_run, _phase, action) => action()),
+      markExecutionUncertain: vi.fn(),
       isCurrent: vi.fn().mockReturnValue(true),
       coordinator: {
         bind: vi.fn(() => ({
@@ -231,7 +237,7 @@ describe('PipelineOrchestrator', () => {
     vi.clearAllMocks();
   });
 
-  it('does not finalize or release a new incarnation when a stopped pipeline finishes late', async () => {
+  it('keeps ownership while a stopped pipeline is settling before allowing replacement', async () => {
     const manager = new ActualConcurrencyManager();
     Object.assign(orchestrator, { concurrencyManager: manager });
     let finish!: () => void;
@@ -249,16 +255,23 @@ describe('PipelineOrchestrator', () => {
     await vi.waitFor(() => expect(mockRunAgentFn).toHaveBeenCalled());
     const first = manager.getRunningFeature('feature-1')!;
     manager.release('feature-1', { force: true, expected: first });
+    await expect(
+      manager.acquireAsync({
+        projectPath: '/test/project',
+        featureId: 'feature-1',
+        isAutoMode: false,
+      })
+    ).rejects.toThrow('already running');
+    first.abortController.abort();
+    finish();
+    await running;
     const second = await manager.acquireAsync({
       projectPath: '/test/project',
       featureId: 'feature-1',
       isAutoMode: false,
     });
-    vi.mocked(mockUpdateFeatureStatusFn).mockClear();
-    finish();
-    await running;
+    expect(second).not.toBe(first);
     expect(manager.getRunningFeature('feature-1')).toBe(second);
-    expect(mockUpdateFeatureStatusFn).not.toHaveBeenCalled();
   });
 
   it('fails SSH preflight for pipeline start/resume and merge without local Git or source context', async () => {
@@ -466,7 +479,8 @@ describe('PipelineOrchestrator', () => {
         '/test/worktree',
         'main',
         { deleteWorktreeAndBranch: false },
-        expect.anything()
+        expect.anything(),
+        expect.objectContaining({ execute: expect.any(Function) })
       );
     });
 
@@ -808,7 +822,8 @@ describe('PipelineOrchestrator', () => {
         '/test/project', // Falls back to projectPath when worktreePath is null
         'main',
         { deleteWorktreeAndBranch: false },
-        expect.anything()
+        expect.anything(),
+        expect.objectContaining({ execute: expect.any(Function) })
       );
     });
   });
@@ -858,7 +873,8 @@ describe('PipelineOrchestrator', () => {
           '/test/custom-worktree',
           'main',
           { deleteWorktreeAndBranch: false },
-          expect.anything()
+          expect.anything(),
+          expect.objectContaining({ execute: expect.any(Function) })
         );
       });
 
@@ -875,7 +891,8 @@ describe('PipelineOrchestrator', () => {
           '/test/worktree',
           'main',
           { deleteWorktreeAndBranch: false },
-          expect.anything()
+          expect.anything(),
+          expect.objectContaining({ execute: expect.any(Function) })
         );
       });
     });

@@ -106,7 +106,7 @@ legacy Direct workspace policy и FSM notification ownership затем испр
       tokens/auth проверяются отдельно от HTTP CORS. Историческая совместимость
       не вводит exclusive allowlist для остальных WS Origins; policy явно
       описана в [deployment policy](../backend-architecture.md#deployment-http-policy).
-- [ ] Secrets redaction и file permissions.
+- [x] Secrets redaction и file permissions.
 - [x] Liveness/readiness probes. Native HTTP проверяет public live/ready,
       protected detailed health и ready=503 при stopping; liveness остаётся 200.
       [Core HTTP contract](../../apps/server/tests/contract/core-response-contracts.contract.test.ts).
@@ -116,7 +116,7 @@ legacy Direct workspace policy и FSM notification ownership затем испр
 
 - [x] Сравнить startup/RSS/latency с baseline.
 - [x] Проверить large feature lists, event streams и terminal output.
-- [ ] Проверить provider streaming без двойной serialization.
+- [x] Проверить provider streaming без двойной serialization.
 - [x] Найти случайные request-scoped heavy dependencies. В native composition
       нет `Scope.REQUEST`/request-scoped providers; owners остаются application-scoped.
 - [x] Проверить file descriptors и child processes после repeated workflows.
@@ -128,7 +128,7 @@ legacy Direct workspace policy и FSM notification ownership затем испр
       Проверены actual Nest HTTP inheritance/explicit false override/protected siblings
       и текущий production public inventory без controller inheritance:
       [contract](../../apps/server/tests/contract/auth-metadata-inheritance.contract.test.ts).
-- [ ] Path traversal/symlink/remote alias boundary.
+- [x] Path traversal/symlink/remote alias boundary.
 - [x] CSRF/content-type/cookie behavior. Actual HTTP проверяет credentialed
       preflight, production cookie и 415 для form/multipart/text; новый token
       protocol не вводится при сохранении существующего API.
@@ -136,10 +136,10 @@ legacy Direct workspace policy и FSM notification ownership затем испр
       token один раз, повторный/expired получает 401; app/restart isolation проверена.
       [WebSocket contract](../../apps/server/tests/contract/websocket-transport.contract.test.ts),
       [auth isolation](../../apps/server/tests/contract/auth-isolation.contract.test.ts).
-- [ ] Command injection в Git/provider/execution paths.
-- [ ] SSRF через preview/MCP/provider endpoints.
-- [ ] Secret leakage в DTO, exceptions и logs.
-- [ ] Cleanup ownership Docker/SSH/PTY resources.
+- [x] Command injection в Git/provider/execution paths.
+- [x] SSRF через preview/MCP/provider endpoints.
+- [x] Secret leakage в DTO, exceptions и logs.
+- [x] Cleanup ownership Docker/SSH/PTY resources.
 
 Уже существующие security evidence с более узким scope, чем общий review:
 
@@ -340,3 +340,27 @@ FD и отсутствие owned children; startup/RSS/latency budgets выпо�
 API, архитектуры, testing tiers, WebSocket и downgrade уже существует и сверена
 с соответствующими checkpoint. Packaging снова проверяется после последнего
 production изменения; старые артефакты не объявляются текущими.
+
+## Финальная source security/transport matrix
+
+Границы ниже относятся к native Linux paths и подтверждённым target modes.
+Они не объявляют sandbox для произвольного разрешённого host shell или egress
+firewall для доверенных начальных endpoint settings. Условия других OS явно
+сохранены в соответствующих acceptance документах.
+
+| Requirement                  | Positive evidence                                                                                                                                                                                                                                                                                                          |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Path/symlink/remote identity | `native-path-policy` unit/native suites, queued-parent retargeting, managed target/token/pin contracts, actual SSH/Git against poisoned controller; Local merge/resolver two-app mutation regressions                                                                                                                      |
+| Command injection            | Native argv/framed worker boundaries; actual SSH/Docker/Local commands, literal quote/$() merge messages, hostile GitHub metadata and Direct Docker unsafe-export negative cases. User-authorized shell content remains executable by design                                                                               |
+| Outbound destination         | Preview routes only owned targets; Direct/manual HTTP and bounded MCP transports refuse redirects; saved-ID lookup prevents arbitrary MCP configs. Actual private HTTP peers prove headers/body do not follow redirects; explicit initial configured endpoints remain allowed                                              |
+| Credentials/errors/logs      | HTTP error secrecy, safe CLI/SDK diagnostics, private auth/cache/checkpoint/journal files, actual failed Git hook/fetch and notification sentinel cases. Native logger classifies Error objects, redacts credential/prompt metadata and unstructured error text; process fatal/rejection handlers omit raw messages/stacks |
+| Streaming                    | Typed provider messages become application event objects, then one JSON WS frame. Native provider/Agent/feature/ideation contracts parse once and assert structured payload/content; terminal has its distinct binary/text protocol. No Nest JSON wrapper is inserted around existing raw WS transports                    |
+| Ownership                    | Actual Linux TERM-resistant PTY/process/Git query, SSH worker and Docker cancellation/drain fixtures; retained unknown identity + DATA_DIR intent rejects replacement/restart replay. Real terminal pressure verifies active and paused viewers, all captured PID/start identities and stable settled FD counts            |
+
+Specific new evidence is in [source checkpoint](artifacts/public-ports-uncertainty-and-application-checkpoint.md),
+[merge audit](artifacts/native-local-merge-environment-audit.md),
+[stage11 matrix](artifacts/stage-11-completion-matrix.md) and
+[terminal pressure acceptance](artifacts/terminal-backpressure-acceptance.md).
+The final source checkpoint records aggregate commands/results. Actual final
+Docker/Linux Electron/Web artifacts and old-volume upgrade/rollback remain the
+separate packaging gates; source review does not close them.

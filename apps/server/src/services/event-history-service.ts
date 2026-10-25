@@ -13,7 +13,7 @@
 
 import { createLogger } from '@automaker/utils';
 import { ProjectEventStorage, type ProjectEventFilesystem } from './project-event-storage.js';
-import { UnknownOutcomeDomainError, ValidationDomainError } from '../core/errors/index.js';
+import { UnknownOutcomeDomainError, ValidationDomainError } from '../core/errors/domain-errors.js';
 import { getEventHistoryIndexPath, getEventPath } from '@automaker/platform';
 import type {
   StoredEvent,
@@ -24,7 +24,6 @@ import type {
 } from '@automaker/types';
 import { DEFAULT_EVENT_HISTORY_INDEX } from '@automaker/types';
 import { randomUUID } from 'crypto';
-import { Injectable } from '@nestjs/common';
 
 const logger = createLogger('EventHistoryService');
 
@@ -76,7 +75,6 @@ export interface StoreEventInput {
 /**
  * EventHistoryService - Manages persistent storage of events
  */
-@Injectable()
 export class EventHistoryService {
   private readonly storage: ProjectEventStorage;
 

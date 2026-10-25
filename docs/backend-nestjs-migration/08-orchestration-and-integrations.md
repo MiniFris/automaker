@@ -106,7 +106,9 @@ wire payloads, IDs, persisted formats и execution binding semantics не мен
       Native ownership и run-bound writes: [incarnation audit](artifacts/stage-8-run-incarnation-audit.md); дальнейшая step decomposition остаётся в 8.3.
 - [x] Перенести resume/recovery и stale-state reconciliation.
       [Recovery checkpoint](artifacts/agent-storage-recovery-session-checkpoint.md) и [verification ownership](artifacts/stage-8-verification-testing-audit.md).
-- [ ] Разделить commands и emitted events.
+- [x] Разделить commands и emitted events. AutoMode command/query ports
+      отдельно от typed EventBus и incarnation-bound publications:
+      [public ports](artifacts/auto-mode-public-ports-audit.md).
 - [x] Обеспечить idempotent handling повторного completion event.
       Completion key/dedup привязаны к incarnation: [audit](artifacts/stage-8-run-incarnation-audit.md).
 
@@ -134,18 +136,27 @@ UI contract не будет версионирован отдельно.
       Captured lease/incarnation и identity-aware release: [audit](artifacts/stage-8-run-incarnation-audit.md).
 - [x] Сохранить stop/pause/restart semantics.
       [Native AutoMode contracts](../../apps/server/tests/contract/auto-mode-native.contract.test.ts) и [active verification stop](artifacts/stage-8-verification-testing-audit.md).
-- [ ] Удалить compatibility facade после переноса всех callers.
+- [x] Удалить compatibility facade после переноса всех callers. Native
+      consumers работают через ports; `compat.ts` удалён, factory создаёт один
+      приватный `AutoModeRuntime`. Старое constructor name — только alias той же
+      class identity в barrel для standalone/tests, без второго service owner.
 
 ## 8.3. PipelineModule
 
 - [x] Отделить pipeline configuration repository.
       [Repository audit](artifacts/stage-8-completion-audit.md), [native contract](../../apps/server/tests/contract/pipeline-repository.contract.test.ts).
-- [ ] Отделить template expansion и validation.
+- [x] Отделить template expansion и validation. Чистая функция
+      `services/pipeline/prompt-template.ts` отделена от orchestration;
+      прежние prompt/summary/provider tests (22 cases) проходят.
       Input/config validation уже выделена в shared schemas и configuration
       repository; live prompt expansion — `buildPipelineStepPrompt`. Generic
       step-kind/test dispatcher в публичной модели отсутствует; удаление dead
       helper не является созданием нового template engine.
-- [ ] Каждый step выполняется через закреплённый execution binding.
+- [x] Каждый step выполняется через закреплённый execution binding.
+      Managed Local/Docker/SSH используют сохранённые target/workspace pins и
+      incarnation-bound port; native legacy-Local сохраняет captured cwd/env и
+      owned command execution без ambient Git routing. Последний путь проверен
+      [actual native merge](artifacts/native-local-merge-environment-audit.md).
       Для явно выбранных managed targets подтверждены Local fallback pin,
       SSH/Docker execution и resume: [live-path audit](artifacts/pipeline-live-path-retirement-audit.md).
       Не следует объявлять unconfigured legacy Local installations новым
@@ -156,10 +167,14 @@ UI contract не будет версионирован отдельно.
       и [summary tests](../../apps/server/tests/unit/services/pipeline-summary-accumulation.test.ts).
       Исторический generic test retry/failure parser не имел production callers
       и удалён; этот пункт не обещает несуществующий автоматический custom-step retry.
-- [ ] Не повторять unknown-outcome mutation.
+- [x] Не повторять unknown-outcome mutation. Write-ahead DATA_DIR ledger,
+      retained incarnation, blocked nested admission и actual restart/no-replay:
+      [uncertainty audit](artifacts/feature-execution-uncertainty-audit.md).
       Нижние provider/transport owners имеют fail-closed guards; итоговый
-      custom-pipeline negative/recovery matrix требует отдельной сверки.
-- [ ] Прерывание pipeline очищает child jobs с bounded deadline.
+      custom-pipeline negative/restart matrix дополнена указанным audit.
+- [x] Прерывание pipeline очищает child jobs с bounded deadline.
+      Подтверждённый cleanup разрешает replacement; неподтверждённый сохраняет
+      unknown state и failed close. [Uncertainty audit](artifacts/feature-execution-uncertainty-audit.md).
       Native HTTP stop/supersession и real SSH cancellation проверены в live-path
       audit; это не полная матрица всех cleanup-uncertain branches.
 - [x] Перенести pipeline routes после service boundary.
@@ -210,13 +225,19 @@ Write недоступен, после решения используется �
 
 ## 8.5. IdeationModule
 
-- [ ] Разделить ideation session, analysis и idea repository.
+- [x] Разделить ideation session, analysis и idea repository. Stateless
+      collaborators при одном accepted-job/session owner:
+      [ideation collaborators](artifacts/ideation-collaborators-audit.md).
 - [x] Использовать общий provider selection и EventBus.
       Native registry/event owner: [ideation audit](artifacts/stage-8-ideation-lifecycle-conversion-audit.md), [native contract](../../apps/server/tests/contract/ideation-native.contract.test.ts).
-- [ ] Удалить дублирование agent streaming logic.
+- [x] Удалить дублирование agent streaming logic. Один text runner сохраняет
+      накопление partials/result override и разные chat/suggestion events:
+      [native proof](artifacts/ideation-collaborators-audit.md).
 - [x] Сохранить conversion idea -> feature как транзакционно понятную операцию.
       Durable intent, exclusive publication и retry-after-restart: [conversion audit](artifacts/stage-8-ideation-lifecycle-conversion-audit.md).
-- [ ] Разбить крупный legacy service после transport parity.
+- [x] Разбить крупный legacy service после transport parity. Prompt catalog,
+      context reader, analysis, idea repository и text runner выделены без второго
+      lifecycle owner; прежние 42 units и 16 native contracts прошли.
 
 ## 8.6. GitHubIntegrationModule
 
@@ -224,7 +245,11 @@ Write недоступен, после решения используется �
       Native discovery/review/runtime boundaries: [source-port checkpoint](artifacts/source-ports-and-locators-checkpoint.md), [GitHub review contract](../../apps/server/tests/contract/github-review.contract.test.ts).
 - [x] Перенести issues, PRs, comments, review threads и validation.
 - [x] Разделить read-only discovery и mutation.
-- [ ] Ввести rate/error mapping без утечки command output.
+- [x] Ввести rate/error mapping без утечки command output.
+      `GithubCommandError` хранит kind/rateLimited/absent без stderr; native
+      discovery/review maps rate limit в 429, timeout/cleanup отдельно.
+      `github-discovery.contract.test.ts` и `github-command-runtime.test.ts`
+      проверяют hostile metadata, rate-limit и raw diagnostic secrecy.
 - [x] Cleanup stale validations сделать lifecycle task.
 - [x] PR creation использует Git/Worktree modules, а не shell из controller.
       [Native Git/worktree characterization](artifacts/legacy-retirement-logging-checkpoint.md); controller shell imports запрещены [architecture tests](../../scripts/tests/server-architecture-rules.test.mjs).
@@ -638,7 +663,11 @@ project dependencies/lockfile или системного Node. Эти резу�
       Saved-ID lookup через injected SettingsService: [MCP native contract](../../apps/server/tests/contract/mcp-transport.contract.test.ts).
 - [x] Разделить list tools и test connection.
       Handshake не ждёт discovery: [MCP contract](../../apps/server/tests/contract/mcp-transport.contract.test.ts), [boundary audit](artifacts/stage-8-completion-audit.md).
-- [ ] Ограничить timeout/output и redaction.
+- [x] Ограничить timeout/output и redaction. Все stdio/HTTP/SSE transports
+      имеют deadlines, pre-SDK frame/body bounds, owned cleanup и safe diagnostics;
+      redirect не передаёт saved headers второму peer:
+      [MCP ownership](artifacts/mcp-bounded-transport-ownership-audit.md),
+      [diagnostics/redirect proof](artifacts/native-cli-discovery-audit.md).
 - [x] Не сохранять live clients между несвязанными requests без owner lifecycle.
 - [x] Добавить fake MCP server integration tests.
 
@@ -647,16 +676,27 @@ SDK handshake по stdio. `mcp-transport.contract.test.ts` проверяет to
 timeout подключения/list-tools, oversized catalog, redaction и shutdown активного
 соединения. Все шесть сценариев подтверждают завершение дочернего процесса. Таймеры
 operation deadline очищаются в `finally`, active clients закрываются через Nest
-`beforeApplicationShutdown`, повторный cleanup безопасен. SSE/HTTP acceptance и
-ограничение сырых transport frames остаются отдельной незакрытой частью этапа.
+`beforeApplicationShutdown`, повторный cleanup безопасен. SSE/HTTP acceptance и pre-SDK raw-frame bounds позднее выполнены в указанном
+MCP ownership checkpoint; этот абзац сохраняет историю первого stdio-среза.
 
 ## 8.8. Hooks и notifications
 
 - [x] Event hooks подписываются через EventBus при module init.
 - [x] Отписываются и очищают timers при shutdown.
-- [ ] Защитить от event loops и повторной обработки feature.
-- [ ] Notification channels не блокируют основной workflow.
-- [ ] Ntfy/desktop/audio failures не меняют результат feature run.
+- [x] Защитить от event loops и повторной обработки feature. Typed topics
+      не переиздают command events; suppression key включает project/feature,
+      повторные completion/error events от одного run подавлены. 30-second
+      hook dedup и разные projects проверены в `event-hook-service.test.ts`
+      и `event-hook-lifecycle.test.ts`;
+      это не запрет на произвольные внешние automation scripts.
+- [x] Notification channels не блокируют основной workflow. EventHookService
+      принимает фоновые promises отдельно от emitting feature mutation; owned
+      drain проверен в `event-hook-drain.contract.test.ts`.
+- [x] Ntfy/desktop/audio failures не меняют результат feature run. Ntfy failure
+      возвращает controlled result и логируется отдельно; browser audio/play
+      rejection ловится в board hook, UI delivery не подтверждает backend success.
+      `event-hook-service.test.ts` проверяет failing Ntfy; actual private HTTP
+      tests дополнительно исключают raw response/title/redirect leakage.
 
 ### Срез 2026-10-24: typed hook subscriptions и owned task drain
 

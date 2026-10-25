@@ -1,5 +1,5 @@
 import { performance } from 'node:perf_hooks';
-import { UnavailableDomainError } from '../../core/errors/index.js';
+import { UnavailableDomainError } from '../../core/errors/domain-errors.js';
 
 export class IdeationCleanupError extends Error {
   readonly code = 'IDEATION_CLEANUP_FAILED';

@@ -535,7 +535,7 @@
         "tags": [
           "auto-mode"
         ],
-        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:127",
+        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:140",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -572,7 +572,7 @@
         "tags": [
           "auto-mode"
         ],
-        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:151",
+        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:164",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -609,7 +609,7 @@
         "tags": [
           "auto-mode"
         ],
-        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:143",
+        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:156",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -646,7 +646,7 @@
         "tags": [
           "auto-mode"
         ],
-        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:119",
+        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:132",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -683,7 +683,7 @@
         "tags": [
           "auto-mode"
         ],
-        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:135",
+        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:148",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -720,7 +720,7 @@
         "tags": [
           "auto-mode"
         ],
-        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:54",
+        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:55",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -757,7 +757,7 @@
         "tags": [
           "auto-mode"
         ],
-        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:62",
+        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:69",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -794,7 +794,7 @@
         "tags": [
           "auto-mode"
         ],
-        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:160",
+        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:173",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -831,7 +831,7 @@
         "tags": [
           "auto-mode"
         ],
-        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:176",
+        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:189",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -868,7 +868,7 @@
         "tags": [
           "auto-mode"
         ],
-        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:111",
+        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:124",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -905,7 +905,7 @@
         "tags": [
           "auto-mode"
         ],
-        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:168",
+        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:181",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -942,7 +942,7 @@
         "tags": [
           "auto-mode"
         ],
-        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:95",
+        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:108",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -979,7 +979,7 @@
         "tags": [
           "auto-mode"
         ],
-        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:70",
+        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:83",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -1016,7 +1016,7 @@
         "tags": [
           "auto-mode"
         ],
-        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:89",
+        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:102",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -1053,7 +1053,7 @@
         "tags": [
           "auto-mode"
         ],
-        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:82",
+        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:95",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -1090,7 +1090,7 @@
         "tags": [
           "auto-mode"
         ],
-        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:76",
+        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:89",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -1127,7 +1127,7 @@
         "tags": [
           "auto-mode"
         ],
-        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:103",
+        "x-source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts:116",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -2566,6 +2566,8 @@
           }
         },
         "x-binary-runtime-proof": [
+          "apps/server/src/modules/files/application.providers.ts",
+          "apps/server/src/modules/files/files.module.ts",
           "apps/server/src/modules/files/files.controller.ts",
           "apps/server/src/modules/files/image-query.service.ts",
           "apps/server/src/modules/files/local-download.service.ts",
@@ -2692,6 +2694,8 @@
           }
         ],
         "x-binary-runtime-proof": [
+          "apps/server/src/modules/files/application.providers.ts",
+          "apps/server/src/modules/files/files.module.ts",
           "apps/server/src/modules/files/files.controller.ts",
           "apps/server/src/modules/files/image-query.service.ts",
           "apps/server/src/modules/files/local-download.service.ts",

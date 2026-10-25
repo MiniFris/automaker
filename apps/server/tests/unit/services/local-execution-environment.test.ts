@@ -50,6 +50,29 @@ describe('Local execution environment / real temporary files and subprocesses', 
         )
       ).content
     );
+  it('separates actual child stderr only for the trusted opt-in and retains the shared byte cap/default combined output', async () => {
+    const command = node("process.stdout.write('out');process.stderr.write('diagnostic')");
+    const separated = await environment.exec(command, signal(), {
+      captureStderrSeparately: true,
+      maxOutputBytes: 100,
+    });
+    expect(separated).toMatchObject({
+      exitCode: 0,
+      output: 'out',
+      stderr: 'diagnostic',
+      truncated: false,
+    });
+    const combined = await environment.exec(command, signal(), { maxOutputBytes: 100 });
+    expect(combined.output).toContain('out');
+    expect(combined.output).toContain('diagnostic');
+    expect(combined).not.toHaveProperty('stderr');
+    const capped = await environment.exec(command, signal(), {
+      captureStderrSeparately: true,
+      maxOutputBytes: 5,
+    });
+    expect(Buffer.byteLength(capped.output) + Buffer.byteLength(capped.stderr ?? '')).toBe(5);
+    expect(capped.truncated).toBe(true);
+  });
   it('reads and writes outside cwd with ordinary OS permissions, not workspace confinement', async () => {
     const file = path.join(temporary, 'outside.txt');
     await environment.writeFile(file, Buffer.from('outside'), signal());

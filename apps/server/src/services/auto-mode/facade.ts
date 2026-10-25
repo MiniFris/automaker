@@ -96,7 +96,8 @@ export class AutoModeServiceFacade {
       ...process.env,
     }),
     private readonly ownsFeatureStateManager = true,
-    private readonly observeOperation: ObserveOperation = unobservedOperation
+    private readonly observeOperation: ObserveOperation = unobservedOperation,
+    private readonly ownsWorktreeResolver = true
   ) {}
 
   /**
@@ -194,7 +195,8 @@ export class AutoModeServiceFacade {
     // Shared services allow multiple facades to share state (e.g., running features, auto loops)
     const eventBus = sharedServices?.eventBus ?? new TypedEventBus(events);
     const worktreeResolver =
-      sharedServices?.worktreeResolver ?? new WorktreeResolver(settingsService);
+      sharedServices?.worktreeResolver ??
+      new WorktreeResolver(settingsService, options.hostEnvironment ? hostEnvironment : undefined);
     const concurrencyManager =
       sharedServices?.concurrencyManager ??
       new ConcurrencyManager((p) => worktreeResolver.getCurrentBranch(p));
@@ -646,7 +648,8 @@ export class AutoModeServiceFacade {
       options.validateWorkingDirectory,
       hostEnvironment,
       !sharedServices?.featureStateManager,
-      observeOperation
+      observeOperation,
+      !sharedServices?.worktreeResolver
     );
 
     return facadeInstance;
@@ -1340,6 +1343,7 @@ export class AutoModeServiceFacade {
   async drainRecoveryState(): Promise<void> {
     await Promise.all([
       this.recoveryService.close(),
+      ...(this.ownsWorktreeResolver ? [this.worktreeResolver.close()] : []),
       ...(this.ownsFeatureStateManager ? [this.featureStateManager.destroy()] : []),
     ]);
   }

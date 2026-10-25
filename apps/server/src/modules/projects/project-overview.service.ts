@@ -8,7 +8,8 @@ import type {
   ProjectStatus,
 } from '@automaker/types';
 import { FeatureLoader } from '../../services/feature-loader.js';
-import { AutoModeServiceCompat, type RunningAgentInfo } from '../../services/auto-mode/index.js';
+import { FEATURE_RUN_READ_MODEL, type FeatureRunReadModel } from '../auto-mode/auto-mode.ports.js';
+import type { RunningAgentInfo } from '../../services/auto-mode/types.js';
 import { NotificationService } from '../../services/notification-service.js';
 import { ProjectRegistry, type RegisteredProject } from './project-registry.service.js';
 
@@ -57,7 +58,11 @@ export class ProjectOverviewService {
   constructor(
     @Inject(ProjectRegistry) private readonly registry: ProjectRegistry,
     @Inject(FeatureLoader) private readonly features: FeatureLoader,
-    @Inject(AutoModeServiceCompat) private readonly autoMode: AutoModeServiceCompat,
+    @Inject(FEATURE_RUN_READ_MODEL)
+    private readonly autoMode: Pick<
+      FeatureRunReadModel,
+      'getRunningAgents' | 'getStatusForProject'
+    >,
     @Inject(NotificationService) private readonly notifications: NotificationService
   ) {}
 

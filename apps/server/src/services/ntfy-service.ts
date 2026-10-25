@@ -99,7 +99,7 @@ export class NtfyService {
     // Message body (with variable substitution)
     const body = this.substituteVariables(options.body || this.getDefaultBody(context), context);
 
-    logger.info(`Sending ntfy notification to ${endpoint.name}: ${title}`);
+    logger.info(`Sending ntfy notification to ${endpoint.name}`);
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), DEFAULT_NTFY_TIMEOUT);
@@ -108,17 +108,18 @@ export class NtfyService {
       signal?.throwIfAborted();
       const response = await fetch(url, {
         method: 'POST',
+        redirect: 'manual',
         headers,
         body,
         signal: signal ? AbortSignal.any([controller.signal, signal]) : controller.signal,
       });
 
       if (!response.ok) {
-        const errorText = await response.text().catch(() => 'Unknown error');
-        logger.error(`Ntfy notification failed with status ${response.status}: ${errorText}`);
+        await response.body?.cancel();
+        logger.error(`Ntfy notification failed with status ${response.status}`);
         return {
           success: false,
-          error: `HTTP ${response.status}: ${errorText}`,
+          error: `HTTP ${response.status}`,
         };
       }
 
@@ -132,9 +133,8 @@ export class NtfyService {
         return { success: false, error: 'Request timed out' };
       }
 
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error(`Ntfy notification failed: ${errorMessage}`);
-      return { success: false, error: errorMessage };
+      logger.error('Ntfy notification request failed.');
+      return { success: false, error: 'Notification request failed' };
     } finally {
       clearTimeout(timeoutId);
     }

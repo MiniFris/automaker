@@ -7,7 +7,8 @@ export type DomainErrorCode =
   | 'UNAVAILABLE'
   | 'TIMEOUT'
   | 'CANCELLED'
-  | 'UNKNOWN_OUTCOME';
+  | 'UNKNOWN_OUTCOME'
+  | 'RATE_LIMITED';
 
 export class DomainError extends Error {
   constructor(
@@ -57,6 +58,11 @@ export class TimeoutDomainError extends DomainError {
 export class CancellationDomainError extends DomainError {
   constructor(message = 'Operation cancelled.') {
     super(message, 'CANCELLED', 409);
+  }
+}
+export class RateLimitDomainError extends DomainError {
+  constructor(message = 'Too many requests.') {
+    super(message, 'RATE_LIMITED', 429);
   }
 }
 export class UnknownOutcomeDomainError extends DomainError {

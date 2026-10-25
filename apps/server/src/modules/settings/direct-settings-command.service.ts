@@ -1,9 +1,8 @@
-import { Inject, Injectable } from '@nestjs/common';
 import { TextDecoder } from 'node:util';
 import type { ResolvedOpenAICompatibleConnection } from '@automaker/types';
 import { modelTimeout, providerModelTimeouts, toDirectModelId } from '@automaker/types';
 
-import { ValidationDomainError } from '../../core/errors/index.js';
+import { ValidationDomainError } from '../../core/errors/domain-errors.js';
 import {
   normalizeOpenAICompatibleBaseUrl,
   parseOpenAICompatibleEndpoint,
@@ -15,13 +14,12 @@ import { chatCompletion } from '../../providers/openai-compatible/transport.js';
 import { SettingsService } from '../../services/settings-service.js';
 import { SettingsQueryService } from './settings-query.service.js';
 
-@Injectable()
 export class DirectSettingsCommandService {
   private writes: Promise<unknown> = Promise.resolve();
 
   constructor(
-    @Inject(SettingsService) private readonly settings: SettingsService,
-    @Inject(SettingsQueryService) private readonly queries: SettingsQueryService
+    private readonly settings: SettingsService,
+    private readonly queries: SettingsQueryService
   ) {}
 
   updateEndpoint(body: Record<string, unknown>): Promise<Record<string, unknown>> {

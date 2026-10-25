@@ -1,3 +1,5 @@
+import { buildPipelineStepPrompt } from './pipeline/prompt-template.js';
+import { uncertainExecution, FEATURE_UNCERTAIN_REASON } from './feature-execution-uncertainty.js';
 /**
  * PipelineOrchestrator - Pipeline step execution and coordination
  */
@@ -28,7 +30,7 @@ import type { WorktreeResolver } from './worktree-resolver.js';
 import type { SettingsService } from './settings-service.js';
 import type { ConcurrencyManager, RunningFeature } from './concurrency-manager.js';
 import type { PipelineService } from './pipeline-service.js';
-import { performMerge } from './merge-service.js';
+import { performMerge, createLocalMergeExecutor } from './merge-service.js';
 import type {
   PipelineContext,
   PipelineStatusInfo,
@@ -193,31 +195,33 @@ export class PipelineOrchestrator {
       });
       const model = resolveModelString(feature.model, DEFAULT_MODELS.claude);
       const currentStatus = `pipeline_${step.id}`;
-      await this.runAgentFn(
-        workDir,
-        featureId,
-        this.buildPipelineStepPrompt(step, feature, previousContext, prompts.taskExecution),
-        abortController,
-        projectPath,
-        undefined,
-        model,
-        {
+      await this.concurrencyManager.executeOwned(run!, 'pipeline_step', () =>
+        this.runAgentFn(
+          workDir,
+          featureId,
+          this.buildPipelineStepPrompt(step, feature, previousContext, prompts.taskExecution),
+          abortController,
           projectPath,
-          planningMode: 'skip',
-          runPort: run
-            ? this.concurrencyManager.coordinator.bind(this.concurrencyManager, run)
-            : undefined,
-          boundTargetCwd: remote?.binding.cwd ?? ctx.boundTargetCwd,
-          requirePlanApproval: false,
-          previousContent: previousContext,
-          systemPrompt: contextFilesPrompt || undefined,
-          autoLoadClaudeMd,
-          useClaudeCodeSystemPrompt,
-          thinkingLevel: feature.thinkingLevel,
-          reasoningEffort: feature.reasoningEffort,
-          status: currentStatus,
-          providerId: feature.providerId,
-        }
+          undefined,
+          model,
+          {
+            projectPath,
+            planningMode: 'skip',
+            runPort: run
+              ? this.concurrencyManager.coordinator.bind(this.concurrencyManager, run)
+              : undefined,
+            boundTargetCwd: remote?.binding.cwd ?? ctx.boundTargetCwd,
+            requirePlanApproval: false,
+            previousContent: previousContext,
+            systemPrompt: contextFilesPrompt || undefined,
+            autoLoadClaudeMd,
+            useClaudeCodeSystemPrompt,
+            thinkingLevel: feature.thinkingLevel,
+            reasoningEffort: feature.reasoningEffort,
+            status: currentStatus,
+            providerId: feature.providerId,
+          }
+        )
       );
       if (abortController.signal.aborted)
         throw new globalThis.DOMException('Pipeline execution aborted', 'AbortError');
@@ -266,22 +270,10 @@ export class PipelineOrchestrator {
     previousContext: string,
     taskPrompts: { implementationInstructions: string; playwrightVerificationInstructions: string }
   ): string {
-    let prompt = `## Pipeline Step: ${step.name}\n\nThis is an automated pipeline step.\n\n### Feature Context\n${this.buildFeaturePromptFn(feature, taskPrompts)}\n\n`;
-    if (previousContext) prompt += `### Previous Work\n${previousContext}\n\n`;
-    return (
-      prompt +
-      `### Pipeline Step Instructions\n${step.instructions}\n\n### Task\nComplete the pipeline step instructions above.\n\n` +
-      `**CRITICAL: After completing the instructions, you MUST output a summary using this EXACT format:**\n\n` +
-      `<summary>\n` +
-      `## Summary: ${step.name}\n\n` +
-      `### Changes Implemented\n` +
-      `- [List all changes made in this step]\n\n` +
-      `### Files Modified\n` +
-      `- [List all files modified in this step]\n\n` +
-      `### Outcome\n` +
-      `- [Describe the result of this step]\n` +
-      `</summary>\n\n` +
-      `The <summary> and </summary> tags MUST be on their own lines. This is REQUIRED.`
+    return buildPipelineStepPrompt(
+      step,
+      this.buildFeaturePromptFn(feature, taskPrompts),
+      previousContext
     );
   }
 
@@ -556,6 +548,16 @@ export class PipelineOrchestrator {
       }
     } catch (error) {
       if (!this.concurrencyManager.isCurrent(runningEntry)) return;
+      if (uncertainExecution(error) || runningEntry.executionUncertain) {
+        await this.concurrencyManager.markExecutionUncertain(runningEntry);
+        this.eventBus.emitAutoModeEvent('auto_mode_error', {
+          featureId,
+          projectPath,
+          error: FEATURE_UNCERTAIN_REASON,
+          errorType: 'unknown',
+        });
+        return;
+      }
       const errorInfo = classifyError(error);
       if (errorInfo.isAbort) {
         if (this.canComplete(runningEntry)) {
@@ -603,6 +605,14 @@ export class PipelineOrchestrator {
   async attemptMerge(context: PipelineContext): Promise<MergeResult> {
     const run = context.run ?? this.concurrencyManager.getRunningFeature(context.featureId);
     this.requireCurrent(run);
+    return this.concurrencyManager.executeOwned(run!, 'merge', () =>
+      this.performMergeAttempt(context)
+    );
+  }
+
+  private async performMergeAttempt(context: PipelineContext): Promise<MergeResult> {
+    const run = context.run ?? this.concurrencyManager.getRunningFeature(context.featureId);
+    this.requireCurrent(run);
     const { projectPath, featureId, branchName, worktreePath, feature } = context;
     if (!branchName) return { success: false, error: 'No branch name for merge' };
     if (this.settingsService) {
@@ -623,6 +633,7 @@ export class PipelineOrchestrator {
           return { success: true };
         }
       } catch (error) {
+        if (uncertainExecution(error)) throw error;
         return {
           success: false,
           error: error instanceof Error ? error.message : 'Remote merge failed; inspect state.',
@@ -633,7 +644,13 @@ export class PipelineOrchestrator {
     logger.info(`Attempting auto-merge for feature ${featureId} (branch: ${branchName})`);
     try {
       // Get the primary branch dynamically instead of hardcoding 'main'
-      const targetBranch = await this.worktreeResolver.getCurrentBranch(projectPath);
+      const mergeCommands = createLocalMergeExecutor(
+        this.hostEnvironment,
+        context.abortController.signal
+      );
+      const targetBranch = (
+        await mergeCommands.execute(['branch', '--show-current'], projectPath)
+      ).trim();
 
       // Call merge service directly instead of HTTP fetch
       const result = await performMerge(
@@ -644,7 +661,8 @@ export class PipelineOrchestrator {
         {
           deleteWorktreeAndBranch: false,
         },
-        this.eventBus.getUnderlyingEmitter()
+        this.eventBus.getUnderlyingEmitter(),
+        mergeCommands
       );
 
       this.requireCurrent(run);
@@ -675,6 +693,7 @@ export class PipelineOrchestrator {
       }
       return { success: true };
     } catch (error) {
+      if (uncertainExecution(error)) throw error;
       logger.error(`Merge failed for ${featureId}:`, error);
       return { success: false, error: (error as Error).message };
     }

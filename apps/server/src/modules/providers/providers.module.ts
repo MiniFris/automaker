@@ -1,3 +1,10 @@
+import {
+  setupCredentialsServiceProvider,
+  claudeVerificationServiceProvider,
+  codexVerificationServiceProvider,
+  githubAuthenticationServiceProvider,
+} from './application.providers.js';
+import { providerConnectionCommandServiceProvider } from './application.providers.js';
 import { HostCliDiscovery } from '../../core/platform/host-cli-discovery.js';
 import { DirectCheckpointRepository } from './direct-checkpoint.repository.js';
 import { DirectWorkspaceAccess } from './direct-workspace-access.js';
@@ -34,19 +41,17 @@ import { ProviderDiscoveryService } from './provider-discovery.service.js';
 import { ProviderSetupStatusService } from './provider-setup-status.service.js';
 import { ProviderModelCatalogService } from './provider-model-catalog.service.js';
 import { SetupController } from './setup.controller.js';
-import { SetupCredentialsService } from './setup-credentials.service.js';
+
 import { ToolPolicyService } from './tool-policy.service.js';
 import { HostSetupStatusService } from './host-setup-status.service.js';
 import { SetupCredentialCache } from './setup-credential-cache.service.js';
-import { ProviderConnectionCommandService } from './provider-connection-command.service.js';
+
 import { ProviderInstallGuidanceService } from './provider-install-guidance.service.js';
 import { CursorPermissionsRepository } from './cursor-permissions.repository.js';
 import { CursorPermissionsService } from './cursor-permissions.service.js';
 import { HostSetupJsonFiles } from './host-setup-json-files.js';
 import { CursorModelConfigService } from './cursor-model-config.service.js';
-import { ClaudeVerificationService } from './claude-verification.service.js';
-import { CodexVerificationService } from './codex-verification.service.js';
-import { GithubAuthenticationService } from './github-authentication.service.js';
+
 import { ApplicationCredentialsService } from './application-credentials.service.js';
 import {
   CodexVerificationRuntime,
@@ -125,19 +130,19 @@ import {
     ProviderUsageService,
     ProviderSetupStatusService,
     ProviderModelCatalogService,
-    SetupCredentialsService,
+    setupCredentialsServiceProvider,
     ToolPolicyService,
     SetupCredentialCache,
     HostSetupStatusService,
-    ProviderConnectionCommandService,
+    providerConnectionCommandServiceProvider,
     ProviderInstallGuidanceService,
     CursorPermissionsRepository,
     CursorPermissionsService,
     HostSetupJsonFiles,
     CursorModelConfigService,
-    ClaudeVerificationService,
-    CodexVerificationService,
-    GithubAuthenticationService,
+    claudeVerificationServiceProvider,
+    codexVerificationServiceProvider,
+    githubAuthenticationServiceProvider,
     ApplicationCredentialsService,
     { provide: CodexCredentialRuntime, useClass: NodeCodexCredentialRuntime },
     { provide: CODEX_CREDENTIAL_PROCESS, useValue: spawnCodexCredentialProcess },

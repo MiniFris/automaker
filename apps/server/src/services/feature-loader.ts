@@ -27,7 +27,7 @@ import {
   ConflictDomainError,
   UnavailableDomainError,
   ValidationDomainError,
-} from '../core/errors/index.js';
+} from '../core/errors/domain-errors.js';
 import { addImplementedFeature, type ImplementedFeature } from '../lib/xml-extractor.js';
 
 const logger = createLogger('FeatureLoader');

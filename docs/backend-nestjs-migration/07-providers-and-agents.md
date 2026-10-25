@@ -7,10 +7,50 @@ Native ProviderRegistry, семь adapters, agent decomposition, leases, persist
 сверены с доказательствами. См. [agent stores](artifacts/agent-storage-recovery-session-checkpoint.md),
 [run ownership](artifacts/run-ownership-provider-filesystem-checkpoint.md) и
 [Local/provider snapshot checkpoint](artifacts/local-runtime-http-errors-checkpoint.md).
-Остаются полный per-adapter error/event/tool-policy review и conditional OS matrix;
-optional live vendor acceptance не выполнялась и не выдаётся за offline evidence.
-Wave20 scoped Direct workspace policy прошёл
-[полный checkpoint](artifacts/fsm-direct-policy-process-checkpoint.md). Весь этап 7 пока не объявлен завершённым.
+Исторические замечания отдельных срезов ниже не являются новым списком работ:
+актуальная сверка pending items и Exit criteria приведена в матрице ниже.
+[Wave20 checkpoint](artifacts/fsm-direct-policy-process-checkpoint.md) и
+[wave22 checkpoint, commit `67948aa8`](artifacts/project-analysis-cli-pipeline-checkpoint.md)
+подтверждают native provider/agent scope. Wave23 aggregate checkpoint ещё принадлежит
+основному агенту. Actual Windows/macOS/WSL, optional live vendor и возможный настоящий
+host installer явно отделены от выполненных offline/Linux требований.
+
+### Актуальная матрица оставшихся маркеров 7.3–7.6
+
+Это сверка текущих исходников и уже выполненных fixtures, без новых vendor calls.
+«Подтверждено» относится к реализованному API/mode contract, включая controlled
+unsupported refusal. Оно не обещает поддержку любого SDK option на любом runtime.
+
+| Старый pending marker              | Текущий owner / доказательство                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Подтверждённая граница                                                                                                                                                                                                                                                              |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| installation/auth detection        | [ProviderDiscoveryService](../../apps/server/src/modules/providers/provider-discovery.service.ts), [native CLI/status contracts](../../apps/server/tests/contract/native-provider-cli-discovery.contract.test.ts), [discovery/usage audit](artifacts/stage-7-discovery-usage-audit.md), [CLI audit](artifacts/native-cli-discovery-audit.md)                                                                                                                                   | Семь registrations; SDK/CLI presence и passive auth hints отделены от authentication proof. Cursor/Copilot/Gemini/GitHub не выполняют скрытый login; explicit Claude/Codex verification имеет отдельный consent.                                                                    |
+| local / supported remote execution | [issued-runtime preparation](../../apps/server/src/providers/environment-execution.ts), [remote SDK](../../apps/server/src/providers/remote-sdk.ts), [Docker integration](../../apps/server/tests/integration/managed-docker.test.ts), [wave22 checkpoint](artifacts/project-analysis-cli-pipeline-checkpoint.md)                                                                                                                                                              | Local и полный private SSH tier; Docker Direct/CLI/три SDK target fixtures. Target credentials, pinning и отсутствие controller fallback; unsupported attachments/MCP/readOnly modes отклоняются до spawn.                                                                          |
+| event normalization                | [AgentStreamNormalizer](../../apps/server/src/services/agent/agent-stream-normalizer.ts), [ordered stream/tool-ID/error tests](../../apps/server/tests/unit/services/agent-stream-normalizer.test.ts), семь adapter unit suites в `tests/unit/providers/*-provider.test.ts`                                                                                                                                                                                                    | Native Claude packets и CLI/SDK/Direct compatibility packets преобразуются в application text/tool/result/error events. Vendor-specific raw payloads не объявляются одним schema.                                                                                                   |
+| cancel/cleanup                     | [BaseProvider](../../apps/server/src/providers/base-provider.ts), [scope suite](../../apps/server/tests/unit/providers/provider-execution-scope.test.ts), [native shutdown](../../apps/server/tests/contract/provider-scope-shutdown.contract.test.ts), [agent shutdown](../../apps/server/tests/contract/agent-active-shutdown.contract.test.ts), [cleanup boundary](../../apps/server/tests/unit/services/provider-cleanup-boundary.test.ts)                                 | Все семь public entrypoints managed; abort/iterator cleanup, no late success, held work, sticky unknown и blocked replacement. Actual Linux remote process tier дополняет SDK API-level cleanup, а не превращает SDK stop в универсальный OS proof.                                 |
+| credentials redaction              | [ApplicationCredentialsService](../../apps/server/src/modules/providers/application-credentials.service.ts), [private native diagnostics](../../apps/server/tests/contract/native-cli-diagnostics.contract.test.ts), [usage errors](../../apps/server/tests/contract/provider-passive-usage.contract.test.ts), [CLI diagnostic audit](artifacts/native-cli-discovery-audit.md)                                                                                                 | Captured app env и rotating vendor keys; backend secrets не наследуются private CLI/SDK. Controlled diagnostic/error branches не возвращают sentinel stderr/JSONL/SDK exceptions. Обычный model content и явно включённый raw-output файл не являются универсальным secret scanner. |
+| usage endpoint                     | [ProviderUsageController](../../apps/server/src/modules/providers/provider-usage.controller.ts), [все девять HTTP response operations](../../apps/server/tests/contract/provider-usage-responses.contract.test.ts), [actual service ownership](../../apps/server/tests/contract/provider-usage-ownership.contract.test.ts), [response audit](artifacts/provider-usage-response-audit.md)                                                                                       | Claude/Codex/Gemini/z.ai usage и прежние statuses/errors; nullable/nested extensions, auth/input precedence, application ownership. Остальные adapters не получают выдуманный quota endpoint.                                                                                       |
+| optional live acceptance           | [wave22 checkpoint](artifacts/project-analysis-cli-pipeline-checkpoint.md)                                                                                                                                                                                                                                                                                                                                                                                                     | Не запускалась; opt-in external vendor/auth/model checks зависят от явно предоставленного vendor context. Платный запрос не является обязательным migration gate.                                                                                                                   |
+| tool name не является authority    | [ToolPolicyService](../../apps/server/src/modules/providers/tool-policy.service.ts), [capability/effect/unknown tests](../../apps/server/tests/unit/modules/tool-policy.test.ts), [Direct tool registry](../../apps/server/src/providers/openai-compatible/tool-registry.ts), [native Direct policy](../../apps/server/tests/contract/direct-workspace-policy.contract.test.ts)                                                                                                | Grant исходит из server registration/effect map, adapter∩model capability и issued environment, а не из stream `tool_use.name`. Display/correlation normalizer не запускает tool. Direct дополнительно исполняет собственные registered tools через scoped workspace.               |
+| tool calls / usage normalization   | [stream normalizer tests](../../apps/server/tests/unit/services/agent-stream-normalizer.test.ts), [Copilot tool-ID mapping](../../apps/server/tests/unit/providers/copilot-provider.test.ts), [Gemini stats](../../apps/server/tests/unit/providers/gemini-provider.test.ts), [OpenCode packet variants](../../apps/server/tests/unit/providers/opencode-provider.test.ts), [usage response audit](artifacts/provider-usage-response-audit.md)                                 | Порядок text/tool events, use/result IDs, missing/result-only/error packets и существующие provider-specific usage wire shapes сохранены. Это не единая новая billing модель и не выдача отсутствующих usage counters.                                                              |
+| setup/credential-consumer policy   | [SetupCredentialsService](../../apps/server/src/modules/providers/setup-credentials.service.ts), [ApplicationCredentialsService](../../apps/server/src/modules/providers/application-credentials.service.ts), [credential transport](../../apps/server/tests/contract/credential-transport.contract.test.ts), [Codex runtime](../../apps/server/tests/contract/codex-credential-runtime.contract.test.ts), [discovery/usage audit](artifacts/stage-7-discovery-usage-audit.md) | Canonical durable save до activation, fresh native consumers, confirmed command target и отдельное vendor OAuth evidence; GET hints не выдают authentication success. Read-only install guidance не выполняет установку.                                                            |
+
+Tool policy подтверждён в своих исполнимых границах: [Gemini native HTTP policy](../../apps/server/tests/contract/gemini-tool-policy.contract.test.ts)
+и [pinned distribution](../../apps/server/tests/contract/gemini-policy-distribution.contract.test.ts),
+[Codex controls](../../apps/server/tests/unit/providers/codex-provider.test.ts),
+[remote readOnly refusal](../../apps/server/tests/unit/providers/remote-sdk.test.ts),
+[actual Local/SSH analysis](artifacts/project-analysis-restoration-audit.md) и Direct
+workspace/tools. Это не sandbox для произвольного vendor extension. Существующие
+local autonomous Claude `bypassPermissions` и Copilot permission approval сохранены;
+их нельзя выдавать за универсальный readOnly grant. Remote неподдерживаемые controls
+отклоняются явно. Отдельного требования менять эти baseline modes миграция не добавляет.
+
+Конкретно остаётся агрегатный checkpoint текущего wave23 source после final build.
+Actual Windows/macOS/WSL process acceptance условна наличию соответствующего host;
+Linux/protocol/mock результаты её не заменяют. Live vendor acceptance опциональна.
+Настоящий host installer отсутствует намеренно: текущий product flow выдаёт manual
+instructions; если установка станет отдельной feature, ей нужны собственные design,
+confirmation и tests. Общий неопределённый «security review всех providers» не является
+дополнительным незавершённым этапом после приведённых конкретных проверок.
 
 ## Цель
 
@@ -348,20 +388,21 @@ UI typecheck, все три inventory checks и production SIGTERM/SIGINT smoke.
 6. Copilot.
 7. OpenAI-compatible agent loop и local tools.
 
-Для каждого provider (полная mode/platform matrix; незакрытый общий маркер
-не означает отсутствие уже реализованного adapter):
+Для каждого provider в реализованном native mode contract; evidence и conditional
+platform/live границы перечислены в актуальной матрице выше:
 
-- [ ] installation/auth detection;
+- [x] installation/auth detection;
 - [x] model catalog; [capability/catalog tests](../../apps/server/tests/unit/providers/provider-capabilities.test.ts)
       проверяют explicit registrations и закрытые unknown models.
-- [ ] local and supported remote execution;
-- [ ] event normalization;
-- [ ] cancel/cleanup;
-- [ ] credentials redaction;
-- [ ] usage endpoint;
+- [x] local and supported remote execution;
+- [x] event normalization;
+- [x] cancel/cleanup;
+- [x] credentials redaction;
+- [x] usage endpoint;
 - [x] contract tests с fake SDK/CLI; [adapter contracts](../../apps/server/tests/unit/providers/provider-adapter-contract.test.ts)
       дополнены полным SSH tier в [checkpoint](artifacts/local-runtime-http-errors-checkpoint.md).
-- [ ] optional live acceptance test вне обычного CI.
+- Optional/conditional: live acceptance test вне обычного CI; не выполнялся,
+  не является обязательным платным gate.
 
 ## 7.4. AgentService decomposition
 
@@ -978,8 +1019,8 @@ filesystem I/O и ошибки Nest hooks, также требует hardening �
       [Policy tests](../../apps/server/tests/unit/modules/tool-policy.test.ts) проверяют обе capability gates.
 - [x] Сохранить plan/read-only ограничения.
       [Run/approval audit](artifacts/stage-8-run-artifact-port-audit.md) и [Direct integration](../../apps/server/tests/unit/services/openai-compatible-integration.test.ts).
-- [ ] Не полагаться только на название tool от внешнего SDK.
-- [ ] Нормализовать tool calls и usage events.
+- [x] Не полагаться только на название tool от внешнего SDK.
+- [x] Нормализовать tool calls и usage events.
 - [x] Проверить command wrappers, redirects и destructive detection.
       [Policy tests](../../apps/server/tests/unit/modules/tool-policy.test.ts) включают wrappers/redirects и обычные команды; эвристика не называется полной shell sandbox.
 
@@ -1017,8 +1058,10 @@ filesystem I/O и ошибки Nest hooks, также требует hardening �
         CLI/API-key separation, confirmed endpoint/model/profile и protocol gate (API v7).
   - [x] Key store/delete: native commands, private storage target/confirmation,
         durable activation, protocol gate и removal setup handler bridge (API v9).
-  - [ ] Единый setup/credential-consumer policy; настоящий host
-        installer, если потребуется, проектируется отдельно с confirmation.
+  - [x] Единый native setup/credential-consumer policy: canonical durable credentials,
+        fresh per-app consumers, confirmed target и passive evidence; см. матрицу выше.
+        Настоящий host installer — отдельная conditional feature; текущий install
+        endpoint возвращает только manual guidance.
 
 ### Срез: native Gemini/Copilot/Cursor setup status
 
@@ -2771,16 +2814,18 @@ redaction, tool policy, универсальный process cleanup и остал
 
 ## Exit criteria
 
-- Versioned connection contract (API v6, connection protocol 3) проверен совместно с Web/Electron HTTP clients:
-  без confirmation — 400, при другом instance/provider/path — 409 до записи,
-  фактический target возвращается в success response и показан в UI confirmation.
-- Client не отправляет connection POST на server без поддерживаемого read-only
-  protocol preview и не подставляет новый target в старое confirmation.
-- Provider registration полностью явная и управляется Nest DI.
-- Нет создания `SettingsService` внутри provider.
-- Agent routes удалены из legacy bridge.
-- Все providers проходят общий adapter contract suite.
-- Active sessions корректно завершаются или помечаются interrupted при shutdown.
-- Полный stage checkpoint пройден для fake providers и всех доступных
-  environment-specific integration suites; результат зафиксирован отдельным
-  завершающим коммитом в общей migration-ветке.
+| Criterion                                                                                                 | Текущее доказательство / состояние                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Versioned connection contract и Web/Electron clients: confirmation, instance/provider/path, actual target | **Подтверждено:** [disconnect](../../apps/server/tests/contract/provider-disconnect.contract.test.ts), [connection commands](../../apps/server/tests/unit/modules/provider-connection.test.ts), [credential transport](../../apps/server/tests/contract/credential-transport.contract.test.ts). Исторические API v6/protocol 3 сохранены в истории; текущий общий API v13 не означает откат последующих command-specific versions.                                                                                             |
+| Client не пишет connection без read-only protocol preview и не заменяет target старого consent            | **Подтверждено:** shared setup client/command extraction и UI confirmation suites в [client audit](artifacts/setup-client-extraction-audit.md); Cursor/Codex/Claude browser checkpoint в [wave22 results](artifacts/project-analysis-cli-pipeline-checkpoint.md).                                                                                                                                                                                                                                                              |
+| Provider registration явная, через Nest DI                                                                | **Подтверждено:** [ProvidersModule](../../apps/server/src/modules/providers/providers.module.ts), [native identity/two-app/preflight contract](../../apps/server/tests/contract/native-provider-composition.contract.test.ts).                                                                                                                                                                                                                                                                                                 |
+| Нет создания SettingsService внутри provider                                                              | **Подтверждено:** native registrations передают dependencies; [native composition](../../apps/server/tests/contract/native-provider-composition.contract.test.ts), [boundary checkpoint](artifacts/source-ports-and-locators-checkpoint.md), [native discovery](artifacts/native-cli-discovery-audit.md). Standalone compatibility defaults не используются как native service locator.                                                                                                                                        |
+| Agent routes удалены из legacy bridge                                                                     | **Подтверждено:** [AgentsController](../../apps/server/src/modules/agents/agents.controller.ts), [native agent composition](../../apps/server/tests/contract/native-agent-composition.contract.test.ts), [route cutover](artifacts/native-cutover-checkpoint.md).                                                                                                                                                                                                                                                              |
+| Все providers проходят общий adapter contract                                                             | **Подтверждено:** [parameterized seven-registration suite](../../apps/server/tests/unit/providers/provider-adapter-contract.test.ts) проверяет managed lifecycle и closed capabilities; adapter-specific protocol/tool/error coverage указана в текущей матрице. Это не утверждение, что общий маленький suite сам тестирует все SDK effects.                                                                                                                                                                                  |
+| Active sessions завершаются либо сохраняют interrupted/unknown при shutdown                               | **Подтверждено:** [actual active shutdown](../../apps/server/tests/contract/agent-active-shutdown.contract.test.ts), [lease isolation](../../apps/server/tests/contract/agent-execution-lease.contract.test.ts), [crash/recovery](../../apps/server/tests/contract/agent-execution-crash.contract.test.ts), [scoped stores](artifacts/stage-7-scoped-agent-persistence-audit.md), [Direct checkpoint lifecycle](artifacts/direct-checkpoint-storage-audit.md). Unknown cleanup не превращается в terminal success/replacement. |
+| Полный checkpoint fake providers и доступных environment suites, завершающий commit в общей ветке         | **Wave22 подтверждён:** [checkpoint](artifacts/project-analysis-cli-pipeline-checkpoint.md), commit `67948aa8`: 4038 unit, 823 contract + pinned Gemini conditional, 136 distinct SSH cases с Chromium и указанные Docker fixtures. **Текущий wave23 aggregate checkpoint ожидается после final build**, его результаты/commit фиксирует основной агент. Optional live vendor и actual unavailable OS не объявляются выполненными.                                                                                             |
+
+- [ ] Зафиксировать текущий wave23 aggregate checkpoint после final build и
+      завершающий commit в общей migration-ветке; предыдущий полный checkpoint —
+      `67948aa8`, приведённый выше. Этот маркер закрывается фактическими результатами
+      основного агента, а не одной сверкой документации.

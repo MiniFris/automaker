@@ -1,8 +1,44 @@
-import { Inject, Injectable } from '@nestjs/common';
+import type {
+  WorktreeBranchesInput,
+  WorktreeBranchCommitLogInput,
+  WorktreeCommitLogInput,
+  WorktreeCommitInput,
+  WorktreeCheckoutBranchInput,
+  WorktreeCherryPickInput,
+  WorktreeMergeInput,
+  WorktreeCreateInput,
+  WorktreeDeleteInput,
+  WorktreeInitGitInput,
+  WorktreeInitScriptDeleteInput,
+  WorktreeInitScriptQueryInput,
+  WorktreeInitScriptWriteInput,
+  WorktreeRunInitScriptInput,
+  WorktreePrInfoInput,
+  WorktreeUpdatePrNumberInput,
+  WorktreeCreatePrInput,
+  WorktreeDiscardInput,
+  WorktreeFeatureInput,
+  WorktreeFileInput,
+  WorktreePathInput,
+  WorktreeProjectInput,
+  WorktreePullInput,
+  WorktreePushInput,
+  WorktreeRebaseInput,
+  WorktreeMutationInput,
+  WorktreeRemoteAddInput,
+  WorktreeStashApplyInput,
+  WorktreeStashDropInput,
+  WorktreeStashPushInput,
+  WorktreeStageFilesInput,
+  WorktreeTrackingInput,
+  WorktreeSwitchBranchInput,
+  WorktreeSyncInput,
+} from './application.inputs.js';
+
 import { getAutomakerDir } from '@automaker/platform';
 import type { EventEmitter } from '../../lib/events.js';
-import { APPLICATION_EVENTS } from '../../core/eventing/application-events.js';
-import { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
+
+import { type FeatureRunReadModel } from '../auto-mode/auto-mode.ports.js';
 import { FeatureLoader } from '../../services/feature-loader.js';
 import { SettingsService } from '../../services/settings-service.js';
 import {
@@ -11,75 +47,39 @@ import {
 } from '../../services/execution-environment/project-git.js';
 import { ExecutionEnvironmentError } from '../../services/execution-environment/runtime.js';
 import { sshSerialized } from '../../services/execution-environment/ssh-state.js';
-import type {
-  WorktreeBranchesRequest,
-  WorktreeBranchCommitLogRequest,
-  WorktreeCommitLogRequest,
-  WorktreeCommitRequest,
-  WorktreeCheckoutBranchRequest,
-  WorktreeCherryPickRequest,
-  WorktreeMergeRequest,
-  WorktreeCreateRequest,
-  WorktreeDeleteRequest,
-  WorktreeInitGitRequest,
-  WorktreeInitScriptDeleteRequest,
-  WorktreeInitScriptQuery,
-  WorktreeInitScriptWriteRequest,
-  WorktreeRunInitScriptRequest,
-  WorktreePrInfoRequest,
-  WorktreeUpdatePrNumberRequest,
-  WorktreeCreatePrRequest,
-  WorktreeDiscardRequest,
-  WorktreeFeatureRequest,
-  WorktreeFileRequest,
-  WorktreePathRequest,
-  WorktreeProjectRequest,
-  WorktreePullRequest,
-  WorktreePushRequest,
-  WorktreeRebaseRequest,
-  WorktreeMutationRequest,
-  WorktreeRemoteAddRequest,
-  WorktreeStashApplyRequest,
-  WorktreeStashDropRequest,
-  WorktreeStashPushRequest,
-  WorktreeStageFilesRequest,
-  WorktreeTrackingRequest,
-  WorktreeSwitchBranchRequest,
-  WorktreeSyncRequest,
-} from './worktree.schemas.js';
 
-@Injectable()
 export class WorktreeApplicationService {
   constructor(
-    @Inject(ProjectGitService) private readonly git: ProjectGitService,
-    @Inject(APPLICATION_EVENTS) private readonly events: EventEmitter,
-    @Inject(AutoModeServiceCompat) private readonly autoMode: AutoModeServiceCompat,
-    @Inject(SettingsService) private readonly settings: SettingsService,
-    @Inject(FeatureLoader) private readonly features: FeatureLoader
+    private readonly git: ProjectGitService,
+    private readonly events: EventEmitter,
+
+    private readonly autoMode: Pick<FeatureRunReadModel, 'isProjectRunning'>,
+    private readonly settings: SettingsService,
+    private readonly features: FeatureLoader
   ) {}
 
-  async environment(input: WorktreeProjectRequest) {
+  async environment(input: WorktreeProjectInput) {
     const target = await this.git.resolveOrLocal(input.projectPath);
     return { success: true as const, executionEnvironment: target.environment };
   }
 
-  list(input: WorktreeProjectRequest, signal: AbortSignal) {
+  list(input: WorktreeProjectInput, signal: AbortSignal) {
     return this.runPath('list', input.projectPath, input, signal);
   }
 
-  info(input: WorktreeFeatureRequest, signal: AbortSignal) {
+  info(input: WorktreeFeatureInput, signal: AbortSignal) {
     return this.runFeature('info', input, signal);
   }
 
-  status(input: WorktreeFeatureRequest, signal: AbortSignal) {
+  status(input: WorktreeFeatureInput, signal: AbortSignal) {
     return this.runFeature('status', input, signal);
   }
 
-  diffs(input: WorktreeFeatureRequest, signal: AbortSignal) {
+  diffs(input: WorktreeFeatureInput, signal: AbortSignal) {
     return this.runFeature('diffs', input, signal);
   }
 
-  async fileDiff(input: WorktreeFileRequest, signal: AbortSignal) {
+  async fileDiff(input: WorktreeFileInput, signal: AbortSignal) {
     if (input.useWorktrees === false) {
       const managed = await this.git.resolve(input.projectPath, input.featureId);
       if (managed) return this.git.run(managed, 'file-diff', input, signal);
@@ -88,87 +88,87 @@ export class WorktreeApplicationService {
     return this.runFeature('file-diff', input, signal);
   }
 
-  checkChanges(input: WorktreePathRequest, signal: AbortSignal) {
+  checkChanges(input: WorktreePathInput, signal: AbortSignal) {
     return this.runPath('check-changes', input.worktreePath, input, signal);
   }
 
-  listBranches(input: WorktreeBranchesRequest, signal: AbortSignal) {
+  listBranches(input: WorktreeBranchesInput, signal: AbortSignal) {
     return this.runPath('list-branches', input.worktreePath, input, signal);
   }
 
-  listRemotes(input: WorktreePathRequest, signal: AbortSignal) {
+  listRemotes(input: WorktreePathInput, signal: AbortSignal) {
     return this.runPath('list-remotes', input.worktreePath, input, signal);
   }
 
-  stageFiles(input: WorktreeStageFilesRequest, signal: AbortSignal) {
+  stageFiles(input: WorktreeStageFilesInput, signal: AbortSignal) {
     return this.runPath('stage-files', input.worktreePath, input, signal);
   }
 
-  commit(input: WorktreeCommitRequest, signal: AbortSignal) {
+  commit(input: WorktreeCommitInput, signal: AbortSignal) {
     return this.runPath('commit', input.worktreePath, input, signal);
   }
 
-  abortOperation(input: WorktreeMutationRequest, signal: AbortSignal) {
+  abortOperation(input: WorktreeMutationInput, signal: AbortSignal) {
     return this.runPath('abort-operation', input.worktreePath, input, signal);
   }
 
-  continueOperation(input: WorktreeMutationRequest, signal: AbortSignal) {
+  continueOperation(input: WorktreeMutationInput, signal: AbortSignal) {
     return this.runPath('continue-operation', input.worktreePath, input, signal);
   }
 
-  addRemote(input: WorktreeRemoteAddRequest, signal: AbortSignal) {
+  addRemote(input: WorktreeRemoteAddInput, signal: AbortSignal) {
     return this.runPath('add-remote', input.worktreePath, input, signal);
   }
 
-  setTracking(input: WorktreeTrackingRequest, signal: AbortSignal) {
+  setTracking(input: WorktreeTrackingInput, signal: AbortSignal) {
     return this.runPath('set-tracking', input.worktreePath, input, signal);
   }
 
-  stashList(input: WorktreePathRequest, signal: AbortSignal) {
+  stashList(input: WorktreePathInput, signal: AbortSignal) {
     return this.runPath('stash-list', input.worktreePath, input, signal);
   }
 
-  stashPush(input: WorktreeStashPushRequest, signal: AbortSignal) {
+  stashPush(input: WorktreeStashPushInput, signal: AbortSignal) {
     return this.runPath('stash-push', input.worktreePath, input, signal);
   }
 
-  stashApply(input: WorktreeStashApplyRequest, signal: AbortSignal) {
+  stashApply(input: WorktreeStashApplyInput, signal: AbortSignal) {
     return this.runPath('stash-apply', input.worktreePath, input, signal);
   }
 
-  stashDrop(input: WorktreeStashDropRequest, signal: AbortSignal) {
+  stashDrop(input: WorktreeStashDropInput, signal: AbortSignal) {
     return this.runPath('stash-drop', input.worktreePath, input, signal);
   }
 
-  checkoutBranch(input: WorktreeCheckoutBranchRequest, signal: AbortSignal) {
+  checkoutBranch(input: WorktreeCheckoutBranchInput, signal: AbortSignal) {
     return this.runPath('checkout-branch', input.worktreePath, input, signal);
   }
 
-  switchBranch(input: WorktreeSwitchBranchRequest, signal: AbortSignal) {
+  switchBranch(input: WorktreeSwitchBranchInput, signal: AbortSignal) {
     return this.runPath('switch-branch', input.worktreePath, input, signal);
   }
 
-  discardChanges(input: WorktreeDiscardRequest, signal: AbortSignal) {
+  discardChanges(input: WorktreeDiscardInput, signal: AbortSignal) {
     return this.runPath('discard-changes', input.worktreePath, input, signal);
   }
 
-  pull(input: WorktreePullRequest, signal: AbortSignal) {
+  pull(input: WorktreePullInput, signal: AbortSignal) {
     return this.runPath('pull', input.worktreePath, input, signal);
   }
 
-  push(input: WorktreePushRequest, signal: AbortSignal) {
+  push(input: WorktreePushInput, signal: AbortSignal) {
     return this.runPath('push', input.worktreePath, input, signal);
   }
 
-  sync(input: WorktreeSyncRequest, signal: AbortSignal) {
+  sync(input: WorktreeSyncInput, signal: AbortSignal) {
     return this.runPath('sync', input.worktreePath, input, signal);
   }
 
-  rebase(input: WorktreeRebaseRequest, signal: AbortSignal) {
+  rebase(input: WorktreeRebaseInput, signal: AbortSignal) {
     return this.runPath('rebase', input.worktreePath, input, signal);
   }
 
-  async cherryPick(input: WorktreeCherryPickRequest, signal: AbortSignal) {
+  async cherryPick(input: WorktreeCherryPickInput, signal: AbortSignal) {
     this.events.emit('cherry-pick:started', {
       worktreePath: input.worktreePath,
       commitHashes: input.commitHashes,
@@ -195,7 +195,7 @@ export class WorktreeApplicationService {
     }
   }
 
-  async merge(input: WorktreeMergeRequest, signal: AbortSignal) {
+  async merge(input: WorktreeMergeInput, signal: AbortSignal) {
     this.events.emit('merge:start', {
       branchName: input.branchName,
       targetBranch: input.targetBranch,
@@ -228,7 +228,7 @@ export class WorktreeApplicationService {
     }
   }
 
-  async create(input: WorktreeCreateRequest, signal: AbortSignal) {
+  async create(input: WorktreeCreateInput, signal: AbortSignal) {
     const projectSettings = await this.settings.getProjectSettings(input.projectPath);
     const copyFiles = Array.isArray(projectSettings.worktreeCopyFiles)
       ? projectSettings.worktreeCopyFiles
@@ -263,7 +263,7 @@ export class WorktreeApplicationService {
     return response;
   }
 
-  async delete(input: WorktreeDeleteRequest, signal: AbortSignal) {
+  async delete(input: WorktreeDeleteInput, signal: AbortSignal) {
     const response = await this.runPath('delete', input.projectPath, input, signal);
     const result = response.deleted as {
       worktreePath: string;
@@ -297,23 +297,23 @@ export class WorktreeApplicationService {
     return response;
   }
 
-  initGit(input: WorktreeInitGitRequest, signal: AbortSignal) {
+  initGit(input: WorktreeInitGitInput, signal: AbortSignal) {
     return this.runPath('init-git', input.projectPath, input, signal);
   }
 
-  getInitScript(input: WorktreeInitScriptQuery, signal: AbortSignal) {
+  getInitScript(input: WorktreeInitScriptQueryInput, signal: AbortSignal) {
     return this.runPath('init-script-get', input.projectPath, input, signal);
   }
 
-  putInitScript(input: WorktreeInitScriptWriteRequest, signal: AbortSignal) {
+  putInitScript(input: WorktreeInitScriptWriteInput, signal: AbortSignal) {
     return this.runPath('init-script-put', input.projectPath, input, signal);
   }
 
-  deleteInitScript(input: WorktreeInitScriptDeleteRequest, signal: AbortSignal) {
+  deleteInitScript(input: WorktreeInitScriptDeleteInput, signal: AbortSignal) {
     return this.runPath('init-script-delete', input.projectPath, input, signal);
   }
 
-  async runInitScript(input: WorktreeRunInitScriptRequest) {
+  async runInitScript(input: WorktreeRunInitScriptInput) {
     const target = await this.git.resolveOrLocal(input.worktreePath);
     const legacyLocal =
       target.runtime.type === 'local' && !target.binding && !input.environmentTargetId;
@@ -331,7 +331,7 @@ export class WorktreeApplicationService {
     return { success: true as const, message: 'Init script started' };
   }
 
-  migrate(input: WorktreeInitGitRequest) {
+  migrate(input: WorktreeInitGitInput) {
     return {
       success: true as const,
       migrated: false,
@@ -340,19 +340,19 @@ export class WorktreeApplicationService {
     };
   }
 
-  prInfo(input: WorktreePrInfoRequest, signal: AbortSignal) {
+  prInfo(input: WorktreePrInfoInput, signal: AbortSignal) {
     return this.runPath('pr-info', input.worktreePath, input, signal);
   }
 
-  updatePrNumber(input: WorktreeUpdatePrNumberRequest, signal: AbortSignal) {
+  updatePrNumber(input: WorktreeUpdatePrNumberInput, signal: AbortSignal) {
     return this.runPath('update-pr-number', input.worktreePath, input, signal);
   }
 
-  createPr(input: WorktreeCreatePrRequest, signal: AbortSignal) {
+  createPr(input: WorktreeCreatePrInput, signal: AbortSignal) {
     return this.runPath('create-pr', input.worktreePath, input, signal);
   }
 
-  private startInitScript(input: WorktreeRunInitScriptRequest) {
+  private startInitScript(input: WorktreeRunInitScriptInput) {
     const controller = new AbortController();
     this.events.emit('worktree:init-started', input);
     void this.runPath('run-init-script', input.worktreePath, input, controller.signal)
@@ -395,7 +395,7 @@ export class WorktreeApplicationService {
       );
   }
 
-  async commitLog(input: WorktreeCommitLogRequest, signal: AbortSignal) {
+  async commitLog(input: WorktreeCommitLogInput, signal: AbortSignal) {
     this.events.emit('commitLog:start', input);
     try {
       const response = await this.runPath('commit-log', input.worktreePath, input, signal);
@@ -417,7 +417,7 @@ export class WorktreeApplicationService {
     }
   }
 
-  async branchCommitLog(input: WorktreeBranchCommitLogRequest, signal: AbortSignal) {
+  async branchCommitLog(input: WorktreeBranchCommitLogInput, signal: AbortSignal) {
     this.events.emit('branchCommitLog:start', {
       ...input,
       branchName: input.branchName ?? 'HEAD',
@@ -444,7 +444,7 @@ export class WorktreeApplicationService {
 
   private async runFeature(
     action: string,
-    input: WorktreeFeatureRequest & Record<string, unknown>,
+    input: WorktreeFeatureInput & Record<string, unknown>,
     signal: AbortSignal
   ) {
     const managed =

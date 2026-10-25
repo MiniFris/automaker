@@ -4,7 +4,7 @@ import path from 'node:path';
 import { expect, it, vi } from 'vitest';
 import { createNestApplication } from '../../src/main.js';
 import { FeatureLoader } from '../../src/services/feature-loader.js';
-import { AutoModeServiceCompat } from '../../src/services/auto-mode/compat.js';
+import { AutoModeServiceCompat } from '../../src/services/auto-mode/index.js';
 import { ApplicationMetrics } from '../../src/core/observability/application-metrics.js';
 import { MockProvider } from '../helpers/mock-provider.js';
 

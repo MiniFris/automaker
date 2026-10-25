@@ -1,23 +1,22 @@
-import { Inject, Injectable, type OnModuleDestroy } from '@nestjs/common';
+import type { SaveImageInput } from './application.inputs.js';
+
 import { performance } from 'node:perf_hooks';
-import { mapInfrastructureError } from '../../core/errors/index.js';
-import { PROJECT_FILE_PORT, type ProjectFilePort } from './project-file.port.js';
+import { mapInfrastructureError } from '../../core/errors/domain-errors.js';
+import { type ProjectFilePort } from './project-file.port.js';
 import { getBoardDir, getImagesDir } from '@automaker/platform';
 import { sanitizeFilename } from '@automaker/utils';
-import { UnavailableDomainError, ValidationDomainError } from '../../core/errors/index.js';
+import { UnavailableDomainError, ValidationDomainError } from '../../core/errors/domain-errors.js';
 import path from 'node:path';
-import type { SaveImageRequest } from './files.schemas.js';
 
 const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp']);
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 
-@Injectable()
-export class FilesCommandService implements OnModuleDestroy {
+export class FilesCommandService {
   private writes: Promise<unknown> = Promise.resolve();
   private closing = false;
   private pending = 0;
   private shutdown?: Promise<void>;
-  constructor(@Inject(PROJECT_FILE_PORT) private readonly files: ProjectFilePort) {}
+  constructor(private readonly files: ProjectFilePort) {}
 
   write(filePath: string, content: string) {
     return this.serialize(() => this.files.write(filePath, content));
@@ -35,7 +34,7 @@ export class FilesCommandService implements OnModuleDestroy {
     return this.serialize(() => this.files.move(sourcePath, destinationPath, overwrite));
   }
 
-  saveImage(input: SaveImageRequest, boardBackground = false) {
+  saveImage(input: SaveImageInput, boardBackground = false) {
     return this.serialize(async () => {
       const content = this.decodeImage(input.data);
       const extension = path.extname(input.filename).toLowerCase() || '.png';

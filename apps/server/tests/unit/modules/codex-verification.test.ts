@@ -1,3 +1,4 @@
+import { createSetupCommandValidation } from '../../../src/modules/providers/setup-command.validation.js';
 import { expect, it, vi } from 'vitest';
 import { CodexVerificationService } from '../../../src/modules/providers/codex-verification.service.js';
 import { ProviderConnectionRepository } from '../../../src/modules/providers/provider-connection.repository.js';
@@ -20,7 +21,8 @@ function fixture(environment: NodeJS.ProcessEnv = {}) {
     ProviderConnectionRepository.forWorkingDirectory('/backend'),
     Object.freeze({ ...environment }),
     keys,
-    settings as never
+    settings as never,
+    createSetupCommandValidation()
   );
   const request = async (method: 'cli' | 'api_key' = 'api_key') =>
     ({ confirmed: true, target: (await service.target(method)).target }) as const;
@@ -167,7 +169,7 @@ it('enforces per-client attempts without sharing a process-global limiter', asyn
     await first.service.verify({ ...(await first.request()), apiKey: key }, 'client');
   await expect(
     first.service.verify({ ...(await first.request()), apiKey: key }, 'client')
-  ).rejects.toMatchObject({ status: 429 });
+  ).rejects.toMatchObject({ statusCode: 429, errorCode: 'RATE_LIMITED' });
   const second = fixture();
   expect(
     (await second.service.verify({ ...(await second.request()), apiKey: key }, 'client'))

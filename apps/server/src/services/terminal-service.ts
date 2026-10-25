@@ -709,7 +709,7 @@ export class TerminalService extends EventEmitter {
         }
       } catch (error) {
         if (this.preflight?.rcFiles) throw error;
-        logger.warn(`[createSession] Failed to apply terminal config: ${error}`);
+        logger.warn('[createSession] Failed to apply terminal config.');
       }
     }
 
@@ -1143,7 +1143,7 @@ export class TerminalService extends EventEmitter {
       }
     } catch (error) {
       if (this.preflight?.rcFiles) throw error;
-      logger.error(`[onThemeChange] Failed to regenerate RC files: ${error}`);
+      logger.error('[onThemeChange] Failed to regenerate RC files.');
     }
   }
 

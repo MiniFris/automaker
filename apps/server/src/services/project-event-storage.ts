@@ -1,5 +1,5 @@
 import { atomicWriteJson, type AtomicWriteFilesystem } from '@automaker/utils';
-import { UnavailableDomainError } from '../core/errors/index.js';
+import { UnavailableDomainError } from '../core/errors/domain-errors.js';
 
 export type ProjectEventFilesystem = AtomicWriteFilesystem;
 

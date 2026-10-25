@@ -43,7 +43,11 @@ class OfflineExecutionProvider extends MockProvider {
     yield { type: 'result' as const, subtype: 'success' as const };
   }
 }
-async function owner(name: string, discoverExecutionOwners = false) {
+async function owner(
+  name: string,
+  discoverExecutionOwners = false,
+  environment: NodeJS.ProcessEnv = {}
+) {
   const project = path.join(root, name);
   await fs.mkdir(project);
   const runtime = await createNestApplication({
@@ -54,7 +58,7 @@ async function owner(name: string, discoverExecutionOwners = false) {
     providerRegistrations: [
       { name: 'claude', create: () => new OfflineExecutionProvider('claude') },
     ],
-    environment: { NODE_ENV: 'test', ALLOWED_ROOT_DIRECTORY: project },
+    environment: { NODE_ENV: 'test', ALLOWED_ROOT_DIRECTORY: project, ...environment },
   });
   apps.push(runtime);
   const filesystem = runtime.app.get<ExecutionFilesystem>(SECURE_FILESYSTEM);
@@ -147,9 +151,49 @@ it('injects one native filesystem into every execution owner and isolates state/
   ).rejects.toMatchObject({ code: 'ENOENT' });
 });
 
-it('writes actual output through the native executor and rejects captured memory writes after replacement', async () => {
+it('captures each application raw-output policy across input and ambient mutation and another app close', async () => {
+  const enabledEnvironment = { AUTOMAKER_DEBUG_RAW_OUTPUT: '1' };
+  const disabledEnvironment = { AUTOMAKER_DEBUG_RAW_OUTPUT: 'false' };
+  const enabled = await owner('raw-enabled', false, enabledEnvironment);
+  const disabled = await owner('raw-disabled', false, disabledEnvironment);
+  enabledEnvironment.AUTOMAKER_DEBUG_RAW_OUTPUT = 'false';
+  disabledEnvironment.AUTOMAKER_DEBUG_RAW_OUTPUT = 'true';
+  const execute = async (runtime: Awaited<ReturnType<typeof owner>>, id: string, raw: boolean) => {
+    await runtime.app.get(FeatureLoader).create(runtime.project, {
+      id,
+      title: 'Captured raw policy',
+      description: 'Offline fixture',
+      model: 'claude-sonnet',
+      status: 'backlog',
+      planningMode: 'skip',
+      skipTests: true,
+    });
+    await runtime.facade.executeFeature(id, false, false);
+    const directory = path.join(runtime.project, '.automaker/features', id);
+    expect(await fs.readFile(path.join(directory, 'agent-output.md'), 'utf8')).toContain(
+      'Mock agent output for testing.'
+    );
+    if (raw) {
+      const lines = (await fs.readFile(path.join(directory, 'raw-output.jsonl'), 'utf8'))
+        .trim()
+        .split('\n');
+      expect(lines.some((line) => JSON.parse(line).event.type === 'assistant')).toBe(true);
+    } else
+      await expect(fs.stat(path.join(directory, 'raw-output.jsonl'))).rejects.toMatchObject({
+        code: 'ENOENT',
+      });
+  };
   vi.stubEnv('AUTOMAKER_DEBUG_RAW_OUTPUT', 'true');
-  const runtime = await owner('output', true);
+  await execute(enabled, 'enabled-ambient-true', true);
+  await execute(disabled, 'disabled-ambient-true', false);
+  vi.stubEnv('AUTOMAKER_DEBUG_RAW_OUTPUT', 'false');
+  await execute(enabled, 'enabled-ambient-false', true);
+  await enabled.app.close();
+  await execute(disabled, 'disabled-after-other-close', false);
+});
+
+it('writes actual output through the native executor and rejects captured memory writes after replacement', async () => {
+  const runtime = await owner('output', true, { AUTOMAKER_DEBUG_RAW_OUTPUT: 'true' });
   const manager = new ConcurrencyManager();
   const input = { projectPath: runtime.project, featureId: 'feature', isAutoMode: false };
   const run = manager.acquire(input);

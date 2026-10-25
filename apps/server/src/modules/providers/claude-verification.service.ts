@@ -1,26 +1,26 @@
-import { VerificationAuthMethodSchema } from '@automaker/contracts/domains/setup-query';
-import { Inject, Injectable, HttpException } from '@nestjs/common';
+import type { SetupCommandValidation } from './setup-command.port.js';
+import type {
+  ClaudeVerificationTargetValue,
+  ClaudeVerificationResult,
+} from './verification.values.js';
+import { RateLimitDomainError } from '../../core/errors/domain-errors.js';
+
 import { URL } from 'node:url';
-import {
-  ClaudeVerificationRequestSchema,
-  type ClaudeVerificationTarget,
-  type ClaudeVerificationRequest,
-  type ClaudeVerificationResponse,
-} from '@automaker/contracts';
+
 import { modelTimeout, providerModelTimeouts } from '@automaker/types';
-import { HOST_ENVIRONMENT } from '../../core/config/index.js';
+
 import {
   ConflictDomainError,
   UnavailableDomainError,
   ValidationDomainError,
-} from '../../core/errors/index.js';
-import {
+} from '../../core/errors/domain-errors.js';
+import type {
   ClaudeVerificationRuntime,
-  type ClaudeVerificationOutcome,
+  ClaudeVerificationOutcome,
 } from '../../core/platform/claude-verification.runtime.js';
-import { ProviderConnectionRepository } from './provider-connection.repository.js';
-import { SetupCredentialCache } from './setup-credential-cache.service.js';
-import { SettingsService } from '../../services/settings-service.js';
+import type { ProviderConnectionRepository } from './provider-connection.repository.js';
+import type { SetupCredentialCache } from './setup-credential-cache.service.js';
+import type { SettingsService } from '../../services/settings-service.js';
 import { resolveApplicationKey } from '../../providers/credential-policy.js';
 
 const errors: Record<Exclude<ClaudeVerificationOutcome, 'verified'>, string> = {
@@ -31,23 +31,24 @@ const errors: Record<Exclude<ClaudeVerificationOutcome, 'verified'>, string> = {
   timeout: 'Claude verification was cancelled or timed out.',
   failed: 'Claude verification could not be completed.',
 };
-@Injectable()
+
 export class ClaudeVerificationService {
   private closing: Promise<void> | undefined;
   private readonly active = new Map<Promise<unknown>, AbortController>();
   private readonly attempts = new Map<string, { count: number; reset: number }>();
   constructor(
-    @Inject(ClaudeVerificationRuntime) private readonly runtime: ClaudeVerificationRuntime,
-    @Inject(ProviderConnectionRepository)
+    private readonly runtime: ClaudeVerificationRuntime,
+
     private readonly connections: ProviderConnectionRepository,
-    @Inject(HOST_ENVIRONMENT) private readonly environment: Readonly<NodeJS.ProcessEnv>,
-    @Inject(SetupCredentialCache) private readonly keys: SetupCredentialCache,
-    @Inject(SettingsService) private readonly settings: SettingsService
+    private readonly environment: Readonly<NodeJS.ProcessEnv>,
+    private readonly keys: SetupCredentialCache,
+    private readonly settings: SettingsService,
+    private readonly validation: SetupCommandValidation
   ) {}
   private accepting() {
     if (this.closing) throw new UnavailableDomainError('Claude verification is shutting down.');
   }
-  private resolve(authMethod: 'cli' | 'api_key'): ClaudeVerificationTarget {
+  private resolve(authMethod: 'cli' | 'api_key'): ClaudeVerificationTargetValue {
     const { instanceId, workingDirectory } = this.connections.target('claude');
     let endpoint: URL;
     try {
@@ -78,7 +79,7 @@ export class ClaudeVerificationService {
   }
   target(authMethod: unknown) {
     this.accepting();
-    const parsed = VerificationAuthMethodSchema.safeParse(authMethod);
+    const parsed = this.validation.authMethod(authMethod);
     if (!parsed.success)
       throw new ValidationDomainError('An explicit authentication method is required.');
     return {
@@ -87,12 +88,9 @@ export class ClaudeVerificationService {
       target: this.resolve(parsed.data),
     };
   }
-  async verify(
-    input: ClaudeVerificationRequest,
-    client: string
-  ): Promise<ClaudeVerificationResponse> {
+  async verify(input: unknown, client: string): Promise<ClaudeVerificationResult> {
     this.accepting();
-    const parsed = ClaudeVerificationRequestSchema.safeParse(input);
+    const parsed = this.validation.claude(input);
     if (!parsed.success)
       throw new ValidationDomainError(
         'Claude verification requires a confirmed target and explicit authentication method.'
@@ -112,17 +110,14 @@ export class ClaudeVerificationService {
     const id = client.slice(0, 512);
     const attempt = this.attempts.get(id) ?? { count: 0, reset: now + 60000 };
     if (attempt.count >= 5 || (!this.attempts.has(id) && this.attempts.size >= 1000))
-      throw new HttpException(
-        { success: false, error: 'Too many Claude verification attempts. Try again later.' },
-        429
-      );
+      throw new RateLimitDomainError('Too many Claude verification attempts. Try again later.');
     if (this.active.size >= 4) throw new UnavailableDomainError('Claude verification is busy.');
     this.attempts.set(id, { ...attempt, count: attempt.count + 1 });
     const controller = new AbortController();
     const result = (
       outcome: ClaudeVerificationOutcome,
       error?: string
-    ): ClaudeVerificationResponse => ({
+    ): ClaudeVerificationResult => ({
       success: true,
       target,
       authType: target.authMethod,

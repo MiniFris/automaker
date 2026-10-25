@@ -1,3 +1,6 @@
+import { ProviderCleanupError } from '../../src/providers/provider-execution-scope.js';
+import { ExecutionEnvironmentError } from '../../src/services/execution-environment/runtime.js';
+import { FeatureWorkspaceService } from '../../src/services/execution-environment/feature-workspace.js';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -47,17 +50,19 @@ const step = (id: string, order: number): PipelineStep => ({
   updatedAt: '2026-10-25T00:00:00Z',
 });
 async function fixture(
-  control?: (stage: string, options: ExecuteOptions, index: number) => Promise<void>
+  control?: (stage: string, options: ExecuteOptions, index: number) => Promise<void>,
+  fixtureOptions: { root?: string; finalize?: (stage: string) => Promise<void> } = {}
 ) {
   vi.stubEnv('GIT_CONFIG_GLOBAL', '/dev/null');
   vi.stubEnv('GIT_CONFIG_SYSTEM', '/dev/null');
   vi.stubEnv('GIT_CONFIG_NOSYSTEM', '1');
   vi.stubEnv('GIT_TERMINAL_PROMPT', '0');
   vi.stubEnv('GIT_CONFIG_COUNT', '0');
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'native-custom-pipeline-'));
-  roots.push(root);
+  const root =
+    fixtureOptions.root ?? (await fs.mkdtemp(path.join(os.tmpdir(), 'native-custom-pipeline-')));
+  if (!roots.includes(root)) roots.push(root);
   const project = path.join(root, 'project');
-  await fs.mkdir(project);
+  await fs.mkdir(project, { recursive: true });
   const calls: Array<{ stage: string; options: ExecuteOptions }> = [];
   class OfflineProvider extends MockProvider {
     protected async *execute(options: ExecuteOptions) {
@@ -65,20 +70,24 @@ async function fixture(
         typeof options.prompt === 'string' ? options.prompt : JSON.stringify(options.prompt);
       const stage = /^## Pipeline Step: Step ([^\n]+)/m.exec(prompt)?.[1] ?? 'implementation';
       const index = calls.push({ stage, options });
-      await control?.(stage, options, index);
-      yield {
-        type: 'assistant' as const,
-        message: {
-          role: 'assistant' as const,
-          content: [
-            {
-              type: 'text' as const,
-              text: `<summary>\n## ${stage}\n${`NATIVE_RESULT_${stage} explicit offline implementation details. `.repeat(12)}\n</summary>`,
-            },
-          ],
-        },
-      };
-      yield { type: 'result' as const, subtype: 'success' as const };
+      try {
+        await control?.(stage, options, index);
+        yield {
+          type: 'assistant' as const,
+          message: {
+            role: 'assistant' as const,
+            content: [
+              {
+                type: 'text' as const,
+                text: `<summary>\n## ${stage}\n${`NATIVE_RESULT_${stage} explicit offline implementation details. `.repeat(12)}\n</summary>`,
+              },
+            ],
+          },
+        };
+        yield { type: 'result' as const, subtype: 'success' as const };
+      } finally {
+        await fixtureOptions.finalize?.(stage);
+      }
     }
   }
   const owner = await createNestApplication({
@@ -90,6 +99,7 @@ async function fixture(
     enableShutdownHooks: false,
     providerRegistrations: [
       { name: 'openai-compatible', create: () => new OfflineProvider('openai-compatible') },
+      { name: 'claude', create: () => new OfflineProvider('claude') },
     ],
     environment: {
       NODE_ENV: 'test',
@@ -185,7 +195,20 @@ async function fixture(
       `Native pipeline did not finish: ${JSON.stringify({ feature: await read(id), stages: calls.map((call) => call.stage) })}`
     );
   };
-  return { root, project, owner, post, events, calls, feature, read, config, idle, manager };
+  return {
+    root,
+    project,
+    owner,
+    post,
+    events,
+    calls,
+    feature,
+    read,
+    config,
+    idle,
+    manager,
+    socket,
+  };
 }
 
 it('executes two ordered custom steps through HTTP, preserves excluded/opaque config and publishes actual WS events and summaries', async () => {
@@ -259,7 +282,7 @@ it('resumes a saved custom step through HTTP and completes removed/excluded stag
   expect(f.calls).toHaveLength(1);
 });
 
-it('keeps a resumed incarnation current when a stopped custom-step provider returns late', async () => {
+it('retains a stopped custom-step owner until cleanup settles before accepting a resumed incarnation', async () => {
   const oldEntered = gate(),
     oldRelease = gate(),
     newEntered = gate(),
@@ -285,10 +308,13 @@ it('keeps a resumed incarnation current when a stopped custom-step provider retu
     stopped: true,
   });
   await f.post('auto-mode/resume-feature', { projectPath: f.project, featureId: feature.id });
+  expect(f.manager.getRunningFeature(feature.id)).toBe(previous);
+  oldRelease.release();
+  await vi.waitFor(() => expect(f.manager.isRunning(feature.id)).toBe(false));
+  await f.post('auto-mode/resume-feature', { projectPath: f.project, featureId: feature.id });
   await newEntered.promise;
   const current = f.manager.getRunningFeature(feature.id)!;
   expect(current).not.toBe(previous);
-  oldRelease.release();
   await new Promise((resolve) => setTimeout(resolve, 50));
   expect(f.manager.getRunningFeature(feature.id)).toBe(current);
   expect((await f.read(feature.id)).status).toBe('pipeline_late');
@@ -349,3 +375,141 @@ it.each([false, true])(
     for (const call of f.calls) expect(call.options.cwd).toBe(worktree);
   }
 );
+
+async function closeUncertain(f: Awaited<ReturnType<typeof fixture>>) {
+  f.socket.terminate();
+  await expect(f.owner.app.close()).rejects.toThrow();
+  owners.splice(owners.indexOf(f.owner), 1);
+  const server = f.owner.app.getHttpServer();
+  await new Promise<void>((resolve) => {
+    server.close(() => resolve());
+    server.closeAllConnections();
+  });
+}
+
+it('quarantines actual HTTP pipeline resume after provider-finally failure across nested release, late completion and native restart', async () => {
+  const delayed = gate();
+  const f = await fixture(undefined, {
+    finalize: async (stage) => {
+      if (stage === 'early') {
+        void delayed.promise.then(() => fs.writeFile(path.join(f.root, 'late-completion'), 'late'));
+        throw new ProviderCleanupError();
+      }
+    },
+  });
+  const healthy = await fixture();
+  await f.config([step('early', 0), step('late', 1)]);
+  const feature = await f.feature('uncertain', {
+    status: 'pipeline_early',
+    model: 'claude-sonnet-4-5',
+    providerId: undefined,
+  });
+  await fs.writeFile(
+    path.join(f.project, '.automaker/features', feature.id, 'agent-output.md'),
+    'SAVED_CONTEXT'
+  );
+  await f.post('auto-mode/resume-feature', { projectPath: f.project, featureId: feature.id });
+  await vi.waitFor(() =>
+    expect(f.manager.getRunningFeature(feature.id)?.executionUncertain).toBe(true)
+  );
+  const incarnation = f.manager.getRunningFeature(feature.id);
+  expect((await f.read(feature.id)).status).toBe('pipeline_early');
+  expect(f.calls.map((call) => call.stage)).toEqual(['early']);
+  f.manager.release(feature.id, { force: true, expected: incarnation });
+  expect(f.manager.getRunningFeature(feature.id)).toBe(incarnation);
+  expect(() =>
+    f.manager.acquire({
+      featureId: feature.id,
+      projectPath: f.project,
+      isAutoMode: false,
+      allowReuse: true,
+    })
+  ).toThrow(/unconfirmed/);
+  delayed.release();
+  await vi.waitFor(async () =>
+    expect(await fs.readFile(path.join(f.root, 'late-completion'), 'utf8')).toBe('late')
+  );
+  expect(f.manager.getRunningFeature(feature.id)).toBe(incarnation);
+  await f.post('auto-mode/resume-feature', { projectPath: f.project, featureId: feature.id });
+  const other = await healthy.feature('other');
+  await healthy.post('auto-mode/run-feature', {
+    projectPath: healthy.project,
+    featureId: other.id,
+  });
+  await healthy.idle(other.id);
+  expect(
+    f.events.some((event) => event.type === 'auto_mode_feature_complete' && event.passes === true)
+  ).toBe(false);
+  const directory = path.join(f.root, 'data', 'feature-execution-intents');
+  const records = await fs.readdir(directory);
+  expect(records).toHaveLength(1);
+  expect(JSON.parse(await fs.readFile(path.join(directory, records[0]), 'utf8'))).toMatchObject({
+    version: 1,
+    phase: 'uncertain',
+    kind: 'pipeline_step',
+  });
+  await closeUncertain(f);
+  const restarted = await fixture(undefined, { root: f.root });
+  await restarted.post('auto-mode/resume-feature', {
+    projectPath: restarted.project,
+    featureId: feature.id,
+  });
+  await restarted.post('auto-mode/resume-interrupted', { projectPath: restarted.project });
+  await restarted.post('auto-mode/run-feature', {
+    projectPath: restarted.project,
+    featureId: feature.id,
+  });
+  await expect(
+    restarted.manager.acquireAsync({
+      projectPath: restarted.project,
+      featureId: feature.id,
+      isAutoMode: false,
+    })
+  ).rejects.toThrow(/unconfirmed/);
+  expect(restarted.calls).toHaveLength(0);
+  expect((await restarted.read(feature.id)).status).toBe('pipeline_early');
+  await closeUncertain(restarted);
+});
+
+it('keeps typed unknown merge outcome at its current pipeline step and never reports success or review', async () => {
+  const f = await fixture();
+  await f.config([step('early', 0)]);
+  const feature = await f.feature('merge-unknown', {
+    status: 'pipeline_early',
+    branchName: 'private-feature',
+  });
+  // Explicit private merge-boundary seam: actual HTTP/step/lease/journal paths run;
+  // this does not pretend to exercise SSH or Docker transport failure.
+  vi.spyOn(FeatureWorkspaceService.prototype, 'prepare').mockImplementation(
+    async (_project, _feature, _signal, create = true) =>
+      create
+        ? undefined
+        : ({ binding: { cwd: f.project }, environment: { cwd: f.project } } as never)
+  );
+  const merge = vi
+    .spyOn(FeatureWorkspaceService.prototype, 'merge')
+    .mockRejectedValue(
+      new ExecutionEnvironmentError('SSH_OUTCOME_UNKNOWN', 'private raw peer diagnostics')
+    );
+  try {
+    await f.post('auto-mode/resume-feature', { projectPath: f.project, featureId: feature.id });
+    await vi.waitFor(() =>
+      expect(f.manager.getRunningFeature(feature.id)?.executionUncertain).toBe(true)
+    );
+    expect(merge).toHaveBeenCalledTimes(1);
+    expect((await f.read(feature.id)).status).toBe('pipeline_early');
+    expect(
+      f.events.some((event) => event.type === 'auto_mode_feature_complete' && event.passes === true)
+    ).toBe(false);
+    expect(JSON.stringify(f.events)).not.toContain('private raw peer diagnostics');
+    const files = await fs.readdir(path.join(f.root, 'data', 'feature-execution-intents'));
+    expect(
+      JSON.parse(
+        await fs.readFile(path.join(f.root, 'data', 'feature-execution-intents', files[0]), 'utf8')
+      )
+    ).toMatchObject({ phase: 'uncertain', kind: 'merge' });
+    await closeUncertain(f);
+  } finally {
+    vi.restoreAllMocks();
+  }
+});

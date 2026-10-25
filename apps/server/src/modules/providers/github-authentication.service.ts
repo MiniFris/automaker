@@ -1,28 +1,25 @@
-import { Inject, Injectable, HttpException } from '@nestjs/common';
-import {
-  GithubAuthenticationRequestSchema,
-  type GithubAuthenticationRequest,
-  type GithubAuthenticationResponse,
-} from '@automaker/contracts';
-import { HOST_ENVIRONMENT } from '../../core/config/index.js';
-import { SetupStatusRuntime } from '../../core/platform/setup-status.runtime.js';
+import type { SetupCommandValidation } from './setup-command.port.js';
+import type { GithubAuthenticationResult } from './verification.values.js';
+import { RateLimitDomainError } from '../../core/errors/domain-errors.js';
+
+import type { SetupStatusRuntime } from '../../core/platform/setup-status.runtime.js';
 import {
   ConflictDomainError,
   UnavailableDomainError,
   ValidationDomainError,
-} from '../../core/errors/index.js';
-import { ProviderConnectionRepository } from './provider-connection.repository.js';
+} from '../../core/errors/domain-errors.js';
+import type { ProviderConnectionRepository } from './provider-connection.repository.js';
 
-@Injectable()
 export class GithubAuthenticationService {
   private closing: Promise<void> | undefined;
   private readonly active = new Set<Promise<unknown>>();
   private readonly attempts = new Map<string, { count: number; until: number }>();
   constructor(
-    @Inject(SetupStatusRuntime) private readonly runtime: SetupStatusRuntime,
-    @Inject(ProviderConnectionRepository)
+    private readonly runtime: SetupStatusRuntime,
+
     private readonly connections: ProviderConnectionRepository,
-    @Inject(HOST_ENVIRONMENT) private readonly environment: Readonly<NodeJS.ProcessEnv>
+    private readonly environment: Readonly<NodeJS.ProcessEnv>,
+    private readonly validation: SetupCommandValidation
   ) {}
   private accepting() {
     if (this.closing) throw new UnavailableDomainError('GitHub authentication is shutting down.');
@@ -48,12 +45,9 @@ export class GithubAuthenticationService {
       },
     };
   }
-  async verify(
-    input: GithubAuthenticationRequest,
-    client: string
-  ): Promise<GithubAuthenticationResponse> {
+  async verify(input: unknown, client: string): Promise<GithubAuthenticationResult> {
     this.accepting();
-    const parsed = GithubAuthenticationRequestSchema.safeParse(input);
+    const parsed = this.validation.github(input);
     if (!parsed.success)
       throw new ValidationDomainError('An explicitly confirmed GitHub target is required.');
     const now = Date.now();
@@ -61,7 +55,7 @@ export class GithubAuthenticationService {
     const id = client.slice(0, 512);
     const attempt = this.attempts.get(id) ?? { count: 0, until: now + 60000 };
     if (attempt.count >= 5 || (!this.attempts.has(id) && this.attempts.size >= 1000))
-      throw new HttpException('Too many GitHub authentication checks.', 429);
+      throw new RateLimitDomainError('Too many GitHub authentication checks.');
     if (this.active.size >= 4) throw new UnavailableDomainError('GitHub authentication is busy.');
     this.attempts.set(id, { ...attempt, count: attempt.count + 1 });
     const task = Promise.resolve().then(async () => {

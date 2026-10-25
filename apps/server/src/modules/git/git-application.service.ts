@@ -1,53 +1,53 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
+import type {
+  GitDetailsInput,
+  GitFileInput,
+  GitProjectInput,
+  GitStageFilesInput,
+} from './application.inputs.js';
+
+import { type FeatureRunReadModel } from '../auto-mode/auto-mode.ports.js';
 import {
   ProjectGitService,
   gitWriteActions,
 } from '../../services/execution-environment/project-git.js';
 import { ExecutionEnvironmentError } from '../../services/execution-environment/runtime.js';
 import { sshSerialized } from '../../services/execution-environment/ssh-state.js';
-import type {
-  GitDetailsRequest,
-  GitFileRequest,
-  GitProjectRequest,
-  GitStageFilesRequest,
-} from './git.schemas.js';
 
-@Injectable()
 export class GitApplicationService {
   constructor(
-    @Inject(ProjectGitService) private readonly git: ProjectGitService,
-    @Inject(AutoModeServiceCompat) private readonly autoMode: AutoModeServiceCompat
+    private readonly git: ProjectGitService,
+
+    private readonly autoMode: Pick<FeatureRunReadModel, 'isProjectRunning'>
   ) {}
 
-  diffs(input: GitProjectRequest, signal: AbortSignal) {
+  diffs(input: GitProjectInput, signal: AbortSignal) {
     return this.run('diffs', input, signal);
   }
 
-  fileDiff(input: GitFileRequest, signal: AbortSignal) {
+  fileDiff(input: GitFileInput, signal: AbortSignal) {
     return this.run('file-diff', input, signal);
   }
 
-  details(input: GitDetailsRequest, signal: AbortSignal) {
+  details(input: GitDetailsInput, signal: AbortSignal) {
     return this.run('details', input, signal);
   }
 
-  enhancedStatus(input: GitProjectRequest, signal: AbortSignal) {
+  enhancedStatus(input: GitProjectInput, signal: AbortSignal) {
     return this.run('enhanced-status', input, signal);
   }
 
-  async environment(input: GitProjectRequest) {
+  async environment(input: GitProjectInput) {
     const target = await this.git.resolveOrLocal(input.projectPath);
     return { success: true as const, executionEnvironment: target.environment };
   }
 
-  stageFiles(input: GitStageFilesRequest, signal: AbortSignal) {
+  stageFiles(input: GitStageFilesInput, signal: AbortSignal) {
     return this.run('stage-files', input, signal);
   }
 
   private async run(
     action: string,
-    input: GitProjectRequest & Record<string, unknown>,
+    input: GitProjectInput & Record<string, unknown>,
     signal: AbortSignal
   ) {
     const target = await this.git.resolveOrLocal(input.projectPath);

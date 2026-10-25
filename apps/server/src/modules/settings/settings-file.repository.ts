@@ -1,4 +1,3 @@
-import { Injectable } from '@nestjs/common';
 import { atomicWriteJson, createLogger, DEFAULT_BACKUP_COUNT } from '@automaker/utils';
 import path from 'node:path';
 
@@ -7,7 +6,6 @@ import * as secureFs from '../../lib/secure-fs.js';
 const logger = createLogger('SettingsFileRepository');
 
 /** File boundary shared by global, project and credential settings stores. */
-@Injectable()
 export class SettingsFileRepository {
   private initialize?: () => Promise<void>;
   setInitializationBarrier(initialize: () => Promise<void>): void {

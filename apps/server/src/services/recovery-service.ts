@@ -13,7 +13,7 @@ import type { TypedEventBus } from './typed-event-bus.js';
 import type { ConcurrencyManager, RunningFeature } from './concurrency-manager.js';
 import type { SettingsService } from './settings-service.js';
 import type { PipelineStatusInfo } from './pipeline-orchestrator.js';
-import { UnavailableDomainError } from '../core/errors/index.js';
+import { UnavailableDomainError } from '../core/errors/domain-errors.js';
 
 const logger = createLogger('RecoveryService');
 const missing = (error: unknown) => (error as NodeJS.ErrnoException)?.code === 'ENOENT';

@@ -1,39 +1,38 @@
-import { Inject, Injectable } from '@nestjs/common';
+import type {
+  AddSuggestionInput,
+  ConvertInput,
+  GenerateSuggestionsInput,
+  IdeaCreateInput,
+  IdeaGetInput,
+  IdeaUpdateInput,
+  ProjectInput,
+  SessionGetInput,
+  SessionMessageInput,
+  SessionStartInput,
+  SessionStopInput,
+} from './application.inputs.js';
+
 import type { IdeaCategory } from '@automaker/types';
-import { NotFoundDomainError, ValidationDomainError } from '../../core/errors/index.js';
-import { APPLICATION_EVENTS } from '../../core/eventing/application-events.js';
+import { NotFoundDomainError, ValidationDomainError } from '../../core/errors/domain-errors.js';
+
 import type { EventEmitter } from '../../lib/events.js';
 import { IdeationService } from '../../services/ideation-service.js';
-import { FEATURE_REPOSITORY, type FeatureRepository } from '../features/feature.repository.js';
+import { type FeatureRepository } from '../features/feature.repository.js';
 import { FeatureTransitionService } from '../features/feature-transition.service.js';
 import { ProjectFeatureSerializer } from '../features/project-feature-serializer.js';
 import { IdeaConversionStore } from './idea-conversion.store.js';
-import type {
-  AddSuggestionRequest,
-  ConvertRequest,
-  GenerateSuggestionsRequest,
-  IdeaCreateRequest,
-  IdeaGetRequest,
-  IdeaUpdateRequest,
-  ProjectRequest,
-  SessionGetRequest,
-  SessionMessageRequest,
-  SessionStartRequest,
-  SessionStopRequest,
-} from './ideation.schemas.js';
 
-@Injectable()
 export class IdeationApplicationService {
   constructor(
-    @Inject(IdeationService) private readonly ideation: IdeationService,
-    @Inject(APPLICATION_EVENTS) private readonly events: EventEmitter,
-    @Inject(FEATURE_REPOSITORY) private readonly features: FeatureRepository,
-    @Inject(ProjectFeatureSerializer) private readonly serializer: ProjectFeatureSerializer,
-    @Inject(FeatureTransitionService) private readonly transitions: FeatureTransitionService,
-    @Inject(IdeaConversionStore) private readonly conversions: IdeaConversionStore
+    private readonly ideation: IdeationService,
+    private readonly events: EventEmitter,
+    private readonly features: FeatureRepository,
+    private readonly serializer: ProjectFeatureSerializer,
+    private readonly transitions: FeatureTransitionService,
+    private readonly conversions: IdeaConversionStore
   ) {}
 
-  async startSession(input: SessionStartRequest) {
+  async startSession(input: SessionStartInput) {
     return {
       success: true as const,
       session: await this.ideation.runAccepted(() =>
@@ -42,18 +41,18 @@ export class IdeationApplicationService {
     };
   }
 
-  message(input: SessionMessageRequest) {
+  message(input: SessionMessageInput) {
     this.ideation.launchMessage(input.sessionId, input.message, input.options);
     return { success: true as const };
   }
 
-  async stopSession(input: SessionStopRequest) {
+  async stopSession(input: SessionStopInput) {
     await this.ideation.runAccepted(() => this.ideation.stopSession(input.sessionId));
     this.events.emit('ideation:session-ended', input);
     return { success: true as const };
   }
 
-  async getSession(input: SessionGetRequest) {
+  async getSession(input: SessionGetInput) {
     const session = await this.ideation.getSession(input.projectPath, input.sessionId);
     if (!session) throw new NotFoundDomainError('Session not found');
     return {
@@ -63,11 +62,11 @@ export class IdeationApplicationService {
     };
   }
 
-  async listIdeas(input: ProjectRequest) {
+  async listIdeas(input: ProjectInput) {
     return { success: true as const, ideas: await this.ideation.getIdeas(input.projectPath) };
   }
 
-  createIdea(input: IdeaCreateRequest) {
+  createIdea(input: IdeaCreateInput) {
     return this.ideation.runAccepted(() =>
       this.serializer.run(input.projectPath, async () => {
         const idea = await this.ideation.createIdea(input.projectPath, input.idea);
@@ -77,13 +76,13 @@ export class IdeationApplicationService {
     );
   }
 
-  async getIdea(input: IdeaGetRequest) {
+  async getIdea(input: IdeaGetInput) {
     const idea = await this.ideation.getIdea(input.projectPath, input.ideaId);
     if (!idea) throw new NotFoundDomainError('Idea not found');
     return { success: true as const, idea };
   }
 
-  updateIdea(input: IdeaUpdateRequest) {
+  updateIdea(input: IdeaUpdateInput) {
     return this.ideation.runAccepted(() =>
       this.serializer.run(input.projectPath, async () => {
         const idea = await this.ideation.updateIdea(input.projectPath, input.ideaId, input.updates);
@@ -98,7 +97,7 @@ export class IdeationApplicationService {
     );
   }
 
-  deleteIdea(input: IdeaGetRequest) {
+  deleteIdea(input: IdeaGetInput) {
     return this.ideation.runAccepted(() =>
       this.serializer.run(input.projectPath, async () => {
         await this.ideation.deleteIdea(input.projectPath, input.ideaId);
@@ -108,19 +107,19 @@ export class IdeationApplicationService {
     );
   }
 
-  analyze(input: ProjectRequest) {
+  analyze(input: ProjectInput) {
     this.ideation.launchAnalysis(input.projectPath);
     return { success: true as const, message: 'Analysis started' };
   }
 
-  async analysis(input: ProjectRequest) {
+  async analysis(input: ProjectInput) {
     return {
       success: true as const,
       result: await this.ideation.getCachedAnalysis(input.projectPath),
     };
   }
 
-  convert(input: ConvertRequest) {
+  convert(input: ConvertInput) {
     return this.ideation.runAccepted(() =>
       this.serializer.run(input.projectPath, async () => {
         let intent = await this.conversions.get(input.projectPath, input.ideaId);
@@ -151,7 +150,7 @@ export class IdeationApplicationService {
     );
   }
 
-  addSuggestion(input: AddSuggestionRequest) {
+  addSuggestion(input: AddSuggestionInput) {
     return this.ideation.runAccepted(() =>
       this.serializer.run(input.projectPath, async () => {
         const description = input.suggestion.rationale
@@ -185,7 +184,7 @@ export class IdeationApplicationService {
     };
   }
 
-  async generateSuggestions(input: GenerateSuggestionsRequest) {
+  async generateSuggestions(input: GenerateSuggestionsInput) {
     const count = Math.min(Math.max(input.count || 10, 1), 20);
     const suggestions = await this.ideation.generateSuggestions(
       input.projectPath,

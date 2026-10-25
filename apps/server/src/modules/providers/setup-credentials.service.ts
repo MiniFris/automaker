@@ -1,37 +1,34 @@
-import { Inject, Injectable, HttpException } from '@nestjs/common';
+import type { SetupCommandValidation } from './setup-command.port.js';
+import type { SetupCredentialTargetValue } from './verification.values.js';
+import { RateLimitDomainError } from '../../core/errors/domain-errors.js';
+
 import path from 'node:path';
-import {
-  SetupCredentialProviderSchema,
-  SetupCredentialStoreRequestSchema,
-  SetupCredentialDeleteRequestSchema,
-  type SetupCredentialTarget,
-} from '@automaker/contracts';
+
 import {
   ConflictDomainError,
   UnavailableDomainError,
   ValidationDomainError,
-} from '../../core/errors/index.js';
-import { SettingsService } from '../../services/settings-service.js';
-import { ApplicationCredentialsService } from './application-credentials.service.js';
-import { ProviderConnectionRepository } from './provider-connection.repository.js';
+} from '../../core/errors/domain-errors.js';
+import type { SettingsService } from '../../services/settings-service.js';
+import type { ApplicationCredentialsService } from './application-credentials.service.js';
+import type { ProviderConnectionRepository } from './provider-connection.repository.js';
 
-@Injectable()
 export class SetupCredentialsService {
   private closing: Promise<void> | undefined;
   private readonly active = new Set<Promise<unknown>>();
   private readonly attempts = new Map<string, { count: number; until: number }>();
   constructor(
-    @Inject(ApplicationCredentialsService)
     private readonly credentials: ApplicationCredentialsService,
-    @Inject(SettingsService) private readonly settings: SettingsService,
-    @Inject(ProviderConnectionRepository) private readonly connections: ProviderConnectionRepository
+    private readonly settings: SettingsService,
+    private readonly connections: ProviderConnectionRepository,
+    private readonly validation: SetupCommandValidation
   ) {}
   private accepting() {
     if (this.closing) throw new UnavailableDomainError('Credential commands are shutting down.');
   }
   target(provider: unknown) {
     this.accepting();
-    const parsed = SetupCredentialProviderSchema.safeParse(provider);
+    const parsed = this.validation.credentialProvider(provider);
     if (!parsed.success) throw new ValidationDomainError('Unsupported credential provider.');
     return {
       success: true as const,
@@ -46,14 +43,12 @@ export class SetupCredentialsService {
   }
   async change(operation: 'store' | 'delete', input: unknown, client: string) {
     this.accepting();
-    const parsed = (
-      operation === 'store' ? SetupCredentialStoreRequestSchema : SetupCredentialDeleteRequestSchema
-    ).safeParse(input);
+    const parsed = this.validation.credentialChange(operation, input);
     if (!parsed.success)
       throw new ValidationDomainError(
         'A confirmed credential target and valid input are required.'
       );
-    const target: SetupCredentialTarget = parsed.data.target;
+    const target: SetupCredentialTargetValue = parsed.data.target;
     const current = this.target(target.provider).target;
     if (
       Object.keys(current).some(
@@ -66,7 +61,7 @@ export class SetupCredentialsService {
     const id = client.slice(0, 512),
       attempt = this.attempts.get(id) ?? { count: 0, until: now + 60000 };
     if (attempt.count >= 10 || (!this.attempts.has(id) && this.attempts.size >= 1000))
-      throw new HttpException('Too many credential changes.', 429);
+      throw new RateLimitDomainError('Too many credential changes.');
     if (this.active.size >= 16) throw new UnavailableDomainError('Credential commands are busy.');
     this.attempts.set(id, { ...attempt, count: attempt.count + 1 });
     const value =

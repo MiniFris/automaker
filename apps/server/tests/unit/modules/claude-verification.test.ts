@@ -1,3 +1,4 @@
+import { createSetupCommandValidation } from '../../../src/modules/providers/setup-command.validation.js';
 import { expect, it, vi } from 'vitest';
 import { ClaudeVerificationService } from '../../../src/modules/providers/claude-verification.service.js';
 import { ProviderConnectionRepository } from '../../../src/modules/providers/provider-connection.repository.js';
@@ -18,7 +19,8 @@ function fixture(environment: NodeJS.ProcessEnv = {}) {
     ProviderConnectionRepository.forWorkingDirectory('/backend'),
     Object.freeze({ ...environment }),
     keys,
-    settings as never
+    settings as never,
+    createSetupCommandValidation()
   );
   const request = (authMethod: 'cli' | 'api_key' = 'cli') =>
     ({ confirmed: true, target: service.target(authMethod).target }) as const;
@@ -161,7 +163,8 @@ it('rate limits attempts per application/client rather than sharing a process-gl
   const first = fixture();
   for (let index = 0; index < 5; index++) await first.service.verify(first.request(), 'client');
   await expect(first.service.verify(first.request(), 'client')).rejects.toMatchObject({
-    status: 429,
+    statusCode: 429,
+    errorCode: 'RATE_LIMITED',
   });
   const second = fixture();
   expect((await second.service.verify(second.request(), 'client')).authenticated).toBe(true);

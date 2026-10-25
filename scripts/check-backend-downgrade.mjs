@@ -219,6 +219,31 @@ export async function inspectBackendDowngrade({ dataDirectory, target } = {}) {
       }
     }
   }
+  const featureIntents = await directory('feature-execution-intents');
+  if (featureIntents)
+    for (const name of featureIntents.sort()) {
+      const relative = `feature-execution-intents/${name}`;
+      if (!/^[a-f0-9]{64}\.json$/.test(name)) {
+        finding('UNRECOGNIZED_FEATURE_INTENT', relative, 'feature-execution', true);
+        continue;
+      }
+      const value = await json(relative, 'feature-execution');
+      if (value === undefined) continue;
+      if (
+        !plainObject(value) ||
+        value.version !== 1 ||
+        !['pending', 'uncertain'].includes(value.phase) ||
+        !['execution', 'pipeline_step', 'merge'].includes(value.kind) ||
+        typeof value.projectPath !== 'string' ||
+        !path.isAbsolute(value.projectPath) ||
+        typeof value.featureId !== 'string' ||
+        typeof value.operationId !== 'string' ||
+        value.code !== 'FEATURE_OUTCOME_UNKNOWN' ||
+        typeof value.reason !== 'string'
+      )
+        finding('UNKNOWN_FEATURE_INTENT', relative, 'feature-execution', true);
+      else finding('UNSUPPORTED_SAFETY_LEDGER', relative, 'feature-execution', false, value.phase);
+    }
   for (const [subdirectory, kind] of [
     ['agent-session-deletions', 'deletion'],
     ['agent-queue-deliveries', 'delivery'],

@@ -1,5 +1,6 @@
+import { appSpecApplicationServiceProvider } from './application.providers.js';
 import { Module } from '@nestjs/common';
-import { AppSpecApplicationService } from './app-spec-application.service.js';
+
 import { AppSpecController } from './app-spec.controller.js';
 import { AppSpecJobRegistry } from './app-spec-job.registry.js';
 import { APP_SPEC_WORKFLOW_PORT } from './app-spec-workflow.port.js';
@@ -9,7 +10,7 @@ import { PlanningWorkflowContext } from './planning-workflow.context.js';
 @Module({
   controllers: [AppSpecController],
   providers: [
-    AppSpecApplicationService,
+    appSpecApplicationServiceProvider,
     AppSpecJobRegistry,
     PlanningWorkflowContext,
     NativeAppSpecWorkflow,

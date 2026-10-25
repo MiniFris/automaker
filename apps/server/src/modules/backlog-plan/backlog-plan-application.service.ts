@@ -1,37 +1,31 @@
-import { Inject, Injectable } from '@nestjs/common';
+import type { BacklogApplyInput, BacklogGenerateInput } from './application.inputs.js';
+
 import { resolvePhaseModel } from '@automaker/model-resolver';
 import type { Feature, PhaseModelEntry, PlanningMode } from '@automaker/types';
 import { SettingsService } from '../../services/settings-service.js';
-import { FEATURE_REPOSITORY, type FeatureRepository } from '../features/feature.repository.js';
+import { type FeatureRepository } from '../features/feature.repository.js';
 import { FeatureTransitionService } from '../features/feature-transition.service.js';
 import { ProjectFeatureSerializer } from '../features/project-feature-serializer.js';
-import {
-  BACKLOG_PLAN_STORE,
-  BACKLOG_PLAN_WORKFLOW,
-  type BacklogPlanStore,
-  type BacklogPlanWorkflow,
-} from './backlog-plan.ports.js';
+import { type BacklogPlanStore, type BacklogPlanWorkflow } from './backlog-plan.ports.js';
 import { BacklogPlanJobRegistry } from './backlog-plan-job.registry.js';
-import type { BacklogApplyRequest, BacklogGenerateRequest } from './backlog-plan.schemas.js';
 
 const normalizeModel = (
   entry: PhaseModelEntry | string | undefined | null
 ): PhaseModelEntry | undefined =>
   typeof entry === 'string' ? { model: entry } : entry || undefined;
 
-@Injectable()
 export class BacklogPlanApplicationService {
   constructor(
-    @Inject(BACKLOG_PLAN_WORKFLOW) private readonly workflow: BacklogPlanWorkflow,
-    @Inject(BACKLOG_PLAN_STORE) private readonly store: BacklogPlanStore,
-    @Inject(BacklogPlanJobRegistry) private readonly jobs: BacklogPlanJobRegistry,
-    @Inject(FEATURE_REPOSITORY) private readonly features: FeatureRepository,
-    @Inject(ProjectFeatureSerializer) private readonly serializer: ProjectFeatureSerializer,
-    @Inject(FeatureTransitionService) private readonly transitions: FeatureTransitionService,
-    @Inject(SettingsService) private readonly settings: SettingsService
+    private readonly workflow: BacklogPlanWorkflow,
+    private readonly store: BacklogPlanStore,
+    private readonly jobs: BacklogPlanJobRegistry,
+    private readonly features: FeatureRepository,
+    private readonly serializer: ProjectFeatureSerializer,
+    private readonly transitions: FeatureTransitionService,
+    private readonly settings: SettingsService
   ) {}
 
-  generate(input: BacklogGenerateRequest) {
+  generate(input: BacklogGenerateInput) {
     const admitted = this.jobs.generate(input, (controller, owned) =>
       this.workflow.generate(owned, controller)
     );
@@ -64,7 +58,7 @@ export class BacklogPlanApplicationService {
     );
   }
 
-  apply(input: BacklogApplyRequest) {
+  apply(input: BacklogApplyInput) {
     return this.jobs.track((signal) =>
       this.serializer.run(input.projectPath, async () => {
         signal.throwIfAborted();

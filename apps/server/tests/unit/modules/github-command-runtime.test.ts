@@ -49,6 +49,31 @@ describe.skipIf(process.platform !== 'linux')('owned GitHub command runtime', ()
     signal,
   });
 
+  it('excludes backend transport secrets from an actual private gh child while retaining its profile token', async () => {
+    const bin = path.join(fixture.root, 'backend-filter-bin');
+    await mkdir(bin);
+    await writeFile(
+      path.join(bin, 'gh'),
+      `#!${process.execPath}
+console.log(JSON.stringify({backendAbsent:!Object.keys(process.env).some(key=>['PORT','DATA_DIR','AUTOMAKER_API_KEY','NODE_PATH'].includes(key.toUpperCase())),profileToken:process.env.GH_TOKEN==='fixture-profile-token'}));
+`,
+      { mode: 0o700 }
+    );
+    await runtime.onModuleDestroy();
+    runtime = createRuntime({
+      ...fixture.environment,
+      PATH: bin + path.delimiter + fixture.environment.PATH,
+      PORT: '8765',
+      DATA_DIR: path.join(fixture.root, 'data'),
+      AUTOMAKER_API_KEY: 'private-backend-key',
+      NODE_PATH: 'private-backend-modules',
+    });
+    expect(JSON.parse((await runtime.run(request(fixture.root))).stdout)).toEqual({
+      backendAbsent: true,
+      profileToken: true,
+    });
+  });
+
   it('rejects forbidden Git and gh commands synchronously before dispatch, and distinguishes no in-root repository', async () => {
     const allowed = path.join(fixture.root, 'allowed');
     await mkdir(allowed);

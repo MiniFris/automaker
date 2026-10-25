@@ -648,6 +648,7 @@ export class EventHookService {
     try {
       const response = await fetch(url, {
         method,
+        redirect: 'manual',
         headers,
         body: method !== 'GET' ? body : undefined,
         signal: AbortSignal.any([controller.signal, this.cancellation.signal]),

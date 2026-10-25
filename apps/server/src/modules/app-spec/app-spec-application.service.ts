@@ -1,22 +1,21 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { EVENT_BUS, type EventBus } from '../../core/eventing/index.js';
-import { APP_SPEC_WORKFLOW_PORT, type AppSpecWorkflowPort } from './app-spec-workflow.port.js';
-import { AppSpecJobRegistry } from './app-spec-job.registry.js';
 import type {
-  AppSpecCreateRequest,
-  AppSpecFeaturesRequest,
-  AppSpecGenerateRequest,
-} from './app-spec.schemas.js';
+  AppSpecCreateInput,
+  AppSpecFeaturesInput,
+  AppSpecGenerateInput,
+} from './application.inputs.js';
 
-@Injectable()
+import { type EventBus } from '../../core/eventing/index.js';
+import { type AppSpecWorkflowPort } from './app-spec-workflow.port.js';
+import { AppSpecJobRegistry } from './app-spec-job.registry.js';
+
 export class AppSpecApplicationService {
   constructor(
-    @Inject(APP_SPEC_WORKFLOW_PORT) private readonly workflow: AppSpecWorkflowPort,
-    @Inject(AppSpecJobRegistry) private readonly jobs: AppSpecJobRegistry,
-    @Inject(EVENT_BUS) private readonly events: EventBus
+    private readonly workflow: AppSpecWorkflowPort,
+    private readonly jobs: AppSpecJobRegistry,
+    private readonly events: EventBus
   ) {}
 
-  create(source: AppSpecCreateRequest) {
+  create(source: AppSpecCreateInput) {
     const input = { ...source };
     return this.start(input.projectPath, 'spec_regeneration', (abortController, projectPath) =>
       this.workflow.generate({
@@ -30,7 +29,7 @@ export class AppSpecApplicationService {
     );
   }
 
-  generate(source: AppSpecGenerateRequest) {
+  generate(source: AppSpecGenerateInput) {
     const input = { ...source };
     return this.start(input.projectPath, 'spec_regeneration', (abortController, projectPath) =>
       this.workflow.generate({
@@ -44,7 +43,7 @@ export class AppSpecApplicationService {
     );
   }
 
-  generateFeatures(source: AppSpecFeaturesRequest) {
+  generateFeatures(source: AppSpecFeaturesInput) {
     const input = { ...source };
     return this.start(input.projectPath, 'feature_generation', (abortController, projectPath) =>
       this.workflow.generateFeatures(projectPath, input.maxFeatures, abortController)

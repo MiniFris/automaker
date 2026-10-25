@@ -1,50 +1,49 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { PipelineService } from '../../services/pipeline-service.js';
 import type {
-  PipelineAddRequest,
-  PipelineDeleteRequest,
-  PipelineProjectRequest,
-  PipelineReorderRequest,
-  PipelineSaveRequest,
-  PipelineUpdateRequest,
-} from './pipeline.schemas.js';
+  PipelineAddInput,
+  PipelineDeleteInput,
+  PipelineProjectInput,
+  PipelineReorderInput,
+  PipelineSaveInput,
+  PipelineUpdateInput,
+} from './application.inputs.js';
 
-@Injectable()
+import { PipelineService } from '../../services/pipeline-service.js';
+
 export class PipelineApplicationService {
-  constructor(@Inject(PipelineService) private readonly pipeline: PipelineService) {}
+  constructor(private readonly pipeline: PipelineService) {}
 
-  async get(input: PipelineProjectRequest) {
+  async get(input: PipelineProjectInput) {
     return {
       success: true as const,
       config: await this.pipeline.getPipelineConfig(input.projectPath),
     };
   }
 
-  async save(input: PipelineSaveRequest) {
+  async save(input: PipelineSaveInput) {
     await this.pipeline.savePipelineConfig(input.projectPath, input.config);
     return { success: true as const };
   }
 
-  async add(input: PipelineAddRequest) {
+  async add(input: PipelineAddInput) {
     return {
       success: true as const,
       step: await this.pipeline.addStep(input.projectPath, input.step),
     };
   }
 
-  async update(input: PipelineUpdateRequest) {
+  async update(input: PipelineUpdateInput) {
     return {
       success: true as const,
       step: await this.pipeline.updateStep(input.projectPath, input.stepId, input.updates),
     };
   }
 
-  async delete(input: PipelineDeleteRequest) {
+  async delete(input: PipelineDeleteInput) {
     await this.pipeline.deleteStep(input.projectPath, input.stepId);
     return { success: true as const };
   }
 
-  async reorder(input: PipelineReorderRequest) {
+  async reorder(input: PipelineReorderInput) {
     await this.pipeline.reorderSteps(input.projectPath, input.stepIds);
     return { success: true as const };
   }

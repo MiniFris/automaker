@@ -1,3 +1,7 @@
+import {
+  githubReviewServiceProvider,
+  githubDiscoveryServiceProvider,
+} from './application.providers.js';
 import { Module } from '@nestjs/common';
 import { GithubController } from './github.controller.js';
 import { IssueValidationRegistry } from './issue-validation-registry.service.js';
@@ -6,11 +10,11 @@ import { IssueValidationRepository } from './issue-validation.repository.js';
 import { GithubCommandRuntime, NodeGithubCommandRuntime } from './github-command.runtime.js';
 import { GithubReadPort } from './github-read.port.js';
 import { GithubCliReadAdapter } from './github-cli-read.adapter.js';
-import { GithubDiscoveryService } from './github-discovery.service.js';
+
 import { GithubCommentsReadPort, GithubReviewMutationPort } from './github-review.port.js';
 import { GithubCliCommentsAdapter } from './github-cli-comments.adapter.js';
 import { GithubCliReviewMutationAdapter } from './github-cli-review-mutation.adapter.js';
-import { GithubReviewService } from './github-review.service.js';
+
 import { GithubRepositoryBoundary } from './github-repository-boundary.js';
 import { SECURE_FILESYSTEM, SecurityModule } from '../../core/security/security.module.js';
 import { SecurityService } from '../../core/security/security.service.js';
@@ -25,12 +29,12 @@ import type { ValidationFilesystem } from '../../lib/validation-storage.js';
     { provide: GithubCommandRuntime, useExisting: NodeGithubCommandRuntime },
     GithubCliReadAdapter,
     { provide: GithubReadPort, useExisting: GithubCliReadAdapter },
-    GithubDiscoveryService,
+    githubDiscoveryServiceProvider,
     GithubCliCommentsAdapter,
     { provide: GithubCommentsReadPort, useExisting: GithubCliCommentsAdapter },
     GithubCliReviewMutationAdapter,
     { provide: GithubReviewMutationPort, useExisting: GithubCliReviewMutationAdapter },
-    GithubReviewService,
+    githubReviewServiceProvider,
     IssueValidationRegistry,
     {
       provide: IssueValidationRepository,

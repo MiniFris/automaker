@@ -1,3 +1,16 @@
+import { autoModeApplicationServiceProvider } from './application.providers.js';
+import {
+  FEATURE_RUN_READ_MODEL,
+  FEATURE_ORPHAN_QUERY,
+  AUTO_MODE_LIFECYCLE,
+  AUTO_MODE_SCHEDULER,
+  FEATURE_WORKFLOW,
+  type FeatureRunReadModel,
+  type FeatureOrphanQuery,
+  type AutoModeLifecycle,
+  type AutoModeScheduler,
+  type FeatureWorkflow,
+} from './auto-mode.ports.js';
 import { ProjectAnalysisService } from './project-analysis.service.js';
 import {
   ProjectAnalysisFilesAdapter,
@@ -14,10 +27,10 @@ import { HOST_ENVIRONMENT } from '../../core/config/index.js';
 import { ApplicationMetrics } from '../../core/observability/application-metrics.js';
 import { Global, Module } from '@nestjs/common';
 import { AutoModeController } from './auto-mode.controller.js';
-import { AutoModeApplicationService } from './auto-mode-application.service.js';
+
 import { ProjectRunContextRegistry } from './project-run-context.registry.js';
 import { autoModeProvider } from './auto-mode.provider.js';
-import { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
+import { AutoModeRuntime } from '../../services/auto-mode/runtime.js';
 import { PipelineModule } from '../pipeline/pipeline.module.js';
 
 @Global()
@@ -26,7 +39,27 @@ import { PipelineModule } from '../pipeline/pipeline.module.js';
   controllers: [AutoModeController],
   providers: [
     autoModeProvider,
-    AutoModeApplicationService,
+    {
+      provide: FEATURE_RUN_READ_MODEL,
+      useExisting: AutoModeRuntime satisfies { prototype: FeatureRunReadModel },
+    },
+    {
+      provide: FEATURE_ORPHAN_QUERY,
+      useExisting: AutoModeRuntime satisfies { prototype: FeatureOrphanQuery },
+    },
+    {
+      provide: AUTO_MODE_LIFECYCLE,
+      useExisting: AutoModeRuntime satisfies { prototype: AutoModeLifecycle },
+    },
+    {
+      provide: AUTO_MODE_SCHEDULER,
+      useExisting: AutoModeRuntime satisfies { prototype: AutoModeScheduler },
+    },
+    {
+      provide: FEATURE_WORKFLOW,
+      useExisting: AutoModeRuntime satisfies { prototype: FeatureWorkflow },
+    },
+    autoModeApplicationServiceProvider,
     ProjectRunContextRegistry,
     {
       provide: ProjectAnalysisService,
@@ -70,6 +103,6 @@ import { PipelineModule } from '../pipeline/pipeline.module.js';
       },
     },
   ],
-  exports: [AutoModeServiceCompat],
+  exports: [FEATURE_RUN_READ_MODEL, FEATURE_ORPHAN_QUERY, AUTO_MODE_LIFECYCLE],
 })
 export class AutoModeModule {}

@@ -47,15 +47,19 @@ it.each([
   expect(response.headers.get('access-control-allow-credentials')).toBe('true');
   await response.arrayBuffer();
 });
-it.each(['https://foreign.example', 'null', 'malformed'])(
-  'does not allow foreign origin: %s',
-  async (origin) => {
-    const response = await fetch(base + '/api/health/live', { headers: { origin } });
-    expect(response.ok).toBe(false);
-    expect(response.headers.get('access-control-allow-origin')).toBeNull();
-    await response.arrayBuffer();
-  }
-);
+it.each([
+  'https://foreign.example',
+  'null',
+  'malformed',
+  'https://10.attacker.invalid',
+  'https://192.168.attacker.invalid',
+  'https://172.16.attacker.invalid',
+])('does not allow foreign origin: %s', async (origin) => {
+  const response = await fetch(base + '/api/health/live', { headers: { origin } });
+  expect(response.ok).toBe(false);
+  expect(response.headers.get('access-control-allow-origin')).toBeNull();
+  await response.arrayBuffer();
+});
 it('handles JSON preflight without claiming private-network permission', async () => {
   const response = await fetch(base + '/api/auth/login', {
     method: 'OPTIONS',

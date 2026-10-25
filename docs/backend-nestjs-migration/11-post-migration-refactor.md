@@ -8,46 +8,26 @@
 
 ## Текущий статус и границы оставшейся работы
 
-Последний завершённый source checkpoint —
-[FSM ownership, Direct path policy и Dev/Test environment](artifacts/fsm-direct-policy-process-checkpoint.md).
-Native startup/shutdown bridge, service locators и legacy composition удалены;
-в wave17 удалены последние 83 test-only route files. Полный build/test checkpoint wave17 прошёл. Приведённый ниже исторический срез сохраняет результаты того
-commit, а не перечень оставшихся в исходниках adapters.
+Source checkpoint wave22 — `67948aa8`; wave23 добавил публичные AutoMode ports,
+постоянный барьер неопределённого результата execution/pipeline, captured agent
+output policy и разделение Ideation collaborators. Девятнадцать application/query/
+command классов стали plain classes: 61 dependency собирается в module-local
+factories, 101 вход описан независимыми interfaces. Полный совместный checkpoint
+wave23 и завершающий коммит ещё не подменяются targeted результатами.
 
-Уже реализованы узкие native application services и ports для основных HTTP
-модулей, scoped filesystem repositories и сериализованные atomic mutations
-FeatureLoader/FeatureStateManager/settings/agent stores. Есть negative, recovery,
-concurrency и active-shutdown contracts. Поэтому общие checklist items ниже
-нельзя трактовать как отсутствие всей этой работы; они требуют итоговой проверки
-coverage по каждому владельцу. См.
-[state checkpoint](artifacts/state-execution-contract-checkpoint.md),
-[agent stores](artifacts/agent-storage-recovery-session-checkpoint.md) и
-[source-port checkpoint](artifacts/source-ports-and-locators-checkpoint.md).
+[Матрица завершения этапа](artifacts/stage-11-completion-matrix.md) сопоставляет
+каждый ранее незакрытый пункт и Exit criterion с исходниками/contracts. Она также
+фиксирует причины превышения рекомендованных размеров transport/use-case файлов.
+Старый исторический срез ниже не описывает текущие legacy adapters: bridge,
+service locators, composition и test-only route files уже удалены.
 
-Оставшиеся конкретные проверки/работы:
-
-- Проверить ответственность крупных owners и направление зависимостей по каждому
-  bounded context; зафиксировать обоснованные исключения. Само наличие большого
-  файла не требует механического разделения.
-- Завершить автоматические dependency rules: framework-free domain/application,
-  public module exports, provider DI cycles и ambient config за пределами
-  `core`/`modules`. Native Local runtime теперь получает application snapshot;
-  Dev/Test spawn sites затем получили отдельный native snapshot proof в wave20.
-  MCP/прочие helper boundaries оцениваются отдельно.
-- Сверить переходы/recovery всех перечисленных lifecycle owners, включая
-  неизвестный cleanup outcome, с отдельными negative/concurrency tests.
-  Feature/agent/pipeline mutations уже покрыты предыдущими срезами.
-- Нормализовать stable machine-readable errors: полная shared schema coverage
-  не доказывает единые error codes для middleware/global и всех domain failures.
-- Завершить correlation HTTP → feature/orchestration → execution transport;
-  HTTP → agent coordinator → provider уже проверена. Startup/job/queue gauges
-  уже есть, но они не являются OS-wide leak census или persisted queue scan.
-- Проверить актуальные logging/config boundaries. Wave17 реализует application
-  logging policy и native HTTP/WS isolation; targeted evidence есть в
-  [logging audit](artifacts/application-logging-policy-audit.md) и завершённом
-  [общем checkpoint](artifacts/legacy-retirement-logging-checkpoint.md).
-- Выполнить sustained workload/resource и artifact/upgrade/rollback gates
-  [этапа 10](10-cutover-and-hardening.md) после итогового refactor.
+Ещё шесть semantic auth/credential/verification/GitHub use cases также перенесены
+на plain classes/factories и явные parsing ports; они не переименованы в adapters
+ради исключения. Всего 25 use-case owners, 82 прежние DI dependencies и четыре
+обязательных validation ports. Services-wide runtime Nest/Express guard сохраняет
+прежние route/controller restrictions. Конкретный остаток — финальный совместный
+checkpoint/commit; operational/artifact gates остаются в
+[этапе 10](10-cutover-and-hardening.md).
 
 ## Исторический срез: удаление legacy service composition
 
@@ -129,60 +109,78 @@ API v13, wire contracts, persisted formats и execution bindings не меняю
 
 ## 11.1. Application use cases
 
-- [ ] Заменить широкие facade APIs узкими use cases.
-- [ ] Commands и queries оформить отдельными классами только там, где это уменьшает
-      зависимости; полноценный CQRS framework не обязателен.
-- [ ] Убрать transport DTO из domain/application layer.
-- [ ] Ввести явные transaction/lock boundaries для файловых mutations.
-- [ ] Удалить optional dependencies, скрывающие неполную композицию.
+- [x] Заменить широкие facade APIs узкими use cases. Семь native consumers
+      используют [публичные capability/query/lifecycle ports](artifacts/auto-mode-public-ports-audit.md), сохраняя одного владельца.
+- [x] Commands и queries оформить отдельными классами там, где это уменьшает
+      зависимости. Feature/Settings/Files разделены; 19 классов используют
+      обычные constructors и explicit module factories, без CQRS framework.
+- [x] Убрать transport DTO из domain/application layer. 25 plain use cases
+      получают независимые Input/Result/Target values; четыре raw-input consumers
+      используют обязательный plain validation port, а shared Zod schemas остаются
+      в composition adapter. AutoMode HTTP400 shaping находится в controller,
+      rate-limit failures — plain domain errors. См.
+      [точный semantic boundary proof](artifacts/stage-11-completion-matrix.md#final-semantic-application-boundary).
+- [x] Ввести явные transaction/lock boundaries для файловых mutations:
+      [Feature transactions](artifacts/stage-5-feature-state-transactions-audit.md),
+      [agent/recovery](artifacts/agent-storage-recovery-session-checkpoint.md),
+      [Ideation concurrent HTTP](artifacts/ideation-collaborators-audit.md) и
+      [execution intents](artifacts/feature-execution-uncertainty-audit.md).
+- [x] Удалить optional dependencies, скрывающие неполную native composition.
+      Explicit factories передают все 82 прежние DI dependencies и четыре
+      обязательных validation ports этих 25 use cases;
+      actual composition/alias contracts проверяют владельцев. Явные standalone
+      defaults и optional credentials не считаются отсутствующим native owner.
 
 ## 11.2. Domain state machines
 
-- [ ] Feature lifecycle.
-- [ ] Agent session lifecycle.
-- [ ] Pipeline run lifecycle.
-- [ ] Terminal/test/dev-server session lifecycle.
-- [ ] Execution environment preparation lifecycle.
-- [ ] Явные transition errors и recovery states.
+- [x] Feature lifecycle: explicit FeatureRun transitions, transaction guards и
+      [native state contract](../../apps/server/tests/contract/native-feature-state.contract.test.ts).
+- [x] Agent session lifecycle: execution/queue/deletion journals и
+      [session state contract](../../apps/server/tests/contract/agent-session-state.contract.test.ts).
+- [x] Pipeline run lifecycle: ordered/excluded/resumed steps, Local merge/conflict
+      и [durable uncertainty/restart gate](artifacts/feature-execution-uncertainty-audit.md).
+- [x] Terminal/test/dev-server lifecycle: explicit admission/closing/unknown guards,
+      [confirmed PTY stop](artifacts/terminal-confirmed-stop-audit.md) и
+      [owned Local process tests](artifacts/native-local-process-ownership-audit.md).
+- [x] Execution environment preparation lifecycle: pinned binding, consent,
+      preflight, abort и [captured preparation proof](../../apps/server/tests/contract/provider-preparation-host-environment.contract.test.ts).
+- [x] Явные transition errors и recovery states. Unknown cleanup сохраняет owner
+      и durable barrier; confirmed cancellation не превращается в unknown.
+      Все state owners и negative proofs перечислены в матрице; единый FSM
+      framework не требуется для независимых protocol/session owners.
 
 ## 11.3. Infrastructure adapters
 
-- [ ] Перевести SecurityService/AllowedPathGuard и secure-fs с legacy platform
-      path globals на единый application-owned config/policy; удалить ambient
-      initAllowedPaths из lifecycle. Проверить два одновременных приложения с разными
-      allowed/data roots, symlink/relative paths и снятие ограничений без stale state.
-      Native GitHub repository boundary не заменяет этот общий exit criterion этапа 3.
-      Native guard/policy, SECURE_FILESYSTEM и Files adapter уже переведены в ADR-041;
-      остаются legacy init, SDK helpers, settings/atomic writer, download/prompt
-      adapters, bounded FS queue shutdown/admission и filesystem coordination.
-      Последующие срезы реализовали bounded FS queue, удаление ambient init и
-      native SDK validators, scoped settings/atomic writer normal path:
-      [filesystem audit](artifacts/filesystem-lifecycle-audit.md),
-      [lifecycle cutover](artifacts/native-lifecycle-cutover-audit.md),
-      [settings audit](artifacts/settings-filesystem-audit.md).
-      Download/prompt и legacy Electron import затем получили scoped ports;
-      agent stores/recovery — ordered drain и atomic state transactions.
-      См. [agent/recovery checkpoint](artifacts/agent-storage-recovery-session-checkpoint.md).
-      Notification/history, auth storage и Codex model cache затем получили
-      scoped FS и drain до filesystem barrier; см.
-      [native stores checkpoint](artifacts/native-stores-terminal-cleanup-checkpoint.md).
-      Validation storage, dev/test preflight/state, settings agent discovery и
-      worktree metadata затем переведены на явные native ports:
-      [source-port checkpoint](artifacts/source-ports-and-locators-checkpoint.md).
-      Terminal shell/WSL/child environment и RC filesystem/lifecycle затем
-      переведены на application snapshot и scoped ports:
-      [terminal audit](artifacts/terminal-host-configuration-audit.md).
-      Остальные config/coordination boundaries требуют итогового аудита;
-      общий checkbox пока не закрывается.
-- [ ] Filesystem repositories.
-- [ ] Git local/remote adapters.
-- [ ] Process/PTY supervisor.
-- [ ] Docker/SSH transports.
-- [ ] Provider SDK/CLI transports.
-- [ ] GitHub/MCP/notification transports.
+- [x] SecurityService/AllowedPathGuard/SECURE_FILESYSTEM используют application
+      policy; ambient lifecycle init удалён. Два приложения, canonical/symlink/
+      relative paths, DATA_DIR и закрытие A при работающем B проверяют
+      [native path contract](../../apps/server/tests/contract/native-path-policy.contract.test.ts),
+      [FS lifecycle](artifacts/filesystem-lifecycle-audit.md) и
+      [Direct policy checkpoint](artifacts/fsm-direct-policy-process-checkpoint.md).
+      Native helpers получают captured policy/environment; standalone compatibility
+      defaults остаются явно отделены от native composition.
+- [x] Filesystem repositories: FeatureLoader, settings/agent/auth/notification
+      stores и [Ideation repository](artifacts/ideation-collaborators-audit.md)
+      имеют scoped IO, mutation lanes и ordered drain.
+- [x] Git local/remote adapters: ProjectGitService/FeatureWorkspace ports;
+      три native WorktreeResolver query paths используют один captured owner,
+      bounded deadline/admission и confirmed drain, сохраняя SSH authority.
+      [Actual two-app/status/held-child proof](artifacts/stage-11-completion-matrix.md#final-native-worktreeresolver-boundary);
+      [actual Local custom pipeline merge](../../apps/server/tests/contract/native-custom-pipeline.contract.test.ts)
+      и [отдельный remote acceptance checkpoint](artifacts/state-execution-contract-checkpoint.md).
+- [x] Process/PTY supervisor: [owned process checkpoint](artifacts/owned-process-response-checkpoint.md)
+      и confirmed-stop/unknown-cleanup contracts сохраняют identity и admission.
+- [x] Docker/SSH transports: issued bindings, explicit runtime interfaces и
+      [отдельные actual adapter acceptance](artifacts/state-execution-contract-checkpoint.md).
+- [x] Provider SDK/CLI transports: scoped execution leases, native factories,
+      [CLI discovery и controlled diagnostics](artifacts/native-cli-discovery-audit.md).
+- [x] GitHub/MCP/notification transports: repository/runtime boundaries,
+      [bounded MCP protocol fixtures](artifacts/mcp-bounded-transport-ownership-audit.md)
+      и [notification confidentiality contract](../../apps/server/tests/contract/notification-transport-confidentiality.contract.test.ts).
 
-Application services тестируются на in-memory/fake ports; adapter contract tests
-проверяют, что fake и real implementations соблюдают одну семантику.
+Application services проверяются на explicit fake ports, adapters — отдельными
+actual Local/private protocol/managed transport contracts. Эти доказательства
+не объявляют paid vendor или external infrastructure acceptance.
 
 ## 11.4. Contracts и клиент
 
@@ -210,9 +208,13 @@ Application services тестируются на in-memory/fake ports; adapter c
 
 ## 11.5. Observability
 
-- [ ] Structured logs с request/job/session ids.
-- [ ] Metrics startup, active jobs, queue depth, provider errors, process leaks.
-- [ ] Traces через HTTP -> orchestration -> provider/execution boundaries.
+- [x] Structured logs с request/job/session ids: [operation correlation](artifacts/feature-execution-correlation-audit.md). Исторические diagnostic logs не объявляются полностью нормализованными.
+- [x] Metrics startup, active jobs, queue depth, provider errors и retained
+      process/cleanup ownership: [workflow gauges](artifacts/transport-context-terminal-observability-checkpoint.md).
+      Это loaded/owned-resource diagnostics, не OS-wide census.
+- [x] Traces через HTTP → orchestration → provider/execution:
+      [actual feature/verification/MCP contract](../../apps/server/tests/contract/feature-execution-correlation.contract.test.ts)
+      проверяет correlation id и parent operation identity. External exporter не требуется.
 - [x] Health не подменяет metrics и не выполняет destructive probes.
       Health/live/ready и protected passive metrics проверены раздельными contracts.
 - [x] Alerting thresholds документированы отдельно от framework:
@@ -249,32 +251,32 @@ Application services тестируются на in-memory/fake ports; adapter c
 
 ## Exit criteria
 
-- Крупные сервисы разделены по согласованным bounded contexts.
-- Dependency rules автоматически проверяются.
-- Shared contracts покрывают публичный API.
-- Observability позволяет расследовать HTTP, agent и execution workflow по одному id.
-- Новая архитектура описана в contributor documentation и соблюдается во всех
-  последующих коммитах.
-- Полный checkpoint этапа 11 успешно выполнен после глубокого рефакторинга и
-  зафиксирован завершающим коммитом в единственной migration-ветке.
+- [x] Крупные сервисы разделены по согласованным bounded contexts. Ideation имеет
+      отдельные repository/analysis/context/prompt/stream collaborators; остальные
+      owners и размерные исключения зафиксированы в матрице.
+- [x] Dependency rules автоматически проверяются: plain application/public ports,
+      pure kernels, core/module/controller IO и conservative Nest module graph.
+      Guards охватывают 25 plain use cases и service runtime imports; module
+      metadata и настоящие HTTP/infrastructure adapters остаются в своих слоях.
+- [x] Shared contracts покрывают публичный API: 318 operations, 316 JSON и две
+      binary responses с documented opaque compatibility payloads.
+- [x] Observability позволяет расследовать native HTTP, agent, feature и execution
+      workflow по correlation id; actual contracts проверяют эту цепочку.
+- [x] Новая архитектура описана в contributor documentation; обязательные guards
+      и contracts проверяют соблюдение заявленных границ в следующих изменениях.
+- [ ] Полный checkpoint этапа 11 успешно выполнен после глубокого рефакторинга и
+      зафиксирован завершающим коммитом в единственной migration-ветке. Targeted
+      counts не заменяют этот gate; его результат записывает основной агент.
 
-## Конкретный остаток после source freeze wave22
+## Остаток после wave23 source freeze
 
-Повторный bounded review не вводит новые общие acceptance требования. Следующий
-срез должен закрыть три проверяемые границы:
+Три конкретные source-задачи wave22 закрыты: публичные AutoMode ports,
+[captured debug policy](artifacts/agent-output-configuration-audit.md) и
+[pipeline uncertainty с restart barrier](artifacts/feature-execution-uncertainty-audit.md).
+Недостижимый generic test-step helper не возвращался для этих проверок.
 
-1. Семь native consumers ещё зависят от широкого `AutoModeServiceCompat`:
-   AutoMode/Git/Worktree application services, RunningAgents, FeatureQuery,
-   ProjectOverview и ApplicationRuntimeLifecycle. Перевести их на узкие публичные
-   capability/query/lifecycle ports, сохранив один project-context/run owner.
-2. `AgentExecutor` читает `AUTOMAKER_DEBUG_RAW_OUTPUT` из ambient `process.env`
-   во время выполнения. Передать captured application flag и проверить два
-   приложения после изменения глобального окружения; filesystem contract должен
-   конфигурировать приложение, а не включать поведение через `vi.stubEnv`.
-3. Проверить и закрепить pipeline state/ownership при cleanup-failed или
-   unknown-outcome custom step/merge. Нижние provider/SSH guards уже fail closed,
-   но общий catch `resumeFromStep` и release в finally требуют отдельного proof:
-   unknown mutation нельзя превращать в разрешённый повтор или успешный merge.
-
-Это оставшийся source scope, а не утверждение о воспроизведённом replay. Удалённый
-недостижимый generic test-step helper не возвращается ради этих проверок.
+Остаётся финальный совместный checkpoint/commit. Строгая semantic application
+граница закрыта реальным переносом 25 use cases, independent inputs и parsing
+ports. Это не новый security/vendor/OS audit и не требование механически дробить
+каждый большой файл. [Матрица](artifacts/stage-11-completion-matrix.md)
+содержит доказательства для каждого ранее незакрытого пункта и текущие ограничения.

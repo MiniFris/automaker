@@ -162,3 +162,55 @@ and `NODE_PATH`. A dev-server owner explicitly assigns its selected child PORT.
 Saved provider settings may rotate credentials without changing the application's
 captured host profile. Relative Codex profile paths resolve from the captured
 application working directory, consistently for discovery and CLI/SDK invocation.
+
+## Building and checking deployable artifacts
+
+Build shared packages and the server with `npm run build:server`. The standalone
+production entry is `apps/server/dist/main.js`; deploy the compiled workspace
+libraries and production dependencies with it. `/api/health/live` and
+`/api/health/ready` support process/readiness checks; detailed health and
+`/api/metrics` require authentication. On shutdown the application closes admission,
+interrupts accepted work and confirms owned cleanup. A failed/unknown cleanup is
+an operational failure, not permission to start another owner against the same data.
+
+For a local production container:
+
+```sh
+docker build --target server --build-arg GIT_COMMIT_SHA="$(git rev-parse HEAD)" \
+  -t automaker-backend-local .
+node scripts/smoke-production-docker.mjs --image automaker-backend-local
+```
+
+The smoke pins the existing local image and uses a private labelled container,
+loopback publication and temporary data. The separate
+`scripts/smoke-backend-upgrade.mjs --old-image ... --new-image ...` requires two
+explicit local images and rehearses existing-volume restart and full-snapshot
+rollback using only its labelled named volumes. A rollback restores a whole
+consistent snapshot into a separate volume; it does not overlay old files onto an
+upgraded profile. Run downgrade preflight before considering reuse of changed
+storage with a binary that does not understand safety journals.
+
+For packaged Linux Electron:
+
+```sh
+npm run build:electron:linux:dir
+xvfb-run -a node scripts/smoke-packaged-electron.mjs \
+  --executable apps/ui/release/linux-unpacked/automaker
+```
+
+The build prepares the server bundle and rebuilds native node-pty for Electron.
+The smoke executes the actual artifact using a private profile, verifies preload,
+backend readiness/authentication and a real PTY, then confirms app/backend cleanup.
+`--config.directories.output=...` may be passed to the workspace electron-builder
+script when an explicit artifact destination is needed. Retain an accepted old
+artifact until the upgrade/rollback rehearsal is complete. Windows/macOS commands
+are available in the root scripts; actual execution needs the corresponding OS
+runner and is not established by a cross-build or Linux native-module test.
+
+Credential-bearing MCP and notification/webhook transports do not follow redirects.
+Configure the final HTTP(S) destination rather than relying on a 3xx hop. Failed
+notification response bodies and raw exception text are not returned as diagnostics.
+Native logging keeps error classifications and structured safe identity; arbitrary
+Error messages/stacks, credential/prompt fields and unstructured secondary error
+text are excluded. Standalone utility logger behavior outside the native policy
+context is preserved.

@@ -1,24 +1,24 @@
-import { Inject, Injectable } from '@nestjs/common';
+import type {
+  LocalStorageMigrationInput,
+  ProjectSettingsUpdateInput,
+  ModelTimeoutUpdateInput,
+} from './application.inputs.js';
+
 import type { GlobalSettings, ProjectSettings } from '../../types/settings.js';
 import { SettingsService } from '../../services/settings-service.js';
 import { SettingsDomainEvents } from './settings-domain-events.js';
-import type {
-  LocalStorageMigrationRequest,
-  ProjectSettingsUpdate,
-  ModelTimeoutUpdate,
-} from './settings.schemas.js';
+
 import {
   parseModelTimeoutSettings,
   PROVIDER_TIMEOUT_KEYS,
   type ModelTimeoutProvider,
 } from '@automaker/types';
-import { ValidationDomainError } from '../../core/errors/index.js';
+import { ValidationDomainError } from '../../core/errors/domain-errors.js';
 
-@Injectable()
 export class SettingsCommandService {
   constructor(
-    @Inject(SettingsService) private readonly settings: SettingsService,
-    @Inject(SettingsDomainEvents) private readonly events: SettingsDomainEvents
+    private readonly settings: SettingsService,
+    private readonly events: SettingsDomainEvents
   ) {}
 
   async updateGlobal(updates: Record<string, unknown>): Promise<Record<string, unknown>> {
@@ -32,7 +32,7 @@ export class SettingsCommandService {
     return { success: true, settings: current };
   }
 
-  async updateProject(input: ProjectSettingsUpdate): Promise<Record<string, unknown>> {
+  async updateProject(input: ProjectSettingsUpdateInput): Promise<Record<string, unknown>> {
     return {
       success: true,
       settings: await this.settings.updateProjectSettings(
@@ -42,11 +42,11 @@ export class SettingsCommandService {
     };
   }
 
-  async migrate(input: LocalStorageMigrationRequest): Promise<Record<string, unknown>> {
+  async migrate(input: LocalStorageMigrationInput): Promise<Record<string, unknown>> {
     return this.settings.migrateFromLocalStorage(input.data);
   }
 
-  async updateModelTimeouts(input: ModelTimeoutUpdate): Promise<Record<string, unknown>> {
+  async updateModelTimeouts(input: ModelTimeoutUpdateInput): Promise<Record<string, unknown>> {
     try {
       const timeouts = parseModelTimeoutSettings(input.timeouts);
       await this.settings.updateGlobalSettings({ modelTimeouts: timeouts });
@@ -60,7 +60,7 @@ export class SettingsCommandService {
 
   async updateProviderModelTimeouts(
     provider: ModelTimeoutProvider,
-    input: ModelTimeoutUpdate
+    input: ModelTimeoutUpdateInput
   ): Promise<Record<string, unknown>> {
     try {
       const timeouts = parseModelTimeoutSettings(input.timeouts, PROVIDER_TIMEOUT_KEYS[provider]);

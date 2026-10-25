@@ -1,22 +1,22 @@
-import { Inject, Injectable } from '@nestjs/common';
+import type { ImageQueryInput } from './application.inputs.js';
+
 import path from 'node:path';
-import { NotFoundDomainError, ValidationDomainError } from '../../core/errors/index.js';
+import { NotFoundDomainError, ValidationDomainError } from '../../core/errors/domain-errors.js';
 import { SecurityService } from '../../core/security/security.service.js';
-import { PROJECT_FILE_PORT, type ProjectFilePort } from './project-file.port.js';
-import type { ImageQuery } from './files.schemas.js';
+import { type ProjectFilePort } from './project-file.port.js';
+
 import {
   IMAGE_FILE_MIME_TYPES,
   IMAGE_MAX_BYTES,
 } from '@automaker/contracts/domains/files-binary-responses';
 
-@Injectable()
 export class ImageQueryService {
   constructor(
-    @Inject(PROJECT_FILE_PORT) private readonly files: ProjectFilePort,
-    @Inject(SecurityService) private readonly security: SecurityService
+    private readonly files: ProjectFilePort,
+    private readonly security: SecurityService
   ) {}
 
-  async load(input: ImageQuery): Promise<{ content: Buffer; mimeType: string }> {
+  async load(input: ImageQueryInput): Promise<{ content: Buffer; mimeType: string }> {
     const candidate = path.isAbsolute(input.path)
       ? input.path
       : input.projectPath

@@ -1,9 +1,10 @@
+import { gitApplicationServiceProvider } from './application.providers.js';
 import { Module } from '@nestjs/common';
 import { HOST_ENVIRONMENT } from '../../core/config/index.js';
 import { captureNativeLocalEnvironment } from '../../services/execution-environment/local.js';
 import { SettingsService } from '../../services/settings-service.js';
 import { ProjectGitService } from '../../services/execution-environment/project-git.js';
-import { GitApplicationService } from './git-application.service.js';
+
 import { GitController } from './git.controller.js';
 
 @Module({
@@ -20,7 +21,7 @@ import { GitController } from './git.controller.js';
           captureNativeLocalEnvironment(environment)
         ),
     },
-    GitApplicationService,
+    gitApplicationServiceProvider,
   ],
   exports: [ProjectGitService],
 })

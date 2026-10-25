@@ -1,8 +1,9 @@
+import { ideationApplicationServiceProvider } from './application.providers.js';
 import { DirectCheckpointRepository } from '../providers/direct-checkpoint.repository.js';
 import { HOST_ENVIRONMENT } from '../../core/config/index.js';
 import { Module } from '@nestjs/common';
 import { FeaturesModule } from '../features/features.module.js';
-import { IdeationApplicationService } from './ideation-application.service.js';
+
 import { IdeationController } from './ideation.controller.js';
 import { IdeationService } from '../../services/ideation-service.js';
 import { SettingsService } from '../../services/settings-service.js';
@@ -53,7 +54,7 @@ import { IdeaConversionStore } from './idea-conversion.store.js';
           checkpointRepository
         ),
     },
-    IdeationApplicationService,
+    ideationApplicationServiceProvider,
     IdeaConversionStore,
   ],
   exports: [IdeationService],

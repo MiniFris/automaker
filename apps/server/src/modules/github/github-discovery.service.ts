@@ -1,4 +1,5 @@
-import { HttpException, Inject, Injectable, type OnModuleDestroy } from '@nestjs/common';
+import { RateLimitDomainError } from '../../core/errors/domain-errors.js';
+
 import { performance } from 'node:perf_hooks';
 import {
   TimeoutDomainError,
@@ -6,7 +7,7 @@ import {
   ValidationDomainError,
 } from '../../core/errors/domain-errors.js';
 import { GithubReadPort } from './github-read.port.js';
-import { GithubCommandError } from './github-command.runtime.js';
+import { GithubCommandError } from './github-command.errors.js';
 
 export class GithubDiscoveryCleanupError extends Error {
   readonly code = 'GITHUB_DISCOVERY_CLEANUP_FAILED';
@@ -14,11 +15,11 @@ export class GithubDiscoveryCleanupError extends Error {
     super('GitHub discovery cleanup could not be confirmed.');
   }
 }
-@Injectable()
-export class GithubDiscoveryService implements OnModuleDestroy {
+
+export class GithubDiscoveryService {
   private readonly active = new Map<Promise<unknown>, AbortController>();
   private shutdown?: Promise<void>;
-  constructor(@Inject(GithubReadPort) private readonly reads: GithubReadPort) {}
+  constructor(private readonly reads: GithubReadPort) {}
   remote(projectPath: string) {
     return this.run(async (signal) => ({
       success: true,
@@ -63,7 +64,7 @@ export class GithubDiscoveryService implements OnModuleDestroy {
       .catch((error) => {
         if (error instanceof GithubCommandError) {
           if (error.rateLimited)
-            throw new HttpException('GitHub request rate limit exceeded.', 429);
+            throw new RateLimitDomainError('GitHub request rate limit exceeded.');
           if (error.kind === 'deadline' || performance.now() >= deadline)
             throw new TimeoutDomainError('GitHub discovery timed out.');
           throw new UnavailableDomainError('GitHub discovery is unavailable.');

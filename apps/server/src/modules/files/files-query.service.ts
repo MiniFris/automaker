@@ -1,14 +1,15 @@
-import { Inject, Injectable } from '@nestjs/common';
+import type { BrowseProjectInput, ResolveDirectoryInput } from './application.inputs.js';
+
 import {
   NotFoundDomainError,
   ValidationDomainError,
   mapInfrastructureError,
-} from '../../core/errors/index.js';
-import { PROJECT_FILE_PORT, type ProjectFilePort } from './project-file.port.js';
+} from '../../core/errors/domain-errors.js';
+import { type ProjectFilePort } from './project-file.port.js';
 import { SecurityService } from '../../core/security/security.service.js';
 import os from 'node:os';
 import path from 'node:path';
-import type { BrowseProjectRequest, ResolveDirectoryRequest } from './files.schemas.js';
+
 import { RuntimePathsService } from '../../core/config/index.js';
 
 const HIDDEN_DIRECTORIES = new Set([
@@ -32,12 +33,11 @@ const HIDDEN_DIRECTORIES = new Set([
   'vendor',
 ]);
 
-@Injectable()
 export class FilesQueryService {
   constructor(
-    @Inject(PROJECT_FILE_PORT) private readonly files: ProjectFilePort,
-    @Inject(SecurityService) private readonly security: SecurityService,
-    @Inject(RuntimePathsService) private readonly paths: RuntimePathsService
+    private readonly files: ProjectFilePort,
+    private readonly security: SecurityService,
+    private readonly paths: RuntimePathsService
   ) {}
 
   async read(filePath: string): Promise<Record<string, unknown>> {
@@ -121,7 +121,7 @@ export class FilesQueryService {
     }
   }
 
-  async browseProject(input: BrowseProjectRequest): Promise<Record<string, unknown>> {
+  async browseProject(input: BrowseProjectInput): Promise<Record<string, unknown>> {
     const project = this.security.validateLocalPath(input.projectPath, 'browse project files');
     const normalized = input.relativePath ? path.normalize(input.relativePath) : '';
     if (normalized.startsWith('..') || path.isAbsolute(normalized)) {
@@ -153,7 +153,7 @@ export class FilesQueryService {
     return { success: true, currentRelativePath: relative, parentRelativePath, entries };
   }
 
-  async resolveDirectory(input: ResolveDirectoryRequest): Promise<Record<string, unknown>> {
+  async resolveDirectory(input: ResolveDirectoryInput): Promise<Record<string, unknown>> {
     const candidates = new Set<string>();
     if (path.isAbsolute(input.directoryName) || input.directoryName.includes(path.sep)) {
       candidates.add(path.resolve(input.directoryName));

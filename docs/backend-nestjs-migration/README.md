@@ -23,7 +23,8 @@ application/infra границ этапа 11. Результаты возобн�
 Предыдущий source checkpoint: [Local runtime snapshot и HTTP error codes](artifacts/local-runtime-http-errors-checkpoint.md).
 Предыдущий source checkpoint: [FSM ownership, Direct path policy и Dev/Test environment](artifacts/fsm-direct-policy-process-checkpoint.md).
 Предыдущий source checkpoint: [MCP, checkpoints и correlation](artifacts/mcp-checkpoints-correlation-checkpoint.md).
-Последний source checkpoint: [project analysis, native CLI, pipeline и diagnostics](artifacts/project-analysis-cli-pipeline-checkpoint.md).
+Предыдущий source checkpoint: [project analysis, native CLI, pipeline и diagnostics](artifacts/project-analysis-cli-pipeline-checkpoint.md).
+Последний source checkpoint: [public ports, durable ownership и plain application](artifacts/public-ports-uncertainty-and-application-checkpoint.md).
 Полная миграция ещё не завершена; checklist и результаты проверок ведутся
 в документах соответствующих этапов.
 

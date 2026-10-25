@@ -1,4 +1,5 @@
-import { Inject, Injectable } from '@nestjs/common';
+import type { DiscoverAgentsInput, ProjectSettingsReadInput } from './application.inputs.js';
+
 import { parseDirectAgentSettings } from '../../providers/openai-compatible/execution.js';
 import { parseOpenAICompatibleEndpoint } from '../../providers/openai-compatible/config.js';
 import {
@@ -13,19 +14,18 @@ import {
   type OpenAICompatibleEndpointStatus,
 } from '@automaker/types';
 import type { DirectAgentSettings } from '@automaker/types';
-import type { DiscoverAgentsRequest, ProjectSettingsRead } from './settings.schemas.js';
-import { RUNTIME_CONFIG, type RuntimeConfig } from '../../core/config/index.js';
-import { SECURE_FILESYSTEM } from '../../core/security/index.js';
+
+import { type RuntimeConfig } from '../../core/config/index.js';
+
 import type * as Filesystem from '../../lib/secure-fs.js';
 import { AgentProfileSource } from './agent-profile.source.js';
 
-@Injectable()
 export class SettingsQueryService {
   constructor(
-    @Inject(SettingsService) private readonly settings: SettingsService,
-    @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig,
-    @Inject(SECURE_FILESYSTEM) private readonly filesystem: typeof Filesystem,
-    @Inject(AgentProfileSource) private readonly profile: AgentProfileSource
+    private readonly settings: SettingsService,
+    private readonly config: RuntimeConfig,
+    private readonly filesystem: typeof Filesystem,
+    private readonly profile: AgentProfileSource
   ) {}
 
   async status(): Promise<Record<string, unknown>> {
@@ -50,14 +50,14 @@ export class SettingsQueryService {
     return { success: true, credentials: await this.settings.getMaskedCredentials() };
   }
 
-  async project(input: ProjectSettingsRead): Promise<Record<string, unknown>> {
+  async project(input: ProjectSettingsReadInput): Promise<Record<string, unknown>> {
     return {
       success: true,
       settings: await this.settings.getProjectSettings(input.projectPath),
     };
   }
 
-  async discoverAgents(input: DiscoverAgentsRequest): Promise<Record<string, unknown>> {
+  async discoverAgents(input: DiscoverAgentsInput): Promise<Record<string, unknown>> {
     return {
       success: true,
       agents: await discoverFilesystemAgents(

@@ -5,7 +5,7 @@ import { HttpException } from '@nestjs/common';
 import { expect, it, vi } from 'vitest';
 import { createNativeWorktreeHttp } from '../helpers/native-worktree-http.js';
 import { ReadinessStateService } from '../../src/core/lifecycle/readiness-state.service.js';
-import { ConflictDomainError } from '../../src/core/errors/domain-errors.js';
+import { ConflictDomainError, RateLimitDomainError } from '../../src/core/errors/domain-errors.js';
 
 it('adds stable HTTP error categories without replacing status, domain codes or safe legacy fields', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'native-error-codes-'));
@@ -72,6 +72,21 @@ it('adds stable HTTP error categories without replacing status, domain codes or 
       message: 'Rate limited.',
       retryAfter: 5,
     });
+    for (const previous of ['scalar', 'object'] as const) {
+      handler.mockImplementationOnce(() => {
+        throw new HttpException(
+          previous === 'scalar'
+            ? 'Controlled admission limit.'
+            : { success: false, error: 'Controlled admission limit.' },
+          429
+        );
+      });
+      const baseline = await check('health/ready', 429, 'RATE_LIMITED');
+      handler.mockImplementationOnce(() => {
+        throw new RateLimitDomainError('Controlled admission limit.');
+      });
+      expect(await check('health/ready', 429, 'RATE_LIMITED')).toEqual(baseline);
+    }
     handler.mockImplementationOnce(() => {
       throw new HttpException(
         { errorCode: 'SPECIFIC_FAILURE', message: 'Controlled failure.' },

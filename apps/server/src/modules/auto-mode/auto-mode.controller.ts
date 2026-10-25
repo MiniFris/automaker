@@ -1,3 +1,4 @@
+import { FeatureMergeError } from './auto-mode.errors.js';
 import {
   AutoModeAcceptedResponseSchema,
   AutoModeApprovalResponseSchema,
@@ -12,7 +13,7 @@ import {
   AutoModeVerificationResponseSchema,
   PendingPlanApprovalResponseSchema,
 } from '@automaker/contracts/domains/auto-mode-responses';
-import { Body, Controller, HttpCode, Inject, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpException, Inject, Post, UseGuards } from '@nestjs/common';
 import {
   PendingPlanApprovalRequestSchema,
   PlanApprovalDecisionRequestSchema,
@@ -57,7 +58,13 @@ export class AutoModeController {
   async mergeEnvironmentFeature(
     @Body(new ZodValidationPipe(AutoModeMergeSchema)) body: AutoModeMergeRequest
   ) {
-    return AutoModeAcceptedResponseSchema.parse(await this.commands.mergeFeature(body, true));
+    try {
+      return AutoModeAcceptedResponseSchema.parse(await this.commands.mergeFeature(body, true));
+    } catch (error) {
+      if (error instanceof FeatureMergeError)
+        throw new HttpException({ success: false, error: error.message }, 400);
+      throw error;
+    }
   }
   @Post('merge-ssh-feature')
   @HttpCode(200)
@@ -65,7 +72,13 @@ export class AutoModeController {
   async mergeSshFeature(
     @Body(new ZodValidationPipe(AutoModeMergeSchema)) body: AutoModeMergeRequest
   ) {
-    return AutoModeAcceptedResponseSchema.parse(await this.commands.mergeFeature(body, false));
+    try {
+      return AutoModeAcceptedResponseSchema.parse(await this.commands.mergeFeature(body, false));
+    } catch (error) {
+      if (error instanceof FeatureMergeError)
+        throw new HttpException({ success: false, error: error.message }, 400);
+      throw error;
+    }
   }
   @Post('start')
   @HttpCode(200)

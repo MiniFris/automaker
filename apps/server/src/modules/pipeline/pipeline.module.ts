@@ -1,3 +1,4 @@
+import { pipelineApplicationServiceProvider } from './application.providers.js';
 import { Module } from '@nestjs/common';
 import { PipelineApplicationService } from './pipeline-application.service.js';
 import { PipelineController } from './pipeline.controller.js';
@@ -29,7 +30,7 @@ import {
       inject: [PipelineConfigurationRepository],
       useFactory: (repository: PipelineConfigurationRepository) => new PipelineService(repository),
     },
-    PipelineApplicationService,
+    pipelineApplicationServiceProvider,
   ],
   exports: [PipelineApplicationService, PipelineService],
 })

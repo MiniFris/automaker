@@ -1,3 +1,5 @@
+import { inspect } from 'node:util';
+import { installProcessExceptionHandlers } from '../../../src/core/lifecycle/process-exception-handlers.js';
 import type { ArgumentsHost } from '@nestjs/common';
 import { HttpException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -50,4 +52,28 @@ describe('exception diagnostic confidentiality', () => {
       });
     }
   });
+});
+
+it('production process handlers classify fatal and rejected failures without raw text or stack', () => {
+  const on = vi.spyOn(process, 'on').mockReturnValue(process);
+  const remove = vi.spyOn(process, 'removeListener').mockReturnValue(process);
+  const exit = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+  try {
+    const dispose = installProcessExceptionHandlers();
+    const rejection = on.mock.calls.find(([event]) => event === 'unhandledRejection')![1] as (
+      reason: unknown
+    ) => void;
+    const exception = on.mock.calls.find(([event]) => event === 'uncaughtException')![1] as (
+      reason: Error
+    ) => void;
+    rejection(new Error('private-process-marker'));
+    exception(new Error('private-process-marker'));
+    expect(inspect(errorLog.mock.calls)).not.toContain('private-process-marker');
+    expect(exit).toHaveBeenCalledExactlyOnceWith(1);
+    dispose();
+    expect(remove).toHaveBeenCalledWith('unhandledRejection', rejection);
+    expect(remove).toHaveBeenCalledWith('uncaughtException', exception);
+  } finally {
+    vi.restoreAllMocks();
+  }
 });

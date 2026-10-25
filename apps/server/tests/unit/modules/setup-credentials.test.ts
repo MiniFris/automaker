@@ -1,3 +1,4 @@
+import { createSetupCommandValidation } from '../../../src/modules/providers/setup-command.validation.js';
 import { expect, it, vi } from 'vitest';
 import { SetupCredentialsService } from '../../../src/modules/providers/setup-credentials.service.js';
 import { ProviderConnectionRepository } from '../../../src/modules/providers/provider-connection.repository.js';
@@ -7,7 +8,8 @@ function fixture() {
   const service = new SetupCredentialsService(
     credentials as never,
     settings as never,
-    ProviderConnectionRepository.forWorkingDirectory('/backend')
+    ProviderConnectionRepository.forWorkingDirectory('/backend'),
+    createSetupCommandValidation()
   );
   const target = service.target('openai').target;
   return { service, credentials, target };
@@ -75,7 +77,7 @@ it('limits attempts per application', async () => {
     await service.change('delete', { confirmed: true, target }, 'client');
   await expect(
     service.change('delete', { confirmed: true, target }, 'client')
-  ).rejects.toMatchObject({ status: 429 });
+  ).rejects.toMatchObject({ statusCode: 429, errorCode: 'RATE_LIMITED' });
   const other = fixture();
   expect(
     (await other.service.change('delete', { confirmed: true, target: other.target }, 'client'))

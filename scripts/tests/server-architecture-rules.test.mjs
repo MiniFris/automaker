@@ -261,3 +261,164 @@ test('pure-kernel overlay retains existing core/module import and ambient-enviro
       );
   }
 });
+
+for (const filePath of ['src/core/example/consumer.ts', 'src/modules/example/consumer.ts']) {
+  test(`${filePath} consumes AutoMode through ports and rejects runtime owner backdoors`, async () => {
+    for (const source of [
+      "import { AutoModeServiceCompat } from '@/services/auto-mode/index.js'; export const owner = AutoModeServiceCompat;",
+      "import { AutoModeRuntime } from '@/services/auto-mode/runtime.js'; export const owner = AutoModeRuntime;",
+      "export { AutoModeServiceCompat as Alias } from '../../services/auto-mode/compat.js';",
+      "export * from '@/services/auto-mode/facade.js';",
+      "import * as owner from '@/services/auto-mode'; export { owner };",
+      "export const owner = import('@/services/auto-mode/global-service.js');",
+      "export const owner = require('@/services/auto-mode/compat.js');",
+      "import owner = require('@/services/auto-mode/compat.js'); export { owner };",
+      'export const owner = import(`@/services/auto-mode/index.js`);',
+      'export function load(name: string) { return import(name); }',
+    ]) {
+      const [result] = await eslint.lintText(source, { filePath });
+      assert.ok(
+        result.messages.some(
+          (message) =>
+            message.ruleId === 'auto-mode-boundaries/public-ports' && message.severity === 2
+        ),
+        `${filePath}: ${source}`
+      );
+    }
+    const [allowed] = await eslint.lintText(
+      "import { FEATURE_RUN_READ_MODEL, type FeatureRunReadModel } from '@/modules/auto-mode/auto-mode.ports.js'; import type { RunningAgentInfo } from '@/services/auto-mode/types.js'; export const token=FEATURE_RUN_READ_MODEL; export type Reader=Pick<FeatureRunReadModel,'getRunningAgents'>; export type Agent=RunningAgentInfo;",
+      { filePath }
+    );
+    assert.equal(allowed.errorCount, 0, JSON.stringify(allowed.messages));
+  });
+}
+test('only the native AutoMode module and factory assemble the runtime owner, retaining previous guards', async () => {
+  for (const filePath of [
+    'src/modules/auto-mode/auto-mode.module.ts',
+    'src/modules/auto-mode/auto-mode.provider.ts',
+  ]) {
+    const [allowed] = await eslint.lintText(
+      "import { AutoModeServiceCompat } from '../../services/auto-mode/index.js'; export const owner=AutoModeServiceCompat;",
+      { filePath }
+    );
+    assert.equal(allowed.errorCount, 0, JSON.stringify(allowed.messages));
+    const [legacy] = await eslint.lintText(
+      "export * from '@/routes/legacy.js'; export const config=process.env.PORT;",
+      { filePath }
+    );
+    for (const ruleId of ['no-restricted-imports', 'no-restricted-syntax'])
+      assert.ok(
+        legacy.messages.some((message) => message.ruleId === ruleId && message.severity === 2)
+      );
+  }
+});
+
+test('plain application services and independent inputs reject framework and transport DTO imports', async () => {
+  const paths = [
+    'src/modules/auto-mode/auto-mode-application.service.ts',
+    'src/modules/features/feature-command.service.ts',
+    'src/modules/settings/settings-query.service.ts',
+    'src/modules/features/application.inputs.ts',
+  ];
+  for (const filePath of paths)
+    for (const source of [
+      "import {Injectable} from '@nestjs/common'; export const x=Injectable;",
+      "import type {Request} from 'express'; export type Input=Request;",
+      "import type {FeatureCreateRequest as Input} from './feature.schemas.js'; export type Command=Input;",
+      "import type {FeatureCreateRequest as Input} from '@automaker/contracts'; export type Command=Input;",
+      "export type {FeatureCreateRequest} from '@automaker/contracts';",
+      "export * from './feature.schemas.js';",
+      "const dependency=import('@nestjs/common'); export {dependency};",
+      "const dependency=require('@nestjs/common'); export {dependency};",
+    ]) {
+      const [result] = await eslint.lintText(source, { filePath });
+      assert.ok(
+        result.messages.some(
+          (message) =>
+            message.ruleId === 'application-boundaries/plain-use-case' && message.severity === 2
+        ),
+        filePath + ' ' + source
+      );
+    }
+});
+test('plain application constructors accept explicit domain values; factories alone own Nest assembly', async () => {
+  for (const [filePath, source] of [
+    [
+      'src/modules/features/feature-command.service.ts',
+      "import type {Feature} from '@automaker/types'; import type {FeatureCreateInput} from './application.inputs.js'; export class UseCase {constructor(private readonly save:(input:FeatureCreateInput)=>Promise<Feature>){} run(input:FeatureCreateInput){return this.save(input);}}",
+    ],
+    [
+      'src/modules/features/application.inputs.ts',
+      'export interface FeatureCreateInput {projectPath:string;feature:Record<string,unknown>}',
+    ],
+    [
+      'src/modules/features/application.providers.ts',
+      "import type {FactoryProvider} from '@nestjs/common'; export const provider:FactoryProvider={provide:'usecase',inject:[],useFactory:()=>({})};",
+    ],
+  ]) {
+    const [result] = await eslint.lintText(source, { filePath });
+    assert.equal(result.errorCount, 0, JSON.stringify(result.messages));
+  }
+  const results = await eslint.lintFiles([
+    'src/modules/**/*application.service.ts',
+    'src/modules/**/*command.service.ts',
+    'src/modules/**/*query.service.ts',
+    'src/modules/*/application.inputs.ts',
+  ]);
+  assert.ok(results.length >= 19);
+  assert.equal(
+    results
+      .flatMap((result) => result.messages)
+      .filter((message) => message.ruleId === 'application-boundaries/plain-use-case').length,
+    0
+  );
+});
+
+test('plain services reject runtime framework imports while retaining erased lifecycle type interfaces', async () => {
+  for (const filePath of ['src/services/plain-service.ts', 'src/services/agent/agent-worker.ts']) {
+    for (const source of [
+      "import {Injectable} from '@nestjs/common'; export const decorator=Injectable;",
+      "import express from 'express'; export const server=express();",
+      "export {HttpException} from '@nestjs/common';",
+    ]) {
+      const [result] = await eslint.lintText(source, { filePath });
+      assert.ok(
+        result.messages.some(
+          (message) => message.ruleId === 'no-restricted-imports' && message.severity === 2
+        ),
+        filePath + ' ' + source
+      );
+    }
+    const [result] = await eslint.lintText(
+      "import type {OnModuleDestroy} from '@nestjs/common'; export class Owner implements OnModuleDestroy {onModuleDestroy(){return Promise.resolve();}}",
+      { filePath }
+    );
+    assert.equal(result.errorCount, 0, JSON.stringify(result.messages));
+  }
+  const results = await eslint.lintFiles(['src/services/**/*.ts']);
+  assert.equal(
+    results
+      .flatMap((result) => result.messages)
+      .filter((message) => message.ruleId === 'no-restricted-imports' && message.severity === 2)
+      .length,
+    0
+  );
+});
+test('auth verification and GitHub use cases retain the same plain application dependency rule', async () => {
+  for (const filePath of [
+    'src/modules/providers/github-authentication.service.ts',
+    'src/modules/providers/setup-credentials.service.ts',
+    'src/modules/providers/claude-verification.service.ts',
+    'src/modules/providers/codex-verification.service.ts',
+    'src/modules/github/github-discovery.service.ts',
+    'src/modules/github/github-review.service.ts',
+  ]) {
+    const [result] = await eslint.lintText(
+      "import {Injectable} from '@nestjs/common'; export const decorator=Injectable;",
+      { filePath }
+    );
+    assert.ok(
+      result.messages.some((message) => message.ruleId === 'application-boundaries/plain-use-case')
+    );
+  }
+});

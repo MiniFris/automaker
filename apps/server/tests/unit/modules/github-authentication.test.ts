@@ -1,3 +1,4 @@
+import { createSetupCommandValidation } from '../../../src/modules/providers/setup-command.validation.js';
 import { expect, it, vi } from 'vitest';
 import { GithubAuthenticationService } from '../../../src/modules/providers/github-authentication.service.js';
 import { ProviderConnectionRepository } from '../../../src/modules/providers/provider-connection.repository.js';
@@ -10,7 +11,8 @@ function fixture(environment: NodeJS.ProcessEnv = {}) {
   const service = new GithubAuthenticationService(
     runtime as never,
     ProviderConnectionRepository.forWorkingDirectory('/backend'),
-    environment
+    environment,
+    createSetupCommandValidation()
   );
   const request = async () =>
     ({ confirmed: true, target: (await service.target()).target }) as const;
@@ -97,7 +99,8 @@ it('limits attempts per application without a process-global limiter', async () 
   for (let count = 0; count < 5; count++)
     await first.service.verify(await first.request(), 'client');
   await expect(first.service.verify(await first.request(), 'client')).rejects.toMatchObject({
-    status: 429,
+    statusCode: 429,
+    errorCode: 'RATE_LIMITED',
   });
   const second = fixture();
   expect((await second.service.verify(await second.request(), 'client')).authenticated).toBe(true);

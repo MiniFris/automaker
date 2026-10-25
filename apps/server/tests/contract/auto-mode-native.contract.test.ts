@@ -27,7 +27,11 @@ afterEach(async () => {
   await rm(root, { recursive: true, force: true });
   for (const result of results) if (result.status === 'rejected') throw result.reason;
 });
-async function start(name: string, provider?: MockProvider) {
+async function start(
+  name: string,
+  provider?: MockProvider,
+  environment: Record<string, string> = {}
+) {
   const project = path.join(root, name);
   await mkdir(project);
   const owner = await createNestApplication({
@@ -43,6 +47,7 @@ async function start(name: string, provider?: MockProvider) {
       AUTOMAKER_API_KEY: 'fixture',
       ALLOWED_ROOT_DIRECTORY: root,
       ENABLE_REQUEST_LOGGING: 'false',
+      ...environment,
     },
   });
   apps.push(owner);
@@ -207,8 +212,7 @@ it('runs a real native feature through an offline provider after the immediate H
   });
 });
 
-it('keeps a restarted native run owned when the stopped provider completes late', async () => {
-  vi.stubEnv('AUTOMAKER_DEBUG_RAW_OUTPUT', 'true');
+it('waits for stopped native provider cleanup before admitting a replacement run', async () => {
   const releases: Array<() => void> = [];
   class DelayedProvider extends MockProvider {
     protected async *execute(_options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
@@ -233,7 +237,9 @@ it('keeps a restarted native run owned when the stopped provider completes late'
       yield { type: 'result', subtype: 'success' };
     }
   }
-  const owner = await start('restart-workflow', new DelayedProvider('claude'));
+  const owner = await start('restart-workflow', new DelayedProvider('claude'), {
+    AUTOMAKER_DEBUG_RAW_OUTPUT: 'true',
+  });
   const loader = owner.app.get(FeatureLoader);
   const feature = await loader.create(owner.project, {
     id: 'restart-feature',
@@ -260,6 +266,17 @@ it('keeps a restarted native run owned when the stopped provider completes late'
       status: 200,
     });
     expect(await run()).toMatchObject({ status: 200 });
+    expect(releases).toHaveLength(1);
+    expect(manager.getRunningFeature(feature.id)).toBe(first);
+    const contexts = owner.app.get(ProjectRunContextRegistry);
+    const all = (
+      contexts as unknown as { contexts: Map<string, { pendingCommands: Set<Promise<unknown>> }> }
+    ).contexts;
+    const originalCommands = [...all.values()].flatMap((context) => [...context.pendingCommands]);
+    releases[0]();
+    await Promise.all(originalCommands);
+    expect(manager.isRunning(feature.id)).toBe(false);
+    expect(await run()).toMatchObject({ status: 200 });
     await vi.waitFor(() => expect(releases).toHaveLength(2));
     const second = manager.getRunningFeature(feature.id)!;
     expect(second.incarnation).not.toBe(first.incarnation);
@@ -274,14 +291,7 @@ it('keeps a restarted native run owned when the stopped provider completes late'
     await vi.waitFor(async () => expect(await readFile(rawPath, 'utf8')).toContain('owned-B'));
     const outputBeforeLate = await readFile(outputPath, 'utf8');
     const rawBeforeLate = await readFile(rawPath, 'utf8');
-    // Drain the old accepted HTTP command, rather than relying on a sleep.
-    const contexts = owner.app.get(ProjectRunContextRegistry);
-    const all = (
-      contexts as unknown as { contexts: Map<string, { pendingCommands: Set<Promise<unknown>> }> }
-    ).contexts;
-    const commands = [...all.values()].flatMap((context) => [...context.pendingCommands]);
-    releases[0]();
-    await commands[0];
+    // The old owned dispatch drained before admitting this replacement.
     expect(manager.getRunningFeature(feature.id)).toBe(second);
     expect(await readFile(outputPath, 'utf8')).toBe(outputBeforeLate);
     expect(await readFile(rawPath, 'utf8')).toBe(rawBeforeLate);
@@ -517,5 +527,36 @@ it.skipIf(process.platform !== 'linux')(
         .getSharedServices()
         .concurrencyManager.getRunningFeature(owner.input.featureId)
     ).toBeUndefined();
+  }
+);
+
+it.each([
+  ['merge-environment-feature', 'mergeEnvironmentFeature'],
+  ['merge-ssh-feature', 'mergeSSHFeature'],
+] as const)(
+  'preserves actual %s HTTP400 merge-failure envelope at the controller boundary',
+  async (route, method) => {
+    const owner = await start('merge-boundary-' + method);
+    const failure = vi
+      .spyOn(owner.runtime, method)
+      .mockRejectedValue(new Error('Owned merge refused; no reset.'));
+    const result = await owner.post(route, {
+      projectPath: owner.project,
+      featureId: 'private-feature',
+      accepted: true,
+    });
+    expect(result).toMatchObject({
+      status: 400,
+      body: {
+        success: false,
+        error: 'Owned merge refused; no reset.',
+        errorCode: 'VALIDATION_ERROR',
+      },
+    });
+    expect(typeof result.body.correlationId).toBe('string');
+    expect(Object.keys(result.body).sort()).toEqual(
+      ['success', 'error', 'errorCode', 'correlationId'].sort()
+    );
+    expect(failure).toHaveBeenCalledTimes(1);
   }
 );

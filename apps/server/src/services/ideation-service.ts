@@ -1,23 +1,25 @@
+import { IdeationIdeaRepository, ensureIdeationDirectories } from './ideation/idea-repository.js';
+import { IdeationProjectAnalysis } from './ideation/project-analysis.js';
+import { IdeationTextStream } from './ideation/text-stream.js';
+import { IdeationPromptCatalog } from './ideation/prompt-catalog.js';
+import { IdeationProjectContextReader } from './ideation/project-context-reader.js';
 import type { AgentCheckpointRepository } from '../providers/openai-compatible/checkpoint.js';
 /**
  * Ideation Service - Manages brainstorming sessions and ideas
  * Provides AI-powered ideation, project analysis, and idea-to-feature conversion
  */
 
-import path from 'path';
 import * as secureFs from '../lib/secure-fs.js';
 import type { EventEmitter } from '../lib/events.js';
 import type { Feature, ExecuteOptions } from '@automaker/types';
 import type {
   Idea,
   IdeaCategory,
-  IdeaStatus,
   IdeationSession,
   IdeationSessionWithMessages,
   IdeationMessage,
   ProjectAnalysisResult,
   AnalysisSuggestion,
-  AnalysisFileInfo,
   CreateIdeaInput,
   UpdateIdeaInput,
   StartSessionOptions,
@@ -27,17 +29,7 @@ import type {
   IdeationContextSources,
 } from '@automaker/types';
 import { DEFAULT_IDEATION_CONTEXT_SOURCES } from '@automaker/types';
-import {
-  getIdeasDir,
-  getIdeaDir,
-  getIdeaPath,
-  getIdeationSessionsDir,
-  getIdeationSessionPath,
-  getIdeationAnalysisPath,
-  getAppSpecPath,
-  getIdeationDraftsDir,
-} from '@automaker/platform';
-import { extractXmlElements, extractImplementedFeatures } from '../lib/xml-extractor.js';
+import { getIdeationSessionsDir, getIdeationSessionPath } from '@automaker/platform';
 import { createLogger, loadContextFiles, isAbortError } from '@automaker/utils';
 import {
   atomicWriteJson,
@@ -47,10 +39,9 @@ import {
 import { IdeationJobs, isUnconfirmedIdeationCleanup } from '../modules/ideation/ideation-jobs.js';
 import type { ProviderRegistry } from '../modules/providers/provider-registry.service.js';
 import { captureNativeLocalEnvironment } from './execution-environment/local.js';
-import { prepareDirectExecution } from '../providers/openai-compatible/execution.js';
 import type { SettingsService } from './settings-service.js';
 import type { FeatureLoader } from './feature-loader.js';
-import { createChatOptions, validateWorkingDirectory } from '../lib/sdk-options.js';
+import { validateWorkingDirectory } from '../lib/sdk-options.js';
 import { resolveModelString, resolvePhaseModel } from '@automaker/model-resolver';
 import { stripProviderPrefix } from '@automaker/types';
 import {
@@ -78,6 +69,11 @@ export class IdeationService {
   private featureLoader: FeatureLoader | null = null;
 
   private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>;
+  private readonly prompts = new IdeationPromptCatalog();
+  private readonly projectContext: IdeationProjectContextReader;
+  private readonly ideas: IdeationIdeaRepository;
+  private readonly analysis: IdeationProjectAnalysis;
+  private readonly textStream: IdeationTextStream;
 
   constructor(
     events: EventEmitter,
@@ -94,6 +90,29 @@ export class IdeationService {
     this.events = events;
     this.settingsService = settingsService ?? null;
     this.featureLoader = featureLoader ?? null;
+    this.ideas = new IdeationIdeaRepository(this.filesystem, this.validateDirectory, (prefix) =>
+      this.generateId(prefix)
+    );
+    this.projectContext = new IdeationProjectContextReader(
+      this.filesystem,
+      this.featureLoader,
+      (project) => this.getIdeas(project),
+      (project) => this.getCachedAnalysis(project),
+      (prefix) => this.generateId(prefix)
+    );
+    this.analysis = new IdeationProjectAnalysis(
+      this.filesystem,
+      this.validateDirectory,
+      this.projectContext,
+      this.events
+    );
+    this.textStream = new IdeationTextStream(
+      this.providerRegistry,
+      this.settingsService,
+      this.validateDirectory,
+      this.hostEnvironment,
+      this.checkpointRepository
+    );
   }
 
   runAccepted<T>(action: () => Promise<T>): Promise<T> {
@@ -117,12 +136,6 @@ export class IdeationService {
     return this.jobs.close();
   }
 
-  private async ensureProjectDirectories(projectPath: string): Promise<void> {
-    await this.filesystem.mkdir(getIdeasDir(projectPath), { recursive: true });
-    await this.filesystem.mkdir(getIdeationSessionsDir(projectPath), { recursive: true });
-    await this.filesystem.mkdir(getIdeationDraftsDir(projectPath), { recursive: true });
-  }
-
   // ============================================================================
   // Session Management
   // ============================================================================
@@ -132,7 +145,7 @@ export class IdeationService {
    */
   async startSession(projectPath: string, options?: StartSessionOptions): Promise<IdeationSession> {
     this.validateDirectory(projectPath);
-    await this.ensureProjectDirectories(projectPath);
+    await ensureIdeationDirectories(this.filesystem, projectPath);
 
     const sessionId = this.generateId('session');
     const now = new Date().toISOString();
@@ -297,76 +310,34 @@ export class IdeationService {
         }
       }
 
-      // Create SDK options
-      const sdkOptions = createChatOptions({
-        validateWorkingDirectory: this.validateDirectory,
-        cwd: projectPath,
-        model: modelId,
-        systemPrompt,
-        abortController: controller,
-      });
-
-      controller.signal.throwIfAborted();
-      const provider = this.providerRegistry.providerForModel(modelId);
-
-      // Strip provider prefix - providers need bare model IDs
-      const bareModel = stripProviderPrefix(modelId);
-
-      const executeOptions: ExecuteOptions = {
+      const executeOptions = {
         prompt: message,
-        model: bareModel,
+        model: stripProviderPrefix(modelId),
         originalModel: modelId,
         cwd: projectPath,
-        systemPrompt: sdkOptions.systemPrompt,
+        systemPrompt,
         maxTurns: 1, // Single turn for ideation
         abortController: controller,
         conversationHistory: conversationHistory.length > 0 ? conversationHistory : undefined,
         claudeCompatibleProvider, // Pass provider for alternative endpoint configuration
         credentials, // Pass credentials for resolving 'credentials' apiKeySource
-      };
+      } satisfies ExecuteOptions;
 
-      const prepared = await prepareDirectExecution(
-        executeOptions,
-        this.settingsService,
-        { model: modelId, providerId: options?.providerId },
-        'text',
-        this.hostEnvironment,
-        this.checkpointRepository
-      );
-      controller.signal.throwIfAborted();
-      const stream = provider.executeQuery(prepared);
-
-      let responseText = '';
       const assistantMessage: IdeationMessage = {
         id: this.generateId('msg'),
         role: 'assistant',
         content: '',
         timestamp: new Date().toISOString(),
       };
-
-      for await (const msg of stream) {
-        controller.signal.throwIfAborted();
-        if (msg.type === 'assistant' && msg.message?.content) {
-          for (const block of msg.message.content) {
-            if (block.type === 'text') {
-              responseText += block.text;
-              assistantMessage.content = responseText;
-
-              this.events.emit('ideation:stream', {
-                sessionId,
-                type: 'stream',
-                content: responseText,
-                done: false,
-              });
-            }
-          }
-        } else if (msg.type === 'result') {
-          if (msg.subtype === 'success' && msg.result) {
-            assistantMessage.content = msg.result;
-            responseText = msg.result;
-          }
+      const responseText = await this.textStream.run(
+        executeOptions,
+        options?.providerId,
+        (content) => {
+          assistantMessage.content = content;
+          this.events.emit('ideation:stream', { sessionId, type: 'stream', content, done: false });
         }
-      }
+      );
+      assistantMessage.content = responseText;
 
       controller.signal.throwIfAborted();
       activeSession.messages.push(assistantMessage);
@@ -438,136 +409,23 @@ export class IdeationService {
   /**
    * Create a new idea
    */
-  async createIdea(projectPath: string, input: CreateIdeaInput): Promise<Idea> {
-    this.validateDirectory(projectPath);
-    await this.ensureProjectDirectories(projectPath);
-
-    const ideaId = this.generateId('idea');
-    const now = new Date().toISOString();
-
-    const idea: Idea = {
-      id: ideaId,
-      title: input.title,
-      description: input.description,
-      category: input.category,
-      status: input.status || 'raw',
-      impact: input.impact || 'medium',
-      effort: input.effort || 'medium',
-      conversationId: input.conversationId,
-      sourcePromptId: input.sourcePromptId,
-      userStories: input.userStories,
-      notes: input.notes,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    // Save to disk
-    const ideaDir = getIdeaDir(projectPath, ideaId);
-    await this.filesystem.mkdir(ideaDir, { recursive: true });
-    await atomicWriteJson(getIdeaPath(projectPath, ideaId), idea, {
-      backupCount: DEFAULT_BACKUP_COUNT,
-      filesystem: this.filesystem,
-    });
-
-    return idea;
+  createIdea(projectPath: string, input: CreateIdeaInput): Promise<Idea> {
+    return this.ideas.createIdea(projectPath, input);
   }
-
-  /**
-   * Get all ideas for a project
-   */
-  async getIdeas(projectPath: string): Promise<Idea[]> {
-    try {
-      const ideasDir = getIdeasDir(projectPath);
-
-      try {
-        await this.filesystem.access(ideasDir);
-      } catch {
-        return [];
-      }
-
-      const entries = (await this.filesystem.readdir(ideasDir, {
-        withFileTypes: true,
-      })) as import('fs').Dirent[];
-      const ideaDirs = entries.filter((entry) => entry.isDirectory());
-
-      const ideas: Idea[] = [];
-      for (const dir of ideaDirs) {
-        try {
-          const ideaPath = getIdeaPath(projectPath, dir.name);
-          const content = (await this.filesystem.readFile(ideaPath, 'utf-8')) as string;
-          ideas.push(JSON.parse(content));
-        } catch (error) {
-          logger.warn(`Failed to load idea ${dir.name}:`, error);
-        }
-      }
-
-      // Sort by updatedAt descending
-      return ideas.sort(
-        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-      );
-    } catch (error) {
-      logger.error('Failed to get ideas:', error);
-      return [];
-    }
+  getIdeas(projectPath: string): Promise<Idea[]> {
+    return this.ideas.getIdeas(projectPath);
   }
-
-  /**
-   * Get a single idea
-   */
-  async getIdea(projectPath: string, ideaId: string): Promise<Idea | null> {
-    try {
-      const ideaPath = getIdeaPath(projectPath, ideaId);
-      const content = (await this.filesystem.readFile(ideaPath, 'utf-8')) as string;
-      return JSON.parse(content);
-    } catch {
-      return null;
-    }
+  getIdea(projectPath: string, ideaId: string): Promise<Idea | null> {
+    return this.ideas.getIdea(projectPath, ideaId);
   }
-
-  /**
-   * Update an idea
-   */
-  async updateIdea(
-    projectPath: string,
-    ideaId: string,
-    updates: UpdateIdeaInput
-  ): Promise<Idea | null> {
-    const idea = await this.getIdea(projectPath, ideaId);
-    if (!idea) return null;
-
-    const updatedIdea: Idea = {
-      ...idea,
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    };
-
-    await atomicWriteJson(getIdeaPath(projectPath, ideaId), updatedIdea, {
-      backupCount: DEFAULT_BACKUP_COUNT,
-      filesystem: this.filesystem,
-    });
-
-    return updatedIdea;
+  updateIdea(projectPath: string, ideaId: string, updates: UpdateIdeaInput): Promise<Idea | null> {
+    return this.ideas.updateIdea(projectPath, ideaId, updates);
   }
-
-  /**
-   * Delete an idea
-   */
-  async deleteIdea(projectPath: string, ideaId: string): Promise<void> {
-    const ideaDir = getIdeaDir(projectPath, ideaId);
-    try {
-      await this.filesystem.rm(ideaDir, { recursive: true });
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
-    }
+  deleteIdea(projectPath: string, ideaId: string): Promise<void> {
+    return this.ideas.deleteIdea(projectPath, ideaId);
   }
-
-  /**
-   * Archive an idea
-   */
-  async archiveIdea(projectPath: string, ideaId: string): Promise<Idea | null> {
-    return this.updateIdea(projectPath, ideaId, {
-      status: 'archived' as IdeaStatus,
-    });
+  archiveIdea(projectPath: string, ideaId: string): Promise<Idea | null> {
+    return this.ideas.archiveIdea(projectPath, ideaId);
   }
 
   // ============================================================================
@@ -578,86 +436,7 @@ export class IdeationService {
    * Analyze project structure and generate suggestions
    */
   analyzeProject(projectPath: string): Promise<ProjectAnalysisResult> {
-    return this.jobs.run((controller) => this.analyzeProjectOwned(projectPath, controller));
-  }
-
-  private async analyzeProjectOwned(
-    projectPath: string,
-    controller: AbortController
-  ): Promise<ProjectAnalysisResult> {
-    this.validateDirectory(projectPath);
-    await this.ensureProjectDirectories(projectPath);
-
-    this.emitAnalysisEvent('ideation:analysis-started', {
-      projectPath,
-      message: 'Starting project analysis...',
-    });
-
-    try {
-      // Gather project structure
-      const structure = await this.gatherProjectStructure(projectPath, controller.signal);
-      controller.signal.throwIfAborted();
-
-      this.emitAnalysisEvent('ideation:analysis-progress', {
-        projectPath,
-        progress: 30,
-        message: 'Analyzing codebase structure...',
-      });
-
-      // Use AI to generate suggestions
-      const suggestions = await this.generateAnalysisSuggestions(projectPath, structure);
-
-      this.emitAnalysisEvent('ideation:analysis-progress', {
-        projectPath,
-        progress: 80,
-        message: 'Generating improvement suggestions...',
-      });
-
-      const result: ProjectAnalysisResult = {
-        projectPath,
-        analyzedAt: new Date().toISOString(),
-        totalFiles: structure.totalFiles,
-        routes: structure.routes,
-        components: structure.components,
-        services: structure.services,
-        framework: structure.framework,
-        language: structure.language,
-        dependencies: structure.dependencies,
-        suggestions,
-        summary: this.generateAnalysisSummary(structure, suggestions),
-      };
-
-      controller.signal.throwIfAborted();
-      // Cache the result
-      await atomicWriteJson(getIdeationAnalysisPath(projectPath), result, {
-        backupCount: DEFAULT_BACKUP_COUNT,
-        filesystem: this.filesystem,
-      });
-
-      this.emitAnalysisEvent('ideation:analysis-complete', {
-        projectPath,
-        result,
-      });
-
-      return result;
-    } catch (error) {
-      logger.error('Project analysis failed:', error);
-      this.emitAnalysisEvent('ideation:analysis-error', {
-        projectPath,
-        error: (error as Error).message,
-      });
-      throw error;
-    }
-  }
-
-  /**
-   * Emit analysis event wrapped in ideation:analysis format
-   */
-  private emitAnalysisEvent(eventType: string, data: Record<string, unknown>): void {
-    this.events.emit('ideation:analysis', {
-      type: eventType,
-      ...data,
-    });
+    return this.jobs.run((controller) => this.analysis.analyze(projectPath, controller));
   }
 
   /**
@@ -671,16 +450,8 @@ export class IdeationService {
   /**
    * Get cached analysis result
    */
-  async getCachedAnalysis(projectPath: string): Promise<ProjectAnalysisResult | null> {
-    try {
-      const content = (await this.filesystem.readFile(
-        getIdeationAnalysisPath(projectPath),
-        'utf-8'
-      )) as string;
-      return JSON.parse(content);
-    } catch {
-      return null;
-    }
+  getCachedAnalysis(projectPath: string): Promise<ProjectAnalysisResult | null> {
+    return this.analysis.getCached(projectPath);
   }
 
   // ============================================================================
@@ -834,27 +605,12 @@ export class IdeationService {
         claudeCompatibleProvider ? `via provider: ${claudeCompatibleProvider.name}` : 'direct API'
       );
 
-      // Create SDK options
-      const sdkOptions = createChatOptions({
-        validateWorkingDirectory: this.validateDirectory,
-        cwd: projectPath,
-        model: modelId,
-        systemPrompt,
-        abortController: controller,
-      });
-
-      controller.signal.throwIfAborted();
-      const provider = this.providerRegistry.providerForModel(modelId);
-
-      // Strip provider prefix - providers need bare model IDs
-      const bareModel = stripProviderPrefix(modelId);
-
-      const executeOptions: ExecuteOptions = {
+      const executeOptions = {
         prompt: prompt.prompt,
-        model: bareModel,
+        model: stripProviderPrefix(modelId),
         originalModel: modelId,
         cwd: projectPath,
-        systemPrompt: sdkOptions.systemPrompt,
+        systemPrompt,
         maxTurns: 1,
         // Disable all tools - we just want text generation, not codebase analysis
         allowedTools: [],
@@ -862,32 +618,12 @@ export class IdeationService {
         readOnly: true, // Suggestions only need to return JSON, never write files
         claudeCompatibleProvider, // Pass provider for alternative endpoint configuration
         credentials, // Pass credentials for resolving 'credentials' apiKeySource
-      };
+      } satisfies ExecuteOptions;
 
-      const prepared = await prepareDirectExecution(
+      const responseText = await this.textStream.run(
         executeOptions,
-        this.settingsService,
-        { model: modelId, providerId: phaseResult.phaseModel.providerId },
-        'text',
-        this.hostEnvironment,
-        this.checkpointRepository
+        phaseResult.phaseModel.providerId
       );
-      controller.signal.throwIfAborted();
-      const stream = provider.executeQuery(prepared);
-
-      let responseText = '';
-      for await (const msg of stream) {
-        controller.signal.throwIfAborted();
-        if (msg.type === 'assistant' && msg.message?.content) {
-          for (const block of msg.message.content) {
-            if (block.type === 'text') {
-              responseText += block.text;
-            }
-          }
-        } else if (msg.type === 'result' && msg.subtype === 'success' && msg.result) {
-          responseText = msg.result;
-        }
-      }
 
       // Parse the response into structured suggestions
       const suggestions = this.parseSuggestionsFromResponse(
@@ -947,7 +683,7 @@ export class IdeationService {
 
     return `${prompt}
 
-Focus area: ${this.getCategoryDescription(category)}
+Focus area: ${this.prompts.getCategoryDescription(category)}
 
 ${contextSection}${existingWorkSection}`;
   }
@@ -1079,70 +815,14 @@ ${contextSection}${existingWorkSection}`;
    * Get all prompt categories
    */
   getPromptCategories(): PromptCategory[] {
-    return [
-      {
-        id: 'feature',
-        name: 'Features',
-        icon: 'Zap',
-        description: 'New capabilities and functionality',
-      },
-      {
-        id: 'ux-ui',
-        name: 'UX/UI',
-        icon: 'Palette',
-        description: 'Design and user experience improvements',
-      },
-      {
-        id: 'dx',
-        name: 'Developer Experience',
-        icon: 'Code',
-        description: 'Developer tooling and workflows',
-      },
-      {
-        id: 'growth',
-        name: 'Growth',
-        icon: 'TrendingUp',
-        description: 'User engagement and retention',
-      },
-      {
-        id: 'technical',
-        name: 'Technical',
-        icon: 'Cpu',
-        description: 'Architecture and infrastructure',
-      },
-      {
-        id: 'security',
-        name: 'Security',
-        icon: 'Shield',
-        description: 'Security improvements and vulnerability fixes',
-      },
-      {
-        id: 'performance',
-        name: 'Performance',
-        icon: 'Gauge',
-        description: 'Performance optimization and speed improvements',
-      },
-      {
-        id: 'accessibility',
-        name: 'Accessibility',
-        icon: 'Accessibility',
-        description: 'Accessibility features and inclusive design',
-      },
-      {
-        id: 'analytics',
-        name: 'Analytics',
-        icon: 'BarChart',
-        description: 'Analytics, monitoring, and insights features',
-      },
-    ];
+    return this.prompts.getPromptCategories();
   }
 
   /**
    * Get prompts for a specific category
    */
   getPromptsByCategory(category: IdeaCategory): IdeationPrompt[] {
-    const allPrompts = this.getAllPrompts();
-    return allPrompts.filter((p) => p.category === category);
+    return this.prompts.getPromptsByCategory(category);
   }
 
   /**
@@ -1151,321 +831,7 @@ ${contextSection}${existingWorkSection}`;
    * Frontend fetches this data via /api/ideation/prompts endpoint.
    */
   getAllPrompts(): IdeationPrompt[] {
-    return [
-      // Feature prompts
-      {
-        id: 'feature-missing',
-        category: 'feature',
-        title: 'Missing Features',
-        description: 'Discover features users might expect',
-        prompt:
-          "Based on the project context provided, identify features that users of similar applications typically expect but might be missing. Consider the app's domain, target users, and common patterns in similar products.",
-      },
-      {
-        id: 'feature-automation',
-        category: 'feature',
-        title: 'Automation Opportunities',
-        description: 'Find manual processes that could be automated',
-        prompt:
-          'Based on the project context, identify manual processes or repetitive tasks that could be automated. Look for patterns where users might be doing things repeatedly that software could handle.',
-      },
-      {
-        id: 'feature-integrations',
-        category: 'feature',
-        title: 'Integration Ideas',
-        description: 'Identify valuable third-party integrations',
-        prompt:
-          "Based on the project context, what third-party services or APIs would provide value if integrated? Consider the app's domain and what complementary services users might need.",
-      },
-      {
-        id: 'feature-workflow',
-        category: 'feature',
-        title: 'Workflow Improvements',
-        description: 'Streamline user workflows',
-        prompt:
-          'Based on the project context, analyze the user workflows. What steps could be combined, eliminated, or automated? Where are users likely spending too much time on repetitive tasks?',
-      },
-
-      // UX/UI prompts
-      {
-        id: 'ux-friction',
-        category: 'ux-ui',
-        title: 'Friction Points',
-        description: 'Identify where users might get stuck',
-        prompt:
-          'Based on the project context, identify potential user friction points. Where might users get confused, stuck, or frustrated? Consider form submissions, navigation, error states, and complex interactions.',
-      },
-      {
-        id: 'ux-empty-states',
-        category: 'ux-ui',
-        title: 'Empty States',
-        description: 'Improve empty state experiences',
-        prompt:
-          "Based on the project context, identify empty states that could be improved. How can we guide users when there's no content? Consider onboarding, helpful prompts, and sample data.",
-      },
-      {
-        id: 'ux-accessibility',
-        category: 'ux-ui',
-        title: 'Accessibility Improvements',
-        description: 'Enhance accessibility and inclusivity',
-        prompt:
-          'Based on the project context, suggest accessibility improvements. Consider keyboard navigation, screen reader support, color contrast, focus states, and ARIA labels. What specific improvements would make this more accessible?',
-      },
-      {
-        id: 'ux-mobile',
-        category: 'ux-ui',
-        title: 'Mobile Experience',
-        description: 'Optimize for mobile users',
-        prompt:
-          'Based on the project context, suggest improvements for the mobile user experience. Consider touch targets, responsive layouts, and mobile-specific interactions.',
-      },
-      {
-        id: 'ux-feedback',
-        category: 'ux-ui',
-        title: 'User Feedback',
-        description: 'Improve feedback and status indicators',
-        prompt:
-          'Based on the project context, analyze how the application communicates with users. Where are loading states, success messages, or error handling missing or unclear? What feedback would help users understand what is happening?',
-      },
-
-      // DX prompts
-      {
-        id: 'dx-documentation',
-        category: 'dx',
-        title: 'Documentation Gaps',
-        description: 'Identify missing documentation',
-        prompt:
-          'Based on the project context, identify areas that could benefit from better documentation. What would help new developers understand the architecture, APIs, and conventions? Consider inline comments, READMEs, and API docs.',
-      },
-      {
-        id: 'dx-testing',
-        category: 'dx',
-        title: 'Testing Improvements',
-        description: 'Enhance test coverage and quality',
-        prompt:
-          'Based on the project context, suggest areas that need better test coverage. What types of tests might be missing? Consider unit tests, integration tests, and end-to-end tests.',
-      },
-      {
-        id: 'dx-tooling',
-        category: 'dx',
-        title: 'Developer Tooling',
-        description: 'Improve development workflows',
-        prompt:
-          'Based on the project context, suggest improvements to development workflows. What improvements would speed up development? Consider build times, hot reload, debugging tools, and developer scripts.',
-      },
-      {
-        id: 'dx-error-handling',
-        category: 'dx',
-        title: 'Error Handling',
-        description: 'Improve error messages and debugging',
-        prompt:
-          'Based on the project context, analyze error handling. Where are error messages unclear or missing? What would help developers debug issues faster? Consider logging, error boundaries, and stack traces.',
-      },
-
-      // Growth prompts
-      {
-        id: 'growth-onboarding',
-        category: 'growth',
-        title: 'Onboarding Flow',
-        description: 'Improve new user experience',
-        prompt:
-          'Based on the project context, suggest improvements to the onboarding experience. How can we help new users understand the value and get started quickly? Consider tutorials, progressive disclosure, and quick wins.',
-      },
-      {
-        id: 'growth-engagement',
-        category: 'growth',
-        title: 'User Engagement',
-        description: 'Increase user retention and activity',
-        prompt:
-          'Based on the project context, suggest features that would increase user engagement and retention. What would bring users back daily? Consider notifications, streaks, social features, and personalization.',
-      },
-      {
-        id: 'growth-sharing',
-        category: 'growth',
-        title: 'Shareability',
-        description: 'Make the app more shareable',
-        prompt:
-          'Based on the project context, suggest ways to make the application more shareable. What features would encourage users to invite others or share their work? Consider collaboration, public profiles, and export features.',
-      },
-      {
-        id: 'growth-monetization',
-        category: 'growth',
-        title: 'Monetization Ideas',
-        description: 'Identify potential revenue streams',
-        prompt:
-          'Based on the project context, what features or tiers could support monetization? Consider premium features, usage limits, team features, and integrations that users would pay for.',
-      },
-
-      // Technical prompts
-      {
-        id: 'tech-performance',
-        category: 'technical',
-        title: 'Performance Optimization',
-        description: 'Identify performance bottlenecks',
-        prompt:
-          'Based on the project context, suggest performance optimization opportunities. Where might bottlenecks exist? Consider database queries, API calls, bundle size, rendering, and caching strategies.',
-      },
-      {
-        id: 'tech-architecture',
-        category: 'technical',
-        title: 'Architecture Review',
-        description: 'Evaluate and improve architecture',
-        prompt:
-          'Based on the project context, suggest architectural improvements. What would make the codebase more maintainable, scalable, or testable? Consider separation of concerns, dependency management, and patterns.',
-      },
-      {
-        id: 'tech-debt',
-        category: 'technical',
-        title: 'Technical Debt',
-        description: 'Identify areas needing refactoring',
-        prompt:
-          'Based on the project context, identify potential technical debt. What areas might be becoming hard to maintain or understand? What refactoring would have the highest impact? Consider duplicated code, complexity, and outdated patterns.',
-      },
-      {
-        id: 'tech-security',
-        category: 'technical',
-        title: 'Security Review',
-        description: 'Identify security improvements',
-        prompt:
-          'Based on the project context, review for security improvements. What best practices are missing? Consider authentication, authorization, input validation, and data protection. Note: This is for improvement suggestions, not a security audit.',
-      },
-
-      // Security prompts
-      {
-        id: 'security-auth',
-        category: 'security',
-        title: 'Authentication Security',
-        description: 'Review authentication mechanisms',
-        prompt:
-          'Based on the project context, analyze the authentication system. What security improvements would strengthen user authentication? Consider password policies, session management, MFA, and token handling.',
-      },
-      {
-        id: 'security-data',
-        category: 'security',
-        title: 'Data Protection',
-        description: 'Protect sensitive user data',
-        prompt:
-          'Based on the project context, review how sensitive data is handled. What improvements would better protect user privacy? Consider encryption, data minimization, secure storage, and data retention policies.',
-      },
-      {
-        id: 'security-input',
-        category: 'security',
-        title: 'Input Validation',
-        description: 'Prevent injection attacks',
-        prompt:
-          'Based on the project context, analyze input handling. Where could input validation be strengthened? Consider SQL injection, XSS, command injection, and file upload vulnerabilities.',
-      },
-      {
-        id: 'security-api',
-        category: 'security',
-        title: 'API Security',
-        description: 'Secure API endpoints',
-        prompt:
-          'Based on the project context, review API security. What improvements would make the API more secure? Consider rate limiting, authorization, CORS, and request validation.',
-      },
-
-      // Performance prompts
-      {
-        id: 'perf-frontend',
-        category: 'performance',
-        title: 'Frontend Performance',
-        description: 'Optimize UI rendering and loading',
-        prompt:
-          'Based on the project context, analyze frontend performance. What optimizations would improve load times and responsiveness? Consider bundle splitting, lazy loading, memoization, and render optimization.',
-      },
-      {
-        id: 'perf-backend',
-        category: 'performance',
-        title: 'Backend Performance',
-        description: 'Optimize server-side operations',
-        prompt:
-          'Based on the project context, review backend performance. What optimizations would improve response times? Consider database queries, caching strategies, async operations, and resource pooling.',
-      },
-      {
-        id: 'perf-database',
-        category: 'performance',
-        title: 'Database Optimization',
-        description: 'Improve query performance',
-        prompt:
-          'Based on the project context, analyze database interactions. What optimizations would improve data access performance? Consider indexing, query optimization, denormalization, and connection pooling.',
-      },
-      {
-        id: 'perf-caching',
-        category: 'performance',
-        title: 'Caching Strategies',
-        description: 'Implement effective caching',
-        prompt:
-          'Based on the project context, review caching opportunities. Where would caching provide the most benefit? Consider API responses, computed values, static assets, and session data.',
-      },
-
-      // Accessibility prompts
-      {
-        id: 'a11y-keyboard',
-        category: 'accessibility',
-        title: 'Keyboard Navigation',
-        description: 'Enable full keyboard access',
-        prompt:
-          'Based on the project context, analyze keyboard accessibility. What improvements would enable users to navigate entirely with keyboard? Consider focus management, tab order, and keyboard shortcuts.',
-      },
-      {
-        id: 'a11y-screen-reader',
-        category: 'accessibility',
-        title: 'Screen Reader Support',
-        description: 'Improve screen reader experience',
-        prompt:
-          'Based on the project context, review screen reader compatibility. What improvements would help users with visual impairments? Consider ARIA labels, semantic HTML, live regions, and alt text.',
-      },
-      {
-        id: 'a11y-visual',
-        category: 'accessibility',
-        title: 'Visual Accessibility',
-        description: 'Improve visual design for all users',
-        prompt:
-          'Based on the project context, analyze visual accessibility. What improvements would help users with visual impairments? Consider color contrast, text sizing, focus indicators, and reduced motion.',
-      },
-      {
-        id: 'a11y-forms',
-        category: 'accessibility',
-        title: 'Accessible Forms',
-        description: 'Make forms usable for everyone',
-        prompt:
-          'Based on the project context, review form accessibility. What improvements would make forms more accessible? Consider labels, error messages, required field indicators, and input assistance.',
-      },
-
-      // Analytics prompts
-      {
-        id: 'analytics-tracking',
-        category: 'analytics',
-        title: 'User Tracking',
-        description: 'Track key user behaviors',
-        prompt:
-          'Based on the project context, analyze analytics opportunities. What user behaviors should be tracked to understand engagement? Consider page views, feature usage, conversion funnels, and session duration.',
-      },
-      {
-        id: 'analytics-metrics',
-        category: 'analytics',
-        title: 'Key Metrics',
-        description: 'Define success metrics',
-        prompt:
-          'Based on the project context, what key metrics should be tracked? Consider user acquisition, retention, engagement, and feature adoption. What dashboards would be most valuable?',
-      },
-      {
-        id: 'analytics-errors',
-        category: 'analytics',
-        title: 'Error Monitoring',
-        description: 'Track and analyze errors',
-        prompt:
-          'Based on the project context, review error handling for monitoring opportunities. What error tracking would help identify and fix issues faster? Consider error aggregation, alerting, and stack traces.',
-      },
-      {
-        id: 'analytics-performance',
-        category: 'analytics',
-        title: 'Performance Monitoring',
-        description: 'Track application performance',
-        prompt:
-          'Based on the project context, analyze performance monitoring opportunities. What metrics would help identify bottlenecks? Consider load times, API response times, and resource usage.',
-      },
-    ];
+    return this.prompts.getAllPrompts();
   }
 
   // ============================================================================
@@ -1478,32 +844,12 @@ ${contextSection}${existingWorkSection}`;
     category?: IdeaCategory,
     existingWorkContext?: string
   ): string {
-    const categoryContext = category
-      ? `\n\nFocus area: ${this.getCategoryDescription(category)}`
-      : '';
-
-    const contextSection = contextFilesPrompt
-      ? `\n\n## Project Context\n${contextFilesPrompt}`
-      : '';
-
-    const existingWorkSection = existingWorkContext ? `\n\n${existingWorkContext}` : '';
-
-    return basePrompt + categoryContext + contextSection + existingWorkSection;
-  }
-
-  private getCategoryDescription(category: IdeaCategory): string {
-    const descriptions: Record<IdeaCategory, string> = {
-      feature: 'New features and capabilities that add value for users',
-      'ux-ui': 'User interface and user experience improvements',
-      dx: 'Developer experience and tooling improvements',
-      growth: 'User acquisition, engagement, and retention',
-      technical: 'Architecture, performance, and infrastructure',
-      security: 'Security improvements and vulnerability fixes',
-      performance: 'Performance optimization and speed improvements',
-      accessibility: 'Accessibility features and inclusive design',
-      analytics: 'Analytics, monitoring, and insights features',
-    };
-    return descriptions[category] || '';
+    return this.prompts.buildIdeationSystemPrompt(
+      basePrompt,
+      contextFilesPrompt,
+      category,
+      existingWorkContext
+    );
   }
 
   /**
@@ -1511,152 +857,14 @@ ${contextSection}${existingWorkSection}`;
    * Extracts project name, overview, capabilities, and implemented features
    */
   private async buildAppSpecContext(projectPath: string): Promise<string> {
-    try {
-      const specPath = getAppSpecPath(projectPath);
-      const specContent = (await this.filesystem.readFile(specPath, 'utf-8')) as string;
-
-      const parts: string[] = [];
-      parts.push('## App Specification');
-
-      // Extract project name
-      const projectNames = extractXmlElements(specContent, 'project_name');
-      if (projectNames.length > 0 && projectNames[0]) {
-        parts.push(`**Project:** ${projectNames[0]}`);
-      }
-
-      // Extract overview
-      const overviews = extractXmlElements(specContent, 'overview');
-      if (overviews.length > 0 && overviews[0]) {
-        parts.push(`**Overview:** ${overviews[0]}`);
-      }
-
-      // Extract core capabilities
-      const capabilities = extractXmlElements(specContent, 'capability');
-      if (capabilities.length > 0) {
-        parts.push('**Core Capabilities:**');
-        for (const cap of capabilities) {
-          parts.push(`- ${cap}`);
-        }
-      }
-
-      // Extract implemented features
-      const implementedFeatures = extractImplementedFeatures(specContent);
-      if (implementedFeatures.length > 0) {
-        parts.push('**Implemented Features:**');
-        for (const feature of implementedFeatures) {
-          if (feature.description) {
-            parts.push(`- ${feature.name}: ${feature.description}`);
-          } else {
-            parts.push(`- ${feature.name}`);
-          }
-        }
-      }
-
-      // Only return content if we extracted something meaningful
-      if (parts.length > 1) {
-        return parts.join('\n');
-      }
-      return '';
-    } catch (error) {
-      // If file doesn't exist, return empty string silently
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        return '';
-      }
-      // For other errors, log and return empty string
-      logger.warn('Failed to build app spec context:', error);
-      return '';
-    }
+    return this.projectContext.buildAppSpecContext(projectPath);
   }
 
   /**
    * Gather basic project information for context when no context files exist
    */
   private async gatherBasicProjectInfo(projectPath: string): Promise<string | null> {
-    const parts: string[] = [];
-
-    // Try to read package.json
-    try {
-      const packageJsonPath = path.join(projectPath, 'package.json');
-      const content = (await this.filesystem.readFile(packageJsonPath, 'utf-8')) as string;
-      const pkg = JSON.parse(content);
-
-      parts.push('## Project Information (from package.json)');
-      if (pkg.name) parts.push(`**Name:** ${pkg.name}`);
-      if (pkg.description) parts.push(`**Description:** ${pkg.description}`);
-      if (pkg.version) parts.push(`**Version:** ${pkg.version}`);
-
-      const allDeps = { ...pkg.dependencies, ...pkg.devDependencies };
-      const depNames = Object.keys(allDeps);
-
-      // Detect framework and language
-      let framework = 'Unknown';
-      if (allDeps.react) framework = allDeps.next ? 'Next.js' : 'React';
-      else if (allDeps.vue) framework = allDeps.nuxt ? 'Nuxt' : 'Vue';
-      else if (allDeps['@angular/core']) framework = 'Angular';
-      else if (allDeps.svelte) framework = 'Svelte';
-      else if (allDeps.express) framework = 'Express';
-      else if (allDeps.fastify) framework = 'Fastify';
-      else if (allDeps.koa) framework = 'Koa';
-
-      const language = allDeps.typescript ? 'TypeScript' : 'JavaScript';
-      parts.push(`**Tech Stack:** ${framework} with ${language}`);
-
-      // Key dependencies
-      const keyDeps = depNames
-        .filter(
-          (d) => !d.startsWith('@types/') && !['typescript', 'eslint', 'prettier'].includes(d)
-        )
-        .slice(0, 15);
-      if (keyDeps.length > 0) {
-        parts.push(`**Key Dependencies:** ${keyDeps.join(', ')}`);
-      }
-
-      // Scripts
-      if (pkg.scripts) {
-        const scriptNames = Object.keys(pkg.scripts).slice(0, 10);
-        parts.push(`**Available Scripts:** ${scriptNames.join(', ')}`);
-      }
-    } catch {
-      // No package.json, try other files
-    }
-
-    // Try to read README.md (first 500 chars)
-    try {
-      const readmePath = path.join(projectPath, 'README.md');
-      const content = (await this.filesystem.readFile(readmePath, 'utf-8')) as string;
-      if (content) {
-        parts.push('\n## README.md (excerpt)');
-        parts.push(content.slice(0, 1000));
-      }
-    } catch {
-      // No README
-    }
-
-    // Try to get cached analysis
-    const cachedAnalysis = await this.getCachedAnalysis(projectPath);
-    if (cachedAnalysis) {
-      parts.push('\n## Project Structure Analysis');
-      parts.push(cachedAnalysis.summary || '');
-      if (cachedAnalysis.routes && cachedAnalysis.routes.length > 0) {
-        parts.push(`**Routes:** ${cachedAnalysis.routes.map((r) => r.name).join(', ')}`);
-      }
-      if (cachedAnalysis.components && cachedAnalysis.components.length > 0) {
-        parts.push(
-          `**Components:** ${cachedAnalysis.components
-            .slice(0, 10)
-            .map((c) => c.name)
-            .join(
-              ', '
-            )}${cachedAnalysis.components.length > 10 ? ` and ${cachedAnalysis.components.length - 10} more` : ''}`
-        );
-      }
-    }
-
-    if (parts.length === 0) {
-      return null;
-    }
-
-    return parts.join('\n');
+    return this.projectContext.gatherBasicProjectInfo(projectPath);
   }
 
   /**
@@ -1667,267 +875,7 @@ ${contextSection}${existingWorkSection}`;
     projectPath: string,
     options?: { includeFeatures?: boolean; includeIdeas?: boolean }
   ): Promise<string> {
-    const { includeFeatures = true, includeIdeas = true } = options ?? {};
-    const parts: string[] = [];
-
-    // Load existing features from the board
-    if (includeFeatures && this.featureLoader) {
-      try {
-        const features = await this.featureLoader.getAll(projectPath);
-        if (features.length > 0) {
-          parts.push('## Existing Features (Do NOT regenerate these)');
-          parts.push(
-            'The following features already exist on the board. Do NOT suggest similar ideas:\n'
-          );
-
-          // Group features by status for clarity
-          const byStatus: Record<string, string[]> = {
-            done: [],
-            'in-review': [],
-            'in-progress': [],
-            backlog: [],
-          };
-
-          for (const feature of features) {
-            const status = feature.status || 'backlog';
-            const title = feature.title || 'Untitled';
-            if (byStatus[status]) {
-              byStatus[status].push(title);
-            } else {
-              byStatus['backlog'].push(title);
-            }
-          }
-
-          // Output completed features first (most important to not duplicate)
-          if (byStatus['done'].length > 0) {
-            parts.push(`**Completed:** ${byStatus['done'].join(', ')}`);
-          }
-          if (byStatus['in-review'].length > 0) {
-            parts.push(`**In Review:** ${byStatus['in-review'].join(', ')}`);
-          }
-          if (byStatus['in-progress'].length > 0) {
-            parts.push(`**In Progress:** ${byStatus['in-progress'].join(', ')}`);
-          }
-          if (byStatus['backlog'].length > 0) {
-            parts.push(`**Backlog:** ${byStatus['backlog'].join(', ')}`);
-          }
-          parts.push('');
-        }
-      } catch (error) {
-        logger.warn('Failed to load existing features:', error);
-      }
-    }
-
-    // Load existing ideas
-    if (includeIdeas) {
-      try {
-        const ideas = await this.getIdeas(projectPath);
-        // Filter out archived ideas
-        const activeIdeas = ideas.filter((idea) => idea.status !== 'archived');
-
-        if (activeIdeas.length > 0) {
-          parts.push('## Existing Ideas (Do NOT regenerate these)');
-          parts.push(
-            'The following ideas have already been captured. Do NOT suggest similar ideas:\n'
-          );
-
-          // Group by category for organization
-          const byCategory: Record<string, string[]> = {};
-          for (const idea of activeIdeas) {
-            const cat = idea.category || 'feature';
-            if (!byCategory[cat]) {
-              byCategory[cat] = [];
-            }
-            byCategory[cat].push(idea.title);
-          }
-
-          for (const [category, titles] of Object.entries(byCategory)) {
-            parts.push(`**${category}:** ${titles.join(', ')}`);
-          }
-          parts.push('');
-        }
-      } catch (error) {
-        logger.warn('Failed to load existing ideas:', error);
-      }
-    }
-
-    return parts.join('\n');
-  }
-
-  private async gatherProjectStructure(
-    projectPath: string,
-    signal?: AbortSignal
-  ): Promise<{
-    totalFiles: number;
-    routes: AnalysisFileInfo[];
-    components: AnalysisFileInfo[];
-    services: AnalysisFileInfo[];
-    framework?: string;
-    language?: string;
-    dependencies?: string[];
-  }> {
-    const routes: AnalysisFileInfo[] = [];
-    const components: AnalysisFileInfo[] = [];
-    const services: AnalysisFileInfo[] = [];
-    let totalFiles = 0;
-    let framework: string | undefined;
-    let language: string | undefined;
-    const dependencies: string[] = [];
-
-    // Check for package.json to detect framework and dependencies
-    try {
-      const packageJsonPath = path.join(projectPath, 'package.json');
-      const content = (await this.filesystem.readFile(packageJsonPath, 'utf-8')) as string;
-      const pkg = JSON.parse(content);
-
-      const allDeps = { ...pkg.dependencies, ...pkg.devDependencies };
-      dependencies.push(...Object.keys(allDeps).slice(0, 20)); // Top 20 deps
-
-      if (allDeps.react) framework = 'React';
-      else if (allDeps.vue) framework = 'Vue';
-      else if (allDeps.angular) framework = 'Angular';
-      else if (allDeps.next) framework = 'Next.js';
-      else if (allDeps.express) framework = 'Express';
-
-      language = allDeps.typescript ? 'TypeScript' : 'JavaScript';
-    } catch {
-      // No package.json
-    }
-
-    // Scan common directories
-    const scanPatterns = [
-      { dir: 'src/routes', type: 'route' as const },
-      { dir: 'src/pages', type: 'route' as const },
-      { dir: 'app', type: 'route' as const },
-      { dir: 'src/components', type: 'component' as const },
-      { dir: 'components', type: 'component' as const },
-      { dir: 'src/services', type: 'service' as const },
-      { dir: 'src/lib', type: 'service' as const },
-      { dir: 'lib', type: 'service' as const },
-    ];
-
-    for (const pattern of scanPatterns) {
-      signal?.throwIfAborted();
-      const fullPath = path.join(projectPath, pattern.dir);
-      try {
-        const files = await this.scanDirectory(fullPath, pattern.type, signal);
-        totalFiles += files.length;
-
-        if (pattern.type === 'route') routes.push(...files);
-        else if (pattern.type === 'component') components.push(...files);
-        else if (pattern.type === 'service') services.push(...files);
-      } catch {
-        // Directory doesn't exist
-      }
-    }
-
-    return {
-      totalFiles,
-      routes: routes.slice(0, 20),
-      components: components.slice(0, 30),
-      services: services.slice(0, 20),
-      framework,
-      language,
-      dependencies,
-    };
-  }
-
-  private async scanDirectory(
-    dirPath: string,
-    type: 'route' | 'component' | 'service' | 'model' | 'config' | 'test' | 'other',
-    signal?: AbortSignal
-  ): Promise<AnalysisFileInfo[]> {
-    const results: AnalysisFileInfo[] = [];
-    signal?.throwIfAborted();
-    try {
-      const entries = (await this.filesystem.readdir(dirPath, {
-        withFileTypes: true,
-      })) as import('fs').Dirent[];
-
-      for (const entry of entries) {
-        signal?.throwIfAborted();
-        if (entry.isDirectory()) {
-          const subResults = await this.scanDirectory(path.join(dirPath, entry.name), type, signal);
-          results.push(...subResults);
-        } else if (entry.isFile() && this.isCodeFile(entry.name)) {
-          results.push({
-            path: path.join(dirPath, entry.name),
-            type,
-            name: entry.name.replace(/\.(tsx?|jsx?|vue)$/, ''),
-          });
-        }
-      }
-    } catch (error) {
-      if (isAbortError(error)) throw error;
-      // Preserve missing directory fallback.
-    }
-
-    return results;
-  }
-
-  private isCodeFile(filename: string): boolean {
-    return (
-      /\.(tsx?|jsx?|vue|svelte)$/.test(filename) &&
-      !filename.includes('.test.') &&
-      !filename.includes('.spec.')
-    );
-  }
-
-  private async generateAnalysisSuggestions(
-    _projectPath: string,
-    structure: Awaited<ReturnType<typeof this.gatherProjectStructure>>
-  ): Promise<AnalysisSuggestion[]> {
-    // Generate basic suggestions based on project structure analysis
-    const suggestions: AnalysisSuggestion[] = [];
-
-    if (structure.routes.length > 0 && structure.routes.length < 5) {
-      suggestions.push({
-        id: this.generateId('sug'),
-        category: 'feature',
-        title: 'Expand Core Functionality',
-        description: 'The app has a small number of routes. Consider adding more features.',
-        rationale: `Only ${structure.routes.length} routes detected. Most apps benefit from additional navigation options.`,
-        priority: 'medium',
-      });
-    }
-
-    if (
-      !structure.dependencies?.includes('react-query') &&
-      !structure.dependencies?.includes('@tanstack/react-query')
-    ) {
-      suggestions.push({
-        id: this.generateId('sug'),
-        category: 'technical',
-        title: 'Add Data Fetching Library',
-        description: 'Consider adding React Query or similar for better data management.',
-        rationale:
-          'Data fetching libraries provide caching, background updates, and better loading states.',
-        priority: 'low',
-      });
-    }
-
-    return suggestions;
-  }
-
-  private generateAnalysisSummary(
-    structure: Awaited<ReturnType<typeof this.gatherProjectStructure>>,
-    suggestions: AnalysisSuggestion[]
-  ): string {
-    const parts: string[] = [];
-
-    if (structure.framework) {
-      parts.push(`${structure.framework} ${structure.language || ''} application`);
-    }
-
-    parts.push(`with ${structure.totalFiles} code files`);
-    parts.push(`${structure.routes.length} routes`);
-    parts.push(`${structure.components.length} components`);
-    parts.push(`${structure.services.length} services`);
-
-    const summary = parts.join(', ');
-    const highPriority = suggestions.filter((s) => s.priority === 'high').length;
-
-    return `${summary}. Found ${suggestions.length} improvement opportunities${highPriority > 0 ? ` (${highPriority} high priority)` : ''}.`;
+    return this.projectContext.gatherExistingWorkContext(projectPath, options);
   }
 
   /**

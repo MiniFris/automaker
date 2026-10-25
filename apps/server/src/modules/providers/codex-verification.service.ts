@@ -1,30 +1,30 @@
-import { VerificationAuthMethodSchema } from '@automaker/contracts/domains/setup-query';
-import { Inject, Injectable, HttpException } from '@nestjs/common';
+import type { SetupCommandValidation } from './setup-command.port.js';
+import type {
+  CodexVerificationTargetValue,
+  CodexVerificationResult,
+} from './verification.values.js';
+import { RateLimitDomainError } from '../../core/errors/domain-errors.js';
+
 import path from 'node:path';
 import os from 'node:os';
 import { URL } from 'node:url';
-import {
-  CodexVerificationRequestSchema,
-  type CodexVerificationTarget,
-  type CodexVerificationRequest,
-  type CodexVerificationResponse,
-} from '@automaker/contracts';
+
 import { modelTimeout, providerModelTimeouts } from '@automaker/types';
-import { HOST_ENVIRONMENT } from '../../core/config/index.js';
+
 import {
   DomainError,
   ConflictDomainError,
   UnavailableDomainError,
   ValidationDomainError,
-} from '../../core/errors/index.js';
-import {
+} from '../../core/errors/domain-errors.js';
+import type {
   CodexVerificationRuntime,
-  type CodexVerificationOutcome,
+  CodexVerificationOutcome,
 } from '../../core/platform/codex-verification.runtime.js';
-import { CodexCredentialRuntime } from '../../core/platform/codex-credential.runtime.js';
-import { ProviderConnectionRepository } from './provider-connection.repository.js';
-import { SetupCredentialCache } from './setup-credential-cache.service.js';
-import { SettingsService } from '../../services/settings-service.js';
+import type { CodexCredentialRuntime } from '../../core/platform/codex-credential.runtime.js';
+import type { ProviderConnectionRepository } from './provider-connection.repository.js';
+import type { SetupCredentialCache } from './setup-credential-cache.service.js';
+import type { SettingsService } from '../../services/settings-service.js';
 import { resolveApplicationKey } from '../../providers/credential-policy.js';
 
 const errors: Record<Exclude<CodexVerificationOutcome, 'verified'>, string> = {
@@ -35,20 +35,21 @@ const errors: Record<Exclude<CodexVerificationOutcome, 'verified'>, string> = {
   timeout: 'Codex verification was cancelled or timed out.',
   failed: 'Codex verification could not be completed.',
 };
-@Injectable()
+
 export class CodexVerificationService {
   private closing: Promise<void> | undefined;
   private readonly active = new Map<Promise<unknown>, AbortController>();
   private cliActive = false;
   private readonly attempts = new Map<string, { count: number; reset: number }>();
   constructor(
-    @Inject(CodexVerificationRuntime) private readonly runtime: CodexVerificationRuntime,
-    @Inject(CodexCredentialRuntime) private readonly credentials: CodexCredentialRuntime,
-    @Inject(ProviderConnectionRepository)
+    private readonly runtime: CodexVerificationRuntime,
+    private readonly credentials: CodexCredentialRuntime,
+
     private readonly connections: ProviderConnectionRepository,
-    @Inject(HOST_ENVIRONMENT) private readonly environment: Readonly<NodeJS.ProcessEnv>,
-    @Inject(SetupCredentialCache) private readonly keys: SetupCredentialCache,
-    @Inject(SettingsService) private readonly settings: SettingsService
+    private readonly environment: Readonly<NodeJS.ProcessEnv>,
+    private readonly keys: SetupCredentialCache,
+    private readonly settings: SettingsService,
+    private readonly validation: SetupCommandValidation
   ) {}
   private accepting() {
     if (this.closing) throw new UnavailableDomainError('Codex verification is shutting down.');
@@ -56,7 +57,7 @@ export class CodexVerificationService {
   private async resolve(
     authMethod: 'cli' | 'api_key',
     controller: AbortController
-  ): Promise<CodexVerificationTarget> {
+  ): Promise<CodexVerificationTargetValue> {
     const { instanceId, workingDirectory } = this.connections.target('codex');
     const credentialKind =
       authMethod === 'cli' ? (await this.credentials.read(false, controller)).kind : 'api-key';
@@ -109,19 +110,16 @@ export class CodexVerificationService {
   }
   async target(authMethod: unknown) {
     this.accepting();
-    const parsed = VerificationAuthMethodSchema.safeParse(authMethod);
+    const parsed = this.validation.authMethod(authMethod);
     if (!parsed.success)
       throw new ValidationDomainError('An explicit authentication method is required.');
     const target = await this.resolve(parsed.data, new AbortController());
     this.accepting();
     return { success: true as const, protocolVersion: 1 as const, target };
   }
-  async verify(
-    input: CodexVerificationRequest,
-    client: string
-  ): Promise<CodexVerificationResponse> {
+  async verify(input: unknown, client: string): Promise<CodexVerificationResult> {
     this.accepting();
-    const parsed = CodexVerificationRequestSchema.safeParse(input);
+    const parsed = this.validation.codex(input);
     if (!parsed.success)
       throw new ValidationDomainError(
         'Codex verification requires a confirmed target and explicit authentication method.'
@@ -132,10 +130,7 @@ export class CodexVerificationService {
     const id = client.slice(0, 512),
       attempt = this.attempts.get(id) ?? { count: 0, reset: now + 60000 };
     if (attempt.count >= 5 || (!this.attempts.has(id) && this.attempts.size >= 1000))
-      throw new HttpException(
-        { success: false, error: 'Too many Codex verification attempts. Try again later.' },
-        429
-      );
+      throw new RateLimitDomainError('Too many Codex verification attempts. Try again later.');
     if (this.active.size >= 4 || (target.authMethod === 'cli' && this.cliActive))
       throw new UnavailableDomainError('Codex verification is busy.');
     this.attempts.set(id, { ...attempt, count: attempt.count + 1 });
@@ -144,7 +139,7 @@ export class CodexVerificationService {
     const result = (
       outcome: CodexVerificationOutcome,
       error?: string
-    ): CodexVerificationResponse => ({
+    ): CodexVerificationResult => ({
       success: true,
       target,
       authType: target.authMethod,

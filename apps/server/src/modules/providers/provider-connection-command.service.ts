@@ -1,16 +1,9 @@
-import {
-  Inject,
-  Injectable,
-  type OnApplicationShutdown,
-  type BeforeApplicationShutdown,
-} from '@nestjs/common';
+import type { ProviderDisconnectResult, ProviderReconnectResult } from './application.outputs.js';
 import type {
-  CliConnectionProvider,
-  ProviderDisconnectRequest,
-  ProviderDisconnectResponse,
-  ProviderReconnectRequest,
-  ProviderReconnectResponse,
-} from '@automaker/contracts';
+  HostCliProvider,
+  ProviderDisconnectInput,
+  ProviderReconnectInput,
+} from './application.inputs.js';
 import {
   ConflictDomainError,
   UnavailableDomainError,
@@ -19,9 +12,9 @@ import {
 import { ProviderConnectionRepository } from './provider-connection.repository.js';
 import { PROVIDER_CONNECTION_PROTOCOL_VERSION } from '@automaker/contracts';
 import { SetupStatusRuntime } from '../../core/platform/setup-status.runtime.js';
-import { RUNTIME_CONFIG, type RuntimeConfig } from '../../core/config/index.js';
+import { type RuntimeConfig } from '../../core/config/index.js';
 
-const messages: Record<CliConnectionProvider, string> = {
+const messages: Record<HostCliProvider, string> = {
   claude: 'Claude CLI is now disconnected from the app',
   codex: 'Codex CLI is now disconnected from the app',
   cursor: 'Cursor CLI is now disconnected from the app',
@@ -30,21 +23,18 @@ const messages: Record<CliConnectionProvider, string> = {
   opencode: 'OpenCode CLI is now disconnected from the app',
 };
 
-@Injectable()
-export class ProviderConnectionCommandService
-  implements OnApplicationShutdown, BeforeApplicationShutdown
-{
+export class ProviderConnectionCommandService {
   private readonly active = new Set<Promise<unknown>>();
-  private readonly queues = new Map<CliConnectionProvider, Promise<unknown>>();
+  private readonly queues = new Map<HostCliProvider, Promise<unknown>>();
   private closing: Promise<void> | undefined;
 
   constructor(
-    @Inject(ProviderConnectionRepository) private readonly repository: ProviderConnectionRepository,
-    @Inject(SetupStatusRuntime) private readonly runtime: SetupStatusRuntime,
-    @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig
+    private readonly repository: ProviderConnectionRepository,
+    private readonly runtime: SetupStatusRuntime,
+    private readonly config: RuntimeConfig
   ) {}
 
-  target(provider: CliConnectionProvider) {
+  target(provider: HostCliProvider) {
     this.assertAccepting();
     return {
       success: true as const,
@@ -54,22 +44,22 @@ export class ProviderConnectionCommandService
   }
 
   async disconnect(
-    provider: CliConnectionProvider,
-    request: ProviderDisconnectRequest
-  ): Promise<ProviderDisconnectResponse> {
+    provider: HostCliProvider,
+    request: ProviderDisconnectInput
+  ): Promise<ProviderDisconnectResult> {
     const target = this.confirm(provider, request);
-    return this.enqueue<ProviderDisconnectResponse>(provider, async () => {
+    return this.enqueue<ProviderDisconnectResult>(provider, async () => {
       await this.repository.disconnect(provider);
       return { success: true, message: messages[provider], target, connected: false };
     });
   }
 
   async reconnect(
-    provider: CliConnectionProvider,
-    request: ProviderReconnectRequest
-  ): Promise<ProviderReconnectResponse> {
+    provider: HostCliProvider,
+    request: ProviderReconnectInput
+  ): Promise<ProviderReconnectResult> {
     const target = this.confirm(provider, request);
-    return this.enqueue<ProviderReconnectResponse>(provider, async () => {
+    return this.enqueue<ProviderReconnectResult>(provider, async () => {
       let evidence: boolean | undefined;
       try {
         if (provider === 'claude') {
@@ -136,7 +126,7 @@ export class ProviderConnectionCommandService
     });
   }
 
-  private confirm(provider: CliConnectionProvider, request: ProviderDisconnectRequest) {
+  private confirm(provider: HostCliProvider, request: ProviderDisconnectInput) {
     this.assertAccepting();
     if (request.confirmed !== true)
       throw new ValidationDomainError('Connection change requires confirmation.');
@@ -154,10 +144,7 @@ export class ProviderConnectionCommandService
     return target;
   }
 
-  private async enqueue<T>(
-    provider: CliConnectionProvider,
-    operation: () => Promise<T>
-  ): Promise<T> {
+  private async enqueue<T>(provider: HostCliProvider, operation: () => Promise<T>): Promise<T> {
     const previous = this.queues.get(provider) ?? Promise.resolve();
     const pending = previous.catch(() => undefined).then(operation);
     this.queues.set(provider, pending);

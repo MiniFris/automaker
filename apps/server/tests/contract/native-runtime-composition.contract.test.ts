@@ -75,7 +75,9 @@ it('owns native runtimes once, applies per-app terminal config and preserves ord
         terminal = runtime.app.get(TerminalService);
       const commands = runtime.app.get(AutoModeApplicationService);
       expect(inspect(runtime.app.get(AutoModeController)).commands).toBe(commands);
-      expect(inspect(commands).autoMode).toBe(auto);
+      for (const field of ['scheduler', 'workflows', 'recovery']) {
+        expect(inspect(commands)[field]).toBe(auto);
+      }
       expect(inspect(runtime.app.get(RunningAgentsService)).autoMode).toBe(auto);
       expect(inspect(runtime.app.get(TerminalController)).terminal).toBe(terminal);
       expect(inspect(runtime.app.get(WebSocketTransportService)).terminal).toBe(terminal);

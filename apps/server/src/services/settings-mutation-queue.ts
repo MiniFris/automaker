@@ -1,4 +1,4 @@
-import { UnavailableDomainError } from '../core/errors/index.js';
+import { UnavailableDomainError } from '../core/errors/domain-errors.js';
 
 /** Serializes complete settings transactions, including reads and backup rotation. */
 export class SettingsMutationQueue {

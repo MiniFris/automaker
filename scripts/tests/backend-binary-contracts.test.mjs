@@ -35,6 +35,11 @@ test('reviewed runtime graph exposes binary media, headers and budgets without a
 test('bypassed byte parsing, raw send and unbounded streams lose binary contract approval', async () => {
   const mutations = [
     [
+      'apps/server/src/modules/files/application.providers.ts',
+      'inject: [PROJECT_FILE_PORT, SecurityService]',
+      'inject: [PROJECT_FILE_PORT, PROJECT_FILE_PORT]',
+    ],
+    [
       'apps/server/src/modules/files/files.controller.ts',
       'ImageBinaryBodySchema.parse(image.content)',
       'image.content',

@@ -1,16 +1,15 @@
-import { Inject, Injectable } from '@nestjs/common';
+import type { MCPServerInput } from './application.inputs.js';
+
 import { MCPTestService } from '../../services/mcp-test-service.js';
-import type { MCPServerRequest } from './mcp.schemas.js';
 
-@Injectable()
 export class MCPApplicationService {
-  constructor(@Inject(MCPTestService) private readonly mcp: MCPTestService) {}
+  constructor(private readonly mcp: MCPTestService) {}
 
-  test(input: MCPServerRequest) {
+  test(input: MCPServerInput) {
     return this.mcp.testConnectionById(input.serverId);
   }
 
-  async tools(input: MCPServerRequest) {
+  async tools(input: MCPServerInput) {
     const result = await this.mcp.listToolsById(input.serverId);
 
     return {

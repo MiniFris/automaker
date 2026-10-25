@@ -63,6 +63,8 @@ export interface LoggerConfiguration {
   level: LogLevel;
   colorsEnabled: boolean;
   timestampsEnabled: boolean;
+  /** Trusted context-local diagnostic policy; omitted for legacy/browser callers. */
+  transformArguments?: (level: LogLevel, args: readonly unknown[]) => readonly unknown[];
 }
 
 // Runtime bridges are stateless lookups; application policies remain owned by their contexts.
@@ -150,6 +152,16 @@ export interface Logger {
   debug: (...args: unknown[]) => void;
 }
 
+function logArguments(level: LogLevel, args: readonly unknown[]): readonly unknown[] {
+  const transform = contextualConfiguration()?.transformArguments;
+  if (!transform) return args;
+  try {
+    return transform(level, args);
+  } catch {
+    return ['Log arguments unavailable.'];
+  }
+}
+
 /**
  * Create a logger instance with a context prefix
  */
@@ -223,25 +235,37 @@ export function createLogger(context: string): Logger {
   return {
     error: (...args: unknown[]): void => {
       if (getLogLevel() >= LogLevel.ERROR) {
-        console.error(formatNodeLog('ERROR', context, ANSI.red), ...args);
+        console.error(
+          formatNodeLog('ERROR', context, ANSI.red),
+          ...logArguments(LogLevel.ERROR, args)
+        );
       }
     },
 
     warn: (...args: unknown[]): void => {
       if (getLogLevel() >= LogLevel.WARN) {
-        console.log(formatNodeLog('WARN', context, ANSI.yellow), ...args);
+        console.log(
+          formatNodeLog('WARN', context, ANSI.yellow),
+          ...logArguments(LogLevel.WARN, args)
+        );
       }
     },
 
     info: (...args: unknown[]): void => {
       if (getLogLevel() >= LogLevel.INFO) {
-        console.log(formatNodeLog('INFO', context, ANSI.cyan), ...args);
+        console.log(
+          formatNodeLog('INFO', context, ANSI.cyan),
+          ...logArguments(LogLevel.INFO, args)
+        );
       }
     },
 
     debug: (...args: unknown[]): void => {
       if (getLogLevel() >= LogLevel.DEBUG) {
-        console.log(formatNodeLog('DEBUG', context, ANSI.magenta), ...args);
+        console.log(
+          formatNodeLog('DEBUG', context, ANSI.magenta),
+          ...logArguments(LogLevel.DEBUG, args)
+        );
       }
     },
   };

@@ -1,12 +1,9 @@
+import type { FeatureExecutionIntents } from '../feature-execution-intents.js';
 import type { AgentCheckpointRepository } from '../../providers/openai-compatible/checkpoint.js';
 import type { ObserveOperation } from '../../core/observability/operation-observer.js';
 /**
- * Compatibility Shim - Provides AutoModeService-like interface using the new architecture
- *
- * This allows existing routes to work without major changes during the transition.
- * Routes receive this shim which delegates to GlobalAutoModeService and facades.
- *
- * This is a TEMPORARY shim - routes should be updated to use the new interface directly.
+ * Application-owned orchestration runtime. Public modules depend on narrow ports;
+ * accepted per-project work belongs to the shared project context registry.
  */
 
 import type { Feature } from '@automaker/types';
@@ -26,13 +23,14 @@ import { ProjectRunContextRegistry } from '../../modules/auto-mode/project-run-c
 import type { FeatureRunCoordinator } from '../../modules/orchestration/feature-run-coordinator.service.js';
 
 /**
- * AutoModeServiceCompat wraps GlobalAutoModeService and facades to provide
- * the old AutoModeService interface that routes expect.
+ * Owns one scheduler, project context registry and ordered application shutdown.
  */
-export class AutoModeServiceCompat {
+export class AutoModeRuntime {
   private readonly globalService: GlobalAutoModeService;
   private readonly facadeOptions: FacadeOptions;
   private readonly contexts: ProjectRunContextRegistry;
+  private readonly executionIntents?: FeatureExecutionIntents;
+  private disposal?: Promise<void>;
 
   constructor(
     events: EventEmitter,
@@ -46,6 +44,7 @@ export class AutoModeServiceCompat {
     filesystem: import('../execution-filesystem.js').ExecutionFilesystem,
     runtime?: {
       contexts: ProjectRunContextRegistry;
+      executionIntents?: FeatureExecutionIntents;
       observeOperation?: ObserveOperation;
       checkpointRepository?: AgentCheckpointRepository;
       coordinator?: FeatureRunCoordinator;
@@ -53,6 +52,7 @@ export class AutoModeServiceCompat {
       validateWorkingDirectory?: (cwd: string) => void;
     }
   ) {
+    this.executionIntents = runtime?.executionIntents;
     this.contexts = runtime?.contexts ?? new ProjectRunContextRegistry();
     this.globalService = new GlobalAutoModeService(
       events,
@@ -60,7 +60,9 @@ export class AutoModeServiceCompat {
       featureLoader,
       notificationService,
       pipeline,
-      runtime?.coordinator
+      runtime?.coordinator,
+      runtime?.executionIntents,
+      runtime?.hostEnvironment
     );
     const sharedServices = this.globalService.getSharedServices();
 
@@ -86,7 +88,21 @@ export class AutoModeServiceCompat {
    * Get the global service for direct access
    */
   onModuleDestroy(): Promise<void> {
-    return this.globalService.onModuleDestroy();
+    return (this.disposal ??= (async () => {
+      const results = await Promise.allSettled([
+        this.contexts.onModuleDestroy(),
+        this.globalService.onModuleDestroy(),
+      ]);
+      let storageError: unknown;
+      try {
+        await this.executionIntents?.close();
+      } catch (error) {
+        storageError = error;
+      }
+      const failure = results.find((result) => result.status === 'rejected');
+      if (failure?.status === 'rejected') throw failure.reason;
+      if (storageError) throw storageError;
+    })());
   }
 
   getGlobalService(): GlobalAutoModeService {
@@ -138,6 +154,7 @@ export class AutoModeServiceCompat {
   /** Called after interruption has been persisted by the application lifecycle. */
   closeAdmission(): void {
     this.contexts.stopAdmission();
+    this.globalService.getSharedServices().worktreeResolver.stopAdmission();
     this.globalService.getSharedServices().concurrencyManager.stopAdmission();
   }
 

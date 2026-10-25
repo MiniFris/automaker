@@ -1,43 +1,55 @@
+import type {
+  AutoModeBranchInput,
+  AutoModeCommitInput,
+  AutoModeExecuteInput,
+  AutoModeFeatureInput,
+  AutoModeFollowUpInput,
+  AutoModeMergeInput,
+  AutoModeProjectInput,
+  AutoModeStartInput,
+  AutoModeStatusInput,
+  AutoModeStopFeatureInput,
+  PendingPlanApprovalInput,
+  PlanApprovalDecisionInput,
+} from './application.inputs.js';
+import { FeatureMergeError } from './auto-mode.errors.js';
 import { ProjectAnalysisService } from './project-analysis.service.js';
 import { UnavailableDomainError } from '../../core/errors/domain-errors.js';
-import { HttpException, Inject, Injectable } from '@nestjs/common';
-import { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
+
+import {
+  type AutoModeScheduler,
+  type FeatureWorkflow,
+  type AutoModeLifecycle,
+} from './auto-mode.ports.js';
 import { ProjectRunContextRegistry } from './project-run-context.registry.js';
-import type {
-  AutoModeBranchRequest,
-  AutoModeCommitRequest,
-  AutoModeExecuteRequest,
-  AutoModeFeatureRequest,
-  AutoModeFollowUpRequest,
-  AutoModeMergeRequest,
-  AutoModeProjectRequest,
-  AutoModeStartRequest,
-  AutoModeStatusRequest,
-  AutoModeStopFeatureRequest,
-} from './auto-mode.schemas.js';
-import type { PendingPlanApprovalRequest, PlanApprovalDecisionRequest } from '@automaker/contracts';
+
 import { ConflictDomainError } from '../../core/errors/domain-errors.js';
 
-@Injectable()
 export class AutoModeApplicationService {
   constructor(
-    @Inject(AutoModeServiceCompat) private readonly autoMode: AutoModeServiceCompat,
-    @Inject(ProjectRunContextRegistry) private readonly contexts: ProjectRunContextRegistry,
-    @Inject(ProjectAnalysisService) private readonly analysis: ProjectAnalysisService
+    private readonly scheduler: AutoModeScheduler,
+    private readonly workflows: FeatureWorkflow,
+
+    private readonly recovery: Pick<
+      AutoModeLifecycle,
+      'reconcileFeatureStates' | 'resumeInterruptedFeatures'
+    >,
+    private readonly contexts: ProjectRunContextRegistry,
+    private readonly analysis: ProjectAnalysisService
   ) {}
 
-  async start(input: AutoModeStartRequest) {
+  async start(input: AutoModeStartInput) {
     const project = this.contexts.canonicalProject(input.projectPath),
       branchName = input.branchName ?? null;
     const description = branchName ? `worktree ${branchName}` : 'main worktree';
-    if (this.autoMode.isAutoLoopRunningForProject(project, branchName))
+    if (this.scheduler.isAutoLoopRunningForProject(project, branchName))
       return {
         success: true,
         message: `Auto mode is already running for ${description}`,
         alreadyRunning: true,
         branchName,
       };
-    const concurrency = await this.autoMode.startAutoLoopForProject(
+    const concurrency = await this.scheduler.startAutoLoopForProject(
       project,
       branchName,
       input.maxConcurrency
@@ -48,11 +60,11 @@ export class AutoModeApplicationService {
       branchName,
     };
   }
-  async stop(input: AutoModeBranchRequest) {
+  async stop(input: AutoModeBranchInput) {
     const project = this.contexts.canonicalProject(input.projectPath),
       branchName = input.branchName ?? null;
     const description = branchName ? `worktree ${branchName}` : 'main worktree';
-    if (!this.autoMode.isAutoLoopRunningForProject(project, branchName))
+    if (!this.scheduler.isAutoLoopRunningForProject(project, branchName))
       return {
         success: true,
         message: `Auto mode is not running for ${description}`,
@@ -62,14 +74,14 @@ export class AutoModeApplicationService {
     return {
       success: true,
       message: 'Auto mode stopped',
-      runningFeaturesCount: await this.autoMode.stopAutoLoopForProject(project, branchName),
+      runningFeaturesCount: await this.scheduler.stopAutoLoopForProject(project, branchName),
       branchName,
     };
   }
-  async status(input: AutoModeStatusRequest) {
+  async status(input: AutoModeStatusInput) {
     if (input.projectPath) {
       const branchName = input.branchName ?? null;
-      const state = await this.autoMode.getStatusForProject(
+      const state = await this.scheduler.getStatusForProject(
         this.contexts.canonicalProject(input.projectPath),
         branchName
       );
@@ -86,32 +98,32 @@ export class AutoModeApplicationService {
     }
     return {
       success: true,
-      ...this.autoMode.getStatus(),
-      activeAutoLoopProjects: this.autoMode.getActiveAutoLoopProjects(),
-      activeAutoLoopWorktrees: this.autoMode.getActiveAutoLoopWorktrees(),
+      ...this.scheduler.getStatus(),
+      activeAutoLoopProjects: this.scheduler.getActiveAutoLoopProjects(),
+      activeAutoLoopWorktrees: this.scheduler.getActiveAutoLoopWorktrees(),
     };
   }
-  async stopFeature(input: AutoModeStopFeatureRequest) {
-    return { success: true, stopped: await this.autoMode.stopFeature(input.featureId) };
+  async stopFeature(input: AutoModeStopFeatureInput) {
+    return { success: true, stopped: await this.workflows.stopFeature(input.featureId) };
   }
-  runFeature(input: AutoModeExecuteRequest) {
+  runFeature(input: AutoModeExecuteInput) {
     const project = this.contexts.canonicalProject(input.projectPath);
     this.contexts.launch(project, () =>
-      this.autoMode.executeFeature(project, input.featureId, input.useWorktrees ?? false, false)
+      this.workflows.executeFeature(project, input.featureId, input.useWorktrees ?? false, false)
     );
     return { success: true };
   }
-  resumeFeature(input: AutoModeExecuteRequest) {
+  resumeFeature(input: AutoModeExecuteInput) {
     const project = this.contexts.canonicalProject(input.projectPath);
     this.contexts.launch(project, () =>
-      this.autoMode.resumeFeature(project, input.featureId, input.useWorktrees ?? false)
+      this.workflows.resumeFeature(project, input.featureId, input.useWorktrees ?? false)
     );
     return { success: true };
   }
-  followUpFeature(input: AutoModeFollowUpRequest) {
+  followUpFeature(input: AutoModeFollowUpInput) {
     const project = this.contexts.canonicalProject(input.projectPath);
     this.contexts.launch(project, () =>
-      this.autoMode.followUpFeature(
+      this.workflows.followUpFeature(
         project,
         input.featureId,
         input.prompt,
@@ -121,58 +133,54 @@ export class AutoModeApplicationService {
     );
     return { success: true };
   }
-  analyzeProject(input: AutoModeProjectRequest) {
+  analyzeProject(input: AutoModeProjectInput) {
     const project = this.contexts.canonicalProject(input.projectPath);
     if (this.contexts.isStopping())
       throw new UnavailableDomainError('Project analysis is unavailable.');
     this.analysis.launch(project);
     return { success: true, message: 'Project analysis started' };
   }
-  async verifyFeature(input: AutoModeFeatureRequest) {
+  async verifyFeature(input: AutoModeFeatureInput) {
     return {
       success: true,
       passes: await this.contexts.runAwaited(input.projectPath, () =>
-        this.autoMode.verifyFeature(input.projectPath, input.featureId)
+        this.workflows.verifyFeature(input.projectPath, input.featureId)
       ),
     };
   }
-  async contextExists(input: AutoModeFeatureRequest) {
+  async contextExists(input: AutoModeFeatureInput) {
     return {
       success: true,
-      exists: await this.autoMode.contextExists(input.projectPath, input.featureId),
+      exists: await this.workflows.contextExists(input.projectPath, input.featureId),
     };
   }
-  async commitFeature(input: AutoModeCommitRequest) {
+  async commitFeature(input: AutoModeCommitInput) {
     return {
       success: true,
-      commitHash: await this.autoMode.commitFeature(
+      commitHash: await this.workflows.commitFeature(
         input.projectPath,
         input.featureId,
         input.worktreePath
       ),
     };
   }
-  async mergeFeature(input: AutoModeMergeRequest, common: boolean) {
+  async mergeFeature(input: AutoModeMergeInput, common: boolean) {
     try {
-      if (common) await this.autoMode.mergeEnvironmentFeature(input.projectPath, input.featureId);
-      else await this.autoMode.mergeSSHFeature(input.projectPath, input.featureId);
+      if (common) await this.workflows.mergeEnvironmentFeature(input.projectPath, input.featureId);
+      else await this.workflows.mergeSSHFeature(input.projectPath, input.featureId);
       return { success: true };
     } catch (error) {
-      throw new HttpException(
-        {
-          success: false,
-          error: error instanceof Error ? error.message : 'Remote feature merge failed.',
-        },
-        400
+      throw new FeatureMergeError(
+        error instanceof Error ? error.message : 'Remote feature merge failed.'
       );
     }
   }
-  async resumeInterrupted(input: AutoModeProjectRequest) {
-    await this.autoMode.resumeInterruptedFeatures(input.projectPath);
+  async resumeInterrupted(input: AutoModeProjectInput) {
+    await this.recovery.resumeInterruptedFeatures(input.projectPath);
     return { success: true, message: 'Resume check completed' };
   }
-  async reconcile(input: AutoModeProjectRequest) {
-    const reconciledCount = await this.autoMode.reconcileFeatureStates(input.projectPath);
+  async reconcile(input: AutoModeProjectInput) {
+    const reconciledCount = await this.recovery.reconcileFeatureStates(input.projectPath);
     return {
       success: true,
       reconciledCount,
@@ -182,8 +190,8 @@ export class AutoModeApplicationService {
           : 'No features needed reconciliation',
     };
   }
-  async approvePlan(body: PlanApprovalDecisionRequest) {
-    const result = await this.autoMode.resolvePlanApproval(
+  async approvePlan(body: PlanApprovalDecisionInput) {
+    const result = await this.workflows.resolvePlanApproval(
       body.projectPath,
       body.featureId,
       body.approved,
@@ -202,10 +210,10 @@ export class AutoModeApplicationService {
         : 'Plan rejected - feature execution stopped',
     };
   }
-  async pendingPlanApproval(body: PendingPlanApprovalRequest) {
+  async pendingPlanApproval(body: PendingPlanApprovalInput) {
     return {
       success: true,
-      approval: await this.autoMode.getPendingPlanApproval(body.projectPath, body.featureId),
+      approval: await this.workflows.getPendingPlanApproval(body.projectPath, body.featureId),
     };
   }
 }

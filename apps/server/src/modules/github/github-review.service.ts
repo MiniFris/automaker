@@ -1,4 +1,10 @@
-import { HttpException, Inject, Injectable, type OnModuleDestroy } from '@nestjs/common';
+import type {
+  GithubIssueCommentsInput,
+  GithubReviewCommentsInput,
+  GithubResolveThreadInput,
+} from './verification.values.js';
+import { RateLimitDomainError } from '../../core/errors/domain-errors.js';
+
 import { performance } from 'node:perf_hooks';
 import {
   ConflictDomainError,
@@ -10,12 +16,8 @@ import {
 } from '../../core/errors/domain-errors.js';
 import { GithubReadPort } from './github-read.port.js';
 import { GithubCommentsReadPort, GithubReviewMutationPort } from './github-review.port.js';
-import type {
-  GithubIssueCommentsRequest,
-  GithubReviewCommentsRequest,
-  GithubResolveThreadRequest,
-} from './github-review.schemas.js';
-import { GithubCommandError } from './github-command.runtime.js';
+
+import { GithubCommandError } from './github-command.errors.js';
 
 export class GithubReviewCleanupError extends Error {
   readonly code = 'GITHUB_REVIEW_CLEANUP_FAILED';
@@ -23,19 +25,19 @@ export class GithubReviewCleanupError extends Error {
     super('GitHub review cleanup or mutation outcome could not be confirmed.');
   }
 }
-@Injectable()
-export class GithubReviewService implements OnModuleDestroy {
+
+export class GithubReviewService {
   private readonly active = new Map<Promise<unknown>, AbortController>();
   private readonly mutations = new Set<string>();
   private readonly unconfirmed = new Set<string>();
   private stopping = false;
   private shutdown?: Promise<void>;
   constructor(
-    @Inject(GithubReadPort) private readonly reads: GithubReadPort,
-    @Inject(GithubCommentsReadPort) private readonly comments: GithubCommentsReadPort,
-    @Inject(GithubReviewMutationPort) private readonly writes: GithubReviewMutationPort
+    private readonly reads: GithubReadPort,
+    private readonly comments: GithubCommentsReadPort,
+    private readonly writes: GithubReviewMutationPort
   ) {}
-  issueComments(input: GithubIssueCommentsRequest) {
+  issueComments(input: GithubIssueCommentsInput) {
     return this.run(async (signal) => {
       const remote = await this.remote(input.projectPath, signal);
       return {
@@ -50,7 +52,7 @@ export class GithubReviewService implements OnModuleDestroy {
       };
     });
   }
-  reviewComments(input: GithubReviewCommentsRequest) {
+  reviewComments(input: GithubReviewCommentsInput) {
     return this.run(async (signal) => {
       const remote = await this.remote(input.projectPath, signal);
       const comments = await this.comments.reviewComments(
@@ -62,7 +64,7 @@ export class GithubReviewService implements OnModuleDestroy {
       return { success: true, comments, totalCount: comments.length };
     });
   }
-  resolve(input: GithubResolveThreadRequest) {
+  resolve(input: GithubResolveThreadInput) {
     // Thread IDs are host-global. Conservatively reserve across project path aliases.
     if (this.unconfirmed.has(input.threadId))
       throw new UnknownOutcomeDomainError(
@@ -115,7 +117,7 @@ export class GithubReviewService implements OnModuleDestroy {
         if (error instanceof DomainError) throw error;
         if (error instanceof GithubCommandError) {
           if (error.rateLimited)
-            throw new HttpException('GitHub request rate limit exceeded.', 429);
+            throw new RateLimitDomainError('GitHub request rate limit exceeded.');
           if (error.kind === 'deadline' || performance.now() >= deadline)
             throw new TimeoutDomainError('GitHub review timed out.');
           throw new UnavailableDomainError('GitHub review is unavailable.');

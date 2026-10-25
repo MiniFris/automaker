@@ -381,3 +381,34 @@ test('full baseline snapshot restores into a fresh sibling; overlay leaves block
   assert.deepEqual(await manifest(upgraded), upgradedBefore);
   assert.deepEqual(await manifest(snapshot), original);
 });
+
+test('feature write-ahead intents block old binaries without exposing stored identity or payload', async (t) => {
+  const root = await owned(t),
+    file = 'feature-execution-intents/' + 'a'.repeat(64) + '.json';
+  for (const phase of ['pending', 'uncertain']) {
+    await json(root, file, {
+      version: 1,
+      projectPath: '/private-project-path',
+      featureId: 'private-feature',
+      operationId: runId,
+      kind: 'pipeline_step',
+      phase,
+      code: 'FEATURE_OUTCOME_UNKNOWN',
+      reason: 'private-controlled-reason',
+      unexpected: 'private-extra-payload',
+    });
+    const before = await manifest(root);
+    const result = await cli(['--data-dir', root, '--target', DOWNGRADE_TARGET], root);
+    assert.equal(result.code, 2);
+    const report = JSON.parse(result.output);
+    assert.equal(report.status, 'blocked');
+    assert.equal(report.findings[0].phase, phase);
+    assert.doesNotMatch(
+      result.output,
+      /private-project-path|private-feature|private-controlled-reason|private-extra-payload/
+    );
+    assert.deepEqual(await manifest(root), before);
+  }
+  await json(root, file, { version: 99, phase: 'pending' });
+  assert.equal((await inspect(root)).status, 'unconfirmed');
+});

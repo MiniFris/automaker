@@ -9,7 +9,7 @@ import {
   type CodexAppServerService,
 } from './codex-app-server-service.js';
 import type { OnApplicationShutdown } from '@nestjs/common';
-import { UnavailableDomainError } from '../core/errors/index.js';
+import { UnavailableDomainError } from '../core/errors/domain-errors.js';
 
 const logger = createLogger('CodexModelCache');
 export type CodexModelCacheFilesystem = Pick<

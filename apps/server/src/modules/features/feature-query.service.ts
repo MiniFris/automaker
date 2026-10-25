@@ -1,22 +1,21 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
+import type { FeatureConflictCheckInput, FeatureExportInput } from './application.inputs.js';
+
+import { type FeatureOrphanQuery } from '../auto-mode/auto-mode.ports.js';
 import { FeatureLoader } from '../../services/feature-loader.js';
 import {
   FeatureExportService,
   type BulkExportOptions,
 } from '../../services/feature-export-service.js';
-import { NotFoundDomainError, ValidationDomainError } from '../../core/errors/index.js';
-import { FEATURE_REPOSITORY, type FeatureRepository } from './feature.repository.js';
-import type { FeatureConflictCheckRequest, FeatureExportRequest } from './feature.schemas.js';
+import { NotFoundDomainError, ValidationDomainError } from '../../core/errors/domain-errors.js';
+import { type FeatureRepository } from './feature.repository.js';
 
-@Injectable()
 export class FeatureQueryService {
   private readonly exports: FeatureExportService;
 
   constructor(
-    @Inject(FEATURE_REPOSITORY) private readonly features: FeatureRepository,
-    @Inject(FeatureLoader) featureLoader: FeatureLoader,
-    @Inject(AutoModeServiceCompat) private readonly autoMode: AutoModeServiceCompat
+    private readonly features: FeatureRepository,
+    featureLoader: FeatureLoader,
+    private readonly autoMode: FeatureOrphanQuery
   ) {
     this.exports = new FeatureExportService(featureLoader);
   }
@@ -47,7 +46,7 @@ export class FeatureQueryService {
     };
   }
 
-  async export(input: FeatureExportRequest) {
+  async export(input: FeatureExportInput) {
     const { projectPath, format, ...options } = input;
     const data = await this.exports.exportFeatures(projectPath, {
       ...options,
@@ -62,7 +61,7 @@ export class FeatureQueryService {
     };
   }
 
-  async conflicts(input: FeatureConflictCheckRequest) {
+  async conflicts(input: FeatureConflictCheckInput) {
     const format = this.exports.detectFormat(input.data);
     if (!format) {
       throw new ValidationDomainError('Invalid data format. Expected valid JSON or YAML.');

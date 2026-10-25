@@ -240,7 +240,7 @@ export class AutoLoopCoordinator {
             true
           ).catch((error) => {
             const errorInfo = classifyError(error);
-            logger.error(`Auto-loop feature ${nextFeature.id} failed:`, errorInfo.message);
+            logger.error('Auto-loop feature execution failed.', { featureId: nextFeature.id });
             if (this.trackFailureAndCheckPauseForProject(projectPath, branchName, errorInfo)) {
               this.signalShouldPauseForProject(projectPath, branchName, errorInfo);
             }

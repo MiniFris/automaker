@@ -1,3 +1,8 @@
+import {
+  settingsQueryServiceProvider,
+  settingsCommandServiceProvider,
+  directSettingsCommandServiceProvider,
+} from './application.providers.js';
 import { Global, Module, type DynamicModule } from '@nestjs/common';
 
 import { RuntimePathsService } from '../../core/config/index.js';
@@ -6,12 +11,12 @@ import type * as SecureFilesystem from '../../lib/secure-fs.js';
 import { SettingsService } from '../../services/settings-service.js';
 import { SettingsFileRepository } from './settings-file.repository.js';
 import { SettingsController } from './settings.controller.js';
-import { SettingsQueryService } from './settings-query.service.js';
+
 import { AgentProfileSource, NodeAgentProfileSource } from './agent-profile.source.js';
-import { SettingsCommandService } from './settings-command.service.js';
+
 import { SettingsDomainEvents } from './settings-domain-events.js';
 import { SettingsRuntimeEffectsService } from './settings-runtime-effects.service.js';
-import { DirectSettingsCommandService } from './direct-settings-command.service.js';
+
 import { ExecutionEnvironmentSettingsController } from './execution-environment-settings.controller.js';
 import { ExecutionEnvironmentSettingsService } from './execution-environment-settings.service.js';
 import { LegacyProfileImporter } from './legacy-profile-importer.js';
@@ -53,12 +58,12 @@ const AUTOMATIC_LEGACY_IMPORT = Symbol('AUTOMATIC_LEGACY_IMPORT');
           true
         ),
     },
-    SettingsQueryService,
+    settingsQueryServiceProvider,
     { provide: AgentProfileSource, useClass: NodeAgentProfileSource },
-    SettingsCommandService,
+    settingsCommandServiceProvider,
     SettingsDomainEvents,
     SettingsRuntimeEffectsService,
-    DirectSettingsCommandService,
+    directSettingsCommandServiceProvider,
     ExecutionEnvironmentSettingsService,
   ],
   exports: [SettingsService, SettingsFileRepository],

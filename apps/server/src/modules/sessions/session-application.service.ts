@@ -1,24 +1,21 @@
-import { Inject, Injectable } from '@nestjs/common';
+import type { SessionCreateInput, SessionUpdateInput } from './application.inputs.js';
+
 import { RuntimePathsService } from '../../core/config/index.js';
-import { NotFoundDomainError } from '../../core/errors/index.js';
+import { NotFoundDomainError } from '../../core/errors/domain-errors.js';
 import { SecurityService } from '../../core/security/index.js';
 import {
-  ACTIVE_SESSION_COORDINATOR,
   type ActiveSessionCoordinator,
-  SESSION_METADATA_REPOSITORY,
   type SessionMetadataRepository,
 } from './session-metadata.repository.js';
-import type { SessionCreateRequest, SessionUpdateRequest } from './session.schemas.js';
 
-@Injectable()
 export class SessionApplicationService {
   private mutationTail: Promise<void> = Promise.resolve();
 
   constructor(
-    @Inject(SESSION_METADATA_REPOSITORY) private readonly sessions: SessionMetadataRepository,
-    @Inject(ACTIVE_SESSION_COORDINATOR) private readonly active: ActiveSessionCoordinator,
-    @Inject(SecurityService) private readonly security: SecurityService,
-    @Inject(RuntimePathsService) private readonly paths: RuntimePathsService
+    private readonly sessions: SessionMetadataRepository,
+    private readonly active: ActiveSessionCoordinator,
+    private readonly security: SecurityService,
+    private readonly paths: RuntimePathsService
   ) {}
 
   async list(includeArchived: boolean) {
@@ -57,7 +54,7 @@ export class SessionApplicationService {
     };
   }
 
-  create(input: SessionCreateRequest) {
+  create(input: SessionCreateInput) {
     return this.serialize(async () => {
       const projectPath = input.projectPath
         ? this.security.validateLocalPath(input.projectPath, 'create session project')
@@ -71,7 +68,7 @@ export class SessionApplicationService {
     });
   }
 
-  update(sessionId: string, input: SessionUpdateRequest) {
+  update(sessionId: string, input: SessionUpdateInput) {
     return this.serialize(async () => {
       const session = await this.sessions.update(sessionId, input);
       if (!session) throw new NotFoundDomainError('Session not found');

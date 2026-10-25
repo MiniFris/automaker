@@ -1,3 +1,4 @@
+import { mCPApplicationServiceProvider } from './application.providers.js';
 import { HOST_ENVIRONMENT, RuntimePathsService } from '../../core/config/index.js';
 import { Module } from '@nestjs/common';
 import { MCPApplicationService } from './mcp-application.service.js';
@@ -32,7 +33,7 @@ import { ApplicationMetrics } from '../../core/observability/application-metrics
         return service;
       },
     },
-    MCPApplicationService,
+    mCPApplicationServiceProvider,
   ],
   exports: [MCPApplicationService, MCPTestService],
 })

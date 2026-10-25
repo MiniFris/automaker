@@ -211,8 +211,8 @@ export class AgentExecutor {
     const outputPath = path.join(featureDirForOutput, 'agent-output.md');
     const rawOutputPath = path.join(featureDirForOutput, 'raw-output.jsonl');
     const enableRawOutput =
-      process.env.AUTOMAKER_DEBUG_RAW_OUTPUT === 'true' ||
-      process.env.AUTOMAKER_DEBUG_RAW_OUTPUT === '1';
+      this.hostEnvironment.AUTOMAKER_DEBUG_RAW_OUTPUT === 'true' ||
+      this.hostEnvironment.AUTOMAKER_DEBUG_RAW_OUTPUT === '1';
     let responseText = previousContent
       ? `${previousContent}\n\n---\n\n## Follow-up Session\n\n`
       : '';

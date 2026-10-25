@@ -1,26 +1,27 @@
-import { Inject, Injectable } from '@nestjs/common';
+import type {
+  FeatureBulkDeleteInput,
+  FeatureBulkUpdateInput,
+  FeatureCreateInput,
+  FeatureImportInput,
+  FeatureUpdateInput,
+  OrphanBulkResolveInput,
+  OrphanResolveInput,
+} from './application.inputs.js';
+
 import crypto from 'node:crypto';
 import path from 'node:path';
 import type { Feature, FeatureExport, FeatureImportResult } from '@automaker/types';
-import { EVENT_BUS, type EventBus } from '../../core/eventing/index.js';
-import { NotFoundDomainError, ValidationDomainError } from '../../core/errors/index.js';
+import { type EventBus } from '../../core/eventing/index.js';
+import { NotFoundDomainError, ValidationDomainError } from '../../core/errors/domain-errors.js';
 import { execGitCommand } from '../../lib/git.js';
 import { deleteWorktreeMetadata } from '../../lib/worktree-metadata.js';
 import { FeatureExportService } from '../../services/feature-export-service.js';
 import { FeatureLoader } from '../../services/feature-loader.js';
-import { FEATURE_REPOSITORY, type FeatureRepository } from './feature.repository.js';
-import type {
-  FeatureBulkDeleteRequest,
-  FeatureBulkUpdateRequest,
-  FeatureCreateRequest,
-  FeatureImportRequest,
-  FeatureUpdateRequest,
-  OrphanBulkResolveRequest,
-  OrphanResolveRequest,
-} from './feature.schemas.js';
+import { type FeatureRepository } from './feature.repository.js';
+
 import { FeatureTransitionService } from './feature-transition.service.js';
 import { ProjectFeatureSerializer } from './project-feature-serializer.js';
-import { SECURE_FILESYSTEM } from '../../core/security/index.js';
+
 import type * as Filesystem from '../../lib/secure-fs.js';
 
 export interface ResolveResult {
@@ -30,22 +31,21 @@ export interface ResolveResult {
   error?: string;
 }
 
-@Injectable()
 export class FeatureCommandService {
   private readonly imports: FeatureExportService;
 
   constructor(
-    @Inject(FEATURE_REPOSITORY) private readonly features: FeatureRepository,
-    @Inject(FeatureLoader) featureLoader: FeatureLoader,
-    @Inject(EVENT_BUS) private readonly events: EventBus,
-    @Inject(FeatureTransitionService) private readonly transitions: FeatureTransitionService,
-    @Inject(ProjectFeatureSerializer) private readonly serializer: ProjectFeatureSerializer,
-    @Inject(SECURE_FILESYSTEM) private readonly filesystem: Pick<typeof Filesystem, 'rm'>
+    private readonly features: FeatureRepository,
+    featureLoader: FeatureLoader,
+    private readonly events: EventBus,
+    private readonly transitions: FeatureTransitionService,
+    private readonly serializer: ProjectFeatureSerializer,
+    private readonly filesystem: Pick<typeof Filesystem, 'rm'>
   ) {
     this.imports = new FeatureExportService(featureLoader);
   }
 
-  create(input: FeatureCreateRequest) {
+  create(input: FeatureCreateInput) {
     return this.serializer.run(input.projectPath, async () => {
       this.transitions.assertAllowed(input.feature.status);
       const created = await this.features.create(
@@ -61,7 +61,7 @@ export class FeatureCommandService {
     });
   }
 
-  update(input: FeatureUpdateRequest) {
+  update(input: FeatureUpdateInput) {
     return this.serializer.run(input.projectPath, async () => {
       this.transitions.assertAllowed(input.updates.status);
       const current = await this.features.get(input.projectPath, input.featureId);
@@ -97,7 +97,7 @@ export class FeatureCommandService {
     }));
   }
 
-  bulkUpdate(input: FeatureBulkUpdateRequest) {
+  bulkUpdate(input: FeatureBulkUpdateInput) {
     return this.serializer.run(input.projectPath, async () => {
       this.transitions.assertAllowed(input.updates.status);
       const results: Array<{ featureId: string; success: boolean; error?: string }> = [];
@@ -130,7 +130,7 @@ export class FeatureCommandService {
     });
   }
 
-  bulkDelete(input: FeatureBulkDeleteRequest) {
+  bulkDelete(input: FeatureBulkDeleteInput) {
     return this.serializer.run(input.projectPath, async () => {
       const results: ResolveResult[] = [];
       for (const featureId of input.featureIds) {
@@ -151,7 +151,7 @@ export class FeatureCommandService {
     });
   }
 
-  import(input: FeatureImportRequest) {
+  import(input: FeatureImportInput) {
     return this.serializer.run(input.projectPath, async () => {
       if (!this.imports.detectFormat(input.data)) {
         throw new ValidationDomainError('Invalid data format. Expected valid JSON or YAML.');
@@ -189,11 +189,11 @@ export class FeatureCommandService {
     });
   }
 
-  resolveOrphan(input: OrphanResolveRequest) {
+  resolveOrphan(input: OrphanResolveInput) {
     return this.serializer.run(input.projectPath, () => this.resolveOrphanUnsafe(input));
   }
 
-  bulkResolveOrphans(input: OrphanBulkResolveRequest) {
+  bulkResolveOrphans(input: OrphanBulkResolveInput) {
     return this.serializer.run(input.projectPath, async () => {
       const results: ResolveResult[] = [];
       for (const featureId of input.featureIds) {
@@ -209,7 +209,7 @@ export class FeatureCommandService {
     });
   }
 
-  private async resolveOrphanUnsafe(input: OrphanResolveRequest): Promise<ResolveResult> {
+  private async resolveOrphanUnsafe(input: OrphanResolveInput): Promise<ResolveResult> {
     const feature = await this.features.get(input.projectPath, input.featureId);
     if (!feature) throw new NotFoundDomainError('Feature not found');
     const missingBranch = feature.branchName;

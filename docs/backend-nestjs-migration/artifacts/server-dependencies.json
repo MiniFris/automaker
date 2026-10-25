@@ -2,22 +2,23 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 457,
-    "internalEdges": 1697,
+    "files": 503,
+    "internalEdges": 1827,
     "stronglyConnectedComponents": 2
   },
   "layerEdges": {
     "core -> core": 90,
     "core -> lib": 6,
     "core -> middleware": 1,
-    "core -> services": 9,
+    "core -> modules": 1,
+    "core -> services": 8,
     "lib -> lib": 4,
     "lib -> services": 1,
-    "modules -> core": 227,
+    "modules -> core": 244,
     "modules -> lib": 56,
-    "modules -> modules": 407,
+    "modules -> modules": 477,
     "modules -> providers": 48,
-    "modules -> services": 190,
+    "modules -> services": 199,
     "modules -> types": 2,
     "providers -> core": 7,
     "providers -> lib": 3,
@@ -27,11 +28,11 @@
     "root -> core": 18,
     "root -> modules": 28,
     "root -> root": 2,
-    "services -> core": 41,
-    "services -> lib": 67,
-    "services -> modules": 17,
-    "services -> providers": 19,
-    "services -> services": 323,
+    "services -> core": 44,
+    "services -> lib": 70,
+    "services -> modules": 18,
+    "services -> providers": 21,
+    "services -> services": 348,
     "services -> types": 3,
     "tests -> lib": 2
   },
@@ -78,8 +79,8 @@
       "apps/server/src/providers/simple-query-service.ts",
       "apps/server/src/services/agent-executor.ts",
       "apps/server/src/services/agent/agent-environment-preparer.ts",
-      "apps/server/src/services/auto-mode/compat.ts",
       "apps/server/src/services/auto-mode/facade.ts",
+      "apps/server/src/services/auto-mode/runtime.ts",
       "apps/server/src/services/claude-usage-service.ts",
       "apps/server/src/services/codex-usage-compat.ts",
       "apps/server/src/services/cursor-config-service.ts",
@@ -236,6 +237,7 @@
       "apps/server/src/services/execution-environment/preview-tunnel.ts",
       "apps/server/src/services/execution-environment/terminal.ts",
       "apps/server/src/services/execution-environment/test-runner.ts",
+      "apps/server/src/services/feature-execution-intents.ts",
       "apps/server/src/services/feature-loader.ts",
       "apps/server/src/services/feature-state-manager.ts",
       "apps/server/src/services/local-process-preflight.ts",
@@ -252,6 +254,7 @@
       "apps/server/src/services/terminal-session-lifecycle.ts",
       "apps/server/src/services/test-runner-service.ts",
       "apps/server/src/services/worktree-branch-service.ts",
+      "apps/server/src/services/worktree-resolver.ts",
       "apps/server/src/services/zai-usage-service.ts"
     ],
     "singletonFactories": [],
@@ -259,7 +262,7 @@
   },
   "externalImports": {
     "@anthropic-ai/claude-agent-sdk": 3,
-    "@automaker/contracts": 24,
+    "@automaker/contracts": 19,
     "@automaker/contracts/domains/agent": 1,
     "@automaker/contracts/domains/auth": 1,
     "@automaker/contracts/domains/auto-mode-responses": 1,
@@ -281,7 +284,7 @@
     "@automaker/contracts/domains/request-context": 5,
     "@automaker/contracts/domains/running-agents": 1,
     "@automaker/contracts/domains/settings": 1,
-    "@automaker/contracts/domains/setup-query": 5,
+    "@automaker/contracts/domains/setup-query": 4,
     "@automaker/contracts/domains/setup-responses": 1,
     "@automaker/contracts/domains/templates": 1,
     "@automaker/contracts/domains/terminal": 2,
@@ -291,10 +294,10 @@
     "@automaker/dependency-resolver": 1,
     "@automaker/git-utils": 7,
     "@automaker/model-resolver": 18,
-    "@automaker/platform": 51,
+    "@automaker/platform": 54,
     "@automaker/prompts": 2,
-    "@automaker/types": 155,
-    "@automaker/utils": 116,
+    "@automaker/types": 162,
+    "@automaker/utils": 119,
     "@automaker/utils/logger": 1,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
@@ -304,7 +307,7 @@
     "@modelcontextprotocol/sdk/shared/stdio.js": 1,
     "@modelcontextprotocol/sdk/shared/transport.js": 2,
     "@modelcontextprotocol/sdk/types.js": 1,
-    "@nestjs/common": 198,
+    "@nestjs/common": 184,
     "@nestjs/core": 8,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
@@ -325,16 +328,16 @@
     "node:async_hooks": 2,
     "node:buffer": 1,
     "node:child_process": 18,
-    "node:crypto": 43,
+    "node:crypto": 44,
     "node:events": 2,
     "node:fs": 13,
     "node:fs/promises": 20,
     "node:http": 8,
     "node:module": 1,
-    "node:net": 4,
+    "node:net": 5,
     "node:os": 12,
-    "node:path": 67,
-    "node:perf_hooks": 26,
+    "node:path": 69,
+    "node:perf_hooks": 27,
     "node:stream": 7,
     "node:stream/web": 3,
     "node:string_decoder": 4,
@@ -342,7 +345,7 @@
     "node:url": 4,
     "node:util": 13,
     "os": 7,
-    "path": 34,
+    "path": 33,
     "reflect-metadata": 1,
     "ssh2": 3,
     "url": 1,
@@ -755,11 +758,11 @@
     },
     {
       "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
-      "target": "apps/server/src/services/agent-service.ts"
+      "target": "apps/server/src/modules/auto-mode/auto-mode.ports.ts"
     },
     {
       "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
+      "target": "apps/server/src/services/agent-service.ts"
     },
     {
       "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
@@ -991,7 +994,7 @@
     },
     {
       "source": "apps/server/src/modules/agents/agent-application.service.ts",
-      "target": "apps/server/src/modules/agents/agent.schemas.ts"
+      "target": "apps/server/src/modules/agents/application.inputs.ts"
     },
     {
       "source": "apps/server/src/modules/agents/agent-application.service.ts",
@@ -1199,15 +1202,15 @@
     },
     {
       "source": "apps/server/src/modules/agents/agents.module.ts",
-      "target": "apps/server/src/modules/agents/agent-application.service.ts"
-    },
-    {
-      "source": "apps/server/src/modules/agents/agents.module.ts",
       "target": "apps/server/src/modules/agents/agent-state.module.ts"
     },
     {
       "source": "apps/server/src/modules/agents/agents.module.ts",
       "target": "apps/server/src/modules/agents/agents.controller.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agents.module.ts",
+      "target": "apps/server/src/modules/agents/application.providers.ts"
     },
     {
       "source": "apps/server/src/modules/agents/agents.module.ts",
@@ -1224,6 +1227,14 @@
     {
       "source": "apps/server/src/modules/agents/agents.module.ts",
       "target": "apps/server/src/modules/backlog-plan/backlog-plan.module.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/application.providers.ts",
+      "target": "apps/server/src/modules/agents/agent-application.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/application.providers.ts",
+      "target": "apps/server/src/services/agent-service.ts"
     },
     {
       "source": "apps/server/src/modules/agents/chat-execution-read-model.ts",
@@ -1247,11 +1258,11 @@
     },
     {
       "source": "apps/server/src/modules/agents/running-agents.service.ts",
-      "target": "apps/server/src/modules/backlog-plan/backlog-plan-job.registry.ts"
+      "target": "apps/server/src/modules/auto-mode/auto-mode.ports.ts"
     },
     {
       "source": "apps/server/src/modules/agents/running-agents.service.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
+      "target": "apps/server/src/modules/backlog-plan/backlog-plan-job.registry.ts"
     },
     {
       "source": "apps/server/src/modules/app-spec/app-spec-application.service.ts",
@@ -1267,7 +1278,7 @@
     },
     {
       "source": "apps/server/src/modules/app-spec/app-spec-application.service.ts",
-      "target": "apps/server/src/modules/app-spec/app-spec.schemas.ts"
+      "target": "apps/server/src/modules/app-spec/application.inputs.ts"
     },
     {
       "source": "apps/server/src/modules/app-spec/app-spec-job.registry.ts",
@@ -1299,10 +1310,6 @@
     },
     {
       "source": "apps/server/src/modules/app-spec/app-spec.module.ts",
-      "target": "apps/server/src/modules/app-spec/app-spec-application.service.ts"
-    },
-    {
-      "source": "apps/server/src/modules/app-spec/app-spec.module.ts",
       "target": "apps/server/src/modules/app-spec/app-spec-job.registry.ts"
     },
     {
@@ -1315,11 +1322,31 @@
     },
     {
       "source": "apps/server/src/modules/app-spec/app-spec.module.ts",
+      "target": "apps/server/src/modules/app-spec/application.providers.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/app-spec.module.ts",
       "target": "apps/server/src/modules/app-spec/native-app-spec.workflow.ts"
     },
     {
       "source": "apps/server/src/modules/app-spec/app-spec.module.ts",
       "target": "apps/server/src/modules/app-spec/planning-workflow.context.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/application.providers.ts",
+      "target": "apps/server/src/core/eventing/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/application.providers.ts",
+      "target": "apps/server/src/modules/app-spec/app-spec-application.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/application.providers.ts",
+      "target": "apps/server/src/modules/app-spec/app-spec-job.registry.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/application.providers.ts",
+      "target": "apps/server/src/modules/app-spec/app-spec-workflow.port.ts"
     },
     {
       "source": "apps/server/src/modules/app-spec/generate-features-from-spec.workflow.ts",
@@ -1510,8 +1537,20 @@
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
-      "source": "apps/server/src/modules/auto-mode/auto-mode-application.service.ts",
-      "target": "apps/server/src/core/errors/domain-errors.ts"
+      "source": "apps/server/src/modules/auto-mode/application.providers.ts",
+      "target": "apps/server/src/modules/auto-mode/auto-mode-application.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/application.providers.ts",
+      "target": "apps/server/src/modules/auto-mode/auto-mode.ports.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/application.providers.ts",
+      "target": "apps/server/src/modules/auto-mode/project-analysis.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/application.providers.ts",
+      "target": "apps/server/src/modules/auto-mode/project-run-context.registry.ts"
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode-application.service.ts",
@@ -1519,7 +1558,19 @@
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode-application.service.ts",
-      "target": "apps/server/src/modules/auto-mode/auto-mode.schemas.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode-application.service.ts",
+      "target": "apps/server/src/modules/auto-mode/application.inputs.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode-application.service.ts",
+      "target": "apps/server/src/modules/auto-mode/auto-mode.errors.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode-application.service.ts",
+      "target": "apps/server/src/modules/auto-mode/auto-mode.ports.ts"
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode-application.service.ts",
@@ -1528,10 +1579,6 @@
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode-application.service.ts",
       "target": "apps/server/src/modules/auto-mode/project-run-context.registry.ts"
-    },
-    {
-      "source": "apps/server/src/modules/auto-mode/auto-mode-application.service.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
@@ -1544,6 +1591,10 @@
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
       "target": "apps/server/src/modules/auto-mode/auto-mode-application.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
+      "target": "apps/server/src/modules/auto-mode/auto-mode.errors.ts"
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
@@ -1571,11 +1622,15 @@
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
-      "target": "apps/server/src/modules/auto-mode/auto-mode-application.service.ts"
+      "target": "apps/server/src/modules/auto-mode/application.providers.ts"
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
       "target": "apps/server/src/modules/auto-mode/auto-mode.controller.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
+      "target": "apps/server/src/modules/auto-mode/auto-mode.ports.ts"
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
@@ -1611,11 +1666,19 @@
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
+      "target": "apps/server/src/services/auto-mode/runtime.ts"
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.module.ts",
       "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.ports.ts",
+      "target": "apps/server/src/services/auto-mode/types.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
+      "target": "apps/server/src/core/config/index.ts"
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
@@ -1663,7 +1726,7 @@
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
+      "target": "apps/server/src/services/auto-mode/runtime.ts"
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
@@ -1672,6 +1735,10 @@
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
       "target": "apps/server/src/services/execution-filesystem.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
+      "target": "apps/server/src/services/feature-execution-intents.ts"
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
@@ -1762,16 +1829,44 @@
       "target": "apps/server/src/services/auto-mode/facade.ts"
     },
     {
+      "source": "apps/server/src/modules/backlog-plan/application.providers.ts",
+      "target": "apps/server/src/modules/backlog-plan/backlog-plan-application.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/application.providers.ts",
+      "target": "apps/server/src/modules/backlog-plan/backlog-plan-job.registry.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/application.providers.ts",
+      "target": "apps/server/src/modules/backlog-plan/backlog-plan.ports.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/application.providers.ts",
+      "target": "apps/server/src/modules/features/feature-transition.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/application.providers.ts",
+      "target": "apps/server/src/modules/features/feature.repository.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/application.providers.ts",
+      "target": "apps/server/src/modules/features/project-feature-serializer.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/application.providers.ts",
+      "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/backlog-plan-application.service.ts",
+      "target": "apps/server/src/modules/backlog-plan/application.inputs.ts"
+    },
+    {
       "source": "apps/server/src/modules/backlog-plan/backlog-plan-application.service.ts",
       "target": "apps/server/src/modules/backlog-plan/backlog-plan-job.registry.ts"
     },
     {
       "source": "apps/server/src/modules/backlog-plan/backlog-plan-application.service.ts",
       "target": "apps/server/src/modules/backlog-plan/backlog-plan.ports.ts"
-    },
-    {
-      "source": "apps/server/src/modules/backlog-plan/backlog-plan-application.service.ts",
-      "target": "apps/server/src/modules/backlog-plan/backlog-plan.schemas.ts"
     },
     {
       "source": "apps/server/src/modules/backlog-plan/backlog-plan-application.service.ts",
@@ -1827,7 +1922,7 @@
     },
     {
       "source": "apps/server/src/modules/backlog-plan/backlog-plan.module.ts",
-      "target": "apps/server/src/modules/backlog-plan/backlog-plan-application.service.ts"
+      "target": "apps/server/src/modules/backlog-plan/application.providers.ts"
     },
     {
       "source": "apps/server/src/modules/backlog-plan/backlog-plan.module.ts",
@@ -2202,16 +2297,48 @@
       "target": "apps/server/src/services/test-runner-service.ts"
     },
     {
+      "source": "apps/server/src/modules/features/application.providers.ts",
+      "target": "apps/server/src/core/eventing/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/features/application.providers.ts",
+      "target": "apps/server/src/core/security/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/features/application.providers.ts",
+      "target": "apps/server/src/modules/auto-mode/auto-mode.ports.ts"
+    },
+    {
+      "source": "apps/server/src/modules/features/application.providers.ts",
+      "target": "apps/server/src/modules/features/feature-command.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/features/application.providers.ts",
+      "target": "apps/server/src/modules/features/feature-query.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/features/application.providers.ts",
+      "target": "apps/server/src/modules/features/feature-transition.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/features/application.providers.ts",
+      "target": "apps/server/src/modules/features/feature.repository.ts"
+    },
+    {
+      "source": "apps/server/src/modules/features/application.providers.ts",
+      "target": "apps/server/src/modules/features/project-feature-serializer.ts"
+    },
+    {
+      "source": "apps/server/src/modules/features/application.providers.ts",
+      "target": "apps/server/src/services/feature-loader.ts"
+    },
+    {
       "source": "apps/server/src/modules/features/feature-command.service.ts",
-      "target": "apps/server/src/core/errors/index.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
       "source": "apps/server/src/modules/features/feature-command.service.ts",
       "target": "apps/server/src/core/eventing/index.ts"
-    },
-    {
-      "source": "apps/server/src/modules/features/feature-command.service.ts",
-      "target": "apps/server/src/core/security/index.ts"
     },
     {
       "source": "apps/server/src/modules/features/feature-command.service.ts",
@@ -2227,15 +2354,15 @@
     },
     {
       "source": "apps/server/src/modules/features/feature-command.service.ts",
+      "target": "apps/server/src/modules/features/application.inputs.ts"
+    },
+    {
+      "source": "apps/server/src/modules/features/feature-command.service.ts",
       "target": "apps/server/src/modules/features/feature-transition.service.ts"
     },
     {
       "source": "apps/server/src/modules/features/feature-command.service.ts",
       "target": "apps/server/src/modules/features/feature.repository.ts"
-    },
-    {
-      "source": "apps/server/src/modules/features/feature-command.service.ts",
-      "target": "apps/server/src/modules/features/feature.schemas.ts"
     },
     {
       "source": "apps/server/src/modules/features/feature-command.service.ts",
@@ -2251,19 +2378,19 @@
     },
     {
       "source": "apps/server/src/modules/features/feature-query.service.ts",
-      "target": "apps/server/src/core/errors/index.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/modules/features/feature-query.service.ts",
+      "target": "apps/server/src/modules/auto-mode/auto-mode.ports.ts"
+    },
+    {
+      "source": "apps/server/src/modules/features/feature-query.service.ts",
+      "target": "apps/server/src/modules/features/application.inputs.ts"
     },
     {
       "source": "apps/server/src/modules/features/feature-query.service.ts",
       "target": "apps/server/src/modules/features/feature.repository.ts"
-    },
-    {
-      "source": "apps/server/src/modules/features/feature-query.service.ts",
-      "target": "apps/server/src/modules/features/feature.schemas.ts"
-    },
-    {
-      "source": "apps/server/src/modules/features/feature-query.service.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
     },
     {
       "source": "apps/server/src/modules/features/feature-query.service.ts",
@@ -2343,11 +2470,7 @@
     },
     {
       "source": "apps/server/src/modules/features/features.module.ts",
-      "target": "apps/server/src/modules/features/feature-command.service.ts"
-    },
-    {
-      "source": "apps/server/src/modules/features/features.module.ts",
-      "target": "apps/server/src/modules/features/feature-query.service.ts"
+      "target": "apps/server/src/modules/features/application.providers.ts"
     },
     {
       "source": "apps/server/src/modules/features/features.module.ts",
@@ -2390,16 +2513,40 @@
       "target": "apps/server/src/core/security/index.ts"
     },
     {
-      "source": "apps/server/src/modules/files/files-command.service.ts",
-      "target": "apps/server/src/core/errors/index.ts"
+      "source": "apps/server/src/modules/files/application.providers.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/files/application.providers.ts",
+      "target": "apps/server/src/core/security/security.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/files/application.providers.ts",
+      "target": "apps/server/src/modules/files/files-command.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/files/application.providers.ts",
+      "target": "apps/server/src/modules/files/files-query.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/files/application.providers.ts",
+      "target": "apps/server/src/modules/files/image-query.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/files/application.providers.ts",
+      "target": "apps/server/src/modules/files/project-file.port.ts"
     },
     {
       "source": "apps/server/src/modules/files/files-command.service.ts",
-      "target": "apps/server/src/core/errors/index.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
       "source": "apps/server/src/modules/files/files-command.service.ts",
-      "target": "apps/server/src/modules/files/files.schemas.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/modules/files/files-command.service.ts",
+      "target": "apps/server/src/modules/files/application.inputs.ts"
     },
     {
       "source": "apps/server/src/modules/files/files-command.service.ts",
@@ -2411,7 +2558,7 @@
     },
     {
       "source": "apps/server/src/modules/files/files-query.service.ts",
-      "target": "apps/server/src/core/errors/index.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
       "source": "apps/server/src/modules/files/files-query.service.ts",
@@ -2419,7 +2566,7 @@
     },
     {
       "source": "apps/server/src/modules/files/files-query.service.ts",
-      "target": "apps/server/src/modules/files/files.schemas.ts"
+      "target": "apps/server/src/modules/files/application.inputs.ts"
     },
     {
       "source": "apps/server/src/modules/files/files-query.service.ts",
@@ -2455,19 +2602,11 @@
     },
     {
       "source": "apps/server/src/modules/files/files.module.ts",
-      "target": "apps/server/src/modules/files/files-command.service.ts"
-    },
-    {
-      "source": "apps/server/src/modules/files/files.module.ts",
-      "target": "apps/server/src/modules/files/files-query.service.ts"
+      "target": "apps/server/src/modules/files/application.providers.ts"
     },
     {
       "source": "apps/server/src/modules/files/files.module.ts",
       "target": "apps/server/src/modules/files/files.controller.ts"
-    },
-    {
-      "source": "apps/server/src/modules/files/files.module.ts",
-      "target": "apps/server/src/modules/files/image-query.service.ts"
     },
     {
       "source": "apps/server/src/modules/files/files.module.ts",
@@ -2483,7 +2622,7 @@
     },
     {
       "source": "apps/server/src/modules/files/image-query.service.ts",
-      "target": "apps/server/src/core/errors/index.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
       "source": "apps/server/src/modules/files/image-query.service.ts",
@@ -2491,7 +2630,7 @@
     },
     {
       "source": "apps/server/src/modules/files/image-query.service.ts",
-      "target": "apps/server/src/modules/files/files.schemas.ts"
+      "target": "apps/server/src/modules/files/application.inputs.ts"
     },
     {
       "source": "apps/server/src/modules/files/image-query.service.ts",
@@ -2538,12 +2677,24 @@
       "target": "apps/server/src/lib/secure-fs.ts"
     },
     {
-      "source": "apps/server/src/modules/git/git-application.service.ts",
-      "target": "apps/server/src/modules/git/git.schemas.ts"
+      "source": "apps/server/src/modules/git/application.providers.ts",
+      "target": "apps/server/src/modules/auto-mode/auto-mode.ports.ts"
+    },
+    {
+      "source": "apps/server/src/modules/git/application.providers.ts",
+      "target": "apps/server/src/modules/git/git-application.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/git/application.providers.ts",
+      "target": "apps/server/src/services/execution-environment/project-git.ts"
     },
     {
       "source": "apps/server/src/modules/git/git-application.service.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
+      "target": "apps/server/src/modules/auto-mode/auto-mode.ports.ts"
+    },
+    {
+      "source": "apps/server/src/modules/git/git-application.service.ts",
+      "target": "apps/server/src/modules/git/application.inputs.ts"
     },
     {
       "source": "apps/server/src/modules/git/git-application.service.ts",
@@ -2579,7 +2730,7 @@
     },
     {
       "source": "apps/server/src/modules/git/git.module.ts",
-      "target": "apps/server/src/modules/git/git-application.service.ts"
+      "target": "apps/server/src/modules/git/application.providers.ts"
     },
     {
       "source": "apps/server/src/modules/git/git.module.ts",
@@ -2596,6 +2747,22 @@
     {
       "source": "apps/server/src/modules/git/git.module.ts",
       "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/application.providers.ts",
+      "target": "apps/server/src/modules/github/github-discovery.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/application.providers.ts",
+      "target": "apps/server/src/modules/github/github-read.port.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/application.providers.ts",
+      "target": "apps/server/src/modules/github/github-review.port.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/application.providers.ts",
+      "target": "apps/server/src/modules/github/github-review.service.ts"
     },
     {
       "source": "apps/server/src/modules/github/github-cli-comments.adapter.ts",
@@ -2679,7 +2846,15 @@
     },
     {
       "source": "apps/server/src/modules/github/github-command.runtime.ts",
+      "target": "apps/server/src/core/platform/git-command-environment.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github-command.runtime.ts",
       "target": "apps/server/src/core/platform/linux-process-group.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github-command.runtime.ts",
+      "target": "apps/server/src/modules/github/github-command.errors.ts"
     },
     {
       "source": "apps/server/src/modules/github/github-command.runtime.ts",
@@ -2691,7 +2866,11 @@
     },
     {
       "source": "apps/server/src/modules/github/github-discovery.service.ts",
-      "target": "apps/server/src/modules/github/github-command.runtime.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github-discovery.service.ts",
+      "target": "apps/server/src/modules/github/github-command.errors.ts"
     },
     {
       "source": "apps/server/src/modules/github/github-discovery.service.ts",
@@ -2723,7 +2902,11 @@
     },
     {
       "source": "apps/server/src/modules/github/github-review.service.ts",
-      "target": "apps/server/src/modules/github/github-command.runtime.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github-review.service.ts",
+      "target": "apps/server/src/modules/github/github-command.errors.ts"
     },
     {
       "source": "apps/server/src/modules/github/github-review.service.ts",
@@ -2735,7 +2918,7 @@
     },
     {
       "source": "apps/server/src/modules/github/github-review.service.ts",
-      "target": "apps/server/src/modules/github/github-review.schemas.ts"
+      "target": "apps/server/src/modules/github/verification.values.ts"
     },
     {
       "source": "apps/server/src/modules/github/github-target.ts",
@@ -2791,6 +2974,10 @@
     },
     {
       "source": "apps/server/src/modules/github/github.module.ts",
+      "target": "apps/server/src/modules/github/application.providers.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/github.module.ts",
       "target": "apps/server/src/modules/github/github-cli-comments.adapter.ts"
     },
     {
@@ -2807,10 +2994,6 @@
     },
     {
       "source": "apps/server/src/modules/github/github.module.ts",
-      "target": "apps/server/src/modules/github/github-discovery.service.ts"
-    },
-    {
-      "source": "apps/server/src/modules/github/github.module.ts",
       "target": "apps/server/src/modules/github/github-read.port.ts"
     },
     {
@@ -2820,10 +3003,6 @@
     {
       "source": "apps/server/src/modules/github/github.module.ts",
       "target": "apps/server/src/modules/github/github-review.port.ts"
-    },
-    {
-      "source": "apps/server/src/modules/github/github.module.ts",
-      "target": "apps/server/src/modules/github/github-review.service.ts"
     },
     {
       "source": "apps/server/src/modules/github/github.module.ts",
@@ -2918,6 +3097,34 @@
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
+      "source": "apps/server/src/modules/ideation/application.providers.ts",
+      "target": "apps/server/src/core/eventing/application-events.ts"
+    },
+    {
+      "source": "apps/server/src/modules/ideation/application.providers.ts",
+      "target": "apps/server/src/modules/features/feature-transition.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/ideation/application.providers.ts",
+      "target": "apps/server/src/modules/features/feature.repository.ts"
+    },
+    {
+      "source": "apps/server/src/modules/ideation/application.providers.ts",
+      "target": "apps/server/src/modules/features/project-feature-serializer.ts"
+    },
+    {
+      "source": "apps/server/src/modules/ideation/application.providers.ts",
+      "target": "apps/server/src/modules/ideation/idea-conversion.store.ts"
+    },
+    {
+      "source": "apps/server/src/modules/ideation/application.providers.ts",
+      "target": "apps/server/src/modules/ideation/ideation-application.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/ideation/application.providers.ts",
+      "target": "apps/server/src/services/ideation-service.ts"
+    },
+    {
       "source": "apps/server/src/modules/ideation/idea-conversion.store.ts",
       "target": "apps/server/src/core/errors/index.ts"
     },
@@ -2927,11 +3134,7 @@
     },
     {
       "source": "apps/server/src/modules/ideation/ideation-application.service.ts",
-      "target": "apps/server/src/core/errors/index.ts"
-    },
-    {
-      "source": "apps/server/src/modules/ideation/ideation-application.service.ts",
-      "target": "apps/server/src/core/eventing/application-events.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
       "source": "apps/server/src/modules/ideation/ideation-application.service.ts",
@@ -2951,11 +3154,11 @@
     },
     {
       "source": "apps/server/src/modules/ideation/ideation-application.service.ts",
-      "target": "apps/server/src/modules/ideation/idea-conversion.store.ts"
+      "target": "apps/server/src/modules/ideation/application.inputs.ts"
     },
     {
       "source": "apps/server/src/modules/ideation/ideation-application.service.ts",
-      "target": "apps/server/src/modules/ideation/ideation.schemas.ts"
+      "target": "apps/server/src/modules/ideation/idea-conversion.store.ts"
     },
     {
       "source": "apps/server/src/modules/ideation/ideation-application.service.ts",
@@ -2963,7 +3166,7 @@
     },
     {
       "source": "apps/server/src/modules/ideation/ideation-jobs.ts",
-      "target": "apps/server/src/core/errors/index.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
       "source": "apps/server/src/modules/ideation/ideation.controller.ts",
@@ -3007,11 +3210,11 @@
     },
     {
       "source": "apps/server/src/modules/ideation/ideation.module.ts",
-      "target": "apps/server/src/modules/ideation/idea-conversion.store.ts"
+      "target": "apps/server/src/modules/ideation/application.providers.ts"
     },
     {
       "source": "apps/server/src/modules/ideation/ideation.module.ts",
-      "target": "apps/server/src/modules/ideation/ideation-application.service.ts"
+      "target": "apps/server/src/modules/ideation/idea-conversion.store.ts"
     },
     {
       "source": "apps/server/src/modules/ideation/ideation.module.ts",
@@ -3038,8 +3241,16 @@
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
+      "source": "apps/server/src/modules/mcp/application.providers.ts",
+      "target": "apps/server/src/modules/mcp/mcp-application.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/mcp/application.providers.ts",
+      "target": "apps/server/src/services/mcp-test-service.ts"
+    },
+    {
       "source": "apps/server/src/modules/mcp/mcp-application.service.ts",
-      "target": "apps/server/src/modules/mcp/mcp.schemas.ts"
+      "target": "apps/server/src/modules/mcp/application.inputs.ts"
     },
     {
       "source": "apps/server/src/modules/mcp/mcp-application.service.ts",
@@ -3064,6 +3275,10 @@
     {
       "source": "apps/server/src/modules/mcp/mcp.module.ts",
       "target": "apps/server/src/core/observability/application-metrics.ts"
+    },
+    {
+      "source": "apps/server/src/modules/mcp/mcp.module.ts",
+      "target": "apps/server/src/modules/mcp/application.providers.ts"
     },
     {
       "source": "apps/server/src/modules/mcp/mcp.module.ts",
@@ -3218,8 +3433,16 @@
       "target": "apps/server/src/services/ntfy-service.ts"
     },
     {
+      "source": "apps/server/src/modules/pipeline/application.providers.ts",
+      "target": "apps/server/src/modules/pipeline/pipeline-application.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/pipeline/application.providers.ts",
+      "target": "apps/server/src/services/pipeline-service.ts"
+    },
+    {
       "source": "apps/server/src/modules/pipeline/pipeline-application.service.ts",
-      "target": "apps/server/src/modules/pipeline/pipeline.schemas.ts"
+      "target": "apps/server/src/modules/pipeline/application.inputs.ts"
     },
     {
       "source": "apps/server/src/modules/pipeline/pipeline-application.service.ts",
@@ -3251,6 +3474,10 @@
     },
     {
       "source": "apps/server/src/modules/pipeline/pipeline.module.ts",
+      "target": "apps/server/src/modules/pipeline/application.providers.ts"
+    },
+    {
+      "source": "apps/server/src/modules/pipeline/pipeline.module.ts",
       "target": "apps/server/src/modules/pipeline/pipeline-application.service.ts"
     },
     {
@@ -3267,11 +3494,15 @@
     },
     {
       "source": "apps/server/src/modules/projects/project-overview.service.ts",
+      "target": "apps/server/src/modules/auto-mode/auto-mode.ports.ts"
+    },
+    {
+      "source": "apps/server/src/modules/projects/project-overview.service.ts",
       "target": "apps/server/src/modules/projects/project-registry.service.ts"
     },
     {
       "source": "apps/server/src/modules/projects/project-overview.service.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
+      "target": "apps/server/src/services/auto-mode/types.ts"
     },
     {
       "source": "apps/server/src/modules/projects/project-overview.service.ts",
@@ -3422,12 +3653,72 @@
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
-      "source": "apps/server/src/modules/providers/claude-verification.service.ts",
+      "source": "apps/server/src/modules/providers/application.providers.ts",
       "target": "apps/server/src/core/config/index.ts"
     },
     {
+      "source": "apps/server/src/modules/providers/application.providers.ts",
+      "target": "apps/server/src/core/platform/claude-verification.runtime.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/application.providers.ts",
+      "target": "apps/server/src/core/platform/codex-credential.runtime.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/application.providers.ts",
+      "target": "apps/server/src/core/platform/codex-verification.runtime.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/application.providers.ts",
+      "target": "apps/server/src/core/platform/setup-status.runtime.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/application.providers.ts",
+      "target": "apps/server/src/modules/providers/application-credentials.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/application.providers.ts",
+      "target": "apps/server/src/modules/providers/claude-verification.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/application.providers.ts",
+      "target": "apps/server/src/modules/providers/codex-verification.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/application.providers.ts",
+      "target": "apps/server/src/modules/providers/github-authentication.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/application.providers.ts",
+      "target": "apps/server/src/modules/providers/provider-connection-command.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/application.providers.ts",
+      "target": "apps/server/src/modules/providers/provider-connection.repository.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/application.providers.ts",
+      "target": "apps/server/src/modules/providers/setup-command.validation.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/application.providers.ts",
+      "target": "apps/server/src/modules/providers/setup-credential-cache.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/application.providers.ts",
+      "target": "apps/server/src/modules/providers/setup-credentials.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/application.providers.ts",
+      "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
       "source": "apps/server/src/modules/providers/claude-verification.service.ts",
-      "target": "apps/server/src/core/errors/index.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/claude-verification.service.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
       "source": "apps/server/src/modules/providers/claude-verification.service.ts",
@@ -3439,7 +3730,15 @@
     },
     {
       "source": "apps/server/src/modules/providers/claude-verification.service.ts",
+      "target": "apps/server/src/modules/providers/setup-command.port.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/claude-verification.service.ts",
       "target": "apps/server/src/modules/providers/setup-credential-cache.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/claude-verification.service.ts",
+      "target": "apps/server/src/modules/providers/verification.values.ts"
     },
     {
       "source": "apps/server/src/modules/providers/claude-verification.service.ts",
@@ -3455,11 +3754,11 @@
     },
     {
       "source": "apps/server/src/modules/providers/codex-verification.service.ts",
-      "target": "apps/server/src/core/config/index.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
       "source": "apps/server/src/modules/providers/codex-verification.service.ts",
-      "target": "apps/server/src/core/errors/index.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
       "source": "apps/server/src/modules/providers/codex-verification.service.ts",
@@ -3475,7 +3774,15 @@
     },
     {
       "source": "apps/server/src/modules/providers/codex-verification.service.ts",
+      "target": "apps/server/src/modules/providers/setup-command.port.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/codex-verification.service.ts",
       "target": "apps/server/src/modules/providers/setup-credential-cache.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/codex-verification.service.ts",
+      "target": "apps/server/src/modules/providers/verification.values.ts"
     },
     {
       "source": "apps/server/src/modules/providers/codex-verification.service.ts",
@@ -3547,11 +3854,11 @@
     },
     {
       "source": "apps/server/src/modules/providers/github-authentication.service.ts",
-      "target": "apps/server/src/core/config/index.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
       "source": "apps/server/src/modules/providers/github-authentication.service.ts",
-      "target": "apps/server/src/core/errors/index.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
       "source": "apps/server/src/modules/providers/github-authentication.service.ts",
@@ -3560,6 +3867,14 @@
     {
       "source": "apps/server/src/modules/providers/github-authentication.service.ts",
       "target": "apps/server/src/modules/providers/provider-connection.repository.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/github-authentication.service.ts",
+      "target": "apps/server/src/modules/providers/setup-command.port.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/github-authentication.service.ts",
+      "target": "apps/server/src/modules/providers/verification.values.ts"
     },
     {
       "source": "apps/server/src/modules/providers/host-setup-json-files.ts",
@@ -3592,6 +3907,14 @@
     {
       "source": "apps/server/src/modules/providers/provider-connection-command.service.ts",
       "target": "apps/server/src/core/platform/setup-status.runtime.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/provider-connection-command.service.ts",
+      "target": "apps/server/src/modules/providers/application.inputs.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/provider-connection-command.service.ts",
+      "target": "apps/server/src/modules/providers/application.outputs.ts"
     },
     {
       "source": "apps/server/src/modules/providers/provider-connection-command.service.ts",
@@ -3807,15 +4130,15 @@
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
-      "target": "apps/server/src/modules/providers/claude-verification.service.ts"
+      "target": "apps/server/src/modules/providers/application.providers.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/providers.module.ts",
+      "target": "apps/server/src/modules/providers/application.providers.ts"
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
       "target": "apps/server/src/modules/providers/codex-model-warmup.service.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/providers.module.ts",
-      "target": "apps/server/src/modules/providers/codex-verification.service.ts"
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
@@ -3839,19 +4162,11 @@
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
-      "target": "apps/server/src/modules/providers/github-authentication.service.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/providers.module.ts",
       "target": "apps/server/src/modules/providers/host-setup-json-files.ts"
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
       "target": "apps/server/src/modules/providers/host-setup-status.service.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/providers.module.ts",
-      "target": "apps/server/src/modules/providers/provider-connection-command.service.ts"
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
@@ -3895,10 +4210,6 @@
     },
     {
       "source": "apps/server/src/modules/providers/providers.module.ts",
-      "target": "apps/server/src/modules/providers/setup-credentials.service.ts"
-    },
-    {
-      "source": "apps/server/src/modules/providers/providers.module.ts",
       "target": "apps/server/src/modules/providers/setup.controller.ts"
     },
     {
@@ -3934,8 +4245,20 @@
       "target": "apps/server/src/services/zai-usage-service.ts"
     },
     {
+      "source": "apps/server/src/modules/providers/setup-command.port.ts",
+      "target": "apps/server/src/modules/providers/verification.values.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/setup-command.validation.ts",
+      "target": "apps/server/src/modules/providers/setup-command.port.ts"
+    },
+    {
       "source": "apps/server/src/modules/providers/setup-credentials.service.ts",
-      "target": "apps/server/src/core/errors/index.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/setup-credentials.service.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
       "source": "apps/server/src/modules/providers/setup-credentials.service.ts",
@@ -3944,6 +4267,14 @@
     {
       "source": "apps/server/src/modules/providers/setup-credentials.service.ts",
       "target": "apps/server/src/modules/providers/provider-connection.repository.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/setup-credentials.service.ts",
+      "target": "apps/server/src/modules/providers/setup-command.port.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/setup-credentials.service.ts",
+      "target": "apps/server/src/modules/providers/verification.values.ts"
     },
     {
       "source": "apps/server/src/modules/providers/setup-credentials.service.ts",
@@ -4018,12 +4349,28 @@
       "target": "apps/server/src/services/agent-service.ts"
     },
     {
+      "source": "apps/server/src/modules/sessions/application.providers.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/sessions/application.providers.ts",
+      "target": "apps/server/src/core/security/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/sessions/application.providers.ts",
+      "target": "apps/server/src/modules/sessions/session-application.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/sessions/application.providers.ts",
+      "target": "apps/server/src/modules/sessions/session-metadata.repository.ts"
+    },
+    {
       "source": "apps/server/src/modules/sessions/session-application.service.ts",
       "target": "apps/server/src/core/config/index.ts"
     },
     {
       "source": "apps/server/src/modules/sessions/session-application.service.ts",
-      "target": "apps/server/src/core/errors/index.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
       "source": "apps/server/src/modules/sessions/session-application.service.ts",
@@ -4031,11 +4378,11 @@
     },
     {
       "source": "apps/server/src/modules/sessions/session-application.service.ts",
-      "target": "apps/server/src/modules/sessions/session-metadata.repository.ts"
+      "target": "apps/server/src/modules/sessions/application.inputs.ts"
     },
     {
       "source": "apps/server/src/modules/sessions/session-application.service.ts",
-      "target": "apps/server/src/modules/sessions/session.schemas.ts"
+      "target": "apps/server/src/modules/sessions/session-metadata.repository.ts"
     },
     {
       "source": "apps/server/src/modules/sessions/session-metadata.repository.ts",
@@ -4059,7 +4406,7 @@
     },
     {
       "source": "apps/server/src/modules/sessions/sessions.module.ts",
-      "target": "apps/server/src/modules/sessions/session-application.service.ts"
+      "target": "apps/server/src/modules/sessions/application.providers.ts"
     },
     {
       "source": "apps/server/src/modules/sessions/sessions.module.ts",
@@ -4082,8 +4429,40 @@
       "target": "apps/server/src/lib/agent-discovery.ts"
     },
     {
+      "source": "apps/server/src/modules/settings/application.providers.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/settings/application.providers.ts",
+      "target": "apps/server/src/core/security/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/settings/application.providers.ts",
+      "target": "apps/server/src/modules/settings/agent-profile.source.ts"
+    },
+    {
+      "source": "apps/server/src/modules/settings/application.providers.ts",
+      "target": "apps/server/src/modules/settings/direct-settings-command.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/settings/application.providers.ts",
+      "target": "apps/server/src/modules/settings/settings-command.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/settings/application.providers.ts",
+      "target": "apps/server/src/modules/settings/settings-domain-events.ts"
+    },
+    {
+      "source": "apps/server/src/modules/settings/application.providers.ts",
+      "target": "apps/server/src/modules/settings/settings-query.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/settings/application.providers.ts",
+      "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
       "source": "apps/server/src/modules/settings/direct-settings-command.service.ts",
-      "target": "apps/server/src/core/errors/index.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
       "source": "apps/server/src/modules/settings/direct-settings-command.service.ts",
@@ -4179,15 +4558,15 @@
     },
     {
       "source": "apps/server/src/modules/settings/settings-command.service.ts",
-      "target": "apps/server/src/core/errors/index.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/modules/settings/settings-command.service.ts",
+      "target": "apps/server/src/modules/settings/application.inputs.ts"
     },
     {
       "source": "apps/server/src/modules/settings/settings-command.service.ts",
       "target": "apps/server/src/modules/settings/settings-domain-events.ts"
-    },
-    {
-      "source": "apps/server/src/modules/settings/settings-command.service.ts",
-      "target": "apps/server/src/modules/settings/settings.schemas.ts"
     },
     {
       "source": "apps/server/src/modules/settings/settings-command.service.ts",
@@ -4211,10 +4590,6 @@
     },
     {
       "source": "apps/server/src/modules/settings/settings-query.service.ts",
-      "target": "apps/server/src/core/security/index.ts"
-    },
-    {
-      "source": "apps/server/src/modules/settings/settings-query.service.ts",
       "target": "apps/server/src/lib/agent-discovery.ts"
     },
     {
@@ -4227,7 +4602,7 @@
     },
     {
       "source": "apps/server/src/modules/settings/settings-query.service.ts",
-      "target": "apps/server/src/modules/settings/settings.schemas.ts"
+      "target": "apps/server/src/modules/settings/application.inputs.ts"
     },
     {
       "source": "apps/server/src/modules/settings/settings-query.service.ts",
@@ -4299,7 +4674,7 @@
     },
     {
       "source": "apps/server/src/modules/settings/settings.module.ts",
-      "target": "apps/server/src/modules/settings/direct-settings-command.service.ts"
+      "target": "apps/server/src/modules/settings/application.providers.ts"
     },
     {
       "source": "apps/server/src/modules/settings/settings.module.ts",
@@ -4315,19 +4690,11 @@
     },
     {
       "source": "apps/server/src/modules/settings/settings.module.ts",
-      "target": "apps/server/src/modules/settings/settings-command.service.ts"
-    },
-    {
-      "source": "apps/server/src/modules/settings/settings.module.ts",
       "target": "apps/server/src/modules/settings/settings-domain-events.ts"
     },
     {
       "source": "apps/server/src/modules/settings/settings.module.ts",
       "target": "apps/server/src/modules/settings/settings-file.repository.ts"
-    },
-    {
-      "source": "apps/server/src/modules/settings/settings.module.ts",
-      "target": "apps/server/src/modules/settings/settings-query.service.ts"
     },
     {
       "source": "apps/server/src/modules/settings/settings.module.ts",
@@ -4530,8 +4897,28 @@
       "target": "apps/server/src/lib/secure-fs.ts"
     },
     {
-      "source": "apps/server/src/modules/worktree/worktree-application.service.ts",
+      "source": "apps/server/src/modules/worktree/application.providers.ts",
       "target": "apps/server/src/core/eventing/application-events.ts"
+    },
+    {
+      "source": "apps/server/src/modules/worktree/application.providers.ts",
+      "target": "apps/server/src/modules/auto-mode/auto-mode.ports.ts"
+    },
+    {
+      "source": "apps/server/src/modules/worktree/application.providers.ts",
+      "target": "apps/server/src/modules/worktree/worktree-application.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/worktree/application.providers.ts",
+      "target": "apps/server/src/services/execution-environment/project-git.ts"
+    },
+    {
+      "source": "apps/server/src/modules/worktree/application.providers.ts",
+      "target": "apps/server/src/services/feature-loader.ts"
+    },
+    {
+      "source": "apps/server/src/modules/worktree/application.providers.ts",
+      "target": "apps/server/src/services/settings-service.ts"
     },
     {
       "source": "apps/server/src/modules/worktree/worktree-application.service.ts",
@@ -4539,11 +4926,11 @@
     },
     {
       "source": "apps/server/src/modules/worktree/worktree-application.service.ts",
-      "target": "apps/server/src/modules/worktree/worktree.schemas.ts"
+      "target": "apps/server/src/modules/auto-mode/auto-mode.ports.ts"
     },
     {
       "source": "apps/server/src/modules/worktree/worktree-application.service.ts",
-      "target": "apps/server/src/services/auto-mode/index.ts"
+      "target": "apps/server/src/modules/worktree/application.inputs.ts"
     },
     {
       "source": "apps/server/src/modules/worktree/worktree-application.service.ts",
@@ -4691,7 +5078,7 @@
     },
     {
       "source": "apps/server/src/modules/worktree/worktree.module.ts",
-      "target": "apps/server/src/modules/worktree/worktree-application.service.ts"
+      "target": "apps/server/src/modules/worktree/application.providers.ts"
     },
     {
       "source": "apps/server/src/modules/worktree/worktree.module.ts",
@@ -5750,66 +6137,6 @@
       "target": "apps/server/src/services/typed-event-bus.ts"
     },
     {
-      "source": "apps/server/src/services/auto-mode/compat.ts",
-      "target": "apps/server/src/core/observability/operation-observer.ts"
-    },
-    {
-      "source": "apps/server/src/services/auto-mode/compat.ts",
-      "target": "apps/server/src/lib/events.ts"
-    },
-    {
-      "source": "apps/server/src/services/auto-mode/compat.ts",
-      "target": "apps/server/src/modules/auto-mode/project-run-context.registry.ts"
-    },
-    {
-      "source": "apps/server/src/services/auto-mode/compat.ts",
-      "target": "apps/server/src/modules/orchestration/feature-run-coordinator.service.ts"
-    },
-    {
-      "source": "apps/server/src/services/auto-mode/compat.ts",
-      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
-    },
-    {
-      "source": "apps/server/src/services/auto-mode/compat.ts",
-      "target": "apps/server/src/modules/providers/tool-policy.service.ts"
-    },
-    {
-      "source": "apps/server/src/services/auto-mode/compat.ts",
-      "target": "apps/server/src/providers/openai-compatible/checkpoint.ts"
-    },
-    {
-      "source": "apps/server/src/services/auto-mode/compat.ts",
-      "target": "apps/server/src/services/auto-mode/facade.ts"
-    },
-    {
-      "source": "apps/server/src/services/auto-mode/compat.ts",
-      "target": "apps/server/src/services/auto-mode/global-service.ts"
-    },
-    {
-      "source": "apps/server/src/services/auto-mode/compat.ts",
-      "target": "apps/server/src/services/auto-mode/types.ts"
-    },
-    {
-      "source": "apps/server/src/services/auto-mode/compat.ts",
-      "target": "apps/server/src/services/claude-usage-service.ts"
-    },
-    {
-      "source": "apps/server/src/services/auto-mode/compat.ts",
-      "target": "apps/server/src/services/feature-loader.ts"
-    },
-    {
-      "source": "apps/server/src/services/auto-mode/compat.ts",
-      "target": "apps/server/src/services/notification-service.ts"
-    },
-    {
-      "source": "apps/server/src/services/auto-mode/compat.ts",
-      "target": "apps/server/src/services/pipeline-service.ts"
-    },
-    {
-      "source": "apps/server/src/services/auto-mode/compat.ts",
-      "target": "apps/server/src/services/settings-service.ts"
-    },
-    {
       "source": "apps/server/src/services/auto-mode/facade.ts",
       "target": "apps/server/src/core/errors/domain-errors.ts"
     },
@@ -5923,6 +6250,10 @@
     },
     {
       "source": "apps/server/src/services/auto-mode/global-service.ts",
+      "target": "apps/server/src/services/feature-execution-intents.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/global-service.ts",
       "target": "apps/server/src/services/feature-loader.ts"
     },
     {
@@ -5956,6 +6287,70 @@
     {
       "source": "apps/server/src/services/auto-mode/index.ts",
       "target": "apps/server/src/services/auto-mode/types.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/runtime.ts",
+      "target": "apps/server/src/core/observability/operation-observer.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/runtime.ts",
+      "target": "apps/server/src/lib/events.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/runtime.ts",
+      "target": "apps/server/src/modules/auto-mode/project-run-context.registry.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/runtime.ts",
+      "target": "apps/server/src/modules/orchestration/feature-run-coordinator.service.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/runtime.ts",
+      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/runtime.ts",
+      "target": "apps/server/src/modules/providers/tool-policy.service.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/runtime.ts",
+      "target": "apps/server/src/providers/openai-compatible/checkpoint.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/runtime.ts",
+      "target": "apps/server/src/services/auto-mode/facade.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/runtime.ts",
+      "target": "apps/server/src/services/auto-mode/global-service.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/runtime.ts",
+      "target": "apps/server/src/services/auto-mode/types.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/runtime.ts",
+      "target": "apps/server/src/services/claude-usage-service.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/runtime.ts",
+      "target": "apps/server/src/services/feature-execution-intents.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/runtime.ts",
+      "target": "apps/server/src/services/feature-loader.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/runtime.ts",
+      "target": "apps/server/src/services/notification-service.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/runtime.ts",
+      "target": "apps/server/src/services/pipeline-service.ts"
+    },
+    {
+      "source": "apps/server/src/services/auto-mode/runtime.ts",
+      "target": "apps/server/src/services/settings-service.ts"
     },
     {
       "source": "apps/server/src/services/auto-mode/types.ts",
@@ -6067,7 +6462,7 @@
     },
     {
       "source": "apps/server/src/services/codex-model-cache-service.ts",
-      "target": "apps/server/src/core/errors/index.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
       "source": "apps/server/src/services/codex-model-cache-service.ts",
@@ -6106,6 +6501,14 @@
       "target": "apps/server/src/modules/orchestration/feature-run-state-machine.ts"
     },
     {
+      "source": "apps/server/src/services/concurrency-manager.ts",
+      "target": "apps/server/src/services/feature-execution-intents.ts"
+    },
+    {
+      "source": "apps/server/src/services/concurrency-manager.ts",
+      "target": "apps/server/src/services/feature-execution-uncertainty.ts"
+    },
+    {
       "source": "apps/server/src/services/dev-server-service.ts",
       "target": "apps/server/src/lib/events.ts"
     },
@@ -6127,7 +6530,7 @@
     },
     {
       "source": "apps/server/src/services/event-history-service.ts",
-      "target": "apps/server/src/core/errors/index.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
       "source": "apps/server/src/services/event-history-service.ts",
@@ -6619,6 +7022,10 @@
     },
     {
       "source": "apps/server/src/services/execution-service.ts",
+      "target": "apps/server/src/services/feature-execution-uncertainty.ts"
+    },
+    {
+      "source": "apps/server/src/services/execution-service.ts",
       "target": "apps/server/src/services/pipeline-service.ts"
     },
     {
@@ -6654,12 +7061,32 @@
       "target": "apps/server/src/services/pipeline-orchestrator.ts"
     },
     {
+      "source": "apps/server/src/services/feature-execution-intents.ts",
+      "target": "apps/server/src/services/execution-filesystem.ts"
+    },
+    {
+      "source": "apps/server/src/services/feature-execution-intents.ts",
+      "target": "apps/server/src/services/feature-execution-uncertainty.ts"
+    },
+    {
+      "source": "apps/server/src/services/feature-execution-uncertainty.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/services/feature-execution-uncertainty.ts",
+      "target": "apps/server/src/providers/provider-execution-scope.ts"
+    },
+    {
+      "source": "apps/server/src/services/feature-execution-uncertainty.ts",
+      "target": "apps/server/src/services/execution-environment/runtime.ts"
+    },
+    {
       "source": "apps/server/src/services/feature-export-service.ts",
       "target": "apps/server/src/services/feature-loader.ts"
     },
     {
       "source": "apps/server/src/services/feature-loader.ts",
-      "target": "apps/server/src/core/errors/index.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
       "source": "apps/server/src/services/feature-loader.ts",
@@ -6711,10 +7138,6 @@
     },
     {
       "source": "apps/server/src/services/ideation-service.ts",
-      "target": "apps/server/src/lib/xml-extractor.ts"
-    },
-    {
-      "source": "apps/server/src/services/ideation-service.ts",
       "target": "apps/server/src/modules/ideation/ideation-jobs.ts"
     },
     {
@@ -6727,10 +7150,6 @@
     },
     {
       "source": "apps/server/src/services/ideation-service.ts",
-      "target": "apps/server/src/providers/openai-compatible/execution.ts"
-    },
-    {
-      "source": "apps/server/src/services/ideation-service.ts",
       "target": "apps/server/src/services/execution-environment/local.ts"
     },
     {
@@ -6739,6 +7158,66 @@
     },
     {
       "source": "apps/server/src/services/ideation-service.ts",
+      "target": "apps/server/src/services/ideation/idea-repository.ts"
+    },
+    {
+      "source": "apps/server/src/services/ideation-service.ts",
+      "target": "apps/server/src/services/ideation/project-analysis.ts"
+    },
+    {
+      "source": "apps/server/src/services/ideation-service.ts",
+      "target": "apps/server/src/services/ideation/project-context-reader.ts"
+    },
+    {
+      "source": "apps/server/src/services/ideation-service.ts",
+      "target": "apps/server/src/services/ideation/prompt-catalog.ts"
+    },
+    {
+      "source": "apps/server/src/services/ideation-service.ts",
+      "target": "apps/server/src/services/ideation/text-stream.ts"
+    },
+    {
+      "source": "apps/server/src/services/ideation-service.ts",
+      "target": "apps/server/src/services/settings-service.ts"
+    },
+    {
+      "source": "apps/server/src/services/ideation/idea-repository.ts",
+      "target": "apps/server/src/lib/secure-fs.ts"
+    },
+    {
+      "source": "apps/server/src/services/ideation/project-analysis.ts",
+      "target": "apps/server/src/lib/events.ts"
+    },
+    {
+      "source": "apps/server/src/services/ideation/project-analysis.ts",
+      "target": "apps/server/src/services/ideation/idea-repository.ts"
+    },
+    {
+      "source": "apps/server/src/services/ideation/project-analysis.ts",
+      "target": "apps/server/src/services/ideation/project-context-reader.ts"
+    },
+    {
+      "source": "apps/server/src/services/ideation/project-context-reader.ts",
+      "target": "apps/server/src/lib/xml-extractor.ts"
+    },
+    {
+      "source": "apps/server/src/services/ideation/text-stream.ts",
+      "target": "apps/server/src/lib/sdk-options.ts"
+    },
+    {
+      "source": "apps/server/src/services/ideation/text-stream.ts",
+      "target": "apps/server/src/modules/providers/provider-registry.service.ts"
+    },
+    {
+      "source": "apps/server/src/services/ideation/text-stream.ts",
+      "target": "apps/server/src/providers/openai-compatible/checkpoint.ts"
+    },
+    {
+      "source": "apps/server/src/services/ideation/text-stream.ts",
+      "target": "apps/server/src/providers/openai-compatible/execution.ts"
+    },
+    {
+      "source": "apps/server/src/services/ideation/text-stream.ts",
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
@@ -6811,7 +7290,23 @@
     },
     {
       "source": "apps/server/src/services/merge-service.ts",
+      "target": "apps/server/src/core/platform/git-command-environment.ts"
+    },
+    {
+      "source": "apps/server/src/services/merge-service.ts",
       "target": "apps/server/src/lib/events.ts"
+    },
+    {
+      "source": "apps/server/src/services/merge-service.ts",
+      "target": "apps/server/src/services/execution-environment/local.ts"
+    },
+    {
+      "source": "apps/server/src/services/merge-service.ts",
+      "target": "apps/server/src/services/execution-environment/runtime.ts"
+    },
+    {
+      "source": "apps/server/src/services/merge-service.ts",
+      "target": "apps/server/src/services/feature-execution-uncertainty.ts"
     },
     {
       "source": "apps/server/src/services/notification-service.ts",
@@ -6859,6 +7354,10 @@
     },
     {
       "source": "apps/server/src/services/pipeline-orchestrator.ts",
+      "target": "apps/server/src/services/feature-execution-uncertainty.ts"
+    },
+    {
+      "source": "apps/server/src/services/pipeline-orchestrator.ts",
       "target": "apps/server/src/services/feature-state-manager.ts"
     },
     {
@@ -6872,6 +7371,10 @@
     {
       "source": "apps/server/src/services/pipeline-orchestrator.ts",
       "target": "apps/server/src/services/pipeline-types.ts"
+    },
+    {
+      "source": "apps/server/src/services/pipeline-orchestrator.ts",
+      "target": "apps/server/src/services/pipeline/prompt-template.ts"
     },
     {
       "source": "apps/server/src/services/pipeline-orchestrator.ts",
@@ -6911,7 +7414,7 @@
     },
     {
       "source": "apps/server/src/services/project-event-storage.ts",
-      "target": "apps/server/src/core/errors/index.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
       "source": "apps/server/src/services/pull-service.ts",
@@ -6927,7 +7430,7 @@
     },
     {
       "source": "apps/server/src/services/recovery-service.ts",
-      "target": "apps/server/src/core/errors/index.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
       "source": "apps/server/src/services/recovery-service.ts",
@@ -6955,7 +7458,7 @@
     },
     {
       "source": "apps/server/src/services/settings-mutation-queue.ts",
-      "target": "apps/server/src/core/errors/index.ts"
+      "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
       "source": "apps/server/src/services/settings-service.ts",
@@ -7112,6 +7615,26 @@
     {
       "source": "apps/server/src/services/worktree-branch-service.ts",
       "target": "apps/server/src/services/branch-utils.ts"
+    },
+    {
+      "source": "apps/server/src/services/worktree-resolver.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/services/worktree-resolver.ts",
+      "target": "apps/server/src/services/execution-environment/bindings.ts"
+    },
+    {
+      "source": "apps/server/src/services/worktree-resolver.ts",
+      "target": "apps/server/src/services/execution-environment/runtime.ts"
+    },
+    {
+      "source": "apps/server/src/services/worktree-resolver.ts",
+      "target": "apps/server/src/services/feature-execution-uncertainty.ts"
+    },
+    {
+      "source": "apps/server/src/services/worktree-resolver.ts",
+      "target": "apps/server/src/services/merge-service.ts"
     },
     {
       "source": "apps/server/src/services/worktree-resolver.ts",

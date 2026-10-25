@@ -12,7 +12,7 @@ import { createEventEmitter, type EventEmitter } from '../../src/lib/events.js';
 import { SettingsService } from '../../src/services/settings-service.js';
 import { ManagedDevServerService } from '../../src/services/execution-environment/dev-server.js';
 import { ManagedTestRunnerService } from '../../src/services/execution-environment/test-runner.js';
-import { AutoModeServiceCompat } from '../../src/services/auto-mode/compat.js';
+import { AutoModeServiceCompat } from '../../src/services/auto-mode/index.js';
 import type { ProviderRegistration } from '../../src/modules/providers/provider-registry.service.js';
 
 /** Actual native composition; overrides are explicit test ports, never factory.services/legacy routes. */

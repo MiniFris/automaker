@@ -20,10 +20,14 @@ export function binarySourceDigest(contents) {
 // headers/bounded pipeFile; native FS ownership and ZIP writer. Updating a pinned
 // implementation requires source review and byte/lifecycle acceptance again.
 export const BINARY_SOURCE_APPROVALS = Object.freeze({
+  'apps/server/src/modules/files/application.providers.ts':
+    '79d3d3cd5e49a90887066f39b880e27f38100bf77e1e1556e036fa3efbb33288',
+  'apps/server/src/modules/files/files.module.ts':
+    'cf2ed9d8ae3ce9cff5b98c7f35fa32f501af876dbc9bbd85df78fd0a3ff6d994',
   'apps/server/src/modules/files/files.controller.ts':
     '560a30cfa1eee69971f3d4b2f845b21184fb01bac26c3889eb959742c614eb7a',
   'apps/server/src/modules/files/image-query.service.ts':
-    '206dd669fb7f65365258fc814804c321ca65989ca2f6ab16b71c9e0622d2ff5e',
+    '338e627d522b94a154c6d8b1d8e0f0f3e300f17dd6d841c52564017adf8bc544',
   'apps/server/src/modules/files/local-download.service.ts':
     '306136794856033e259e6c7804d6ae8c47ee30100e9d3f76f93403539236c519',
   'apps/server/src/modules/files/local-zip-archive.ts':

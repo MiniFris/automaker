@@ -1,3 +1,4 @@
+import type { FeatureExecutionIntents } from '../feature-execution-intents.js';
 /**
  * GlobalAutoModeService - Global operations for auto-mode that span across all projects
  *
@@ -38,6 +39,7 @@ export class GlobalAutoModeService {
   private readonly worktreeResolver: WorktreeResolver;
   private readonly featureStateManager: FeatureStateManager;
   private readonly featureLoader: FeatureLoader;
+  private disposal?: Promise<void>;
 
   constructor(
     events: EventEmitter,
@@ -45,14 +47,17 @@ export class GlobalAutoModeService {
     featureLoader: FeatureLoader = new FeatureLoader(),
     notificationService: NotificationService | null = null,
     pipeline: PipelineService,
-    coordinator?: FeatureRunCoordinator
+    coordinator?: FeatureRunCoordinator,
+    executionIntents?: FeatureExecutionIntents,
+    hostEnvironment?: Readonly<NodeJS.ProcessEnv>
   ) {
     this.featureLoader = featureLoader;
     this.eventBus = new TypedEventBus(events);
-    this.worktreeResolver = new WorktreeResolver(settingsService);
+    this.worktreeResolver = new WorktreeResolver(settingsService, hostEnvironment);
     this.concurrencyManager = new ConcurrencyManager(
       (p) => this.worktreeResolver.getCurrentBranch(p),
-      coordinator
+      coordinator,
+      executionIntents
     );
     this.featureStateManager = new FeatureStateManager(
       events,
@@ -124,7 +129,13 @@ export class GlobalAutoModeService {
   }
 
   onModuleDestroy(): Promise<void> {
-    return this.featureStateManager.destroy();
+    return (this.disposal ??= Promise.allSettled([
+      this.featureStateManager.destroy(),
+      this.worktreeResolver.close(),
+    ]).then((results) => {
+      const failure = results.find((result) => result.status === 'rejected');
+      if (failure?.status === 'rejected') throw failure.reason;
+    }));
   }
 
   // ===========================================================================

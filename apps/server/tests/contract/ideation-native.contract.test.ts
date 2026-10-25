@@ -1,9 +1,13 @@
+import { APPLICATION_EVENTS } from '../../src/core/eventing/application-events.js';
+import type { EventEmitter } from '../../src/lib/events.js';
+import * as legacyFilesystem from '../../src/lib/secure-fs.js';
+import { ProjectFeatureSerializer } from '../../src/modules/features/project-feature-serializer.js';
 import { mkdir, mkdtemp, readFile, rm, writeFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { ExecuteOptions } from '@automaker/types';
-import { getFeatureDir, getIdeasDir } from '@automaker/platform';
+import { getFeatureDir, getIdeasDir, getIdeaPath } from '@automaker/platform';
 import { createNestApplication } from '../../src/main.js';
 import { IdeationService } from '../../src/services/ideation-service.js';
 import { FeatureLoader } from '../../src/services/feature-loader.js';
@@ -260,4 +264,237 @@ it('aborts and drains owned messages on shutdown without interrupting another ap
       category: 'feature',
     })
   ).toMatchObject({ title: 'Still active' });
+});
+
+it('uses captured repository/analysis filesystems across two apps despite hostile legacy IO', async () => {
+  const first = await start('collaborator-one'),
+    second = await start('collaborator-two');
+  for (const runtime of [first, second]) {
+    const collaborators = runtime.service as unknown as {
+      ideas: { filesystem: unknown };
+      analysis: { filesystem: unknown };
+    };
+    expect(collaborators.ideas.filesystem).toBe(runtime.app.get(SECURE_FILESYSTEM));
+    expect(collaborators.analysis.filesystem).toBe(runtime.app.get(SECURE_FILESYSTEM));
+    await writeFile(
+      path.join(runtime.project, 'package.json'),
+      JSON.stringify({ name: path.basename(runtime.project), dependencies: { react: 'fixture' } })
+    );
+  }
+  for (const method of ['readFile', 'writeFile', 'readdir'] as const)
+    vi.spyOn(legacyFilesystem, method).mockImplementation(() => {
+      throw new Error('ambient filesystem forbidden');
+    });
+  for (const [index, runtime] of [first, second].entries()) {
+    const created = await runtime.post('ideas/create', {
+      projectPath: runtime.project,
+      idea: { title: `Owned ${index}`, description: 'captured filesystem', category: 'feature' },
+    });
+    expect(created).toMatchObject({
+      status: 200,
+      body: { success: true, idea: { title: `Owned ${index}` } },
+    });
+    expect((await runtime.service.getIdeas(runtime.project)).map((idea) => idea.title)).toEqual([
+      `Owned ${index}`,
+    ]);
+    expect((await runtime.post('analyze', { projectPath: runtime.project })).status).toBe(200);
+    await vi.waitFor(async () =>
+      expect(await runtime.service.getCachedAnalysis(runtime.project)).toMatchObject({
+        projectPath: runtime.project,
+        dependencies: ['react'],
+      })
+    );
+  }
+  expect((await first.service.getIdeas(first.project))[0].title).toBe('Owned 0');
+});
+
+it('serializes actual concurrent HTTP idea patches and drains a held repository write before FS shutdown', async () => {
+  const runtime = await start('repository-mutations');
+  const idea = await runtime.service.createIdea(runtime.project, {
+    title: 'Original',
+    description: 'Original body',
+    category: 'feature',
+  });
+  const filesystem = runtime.app.get(SECURE_FILESYSTEM);
+  const originalRead = filesystem.readFile.bind(filesystem);
+  let releaseRead!: () => void;
+  const heldRead = new Promise<void>((resolve) => {
+    releaseRead = resolve;
+  });
+  let captured = false,
+    readCount = 0;
+  vi.spyOn(filesystem, 'readFile').mockImplementation(
+    async (...args: Parameters<typeof filesystem.readFile>) => {
+      const content = await originalRead(...args);
+      if (String(args[0]) === getIdeaPath(runtime.project, idea.id)) {
+        readCount++;
+        if (!captured) {
+          captured = true;
+          await heldRead;
+        }
+      }
+      return content;
+    }
+  );
+  const serialization = vi.spyOn(runtime.app.get(ProjectFeatureSerializer), 'run');
+  const title = runtime.post('ideas/update', {
+    projectPath: runtime.project,
+    ideaId: idea.id,
+    updates: { title: 'Changed title' },
+  });
+  await vi.waitFor(() => expect(captured).toBe(true));
+  const notes = runtime.post('ideas/update', {
+    projectPath: runtime.project,
+    ideaId: idea.id,
+    updates: { notes: 'Independent notes' },
+  });
+  try {
+    await vi.waitFor(() => expect(serialization).toHaveBeenCalledTimes(2));
+    expect(readCount).toBe(1);
+  } finally {
+    releaseRead();
+  }
+  expect((await title).status).toBe(200);
+  expect((await notes).status).toBe(200);
+  expect(await runtime.service.getIdea(runtime.project, idea.id)).toMatchObject({
+    title: 'Changed title',
+    notes: 'Independent notes',
+  });
+  const originalWrite = filesystem.writeFile.bind(filesystem);
+  let releaseWrite!: () => void;
+  const heldWrite = new Promise<void>((resolve) => {
+    releaseWrite = resolve;
+  });
+  let writing = false;
+  vi.spyOn(filesystem, 'writeFile').mockImplementation(
+    async (...args: Parameters<typeof filesystem.writeFile>) => {
+      if (String(args[0]).startsWith(getIdeaPath(runtime.project, idea.id) + '.tmp.')) {
+        writing = true;
+        await heldWrite;
+      }
+      return originalWrite(...args);
+    }
+  );
+  const update = runtime.post('ideas/update', {
+    projectPath: runtime.project,
+    ideaId: idea.id,
+    updates: { description: 'Drained update' },
+  });
+  await vi.waitFor(() => expect(writing).toBe(true));
+  const closingOwner = vi.spyOn(runtime.service, 'onModuleDestroy');
+  const barrier = vi.spyOn(filesystem, 'beforeApplicationShutdown');
+  let closed = false;
+  const closing = runtime.app.close().then(() => {
+    closed = true;
+  });
+  try {
+    await vi.waitFor(() => expect(closingOwner).toHaveBeenCalledOnce());
+    expect(closed).toBe(false);
+    expect(barrier).not.toHaveBeenCalled();
+  } finally {
+    releaseWrite();
+  }
+  expect((await update).status).toBe(200);
+  await closing;
+  expect(barrier).toHaveBeenCalledOnce();
+  expect(JSON.parse(await readFile(getIdeaPath(runtime.project, idea.id), 'utf8'))).toMatchObject({
+    title: 'Changed title',
+    notes: 'Independent notes',
+    description: 'Drained update',
+  });
+});
+
+class NormalizedTextProvider extends MockProvider {
+  readonly calls: ExecuteOptions[] = [];
+  protected async *execute(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+    this.calls.push(options);
+    yield {
+      type: 'assistant',
+      message: {
+        role: 'assistant',
+        content: [
+          { type: 'text', text: 'partial-' },
+          { type: 'text', text: 'text' },
+        ],
+      },
+    };
+    yield {
+      type: 'result',
+      subtype: 'success',
+      result:
+        this.calls.length === 1
+          ? 'Final answer'
+          : JSON.stringify([
+              { title: 'Structured idea', description: 'Final JSON', priority: 'high' },
+            ]),
+    };
+    yield {
+      type: 'assistant',
+      message: {
+        role: 'assistant',
+        content: [{ type: 'text', text: this.calls.length === 1 ? '!' : ' ' }],
+      },
+    };
+  }
+}
+
+it('shares native text normalization while preserving message progress and structured suggestion results', async () => {
+  const provider = new NormalizedTextProvider('claude');
+  const runtime = await start('text-normalization', provider);
+  const events: Array<{ type: string; payload: Record<string, unknown> }> = [];
+  const unsubscribe = runtime.app
+    .get<EventEmitter>(APPLICATION_EVENTS)
+    .subscribe((type, payload) =>
+      events.push({ type, payload: payload as Record<string, unknown> })
+    );
+  try {
+    const session = await runtime.service.startSession(runtime.project);
+    expect(
+      (await runtime.post('session/message', { sessionId: session.id, message: 'Question' })).status
+    ).toBe(200);
+    await vi.waitFor(() => expect(runtime.service.isSessionRunning(session.id)).toBe(false));
+    expect(
+      (await runtime.service.getSession(runtime.project, session.id))?.messages.map(
+        (message) => message.content
+      )
+    ).toEqual(['Question', 'Final answer!']);
+    expect(
+      events
+        .filter((event) => event.type === 'ideation:stream' && event.payload.type === 'stream')
+        .map((event) => event.payload.content)
+    ).toEqual(['partial-', 'partial-text', 'Final answer!']);
+    const prompt = runtime.service.getAllPrompts()[0];
+    const result = await runtime.post('suggestions/generate', {
+      projectPath: runtime.project,
+      promptId: prompt.id,
+      category: prompt.category,
+      count: 1,
+    });
+    expect(result).toMatchObject({
+      status: 200,
+      body: {
+        success: true,
+        suggestions: [{ title: 'Structured idea', description: 'Final JSON', priority: 'high' }],
+      },
+    });
+    expect(
+      events
+        .filter((event) => event.type === 'ideation:suggestions')
+        .map((event) => event.payload.type)
+    ).toEqual(['started', 'complete']);
+    expect(provider.calls).toHaveLength(2);
+    expect(provider.calls[0]).toMatchObject({
+      maxTurns: 1,
+      originalModel: expect.any(String),
+      cwd: runtime.project,
+    });
+    expect(provider.calls[1]).toMatchObject({
+      maxTurns: 1,
+      allowedTools: [],
+      readOnly: true,
+      cwd: runtime.project,
+    });
+  } finally {
+    unsubscribe();
+  }
 });

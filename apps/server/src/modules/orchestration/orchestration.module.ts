@@ -8,7 +8,7 @@ import { HOST_ENVIRONMENT, WORKING_DIRECTORY } from '../../core/config/index.js'
 @Global()
 @Module({
   providers: [
-    FeatureRunCoordinator,
+    { provide: FeatureRunCoordinator, useFactory: () => new FeatureRunCoordinator() },
     { provide: NtfyService, useFactory: () => new NtfyService() },
     {
       provide: EventHookService,
