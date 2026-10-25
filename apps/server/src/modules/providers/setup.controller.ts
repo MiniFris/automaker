@@ -35,7 +35,7 @@ import {
   ProviderRefreshQuerySchema,
   SetupQueryValueSchema,
 } from '@automaker/contracts/domains/setup-query';
-import { Body, Controller, Delete, Get, HttpCode, Inject, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Inject, Post, Query } from '@nestjs/common';
 import {
   CliConnectionProviderSchema,
   ProviderDisconnectRequestSchema,
@@ -64,7 +64,8 @@ import {
   type ProviderDisconnectRequest,
   type ProviderReconnectRequest,
 } from '@automaker/contracts';
-import type { Request } from 'express';
+import { ClientIdentity } from '../../core/http/request-context.decorators.js';
+import type { ClientIdentityContext } from '@automaker/contracts/domains/request-context';
 
 import { Public } from '../../core/auth/index.js';
 import { SetupCredentialsService } from './setup-credentials.service.js';
@@ -132,27 +133,19 @@ export class SetupController {
   @Post('store-api-key') @HttpCode(200) async storeApiKey(
     @Body(new ZodValidationPipe(SetupCredentialStoreRequestSchema))
     body: SetupCredentialStoreRequest,
-    @Req() request: Request
+    @ClientIdentity() client: ClientIdentityContext
   ) {
     return SetupCredentialMutationResponseSchema.parse(
-      await this.credentials.change(
-        'store',
-        body,
-        request.ip || request.socket.remoteAddress || 'unknown'
-      )
+      await this.credentials.change('store', body, client.clientId)
     );
   }
   @Post('delete-api-key') @HttpCode(200) async deleteApiKey(
     @Body(new ZodValidationPipe(SetupCredentialDeleteRequestSchema))
     body: SetupCredentialDeleteRequest,
-    @Req() request: Request
+    @ClientIdentity() client: ClientIdentityContext
   ) {
     return SetupCredentialMutationResponseSchema.parse(
-      await this.credentials.change(
-        'delete',
-        body,
-        request.ip || request.socket.remoteAddress || 'unknown'
-      )
+      await this.credentials.change('delete', body, client.clientId)
     );
   }
   @Get('api-keys') async apiKeys() {
@@ -168,10 +161,10 @@ export class SetupController {
   }
   @Post('verify-claude-auth') @HttpCode(200) async verifyClaudeAuth(
     @Body(new ZodValidationPipe(ClaudeVerificationRequestSchema)) body: ClaudeVerificationRequest,
-    @Req() request: Request
+    @ClientIdentity() client: ClientIdentityContext
   ) {
     return ClaudeVerificationResponseSchema.parse(
-      await this.verification.verify(body, request.ip || request.socket.remoteAddress || 'unknown')
+      await this.verification.verify(body, client.clientId)
     );
   }
   @Get('codex-verification-target') async codexVerificationTarget(
@@ -183,13 +176,10 @@ export class SetupController {
   }
   @Post('verify-codex-auth') @HttpCode(200) async verifyCodexAuth(
     @Body(new ZodValidationPipe(CodexVerificationRequestSchema)) body: CodexVerificationRequest,
-    @Req() request: Request
+    @ClientIdentity() client: ClientIdentityContext
   ) {
     return CodexVerificationResponseSchema.parse(
-      await this.codexVerification.verify(
-        body,
-        request.ip || request.socket.remoteAddress || 'unknown'
-      )
+      await this.codexVerification.verify(body, client.clientId)
     );
   }
   @Get('gh-status') async ghStatus() {
@@ -201,13 +191,10 @@ export class SetupController {
   @Post('verify-github-auth') @HttpCode(200) async verifyGithubAuth(
     @Body(new ZodValidationPipe(GithubAuthenticationRequestSchema))
     body: GithubAuthenticationRequest,
-    @Req() request: Request
+    @ClientIdentity() client: ClientIdentityContext
   ) {
     return GithubAuthenticationResponseSchema.parse(
-      await this.githubAuthentication.verify(
-        body,
-        request.ip || request.socket.remoteAddress || 'unknown'
-      )
+      await this.githubAuthentication.verify(body, client.clientId)
     );
   }
   @Get('cursor-status') async cursorStatus() {

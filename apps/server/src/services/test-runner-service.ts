@@ -729,6 +729,21 @@ class TestRunnerService {
   /**
    * List all test sessions (optionally filter by worktree)
    */
+  /** In-memory owned state only; completed history is not an active process. */
+  runtimeDiagnostics(): { active: number; pending: number; unknownCleanup: number } {
+    const sessions = [...this.sessions.values()];
+    return {
+      active: sessions.filter(
+        (session) =>
+          session.status === 'running' || session.status === 'pending' || session.cleanupUnknown
+      ).length,
+      pending: this.runtime
+        ? this.acceptedStarts.size
+        : sessions.filter((session) => session.status === 'pending').length,
+      unknownCleanup: sessions.filter((session) => session.cleanupUnknown).length,
+    };
+  }
+
   listSessions(worktreePath?: string): {
     success: boolean;
     result: {

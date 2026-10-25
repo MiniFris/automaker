@@ -1,15 +1,15 @@
+import { Body, Controller, Get, HttpCode, HttpException, Inject, Post, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpException,
-  Inject,
-  Post,
-  Req,
-  Res,
-} from '@nestjs/common';
-import type { Request, Response } from 'express';
+  ClientIdentity,
+  HttpAuthentication,
+  SessionCookie,
+} from '../http/request-context.decorators.js';
+import type {
+  ClientIdentityContext,
+  HttpAuthenticationContext,
+  SessionCookieContext,
+} from '@automaker/contracts/domains/request-context';
 import { UnauthorizedDomainError } from '../errors/index.js';
 import { ZodValidationPipe } from '../validation/zod-validation.pipe.js';
 import { AuthService } from './auth.service.js';
@@ -35,10 +35,10 @@ export class AuthController {
   @Public()
   @Get('status')
   async status(
-    @Req() request: Request,
+    @HttpAuthentication() context: HttpAuthenticationContext,
     @Res({ passthrough: true }) response: Response
   ): Promise<Record<string, unknown>> {
-    let authenticated = this.auth.isRequestAuthenticated(request);
+    let authenticated = this.auth.isContextAuthenticated(context);
     if (!authenticated && this.config.auth.autoLogin && this.config.environment !== 'production') {
       response.cookie(
         this.auth.sessionCookieName,
@@ -54,11 +54,11 @@ export class AuthController {
   @Post('login')
   @HttpCode(200)
   async login(
-    @Req() request: Request,
+    @ClientIdentity() client: ClientIdentityContext,
     @Res({ passthrough: true }) response: Response,
     @Body(new ZodValidationPipe(LoginRequestSchema)) input: LoginRequest
   ): Promise<Record<string, unknown>> {
-    const clientIp = this.clientIp(request);
+    const clientIp = client.clientId;
     const rateLimit = this.attempts.check(clientIp);
     if (!rateLimit.allowed)
       throw new HttpException(
@@ -92,10 +92,10 @@ export class AuthController {
   @Post('logout')
   @HttpCode(200)
   async logout(
-    @Req() request: Request,
+    @SessionCookie() cookie: SessionCookieContext,
     @Res({ passthrough: true }) response: Response
   ): Promise<Record<string, unknown>> {
-    const token = request.cookies?.[this.auth.sessionCookieName] as string | undefined;
+    const token = cookie.token as string | undefined;
     if (token) await this.auth.invalidateSession(token);
     response.cookie(this.auth.sessionCookieName, '', {
       ...this.auth.sessionCookieOptions,
@@ -103,11 +103,5 @@ export class AuthController {
       expires: new Date(0),
     });
     return LogoutResponseSchema.parse({ success: true, message: 'Logged out successfully.' });
-  }
-
-  private clientIp(request: Request): string {
-    // Only Express may interpret forwarding headers using an explicitly trusted
-    // proxy policy. An arbitrary client header must not reset the login window.
-    return request.ip || request.socket.remoteAddress || 'unknown';
   }
 }

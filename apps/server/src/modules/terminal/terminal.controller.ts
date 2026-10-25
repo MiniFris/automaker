@@ -24,11 +24,12 @@ import {
   Param,
   Post,
   Put,
-  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
-import type { Request, Response } from 'express';
+import type { Response } from 'express';
+import { TerminalLogoutToken } from '../../core/http/request-context.decorators.js';
+import type { TerminalLogoutContext } from '@automaker/contracts/domains/request-context';
 import { AllowedPathFields, AllowedPathGuard } from '../../core/security/index.js';
 import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
 import { ExecutionEnvironmentError } from '../../services/execution-environment/runtime.js';
@@ -71,12 +72,8 @@ export class TerminalController {
 
   @Post('logout')
   @HttpCode(200)
-  logout(@Req() request: Request) {
-    const token =
-      (typeof request.headers['x-terminal-token'] === 'string'
-        ? request.headers['x-terminal-token']
-        : undefined) || (typeof request.body?.token === 'string' ? request.body.token : undefined);
-    this.access.logout(token);
+  logout(@TerminalLogoutToken() context: TerminalLogoutContext) {
+    this.access.logout(context.token);
     return TerminalMutationResponseSchema.parse({ success: true });
   }
 

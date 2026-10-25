@@ -7,8 +7,8 @@ import {
   ExecutionSSHScanResponseSchema,
   ExecutionSSHDiagnosticResponseSchema,
 } from '@automaker/contracts/domains/execution-environment-responses';
-import { Body, Controller, HttpCode, Inject, Post, Put, Req, Res } from '@nestjs/common';
-import type { Request, Response } from 'express';
+import { Body, Controller, HttpCode, Inject, Post, Put, Res } from '@nestjs/common';
+import type { Response } from 'express';
 
 import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
 import { DirectSettingsMutationSchema } from './settings.schemas.js';
@@ -101,13 +101,10 @@ export class ExecutionEnvironmentSettingsController {
   @HttpCode(200)
   async checkDocker(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
-    @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ) {
     return ExecutionDockerDiagnosticResponseSchema.parse(
-      await this.abortable(request, response, (signal) =>
-        this.environments.checkDocker(body, signal)
-      )
+      await this.abortable(response, (signal) => this.environments.checkDocker(body, signal))
     );
   }
 
@@ -115,13 +112,10 @@ export class ExecutionEnvironmentSettingsController {
   @HttpCode(200)
   async prepareDocker(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
-    @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ) {
     return ExecutionDockerPreparationResponseSchema.parse(
-      await this.abortable(request, response, (signal) =>
-        this.environments.prepareDocker(body, signal)
-      )
+      await this.abortable(response, (signal) => this.environments.prepareDocker(body, signal))
     );
   }
 
@@ -129,11 +123,10 @@ export class ExecutionEnvironmentSettingsController {
   @HttpCode(200)
   async inspectProvider(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
-    @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ) {
     return ExecutionProviderStatusResponseSchema.parse(
-      await this.abortable(request, response, (signal) =>
+      await this.abortable(response, (signal) =>
         this.environments.providerOperation('inspect', body, signal)
       )
     );
@@ -143,11 +136,10 @@ export class ExecutionEnvironmentSettingsController {
   @HttpCode(200)
   async installProvider(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
-    @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ) {
     return ExecutionProviderStatusResponseSchema.parse(
-      await this.abortable(request, response, (signal) =>
+      await this.abortable(response, (signal) =>
         this.environments.providerOperation('install', body, signal)
       )
     );
@@ -157,11 +149,10 @@ export class ExecutionEnvironmentSettingsController {
   @HttpCode(200)
   async updateProviderKey(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
-    @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ) {
     return ExecutionProviderStatusResponseSchema.parse(
-      await this.abortable(request, response, (signal) =>
+      await this.abortable(response, (signal) =>
         this.environments.providerOperation('key', body, signal)
       )
     );
@@ -171,11 +162,10 @@ export class ExecutionEnvironmentSettingsController {
   @HttpCode(200)
   async scanSSH(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
-    @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ) {
     return ExecutionSSHScanResponseSchema.parse(
-      await this.abortable(request, response, (signal) => this.environments.scanSSH(body, signal))
+      await this.abortable(response, (signal) => this.environments.scanSSH(body, signal))
     );
   }
 
@@ -183,11 +173,10 @@ export class ExecutionEnvironmentSettingsController {
   @HttpCode(200)
   async trustSSH(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
-    @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ) {
     return ExecutionEnvironmentSettingsResponseSchema.parse(
-      await this.abortable(request, response, (signal) => this.environments.trustSSH(body, signal))
+      await this.abortable(response, (signal) => this.environments.trustSSH(body, signal))
     );
   }
 
@@ -205,11 +194,10 @@ export class ExecutionEnvironmentSettingsController {
   @HttpCode(200)
   async checkSSH(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
-    @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ) {
     return ExecutionSSHDiagnosticResponseSchema.parse(
-      await this.abortable(request, response, (signal) => this.environments.checkSSH(body, signal))
+      await this.abortable(response, (signal) => this.environments.checkSSH(body, signal))
     );
   }
 
@@ -217,13 +205,10 @@ export class ExecutionEnvironmentSettingsController {
   @HttpCode(200)
   async prepareSSH(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
-    @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ) {
     return ExecutionEnvironmentSettingsResponseSchema.parse(
-      await this.abortable(request, response, (signal) =>
-        this.environments.prepareSSH(body, signal)
-      )
+      await this.abortable(response, (signal) => this.environments.prepareSSH(body, signal))
     );
   }
 
@@ -231,13 +216,10 @@ export class ExecutionEnvironmentSettingsController {
   @HttpCode(200)
   async prepareSSHProject(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
-    @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ) {
     return ExecutionEnvironmentSettingsResponseSchema.parse(
-      await this.abortable(request, response, (signal) =>
-        this.environments.prepareSSHProject(body, signal)
-      )
+      await this.abortable(response, (signal) => this.environments.prepareSSHProject(body, signal))
     );
   }
 
@@ -245,18 +227,14 @@ export class ExecutionEnvironmentSettingsController {
   @HttpCode(200)
   async recoverSSH(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
-    @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ) {
     return ExecutionEnvironmentSettingsResponseSchema.parse(
-      await this.abortable(request, response, (signal) =>
-        this.environments.recoverSSH(body, signal)
-      )
+      await this.abortable(response, (signal) => this.environments.recoverSSH(body, signal))
     );
   }
 
   private async abortable<T>(
-    _request: Request,
     response: Response,
     operation: (signal: AbortSignal) => Promise<T>
   ): Promise<T> {

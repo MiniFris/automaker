@@ -62,20 +62,33 @@ test('status-only passthrough documents a validated body without inventing a fix
   }
 });
 
-test('binary responses and raw request access retain their explicit coverage boundaries', () => {
+test('normalized context and binary contracts retain their distinct representations', () => {
   const operation = document.paths['/api/setup/verify-claude-auth'].post;
-  assert.equal(operation['x-request-contract'], 'incomplete');
+  assert.equal(operation['x-request-contract'], 'shared-or-no-input');
   assert.equal(operation['x-response-contract'], 'shared-runtime');
   for (const [path, method] of [
     ['/api/fs/image', 'get'],
     ['/api/fs/download', 'post'],
   ]) {
-    assert.equal(document.paths[path][method]['x-response-contract'], 'unverified');
+    assert.equal(document.paths[path][method]['x-response-contract'], 'shared-binary-runtime');
     assert.equal(document.paths[path][method].responses.default.content, undefined);
+    assert.ok(
+      Object.values(document.paths[path][method].responses['200'].content).every(
+        (entry) => entry.schema.format === 'binary'
+      )
+    );
   }
-  assert.ok(operation['x-unresolved-inputs'].some((input) => input.in === 'request'));
+  assert.equal(operation['x-unresolved-inputs'], undefined);
+  const context = operation['x-request-context-contracts'][0];
+  assert.equal(context.decorator, 'ClientIdentity');
   assert.equal(
-    document['x-coverage'].unverifiedResponses + document['x-coverage'].sharedRuntimeResponses,
+    document.components.schemas[context.schema.$ref.split('/').at(-1)].properties.clientId.type,
+    'string'
+  );
+  assert.equal(
+    document['x-coverage'].unverifiedResponses +
+      document['x-coverage'].sharedRuntimeResponses +
+      document['x-coverage'].sharedBinaryResponses,
     inventory.endpoints.length
   );
   assert.ok(!JSON.stringify(document).includes('ZodValidationPipe'));

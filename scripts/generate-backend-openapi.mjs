@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 import ts from 'typescript';
 import { z } from 'zod';
 import { API_CONTRACT_VERSION } from '@automaker/contracts';
+import { binaryOperationContract } from './backend-binary-contracts.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const output = resolve(root, 'docs/backend-nestjs-migration/artifacts/openapi.json');
@@ -111,6 +112,96 @@ function guardedInputSchema(method, parameterName) {
     )
       continue;
     return call.expression.expression.text;
+  }
+  return undefined;
+}
+
+/** Prove createParamDecorator returns one shared parse, possibly through local pure projection helpers. */
+export function contextSchemaName(ast, exportedName) {
+  const factory = ast.statements
+    .filter(ts.isImportDeclaration)
+    .flatMap((node) =>
+      ts.isStringLiteral(node.moduleSpecifier) &&
+      node.moduleSpecifier.text === '@nestjs/common' &&
+      node.importClause?.namedBindings &&
+      ts.isNamedImports(node.importClause.namedBindings)
+        ? node.importClause.namedBindings.elements
+            .filter((item) => (item.propertyName ?? item.name).text === 'createParamDecorator')
+            .map((item) => item.name.text)
+        : []
+    );
+  const declarations = ast.statements.flatMap((node) =>
+    ts.isVariableStatement(node) ? [...node.declarationList.declarations] : []
+  );
+  const declaration = declarations.find(
+    (node) => ts.isIdentifier(node.name) && node.name.text === exportedName
+  );
+  const call = declaration?.initializer;
+  if (
+    !call ||
+    !ts.isCallExpression(call) ||
+    !ts.isIdentifier(call.expression) ||
+    !factory.includes(call.expression.text) ||
+    call.arguments.length !== 1
+  )
+    return undefined;
+  const seen = new Set();
+  function returned(fn) {
+    if (!fn?.body || seen.has(fn)) return undefined;
+    seen.add(fn);
+    let expression;
+    if (!ts.isBlock(fn.body)) expression = fn.body;
+    else {
+      const returns = [];
+      function visit(node) {
+        if (node !== fn.body && ts.isFunctionLike(node)) return;
+        if (ts.isReturnStatement(node)) returns.push(node);
+        ts.forEachChild(node, visit);
+      }
+      visit(fn.body);
+      if (returns.length !== 1) return undefined;
+      expression = returns[0].expression;
+    }
+    if (!expression || !ts.isCallExpression(expression)) return undefined;
+    const callee = expression.expression;
+    if (
+      ts.isPropertyAccessExpression(callee) &&
+      callee.name.text === 'parse' &&
+      ts.isIdentifier(callee.expression)
+    )
+      return callee.expression.text;
+    if (!ts.isIdentifier(callee)) return undefined;
+    return returned(
+      ast.statements.find(
+        (node) => ts.isFunctionDeclaration(node) && node.name?.text === callee.text
+      )
+    );
+  }
+  const callback = call.arguments[0];
+  return ts.isArrowFunction(callback) || ts.isFunctionExpression(callback)
+    ? returned(callback)
+    : undefined;
+}
+
+async function contextContract(file, name) {
+  const ast = await source(file);
+  for (const node of ast.statements) {
+    if (
+      !ts.isImportDeclaration(node) ||
+      !ts.isStringLiteral(node.moduleSpecifier) ||
+      !node.moduleSpecifier.text.startsWith('.')
+    )
+      continue;
+    const bindings = node.importClause?.namedBindings;
+    if (!bindings || !ts.isNamedImports(bindings)) continue;
+    const binding = bindings.elements.find((item) => item.name.text === name);
+    if (!binding) continue;
+    const target = resolve(dirname(file), node.moduleSpecifier.text.replace(/\.js$/, '.ts'));
+    const schemaName = contextSchemaName(
+      await source(target),
+      (binding.propertyName ?? binding.name).text
+    );
+    if (schemaName) return resolveSchema(target, schemaName);
   }
   return undefined;
 }
@@ -233,6 +324,7 @@ async function operation(endpoint) {
   if (!method) throw new Error(`Cannot resolve controller handler ${handler}`);
   const parameters = [];
   const unresolved = [];
+  const contexts = [];
   let requestBody;
   for (const parameter of method.parameters) {
     for (const decorator of decorators(parameter)) {
@@ -246,7 +338,23 @@ async function operation(endpoint) {
         continue;
       }
       const location = { Body: 'body', Query: 'query', Param: 'path' }[call.expression.text];
-      if (!location) continue;
+      if (!location) {
+        if (['Res', 'Next'].includes(call.expression.text)) continue;
+        const schema = await contextContract(resolve(root, endpoint.source), call.expression.text);
+        if (schema)
+          contexts.push({
+            decorator: call.expression.text,
+            schema,
+            representation: 'validated normalized transport context',
+          });
+        else
+          unresolved.push({
+            in: 'request-context',
+            decorator: call.expression.text,
+            reason: 'No shared parse proof for the parameter decorator.',
+          });
+        continue;
+      }
       const field = call.arguments.find(ts.isStringLiteral)?.text;
       const pipe = call.arguments.find(
         (a) => ts.isNewExpression(a) && a.expression.getText(ast) === 'ZodValidationPipe'
@@ -344,6 +452,9 @@ async function operation(endpoint) {
   const responseSchema = schemaName
     ? await resolveSchema(resolve(root, endpoint.source), schemaName, new Set(), 'output')
     : undefined;
+  const binary = await binaryOperationContract(handler, (file) =>
+    readFile(resolve(root, file), 'utf8')
+  );
   return {
     operationId: handler.replace('.', '_'),
     tags: [endpoint.group],
@@ -351,12 +462,19 @@ async function operation(endpoint) {
     'x-access': endpoint.access,
     'x-request-contract': unresolved.length ? 'incomplete' : 'shared-or-no-input',
     ...(unresolved.length && { 'x-unresolved-inputs': unresolved }),
+    ...(contexts.length && { 'x-request-context-contracts': contexts }),
     // Response schemas are not inferred from TypeScript annotations or arbitrary examples.
-    'x-response-contract': responseSchema ? 'shared-runtime' : 'unverified',
+    'x-response-contract': binary
+      ? binary['x-response-contract']
+      : responseSchema
+        ? 'shared-runtime'
+        : 'unverified',
     ...(parameters.length && { parameters }),
     ...(requestBody && { requestBody }),
-    responses:
-      ownsResponse && !manualSchema
+    ...(binary && { 'x-binary-runtime-proof': binary['x-binary-runtime-proof'] }),
+    responses: binary
+      ? binary.responses
+      : ownsResponse && !manualSchema
         ? {
             default: {
               description:
@@ -484,6 +602,7 @@ export async function generateDocument() {
   const paths = {};
   let incomplete = 0;
   let sharedResponses = 0;
+  let binaryResponses = 0;
   for (const endpoint of inventory.endpoints) {
     if (endpoint.owner !== 'nestjs') throw new Error(`Non-native endpoint: ${endpoint.path}`);
     const path = endpoint.path.replace(/:([A-Za-z0-9_]+)/g, '{$1}');
@@ -493,6 +612,7 @@ export async function generateDocument() {
     paths[path][key] = await operation(endpoint);
     if (paths[path][key]['x-request-contract'] === 'incomplete') incomplete++;
     if (paths[path][key]['x-response-contract'] === 'shared-runtime') sharedResponses++;
+    if (paths[path][key]['x-response-contract'] === 'shared-binary-runtime') binaryResponses++;
   }
   return {
     openapi: '3.1.0',
@@ -500,14 +620,15 @@ export async function generateDocument() {
       title: 'Automaker HTTP API',
       version: API_CONTRACT_VERSION,
       description:
-        'Generated from native controller routes and shared Zod input schemas. Incomplete inputs and unverified responses are explicitly marked; this is not a complete response contract. JSON Schema cannot express every Zod refinement: shared runtime schemas remain authoritative for validation.',
+        'Generated from native routes and shared runtime contracts, including normalized request contexts and reviewed binary transport boundaries. Opaque legacy business values and middleware/global error envelopes retain their documented limits. JSON Schema cannot express every Zod refinement: runtime schemas remain authoritative.',
     },
     'x-coverage': {
       operations: inventory.endpoints.length,
       sharedOrNoInput: inventory.endpoints.length - incomplete,
       incompleteInput: incomplete,
       sharedRuntimeResponses: sharedResponses,
-      unverifiedResponses: inventory.endpoints.length - sharedResponses,
+      sharedBinaryResponses: binaryResponses,
+      unverifiedResponses: inventory.endpoints.length - sharedResponses - binaryResponses,
     },
     paths,
     components: {

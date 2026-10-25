@@ -49,6 +49,11 @@ import { FilesQueryService } from './files-query.service.js';
 import { FilesCommandService } from './files-command.service.js';
 import { ImageQueryService } from './image-query.service.js';
 import { LocalDownloadService } from './local-download.service.js';
+import {
+  ImageBinaryBodySchema,
+  ImageBinaryResponseDescriptorSchema,
+  IMAGE_CACHE_CONTROL,
+} from '@automaker/contracts/domains/files-binary-responses';
 
 @Controller('fs')
 @UseGuards(AllowedPathGuard)
@@ -194,9 +199,19 @@ export class FilesController {
     @Res() response: Response
   ): Promise<void> {
     const image = await this.images.load(input);
-    response.setHeader('Content-Type', image.mimeType);
-    response.setHeader('Cache-Control', 'public, max-age=3600');
-    response.send(image.content);
+    const body = ImageBinaryBodySchema.parse(image.content);
+    const descriptor = ImageBinaryResponseDescriptorSchema.parse({
+      status: 200,
+      byteLength: body.byteLength,
+      headers: {
+        'Content-Type': image.mimeType,
+        'Cache-Control': IMAGE_CACHE_CONTROL,
+        'Content-Length': String(body.byteLength),
+      },
+    });
+    response.status(descriptor.status);
+    for (const [name, value] of Object.entries(descriptor.headers)) response.setHeader(name, value);
+    response.send(Buffer.from(body.buffer, body.byteOffset, body.byteLength));
   }
 
   @Post('download')

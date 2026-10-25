@@ -1004,7 +1004,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 147,
+      "line": 152,
       "middleware": [
         "FilesController.browseProject"
       ],
@@ -1019,7 +1019,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 141,
+      "line": 146,
       "middleware": [
         "FilesController.browse"
       ],
@@ -1034,7 +1034,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 116,
+      "line": 121,
       "middleware": [
         "FilesController.copy"
       ],
@@ -1049,7 +1049,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 180,
+      "line": 185,
       "middleware": [
         "FilesController.deleteBoardBackground"
       ],
@@ -1064,7 +1064,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 109,
+      "line": 114,
       "middleware": [
         "FilesController.remove"
       ],
@@ -1079,7 +1079,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 202,
+      "line": 217,
       "middleware": [
         "FilesController.download"
       ],
@@ -1094,7 +1094,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 84,
+      "line": 89,
       "middleware": [
         "FilesController.exists"
       ],
@@ -1109,7 +1109,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 191,
+      "line": 196,
       "middleware": [
         "FilesController.image"
       ],
@@ -1124,7 +1124,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 100,
+      "line": 105,
       "middleware": [
         "FilesController.mkdir"
       ],
@@ -1139,7 +1139,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 125,
+      "line": 130,
       "middleware": [
         "FilesController.move"
       ],
@@ -1154,7 +1154,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 70,
+      "line": 75,
       "middleware": [
         "FilesController.list"
       ],
@@ -1169,7 +1169,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 63,
+      "line": 68,
       "middleware": [
         "FilesController.read"
       ],
@@ -1184,7 +1184,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 156,
+      "line": 161,
       "middleware": [
         "FilesController.resolveDirectory"
       ],
@@ -1199,7 +1199,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 171,
+      "line": 176,
       "middleware": [
         "FilesController.saveBoardBackground"
       ],
@@ -1214,7 +1214,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 164,
+      "line": 169,
       "middleware": [
         "FilesController.saveImage"
       ],
@@ -1229,7 +1229,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 77,
+      "line": 82,
       "middleware": [
         "FilesController.stat"
       ],
@@ -1244,7 +1244,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 134,
+      "line": 139,
       "middleware": [
         "FilesController.validatePath"
       ],
@@ -1259,7 +1259,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/files/files.controller.ts",
-      "line": 91,
+      "line": 96,
       "middleware": [
         "FilesController.write"
       ],
@@ -2249,7 +2249,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 81,
+      "line": 70,
       "middleware": [
         "SettingsController.discoverAgents"
       ],
@@ -2264,7 +2264,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 68,
+      "line": 57,
       "middleware": [
         "SettingsController.credentials"
       ],
@@ -2279,7 +2279,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 114,
+      "line": 103,
       "middleware": [
         "SettingsController.retiredCredentialsWrite"
       ],
@@ -2339,7 +2339,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 114,
+      "line": 111,
       "middleware": [
         "ExecutionEnvironmentSettingsController.prepareDocker"
       ],
@@ -2444,7 +2444,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 128,
+      "line": 122,
       "middleware": [
         "ExecutionEnvironmentSettingsController.inspectProvider"
       ],
@@ -2459,7 +2459,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 142,
+      "line": 135,
       "middleware": [
         "ExecutionEnvironmentSettingsController.installProvider"
       ],
@@ -2474,7 +2474,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 156,
+      "line": 148,
       "middleware": [
         "ExecutionEnvironmentSettingsController.updateProviderKey"
       ],
@@ -2489,7 +2489,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 204,
+      "line": 193,
       "middleware": [
         "ExecutionEnvironmentSettingsController.checkSSH"
       ],
@@ -2504,7 +2504,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 194,
+      "line": 183,
       "middleware": [
         "ExecutionEnvironmentSettingsController.updateSSHKey"
       ],
@@ -2519,7 +2519,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 216,
+      "line": 204,
       "middleware": [
         "ExecutionEnvironmentSettingsController.prepareSSH"
       ],
@@ -2534,7 +2534,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 230,
+      "line": 215,
       "middleware": [
         "ExecutionEnvironmentSettingsController.prepareSSHProject"
       ],
@@ -2549,7 +2549,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 244,
+      "line": 226,
       "middleware": [
         "ExecutionEnvironmentSettingsController.recoverSSH"
       ],
@@ -2564,7 +2564,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 170,
+      "line": 161,
       "middleware": [
         "ExecutionEnvironmentSettingsController.scanSSH"
       ],
@@ -2579,7 +2579,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 182,
+      "line": 172,
       "middleware": [
         "ExecutionEnvironmentSettingsController.trustSSH"
       ],
@@ -2594,7 +2594,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 63,
+      "line": 52,
       "middleware": [
         "SettingsController.global"
       ],
@@ -2609,7 +2609,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 107,
+      "line": 96,
       "middleware": [
         "SettingsController.updateGlobal"
       ],
@@ -2624,7 +2624,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 127,
+      "line": 116,
       "middleware": [
         "SettingsController.migrate"
       ],
@@ -2639,7 +2639,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 94,
+      "line": 83,
       "middleware": [
         "SettingsController.providerModelTimeouts"
       ],
@@ -2654,7 +2654,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 143,
+      "line": 132,
       "middleware": [
         "SettingsController.updateProviderModelTimeouts"
       ],
@@ -2669,7 +2669,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 89,
+      "line": 78,
       "middleware": [
         "SettingsController.modelTimeouts"
       ],
@@ -2684,7 +2684,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 136,
+      "line": 125,
       "middleware": [
         "SettingsController.updateModelTimeouts"
       ],
@@ -2699,7 +2699,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 169,
+      "line": 158,
       "middleware": [
         "SettingsController.updateDirectAgent"
       ],
@@ -2714,7 +2714,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 154,
+      "line": 143,
       "middleware": [
         "SettingsController.updateDirectEndpoint"
       ],
@@ -2729,7 +2729,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 176,
+      "line": 165,
       "middleware": [
         "SettingsController.discoverDirectModels"
       ],
@@ -2744,7 +2744,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 161,
+      "line": 150,
       "middleware": [
         "SettingsController.removeDirectEndpoint"
       ],
@@ -2759,7 +2759,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 190,
+      "line": 176,
       "middleware": [
         "SettingsController.testDirectConnection"
       ],
@@ -2774,7 +2774,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 102,
+      "line": 91,
       "middleware": [
         "SettingsController.openAICompatible"
       ],
@@ -2789,7 +2789,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 73,
+      "line": 62,
       "middleware": [
         "SettingsController.project"
       ],
@@ -2804,7 +2804,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 120,
+      "line": 109,
       "middleware": [
         "SettingsController.updateProject"
       ],
@@ -2819,7 +2819,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/settings.controller.ts",
-      "line": 58,
+      "line": 47,
       "middleware": [
         "SettingsController.status"
       ],
@@ -2834,7 +2834,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 158,
+      "line": 151,
       "middleware": [
         "SetupController.apiKeys"
       ],
@@ -2849,7 +2849,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 109,
+      "line": 110,
       "middleware": [
         "SetupController.authClaude"
       ],
@@ -2864,7 +2864,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 236,
+      "line": 223,
       "middleware": [
         "SetupController.authCodex"
       ],
@@ -2879,7 +2879,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 283,
+      "line": 270,
       "middleware": [
         "SetupController.authCopilot"
       ],
@@ -2894,7 +2894,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 216,
+      "line": 203,
       "middleware": [
         "SetupController.authCursor"
       ],
@@ -2909,7 +2909,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 268,
+      "line": 255,
       "middleware": [
         "SetupController.authGemini"
       ],
@@ -2924,7 +2924,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 251,
+      "line": 238,
       "middleware": [
         "SetupController.authOpencode"
       ],
@@ -2939,7 +2939,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 103,
+      "line": 104,
       "middleware": [
         "SetupController.claudeStatus"
       ],
@@ -2954,7 +2954,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 164,
+      "line": 157,
       "middleware": [
         "SetupController.claudeVerificationTarget"
       ],
@@ -2969,7 +2969,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 228,
+      "line": 215,
       "middleware": [
         "SetupController.codexStatus"
       ],
@@ -2984,7 +2984,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 177,
+      "line": 170,
       "middleware": [
         "SetupController.codexVerificationTarget"
       ],
@@ -2999,7 +2999,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 114,
+      "line": 115,
       "middleware": [
         "SetupController.connectionTarget"
       ],
@@ -3014,7 +3014,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 280,
+      "line": 267,
       "middleware": [
         "SetupController.copilotStatus"
       ],
@@ -3029,7 +3029,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 306,
+      "line": 293,
       "middleware": [
         "SetupController.clearCopilotCache"
       ],
@@ -3044,7 +3044,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 303,
+      "line": 290,
       "middleware": [
         "SetupController.refreshCopilotModels"
       ],
@@ -3059,7 +3059,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 295,
+      "line": 282,
       "middleware": [
         "SetupController.copilotModels"
       ],
@@ -3074,7 +3074,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 127,
+      "line": 128,
       "middleware": [
         "SetupController.credentialTarget"
       ],
@@ -3089,7 +3089,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 338,
+      "line": 325,
       "middleware": [
         "SetupController.setCursorDefaultModel"
       ],
@@ -3104,7 +3104,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 343,
+      "line": 330,
       "middleware": [
         "SetupController.setCursorModels"
       ],
@@ -3119,7 +3119,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 328,
+      "line": 315,
       "middleware": [
         "SetupController.cursorConfigTarget"
       ],
@@ -3134,7 +3134,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 333,
+      "line": 320,
       "middleware": [
         "SetupController.cursorConfig"
       ],
@@ -3149,7 +3149,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 366,
+      "line": 353,
       "middleware": [
         "SetupController.setCustomPermissions"
       ],
@@ -3164,7 +3164,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 378,
+      "line": 365,
       "middleware": [
         "SetupController.exampleCursorConfig"
       ],
@@ -3179,7 +3179,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 361,
+      "line": 348,
       "middleware": [
         "SetupController.applyPermissionProfile"
       ],
@@ -3194,7 +3194,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 348,
+      "line": 335,
       "middleware": [
         "SetupController.cursorPermissionsTarget"
       ],
@@ -3209,7 +3209,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 372,
+      "line": 359,
       "middleware": [
         "SetupController.deleteProjectPermissions"
       ],
@@ -3224,7 +3224,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 356,
+      "line": 343,
       "middleware": [
         "SetupController.cursorPermissions"
       ],
@@ -3239,7 +3239,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 213,
+      "line": 200,
       "middleware": [
         "SetupController.cursorStatus"
       ],
@@ -3254,7 +3254,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 120,
+      "line": 121,
       "middleware": [
         "SetupController.deauthClaude"
       ],
@@ -3269,7 +3269,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 241,
+      "line": 228,
       "middleware": [
         "SetupController.deauthCodex"
       ],
@@ -3284,7 +3284,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 288,
+      "line": 275,
       "middleware": [
         "SetupController.deauthCopilot"
       ],
@@ -3299,7 +3299,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 221,
+      "line": 208,
       "middleware": [
         "SetupController.deauthCursor"
       ],
@@ -3314,7 +3314,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 273,
+      "line": 260,
       "middleware": [
         "SetupController.deauthGemini"
       ],
@@ -3329,7 +3329,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 258,
+      "line": 245,
       "middleware": [
         "SetupController.deauthOpencode"
       ],
@@ -3344,7 +3344,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 145,
+      "line": 142,
       "middleware": [
         "SetupController.deleteApiKey"
       ],
@@ -3359,7 +3359,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 265,
+      "line": 252,
       "middleware": [
         "SetupController.geminiStatus"
       ],
@@ -3374,7 +3374,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 195,
+      "line": 185,
       "middleware": [
         "SetupController.ghStatus"
       ],
@@ -3389,7 +3389,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 198,
+      "line": 188,
       "middleware": [
         "SetupController.githubAuthenticationTarget"
       ],
@@ -3404,7 +3404,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 106,
+      "line": 107,
       "middleware": [
         "SetupController.installClaude"
       ],
@@ -3419,7 +3419,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 233,
+      "line": 220,
       "middleware": [
         "SetupController.installCodex"
       ],
@@ -3434,7 +3434,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 246,
+      "line": 233,
       "middleware": [
         "SetupController.opencodeStatus"
       ],
@@ -3449,7 +3449,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 325,
+      "line": 312,
       "middleware": [
         "SetupController.clearOpencodeCache"
       ],
@@ -3464,7 +3464,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 317,
+      "line": 304,
       "middleware": [
         "SetupController.refreshOpencodeModels"
       ],
@@ -3479,7 +3479,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 309,
+      "line": 296,
       "middleware": [
         "SetupController.opencodeModels"
       ],
@@ -3494,7 +3494,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 320,
+      "line": 307,
       "middleware": [
         "SetupController.opencodeProviders"
       ],
@@ -3509,7 +3509,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 161,
+      "line": 154,
       "middleware": [
         "SetupController.platform"
       ],
@@ -3524,7 +3524,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 132,
+      "line": 133,
       "middleware": [
         "SetupController.storeApiKey"
       ],
@@ -3539,7 +3539,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 169,
+      "line": 162,
       "middleware": [
         "SetupController.verifyClaudeAuth"
       ],
@@ -3554,7 +3554,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 184,
+      "line": 177,
       "middleware": [
         "SetupController.verifyCodexAuth"
       ],
@@ -3569,7 +3569,7 @@
       "owner": "nestjs",
       "access": "public-before-global-auth",
       "source": "apps/server/src/modules/providers/setup.controller.ts",
-      "line": 201,
+      "line": 191,
       "middleware": [
         "SetupController.verifyGithubAuth"
       ],
@@ -3689,7 +3689,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 62,
+      "line": 63,
       "middleware": [
         "TerminalController.authenticate"
       ],
@@ -3704,7 +3704,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 72,
+      "line": 73,
       "middleware": [
         "TerminalController.logout"
       ],
@@ -3719,7 +3719,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 226,
+      "line": 223,
       "middleware": [
         "TerminalController.resize"
       ],
@@ -3734,7 +3734,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 197,
+      "line": 194,
       "middleware": [
         "TerminalController.deleteSession"
       ],
@@ -3749,7 +3749,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 92,
+      "line": 89,
       "middleware": [
         "TerminalController.session"
       ],
@@ -3764,7 +3764,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 83,
+      "line": 80,
       "middleware": [
         "TerminalController.sessions"
       ],
@@ -3779,7 +3779,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 131,
+      "line": 128,
       "middleware": [
         "TerminalController.createSession"
       ],
@@ -3794,7 +3794,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 253,
+      "line": 250,
       "middleware": [
         "TerminalController.settings"
       ],
@@ -3809,7 +3809,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 265,
+      "line": 262,
       "middleware": [
         "TerminalController.updateSettings"
       ],
@@ -3824,7 +3824,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
-      "line": 50,
+      "line": 51,
       "middleware": [
         "TerminalController.status"
       ],

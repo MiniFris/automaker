@@ -1422,6 +1422,16 @@ export class DevServerService {
    * List all running dev servers
    * Also verifies that each server's process is still alive, removing stale entries
    */
+  /** In-memory diagnostics: never probes or prunes a process. */
+  runtimeDiagnostics(): { active: number; pending: number; unknownCleanup: number } {
+    return {
+      active: this.runningServers.size,
+      pending: this.runtime ? this.acceptedStarts.size : this.startingServers.size,
+      unknownCleanup: [...this.runningServers.values()].filter((server) => server.cleanupUnknown)
+        .length,
+    };
+  }
+
   listDevServers(): {
     success: boolean;
     result: {

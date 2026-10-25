@@ -25,6 +25,77 @@ async function collect(stream: AsyncGenerator<unknown>) {
 beforeEach(() => debug.mockClear());
 
 describe('application metrics', () => {
+  it('bounds passive gauges, keeps failures unknown and isolates application state', () => {
+    const metrics = new ApplicationMetrics();
+    const reader = vi.fn(() => 3);
+    const unregister = metrics.registerRuntimeGauge('owned_jobs', reader);
+    metrics.registerRuntimeGauge('unknown_cleanup', () => {
+      throw new Error('private diagnostic detail');
+    });
+    expect(reader).not.toHaveBeenCalled();
+    expect(metrics.snapshot().runtimeGauges).toEqual([
+      { name: 'owned_jobs', value: 3 },
+      { name: 'unknown_cleanup', value: null },
+    ]);
+    expect(new ApplicationMetrics().snapshot().runtimeGauges).toEqual([]);
+    expect(() => metrics.registerRuntimeGauge('owned_jobs', reader)).toThrow();
+    for (let index = 0; index < 30; index++)
+      metrics.registerRuntimeGauge(`bounded_${index}`, () => 0);
+    expect(() => metrics.registerRuntimeGauge('overflow', () => 0)).toThrow();
+    unregister();
+    metrics.registerRuntimeGauge('replacement', () => -1);
+    expect(metrics.snapshot().runtimeGauges.at(-1)).toEqual({ name: 'replacement', value: null });
+    expect(JSON.stringify(metrics.snapshot())).not.toContain('private diagnostic detail');
+  });
+
+  it('joins operation/provider logs with one correlation id without putting ids or payloads in metric labels', async () => {
+    const metrics = new ApplicationMetrics();
+    const failure = new Error('private-payload');
+    await expect(
+      runWithCorrelationContext('workflow-proof', () =>
+        metrics.operation(
+          'agent_execution',
+          async () => {
+            expect(getCorrelationId()).toBe('workflow-proof');
+            const finish = metrics.providerQueryStarted();
+            finish({ failed: true, cancelled: false, unconfirmed: false });
+            throw failure;
+          },
+          'session-proof'
+        )
+      )
+    ).rejects.toBe(failure);
+    expect(debug.mock.calls.map(([event]) => event)).toEqual([
+      'operation started',
+      'provider query started',
+      'provider query settled',
+      'operation settled',
+    ]);
+    expect(debug.mock.calls.every(([, fields]) => fields.correlationId === 'workflow-proof')).toBe(
+      true
+    );
+    expect(JSON.stringify(debug.mock.calls)).not.toContain('private-payload');
+    expect(JSON.stringify(metrics.snapshot())).not.toContain('workflow-proof');
+    expect(metrics.snapshot().counters).toContainEqual({
+      name: 'operations_total',
+      labels: { kind: 'agent_execution', outcome: 'error' },
+      value: 1,
+    });
+    const controller = new AbortController();
+    await metrics.operation(
+      'agent_execution',
+      async () => {
+        controller.abort();
+      },
+      undefined,
+      controller.signal
+    );
+    expect(metrics.snapshot().counters).toContainEqual({
+      name: 'operations_total',
+      labels: { kind: 'agent_execution', outcome: 'cancelled' },
+      value: 1,
+    });
+  });
   it('bounds aggregate cardinality and returns independent snapshots', () => {
     const metrics = new ApplicationMetrics();
     for (let index = 0; index < 2200; index++)

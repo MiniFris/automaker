@@ -24,6 +24,7 @@ import { agentServiceProvider } from './agent-service.provider.js';
 import { SecurityService } from '../../core/security/security.service.js';
 import { SECURE_FILESYSTEM } from '../../core/security/security.module.js';
 import type { AgentStorageFilesystem } from '../../services/agent/agent-storage-filesystem.js';
+import { ApplicationMetrics } from '../../core/observability/application-metrics.js';
 
 @Global()
 @Module({
@@ -190,7 +191,25 @@ import type { AgentStorageFilesystem } from '../../services/agent/agent-storage-
       inject: [AgentPromptBuilder],
       useFactory: (prompts: AgentPromptBuilder) => new AgentEnvironmentPreparer(prompts),
     },
-    { provide: AgentExecutionCoordinator, useFactory: () => new AgentExecutionCoordinator() },
+    {
+      provide: AgentExecutionCoordinator,
+      inject: [ApplicationMetrics, AgentSessionRegistry],
+      useFactory: (metrics: ApplicationMetrics, sessions: AgentSessionRegistry) => {
+        const coordinator = new AgentExecutionCoordinator(5000, (kind, id, task, signal) =>
+          metrics.operation(kind, task, id, signal)
+        );
+        metrics.registerRuntimeGauge('agent_executions', () => coordinator.ids().length);
+        metrics.registerRuntimeGauge('agent_mutation_lanes', () => coordinator.pendingMutations);
+        metrics.registerRuntimeGauge('loaded_agent_sessions', () => sessions.size);
+        metrics.registerRuntimeGauge('loaded_session_queue_depth', () =>
+          [...sessions.entries()].reduce(
+            (count, [, session]) => count + session.promptQueue.length,
+            0
+          )
+        );
+        return coordinator;
+      },
+    },
     {
       provide: AgentSessionRepository,
       inject: [RUNTIME_CONFIG, SECURE_FILESYSTEM],

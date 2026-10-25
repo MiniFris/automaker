@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApplicationRuntimeLifecycle } from '../../../src/core/lifecycle/application-runtime.lifecycle.js';
 import { ReadinessStateService } from '../../../src/core/lifecycle/readiness-state.service.js';
+import { ApplicationMetrics } from '../../../src/core/observability/application-metrics.js';
 
 function fixture(enabled = true) {
   const readiness = new ReadinessStateService();
@@ -33,7 +34,8 @@ function fixture(enabled = true) {
     tests as never,
     terminal as never,
     managedDev as never,
-    managedTests as never
+    managedTests as never,
+    new ApplicationMetrics()
   );
   return {
     lifecycle,

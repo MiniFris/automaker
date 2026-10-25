@@ -23,6 +23,8 @@ import { TerminalService } from '../../services/terminal-service.js';
 import { ManagedDevServerService } from '../../services/execution-environment/dev-server.js';
 import { ManagedTestRunnerService } from '../../services/execution-environment/test-runner.js';
 import { LegacyProfileImportError } from '../platform/legacy-profile-import.error.js';
+import { ApplicationMetrics } from '../observability/application-metrics.js';
+import { performance } from 'node:perf_hooks';
 
 export const APPLICATION_STARTUP_TASKS = Symbol('APPLICATION_STARTUP_TASKS');
 const logger = createLogger('ApplicationRuntime');
@@ -53,10 +55,41 @@ export class ApplicationRuntimeLifecycle implements OnApplicationBootstrap, OnMo
     @Inject(TestRunnerService) private readonly tests: TestRunnerService,
     @Inject(TerminalService) private readonly terminal: TerminalService,
     @Inject(ManagedDevServerService) private readonly managedDev: ManagedDevServerService,
-    @Inject(ManagedTestRunnerService) private readonly managedTests: ManagedTestRunnerService
-  ) {}
+    @Inject(ManagedTestRunnerService) private readonly managedTests: ManagedTestRunnerService,
+    @Inject(ApplicationMetrics) private readonly metrics: ApplicationMetrics
+  ) {
+    metrics.registerRuntimeGauge('terminal_sessions', () => this.terminal.getSessionCount());
+    metrics.registerRuntimeGauge(
+      'local_dev_sessions',
+      () => this.devServer.runtimeDiagnostics().active
+    );
+    metrics.registerRuntimeGauge(
+      'local_dev_pending_starts',
+      () => this.devServer.runtimeDiagnostics().pending
+    );
+    metrics.registerRuntimeGauge(
+      'local_dev_unknown_cleanup',
+      () => this.devServer.runtimeDiagnostics().unknownCleanup
+    );
+    metrics.registerRuntimeGauge(
+      'local_test_sessions',
+      () => this.tests.runtimeDiagnostics().active
+    );
+    metrics.registerRuntimeGauge(
+      'local_test_pending_starts',
+      () => this.tests.runtimeDiagnostics().pending
+    );
+    metrics.registerRuntimeGauge(
+      'local_test_unknown_cleanup',
+      () => this.tests.runtimeDiagnostics().unknownCleanup
+    );
+    metrics.registerRuntimeGauge('startup_tasks', () => this.startup.size);
+    metrics.registerRuntimeGauge('resuming_feature_jobs', () => this.resumes.size);
+  }
 
   async onApplicationBootstrap(): Promise<void> {
+    const started = performance.now();
+    let outcome = 'ready';
     try {
       if (this.enabled) {
         await this.startupTask('application-initialization', () => this.initialize(), true);
@@ -69,9 +102,14 @@ export class ApplicationRuntimeLifecycle implements OnApplicationBootstrap, OnMo
       }
       if (!this.stopping) this.readiness.markReady();
     } catch (error) {
+      outcome = 'error';
       this.stopping = true;
       this.readiness.markFailed(error);
       throw error;
+    } finally {
+      this.metrics.observe('application_bootstrap_duration_ms', performance.now() - started, {
+        outcome: this.stopping && outcome !== 'error' ? 'stopped' : outcome,
+      });
     }
   }
 
@@ -133,7 +171,9 @@ export class ApplicationRuntimeLifecycle implements OnApplicationBootstrap, OnMo
     let timedOut = false;
     const actual = Promise.resolve().then(async () => {
       if (!this.stopping)
-        await runWithCorrelationContext(createCorrelationId(`startup:${name}:${Date.now()}`), task);
+        await runWithCorrelationContext(createCorrelationId(`startup:${name}:${Date.now()}`), () =>
+          this.metrics.operation('startup', task)
+        );
     });
     this.startup.add(actual);
     void actual.then(

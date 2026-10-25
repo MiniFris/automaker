@@ -8,9 +8,15 @@ import { SECURE_FILESYSTEM, SecurityService } from '../../core/security/index.js
 import { RuntimePathsService } from '../../core/config/index.js';
 import { UnavailableDomainError, ValidationDomainError } from '../../core/errors/index.js';
 import { writeLocalArchive, type ArchiveEntry } from './local-zip-archive.js';
+import {
+  DOWNLOAD_MAX_BYTES,
+  DIRECTORY_DOWNLOAD_MAX_BYTES,
+  DownloadBinaryResponseDescriptorSchema,
+  type DownloadBinaryResponseDescriptor,
+} from '@automaker/contracts/domains/files-binary-responses';
 
-const MAX_DIRECTORY_BYTES = 100 * 1024 * 1024;
-const MAX_FILE_BYTES = 500 * 1024 * 1024;
+const MAX_DIRECTORY_BYTES = DIRECTORY_DOWNLOAD_MAX_BYTES;
+const MAX_FILE_BYTES = DOWNLOAD_MAX_BYTES;
 interface DownloadJob {
   controller: AbortController;
   promise: Promise<void>;
@@ -56,13 +62,16 @@ export class LocalDownloadService {
     if (stats.isFile()) {
       if (Number(stats.size) > MAX_FILE_BYTES)
         throw new ValidationDomainError('File exceeds the 500 MiB download limit.');
-      this.headers(
+      const descriptor = this.headers(
         response,
         path.basename(filePath),
         'application/octet-stream',
         Number(stats.size)
       );
-      await this.filesystem.pipeFile(filePath, response, { signal, maxBytes: Number(stats.size) });
+      await this.filesystem.pipeFile(filePath, response, {
+        signal,
+        maxBytes: descriptor.byteLength,
+      });
       return;
     }
     if (path.dirname(filePath) === filePath)
@@ -81,16 +90,16 @@ export class LocalDownloadService {
       await writeLocalArchive(this.filesystem, state.entries, archivePath, MAX_FILE_BYTES, signal);
       signal.throwIfAborted();
       const archive = await this.filesystem.stat(archivePath);
-      this.headers(
+      const descriptor = this.headers(
         response,
         `${path.basename(filePath)}.zip`,
         'application/zip',
-        Number(archive.size)
+        Number(archive.size),
+        state.bytes
       );
-      response.setHeader('X-Directory-Size', String(state.bytes));
       await this.filesystem.pipeFile(archivePath, response, {
         signal,
-        maxBytes: Number(archive.size),
+        maxBytes: descriptor.byteLength,
       });
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'STREAM_BYTE_LIMIT')
@@ -110,13 +119,29 @@ export class LocalDownloadService {
     }
   }
 
-  private headers(response: Response, name: string, type: string, bytes: number): void {
-    response.setHeader('Content-Type', type);
-    response.setHeader(
-      'Content-Disposition',
-      `attachment; filename="${name.replace(/["\r\n]/g, '_')}"`
-    );
-    response.setHeader('Content-Length', String(bytes));
+  private headers(
+    response: Response,
+    name: string,
+    type: string,
+    bytes: number,
+    directoryBytes?: number
+  ): DownloadBinaryResponseDescriptor {
+    const descriptor = DownloadBinaryResponseDescriptorSchema.parse({
+      kind: directoryBytes === undefined ? 'file' : 'directory',
+      status: 200,
+      byteLength: bytes,
+      ...(directoryBytes === undefined ? {} : { directoryBytes }),
+      headers: {
+        'Content-Type': type,
+        'Content-Disposition': `attachment; filename="${name.replace(/["\r\n]/g, '_')}"`,
+        'Content-Length': String(bytes),
+        ...(directoryBytes === undefined ? {} : { 'X-Directory-Size': String(directoryBytes) }),
+      },
+    });
+    response.status(descriptor.status);
+    for (const [header, value] of Object.entries(descriptor.headers))
+      response.setHeader(header, value);
+    return descriptor;
   }
 
   private async scan(

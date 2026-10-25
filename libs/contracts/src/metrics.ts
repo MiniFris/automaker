@@ -8,6 +8,10 @@ export const MetricsSnapshotSchema = z.object({
   providerActiveQueries: count,
   droppedMeasurements: count,
   seriesLimit: z.literal(2048),
+  runtimeGauges: z
+    .array(z.object({ name: z.string(), value: count.nullable() }))
+    .max(32)
+    .optional(),
   counters: z.array(z.object({ name: z.string(), labels, value: count })).max(2048),
   observations: z
     .array(

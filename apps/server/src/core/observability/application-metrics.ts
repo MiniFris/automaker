@@ -3,7 +3,7 @@ import { performance } from 'node:perf_hooks';
 import { randomUUID } from 'node:crypto';
 import { createLogger } from '@automaker/utils';
 import type { Metrics } from './metrics.js';
-import { getCorrelationId } from './request-context.js';
+import { getCorrelationId, runWithCorrelationContext } from './request-context.js';
 
 const logger = createLogger('Operations');
 const LIMIT = 2048;
@@ -33,6 +33,52 @@ export class ApplicationMetrics implements Metrics {
   private readonly observations = new Map<string, Series>();
   private dropped = 0;
   private providerActive = 0;
+  private readonly runtimeReaders = new Map<string, () => number>();
+
+  /** Passive, bounded readers only: no discovery, filesystem or process probes. */
+  registerRuntimeGauge(name: string, reader: () => number): () => void {
+    if (
+      !/^[a-z][a-z0-9_]{0,79}$/.test(name) ||
+      this.runtimeReaders.has(name) ||
+      this.runtimeReaders.size >= 32
+    )
+      throw new Error('Invalid or duplicate runtime metric registration.');
+    this.runtimeReaders.set(name, reader);
+    return () => {
+      if (this.runtimeReaders.get(name) === reader) this.runtimeReaders.delete(name);
+    };
+  }
+
+  async operation<T>(
+    kind: 'startup' | 'agent_execution' | 'agent_mutation',
+    task: () => Promise<T>,
+    sessionId?: string,
+    signal?: AbortSignal
+  ): Promise<T> {
+    const correlationId = getCorrelationId() ?? randomUUID();
+    const operationId = randomUUID();
+    const context = {
+      correlationId,
+      operationId,
+      kind,
+      ...(sessionId && /^[A-Za-z0-9._:-]{1,128}$/.test(sessionId) ? { sessionId } : {}),
+    };
+    const started = performance.now();
+    logger.debug('operation started', context);
+    let outcome = 'completed';
+    try {
+      return await runWithCorrelationContext(correlationId, task);
+    } catch (error) {
+      outcome = error instanceof Error && error.name === 'AbortError' ? 'cancelled' : 'error';
+      throw error;
+    } finally {
+      if (outcome === 'completed' && signal?.aborted) outcome = 'cancelled';
+      const durationMs = performance.now() - started;
+      this.increment('operations_total', { kind, outcome });
+      this.observe('operation_duration_ms', durationMs, { kind, outcome });
+      logger.debug('operation settled', { ...context, outcome, durationMs });
+    }
+  }
 
   private identity(name: string, labels: Labels): { key: string; labels: Labels } | undefined {
     const pairs = Object.entries(labels).sort(([a], [b]) => a.localeCompare(b));
@@ -142,6 +188,16 @@ export class ApplicationMetrics implements Metrics {
       providerActiveQueries: this.providerActive,
       droppedMeasurements: this.dropped,
       seriesLimit: LIMIT,
+      runtimeGauges: [...this.runtimeReaders].map(([name, read]) => {
+        let value: number | null = null;
+        try {
+          const measured = read();
+          if (Number.isSafeInteger(measured) && measured >= 0) value = measured;
+        } catch {
+          /* An unavailable diagnostic must not become a fabricated zero. */
+        }
+        return { name, value };
+      }),
       counters: [...this.counters.values()].map((series) => ({
         ...series,
         labels: { ...series.labels },

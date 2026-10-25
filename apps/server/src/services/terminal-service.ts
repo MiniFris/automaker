@@ -6,6 +6,8 @@
  */
 
 import * as pty from 'node-pty';
+import type { TerminalHostPort } from '../core/platform/terminal-host.runtime.js';
+import type { TerminalRcFilesPort } from '../core/platform/terminal-rc-files.adapter.js';
 import {
   TERMINAL_MIN_MAX_SESSIONS,
   TERMINAL_MAX_MAX_SESSIONS,
@@ -24,7 +26,7 @@ import { ProjectGitService } from './execution-environment/project-git.js';
 import { ManagedTerminalPty, type TerminalPty } from './execution-environment/terminal.js';
 import { ExecutionEnvironmentError } from './execution-environment/runtime.js';
 import { TerminalSessionLifecycle, terminalCleanupError } from './terminal-session-lifecycle.js';
-import { ForbiddenDomainError } from '../core/errors/domain-errors.js';
+import { ForbiddenDomainError, UnavailableDomainError } from '../core/errors/domain-errors.js';
 import { getTerminalThemeColors, getAllTerminalThemes } from '../lib/terminal-themes-data.js';
 import {
   getRcFilePath,
@@ -34,8 +36,7 @@ import {
 } from '@automaker/platform';
 
 const logger = createLogger('Terminal');
-// System paths module handles shell binary checks and WSL detection
-// These are system paths outside ALLOWED_ROOT_DIRECTORY, centralized for security auditing
+// Direct-constructor compatibility only; native composition supplies TerminalHostPort.
 import {
   systemPathExists,
   systemPathReadFileSync,
@@ -223,6 +224,8 @@ export function claimTerminalStartup(
 
 export interface TerminalPreflight {
   filesystem: Pick<typeof secureFs, 'stat'>;
+  host?: TerminalHostPort;
+  rcFiles?: TerminalRcFilesPort;
   homeDirectory?: string;
   fallbackDirectory: string;
   resolvePath: (candidate: string) => string;
@@ -234,16 +237,12 @@ export class TerminalService extends EventEmitter {
   private stopping = false;
   private shutdown?: Promise<void>;
   private readonly creations = new Set<Promise<TerminalSession | null>>();
+  private readonly configurationUpdates = new Set<Promise<void>>();
   private readonly lifecycles = new Map<string, TerminalSessionLifecycle>();
   private sessions: Map<string, TerminalSession> = new Map();
   private dataCallbacks: Set<DataCallback> = new Set();
   private exitCallbacks: Set<ExitCallback> = new Set();
   private isWindows = os.platform() === 'win32';
-  // On Windows, ConPTY requires AttachConsole which fails in Electron/service mode
-  // Detect Electron by checking for electron-specific env vars or process properties
-  private isElectron =
-    !!(process.versions && (process.versions as Record<string, string>).electron) ||
-    !!process.env.ELECTRON_RUN_AS_NODE;
   private useConptyFallback = false; // Track if we need to use winpty fallback on Windows
   private settingsService: SettingsService | null = null;
 
@@ -254,21 +253,22 @@ export class TerminalService extends EventEmitter {
   ) {
     super();
     this.settingsService = settingsService || null;
+    if (preflight?.host) this.isWindows = preflight.host.platform === 'win32';
     this.maxSessions =
       initialMaxSessions ?? Number.parseInt(process.env.TERMINAL_MAX_SESSIONS || '1000', 10);
   }
 
   /**
    * Detect the best shell for the current platform
-   * Uses getShellPaths() to iterate through allowed shell paths
+   * Iterates explicit host shell candidates (legacy getShellPaths for direct callers).
    */
   detectShell(): { shell: string; args: string[] } {
-    const platform = os.platform();
-    const shellPaths = getShellPaths();
+    const platform = this.preflight?.host?.platform ?? os.platform();
+    const shellPaths = this.preflight?.host?.shellPaths ?? getShellPaths();
 
     // Check if running in WSL - prefer user's shell or bash with --login
     if (platform === 'linux' && this.isWSL()) {
-      const userShell = process.env.SHELL;
+      const userShell = this.hostEnvironment.SHELL;
       if (userShell) {
         // Try to find userShell in allowed paths
         for (const allowedShell of shellPaths) {
@@ -277,7 +277,7 @@ export class TerminalService extends EventEmitter {
             getShellBasename(allowedShell) === getShellBasename(userShell)
           ) {
             try {
-              if (systemPathExists(allowedShell)) {
+              if (this.shellExists(allowedShell)) {
                 return { shell: allowedShell, args: getShellArgsForPath(allowedShell) };
               }
             } catch {
@@ -289,7 +289,7 @@ export class TerminalService extends EventEmitter {
       // Fall back to first available POSIX shell
       for (const shell of shellPaths) {
         try {
-          if (systemPathExists(shell)) {
+          if (this.shellExists(shell)) {
             return { shell, args: getShellArgsForPath(shell) };
           }
         } catch {
@@ -300,7 +300,7 @@ export class TerminalService extends EventEmitter {
     }
 
     // For all platforms: first try user's shell if set
-    const userShell = process.env.SHELL;
+    const userShell = this.hostEnvironment.SHELL;
     if (userShell && platform !== 'win32') {
       // Try to find userShell in allowed paths
       for (const allowedShell of shellPaths) {
@@ -309,7 +309,7 @@ export class TerminalService extends EventEmitter {
           getShellBasename(allowedShell) === getShellBasename(userShell)
         ) {
           try {
-            if (systemPathExists(allowedShell)) {
+            if (this.shellExists(allowedShell)) {
               return { shell: allowedShell, args: getShellArgsForPath(allowedShell) };
             }
           } catch {
@@ -322,7 +322,7 @@ export class TerminalService extends EventEmitter {
     // Iterate through allowed shell paths and return first existing one
     for (const shell of shellPaths) {
       try {
-        if (systemPathExists(shell)) {
+        if (this.shellExists(shell)) {
           return { shell, args: getShellArgsForPath(shell) };
         }
       } catch {
@@ -337,11 +337,26 @@ export class TerminalService extends EventEmitter {
     return { shell: '/bin/sh', args: [] };
   }
 
+  private get hostEnvironment(): Readonly<NodeJS.ProcessEnv> {
+    return this.preflight?.host?.environment ?? process.env;
+  }
+
+  private shellExists(candidate: string): boolean {
+    return this.preflight?.host
+      ? this.preflight.host.shellExists(candidate)
+      : systemPathExists(candidate);
+  }
+
   /**
    * Detect if running inside WSL (Windows Subsystem for Linux)
    */
   isWSL(): boolean {
     try {
+      if (this.preflight?.host) {
+        const version = this.preflight.host.wslVersion();
+        if (version !== undefined) return /microsoft|wsl/i.test(version);
+        return Boolean(this.hostEnvironment.WSL_DISTRO_NAME || this.hostEnvironment.WSLENV);
+      }
       // Check /proc/version for Microsoft/WSL indicators
       const wslVersionPath = getWslVersionPath();
       if (systemPathExists(wslVersionPath)) {
@@ -369,10 +384,10 @@ export class TerminalService extends EventEmitter {
   } {
     const { shell } = this.detectShell();
     return {
-      platform: os.platform(),
+      platform: this.preflight?.host?.platform ?? os.platform(),
       isWSL: this.isWSL(),
       defaultShell: shell,
-      arch: os.arch(),
+      arch: this.preflight?.host?.arch ?? os.arch(),
     };
   }
 
@@ -558,6 +573,7 @@ export class TerminalService extends EventEmitter {
               'TERMINAL_ENV_UNSUPPORTED',
               'Controller terminal environment overrides are not forwarded to a managed terminal.'
             );
+          if (this.stopping) return null;
           const remote = await ManagedTerminalPty.open(target, this.settingsService, {
             cols: options.cols ?? 80,
             rows: options.rows ?? 24,
@@ -601,11 +617,12 @@ export class TerminalService extends EventEmitter {
 
     // Build environment with some useful defaults
     // These settings ensure consistent terminal behavior across platforms
-    // First, create a clean copy of process.env excluding Automaker-specific variables
+    // Copy the app's host snapshot (ambient env only for direct legacy callers), excluding
+    // Automaker-specific variables
     // that could pollute user shells (e.g., PORT would affect Next.js/other dev servers)
     const automakerEnvVars = ['PORT', 'DATA_DIR', 'AUTOMAKER_API_KEY', 'NODE_PATH'];
     const cleanEnv: Record<string, string> = {};
-    for (const [key, value] of Object.entries(process.env)) {
+    for (const [key, value] of Object.entries(this.hostEnvironment)) {
       if (value !== undefined && !automakerEnvVars.includes(key)) {
         cleanEnv[key] = value;
       }
@@ -613,6 +630,7 @@ export class TerminalService extends EventEmitter {
 
     // Terminal config injection (custom prompts, themes)
     const terminalConfigEnv: Record<string, string> = {};
+    const configurationCwd = this.preflight ? cwd : options.cwd || cwd;
     if (this.settingsService) {
       try {
         logger.info(
@@ -620,7 +638,7 @@ export class TerminalService extends EventEmitter {
         );
         const globalSettings = await this.settingsService.getGlobalSettings();
         const projectSettings = options.cwd
-          ? await this.settingsService.getProjectSettings(options.cwd)
+          ? await this.settingsService.getProjectSettings(configurationCwd)
           : null;
 
         const globalTerminalConfig = globalSettings?.terminalConfig;
@@ -646,8 +664,8 @@ export class TerminalService extends EventEmitter {
           const ompThemeName = resolveOmpThemeName(promptTheme);
 
           // Ensure RC files are up to date
-          await ensureRcFilesUpToDate(
-            options.cwd || cwd,
+          await this.ensureRcFiles(
+            configurationCwd,
             currentTheme,
             effectiveConfig,
             themeColors,
@@ -661,7 +679,7 @@ export class TerminalService extends EventEmitter {
           }
 
           if (shellName.includes(SHELL_NAME_BASH)) {
-            const bashRcFilePath = getRcFilePath(options.cwd || cwd, SHELL_NAME_BASH);
+            const bashRcFilePath = getRcFilePath(configurationCwd, SHELL_NAME_BASH);
             terminalConfigEnv.BASH_ENV = bashRcFilePath;
             terminalConfigEnv.AUTOMAKER_CUSTOM_PROMPT = effectiveConfig.customPrompt
               ? 'true'
@@ -669,13 +687,13 @@ export class TerminalService extends EventEmitter {
             terminalConfigEnv.AUTOMAKER_THEME = currentTheme;
             shellArgs = applyBashRcFileArgs(shellArgs, bashRcFilePath);
           } else if (shellName.includes(SHELL_NAME_ZSH)) {
-            terminalConfigEnv.ZDOTDIR = getTerminalDir(options.cwd || cwd);
+            terminalConfigEnv.ZDOTDIR = getTerminalDir(configurationCwd);
             terminalConfigEnv.AUTOMAKER_CUSTOM_PROMPT = effectiveConfig.customPrompt
               ? 'true'
               : 'false';
             terminalConfigEnv.AUTOMAKER_THEME = currentTheme;
           } else if (shellName === SHELL_NAME_SH) {
-            terminalConfigEnv.ENV = getRcFilePath(options.cwd || cwd, SHELL_NAME_SH);
+            terminalConfigEnv.ENV = getRcFilePath(configurationCwd, SHELL_NAME_SH);
             terminalConfigEnv.AUTOMAKER_CUSTOM_PROMPT = effectiveConfig.customPrompt
               ? 'true'
               : 'false';
@@ -690,6 +708,7 @@ export class TerminalService extends EventEmitter {
           );
         }
       } catch (error) {
+        if (this.preflight?.rcFiles) throw error;
         logger.warn(`[createSession] Failed to apply terminal config: ${error}`);
       }
     }
@@ -700,8 +719,8 @@ export class TerminalService extends EventEmitter {
       COLORTERM: 'truecolor',
       TERM_PROGRAM: 'automaker-terminal',
       // Ensure proper locale for character handling
-      LANG: process.env.LANG || 'en_US.UTF-8',
-      LC_ALL: process.env.LC_ALL || process.env.LANG || 'en_US.UTF-8',
+      LANG: this.hostEnvironment.LANG || 'en_US.UTF-8',
+      LC_ALL: this.hostEnvironment.LC_ALL || this.hostEnvironment.LANG || 'en_US.UTF-8',
       ...options.env,
       ...terminalConfigEnv, // Apply terminal config env vars last (highest priority)
     };
@@ -730,6 +749,7 @@ export class TerminalService extends EventEmitter {
       );
     }
 
+    if (this.stopping) return null;
     let ptyProcess: pty.IPty;
     try {
       ptyProcess = pty.spawn(shell, shellArgs, ptyOptions);
@@ -1069,7 +1089,29 @@ export class TerminalService extends EventEmitter {
   /**
    * Handle theme change - regenerate RC files with new theme colors
    */
-  async onThemeChange(projectPath: string, newTheme: string): Promise<void> {
+  private ensureRcFiles(...args: Parameters<typeof ensureRcFilesUpToDate>): Promise<void> {
+    return this.preflight?.rcFiles
+      ? this.preflight.rcFiles.ensure(...args)
+      : ensureRcFilesUpToDate(...args);
+  }
+
+  onThemeChange(projectPath: string, newTheme: string): Promise<void> {
+    if (this.stopping) return Promise.resolve();
+    if (this.configurationUpdates.size >= 256)
+      return Promise.reject(new UnavailableDomainError('Terminal configuration queue is busy.'));
+    const task = this.updateTheme(projectPath, newTheme).finally(() =>
+      this.configurationUpdates.delete(task)
+    );
+    this.configurationUpdates.add(task);
+    return task;
+  }
+
+  private async updateTheme(projectPath: string, newTheme: string): Promise<void> {
+    if (this.preflight) {
+      projectPath = this.preflight.resolvePath(projectPath);
+      if (!(await this.preflight.filesystem.stat(projectPath)).isDirectory())
+        throw new ExecutionEnvironmentError('INVALID_CWD', 'Working directory must exist.');
+    }
     if (!this.settingsService) {
       logger.warn('[onThemeChange] SettingsService not available');
       return;
@@ -1089,7 +1131,7 @@ export class TerminalService extends EventEmitter {
         const allThemes = getAllTerminalThemes();
 
         // Regenerate RC files with new theme
-        await ensureRcFilesUpToDate(
+        await this.ensureRcFiles(
           projectPath,
           newTheme as import('@automaker/types').ThemeMode,
           effectiveConfig,
@@ -1100,6 +1142,7 @@ export class TerminalService extends EventEmitter {
         logger.info(`[onThemeChange] Regenerated RC files for theme: ${newTheme}`);
       }
     } catch (error) {
+      if (this.preflight?.rcFiles) throw error;
       logger.error(`[onThemeChange] Failed to regenerate RC files: ${error}`);
     }
   }
@@ -1117,6 +1160,7 @@ export class TerminalService extends EventEmitter {
           throw error;
       })
     );
+    tasks.push(...this.configurationUpdates);
     for (const [id, lifecycle] of this.lifecycles) {
       const session = this.sessions.get(id);
       if (session?.flushTimeout) clearTimeout(session.flushTimeout);

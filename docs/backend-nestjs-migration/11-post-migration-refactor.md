@@ -140,17 +140,20 @@ Application services тестируются на in-memory/fake ports; adapter c
 
 ## 11.4. Contracts и клиент
 
-- [ ] Завершить shared schema coverage всех endpoints.
+- [x] Shared schemas покрывают transport inputs/normalized contexts и ответы всех
+      318 operations: 316 JSON и 2 binary. Исторические opaque business maps и
+      default middleware/global errors сохраняют явно описанные ограничения.
+      Это не закрывает отдельный пункт stable error codes.
 - [x] Разбить большой UI HTTP client по domain modules. 29 namespaces вынесены
       в typed factories; root сохраняет auth/fetch/WS ownership и Electron/filesystem
       compatibility bridges. См. [domain audit](artifacts/shared-inputs-openapi-client-audit.md)
       и [setup extraction](artifacts/setup-client-extraction-audit.md).
 - [x] Добавить generated/verified OpenAPI artifact. Проверяются все 318 native
-      operations и ссылки на shared inputs; 22 incomplete inputs, 316 runtime
-      JSON response schemas и 2 unverified binary responses явно отмечены (включая typed
+      operations и ссылки на shared inputs; 0 incomplete inputs, 316 runtime
+      JSON response schemas и 2 shared binary responses (0 unverified) явно отмечены (включая typed
       non-2xx envelopes в числе runtime schemas).
       Это не закрывает отдельный пункт полной coverage.
-      См. [актуальный checkpoint](artifacts/json-response-coverage-checkpoint.md).
+      См. [актуальный checkpoint](artifacts/transport-context-terminal-observability-checkpoint.md).
 - [x] Ввести deprecation policy и API versioning до intentional breaking changes.
       [API policy](../backend-api-contracts.md) сохраняет текущую v13 и требует
       явного решения о версии/переходе до нарушения совместимости.

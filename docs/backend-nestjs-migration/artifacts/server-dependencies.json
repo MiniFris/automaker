@@ -2,18 +2,18 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 525,
-    "internalEdges": 1850,
+    "files": 528,
+    "internalEdges": 1863,
     "stronglyConnectedComponents": 2
   },
   "layerEdges": {
-    "core -> core": 76,
-    "core -> lib": 6,
+    "core -> core": 81,
+    "core -> lib": 7,
     "core -> middleware": 1,
     "core -> services": 8,
     "lib -> lib": 4,
     "lib -> services": 1,
-    "modules -> core": 193,
+    "modules -> core": 198,
     "modules -> lib": 54,
     "modules -> modules": 387,
     "modules -> providers": 33,
@@ -34,7 +34,7 @@
     "routes -> routes": 145,
     "routes -> services": 82,
     "routes -> types": 2,
-    "services -> core": 33,
+    "services -> core": 35,
     "services -> lib": 67,
     "services -> modules": 17,
     "services -> providers": 16,
@@ -280,6 +280,7 @@
     "@automaker/contracts/domains/event-history": 1,
     "@automaker/contracts/domains/execution-environment-responses": 1,
     "@automaker/contracts/domains/feature-responses": 1,
+    "@automaker/contracts/domains/files-binary-responses": 3,
     "@automaker/contracts/domains/files-responses": 1,
     "@automaker/contracts/domains/git-responses": 1,
     "@automaker/contracts/domains/ideation": 1,
@@ -290,6 +291,7 @@
     "@automaker/contracts/domains/pipeline": 1,
     "@automaker/contracts/domains/planning-responses": 2,
     "@automaker/contracts/domains/provider-usage-responses": 1,
+    "@automaker/contracts/domains/request-context": 5,
     "@automaker/contracts/domains/running-agents": 1,
     "@automaker/contracts/domains/settings": 1,
     "@automaker/contracts/domains/setup-query": 5,
@@ -302,16 +304,16 @@
     "@automaker/dependency-resolver": 1,
     "@automaker/git-utils": 12,
     "@automaker/model-resolver": 20,
-    "@automaker/platform": 56,
+    "@automaker/platform": 57,
     "@automaker/prompts": 3,
-    "@automaker/types": 161,
+    "@automaker/types": 162,
     "@automaker/utils": 139,
     "@github/copilot-sdk": 1,
     "@modelcontextprotocol/sdk/client/index.js": 1,
     "@modelcontextprotocol/sdk/client/sse.js": 1,
     "@modelcontextprotocol/sdk/client/stdio.js": 1,
     "@modelcontextprotocol/sdk/client/streamableHttp.js": 1,
-    "@nestjs/common": 194,
+    "@nestjs/common": 195,
     "@nestjs/core": 8,
     "@nestjs/platform-express": 2,
     "@openai/codex-sdk": 1,
@@ -332,15 +334,15 @@
     "node:async_hooks": 1,
     "node:buffer": 1,
     "node:child_process": 16,
-    "node:crypto": 40,
+    "node:crypto": 41,
     "node:events": 1,
-    "node:fs": 11,
+    "node:fs": 12,
     "node:fs/promises": 21,
     "node:http": 8,
     "node:net": 4,
-    "node:os": 11,
-    "node:path": 62,
-    "node:perf_hooks": 23,
+    "node:os": 12,
+    "node:path": 64,
+    "node:perf_hooks": 24,
     "node:stream": 6,
     "node:stream/web": 2,
     "node:string_decoder": 4,
@@ -553,6 +555,10 @@
     },
     {
       "source": "apps/server/src/core/auth/auth.controller.ts",
+      "target": "apps/server/src/core/http/request-context.decorators.ts"
+    },
+    {
+      "source": "apps/server/src/core/auth/auth.controller.ts",
       "target": "apps/server/src/core/validation/zod-validation.pipe.ts"
     },
     {
@@ -606,6 +612,10 @@
     {
       "source": "apps/server/src/core/auth/auth.service.ts",
       "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/core/auth/auth.service.ts",
+      "target": "apps/server/src/core/http/request-context.decorators.ts"
     },
     {
       "source": "apps/server/src/core/config/runtime-config.module.ts",
@@ -708,6 +718,10 @@
       "target": "apps/server/src/middleware/require-json-content-type.ts"
     },
     {
+      "source": "apps/server/src/core/http/request-context.decorators.ts",
+      "target": "apps/server/src/core/auth/auth-state.repository.ts"
+    },
+    {
       "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
       "target": "apps/server/src/core/config/index.ts"
     },
@@ -718,6 +732,10 @@
     {
       "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
       "target": "apps/server/src/core/lifecycle/readiness-state.service.ts"
+    },
+    {
+      "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
+      "target": "apps/server/src/core/observability/application-metrics.ts"
     },
     {
       "source": "apps/server/src/core/lifecycle/application-runtime.lifecycle.ts",
@@ -834,6 +852,14 @@
     {
       "source": "apps/server/src/core/platform/setup-status.runtime.ts",
       "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/core/platform/terminal-rc-files.adapter.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/core/platform/terminal-rc-files.adapter.ts",
+      "target": "apps/server/src/lib/secure-fs.ts"
     },
     {
       "source": "apps/server/src/core/security/allowed-path.guard.ts",
@@ -1014,6 +1040,10 @@
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
       "target": "apps/server/src/core/eventing/event-bus.ts"
+    },
+    {
+      "source": "apps/server/src/modules/agents/agent-state.module.ts",
+      "target": "apps/server/src/core/observability/application-metrics.ts"
     },
     {
       "source": "apps/server/src/modules/agents/agent-state.module.ts",
@@ -3609,6 +3639,10 @@
     },
     {
       "source": "apps/server/src/modules/providers/setup.controller.ts",
+      "target": "apps/server/src/core/http/request-context.decorators.ts"
+    },
+    {
+      "source": "apps/server/src/modules/providers/setup.controller.ts",
       "target": "apps/server/src/core/validation/zod-validation.pipe.ts"
     },
     {
@@ -4049,6 +4083,14 @@
     },
     {
       "source": "apps/server/src/modules/terminal/terminal-runtime.module.ts",
+      "target": "apps/server/src/core/platform/terminal-host.runtime.ts"
+    },
+    {
+      "source": "apps/server/src/modules/terminal/terminal-runtime.module.ts",
+      "target": "apps/server/src/core/platform/terminal-rc-files.adapter.ts"
+    },
+    {
+      "source": "apps/server/src/modules/terminal/terminal-runtime.module.ts",
       "target": "apps/server/src/core/security/index.ts"
     },
     {
@@ -4062,6 +4104,10 @@
     {
       "source": "apps/server/src/modules/terminal/terminal-runtime.module.ts",
       "target": "apps/server/src/services/terminal-service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/terminal/terminal.controller.ts",
+      "target": "apps/server/src/core/http/request-context.decorators.ts"
     },
     {
       "source": "apps/server/src/modules/terminal/terminal.controller.ts",
@@ -7658,6 +7704,14 @@
     {
       "source": "apps/server/src/services/terminal-service.ts",
       "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/services/terminal-service.ts",
+      "target": "apps/server/src/core/platform/terminal-host.runtime.ts"
+    },
+    {
+      "source": "apps/server/src/services/terminal-service.ts",
+      "target": "apps/server/src/core/platform/terminal-rc-files.adapter.ts"
     },
     {
       "source": "apps/server/src/services/terminal-service.ts",

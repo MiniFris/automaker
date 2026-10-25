@@ -9,6 +9,8 @@ import {
   SESSION_MAX_AGE_MS,
 } from './auth-state.repository.js';
 import { RUNTIME_CONFIG, type RuntimeConfig } from '../config/index.js';
+import { authenticationMaterial } from '../http/request-context.decorators.js';
+import type { HttpAuthenticationContext } from '@automaker/contracts/domains/request-context';
 
 export type AuthResult =
   | { authenticated: true }
@@ -39,6 +41,9 @@ export class AuthService implements OnApplicationShutdown {
   }
   isRequestAuthenticated(request: Request): boolean {
     return this.config.auth.disabled || this.authenticateRequest(request).authenticated;
+  }
+  isContextAuthenticated(context: HttpAuthenticationContext): boolean {
+    return this.config.auth.disabled || this.authenticateContext(context).authenticated;
   }
   validateApiKey(apiKey: string): boolean {
     return this.state.validateApiKey(apiKey);
@@ -73,26 +78,31 @@ export class AuthService implements OnApplicationShutdown {
     query: Record<string, string | undefined>,
     cookies: Record<string, string | undefined>
   ): AuthResult {
-    const key = headers['x-api-key'];
-    if (key)
-      return typeof key === 'string' && this.validateApiKey(key)
+    return this.authenticateContext(authenticationMaterial(headers, query, cookies));
+  }
+
+  authenticateContext(context: HttpAuthenticationContext): AuthResult {
+    const key = context.apiKeyHeader;
+    if (key.kind !== 'absent')
+      return key.kind === 'string' && this.validateApiKey(key.value)
         ? { authenticated: true }
         : { authenticated: false, errorType: 'invalid_api_key' };
-    const headerToken = headers['x-session-token'];
-    if (headerToken)
-      return typeof headerToken === 'string' && this.state.validateSession(headerToken)
+    const headerToken = context.sessionHeader;
+    if (headerToken.kind !== 'absent')
+      return headerToken.kind === 'string' && this.state.validateSession(headerToken.value)
         ? { authenticated: true }
         : { authenticated: false, errorType: 'invalid_session' };
-    if (query.apiKey)
-      return this.validateApiKey(query.apiKey)
+    if (context.apiKeyQuery.kind !== 'absent')
+      return context.apiKeyQuery.kind === 'string' && this.validateApiKey(context.apiKeyQuery.value)
         ? { authenticated: true }
         : { authenticated: false, errorType: 'invalid_api_key' };
-    if (query.token)
-      return this.state.validateSession(query.token)
+    if (context.tokenQuery.kind !== 'absent')
+      return context.tokenQuery.kind === 'string' &&
+        this.state.validateSession(context.tokenQuery.value)
         ? { authenticated: true }
         : { authenticated: false, errorType: 'invalid_session' };
-    const token = cookies[SESSION_COOKIE_NAME];
-    return token && this.state.validateSession(token)
+    const token = context.sessionCookie;
+    return token.kind === 'string' && this.state.validateSession(token.value)
       ? { authenticated: true }
       : { authenticated: false, errorType: 'no_auth' };
   }

@@ -10,19 +10,8 @@ import {
   SettingsDirectModelsResponseSchema,
   SettingsDirectTestResponseSchema,
 } from '@automaker/contracts/domains/settings';
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  Inject,
-  Param,
-  Post,
-  Put,
-  Req,
-  Res,
-} from '@nestjs/common';
-import type { Request, Response } from 'express';
+import { Body, Controller, Get, HttpCode, Inject, Param, Post, Put, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { RETIRED_CREDENTIAL_WRITE } from '@automaker/contracts';
 
 import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
@@ -177,13 +166,10 @@ export class SettingsController {
   @HttpCode(200)
   async discoverDirectModels(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) input: Record<string, unknown>,
-    @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ) {
     return SettingsDirectModelsResponseSchema.parse(
-      await this.abortable(request, response, (signal) =>
-        this.directCommands.discoverModels(input, signal)
-      )
+      await this.abortable(response, (signal) => this.directCommands.discoverModels(input, signal))
     );
   }
 
@@ -191,18 +177,14 @@ export class SettingsController {
   @HttpCode(200)
   async testDirectConnection(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) input: Record<string, unknown>,
-    @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ) {
     return SettingsDirectTestResponseSchema.parse(
-      await this.abortable(request, response, (signal) =>
-        this.directCommands.testConnection(input, signal)
-      )
+      await this.abortable(response, (signal) => this.directCommands.testConnection(input, signal))
     );
   }
 
   private async abortable<T>(
-    _request: Request,
     response: Response,
     operation: (signal: AbortSignal) => Promise<T>
   ): Promise<T> {

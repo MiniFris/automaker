@@ -3,14 +3,15 @@
   "info": {
     "title": "Automaker HTTP API",
     "version": "13",
-    "description": "Generated from native controller routes and shared Zod input schemas. Incomplete inputs and unverified responses are explicitly marked; this is not a complete response contract. JSON Schema cannot express every Zod refinement: shared runtime schemas remain authoritative for validation."
+    "description": "Generated from native routes and shared runtime contracts, including normalized request contexts and reviewed binary transport boundaries. Opaque legacy business values and middleware/global error envelopes retain their documented limits. JSON Schema cannot express every Zod refinement: runtime schemas remain authoritative."
   },
   "x-coverage": {
     "operations": 318,
-    "sharedOrNoInput": 296,
-    "incompleteInput": 22,
+    "sharedOrNoInput": 318,
+    "incompleteInput": 0,
     "sharedRuntimeResponses": 316,
-    "unverifiedResponses": 2
+    "sharedBinaryResponses": 2,
+    "unverifiedResponses": 0
   },
   "paths": {
     "/api/agent/clear": {
@@ -391,11 +392,14 @@
         ],
         "x-source": "apps/server/src/core/auth/auth.controller.ts:54",
         "x-access": "public-before-global-auth",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
+        "x-request-contract": "shared-or-no-input",
+        "x-request-context-contracts": [
           {
-            "in": "request",
-            "reason": "Raw request access is not a shared input contract."
+            "decorator": "ClientIdentity",
+            "schema": {
+              "$ref": "#/components/schemas/request-context.ClientIdentityContextSchema"
+            },
+            "representation": "validated normalized transport context"
           }
         ],
         "x-response-contract": "shared-runtime",
@@ -434,11 +438,14 @@
         ],
         "x-source": "apps/server/src/core/auth/auth.controller.ts:92",
         "x-access": "public-before-global-auth",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
+        "x-request-contract": "shared-or-no-input",
+        "x-request-context-contracts": [
           {
-            "in": "request",
-            "reason": "Raw request access is not a shared input contract."
+            "decorator": "SessionCookie",
+            "schema": {
+              "$ref": "#/components/schemas/request-context.SessionCookieContextSchema"
+            },
+            "representation": "validated normalized transport context"
           }
         ],
         "x-response-contract": "shared-runtime",
@@ -467,11 +474,14 @@
         ],
         "x-source": "apps/server/src/core/auth/auth.controller.ts:36",
         "x-access": "public-before-global-auth",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
+        "x-request-contract": "shared-or-no-input",
+        "x-request-context-contracts": [
           {
-            "in": "request",
-            "reason": "Raw request access is not a shared input contract."
+            "decorator": "HttpAuthentication",
+            "schema": {
+              "$ref": "#/components/schemas/request-context.HttpAuthenticationContextSchema"
+            },
+            "representation": "validated normalized transport context"
           }
         ],
         "x-response-contract": "shared-runtime",
@@ -2356,7 +2366,7 @@
         "tags": [
           "fs"
         ],
-        "x-source": "apps/server/src/modules/files/files.controller.ts:147",
+        "x-source": "apps/server/src/modules/files/files.controller.ts:152",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -2393,7 +2403,7 @@
         "tags": [
           "fs"
         ],
-        "x-source": "apps/server/src/modules/files/files.controller.ts:141",
+        "x-source": "apps/server/src/modules/files/files.controller.ts:146",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -2430,7 +2440,7 @@
         "tags": [
           "fs"
         ],
-        "x-source": "apps/server/src/modules/files/files.controller.ts:116",
+        "x-source": "apps/server/src/modules/files/files.controller.ts:121",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -2467,7 +2477,7 @@
         "tags": [
           "fs"
         ],
-        "x-source": "apps/server/src/modules/files/files.controller.ts:180",
+        "x-source": "apps/server/src/modules/files/files.controller.ts:185",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -2504,7 +2514,7 @@
         "tags": [
           "fs"
         ],
-        "x-source": "apps/server/src/modules/files/files.controller.ts:109",
+        "x-source": "apps/server/src/modules/files/files.controller.ts:114",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -2541,10 +2551,10 @@
         "tags": [
           "fs"
         ],
-        "x-source": "apps/server/src/modules/files/files.controller.ts:202",
+        "x-source": "apps/server/src/modules/files/files.controller.ts:217",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-binary-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -2555,9 +2565,59 @@
             }
           }
         },
+        "x-binary-runtime-proof": [
+          "apps/server/src/modules/files/files.controller.ts",
+          "apps/server/src/modules/files/image-query.service.ts",
+          "apps/server/src/modules/files/local-download.service.ts",
+          "apps/server/src/modules/files/local-zip-archive.ts",
+          "apps/server/src/core/security/security.module.ts",
+          "libs/platform/src/secure-fs.ts"
+        ],
         "responses": {
+          "200": {
+            "description": "Validated file/ZIP metadata with an owned bounded byte stream.",
+            "headers": {
+              "Content-Disposition": {
+                "description": "Validated before response headers are sent.",
+                "schema": {
+                  "type": "string",
+                  "maxLength": 8192,
+                  "pattern": "^attachment; filename=\"[^\"\\r\\n]*\"$"
+                }
+              },
+              "Content-Length": {
+                "description": "Validated before response headers are sent.",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d*)$"
+                }
+              },
+              "X-Directory-Size": {
+                "description": "Present for directory ZIP responses only.",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d*)$"
+                }
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "x-max-response-bytes": 524288000
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Non-success responses use endpoint/middleware JSON errors; full error schema is not yet verified."
           }
         }
       }
@@ -2568,7 +2628,7 @@
         "tags": [
           "fs"
         ],
-        "x-source": "apps/server/src/modules/files/files.controller.ts:84",
+        "x-source": "apps/server/src/modules/files/files.controller.ts:89",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -2605,10 +2665,10 @@
         "tags": [
           "fs"
         ],
-        "x-source": "apps/server/src/modules/files/files.controller.ts:191",
+        "x-source": "apps/server/src/modules/files/files.controller.ts:196",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-binary-runtime",
         "parameters": [
           {
             "name": "path",
@@ -2631,9 +2691,69 @@
             }
           }
         ],
+        "x-binary-runtime-proof": [
+          "apps/server/src/modules/files/files.controller.ts",
+          "apps/server/src/modules/files/image-query.service.ts",
+          "apps/server/src/modules/files/local-download.service.ts",
+          "apps/server/src/modules/files/local-zip-archive.ts",
+          "apps/server/src/core/security/security.module.ts",
+          "libs/platform/src/secure-fs.ts"
+        ],
         "responses": {
+          "200": {
+            "description": "Validated image bytes and headers.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Validated before response headers are sent.",
+                "schema": {
+                  "type": "string",
+                  "const": "public, max-age=3600"
+                }
+              },
+              "Content-Length": {
+                "description": "Validated before response headers are sent.",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d*)$"
+                }
+              }
+            },
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/gif": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/bmp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "x-max-response-bytes": 20971520
+          },
           "default": {
-            "description": "Status and body controlled by the handler; response contract not yet shared."
+            "description": "Non-success responses use endpoint/middleware JSON errors; full error schema is not yet verified."
           }
         }
       }
@@ -2644,7 +2764,7 @@
         "tags": [
           "fs"
         ],
-        "x-source": "apps/server/src/modules/files/files.controller.ts:100",
+        "x-source": "apps/server/src/modules/files/files.controller.ts:105",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -2681,7 +2801,7 @@
         "tags": [
           "fs"
         ],
-        "x-source": "apps/server/src/modules/files/files.controller.ts:125",
+        "x-source": "apps/server/src/modules/files/files.controller.ts:130",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -2718,7 +2838,7 @@
         "tags": [
           "fs"
         ],
-        "x-source": "apps/server/src/modules/files/files.controller.ts:70",
+        "x-source": "apps/server/src/modules/files/files.controller.ts:75",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -2755,7 +2875,7 @@
         "tags": [
           "fs"
         ],
-        "x-source": "apps/server/src/modules/files/files.controller.ts:63",
+        "x-source": "apps/server/src/modules/files/files.controller.ts:68",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -2792,7 +2912,7 @@
         "tags": [
           "fs"
         ],
-        "x-source": "apps/server/src/modules/files/files.controller.ts:156",
+        "x-source": "apps/server/src/modules/files/files.controller.ts:161",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -2829,7 +2949,7 @@
         "tags": [
           "fs"
         ],
-        "x-source": "apps/server/src/modules/files/files.controller.ts:171",
+        "x-source": "apps/server/src/modules/files/files.controller.ts:176",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -2866,7 +2986,7 @@
         "tags": [
           "fs"
         ],
-        "x-source": "apps/server/src/modules/files/files.controller.ts:164",
+        "x-source": "apps/server/src/modules/files/files.controller.ts:169",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -2903,7 +3023,7 @@
         "tags": [
           "fs"
         ],
-        "x-source": "apps/server/src/modules/files/files.controller.ts:77",
+        "x-source": "apps/server/src/modules/files/files.controller.ts:82",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -2940,7 +3060,7 @@
         "tags": [
           "fs"
         ],
-        "x-source": "apps/server/src/modules/files/files.controller.ts:134",
+        "x-source": "apps/server/src/modules/files/files.controller.ts:139",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -2977,7 +3097,7 @@
         "tags": [
           "fs"
         ],
-        "x-source": "apps/server/src/modules/files/files.controller.ts:91",
+        "x-source": "apps/server/src/modules/files/files.controller.ts:96",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -5319,7 +5439,7 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:81",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:70",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -5356,7 +5476,7 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:68",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:57",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -5381,7 +5501,7 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:114",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:103",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -5484,13 +5604,7 @@
         ],
         "x-source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts:100",
         "x-access": "protected",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "request",
-            "reason": "Raw request access is not a shared input contract."
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
@@ -5525,15 +5639,9 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts:114",
+        "x-source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts:111",
         "x-access": "protected",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "request",
-            "reason": "Raw request access is not a shared input contract."
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
@@ -5790,15 +5898,9 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts:128",
+        "x-source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts:122",
         "x-access": "protected",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "request",
-            "reason": "Raw request access is not a shared input contract."
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
@@ -5833,15 +5935,9 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts:142",
+        "x-source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts:135",
         "x-access": "protected",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "request",
-            "reason": "Raw request access is not a shared input contract."
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
@@ -5876,15 +5972,9 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts:156",
+        "x-source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts:148",
         "x-access": "protected",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "request",
-            "reason": "Raw request access is not a shared input contract."
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
@@ -5919,15 +6009,9 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts:204",
+        "x-source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts:193",
         "x-access": "protected",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "request",
-            "reason": "Raw request access is not a shared input contract."
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
@@ -5962,7 +6046,7 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts:194",
+        "x-source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts:183",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -5999,15 +6083,9 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts:216",
+        "x-source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts:204",
         "x-access": "protected",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "request",
-            "reason": "Raw request access is not a shared input contract."
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
@@ -6042,15 +6120,9 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts:230",
+        "x-source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts:215",
         "x-access": "protected",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "request",
-            "reason": "Raw request access is not a shared input contract."
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
@@ -6085,15 +6157,9 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts:244",
+        "x-source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts:226",
         "x-access": "protected",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "request",
-            "reason": "Raw request access is not a shared input contract."
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
@@ -6128,15 +6194,9 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts:170",
+        "x-source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts:161",
         "x-access": "protected",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "request",
-            "reason": "Raw request access is not a shared input contract."
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
@@ -6171,15 +6231,9 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts:182",
+        "x-source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts:172",
         "x-access": "protected",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "request",
-            "reason": "Raw request access is not a shared input contract."
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
@@ -6214,7 +6268,7 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:63",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:52",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -6239,7 +6293,7 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:107",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:96",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -6276,7 +6330,7 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:127",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:116",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -6313,7 +6367,7 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:94",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:83",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -6348,7 +6402,7 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:143",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:132",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -6395,7 +6449,7 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:89",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:78",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -6420,7 +6474,7 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:136",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:125",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -6457,7 +6511,7 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:169",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:158",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -6494,7 +6548,7 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:154",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:143",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -6531,15 +6585,9 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:176",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:165",
         "x-access": "protected",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "request",
-            "reason": "Raw request access is not a shared input contract."
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
@@ -6574,7 +6622,7 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:161",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:150",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -6611,15 +6659,9 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:190",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:176",
         "x-access": "protected",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
-          {
-            "in": "request",
-            "reason": "Raw request access is not a shared input contract."
-          }
-        ],
+        "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
@@ -6654,7 +6696,7 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:102",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:91",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -6681,7 +6723,7 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:73",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:62",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -6716,7 +6758,7 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:120",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:109",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -6753,7 +6795,7 @@
         "tags": [
           "settings"
         ],
-        "x-source": "apps/server/src/modules/settings/settings.controller.ts:58",
+        "x-source": "apps/server/src/modules/settings/settings.controller.ts:47",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -6780,7 +6822,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:158",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:151",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -6807,7 +6849,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:109",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:110",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -6844,7 +6886,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:236",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:223",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -6881,7 +6923,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:283",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:270",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -6918,7 +6960,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:216",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:203",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -6955,7 +6997,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:268",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:255",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -6992,7 +7034,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:251",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:238",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7029,7 +7071,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:103",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:104",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7056,7 +7098,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:164",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:157",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7093,7 +7135,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:228",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:215",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7120,7 +7162,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:177",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:170",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7157,7 +7199,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:114",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:115",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7194,7 +7236,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:280",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:267",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7221,7 +7263,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:306",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:293",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7248,7 +7290,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:303",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:290",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7275,7 +7317,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:295",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:282",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7312,7 +7354,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:127",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:128",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7349,7 +7391,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:338",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:325",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7386,7 +7428,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:343",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:330",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7423,7 +7465,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:328",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:315",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7460,7 +7502,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:333",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:320",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7497,7 +7539,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:366",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:353",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7534,7 +7576,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:378",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:365",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7571,7 +7613,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:361",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:348",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7608,7 +7650,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:348",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:335",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7653,7 +7695,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:372",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:359",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7688,7 +7730,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:356",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:343",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7725,7 +7767,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:213",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:200",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7752,7 +7794,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:120",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:121",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7789,7 +7831,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:241",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:228",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7826,7 +7868,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:288",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:275",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7863,7 +7905,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:221",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:208",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7900,7 +7942,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:273",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:260",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7937,7 +7979,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:258",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:245",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -7974,13 +8016,16 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:145",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:142",
         "x-access": "public-before-global-auth",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
+        "x-request-contract": "shared-or-no-input",
+        "x-request-context-contracts": [
           {
-            "in": "request",
-            "reason": "Raw request access is not a shared input contract."
+            "decorator": "ClientIdentity",
+            "schema": {
+              "$ref": "#/components/schemas/request-context.ClientIdentityContextSchema"
+            },
+            "representation": "validated normalized transport context"
           }
         ],
         "x-response-contract": "shared-runtime",
@@ -8017,7 +8062,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:265",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:252",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -8044,7 +8089,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:195",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:185",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -8071,7 +8116,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:198",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:188",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -8098,7 +8143,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:106",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:107",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -8125,7 +8170,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:233",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:220",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -8152,7 +8197,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:246",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:233",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -8179,7 +8224,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:325",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:312",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -8206,7 +8251,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:317",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:304",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -8233,7 +8278,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:309",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:296",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -8270,7 +8315,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:320",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:307",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -8297,7 +8342,7 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:161",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:154",
         "x-access": "public-before-global-auth",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -8324,13 +8369,16 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:132",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:133",
         "x-access": "public-before-global-auth",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
+        "x-request-contract": "shared-or-no-input",
+        "x-request-context-contracts": [
           {
-            "in": "request",
-            "reason": "Raw request access is not a shared input contract."
+            "decorator": "ClientIdentity",
+            "schema": {
+              "$ref": "#/components/schemas/request-context.ClientIdentityContextSchema"
+            },
+            "representation": "validated normalized transport context"
           }
         ],
         "x-response-contract": "shared-runtime",
@@ -8367,13 +8415,16 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:169",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:162",
         "x-access": "public-before-global-auth",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
+        "x-request-contract": "shared-or-no-input",
+        "x-request-context-contracts": [
           {
-            "in": "request",
-            "reason": "Raw request access is not a shared input contract."
+            "decorator": "ClientIdentity",
+            "schema": {
+              "$ref": "#/components/schemas/request-context.ClientIdentityContextSchema"
+            },
+            "representation": "validated normalized transport context"
           }
         ],
         "x-response-contract": "shared-runtime",
@@ -8410,13 +8461,16 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:184",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:177",
         "x-access": "public-before-global-auth",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
+        "x-request-contract": "shared-or-no-input",
+        "x-request-context-contracts": [
           {
-            "in": "request",
-            "reason": "Raw request access is not a shared input contract."
+            "decorator": "ClientIdentity",
+            "schema": {
+              "$ref": "#/components/schemas/request-context.ClientIdentityContextSchema"
+            },
+            "representation": "validated normalized transport context"
           }
         ],
         "x-response-contract": "shared-runtime",
@@ -8453,13 +8507,16 @@
         "tags": [
           "setup"
         ],
-        "x-source": "apps/server/src/modules/providers/setup.controller.ts:201",
+        "x-source": "apps/server/src/modules/providers/setup.controller.ts:191",
         "x-access": "public-before-global-auth",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
+        "x-request-contract": "shared-or-no-input",
+        "x-request-context-contracts": [
           {
-            "in": "request",
-            "reason": "Raw request access is not a shared input contract."
+            "decorator": "ClientIdentity",
+            "schema": {
+              "$ref": "#/components/schemas/request-context.ClientIdentityContextSchema"
+            },
+            "representation": "validated normalized transport context"
           }
         ],
         "x-response-contract": "shared-runtime",
@@ -8757,7 +8814,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:62",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:63",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -8797,13 +8854,16 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:72",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:73",
         "x-access": "protected",
-        "x-request-contract": "incomplete",
-        "x-unresolved-inputs": [
+        "x-request-contract": "shared-or-no-input",
+        "x-request-context-contracts": [
           {
-            "in": "request",
-            "reason": "Raw request access is not a shared input contract."
+            "decorator": "TerminalLogoutToken",
+            "schema": {
+              "$ref": "#/components/schemas/request-context.TerminalLogoutContextSchema"
+            },
+            "representation": "validated normalized transport context"
           }
         ],
         "x-response-contract": "shared-runtime",
@@ -8830,7 +8890,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:226",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:223",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -8880,7 +8940,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:197",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:194",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -8918,7 +8978,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:92",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:89",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -8958,7 +9018,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:83",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:80",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -8983,7 +9043,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:131",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:128",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -9023,7 +9083,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:253",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:250",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -9048,7 +9108,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:265",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:262",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -9088,7 +9148,7 @@
         "tags": [
           "terminal"
         ],
-        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:50",
+        "x-source": "apps/server/src/modules/terminal/terminal.controller.ts:51",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
         "x-response-contract": "shared-runtime",
@@ -19671,6 +19731,286 @@
         ],
         "additionalProperties": false
       },
+      "request-context.ClientIdentityContextSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "clientId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "clientId"
+        ],
+        "additionalProperties": false
+      },
+      "request-context.HttpAuthenticationContextSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "apiKeyHeader": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "absent"
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "value"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "invalid"
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "sessionHeader": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "absent"
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "value"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "invalid"
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "apiKeyQuery": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "absent"
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "value"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "invalid"
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "tokenQuery": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "absent"
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "value"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "invalid"
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "sessionCookie": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "absent"
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "value"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "invalid"
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "apiKeyHeader",
+          "sessionHeader",
+          "apiKeyQuery",
+          "tokenQuery",
+          "sessionCookie"
+        ],
+        "additionalProperties": false
+      },
+      "request-context.SessionCookieContextSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "token": {}
+        },
+        "additionalProperties": false
+      },
+      "request-context.TerminalLogoutContextSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "running-agents.RunningAgentsResponseSchema.Response": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -24658,6 +24998,35 @@
           "seriesLimit": {
             "type": "number",
             "const": 2048
+          },
+          "runtimeGauges": {
+            "maxItems": 32,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "value": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "value"
+              ],
+              "additionalProperties": false
+            }
           },
           "counters": {
             "maxItems": 2048,

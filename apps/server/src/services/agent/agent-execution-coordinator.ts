@@ -6,6 +6,12 @@ interface Execution {
   task: Promise<unknown>;
   selected: boolean;
 }
+export type AgentExecutionObservation = <T>(
+  kind: 'agent_execution' | 'agent_mutation',
+  id: string,
+  task: () => Promise<T>,
+  signal?: AbortSignal
+) => Promise<T>;
 
 /** Reserves ownership before any await; cancellation never releases an unsettled run. */
 export class AgentExecutionCoordinator {
@@ -13,7 +19,14 @@ export class AgentExecutionCoordinator {
   private readonly mutations = new Map<string, Promise<unknown>>();
   private accepting = true;
 
-  constructor(private readonly drainTimeoutMs = 5000) {}
+  constructor(
+    private readonly drainTimeoutMs = 5000,
+    private readonly observe: AgentExecutionObservation = (_kind, _id, task) => task()
+  ) {}
+
+  get pendingMutations(): number {
+    return this.mutations.size;
+  }
 
   assertAccepting(): void {
     if (!this.accepting) throw new UnavailableDomainError('Agent execution is shutting down.');
@@ -37,7 +50,14 @@ export class AgentExecutionCoordinator {
       selected: false,
     };
     const task = Promise.resolve()
-      .then(() => operation(execution.controller))
+      .then(() =>
+        this.observe(
+          'agent_execution',
+          id,
+          () => operation(execution.controller),
+          execution.controller.signal
+        )
+      )
       .finally(() => {
         if (this.executions.get(id) === execution) this.executions.delete(id);
       });
@@ -55,7 +75,7 @@ export class AgentExecutionCoordinator {
       if (cancelActive) await this.cancelAndDrain(id);
       else if (this.executions.has(id))
         throw new ConflictDomainError('Stop the active agent before changing its model.');
-      return operation();
+      return this.observe('agent_mutation', id, operation);
     });
     const tail = task.then(
       () => undefined,
