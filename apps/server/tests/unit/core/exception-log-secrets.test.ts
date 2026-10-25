@@ -45,6 +45,7 @@ describe('exception diagnostic confidentiality', () => {
       expect(json).toHaveBeenCalledWith({
         success: false,
         error: 'Internal server error.',
+        errorCode: 'INTERNAL_ERROR',
         correlationId: 'exception-fixture',
       });
     }

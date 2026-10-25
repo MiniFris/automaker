@@ -14,6 +14,7 @@ import {
   ExecutionEnvironmentError,
   isIssuedEnvironment,
 } from '../services/execution-environment/runtime.js';
+import { captureNativeLocalEnvironment } from '../services/execution-environment/local.js';
 import { boundRuntime } from '../services/execution-environment/bound-runtime.js';
 
 /** Never interpret a client-shaped object as permission to run a host process. */
@@ -43,9 +44,11 @@ export function remoteCliRuntime(options: ExecuteOptions) {
 export async function hasRemoteEnvironment(
   settings: SettingsService,
   projectPath: string,
-  runKey: string
+  runKey: string,
+  hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
 ) {
-  const store = new EnvironmentBindingStore(settings);
+  const environmentSnapshot = captureNativeLocalEnvironment(hostEnvironment);
+  const store = new EnvironmentBindingStore(settings, undefined, undefined, environmentSnapshot);
   const pinned = await store.peek(projectPath, runKey);
   return ['ssh', 'docker', 'auto'].includes(
     pinned?.type ?? (await store.configuration(projectPath)).resolved.type
@@ -60,10 +63,12 @@ export async function prepareCliExecution(
     projectPath?: string;
     runKey?: string;
     feature?: { targetBranch?: string | null };
-  }
+  },
+  hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
 ): Promise<ExecuteOptions> {
   if (!settings) return options;
-  const store = new EnvironmentBindingStore(settings);
+  const environmentSnapshot = captureNativeLocalEnvironment(hostEnvironment);
+  const store = new EnvironmentBindingStore(settings, undefined, undefined, environmentSnapshot);
   const projectPath = selection.projectPath ?? options.cwd;
   const pinned = selection.runKey ? await store.peek(projectPath, selection.runKey) : undefined;
   const state = await store.configuration(projectPath);
@@ -117,7 +122,10 @@ export async function prepareCliExecution(
     sshFeature: selection.feature,
     feature: selection.feature,
   });
-  const environment = binding.type === 'legacy' ? undefined : await boundRuntime(binding, settings);
+  const environment =
+    binding.type === 'legacy'
+      ? undefined
+      : await boundRuntime(binding, settings, environmentSnapshot);
   const codexDefaults =
     remote && isCodexModel(selection.model) ? await settings.getGlobalSettings() : undefined;
   return {

@@ -89,7 +89,10 @@ export class AutoModeServiceFacade {
     private readonly pipelineOrchestrator: PipelineOrchestrator,
     private readonly settingsService: SettingsService | null,
     private readonly filesystem: ExecutionFilesystem,
-    private readonly directoryValidator: (cwd: string) => void = validateWorkingDirectory
+    private readonly directoryValidator: (cwd: string) => void = validateWorkingDirectory,
+    private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv> = Object.freeze({
+      ...process.env,
+    })
   ) {}
 
   /**
@@ -169,6 +172,7 @@ export class AutoModeServiceFacade {
    * @param options - Configuration options including events, settingsService, featureLoader
    */
   static create(projectPath: string, options: FacadeOptions): AutoModeServiceFacade {
+    const hostEnvironment = Object.freeze({ ...(options.hostEnvironment ?? process.env) });
     const {
       events,
       settingsService = null,
@@ -205,7 +209,8 @@ export class AutoModeServiceFacade {
       featureStateManager,
       planApprovalService,
       settingsService,
-      filesystem
+      filesystem,
+      hostEnvironment
     );
     const testRunnerService = new TestRunnerService();
 
@@ -280,7 +285,12 @@ export class AutoModeServiceFacade {
         const remoteCLI =
           (isRemoteCliModel(resolvedModel) || isRemoteSdkModel(resolvedModel)) &&
           settingsService &&
-          (await hasRemoteEnvironment(settingsService, pPath, `feature:${pPath}:${featureId}`));
+          (await hasRemoteEnvironment(
+            settingsService,
+            pPath,
+            `feature:${pPath}:${featureId}`,
+            hostEnvironment
+          ));
         const provider = remoteCLI
           ? providerRegistry.providerForModel(resolvedModel, { throwOnDisconnected: false })
           : providerRegistry.providerForModel(resolvedModel);
@@ -451,7 +461,8 @@ export class AutoModeServiceFacade {
       createRunAgentFn(),
       pipeline,
       filesystem,
-      options.validateWorkingDirectory
+      options.validateWorkingDirectory,
+      hostEnvironment
     );
 
     // AutoLoopCoordinator - ALWAYS create new with proper execution callbacks
@@ -582,7 +593,8 @@ export class AutoModeServiceFacade {
       providerRegistry,
       pipeline,
       filesystem,
-      options.validateWorkingDirectory
+      options.validateWorkingDirectory,
+      hostEnvironment
     );
 
     // RecoveryService
@@ -621,7 +633,8 @@ export class AutoModeServiceFacade {
       pipelineOrchestrator,
       settingsService,
       filesystem,
-      options.validateWorkingDirectory
+      options.validateWorkingDirectory,
+      hostEnvironment
     );
 
     return facadeInstance;
@@ -868,12 +881,11 @@ export class AutoModeServiceFacade {
       const feature = await this.featureStateManager.loadFeature(this.projectPath, featureId);
       const remote =
         feature && this.settingsService
-          ? await new FeatureWorkspaceService(this.settingsService).prepare(
-              this.projectPath,
-              feature,
-              signal,
-              false
-            )
+          ? await new FeatureWorkspaceService(
+              this.settingsService,
+              undefined,
+              this.hostEnvironment
+            ).prepare(this.projectPath, feature, signal, false)
           : undefined;
       port.assertCurrent();
       signal.throwIfAborted();
@@ -895,7 +907,9 @@ export class AutoModeServiceFacade {
       port.assertCurrent();
       signal.throwIfAborted();
       if (!remote) this.directoryValidator(workDir);
-      const environment = remote?.environment ?? (await LocalExecutionEnvironment.create(workDir));
+      const environment =
+        remote?.environment ??
+        (await LocalExecutionEnvironment.create(workDir, this.hostEnvironment));
       lease.remoteWorkspace = !!remote;
       lease.worktreePath = environment.cwd;
       lease.branchName = feature?.branchName ?? null;
@@ -961,7 +975,11 @@ export class AutoModeServiceFacade {
     const observedRun = this.concurrencyManager.getRunningFeature(featureId);
     const remoteFeature = await this.featureStateManager.loadFeature(this.projectPath, featureId);
     if (remoteFeature && this.settingsService) {
-      const service = new FeatureWorkspaceService(this.settingsService);
+      const service = new FeatureWorkspaceService(
+        this.settingsService,
+        undefined,
+        this.hostEnvironment
+      );
       const remote = await service.prepare(
         this.projectPath,
         remoteFeature,
@@ -1070,7 +1088,11 @@ export class AutoModeServiceFacade {
       isAutoMode: false,
     });
     try {
-      const service = new FeatureWorkspaceService(this.settingsService);
+      const service = new FeatureWorkspaceService(
+        this.settingsService,
+        undefined,
+        this.hostEnvironment
+      );
       const remote = await service.prepare(
         this.projectPath,
         feature,

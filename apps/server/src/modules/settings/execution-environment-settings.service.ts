@@ -1,4 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { HOST_ENVIRONMENT } from '../../core/config/index.js';
+import { captureNativeLocalEnvironment } from '../../services/execution-environment/local.js';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 
@@ -29,8 +31,16 @@ export class ExecutionEnvironmentSettingsService {
   private readonly providers: ProviderSetupService;
   private writes: Promise<unknown> = Promise.resolve();
 
-  constructor(@Inject(SettingsService) private readonly settings: SettingsService) {
-    this.bindings = new EnvironmentBindingStore(settings);
+  constructor(
+    @Inject(SettingsService) private readonly settings: SettingsService,
+    @Inject(HOST_ENVIRONMENT) environment: Readonly<NodeJS.ProcessEnv>
+  ) {
+    this.bindings = new EnvironmentBindingStore(
+      settings,
+      undefined,
+      undefined,
+      captureNativeLocalEnvironment(environment)
+    );
     this.docker = new ManagedDocker(settings);
     this.ssh = new ManagedSSH(settings);
     this.providers = new ProviderSetupService(settings, this.docker, this.ssh);

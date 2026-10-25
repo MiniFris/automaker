@@ -17,7 +17,7 @@ describe('ExecutionEnvironmentSettingsService', () => {
     project = path.join(temporary, 'project');
     data = path.join(temporary, 'data');
     await mkdir(project);
-    service = new ExecutionEnvironmentSettingsService(new SettingsService(data));
+    service = new ExecutionEnvironmentSettingsService(new SettingsService(data), {});
   });
 
   afterEach(async () => {

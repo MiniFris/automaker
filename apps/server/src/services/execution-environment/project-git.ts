@@ -84,14 +84,23 @@ export interface ProjectGitTarget {
 
 /** Resolves only saved project targets / pinned workspaces; no preparation or fallback on poll. */
 export class ProjectGitService {
+  private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>;
   constructor(
     private readonly settings: SettingsService,
     private readonly docker = new ManagedDocker(settings),
-    private readonly ssh = new ManagedSSH(settings)
-  ) {}
+    private readonly ssh = new ManagedSSH(settings),
+    hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
+  ) {
+    this.hostEnvironment = Object.freeze({ ...hostEnvironment });
+  }
 
   async pinnedEntries(projectPath: string) {
-    const pins = await new EnvironmentBindingStore(this.settings).workspaceBindings(projectPath);
+    const pins = await new EnvironmentBindingStore(
+      this.settings,
+      undefined,
+      undefined,
+      this.hostEnvironment
+    ).workspaceBindings(projectPath);
     return pins.flatMap((pin) => {
       const alias = workspaceAlias(pin);
       if (
@@ -140,7 +149,12 @@ export class ProjectGitService {
     const projectPath = await fs.realpath(rootHint);
     validatePath(projectPath);
     const alias = path.resolve(projectPath, path.relative(rootHint, normalized));
-    const store = new EnvironmentBindingStore(this.settings);
+    const store = new EnvironmentBindingStore(
+      this.settings,
+      undefined,
+      undefined,
+      this.hostEnvironment
+    );
     const pins = await store.workspaceBindings(projectPath);
     let binding = featureId
       ? await store.peek(projectPath, `feature:${projectPath}:${featureId}`)
@@ -166,7 +180,7 @@ export class ProjectGitService {
         );
       if (binding.type === 'legacy' || (binding.type === 'local' && !binding.featureWorkspace))
         return undefined;
-      runtime = await boundRuntime(binding, this.settings);
+      runtime = await boundRuntime(binding, this.settings, this.hostEnvironment);
       root = binding.ssh?.remotePath ?? projectPath;
       identity = binding;
     } else {
@@ -245,7 +259,7 @@ export class ProjectGitService {
     const projectPath = await fs.realpath(rootHint);
     const alias = await fs.realpath(path.resolve(projectPath, path.relative(rootHint, normalized)));
     validatePath(alias);
-    const runtime = await LocalExecutionEnvironment.create(alias);
+    const runtime = await LocalExecutionEnvironment.create(alias, this.hostEnvironment);
     const targetId = identityHash(['local', projectPath, alias]);
     return {
       environment: {
@@ -281,7 +295,12 @@ export class ProjectGitService {
         'Inspect this workspace again before changing it: its saved environment target must match the one shown by the UI. No Git mutation was dispatched.'
       );
     if (target.binding) {
-      await new EnvironmentBindingStore(this.settings).bind({
+      await new EnvironmentBindingStore(
+        this.settings,
+        undefined,
+        undefined,
+        this.hostEnvironment
+      ).bind({
         projectPath: target.binding.projectPath,
         cwd: target.binding.cwd,
         existingId: target.binding.id,
@@ -304,9 +323,12 @@ export class ProjectGitService {
     };
     if (['merge', 'delete'].includes(action) && typeof body.worktreePath === 'string') {
       const source = (
-        await new EnvironmentBindingStore(this.settings).workspaceBindings(
-          target.environment.projectPath
-        )
+        await new EnvironmentBindingStore(
+          this.settings,
+          undefined,
+          undefined,
+          this.hostEnvironment
+        ).workspaceBindings(target.environment.projectPath)
       ).find((binding) => workspaceAlias(binding) === path.resolve(body.worktreePath as string));
       if (source) workerBody = { ...workerBody, sourceBindingId: source.id };
     }
@@ -380,10 +402,12 @@ export class ProjectGitService {
         (lifecycle?.worktreeDeleted || lifecycle?.deleted?.worktreeDeleted) &&
         lifecycle.deletedBindingId
       ) {
-        await new EnvironmentBindingStore(this.settings).removeWorkspaceBinding(
-          target.environment.projectPath,
-          lifecycle.deletedBindingId
-        );
+        await new EnvironmentBindingStore(
+          this.settings,
+          undefined,
+          undefined,
+          this.hostEnvironment
+        ).removeWorkspaceBinding(target.environment.projectPath, lifecycle.deletedBindingId);
         delete lifecycle.deletedBindingId;
       }
     }

@@ -65,6 +65,7 @@ export type {
 const logger = createLogger('PipelineOrchestrator');
 
 export class PipelineOrchestrator {
+  private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>;
   constructor(
     private eventBus: TypedEventBus,
     private featureStateManager: FeatureStateManager,
@@ -80,8 +81,11 @@ export class PipelineOrchestrator {
     private runAgentFn: RunAgentFn,
     private readonly pipeline: PipelineService,
     private readonly filesystem: ExecutionFilesystem,
-    private readonly directoryValidator: (cwd: string) => void = validateWorkingDirectory
-  ) {}
+    private readonly directoryValidator: (cwd: string) => void = validateWorkingDirectory,
+    hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
+  ) {
+    this.hostEnvironment = Object.freeze({ ...hostEnvironment });
+  }
 
   private requireCurrent(run: RunningFeature | undefined): void {
     if (!run || !this.concurrencyManager.isCurrent(run)) {
@@ -133,7 +137,7 @@ export class PipelineOrchestrator {
       this.concurrencyManager.coordinator.bind(this.concurrencyManager, run!)
     );
     const remoteService = this.settingsService
-      ? new FeatureWorkspaceService(this.settingsService)
+      ? new FeatureWorkspaceService(this.settingsService, undefined, this.hostEnvironment)
       : undefined;
     const remote = await remoteService?.prepare(
       ctx.projectPath,
@@ -345,11 +349,11 @@ export class PipelineOrchestrator {
     const run = expected ?? this.concurrencyManager.getRunningFeature(feature.id);
     this.requireCurrent(run);
     if (this.settingsService)
-      await new FeatureWorkspaceService(this.settingsService).prepare(
-        projectPath,
-        feature,
-        run?.abortController.signal ?? new AbortController().signal
-      );
+      await new FeatureWorkspaceService(
+        this.settingsService,
+        undefined,
+        this.hostEnvironment
+      ).prepare(projectPath, feature, run?.abortController.signal ?? new AbortController().signal);
     const featureId = feature.id;
     const contextPath = path.join(getFeatureDir(projectPath, featureId), 'agent-output.md');
     let hasContext = false;
@@ -409,7 +413,7 @@ export class PipelineOrchestrator {
   ): Promise<void> {
     let run = expected ?? this.concurrencyManager.getRunningFeature(feature.id);
     const remoteService = this.settingsService
-      ? new FeatureWorkspaceService(this.settingsService)
+      ? new FeatureWorkspaceService(this.settingsService, undefined, this.hostEnvironment)
       : undefined;
     const featureId = feature.id;
     const allSortedSteps = [...pipelineConfig.steps].sort((a, b) => a.order - b.order);
@@ -632,13 +636,16 @@ export class PipelineOrchestrator {
           ((await hasRemoteEnvironment(
             this.settingsService,
             projectPath,
-            `feature:${projectPath}:${featureId}`
+            `feature:${projectPath}:${featureId}`,
+            this.hostEnvironment
           )) ||
             !!(
-              await new EnvironmentBindingStore(this.settingsService).peek(
-                projectPath,
-                `feature:${projectPath}:${featureId}`
-              )
+              await new EnvironmentBindingStore(
+                this.settingsService,
+                undefined,
+                undefined,
+                this.hostEnvironment
+              ).peek(projectPath, `feature:${projectPath}:${featureId}`)
             )?.featureWorkspace))
       ) {
         try {
@@ -647,7 +654,8 @@ export class PipelineOrchestrator {
             workDir,
             testCommand,
             abortController.signal,
-            { projectPath, runKey: `feature:${projectPath}:${featureId}` }
+            { projectPath, runKey: `feature:${projectPath}:${featureId}` },
+            this.hostEnvironment
           );
           this.eventBus.emitAutoModeEvent('auto_mode_progress', {
             featureId,
@@ -780,7 +788,11 @@ export class PipelineOrchestrator {
     const { projectPath, featureId, branchName, worktreePath, feature } = context;
     if (!branchName) return { success: false, error: 'No branch name for merge' };
     if (this.settingsService) {
-      const service = new FeatureWorkspaceService(this.settingsService);
+      const service = new FeatureWorkspaceService(
+        this.settingsService,
+        undefined,
+        this.hostEnvironment
+      );
       try {
         const remote = await service.prepare(
           projectPath,

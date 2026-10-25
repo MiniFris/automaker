@@ -1,3 +1,4 @@
+import { HOST_ENVIRONMENT } from '../../core/config/index.js';
 import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
@@ -32,7 +33,8 @@ export interface PlanningRunContext {
 export class PlanningWorkflowContext {
   constructor(
     @Inject(SECURE_FILESYSTEM) private readonly filesystem: typeof Filesystem,
-    @Inject(SecurityService) private readonly security: SecurityService
+    @Inject(SecurityService) private readonly security: SecurityService,
+    @Inject(HOST_ENVIRONMENT) private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv> = {}
   ) {}
 
   operation(project: string, signal: AbortSignal): PlanningRunContext {
@@ -52,7 +54,8 @@ export class PlanningWorkflowContext {
       projectPath,
       check,
       filesystem: { readFile: (...args) => owned(() => this.filesystem.readFile(...args)) },
-      query: (...args) => owned(() => streamingQuery(...args)),
+      query: (options, registry) =>
+        owned(() => streamingQuery(options, registry, this.hostEnvironment)),
       features: {
         getAll: (candidate) => {
           same(candidate);

@@ -25,8 +25,8 @@ vi.mock('../../../src/services/execution-environment/runtime.js', () => ({
 }));
 vi.mock('../../../src/services/execution-environment/feature-workspace.js', () => ({
   FeatureWorkspaceService: class {
-    constructor(settings: unknown) {
-      mocks.workspace(settings);
+    constructor(...args: unknown[]) {
+      mocks.workspace(...args);
     }
     context = mocks.context;
     memory = mocks.memory;
@@ -59,7 +59,8 @@ function input() {
     onBinding: vi.fn().mockResolvedValue(undefined),
   };
 }
-const preparer = new AgentEnvironmentPreparer(new AgentPromptBuilder(filesystem));
+const hostEnvironment = Object.freeze({ PATH: '/owned-tooling', OWNED_HOST: 'fixture' });
+const preparer = new AgentEnvironmentPreparer(new AgentPromptBuilder(filesystem), hostEnvironment);
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.remote.mockResolvedValue(true);
@@ -80,7 +81,12 @@ describe('AgentEnvironmentPreparer', () => {
     expect(await preparer.usesManagedContext(settings, '/project', 'chat:fixture', signal)).toBe(
       true
     );
-    expect(mocks.remote).toHaveBeenCalledWith(settings, '/project', 'chat:fixture');
+    expect(mocks.remote).toHaveBeenCalledWith(
+      settings,
+      '/project',
+      'chat:fixture',
+      hostEnvironment
+    );
     expect(await preparer.usesManagedContext(null, '/project', 'chat:fixture', signal)).toBe(false);
     expect(mocks.remote).toHaveBeenCalledTimes(1);
   });
@@ -125,8 +131,14 @@ describe('AgentEnvironmentPreparer', () => {
       return { formattedPrompt: 'TARGET', files: [], memoryFiles };
     });
     const result = await preparer.prepare(request);
-    expect(mocks.prepare).toHaveBeenCalledWith(request.options, settings, request.selection);
-    expect(mocks.workspace).toHaveBeenCalledWith(settings);
+    expect(mocks.prepare).toHaveBeenCalledWith(
+      request.options,
+      settings,
+      request.selection,
+      'agent',
+      hostEnvironment
+    );
+    expect(mocks.workspace).toHaveBeenCalledWith(settings, undefined, hostEnvironment);
     expect(mocks.context).toHaveBeenCalledWith(
       { binding, environment: runtime },
       request.options.abortController.signal

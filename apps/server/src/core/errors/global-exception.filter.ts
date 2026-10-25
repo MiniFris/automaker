@@ -3,6 +3,7 @@ import type { Response } from 'express';
 import { createLogger } from '@automaker/utils';
 import { getCorrelationId, redactSecrets } from '../observability/request-context.js';
 import { DomainError } from './domain-errors.js';
+import { httpErrorCode } from './http-error-code.js';
 
 const logger = createLogger('ExceptionFilter');
 
@@ -35,8 +36,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       });
     const httpResponse = exception instanceof HttpException ? exception.getResponse() : undefined;
     if (httpResponse && typeof httpResponse === 'object' && !domainError) {
+      const payload = redactSecrets(httpResponse) as Record<string, unknown>;
       response.status(status).json({
-        ...(redactSecrets(httpResponse) as Record<string, unknown>),
+        ...payload,
+        errorCode:
+          typeof payload.errorCode === 'string' && payload.errorCode.length > 0
+            ? payload.errorCode
+            : httpErrorCode(status),
         ...(correlationId && { correlationId }),
       });
       return;
@@ -52,7 +58,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       success: false,
       error,
       ...infrastructureCode,
-      ...(domainError && { errorCode: domainError.errorCode }),
+      errorCode: domainError?.errorCode ?? httpErrorCode(status),
       ...(correlationId && { correlationId }),
     });
   }

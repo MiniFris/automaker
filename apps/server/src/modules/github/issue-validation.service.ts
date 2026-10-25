@@ -1,3 +1,4 @@
+import { HOST_ENVIRONMENT } from '../../core/config/index.js';
 /**
  * Native issue-validation workflow and application service.
  *
@@ -74,7 +75,8 @@ async function runValidation(
   thinkingLevel: ThinkingLevel | undefined,
   reasoningEffort: ReasoningEffort | undefined,
   providerRegistry: ProviderRegistry,
-  repository: IssueValidationRepository
+  repository: IssueValidationRepository,
+  hostEnvironment: Readonly<NodeJS.ProcessEnv>
 ): Promise<void> {
   // Emit start event
   const startEvent: IssueValidationEvent = {
@@ -213,7 +215,8 @@ ${basePrompt}`;
           events.emit('issue-validation:event', progressEvent);
         },
       },
-      providerRegistry
+      providerRegistry,
+      hostEnvironment
     );
 
     abortController.signal.throwIfAborted();
@@ -284,7 +287,8 @@ export class IssueValidationService {
     @Inject(SettingsService) private readonly settings: SettingsService,
     @Inject(ProviderRegistry) private readonly providers: ProviderRegistry,
     @Inject(IssueValidationRegistry) private readonly registry: IssueValidationRegistry,
-    @Inject(IssueValidationRepository) private readonly repository: IssueValidationRepository
+    @Inject(IssueValidationRepository) private readonly repository: IssueValidationRepository,
+    @Inject(HOST_ENVIRONMENT) private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv> = {}
   ) {}
 
   start(input: IssueValidationRequest) {
@@ -334,7 +338,8 @@ export class IssueValidationService {
         thinkingLevel,
         reasoningEffort,
         this.providers,
-        this.repository
+        this.repository,
+        this.hostEnvironment
       )
     );
     return accepted

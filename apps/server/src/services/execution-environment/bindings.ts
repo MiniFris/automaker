@@ -48,12 +48,15 @@ async function read(file: string): Promise<unknown | undefined> {
 
 export class EnvironmentBindingStore {
   readonly serverIdentity: string;
+  private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>;
   private readonly directory: string;
   constructor(
     private readonly settings: SettingsService,
     private readonly docker = new ManagedDocker(settings),
-    private readonly ssh = new ManagedSSH(settings)
+    private readonly ssh = new ManagedSSH(settings),
+    hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
   ) {
+    this.hostEnvironment = Object.freeze({ ...hostEnvironment });
     this.directory = path.join(settings.getDataDirectory(), 'execution-environments');
     const user = os.userInfo();
     this.serverIdentity = digest(
@@ -68,7 +71,7 @@ export class EnvironmentBindingStore {
   }
   /** Container hostnames change on recreation; consent belongs to the persisted installation. */
   private async consentIdentity(create = false): Promise<string | undefined> {
-    if (process.env.IS_CONTAINERIZED !== 'true') return this.serverIdentity;
+    if (this.hostEnvironment.IS_CONTAINERIZED !== 'true') return this.serverIdentity;
     const file = path.join(this.directory, 'container-installation.json');
     return serialized(file, async () => {
       let installation = (await read(file)) as { version?: number; id?: string } | undefined;
@@ -219,7 +222,7 @@ export class EnvironmentBindingStore {
       confirmed: scope !== null,
       scope,
       legacy: !state.explicit,
-      serverContainerized: process.env.IS_CONTAINERIZED === 'true',
+      serverContainerized: this.hostEnvironment.IS_CONTAINERIZED === 'true',
       autoFallbackConfirmed: autoScope !== null,
       autoFallbackScope: autoScope,
     };
@@ -324,7 +327,7 @@ export class EnvironmentBindingStore {
           const environment =
             binding.type === 'docker'
               ? new DockerExecutionEnvironment(this.docker, binding.docker!, projectPath)
-              : await LocalExecutionEnvironment.create(projectPath);
+              : await LocalExecutionEnvironment.create(projectPath, this.hostEnvironment);
           const prepared = await prepareManagedFeatureWorkspace({
             environment,
             directory: this.directory,
@@ -352,7 +355,7 @@ export class EnvironmentBindingStore {
           const environment =
             binding.type === 'docker'
               ? new DockerExecutionEnvironment(this.docker, binding.docker!, binding.runtimeCwd)
-              : await LocalExecutionEnvironment.create(binding.runtimeCwd);
+              : await LocalExecutionEnvironment.create(binding.runtimeCwd, this.hostEnvironment);
           await verifyManagedFeatureWorkspace(
             environment,
             projectPath,
@@ -476,7 +479,7 @@ export class EnvironmentBindingStore {
         await atomicWriteJson(file, { binding }, { mode: 0o600 });
         const environment = docker
           ? new DockerExecutionEnvironment(this.docker, docker, projectPath)
-          : await LocalExecutionEnvironment.create(projectPath);
+          : await LocalExecutionEnvironment.create(projectPath, this.hostEnvironment);
         const prepared = await prepareManagedFeatureWorkspace({
           environment,
           directory: this.directory,

@@ -61,3 +61,26 @@ available and avoid provider output or credentials in public error messages.
 The global filter and existing route-specific responses have different historical
 envelopes; the shared optional error envelope is not proof that every endpoint
 already emits one normalized format.
+
+Native global HTTP failures now carry an additive `errorCode`, including Nest
+404/readiness responses and parser failures. Existing nonempty intentional HTTP
+`errorCode`, domain `errorCode` and infrastructure `code` retain their meanings;
+status, messages and historical response fields remain unchanged. Common middleware
+415 and preview-denial403 responses also carry the corresponding category.
+
+| HTTP status           | Fallback errorCode                                              |
+| --------------------- | --------------------------------------------------------------- |
+| 400                   | `VALIDATION_ERROR`                                              |
+| 401 / 403 / 404       | `UNAUTHORIZED` / `FORBIDDEN` / `NOT_FOUND`                      |
+| 405 / 409             | `METHOD_NOT_ALLOWED` / `CONFLICT`                               |
+| 408 / 504             | `TIMEOUT`                                                       |
+| 413 / 415 / 429       | `PAYLOAD_TOO_LARGE` / `UNSUPPORTED_MEDIA_TYPE` / `RATE_LIMITED` |
+| 502 / 503             | `UPSTREAM_ERROR` / `UNAVAILABLE`                                |
+| Other 5xx / other 4xx | `INTERNAL_ERROR` / `HTTP_ERROR`                                 |
+
+The fallback category is deliberately broader than a specific infrastructure code.
+Clients must not infer that a failed command can be replayed from an HTTP category;
+unknown execution outcomes retain their existing no-replay policy. Controller-owned
+legacy business-failure bodies, including historical HTTP200 responses, retain their
+specific existing fields; this does not silently normalize their format or require
+all old clients to understand the new field.

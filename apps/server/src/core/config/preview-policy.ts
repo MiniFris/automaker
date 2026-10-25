@@ -108,9 +108,11 @@ export class PreviewPolicy {
   }
   readonly apiGuard = (req: Request, res: Response, next: NextFunction): void => {
     if (this.isApiRequest(req)) {
-      res
-        .status(403)
-        .json({ success: false, error: 'Preview applications cannot access the Automaker API.' });
+      res.status(403).json({
+        success: false,
+        error: 'Preview applications cannot access the Automaker API.',
+        errorCode: 'FORBIDDEN',
+      });
       return;
     }
     next();

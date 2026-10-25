@@ -45,6 +45,7 @@ export class AutoModeServiceCompat {
     runtime?: {
       contexts: ProjectRunContextRegistry;
       coordinator?: FeatureRunCoordinator;
+      hostEnvironment?: Readonly<NodeJS.ProcessEnv>;
       validateWorkingDirectory?: (cwd: string) => void;
     }
   ) {
@@ -70,6 +71,7 @@ export class AutoModeServiceCompat {
       toolPolicy,
       pipeline,
       validateWorkingDirectory: runtime?.validateWorkingDirectory,
+      hostEnvironment: Object.freeze({ ...(runtime?.hostEnvironment ?? process.env) }),
       filesystem,
     };
   }

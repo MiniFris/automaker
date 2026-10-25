@@ -45,6 +45,7 @@ import {
 } from '@automaker/utils';
 import { IdeationJobs, isUnconfirmedIdeationCleanup } from '../modules/ideation/ideation-jobs.js';
 import type { ProviderRegistry } from '../modules/providers/provider-registry.service.js';
+import { captureNativeLocalEnvironment } from './execution-environment/local.js';
 import { prepareDirectExecution } from '../providers/openai-compatible/execution.js';
 import type { SettingsService } from './settings-service.js';
 import type { FeatureLoader } from './feature-loader.js';
@@ -75,6 +76,8 @@ export class IdeationService {
   private settingsService: SettingsService | null = null;
   private featureLoader: FeatureLoader | null = null;
 
+  private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>;
+
   constructor(
     events: EventEmitter,
     settingsService: SettingsService | undefined,
@@ -82,8 +85,10 @@ export class IdeationService {
     private readonly providerRegistry: ProviderRegistry,
     private readonly validateDirectory: (cwd: string) => void = validateWorkingDirectory,
     private readonly filesystem: AtomicWriteFilesystem &
-      Pick<typeof secureFs, 'readdir' | 'rm' | 'link' | 'appendFile'> = secureFs
+      Pick<typeof secureFs, 'readdir' | 'rm' | 'link' | 'appendFile'> = secureFs,
+    hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
   ) {
+    this.hostEnvironment = captureNativeLocalEnvironment(hostEnvironment);
     this.events = events;
     this.settingsService = settingsService ?? null;
     this.featureLoader = featureLoader ?? null;
@@ -322,7 +327,8 @@ export class IdeationService {
         executeOptions,
         this.settingsService,
         { model: modelId, providerId: options?.providerId },
-        'text'
+        'text',
+        this.hostEnvironment
       );
       controller.signal.throwIfAborted();
       const stream = provider.executeQuery(prepared);
@@ -859,7 +865,8 @@ export class IdeationService {
         executeOptions,
         this.settingsService,
         { model: modelId, providerId: phaseResult.phaseModel.providerId },
-        'text'
+        'text',
+        this.hostEnvironment
       );
       controller.signal.throwIfAborted();
       const stream = provider.executeQuery(prepared);

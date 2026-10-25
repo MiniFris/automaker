@@ -162,7 +162,8 @@ export async function generateBacklogPlan(
   branchName: string | undefined,
   providerId: string | undefined,
   providerRegistry: ProviderRegistry,
-  context: PlanningRunContext
+  context: PlanningRunContext,
+  hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
 ): Promise<BacklogPlanResult> {
   context.check();
   const featureLoader = context.features;
@@ -358,7 +359,8 @@ ${userPrompt}`;
       },
       settingsService,
       { model: effectiveModel, providerId },
-      'text'
+      'text',
+      hostEnvironment
     );
 
     let responseText = '';

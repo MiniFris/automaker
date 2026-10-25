@@ -1,3 +1,4 @@
+import { HOST_ENVIRONMENT } from '../../core/config/index.js';
 import { Module } from '@nestjs/common';
 import { ProviderRegistry } from '../providers/provider-registry.service.js';
 import { simpleQuery } from '../../providers/simple-query-service.js';
@@ -10,9 +11,11 @@ import { PromptEnhancementService } from './prompt-enhancement.service.js';
   providers: [
     {
       provide: PROMPT_QUERY,
-      inject: [ProviderRegistry],
-      useFactory: (registry: ProviderRegistry) => (options: Parameters<typeof simpleQuery>[0]) =>
-        simpleQuery(options, registry),
+      inject: [ProviderRegistry, HOST_ENVIRONMENT],
+      useFactory:
+        (registry: ProviderRegistry, hostEnvironment: Readonly<NodeJS.ProcessEnv>) =>
+        (options: Parameters<typeof simpleQuery>[0]) =>
+          simpleQuery(options, registry, hostEnvironment),
     },
     PromptEnhancementService,
   ],

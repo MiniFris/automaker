@@ -1,4 +1,6 @@
 import type { FactoryProvider } from '@nestjs/common';
+import { HOST_ENVIRONMENT } from '../../core/config/index.js';
+import { captureNativeLocalEnvironment } from '../../services/execution-environment/local.js';
 import { APPLICATION_EVENTS } from '../../core/eventing/application-events.js';
 import type { EventEmitter } from '../../lib/events.js';
 import { SettingsService } from '../../services/settings-service.js';
@@ -28,6 +30,7 @@ export const autoModeProvider: FactoryProvider<AutoModeServiceCompat> = {
     ProjectRunContextRegistry,
     SecurityService,
     FeatureRunCoordinator,
+    HOST_ENVIRONMENT,
   ],
   useFactory: (
     events: EventEmitter,
@@ -40,7 +43,8 @@ export const autoModeProvider: FactoryProvider<AutoModeServiceCompat> = {
     filesystem: ExecutionFilesystem,
     contexts: ProjectRunContextRegistry,
     security: SecurityService,
-    coordinator: FeatureRunCoordinator
+    coordinator: FeatureRunCoordinator,
+    environment: Readonly<NodeJS.ProcessEnv>
   ) =>
     new AutoModeServiceCompat(
       events,
@@ -55,6 +59,7 @@ export const autoModeProvider: FactoryProvider<AutoModeServiceCompat> = {
       {
         contexts,
         coordinator,
+        hostEnvironment: captureNativeLocalEnvironment(environment),
         validateWorkingDirectory: (cwd) => {
           security.validateLocalPath(cwd, 'auto mode working directory');
         },

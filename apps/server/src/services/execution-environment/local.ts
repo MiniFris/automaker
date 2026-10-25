@@ -14,6 +14,23 @@ import {
 
 const writes = new Map<string, Promise<void>>();
 
+/** Native children inherit host tooling settings, never backend transport/profile variables. */
+export function captureNativeLocalEnvironment(
+  environment: Readonly<NodeJS.ProcessEnv>
+): Readonly<NodeJS.ProcessEnv> {
+  const applicationVariables = new Set(['PORT', 'DATA_DIR', 'AUTOMAKER_API_KEY', 'NODE_PATH']);
+  return Object.freeze(
+    Object.fromEntries(
+      Object.entries(environment).filter(([name]) => !applicationVariables.has(name.toUpperCase()))
+    )
+  );
+}
+
+/** Plain snapshots need case-insensitive Windows environment lookup after leaving process.env. */
+export function localComspec(environment: Readonly<NodeJS.ProcessEnv>): string {
+  return Object.entries(environment).find(([name]) => name.toLowerCase() === 'comspec')?.[1] ?? '';
+}
+
 /** Preserve legacy node:child_process.exec cmd semantics only for explicit callers. */
 export function localShellInvocation(
   command: string,
@@ -50,12 +67,20 @@ export class LocalExecutionEnvironment implements ExecutionEnvironment {
     remove: true,
     sandboxed: false,
   });
-  private constructor(readonly cwd: string) {}
-  static async create(cwd: string): Promise<LocalExecutionEnvironment> {
+  private constructor(
+    readonly cwd: string,
+    private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>
+  ) {}
+  static async create(
+    cwd: string,
+    environment: Readonly<NodeJS.ProcessEnv> = process.env
+  ): Promise<LocalExecutionEnvironment> {
+    // Capture before the first await; standalone callers retain the legacy inherited variables.
+    const hostEnvironment = Object.freeze({ ...environment });
     const absolute = await fs.realpath(cwd);
     if (!(await fs.stat(absolute)).isDirectory())
       throw new ExecutionEnvironmentError('INVALID_CWD', 'Working directory must exist.');
-    return new LocalExecutionEnvironment(absolute);
+    return new LocalExecutionEnvironment(absolute, hostEnvironment);
   }
   private resolve(target: string): string {
     if (!target || /\0/.test(target))
@@ -221,12 +246,17 @@ export class LocalExecutionEnvironment implements ExecutionEnvironment {
     const combined = AbortSignal.any([signal, deadline]);
     const cwd = options.cwd ? this.resolve(options.cwd) : this.cwd;
     const windows = process.platform === 'win32';
-    const invocation = localShellInvocation(command, process.platform, options.windowsShell);
+    const invocation = localShellInvocation(
+      command,
+      this.platform,
+      options.windowsShell,
+      localComspec(this.hostEnvironment)
+    );
     const maximum = Math.min(options.maxOutputBytes ?? 12_000, 1_048_576);
     return new Promise((resolve, reject) => {
       const child = spawn(invocation.command, invocation.args, {
         cwd,
-        env: { ...process.env },
+        env: { ...this.hostEnvironment },
         detached: !windows,
         windowsHide: true,
         windowsVerbatimArguments: invocation.windowsVerbatimArguments,
@@ -264,6 +294,7 @@ export class LocalExecutionEnvironment implements ExecutionEnvironment {
                 return;
               }
               const killer = spawn('taskkill.exe', ['/PID', String(child.pid), '/T', '/F'], {
+                env: { ...this.hostEnvironment },
                 windowsHide: true,
                 stdio: 'ignore',
                 timeout: 1500,

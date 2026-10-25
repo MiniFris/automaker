@@ -1,4 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { HOST_ENVIRONMENT } from '../../core/config/index.js';
+import { captureNativeLocalEnvironment } from '../../services/execution-environment/local.js';
 import type { SettingsService } from '../../services/settings-service.js';
 import { boundRuntime } from '../../services/execution-environment/bound-runtime.js';
 import type { ExecutionEnvironment } from '../../services/execution-environment/runtime.js';
@@ -22,10 +24,16 @@ abstract class BoundExecutionAdapter implements ExecutionAdapter {
   abstract readonly type: ExecutionEnvironmentType;
   abstract readonly capabilities: ReadonlySet<ExecutionCapability>;
 
-  constructor(@Inject('EXECUTION_SETTINGS') private readonly settings: SettingsService) {}
+  private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>;
+  constructor(
+    @Inject('EXECUTION_SETTINGS') private readonly settings: SettingsService,
+    @Inject(HOST_ENVIRONMENT) environment: Readonly<NodeJS.ProcessEnv>
+  ) {
+    this.hostEnvironment = captureNativeLocalEnvironment(environment);
+  }
 
   open(binding: ResolvedExecutionBinding): Promise<ExecutionEnvironment> {
-    return boundRuntime(binding.binding, this.settings);
+    return boundRuntime(binding.binding, this.settings, this.hostEnvironment);
   }
 }
 

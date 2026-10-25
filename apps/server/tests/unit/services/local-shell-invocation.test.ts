@@ -31,3 +31,32 @@ it('does not change the default Windows execution environment or the Unix shell'
     args: ['-c', 'echo "$HOME"'],
   });
 });
+
+it('uses case-insensitive captured COMSPEC and never an ambient shell when the captured value is absent', async () => {
+  const { captureNativeLocalEnvironment, localComspec } =
+    await import('../../../src/services/execution-environment/local.js');
+  for (const key of ['COMSPEC', 'comspec', 'ComSpec']) {
+    const environment = {
+      [key]: 'C:\\Owned\\cmd.exe',
+      AUTOMAKER_API_KEY: 'backend-secret',
+      PATH: 'owned-path',
+      HOME: 'owned-home',
+      DATA_DIR: 'backend-data',
+      PORT: '3008',
+      NODE_PATH: 'backend-modules',
+      USER_OPTION: 'keep',
+    };
+    const captured = captureNativeLocalEnvironment(environment);
+    environment[key] = 'C:\\Changed\\cmd.exe';
+    expect(Object.isFrozen(captured)).toBe(true);
+    expect(captured).toMatchObject({ PATH: 'owned-path', HOME: 'owned-home', USER_OPTION: 'keep' });
+    for (const secret of ['AUTOMAKER_API_KEY', 'DATA_DIR', 'PORT', 'NODE_PATH'])
+      expect(captured).not.toHaveProperty(secret);
+    expect(localShellInvocation('echo owned', 'win32', 'cmd', localComspec(captured)).command).toBe(
+      'C:\\Owned\\cmd.exe'
+    );
+  }
+  expect(localShellInvocation('echo owned', 'win32', 'cmd', localComspec({})).command).toBe(
+    'cmd.exe'
+  );
+});

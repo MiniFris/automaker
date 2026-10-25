@@ -52,6 +52,8 @@ export interface SharedServices {
  * Options for creating an AutoModeServiceFacade instance
  */
 export interface FacadeOptions {
+  /** Native composition supplies a captured, sanitized Local child environment. */
+  hostEnvironment?: Readonly<NodeJS.ProcessEnv>;
   /** Application-owned local output/context/memory IO. */
   filesystem: import('../execution-filesystem.js').ExecutionFilesystem;
   /** EventEmitter for broadcasting events to clients */

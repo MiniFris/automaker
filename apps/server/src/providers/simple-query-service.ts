@@ -122,7 +122,8 @@ const DEFAULT_MODEL = 'claude-sonnet-4-6';
  */
 export async function simpleQuery(
   options: SimpleQueryOptions,
-  providerRegistry: ProviderRegistry
+  providerRegistry: ProviderRegistry,
+  hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
 ): Promise<SimpleQueryResult> {
   options.abortController?.signal.throwIfAborted();
   const model = options.model || DEFAULT_MODEL;
@@ -156,7 +157,8 @@ export async function simpleQuery(
     providerOptions,
     options.settingsService,
     { model, providerId: options.providerId },
-    'text'
+    'text',
+    hostEnvironment
   );
   for await (const msg of provider.executeQuery(executeOptions)) {
     // Handle error messages
@@ -217,7 +219,8 @@ export async function simpleQuery(
  */
 export async function streamingQuery(
   options: StreamingQueryOptions,
-  providerRegistry: ProviderRegistry
+  providerRegistry: ProviderRegistry,
+  hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
 ): Promise<SimpleQueryResult> {
   options.abortController?.signal.throwIfAborted();
   const model = options.model || DEFAULT_MODEL;
@@ -253,7 +256,9 @@ export async function streamingQuery(
       ...(isDirectModel(model) && { tools: options.allowedTools ?? ['Read', 'Glob', 'Grep'] }),
     },
     options.settingsService,
-    { model, providerId: options.providerId }
+    { model, providerId: options.providerId },
+    'agent',
+    hostEnvironment
   );
   for await (const msg of provider.executeQuery(executeOptions)) {
     // Handle error messages

@@ -2,28 +2,28 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 446,
-    "internalEdges": 1589,
+    "files": 447,
+    "internalEdges": 1610,
     "stronglyConnectedComponents": 2
   },
   "layerEdges": {
-    "core -> core": 86,
+    "core -> core": 87,
     "core -> lib": 6,
     "core -> middleware": 1,
     "core -> services": 8,
     "lib -> lib": 4,
     "lib -> services": 1,
-    "modules -> core": 201,
+    "modules -> core": 212,
     "modules -> lib": 53,
     "modules -> modules": 387,
     "modules -> providers": 35,
-    "modules -> services": 180,
+    "modules -> services": 185,
     "modules -> types": 2,
     "providers -> core": 1,
     "providers -> lib": 3,
     "providers -> modules": 1,
     "providers -> providers": 93,
-    "providers -> services": 24,
+    "providers -> services": 26,
     "root -> core": 18,
     "root -> modules": 28,
     "root -> root": 2,
@@ -31,7 +31,7 @@
     "services -> lib": 67,
     "services -> modules": 17,
     "services -> providers": 16,
-    "services -> services": 315,
+    "services -> services": 317,
     "services -> types": 3,
     "tests -> lib": 2
   },
@@ -64,33 +64,47 @@
       "apps/server/src/lib/request-logging-state.ts",
       "apps/server/src/lib/sdk-options.ts",
       "apps/server/src/main.ts",
+      "apps/server/src/modules/backlog-plan/generate-plan.workflow.ts",
       "apps/server/src/providers/claude-provider.ts",
       "apps/server/src/providers/cli-provider.ts",
       "apps/server/src/providers/codex-provider.ts",
       "apps/server/src/providers/codex-sdk-client.ts",
       "apps/server/src/providers/cursor-provider.ts",
+      "apps/server/src/providers/environment-execution.ts",
       "apps/server/src/providers/openai-compatible/config.ts",
+      "apps/server/src/providers/openai-compatible/execution.ts",
       "apps/server/src/providers/openai-compatible/workspace.ts",
       "apps/server/src/providers/opencode-provider.ts",
       "apps/server/src/providers/remote-sdk-worker.ts",
+      "apps/server/src/providers/simple-query-service.ts",
       "apps/server/src/services/agent-executor.ts",
+      "apps/server/src/services/agent/agent-environment-preparer.ts",
+      "apps/server/src/services/auto-mode/compat.ts",
+      "apps/server/src/services/auto-mode/facade.ts",
       "apps/server/src/services/claude-usage-service.ts",
       "apps/server/src/services/codex-usage-compat.ts",
       "apps/server/src/services/cursor-config-service.ts",
       "apps/server/src/services/dev-server-service.ts",
+      "apps/server/src/services/event-hook-service.ts",
       "apps/server/src/services/execution-environment/bindings.ts",
+      "apps/server/src/services/execution-environment/bound-runtime.ts",
       "apps/server/src/services/execution-environment/docker-command.ts",
       "apps/server/src/services/execution-environment/docker-diagnostics.ts",
       "apps/server/src/services/execution-environment/docker-worker.ts",
       "apps/server/src/services/execution-environment/docker.ts",
+      "apps/server/src/services/execution-environment/feature-workspace.ts",
       "apps/server/src/services/execution-environment/local.ts",
       "apps/server/src/services/execution-environment/preview-policy.compat.ts",
       "apps/server/src/services/execution-environment/project-git-worker.ts",
+      "apps/server/src/services/execution-environment/project-git.ts",
       "apps/server/src/services/execution-environment/provider-catalog.ts",
       "apps/server/src/services/execution-environment/ssh-state.ts",
       "apps/server/src/services/execution-environment/ssh.ts",
+      "apps/server/src/services/execution-service.ts",
       "apps/server/src/services/gemini-usage-service.ts",
+      "apps/server/src/services/ideation-service.ts",
       "apps/server/src/services/init-script-service.ts",
+      "apps/server/src/services/pipeline-orchestrator.ts",
       "apps/server/src/services/pr-service.ts",
       "apps/server/src/services/terminal-service.ts",
       "apps/server/src/services/test-runner-service.ts",
@@ -632,6 +646,10 @@
     },
     {
       "source": "apps/server/src/core/errors/global-exception.filter.ts",
+      "target": "apps/server/src/core/errors/http-error-code.ts"
+    },
+    {
+      "source": "apps/server/src/core/errors/global-exception.filter.ts",
       "target": "apps/server/src/core/observability/request-context.ts"
     },
     {
@@ -1127,6 +1145,10 @@
       "target": "apps/server/src/services/agent/agent-stream-normalizer.ts"
     },
     {
+      "source": "apps/server/src/modules/agents/agent-state.module.ts",
+      "target": "apps/server/src/services/execution-environment/local.ts"
+    },
+    {
       "source": "apps/server/src/modules/agents/agents.controller.ts",
       "target": "apps/server/src/core/security/index.ts"
     },
@@ -1400,6 +1422,10 @@
     },
     {
       "source": "apps/server/src/modules/app-spec/planning-workflow.context.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/app-spec/planning-workflow.context.ts",
       "target": "apps/server/src/core/errors/index.ts"
     },
     {
@@ -1504,6 +1530,10 @@
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
       "target": "apps/server/src/core/eventing/application-events.ts"
     },
     {
@@ -1537,6 +1567,10 @@
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
       "target": "apps/server/src/services/auto-mode/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
+      "target": "apps/server/src/services/execution-environment/local.ts"
     },
     {
       "source": "apps/server/src/modules/auto-mode/auto-mode.provider.ts",
@@ -1700,6 +1734,10 @@
     },
     {
       "source": "apps/server/src/modules/backlog-plan/native-backlog-plan.workflow.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/backlog-plan/native-backlog-plan.workflow.ts",
       "target": "apps/server/src/core/eventing/application-events.ts"
     },
     {
@@ -1789,6 +1827,10 @@
     {
       "source": "apps/server/src/modules/context/context.module.ts",
       "target": "apps/server/src/modules/files/files.module.ts"
+    },
+    {
+      "source": "apps/server/src/modules/context/simple-context-query.adapter.ts",
+      "target": "apps/server/src/core/config/index.ts"
     },
     {
       "source": "apps/server/src/modules/context/simple-context-query.adapter.ts",
@@ -1892,11 +1934,19 @@
     },
     {
       "source": "apps/server/src/modules/execution/execution.adapters.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/execution/execution.adapters.ts",
       "target": "apps/server/src/modules/execution/execution.port.ts"
     },
     {
       "source": "apps/server/src/modules/execution/execution.adapters.ts",
       "target": "apps/server/src/services/execution-environment/bound-runtime.ts"
+    },
+    {
+      "source": "apps/server/src/modules/execution/execution.adapters.ts",
+      "target": "apps/server/src/services/execution-environment/local.ts"
     },
     {
       "source": "apps/server/src/modules/execution/execution.adapters.ts",
@@ -2344,11 +2394,19 @@
     },
     {
       "source": "apps/server/src/modules/git/git.module.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/git/git.module.ts",
       "target": "apps/server/src/modules/git/git-application.service.ts"
     },
     {
       "source": "apps/server/src/modules/git/git.module.ts",
       "target": "apps/server/src/modules/git/git.controller.ts"
+    },
+    {
+      "source": "apps/server/src/modules/git/git.module.ts",
+      "target": "apps/server/src/services/execution-environment/local.ts"
     },
     {
       "source": "apps/server/src/modules/git/git.module.ts",
@@ -2624,6 +2682,10 @@
     },
     {
       "source": "apps/server/src/modules/github/issue-validation.service.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/github/issue-validation.service.ts",
       "target": "apps/server/src/core/errors/domain-errors.ts"
     },
     {
@@ -2729,6 +2791,10 @@
     {
       "source": "apps/server/src/modules/ideation/ideation.controller.ts",
       "target": "apps/server/src/modules/ideation/ideation.schemas.ts"
+    },
+    {
+      "source": "apps/server/src/modules/ideation/ideation.module.ts",
+      "target": "apps/server/src/core/config/index.ts"
     },
     {
       "source": "apps/server/src/modules/ideation/ideation.module.ts",
@@ -2932,6 +2998,10 @@
     },
     {
       "source": "apps/server/src/modules/orchestration/orchestration.module.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/orchestration/orchestration.module.ts",
       "target": "apps/server/src/modules/orchestration/background-integrations.lifecycle.ts"
     },
     {
@@ -3057,6 +3127,10 @@
     {
       "source": "apps/server/src/modules/prompt-enhancement/prompt-enhancement.controller.ts",
       "target": "apps/server/src/modules/prompt-enhancement/prompt-enhancement.service.ts"
+    },
+    {
+      "source": "apps/server/src/modules/prompt-enhancement/prompt-enhancement.module.ts",
+      "target": "apps/server/src/core/config/index.ts"
     },
     {
       "source": "apps/server/src/modules/prompt-enhancement/prompt-enhancement.module.ts",
@@ -3800,6 +3874,10 @@
     },
     {
       "source": "apps/server/src/modules/settings/execution-environment-settings.service.ts",
+      "target": "apps/server/src/core/config/index.ts"
+    },
+    {
+      "source": "apps/server/src/modules/settings/execution-environment-settings.service.ts",
       "target": "apps/server/src/services/execution-environment/bindings.ts"
     },
     {
@@ -3813,6 +3891,10 @@
     {
       "source": "apps/server/src/modules/settings/execution-environment-settings.service.ts",
       "target": "apps/server/src/services/execution-environment/docker.ts"
+    },
+    {
+      "source": "apps/server/src/modules/settings/execution-environment-settings.service.ts",
+      "target": "apps/server/src/services/execution-environment/local.ts"
     },
     {
       "source": "apps/server/src/modules/settings/execution-environment-settings.service.ts",
@@ -4532,6 +4614,10 @@
     },
     {
       "source": "apps/server/src/providers/environment-execution.ts",
+      "target": "apps/server/src/services/execution-environment/local.ts"
+    },
+    {
+      "source": "apps/server/src/providers/environment-execution.ts",
       "target": "apps/server/src/services/execution-environment/runtime.ts"
     },
     {
@@ -4701,6 +4787,10 @@
     {
       "source": "apps/server/src/providers/openai-compatible/execution.ts",
       "target": "apps/server/src/services/execution-environment/bound-runtime.ts"
+    },
+    {
+      "source": "apps/server/src/providers/openai-compatible/execution.ts",
+      "target": "apps/server/src/services/execution-environment/local.ts"
     },
     {
       "source": "apps/server/src/providers/openai-compatible/execution.ts",
@@ -4885,6 +4975,10 @@
     {
       "source": "apps/server/src/services/agent-executor.ts",
       "target": "apps/server/src/services/agent-executor-types.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent-executor.ts",
+      "target": "apps/server/src/services/execution-environment/local.ts"
     },
     {
       "source": "apps/server/src/services/agent-executor.ts",
@@ -6301,6 +6395,10 @@
     {
       "source": "apps/server/src/services/ideation-service.ts",
       "target": "apps/server/src/providers/openai-compatible/execution.ts"
+    },
+    {
+      "source": "apps/server/src/services/ideation-service.ts",
+      "target": "apps/server/src/services/execution-environment/local.ts"
     },
     {
       "source": "apps/server/src/services/ideation-service.ts",

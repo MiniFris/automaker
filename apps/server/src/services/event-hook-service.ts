@@ -36,7 +36,10 @@ import {
   featureRunKey,
 } from './execution-environment/feature-workspace.js';
 import { ExecutionEnvironmentError } from './execution-environment/runtime.js';
-import { LocalExecutionEnvironment } from './execution-environment/local.js';
+import {
+  LocalExecutionEnvironment,
+  captureNativeLocalEnvironment,
+} from './execution-environment/local.js';
 
 const logger = createLogger('EventHooks');
 
@@ -100,7 +103,14 @@ export class EventHookCleanupError extends Error {
  * Also stores events to history for debugging and replay.
  */
 export class EventHookService {
-  constructor(private readonly ntfy: NtfyService) {}
+  private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>;
+  constructor(
+    private readonly ntfy: NtfyService,
+    hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env,
+    private readonly workingDirectory = process.cwd()
+  ) {
+    this.hostEnvironment = captureNativeLocalEnvironment(hostEnvironment);
+  }
   /** Feature status that indicates agent work is done and awaiting human review (tests skipped) */
   private static readonly STATUS_WAITING_APPROVAL = 'waiting_approval';
   /** Feature status that indicates agent work passed automated verification */
@@ -514,7 +524,12 @@ export class EventHookService {
     this.cancellation.signal.throwIfAborted();
     const timeout = action.timeout || DEFAULT_SHELL_TIMEOUT;
     if (this.settingsService && context.projectPath) {
-      const store = new EnvironmentBindingStore(this.settingsService);
+      const store = new EnvironmentBindingStore(
+        this.settingsService,
+        undefined,
+        undefined,
+        this.hostEnvironment
+      );
       const pinned = context.featureId
         ? await store.peek(
             context.projectPath,
@@ -522,7 +537,11 @@ export class EventHookService {
           )
         : undefined;
       if (pinned?.type === 'ssh' || pinned?.type === 'docker' || pinned?.featureWorkspace) {
-        const service = new FeatureWorkspaceService(this.settingsService);
+        const service = new FeatureWorkspaceService(
+          this.settingsService,
+          undefined,
+          this.hostEnvironment
+        );
         const remote = await service.prepare(
           context.projectPath,
           {
@@ -569,8 +588,11 @@ export class EventHookService {
     const command = this.substituteVariables(action.command, context);
 
     logger.info(`Executing shell hook "${hookName}"`);
-    // Preserve the previous host cwd, but use the shared owned process supervisor.
-    const local = await LocalExecutionEnvironment.create(process.cwd());
+    // Use the captured application cwd and environment with the shared owned process supervisor.
+    const local = await LocalExecutionEnvironment.create(
+      this.workingDirectory,
+      this.hostEnvironment
+    );
     const result = await local.exec(command, this.cancellation.signal, {
       timeoutMs: timeout,
       maxOutputBytes: 1024 * 1024,

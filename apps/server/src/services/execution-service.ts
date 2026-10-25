@@ -69,6 +69,7 @@ const TOOL_USE_MARKER = '🔧 Tool:';
 const MIN_MEANINGFUL_OUTPUT_LENGTH = 200;
 
 export class ExecutionService {
+  private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>;
   constructor(
     private eventBus: TypedEventBus,
     private concurrencyManager: ConcurrencyManager,
@@ -92,8 +93,11 @@ export class ExecutionService {
     private readonly providerRegistry: ProviderRegistry,
     private readonly pipeline: PipelineService,
     private readonly filesystem: ExecutionFilesystem,
-    private readonly directoryValidator: (cwd: string) => void = validateWorkingDirectory
-  ) {}
+    private readonly directoryValidator: (cwd: string) => void = validateWorkingDirectory,
+    hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
+  ) {
+    this.hostEnvironment = Object.freeze({ ...hostEnvironment });
+  }
 
   private acquireRunningFeature(options: {
     featureId: string;
@@ -210,7 +214,7 @@ ${feature.spec}
       feature = await this.loadFeatureFn(projectPath, featureId);
       if (!feature) throw new Error(`Feature ${featureId} not found`);
       const remoteService = this.settingsService
-        ? new FeatureWorkspaceService(this.settingsService)
+        ? new FeatureWorkspaceService(this.settingsService, undefined, this.hostEnvironment)
         : undefined;
       const remote = await remoteService?.prepare(projectPath, feature, abortController.signal);
       tempRunningFeature.remoteWorkspace = !!remote;

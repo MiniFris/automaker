@@ -27,6 +27,7 @@ import {
   extractSummary,
 } from './spec-parser.js';
 import { getPromptCustomization } from '../lib/settings-helpers.js';
+import { captureNativeLocalEnvironment } from './execution-environment/local.js';
 import { prepareDirectExecution } from '../providers/openai-compatible/execution.js';
 import type {
   AgentExecutionOptions,
@@ -73,13 +74,18 @@ export class AgentExecutor {
     return cleaned || 'Unknown error';
   }
 
+  private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>;
+
   constructor(
     private eventBus: TypedEventBus,
     private featureStateManager: FeatureStateManager,
     private planApprovalService: PlanApprovalService,
     private settingsService: SettingsService | null = null,
-    private readonly filesystem: ExecutionFilesystem
-  ) {}
+    private readonly filesystem: ExecutionFilesystem,
+    hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
+  ) {
+    this.hostEnvironment = captureNativeLocalEnvironment(hostEnvironment);
+  }
 
   private stateFor(
     options: AgentExecutionOptions
@@ -194,7 +200,9 @@ export class AgentExecutor {
         projectPath,
         runKey: `feature:${projectPath}:${featureId}`,
         feature: { targetBranch: options.branchName },
-      }
+      },
+      'agent',
+      this.hostEnvironment
     );
     const featureDirForOutput = getFeatureDir(projectPath, featureId);
     const outputPath = path.join(featureDirForOutput, 'agent-output.md');
@@ -958,7 +966,9 @@ export class AgentExecutor {
         projectPath: o.projectPath,
         runKey: `feature:${o.projectPath}:${o.featureId}`,
         feature: { targetBranch: o.branchName },
-      }
+      },
+      'agent',
+      this.hostEnvironment
     );
   }
 

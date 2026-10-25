@@ -100,7 +100,8 @@ export async function prepareGeminiPolicy(
 ): Promise<GeminiPolicyLease | undefined> {
   const tools = geminiPolicyTools(options);
   if (tools === undefined) return undefined;
-  const filesystem = remote ?? (await LocalExecutionEnvironment.create(options.cwd));
+  // This local port only writes/removes policy files; CLI probes use the explicit probe port.
+  const filesystem = remote ?? (await LocalExecutionEnvironment.create(options.cwd, {}));
   const signal = options.abortController?.signal ?? new AbortController().signal;
   const platform = filesystem.platform;
   if (platform !== 'linux' && platform !== 'darwin') unsupported();

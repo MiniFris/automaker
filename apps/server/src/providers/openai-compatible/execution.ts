@@ -16,6 +16,7 @@ import { OpenAICompatibleError } from './errors.js';
 import { EnvironmentBindingStore } from '../../services/execution-environment/bindings.js';
 import { type ExecutionEnvironment } from '../../services/execution-environment/runtime.js';
 import { boundRuntime } from '../../services/execution-environment/bound-runtime.js';
+import { captureNativeLocalEnvironment } from '../../services/execution-environment/local.js';
 import { prepareCliExecution } from '../environment-execution.js';
 
 /** Persistable controls only: no callbacks, connections, checkpoints or arbitrary tool names. */
@@ -60,13 +61,17 @@ export async function prepareDirectExecution(
     runKey?: string;
     feature?: { targetBranch?: string | null };
   },
-  mode: 'text' | 'agent' = 'agent'
+  mode: 'text' | 'agent' = 'agent',
+  hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
 ): Promise<ExecuteOptions> {
+  const environmentSnapshot = captureNativeLocalEnvironment(hostEnvironment);
   const global = settings ? await settings.getGlobalSettings() : undefined;
   const modelTimeouts = providerModelTimeouts(global, getModelProvider(selection.model));
   if (settings) options = { ...options, modelTimeouts };
   if (!isDirectModel(selection.model))
-    return mode === 'text' ? options : prepareCliExecution(options, settings, selection);
+    return mode === 'text'
+      ? options
+      : prepareCliExecution(options, settings, selection, environmentSnapshot);
   if (!settings || typeof selection.providerId !== 'string' || !selection.providerId)
     throw new OpenAICompatibleError(
       'Direct models require an explicit configured endpoint providerId.'
@@ -84,7 +89,12 @@ export async function prepareDirectExecution(
   let environment: ExecutionEnvironment | undefined;
   if (mode === 'agent' && options.tools?.length !== 0 && connection.model.capabilities.tools) {
     try {
-      const pinned = await new EnvironmentBindingStore(settings).bind({
+      const pinned = await new EnvironmentBindingStore(
+        settings,
+        undefined,
+        undefined,
+        environmentSnapshot
+      ).bind({
         cwd: options.cwd,
         projectPath: selection.projectPath ?? options.cwd,
         key: selection.runKey,
@@ -95,7 +105,7 @@ export async function prepareDirectExecution(
       });
       binding = pinned.binding;
       if (binding.type !== 'legacy') {
-        environment = await boundRuntime(binding, settings);
+        environment = await boundRuntime(binding, settings, environmentSnapshot);
         // Legacy permission flags do not control an explicitly confirmed Local environment.
         policy = {
           access: 'read-only',
@@ -156,16 +166,23 @@ export async function runDirectShellCommand(
   cwd: string,
   command: string,
   abortSignal: AbortSignal,
-  context?: { projectPath: string; runKey: string }
+  context?: { projectPath: string; runKey: string },
+  hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
 ): Promise<{ exitCode: number; output: string; truncated: boolean }> {
   if (!settings)
     throw new OpenAICompatibleError(
       'Direct pipeline tests require server execution-environment settings.'
     );
+  const environmentSnapshot = captureNativeLocalEnvironment(hostEnvironment);
   const global = await settings.getGlobalSettings();
   const timeouts = providerModelTimeouts(global, 'openai-compatible');
   let policy = parseDirectAgentSettings(global.openaiCompatibleAgentSettings ?? {});
-  const pinned = await new EnvironmentBindingStore(settings).bind({
+  const pinned = await new EnvironmentBindingStore(
+    settings,
+    undefined,
+    undefined,
+    environmentSnapshot
+  ).bind({
     cwd,
     projectPath: context?.projectPath ?? cwd,
     key: context?.runKey,
@@ -173,7 +190,7 @@ export async function runDirectShellCommand(
     signal: abortSignal,
   });
   if (pinned.binding.type !== 'legacy') {
-    const environment = await boundRuntime(pinned.binding, settings);
+    const environment = await boundRuntime(pinned.binding, settings, environmentSnapshot);
     return environment.exec(command, abortSignal, {
       timeoutMs: Math.min(
         timeouts.toolTimeoutMs ?? policy.limits?.toolTimeoutMs ?? 180_000,

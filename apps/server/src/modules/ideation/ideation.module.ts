@@ -1,3 +1,4 @@
+import { HOST_ENVIRONMENT } from '../../core/config/index.js';
 import { Module } from '@nestjs/common';
 import { FeaturesModule } from '../features/features.module.js';
 import { IdeationApplicationService } from './ideation-application.service.js';
@@ -25,6 +26,7 @@ import { IdeaConversionStore } from './idea-conversion.store.js';
         ProviderRegistry,
         SecurityService,
         SECURE_FILESYSTEM,
+        HOST_ENVIRONMENT,
       ],
       useFactory: (
         events: EventEmitter,
@@ -32,7 +34,8 @@ import { IdeaConversionStore } from './idea-conversion.store.js';
         features: FeatureLoader,
         providers: ProviderRegistry,
         security: SecurityService,
-        filesystem: ConstructorParameters<typeof IdeationService>[5]
+        filesystem: ConstructorParameters<typeof IdeationService>[5],
+        hostEnvironment: Readonly<NodeJS.ProcessEnv>
       ) =>
         new IdeationService(
           events,
@@ -42,7 +45,8 @@ import { IdeaConversionStore } from './idea-conversion.store.js';
           (cwd) => {
             security.validateLocalPath(cwd, 'ideation working directory');
           },
-          filesystem
+          filesystem,
+          hostEnvironment
         ),
     },
     IdeationApplicationService,

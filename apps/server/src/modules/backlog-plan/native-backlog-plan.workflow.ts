@@ -1,3 +1,4 @@
+import { HOST_ENVIRONMENT } from '../../core/config/index.js';
 import { Inject, Injectable } from '@nestjs/common';
 import { APPLICATION_EVENTS } from '../../core/eventing/application-events.js';
 import type { EventEmitter } from '../../lib/events.js';
@@ -14,7 +15,8 @@ export class NativeBacklogPlanWorkflow implements BacklogPlanWorkflow {
     @Inject(APPLICATION_EVENTS) private readonly events: EventEmitter,
     @Inject(SettingsService) private readonly settings: SettingsService,
     @Inject(ProviderRegistry) private readonly providers: ProviderRegistry,
-    @Inject(PlanningWorkflowContext) private readonly context: PlanningWorkflowContext
+    @Inject(PlanningWorkflowContext) private readonly context: PlanningWorkflowContext,
+    @Inject(HOST_ENVIRONMENT) private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>
   ) {}
   generate(input: BacklogGenerateRequest, controller: AbortController) {
     const run = this.context.operation(input.projectPath, controller.signal);
@@ -28,7 +30,8 @@ export class NativeBacklogPlanWorkflow implements BacklogPlanWorkflow {
       input.branchName,
       input.providerId,
       this.providers,
-      run
+      run,
+      this.hostEnvironment
     );
   }
 }

@@ -68,7 +68,9 @@ instances; source/build guards запрещают возврат legacy handlers
 5динамических фабрик;циклов нет. Неизвестная композиция завершает проверку
 с ошибкой. См.
 [module graph audit](artifacts/nest-module-import-graph-audit.md).
-Например, Local execution adapter всё ещё использует ambient process environment.
+Native Local execution теперь использует application snapshot:
+[checkpoint](artifacts/local-runtime-http-errors-checkpoint.md). Отдельные Dev/Test
+spawns и legacy Direct workspace policy ещё требуют исправления.
 
 ## 10.3. Production configuration
 

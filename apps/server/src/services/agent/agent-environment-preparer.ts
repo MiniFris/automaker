@@ -9,7 +9,13 @@ import { AgentPromptBuilder } from './agent-prompt-builder.js';
 
 /** Binds chat execution and target context; never selects a provider or retries mutations. */
 export class AgentEnvironmentPreparer {
-  constructor(private readonly prompts: AgentPromptBuilder) {}
+  private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>;
+  constructor(
+    private readonly prompts: AgentPromptBuilder,
+    hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
+  ) {
+    this.hostEnvironment = Object.freeze({ ...hostEnvironment });
+  }
 
   async usesManagedContext(
     settings: SettingsService | null,
@@ -18,7 +24,9 @@ export class AgentEnvironmentPreparer {
     signal: AbortSignal
   ): Promise<boolean> {
     signal.throwIfAborted();
-    const managed = settings ? await hasRemoteEnvironment(settings, projectPath, runKey) : false;
+    const managed = settings
+      ? await hasRemoteEnvironment(settings, projectPath, runKey, this.hostEnvironment)
+      : false;
     signal.throwIfAborted();
     return managed;
   }
@@ -35,7 +43,13 @@ export class AgentEnvironmentPreparer {
   }> {
     const signal = input.options.abortController!.signal;
     signal.throwIfAborted();
-    const options = await prepareDirectExecution(input.options, input.settings, input.selection);
+    const options = await prepareDirectExecution(
+      input.options,
+      input.settings,
+      input.selection,
+      'agent',
+      this.hostEnvironment
+    );
     // Persist a newly acquired binding even if cancellation arrived while binding.
     // A restart must not silently select a different environment for this chat.
     if (options.executionEnvironmentBinding)
@@ -46,7 +60,7 @@ export class AgentEnvironmentPreparer {
     const managed =
       input.managedContext && binding && isIssuedEnvironment(runtime) && input.settings
         ? {
-            service: new FeatureWorkspaceService(input.settings),
+            service: new FeatureWorkspaceService(input.settings, undefined, this.hostEnvironment),
             run: { binding, environment: runtime },
           }
         : undefined;

@@ -8,8 +8,8 @@
 
 ## Текущий статус и границы оставшейся работы
 
-Последний завершённый checkpoint —
-[legacy route retirement и logging ownership](artifacts/legacy-retirement-logging-checkpoint.md).
+Последний завершённый source checkpoint —
+[Local runtime snapshot и HTTP error codes](artifacts/local-runtime-http-errors-checkpoint.md).
 Native startup/shutdown bridge, service locators и legacy composition удалены;
 в wave17 удалены последние 83 test-only route files. Полный build/test checkpoint wave17 прошёл. Приведённый ниже исторический срез сохраняет результаты того
 commit, а не перечень оставшихся в исходниках adapters.
@@ -31,7 +31,8 @@ coverage по каждому владельцу. См.
   файла не требует механического разделения.
 - Завершить автоматические dependency rules: framework-free domain/application,
   public module exports, provider DI cycles и ambient config за пределами
-  `core`/`modules`. В частности, Local execution ещё читает process environment.
+  `core`/`modules`. Native Local runtime теперь получает application snapshot;
+  отдельные Dev/Test spawn sites ещё требуют исправления.
 - Сверить переходы/recovery всех перечисленных lifecycle owners, включая
   неизвестный cleanup outcome, с отдельными negative/concurrency tests.
   Feature/agent/pipeline mutations уже покрыты предыдущими срезами.

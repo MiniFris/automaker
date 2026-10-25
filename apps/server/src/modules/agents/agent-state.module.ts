@@ -1,9 +1,10 @@
 import { Global, Inject, Module } from '@nestjs/common';
-import { RUNTIME_CONFIG, type RuntimeConfig } from '../../core/config/index.js';
+import { RUNTIME_CONFIG, HOST_ENVIRONMENT, type RuntimeConfig } from '../../core/config/index.js';
 import { AgentSessionRepository } from '../../services/agent/agent-session.repository.js';
 import { AgentSessionRegistry } from '../../services/agent/agent-session-registry.js';
 import { AgentExecutionCoordinator } from '../../services/agent/agent-execution-coordinator.js';
 import { AgentPromptBuilder } from '../../services/agent/agent-prompt-builder.js';
+import { captureNativeLocalEnvironment } from '../../services/execution-environment/local.js';
 import { AgentEnvironmentPreparer } from '../../services/agent/agent-environment-preparer.js';
 import { AgentProviderSelector } from '../../services/agent/agent-provider-selector.js';
 import { AgentQueryOptionsBuilder } from '../../services/agent/agent-query-options-builder.js';
@@ -188,8 +189,9 @@ import { ApplicationMetrics } from '../../core/observability/application-metrics
     },
     {
       provide: AgentEnvironmentPreparer,
-      inject: [AgentPromptBuilder],
-      useFactory: (prompts: AgentPromptBuilder) => new AgentEnvironmentPreparer(prompts),
+      inject: [AgentPromptBuilder, HOST_ENVIRONMENT],
+      useFactory: (prompts: AgentPromptBuilder, environment: Readonly<NodeJS.ProcessEnv>) =>
+        new AgentEnvironmentPreparer(prompts, captureNativeLocalEnvironment(environment)),
     },
     {
       provide: AgentExecutionCoordinator,
