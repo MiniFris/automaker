@@ -1,8 +1,10 @@
+import type { AgentCheckpointRepository } from '../providers/openai-compatible/checkpoint.js';
 /**
  * AgentExecutor - Core agent execution engine with streaming support
  */
 
 import path from 'path';
+import { randomUUID } from 'node:crypto';
 import type { ExecuteOptions, ParsedTask, ProviderMessage } from '@automaker/types';
 import {
   isPipelineStatus,
@@ -12,7 +14,7 @@ import {
 } from '@automaker/types';
 import { buildPromptWithImages, createLogger, isAuthenticationError } from '@automaker/utils';
 import { getFeatureDir } from '@automaker/platform';
-import * as secureFs from '../lib/secure-fs.js';
+import type { ExecutionFilesystem } from './execution-filesystem.js';
 import { TypedEventBus } from './typed-event-bus.js';
 import { FeatureStateManager } from './feature-state-manager.js';
 import { PlanApprovalService } from './plan-approval-service.js';
@@ -26,6 +28,7 @@ import {
   extractSummary,
 } from './spec-parser.js';
 import { getPromptCustomization } from '../lib/settings-helpers.js';
+import { captureNativeLocalEnvironment } from './execution-environment/local.js';
 import { prepareDirectExecution } from '../providers/openai-compatible/execution.js';
 import type {
   AgentExecutionOptions,
@@ -72,17 +75,64 @@ export class AgentExecutor {
     return cleaned || 'Unknown error';
   }
 
+  private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>;
+
   constructor(
     private eventBus: TypedEventBus,
     private featureStateManager: FeatureStateManager,
     private planApprovalService: PlanApprovalService,
-    private settingsService: SettingsService | null = null
-  ) {}
+    private settingsService: SettingsService | null = null,
+    private readonly filesystem: ExecutionFilesystem,
+    hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env,
+    private readonly checkpointRepository?: AgentCheckpointRepository
+  ) {
+    this.hostEnvironment = captureNativeLocalEnvironment(hostEnvironment);
+  }
+
+  private stateFor(
+    options: AgentExecutionOptions
+  ): Pick<FeatureStateManager, 'updateFeaturePlanSpec' | 'updateTaskStatus'> {
+    return {
+      updateFeaturePlanSpec: (...args) =>
+        this.write(options, () => this.featureStateManager.updateFeaturePlanSpec(...args)),
+      updateTaskStatus: (...args) =>
+        this.write(options, () => this.featureStateManager.updateTaskStatus(...args)),
+    };
+  }
+
+  private async write(
+    options: AgentExecutionOptions,
+    write: () => Promise<unknown>
+  ): Promise<void> {
+    if (options.runPort) await options.runPort.mutate(write);
+    else await write();
+  }
+
+  private emitFor(
+    options: AgentExecutionOptions,
+    ...args: Parameters<TypedEventBus['emitAutoModeEvent']>
+  ): void {
+    options.runPort?.assertCurrent();
+    this.eventBus.emitAutoModeEvent(...args);
+  }
 
   async execute(
     options: AgentExecutionOptions,
     callbacks: AgentExecutorCallbacks
   ): Promise<AgentExecutionResult> {
+    options.runPort?.assertCurrent();
+    const originalCallbacks = callbacks;
+    callbacks = {
+      ...callbacks,
+      saveFeatureSummary: (...args) =>
+        this.write(options, () => originalCallbacks.saveFeatureSummary(...args)),
+      updateFeatureSummary: (...args) =>
+        this.write(options, () => originalCallbacks.updateFeatureSummary(...args)),
+      waitForApproval: (...args) => {
+        options.runPort?.assertCurrent();
+        return originalCallbacks.waitForApproval(...args);
+      },
+    };
     const {
       workDir,
       featureId,
@@ -103,6 +153,9 @@ export class AgentExecutor {
       sdkSessionId,
       sdkOptions,
     } = options;
+    options.runPort?.transition(
+      planningMode !== 'skip' && !existingApprovedPlanContent ? 'planning' : 'executing'
+    );
     const { content: promptContent } = await buildPromptWithImages(
       options.prompt,
       options.imagePaths,
@@ -140,11 +193,7 @@ export class AgentExecutor {
         credentials,
         claudeCompatibleProvider,
         sdkSessionId,
-        ...((isDirectModel(options.model ?? effectiveBareModel) ||
-          isRemoteCliModel(options.model ?? effectiveBareModel) ||
-          isRemoteSdkModel(options.model ?? effectiveBareModel)) && {
-          readOnly: planningMode !== 'skip' && requirePlanApproval,
-        }),
+        readOnly: planningMode !== 'skip' && requirePlanApproval,
       },
       this.settingsService,
       {
@@ -153,14 +202,17 @@ export class AgentExecutor {
         projectPath,
         runKey: `feature:${projectPath}:${featureId}`,
         feature: { targetBranch: options.branchName },
-      }
+      },
+      'agent',
+      this.hostEnvironment,
+      this.checkpointRepository
     );
     const featureDirForOutput = getFeatureDir(projectPath, featureId);
     const outputPath = path.join(featureDirForOutput, 'agent-output.md');
     const rawOutputPath = path.join(featureDirForOutput, 'raw-output.jsonl');
     const enableRawOutput =
-      process.env.AUTOMAKER_DEBUG_RAW_OUTPUT === 'true' ||
-      process.env.AUTOMAKER_DEBUG_RAW_OUTPUT === '1';
+      this.hostEnvironment.AUTOMAKER_DEBUG_RAW_OUTPUT === 'true' ||
+      this.hostEnvironment.AUTOMAKER_DEBUG_RAW_OUTPUT === '1';
     let responseText = previousContent
       ? `${previousContent}\n\n---\n\n## Follow-up Session\n\n`
       : '';
@@ -171,7 +223,7 @@ export class AgentExecutor {
       ...options,
       captureToolResult: (id, content) => {
         directToolResults.push(`### ${id}\n\n\`\`\`json\n${content}\n\`\`\``);
-        this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+        this.emitFor(options, 'auto_mode_progress', {
           featureId,
           projectPath,
           branchName,
@@ -189,16 +241,31 @@ export class AgentExecutor {
 
     const writeToFile = async (): Promise<void> => {
       try {
-        await secureFs.mkdir(path.dirname(outputPath), { recursive: true });
-        await secureFs.writeFile(
-          outputPath,
-          responseText +
-            (directToolResults.length
-              ? `\n\n## Tool results\n\n${directToolResults.join('\n\n')}`
-              : '')
-        );
+        await this.write(options, async () => {
+          await this.filesystem.mkdir(path.dirname(outputPath), { recursive: true });
+          await this.filesystem.writeFile(
+            outputPath,
+            responseText +
+              (directToolResults.length
+                ? `\n\n## Tool results\n\n${directToolResults.join('\n\n')}`
+                : '')
+          );
+        });
       } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') return;
         logger.error(`Failed to write agent output for ${featureId}:`, error);
+      }
+    };
+    const flushRaw = async (): Promise<void> => {
+      const lines = rawOutputLines.splice(0);
+      if (!lines.length) return;
+      try {
+        await this.write(options, async () => {
+          await this.filesystem.mkdir(path.dirname(rawOutputPath), { recursive: true });
+          await this.filesystem.appendFile(rawOutputPath, lines.join('\n') + '\n');
+        });
+      } catch {
+        /* Debug output must not override the execution outcome. */
       }
     };
     const scheduleWrite = (): void => {
@@ -210,15 +277,7 @@ export class AgentExecutor {
       try {
         rawOutputLines.push(JSON.stringify({ timestamp: new Date().toISOString(), event }));
         if (rawWriteTimeout) clearTimeout(rawWriteTimeout);
-        rawWriteTimeout = setTimeout(async () => {
-          try {
-            await secureFs.mkdir(path.dirname(rawOutputPath), { recursive: true });
-            await secureFs.appendFile(rawOutputPath, rawOutputLines.join('\n') + '\n');
-            rawOutputLines = [];
-          } catch {
-            /* ignore */
-          }
-        }, AgentExecutor.WRITE_DEBOUNCE_MS);
+        rawWriteTimeout = setTimeout(() => void flushRaw(), AgentExecutor.WRITE_DEBOUNCE_MS);
       } catch {
         /* ignore */
       }
@@ -239,35 +298,38 @@ export class AgentExecutor {
     const requiresApproval = planningModeRequiresApproval && requirePlanApproval;
 
     if (existingApprovedPlanContent && persistedTasks && persistedTasks.length > 0) {
-      const result = await this.executeTasksLoop(
-        options,
-        persistedTasks,
-        existingApprovedPlanContent,
-        responseText,
-        scheduleWrite,
-        callbacks
-      );
-      clearInterval(streamHeartbeat);
-      if (writeTimeout) clearTimeout(writeTimeout);
-      if (rawWriteTimeout) clearTimeout(rawWriteTimeout);
-      await writeToFile();
+      try {
+        const result = await this.executeTasksLoop(
+          options,
+          persistedTasks,
+          existingApprovedPlanContent,
+          responseText,
+          scheduleWrite,
+          callbacks
+        );
+        // Extract and save summary from the new content generated in this session
+        await this.extractAndSaveSessionSummary(
+          projectPath,
+          featureId,
+          result.responseText,
+          previousContent,
+          callbacks,
+          status
+        );
 
-      // Extract and save summary from the new content generated in this session
-      await this.extractAndSaveSessionSummary(
-        projectPath,
-        featureId,
-        result.responseText,
-        previousContent,
-        callbacks,
-        status
-      );
-
-      return {
-        responseText: result.responseText,
-        specDetected: true,
-        tasksCompleted: result.tasksCompleted,
-        aborted: result.aborted,
-      };
+        return {
+          responseText: result.responseText,
+          specDetected: true,
+          tasksCompleted: result.tasksCompleted,
+          aborted: result.aborted,
+        };
+      } finally {
+        clearInterval(streamHeartbeat);
+        if (writeTimeout) clearTimeout(writeTimeout);
+        if (rawWriteTimeout) clearTimeout(rawWriteTimeout);
+        await writeToFile();
+        if (enableRawOutput) await flushRaw();
+      }
     }
 
     logger.info(`Starting stream for feature ${featureId}...`);
@@ -332,13 +394,13 @@ export class AgentExecutor {
                 break streamLoop;
               }
               if (!specDetected)
-                this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+                this.emitFor(options, 'auto_mode_progress', {
                   featureId,
                   branchName,
                   content: block.text,
                 });
             } else if (block.type === 'tool_use') {
-              this.eventBus.emitAutoModeEvent('auto_mode_tool', {
+              this.emitFor(options, 'auto_mode_tool', {
                 featureId,
                 branchName,
                 tool: block.name,
@@ -387,17 +449,14 @@ export class AgentExecutor {
 
       await writeToFile();
       if (enableRawOutput && rawOutputLines.length > 0) {
-        try {
-          await secureFs.mkdir(path.dirname(rawOutputPath), { recursive: true });
-          await secureFs.appendFile(rawOutputPath, rawOutputLines.join('\n') + '\n');
-        } catch {
-          /* ignore */
-        }
+        await flushRaw();
       }
     }
 
     // Capture summary if it hasn't been captured by handleSpecGenerated or executeTasksLoop
     // or if we're in a simple execution mode (planningMode='skip')
+    options.runPort?.assertCurrent();
+    if (!specDetected) options.runPort?.transition('executing');
     await this.extractAndSaveSessionSummary(
       projectPath,
       featureId,
@@ -489,13 +548,8 @@ export class AgentExecutor {
         continue;
       }
       if (abortController.signal.aborted) return { responseText, tasksCompleted, aborted: true };
-      await this.featureStateManager.updateTaskStatus(
-        projectPath,
-        featureId,
-        task.id,
-        'in_progress'
-      );
-      this.eventBus.emitAutoModeEvent('auto_mode_task_started', {
+      await this.stateFor(options).updateTaskStatus(projectPath, featureId, task.id, 'in_progress');
+      this.emitFor(options, 'auto_mode_task_started', {
         featureId,
         projectPath,
         branchName,
@@ -504,7 +558,7 @@ export class AgentExecutor {
         taskIndex,
         tasksTotal: tasks.length,
       });
-      await this.featureStateManager.updateFeaturePlanSpec(projectPath, featureId, {
+      await this.stateFor(options).updateFeaturePlanSpec(projectPath, featureId, {
         currentTaskId: task.id,
       });
       const taskPrompt = callbacks.buildTaskPrompt(
@@ -538,7 +592,7 @@ export class AgentExecutor {
               const text = b.text || '';
               taskOutput += text;
               responseText += text;
-              this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+              this.emitFor(options, 'auto_mode_progress', {
                 featureId,
                 branchName,
                 content: text,
@@ -548,7 +602,7 @@ export class AgentExecutor {
                 const sid = detectTaskStartMarker(taskOutput);
                 if (sid) {
                   taskStartDetected = true;
-                  await this.featureStateManager.updateTaskStatus(
+                  await this.stateFor(options).updateTaskStatus(
                     projectPath,
                     featureId,
                     sid,
@@ -560,7 +614,7 @@ export class AgentExecutor {
                 const completeMarker = detectTaskCompleteMarker(taskOutput);
                 if (completeMarker) {
                   taskCompleteDetected = true;
-                  await this.featureStateManager.updateTaskStatus(
+                  await this.stateFor(options).updateTaskStatus(
                     projectPath,
                     featureId,
                     completeMarker.id,
@@ -571,14 +625,14 @@ export class AgentExecutor {
               }
               const pn = detectPhaseCompleteMarker(text);
               if (pn !== null)
-                this.eventBus.emitAutoModeEvent('auto_mode_phase_complete', {
+                this.emitFor(options, 'auto_mode_phase_complete', {
                   featureId,
                   projectPath,
                   branchName,
                   phaseNumber: pn,
                 });
             } else if (b.type === 'tool_use')
-              this.eventBus.emitAutoModeEvent('auto_mode_tool', {
+              this.emitFor(options, 'auto_mode_tool', {
                 featureId,
                 branchName,
                 tool: b.name,
@@ -611,14 +665,9 @@ export class AgentExecutor {
         }
       }
       if (!taskCompleteDetected)
-        await this.featureStateManager.updateTaskStatus(
-          projectPath,
-          featureId,
-          task.id,
-          'completed'
-        );
+        await this.stateFor(options).updateTaskStatus(projectPath, featureId, task.id, 'completed');
       tasksCompleted = taskIndex + 1;
-      this.eventBus.emitAutoModeEvent('auto_mode_task_complete', {
+      this.emitFor(options, 'auto_mode_task_complete', {
         featureId,
         projectPath,
         branchName,
@@ -626,7 +675,7 @@ export class AgentExecutor {
         tasksCompleted,
         tasksTotal: tasks.length,
       });
-      await this.featureStateManager.updateFeaturePlanSpec(projectPath, featureId, {
+      await this.stateFor(options).updateFeaturePlanSpec(projectPath, featureId, {
         tasksCompleted,
       });
       if (task.phase) {
@@ -634,7 +683,7 @@ export class AgentExecutor {
         if (!next || next.phase !== task.phase) {
           const m = task.phase.match(/Phase\s*(\d+)/i);
           if (m)
-            this.eventBus.emitAutoModeEvent('auto_mode_phase_complete', {
+            this.emitFor(options, 'auto_mode_phase_complete', {
               featureId,
               projectPath,
               branchName,
@@ -664,7 +713,7 @@ export class AgentExecutor {
     let responseText = initialResponseText,
       parsedTasks = parseTasksFromSpec(planContent);
     logger.info(`Parsed ${parsedTasks.length} tasks from spec for feature ${featureId}`);
-    await this.featureStateManager.updateFeaturePlanSpec(projectPath, featureId, {
+    await this.stateFor(options).updateFeaturePlanSpec(projectPath, featureId, {
       status: 'generated',
       content: planContent,
       version: 1,
@@ -683,19 +732,30 @@ export class AgentExecutor {
 
     if (requiresApproval) {
       let planApproved = false;
+      const approvalRunId = randomUUID();
       while (!planApproved) {
+        options.runPort?.transition('awaiting_plan_approval');
+        const approvalToken = randomUUID();
+        const approvalPromise = callbacks.waitForApproval(featureId, projectPath, {
+          token: approvalToken,
+          planVersion,
+          runId: approvalRunId,
+        });
         logger.info(
           `Spec v${planVersion} generated for feature ${featureId}, waiting for approval`
         );
-        this.eventBus.emitAutoModeEvent('plan_approval_required', {
+        this.emitFor(options, 'plan_approval_required', {
           featureId,
           projectPath,
           branchName,
           planContent: currentPlanContent,
           planningMode,
           planVersion,
+          approvalToken,
+          approvalRunId,
         });
-        const approvalResult = await callbacks.waitForApproval(featureId, projectPath);
+        const approvalResult = await approvalPromise;
+        options.runPort?.assertCurrent();
         if (approvalResult.approved) {
           planApproved = true;
           userFeedback = approvalResult.feedback;
@@ -704,14 +764,14 @@ export class AgentExecutor {
             // Re-parse tasks from edited plan to ensure we execute the updated tasks
             const editedTasks = parseTasksFromSpec(approvalResult.editedPlan);
             parsedTasks = editedTasks;
-            await this.featureStateManager.updateFeaturePlanSpec(projectPath, featureId, {
+            await this.stateFor(options).updateFeaturePlanSpec(projectPath, featureId, {
               content: approvalResult.editedPlan,
               tasks: editedTasks,
               tasksTotal: editedTasks.length,
               tasksCompleted: 0,
             });
           }
-          this.eventBus.emitAutoModeEvent('plan_approved', {
+          this.emitFor(options, 'plan_approved', {
             featureId,
             projectPath,
             branchName,
@@ -723,7 +783,8 @@ export class AgentExecutor {
             hasEdits = approvalResult.editedPlan?.trim().length;
           if (!hasFeedback && !hasEdits) throw new Error('Plan cancelled by user');
           planVersion++;
-          this.eventBus.emitAutoModeEvent('plan_revision_requested', {
+          options.runPort?.transition('planning');
+          this.emitFor(options, 'plan_revision_requested', {
             featureId,
             projectPath,
             branchName,
@@ -748,7 +809,7 @@ export class AgentExecutor {
             )
             .replace(/\{\{planningMode\}\}/g, planningMode)
             .replace(/\{\{taskFormatExample\}\}/g, taskEx);
-          await this.featureStateManager.updateFeaturePlanSpec(projectPath, featureId, {
+          await this.stateFor(options).updateFeaturePlanSpec(projectPath, featureId, {
             status: 'generating',
             version: planVersion,
           });
@@ -769,7 +830,7 @@ export class AgentExecutor {
               for (const b of msg.message.content)
                 if (b.type === 'text') {
                   revText += b.text || '';
-                  this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+                  this.emitFor(options, 'auto_mode_progress', {
                     featureId,
                     branchName,
                     content: b.text,
@@ -789,17 +850,18 @@ export class AgentExecutor {
           currentPlanContent = mi > 0 ? revText.substring(0, mi).trim() : revText.trim();
           const revisedTasks = parseTasksFromSpec(currentPlanContent);
           if (revisedTasks.length === 0 && (planningMode === 'spec' || planningMode === 'full'))
-            this.eventBus.emitAutoModeEvent('plan_revision_warning', {
+            this.emitFor(options, 'plan_revision_warning', {
               featureId,
               projectPath,
               branchName,
               planningMode,
               warning: 'Revised plan missing tasks block',
             });
-          await this.featureStateManager.updateFeaturePlanSpec(projectPath, featureId, {
+          await this.stateFor(options).updateFeaturePlanSpec(projectPath, featureId, {
             status: 'generated',
             content: currentPlanContent,
             version: planVersion,
+            reviewedByUser: false,
             tasks: revisedTasks,
             tasksTotal: revisedTasks.length,
             tasksCompleted: 0,
@@ -809,7 +871,7 @@ export class AgentExecutor {
         }
       }
     } else {
-      this.eventBus.emitAutoModeEvent('plan_auto_approved', {
+      this.emitFor(options, 'plan_auto_approved', {
         featureId,
         projectPath,
         branchName,
@@ -817,7 +879,8 @@ export class AgentExecutor {
         planningMode,
       });
     }
-    await this.featureStateManager.updateFeaturePlanSpec(projectPath, featureId, {
+    options.runPort?.transition('executing');
+    await this.stateFor(options).updateFeaturePlanSpec(projectPath, featureId, {
       status: 'approved',
       approvedAt: new Date().toISOString(),
       reviewedByUser: requiresApproval,
@@ -852,7 +915,9 @@ export class AgentExecutor {
     query: ExecuteOptions
   ): AsyncGenerator<ProviderMessage> {
     const names = new Map<string, string>();
+    options.runPort?.assertCurrent();
     for await (const message of options.provider.executeQuery(query)) {
+      options.runPort?.assertCurrent();
       if (isDirectModel(options.model ?? options.effectiveBareModel))
         for (const block of message.message?.content ?? []) {
           const id = block.tool_use_id ?? 'unknown';
@@ -890,10 +955,10 @@ export class AgentExecutor {
         credentials: o.credentials,
         claudeCompatibleProvider: o.claudeCompatibleProvider,
         sdkSessionId: o.sdkSessionId,
+        readOnly,
         ...((isDirectModel(o.model ?? o.effectiveBareModel) ||
           isRemoteCliModel(o.model ?? o.effectiveBareModel) ||
           isRemoteSdkModel(o.model ?? o.effectiveBareModel)) && {
-          readOnly,
           systemPrompt: o.sdkOptions?.systemPrompt ?? o.systemPrompt,
         }),
       },
@@ -904,7 +969,10 @@ export class AgentExecutor {
         projectPath: o.projectPath,
         runKey: `feature:${o.projectPath}:${o.featureId}`,
         feature: { targetBranch: o.branchName },
-      }
+      },
+      'agent',
+      this.hostEnvironment,
+      this.checkpointRepository
     );
   }
 
@@ -936,13 +1004,13 @@ export class AgentExecutor {
         for (const b of msg.message.content) {
           if (b.type === 'text') {
             responseText += b.text || '';
-            this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+            this.emitFor(options, 'auto_mode_progress', {
               featureId,
               branchName,
               content: b.text,
             });
           } else if (b.type === 'tool_use')
-            this.eventBus.emitAutoModeEvent('auto_mode_tool', {
+            this.emitFor(options, 'auto_mode_tool', {
               featureId,
               branchName,
               tool: b.name,

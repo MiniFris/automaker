@@ -6,6 +6,9 @@ export interface CursorStatus {
   installed: boolean;
   version?: string;
   authenticated: boolean;
+  connected: boolean;
+  hasEnvApiKey: boolean;
+  hasCredentialsFile: boolean;
   method?: string;
 }
 
@@ -15,7 +18,7 @@ export interface CursorStatus {
  */
 export function useCursorStatus() {
   const { setCursorCliStatus } = useSetupStore();
-  const { data: result, isLoading, refetch } = useCursorCliStatus();
+  const { data: result, isLoading, refetch, error } = useCursorCliStatus();
 
   // Transform the API result into the local CursorStatus shape
   const status = useMemo((): CursorStatus | null => {
@@ -23,7 +26,10 @@ export function useCursorStatus() {
     return {
       installed: result.installed ?? false,
       version: result.version ?? undefined,
-      authenticated: result.auth?.authenticated ?? false,
+      authenticated: false,
+      connected: result.connected,
+      hasEnvApiKey: result.auth.hasEnvApiKey,
+      hasCredentialsFile: result.auth.hasCredentialsFile,
       method: result.auth?.method,
     };
   }, [result]);
@@ -33,13 +39,16 @@ export function useCursorStatus() {
     if (status) {
       setCursorCliStatus({
         installed: status.installed,
+        connected: status.connected,
         version: status.version,
-        auth: status.authenticated
-          ? {
-              authenticated: true,
-              method: status.method || 'unknown',
-            }
-          : undefined,
+        auth: {
+          authenticated: false,
+          authenticationChecked: false,
+          scope: 'host',
+          method: status.method || 'none',
+          hasEnvApiKey: status.hasEnvApiKey,
+          hasCredentialsFile: status.hasCredentialsFile,
+        },
       });
     }
   }, [status, setCursorCliStatus]);
@@ -52,5 +61,6 @@ export function useCursorStatus() {
     status,
     isLoading,
     loadData,
+    error,
   };
 }

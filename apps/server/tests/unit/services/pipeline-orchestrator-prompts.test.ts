@@ -1,3 +1,5 @@
+import * as executionFilesystem from '../../../src/lib/secure-fs.js';
+import { PipelineService } from '../../../src/services/pipeline-service.js';
 import { describe, it, expect, vi } from 'vitest';
 import { PipelineOrchestrator } from '../../../src/services/pipeline-orchestrator.js';
 import type { Feature } from '@automaker/types';
@@ -17,18 +19,18 @@ describe('PipelineOrchestrator Prompts', () => {
 
   it('should include mandatory summary requirement in pipeline step prompt', () => {
     const orchestrator = new PipelineOrchestrator(
-      null as any, // eventBus
-      null as any, // featureStateManager
-      null as any, // agentExecutor
-      null as any, // testRunnerService
-      null as any, // worktreeResolver
-      null as any, // concurrencyManager
-      null as any, // settingsService
-      null as any, // updateFeatureStatusFn
-      null as any, // loadContextFilesFn
+      null as any,
+      null as any,
+      null as any,
+      null as any,
+      null as any,
+      null as any,
+      null as any,
       mockBuildFeaturePrompt,
-      null as any, // executeFeatureFn
-      null as any // runAgentFn
+      null as any,
+      null as any,
+      new PipelineService(),
+      executionFilesystem // runAgentFn
     );
 
     const step = {

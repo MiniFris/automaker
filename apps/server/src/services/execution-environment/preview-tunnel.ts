@@ -7,9 +7,12 @@ import { SSHExecutionEnvironment } from './ssh.js';
 import { SSHState } from './ssh-state.js';
 import { connectSSH, shellQuote } from './ssh-transport.js';
 import { dockerArguments } from './docker-command.js';
+import { PreviewPolicy } from '../../core/config/preview-policy.js';
+import { legacyPreviewPolicy } from './preview-policy.compat.js';
 
 /** Fixed TCP destination and verified owning Linux session. No client host/port, URL or shell. */
-export const PREVIEW_RELAY = String.raw`
+export function createPreviewRelay(preview: PreviewPolicy): string {
+  return String.raw`
 const fs=require('node:fs'),net=require('node:net');
 const p=JSON.parse(process.argv[1]);
 function owned(){
@@ -31,7 +34,7 @@ function owned(){
   }
   return false;
 }
-if(!Number.isInteger(p.port)||p.port<4100||p.port>4119||!Number.isSafeInteger(p.pid)||p.pid<1||!owned())process.exit(73);
+if(!Number.isInteger(p.port)||p.port<${preview.config.firstPort + 1000}||p.port>${preview.config.lastPort + 1000}||!Number.isSafeInteger(p.pid)||p.pid<1||!owned())process.exit(73);
 const socket=net.connect({host:'127.0.0.1',port:p.port});
 socket.setTimeout(120000,()=>socket.destroy());
 const timer=setTimeout(()=>socket.destroy(),5000);
@@ -42,14 +45,16 @@ process.stdin.on('end',()=>socket.destroy());
 process.stdin.on('error',()=>socket.destroy());
 process.stdout.on('error',()=>socket.destroy());
 `;
+}
 
 export async function openPreviewTunnel(
   target: ProjectGitTarget,
   settings: SettingsService,
   port: number,
-  pid: number
+  pid: number,
+  preview: PreviewPolicy = legacyPreviewPolicy()
 ): Promise<Duplex> {
-  const args = ['-e', PREVIEW_RELAY, JSON.stringify({ port, pid })];
+  const args = ['-e', createPreviewRelay(preview), JSON.stringify({ port, pid })];
   if (target.runtime.type === 'ssh') {
     const descriptor = (target.runtime as SSHExecutionEnvironment).binding;
     const client = await connectSSH(

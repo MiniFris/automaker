@@ -424,7 +424,9 @@ export function LoginView() {
             {translate('Authentication Required')}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            {translate('Enter the API key shown in the server console to continue.')}
+            {translate(
+              'Enter the configured API key or the key stored in DATA_DIR/.api-key to continue.'
+            )}
           </p>
         </div>
 

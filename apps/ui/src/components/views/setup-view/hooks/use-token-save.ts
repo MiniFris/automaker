@@ -40,10 +40,8 @@ export function useTokenSave({ provider, onSuccess }: UseTokenSaveOptions) {
             return false;
           }
         } else {
-          // Web mode fallback - just show success
-          toast.success(translate('Token saved'));
-          onSuccess?.();
-          return true;
+          toast.error(translate('Credential API is not available'));
+          return false;
         }
       } catch (error) {
         logger.error(`Failed to save ${provider}:`, error);

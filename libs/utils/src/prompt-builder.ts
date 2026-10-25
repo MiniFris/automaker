@@ -42,7 +42,8 @@ export async function buildPromptWithImages(
   basePrompt: string,
   imagePaths?: string[],
   workDir?: string,
-  includeImagePaths: boolean = false
+  includeImagePaths: boolean = false,
+  filesystem?: Parameters<typeof convertImagesToContentBlocks>[2]
 ): Promise<PromptWithImages> {
   // No images - return plain text
   if (!imagePaths || imagePaths.length === 0) {
@@ -68,7 +69,7 @@ export async function buildPromptWithImages(
   }
 
   // Add image blocks
-  const imageBlocks = await convertImagesToContentBlocks(imagePaths, workDir);
+  const imageBlocks = await convertImagesToContentBlocks(imagePaths, workDir, filesystem);
   contentBlocks.push(...imageBlocks);
 
   // Return appropriate format

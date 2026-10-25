@@ -6,9 +6,16 @@
  */
 
 import * as pty from 'node-pty';
+import type { TerminalHostPort } from '../core/platform/terminal-host.runtime.js';
+import type { TerminalRcFilesPort } from '../core/platform/terminal-rc-files.adapter.js';
+import {
+  TERMINAL_MIN_MAX_SESSIONS,
+  TERMINAL_MAX_MAX_SESSIONS,
+} from '@automaker/contracts/domains/terminal';
 import { EventEmitter } from 'events';
 import * as os from 'os';
 import * as path from 'path';
+import { performance } from 'node:perf_hooks';
 // secureFs is used for user-controllable paths (working directory validation)
 // to enforce ALLOWED_ROOT_DIRECTORY security boundary
 import * as secureFs from '../lib/secure-fs.js';
@@ -18,6 +25,8 @@ import type { ProjectGitEnvironment } from '@automaker/types';
 import { ProjectGitService } from './execution-environment/project-git.js';
 import { ManagedTerminalPty, type TerminalPty } from './execution-environment/terminal.js';
 import { ExecutionEnvironmentError } from './execution-environment/runtime.js';
+import { TerminalSessionLifecycle, terminalCleanupError } from './terminal-session-lifecycle.js';
+import { ForbiddenDomainError, UnavailableDomainError } from '../core/errors/domain-errors.js';
 import { getTerminalThemeColors, getAllTerminalThemes } from '../lib/terminal-themes-data.js';
 import {
   getRcFilePath,
@@ -27,8 +36,7 @@ import {
 } from '@automaker/platform';
 
 const logger = createLogger('Terminal');
-// System paths module handles shell binary checks and WSL detection
-// These are system paths outside ALLOWED_ROOT_DIRECTORY, centralized for security auditing
+// Direct-constructor compatibility only; native composition supplies TerminalHostPort.
 import {
   systemPathExists,
   systemPathReadFileSync,
@@ -60,14 +68,9 @@ const OMP_THEME_ENV_VAR = 'AUTOMAKER_OMP_THEME';
 // Maximum scrollback buffer size (characters)
 const MAX_SCROLLBACK_SIZE = 50000; // ~50KB per terminal
 
-// Session limit constants - shared with routes/settings.ts
-export const MIN_MAX_SESSIONS = 1;
-export const MAX_MAX_SESSIONS = 1000;
-
-// Maximum number of concurrent terminal sessions
-// Can be overridden via TERMINAL_MAX_SESSIONS environment variable
-// Default set to 1000 - effectively unlimited for most use cases
-let maxSessions = parseInt(process.env.TERMINAL_MAX_SESSIONS || '1000', 10);
+// Preserve the public service names while sharing the HTTP contract bounds.
+export const MIN_MAX_SESSIONS = TERMINAL_MIN_MAX_SESSIONS;
+export const MAX_MAX_SESSIONS = TERMINAL_MAX_MAX_SESSIONS;
 
 // Throttle output to prevent overwhelming WebSocket under heavy load
 // Using 4ms for responsive input feedback while still preventing flood
@@ -219,52 +222,53 @@ export function claimTerminalStartup(
   return allowed;
 }
 
+export interface TerminalPreflight {
+  filesystem: Pick<typeof secureFs, 'stat'>;
+  host?: TerminalHostPort;
+  rcFiles?: TerminalRcFilesPort;
+  homeDirectory?: string;
+  fallbackDirectory: string;
+  resolvePath: (candidate: string) => string;
+}
+
 export class TerminalService extends EventEmitter {
+  private maxSessions: number;
   private pendingCreations = 0;
+  private stopping = false;
+  private shutdown?: Promise<void>;
+  private readonly creations = new Set<Promise<TerminalSession | null>>();
+  private readonly configurationUpdates = new Set<Promise<void>>();
+  private readonly lifecycles = new Map<string, TerminalSessionLifecycle>();
   private sessions: Map<string, TerminalSession> = new Map();
   private dataCallbacks: Set<DataCallback> = new Set();
   private exitCallbacks: Set<ExitCallback> = new Set();
   private isWindows = os.platform() === 'win32';
-  // On Windows, ConPTY requires AttachConsole which fails in Electron/service mode
-  // Detect Electron by checking for electron-specific env vars or process properties
-  private isElectron =
-    !!(process.versions && (process.versions as Record<string, string>).electron) ||
-    !!process.env.ELECTRON_RUN_AS_NODE;
   private useConptyFallback = false; // Track if we need to use winpty fallback on Windows
   private settingsService: SettingsService | null = null;
 
-  constructor(settingsService?: SettingsService) {
+  constructor(
+    settingsService?: SettingsService,
+    initialMaxSessions?: number,
+    private readonly preflight?: TerminalPreflight
+  ) {
     super();
     this.settingsService = settingsService || null;
-  }
-
-  /**
-   * Kill a PTY process with platform-specific handling.
-   * Windows doesn't support Unix signals like SIGTERM/SIGKILL, so we call kill() without arguments.
-   * On Unix-like systems (macOS, Linux), we can specify the signal.
-   *
-   * @param ptyProcess - The PTY process to kill
-   * @param signal - The signal to send on Unix-like systems (default: 'SIGTERM')
-   */
-  private killPtyProcess(ptyProcess: TerminalPty, signal: string = 'SIGTERM'): void {
-    if (this.isWindows) {
-      ptyProcess.kill();
-    } else {
-      ptyProcess.kill(signal);
-    }
+    if (preflight?.host) this.isWindows = preflight.host.platform === 'win32';
+    this.maxSessions =
+      initialMaxSessions ?? Number.parseInt(process.env.TERMINAL_MAX_SESSIONS || '1000', 10);
   }
 
   /**
    * Detect the best shell for the current platform
-   * Uses getShellPaths() to iterate through allowed shell paths
+   * Iterates explicit host shell candidates (legacy getShellPaths for direct callers).
    */
   detectShell(): { shell: string; args: string[] } {
-    const platform = os.platform();
-    const shellPaths = getShellPaths();
+    const platform = this.preflight?.host?.platform ?? os.platform();
+    const shellPaths = this.preflight?.host?.shellPaths ?? getShellPaths();
 
     // Check if running in WSL - prefer user's shell or bash with --login
     if (platform === 'linux' && this.isWSL()) {
-      const userShell = process.env.SHELL;
+      const userShell = this.hostEnvironment.SHELL;
       if (userShell) {
         // Try to find userShell in allowed paths
         for (const allowedShell of shellPaths) {
@@ -273,7 +277,7 @@ export class TerminalService extends EventEmitter {
             getShellBasename(allowedShell) === getShellBasename(userShell)
           ) {
             try {
-              if (systemPathExists(allowedShell)) {
+              if (this.shellExists(allowedShell)) {
                 return { shell: allowedShell, args: getShellArgsForPath(allowedShell) };
               }
             } catch {
@@ -285,7 +289,7 @@ export class TerminalService extends EventEmitter {
       // Fall back to first available POSIX shell
       for (const shell of shellPaths) {
         try {
-          if (systemPathExists(shell)) {
+          if (this.shellExists(shell)) {
             return { shell, args: getShellArgsForPath(shell) };
           }
         } catch {
@@ -296,7 +300,7 @@ export class TerminalService extends EventEmitter {
     }
 
     // For all platforms: first try user's shell if set
-    const userShell = process.env.SHELL;
+    const userShell = this.hostEnvironment.SHELL;
     if (userShell && platform !== 'win32') {
       // Try to find userShell in allowed paths
       for (const allowedShell of shellPaths) {
@@ -305,7 +309,7 @@ export class TerminalService extends EventEmitter {
           getShellBasename(allowedShell) === getShellBasename(userShell)
         ) {
           try {
-            if (systemPathExists(allowedShell)) {
+            if (this.shellExists(allowedShell)) {
               return { shell: allowedShell, args: getShellArgsForPath(allowedShell) };
             }
           } catch {
@@ -318,7 +322,7 @@ export class TerminalService extends EventEmitter {
     // Iterate through allowed shell paths and return first existing one
     for (const shell of shellPaths) {
       try {
-        if (systemPathExists(shell)) {
+        if (this.shellExists(shell)) {
           return { shell, args: getShellArgsForPath(shell) };
         }
       } catch {
@@ -333,11 +337,26 @@ export class TerminalService extends EventEmitter {
     return { shell: '/bin/sh', args: [] };
   }
 
+  private get hostEnvironment(): Readonly<NodeJS.ProcessEnv> {
+    return this.preflight?.host?.environment ?? process.env;
+  }
+
+  private shellExists(candidate: string): boolean {
+    return this.preflight?.host
+      ? this.preflight.host.shellExists(candidate)
+      : systemPathExists(candidate);
+  }
+
   /**
    * Detect if running inside WSL (Windows Subsystem for Linux)
    */
   isWSL(): boolean {
     try {
+      if (this.preflight?.host) {
+        const version = this.preflight.host.wslVersion();
+        if (version !== undefined) return /microsoft|wsl/i.test(version);
+        return Boolean(this.hostEnvironment.WSL_DISTRO_NAME || this.hostEnvironment.WSLENV);
+      }
       // Check /proc/version for Microsoft/WSL indicators
       const wslVersionPath = getWslVersionPath();
       if (systemPathExists(wslVersionPath)) {
@@ -365,10 +384,10 @@ export class TerminalService extends EventEmitter {
   } {
     const { shell } = this.detectShell();
     return {
-      platform: os.platform(),
+      platform: this.preflight?.host?.platform ?? os.platform(),
       isWSL: this.isWSL(),
       defaultShell: shell,
-      arch: os.arch(),
+      arch: this.preflight?.host?.arch ?? os.arch(),
     };
   }
 
@@ -378,6 +397,7 @@ export class TerminalService extends EventEmitter {
    * Uses secureFs to enforce ALLOWED_ROOT_DIRECTORY for user-provided paths
    */
   private async resolveWorkingDirectory(requestedCwd?: string): Promise<string> {
+    if (this.preflight) return this.resolveNativeWorkingDirectory(requestedCwd);
     const homeDir = os.homedir();
 
     // If no cwd requested, use home
@@ -421,6 +441,47 @@ export class TerminalService extends EventEmitter {
     }
   }
 
+  private async resolveNativeWorkingDirectory(requestedCwd?: string): Promise<string> {
+    const preflight = this.preflight!;
+    const fallback = async (): Promise<string> => {
+      const candidates = [
+        ...new Set(
+          [preflight.homeDirectory, preflight.fallbackDirectory].filter((value): value is string =>
+            Boolean(value)
+          )
+        ),
+      ];
+      for (const candidate of candidates) {
+        try {
+          const canonical = preflight.resolvePath(candidate);
+          if ((await preflight.filesystem.stat(canonical)).isDirectory()) return canonical;
+        } catch (error) {
+          // A missing/unauthorized configured HOME may select the explicit app
+          // fallback. Indeterminate IO never grants authority to spawn elsewhere.
+          if (
+            candidate === preflight.homeDirectory &&
+            (error instanceof ForbiddenDomainError ||
+              (error as NodeJS.ErrnoException).code === 'ENOENT')
+          )
+            continue;
+          throw error;
+        }
+      }
+      throw new ExecutionEnvironmentError(
+        'TERMINAL_TARGET_CHANGED',
+        'No authorized terminal directory is available. No shell was started.'
+      );
+    };
+    if (!requestedCwd) return fallback();
+    const canonical = preflight.resolvePath(requestedCwd.trim());
+    try {
+      if ((await preflight.filesystem.stat(canonical)).isDirectory()) return canonical;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    }
+    return fallback();
+  }
+
   /**
    * Get current session count
    */
@@ -432,7 +493,7 @@ export class TerminalService extends EventEmitter {
    * Get maximum allowed sessions
    */
   getMaxSessions(): number {
-    return maxSessions;
+    return this.maxSessions;
   }
 
   /**
@@ -440,7 +501,7 @@ export class TerminalService extends EventEmitter {
    */
   setMaxSessions(limit: number): void {
     if (limit >= MIN_MAX_SESSIONS && limit <= MAX_MAX_SESSIONS) {
-      maxSessions = limit;
+      this.maxSessions = limit;
       logger.info(`Max sessions limit updated to ${limit}`);
     }
   }
@@ -449,14 +510,27 @@ export class TerminalService extends EventEmitter {
    * Create a new terminal session
    * Returns null if the maximum session limit has been reached
    */
-  async createSession(options: TerminalOptions = {}): Promise<TerminalSession | null> {
-    if (this.sessions.size + this.pendingCreations >= maxSessions) return null;
+  createSession(options: TerminalOptions = {}): Promise<TerminalSession | null> {
+    if (this.stopping || this.sessions.size + this.pendingCreations >= this.maxSessions)
+      return Promise.resolve(null);
     this.pendingCreations++;
-    try {
-      return await this.createSessionInternal(options);
-    } finally {
-      this.pendingCreations--;
-    }
+    const creation = this.createSessionInternal(options)
+      .then(async (session) => {
+        const lifecycle = session ? this.lifecycles.get(session.id) : undefined;
+        if (session && !lifecycle) return null;
+        if (lifecycle) await lifecycle.ready();
+        if (session && (this.stopping || lifecycle!.closing)) {
+          await lifecycle!.close();
+          return null;
+        }
+        return session;
+      })
+      .finally(() => {
+        this.pendingCreations--;
+        this.creations.delete(creation);
+      });
+    this.creations.add(creation);
+    return creation;
   }
 
   private async createSessionInternal(options: TerminalOptions): Promise<TerminalSession | null> {
@@ -476,8 +550,8 @@ export class TerminalService extends EventEmitter {
         'Invalid terminal dimensions.'
       );
     // Check session limit
-    if (this.sessions.size >= maxSessions) {
-      logger.error(`Max sessions (${maxSessions}) reached, refusing new session`);
+    if (this.sessions.size >= this.maxSessions) {
+      logger.error(`Max sessions (${this.maxSessions}) reached, refusing new session`);
       return null;
     }
 
@@ -499,6 +573,7 @@ export class TerminalService extends EventEmitter {
               'TERMINAL_ENV_UNSUPPORTED',
               'Controller terminal environment overrides are not forwarded to a managed terminal.'
             );
+          if (this.stopping) return null;
           const remote = await ManagedTerminalPty.open(target, this.settingsService, {
             cols: options.cols ?? 80,
             rows: options.rows ?? 24,
@@ -542,11 +617,12 @@ export class TerminalService extends EventEmitter {
 
     // Build environment with some useful defaults
     // These settings ensure consistent terminal behavior across platforms
-    // First, create a clean copy of process.env excluding Automaker-specific variables
+    // Copy the app's host snapshot (ambient env only for direct legacy callers), excluding
+    // Automaker-specific variables
     // that could pollute user shells (e.g., PORT would affect Next.js/other dev servers)
     const automakerEnvVars = ['PORT', 'DATA_DIR', 'AUTOMAKER_API_KEY', 'NODE_PATH'];
     const cleanEnv: Record<string, string> = {};
-    for (const [key, value] of Object.entries(process.env)) {
+    for (const [key, value] of Object.entries(this.hostEnvironment)) {
       if (value !== undefined && !automakerEnvVars.includes(key)) {
         cleanEnv[key] = value;
       }
@@ -554,6 +630,7 @@ export class TerminalService extends EventEmitter {
 
     // Terminal config injection (custom prompts, themes)
     const terminalConfigEnv: Record<string, string> = {};
+    const configurationCwd = this.preflight ? cwd : options.cwd || cwd;
     if (this.settingsService) {
       try {
         logger.info(
@@ -561,7 +638,7 @@ export class TerminalService extends EventEmitter {
         );
         const globalSettings = await this.settingsService.getGlobalSettings();
         const projectSettings = options.cwd
-          ? await this.settingsService.getProjectSettings(options.cwd)
+          ? await this.settingsService.getProjectSettings(configurationCwd)
           : null;
 
         const globalTerminalConfig = globalSettings?.terminalConfig;
@@ -587,8 +664,8 @@ export class TerminalService extends EventEmitter {
           const ompThemeName = resolveOmpThemeName(promptTheme);
 
           // Ensure RC files are up to date
-          await ensureRcFilesUpToDate(
-            options.cwd || cwd,
+          await this.ensureRcFiles(
+            configurationCwd,
             currentTheme,
             effectiveConfig,
             themeColors,
@@ -602,7 +679,7 @@ export class TerminalService extends EventEmitter {
           }
 
           if (shellName.includes(SHELL_NAME_BASH)) {
-            const bashRcFilePath = getRcFilePath(options.cwd || cwd, SHELL_NAME_BASH);
+            const bashRcFilePath = getRcFilePath(configurationCwd, SHELL_NAME_BASH);
             terminalConfigEnv.BASH_ENV = bashRcFilePath;
             terminalConfigEnv.AUTOMAKER_CUSTOM_PROMPT = effectiveConfig.customPrompt
               ? 'true'
@@ -610,13 +687,13 @@ export class TerminalService extends EventEmitter {
             terminalConfigEnv.AUTOMAKER_THEME = currentTheme;
             shellArgs = applyBashRcFileArgs(shellArgs, bashRcFilePath);
           } else if (shellName.includes(SHELL_NAME_ZSH)) {
-            terminalConfigEnv.ZDOTDIR = getTerminalDir(options.cwd || cwd);
+            terminalConfigEnv.ZDOTDIR = getTerminalDir(configurationCwd);
             terminalConfigEnv.AUTOMAKER_CUSTOM_PROMPT = effectiveConfig.customPrompt
               ? 'true'
               : 'false';
             terminalConfigEnv.AUTOMAKER_THEME = currentTheme;
           } else if (shellName === SHELL_NAME_SH) {
-            terminalConfigEnv.ENV = getRcFilePath(options.cwd || cwd, SHELL_NAME_SH);
+            terminalConfigEnv.ENV = getRcFilePath(configurationCwd, SHELL_NAME_SH);
             terminalConfigEnv.AUTOMAKER_CUSTOM_PROMPT = effectiveConfig.customPrompt
               ? 'true'
               : 'false';
@@ -631,7 +708,8 @@ export class TerminalService extends EventEmitter {
           );
         }
       } catch (error) {
-        logger.warn(`[createSession] Failed to apply terminal config: ${error}`);
+        if (this.preflight?.rcFiles) throw error;
+        logger.warn('[createSession] Failed to apply terminal config.');
       }
     }
 
@@ -641,8 +719,8 @@ export class TerminalService extends EventEmitter {
       COLORTERM: 'truecolor',
       TERM_PROGRAM: 'automaker-terminal',
       // Ensure proper locale for character handling
-      LANG: process.env.LANG || 'en_US.UTF-8',
-      LC_ALL: process.env.LC_ALL || process.env.LANG || 'en_US.UTF-8',
+      LANG: this.hostEnvironment.LANG || 'en_US.UTF-8',
+      LC_ALL: this.hostEnvironment.LC_ALL || this.hostEnvironment.LANG || 'en_US.UTF-8',
       ...options.env,
       ...terminalConfigEnv, // Apply terminal config env vars last (highest priority)
     };
@@ -671,6 +749,7 @@ export class TerminalService extends EventEmitter {
       );
     }
 
+    if (this.stopping) return null;
     let ptyProcess: pty.IPty;
     try {
       ptyProcess = pty.spawn(shell, shellArgs, ptyOptions);
@@ -729,6 +808,12 @@ export class TerminalService extends EventEmitter {
     };
 
     this.sessions.set(id, session);
+    const lifecycle = new TerminalSessionLifecycle(ptyProcess, this.isWindows);
+    this.lifecycles.set(id, lifecycle);
+    const finish = () => {
+      this.sessions.delete(id);
+      this.lifecycles.delete(id);
+    };
 
     // Flush buffered output to clients (throttled)
     const flushOutput = () => {
@@ -752,6 +837,7 @@ export class TerminalService extends EventEmitter {
 
     // Forward data events with throttling
     ptyProcess.onData((data) => {
+      if (lifecycle.closing) return;
       // Skip ALL output during resize/reconnect to prevent prompt redraw duplication
       // This drops both scrollback AND live output during the suppression window
       // Without this, prompt redraws from SIGWINCH go to live clients causing duplicates
@@ -779,6 +865,31 @@ export class TerminalService extends EventEmitter {
 
     // Handle exit
     ptyProcess.onExit(({ exitCode }) => {
+      lifecycle.markExited();
+      const publishExit = (code: number) => {
+        for (const callback of this.exitCallbacks) {
+          try {
+            callback(id, code);
+          } catch {
+            logger.error('Terminal exit subscriber failed.');
+          }
+        }
+        try {
+          this.emit('exit', id, code);
+        } catch {
+          logger.error('Terminal exit subscriber failed.');
+        }
+      };
+      void lifecycle.close().then(
+        () => {
+          finish();
+          publishExit(exitCode);
+        },
+        () => {
+          logger.error('Terminal cleanup could not be confirmed; retaining session identity.');
+          publishExit(255);
+        }
+      );
       if (session.flushTimeout) clearTimeout(session.flushTimeout);
       if (session.resizeDebounceTimeout) clearTimeout(session.resizeDebounceTimeout);
       if (session.outputBuffer) {
@@ -790,9 +901,7 @@ export class TerminalService extends EventEmitter {
           ? 'Session terminated'
           : `Session exited with code ${exitCode}`;
       logger.info(`${exitMessage} (${id})`);
-      this.sessions.delete(id);
-      this.exitCallbacks.forEach((cb) => cb(id, exitCode));
-      this.emit('exit', id, exitCode);
+      // Exit alone does not prove the original Linux process group is quiescent.
     });
 
     logger.info(`Session ${id} created successfully`);
@@ -803,6 +912,7 @@ export class TerminalService extends EventEmitter {
    * Write data to a terminal session
    */
   write(sessionId: string, data: string): boolean {
+    if (this.stopping || this.lifecycles.get(sessionId)?.closing) return false;
     if (typeof data !== 'string' || Buffer.byteLength(data) > 1024 * 1024) return false;
     const session = this.sessions.get(sessionId);
     if (!session) {
@@ -819,6 +929,7 @@ export class TerminalService extends EventEmitter {
    *                         Should be false for the initial resize so the first prompt isn't dropped.
    */
   resize(sessionId: string, cols: number, rows: number, suppressOutput: boolean = true): boolean {
+    if (this.stopping || this.lifecycles.get(sessionId)?.closing) return false;
     if (
       !Number.isInteger(cols) ||
       !Number.isInteger(rows) ||
@@ -868,53 +979,33 @@ export class TerminalService extends EventEmitter {
    */
   killSession(sessionId: string): boolean {
     const session = this.sessions.get(sessionId);
-    if (!session) {
-      return false;
-    }
-    if (session.pty instanceof ManagedTerminalPty) {
-      session.pty.kill(); // Retain identity until target confirms cleanup (or reports unknown).
-      return true;
-    }
-    try {
-      // Clean up flush timeout
-      if (session.flushTimeout) {
-        clearTimeout(session.flushTimeout);
-        session.flushTimeout = null;
-      }
-      // Clean up resize debounce timeout
-      if (session.resizeDebounceTimeout) {
-        clearTimeout(session.resizeDebounceTimeout);
-        session.resizeDebounceTimeout = null;
-      }
+    const lifecycle = this.lifecycles.get(sessionId);
+    if (!session || !lifecycle) return false;
+    if (session.flushTimeout) clearTimeout(session.flushTimeout);
+    if (session.resizeDebounceTimeout) clearTimeout(session.resizeDebounceTimeout);
+    session.flushTimeout = null;
+    session.resizeDebounceTimeout = null;
+    const accepted = lifecycle.requestClose();
+    void lifecycle
+      .close()
+      .catch(() =>
+        logger.error('Terminal cleanup could not be confirmed; retaining session identity.')
+      );
+    return accepted;
+  }
 
-      // First try graceful SIGTERM to allow process cleanup
-      // On Windows, killPtyProcess calls kill() without signal since Windows doesn't support Unix signals
-      logger.info(`Session ${sessionId} sending SIGTERM`);
-      this.killPtyProcess(session.pty, 'SIGTERM');
-
-      // Schedule SIGKILL fallback if process doesn't exit gracefully
-      // The onExit handler will remove session from map when it actually exits
-      setTimeout(() => {
-        if (this.sessions.has(sessionId)) {
-          logger.info(`Session ${sessionId} still alive after SIGTERM, sending SIGKILL`);
-          try {
-            this.killPtyProcess(session.pty, 'SIGKILL');
-          } catch {
-            // Process may have already exited
-          }
-          // Force remove from map if still present
-          this.sessions.delete(sessionId);
-        }
-      }, 1000);
-
-      logger.info(`Session ${sessionId} kill initiated`);
-      return true;
-    } catch (error) {
-      logger.error(`Error killing session ${sessionId}:`, error);
-      // Still try to remove from map even if kill fails
-      this.sessions.delete(sessionId);
-      return false;
-    }
+  /** Success means the original owned PTY/group has actually finished cleanup. */
+  async stopSession(sessionId: string): Promise<boolean> {
+    const lifecycle = this.lifecycles.get(sessionId);
+    if (!this.sessions.has(sessionId)) return false;
+    if (!lifecycle) throw terminalCleanupError();
+    this.killSession(sessionId);
+    await lifecycle.close();
+    // An onExit subscriber normally removes these first. Do not publish success
+    // with a stale identity even if its callback is still awaiting this promise.
+    this.sessions.delete(sessionId);
+    this.lifecycles.delete(sessionId);
+    return true;
   }
 
   /**
@@ -922,6 +1013,10 @@ export class TerminalService extends EventEmitter {
    */
   getSession(sessionId: string): TerminalSession | undefined {
     return this.sessions.get(sessionId);
+  }
+
+  isSessionClosing(sessionId: string): boolean {
+    return this.stopping || this.lifecycles.get(sessionId)?.closing === true;
   }
 
   /**
@@ -994,7 +1089,29 @@ export class TerminalService extends EventEmitter {
   /**
    * Handle theme change - regenerate RC files with new theme colors
    */
-  async onThemeChange(projectPath: string, newTheme: string): Promise<void> {
+  private ensureRcFiles(...args: Parameters<typeof ensureRcFilesUpToDate>): Promise<void> {
+    return this.preflight?.rcFiles
+      ? this.preflight.rcFiles.ensure(...args)
+      : ensureRcFilesUpToDate(...args);
+  }
+
+  onThemeChange(projectPath: string, newTheme: string): Promise<void> {
+    if (this.stopping) return Promise.resolve();
+    if (this.configurationUpdates.size >= 256)
+      return Promise.reject(new UnavailableDomainError('Terminal configuration queue is busy.'));
+    const task = this.updateTheme(projectPath, newTheme).finally(() =>
+      this.configurationUpdates.delete(task)
+    );
+    this.configurationUpdates.add(task);
+    return task;
+  }
+
+  private async updateTheme(projectPath: string, newTheme: string): Promise<void> {
+    if (this.preflight) {
+      projectPath = this.preflight.resolvePath(projectPath);
+      if (!(await this.preflight.filesystem.stat(projectPath)).isDirectory())
+        throw new ExecutionEnvironmentError('INVALID_CWD', 'Working directory must exist.');
+    }
     if (!this.settingsService) {
       logger.warn('[onThemeChange] SettingsService not available');
       return;
@@ -1014,7 +1131,7 @@ export class TerminalService extends EventEmitter {
         const allThemes = getAllTerminalThemes();
 
         // Regenerate RC files with new theme
-        await ensureRcFilesUpToDate(
+        await this.ensureRcFiles(
           projectPath,
           newTheme as import('@automaker/types').ThemeMode,
           effectiveConfig,
@@ -1025,37 +1142,48 @@ export class TerminalService extends EventEmitter {
         logger.info(`[onThemeChange] Regenerated RC files for theme: ${newTheme}`);
       }
     } catch (error) {
-      logger.error(`[onThemeChange] Failed to regenerate RC files: ${error}`);
+      if (this.preflight?.rcFiles) throw error;
+      logger.error('[onThemeChange] Failed to regenerate RC files.');
     }
   }
 
   /**
    * Clean up all sessions
    */
-  cleanup(): void {
-    logger.info(`Cleaning up ${this.sessions.size} sessions`);
-    this.sessions.forEach((session, id) => {
-      try {
-        // Clean up flush timeout
-        if (session.flushTimeout) {
-          clearTimeout(session.flushTimeout);
-        }
-        // Use platform-specific kill to ensure proper termination on Windows
-        this.killPtyProcess(session.pty);
-      } catch {
-        // Ignore errors during cleanup
-      }
-      this.sessions.delete(id);
+  cleanup(): Promise<void> {
+    if (this.shutdown) return this.shutdown;
+    this.stopping = true;
+    const deadline = performance.now() + 25_000;
+    const tasks: Promise<unknown>[] = [...this.creations].map((creation) =>
+      creation.catch((error) => {
+        if (error instanceof ExecutionEnvironmentError && error.code === 'TERMINAL_CLEANUP_FAILED')
+          throw error;
+      })
+    );
+    tasks.push(...this.configurationUpdates);
+    for (const [id, lifecycle] of this.lifecycles) {
+      const session = this.sessions.get(id);
+      if (session?.flushTimeout) clearTimeout(session.flushTimeout);
+      if (session?.resizeDebounceTimeout) clearTimeout(session.resizeDebounceTimeout);
+      tasks.push(
+        lifecycle.close().then(() => {
+          this.sessions.delete(id);
+          this.lifecycles.delete(id);
+        })
+      );
+    }
+    let timer: NodeJS.Timeout | undefined;
+    this.shutdown = Promise.race([
+      Promise.allSettled(tasks).then((results) => {
+        if (performance.now() >= deadline || results.some((result) => result.status === 'rejected'))
+          throw terminalCleanupError();
+      }),
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => reject(terminalCleanupError()), 25_000);
+      }),
+    ]).finally(() => {
+      if (timer) clearTimeout(timer);
     });
+    return this.shutdown;
   }
-}
-
-// Singleton instance
-let terminalService: TerminalService | null = null;
-
-export function getTerminalService(settingsService?: SettingsService): TerminalService {
-  if (!terminalService) {
-    terminalService = new TerminalService(settingsService);
-  }
-  return terminalService;
 }

@@ -1,149 +1,101 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { BacklogPlanApplicationService } from '@/modules/backlog-plan/backlog-plan-application.service.js';
+import { BacklogPlanJobRegistry } from '@/modules/backlog-plan/backlog-plan-job.registry.js';
+import { ProjectFeatureSerializer } from '@/modules/features/project-feature-serializer.js';
+import { FeatureTransitionService } from '@/modules/features/feature-transition.service.js';
 
-const { mockGetAll, mockCreate, mockUpdate, mockDelete, mockClearBacklogPlan } = vi.hoisted(() => ({
-  mockGetAll: vi.fn(),
-  mockCreate: vi.fn(),
-  mockUpdate: vi.fn(),
-  mockDelete: vi.fn(),
-  mockClearBacklogPlan: vi.fn(),
-}));
-
-vi.mock('@/services/feature-loader.js', () => ({
-  FeatureLoader: class {
-    getAll = mockGetAll;
-    create = mockCreate;
-    update = mockUpdate;
-    delete = mockDelete;
-  },
-}));
-
-vi.mock('@/routes/backlog-plan/common.js', () => ({
-  logger: {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  },
-  clearBacklogPlan: mockClearBacklogPlan,
-  getErrorMessage: (error: unknown) => (error instanceof Error ? error.message : String(error)),
-  logError: vi.fn(),
-}));
-
-import { createApplyHandler } from '@/routes/backlog-plan/routes/apply.js';
-
-function createMockRes() {
-  const res: {
-    status: ReturnType<typeof vi.fn>;
-    json: ReturnType<typeof vi.fn>;
-  } = {
-    status: vi.fn(),
-    json: vi.fn(),
+function fixture(global: object, project: object) {
+  const settings = {
+    getGlobalSettings: vi.fn().mockResolvedValue(global),
+    getProjectSettings: vi.fn().mockResolvedValue(project),
   };
-  res.status.mockReturnValue(res);
-  return res;
+  const features = {
+    list: vi.fn().mockResolvedValue([]),
+    create: vi.fn(async (_path: string, value: object) => ({ id: 'feature-created', ...value })),
+    update: vi.fn(),
+    delete: vi.fn(),
+  };
+  const store = { load: vi.fn(), clear: vi.fn().mockResolvedValue(undefined) };
+  const security = { validateLocalPath: (value: string) => value };
+  const jobs = new BacklogPlanJobRegistry(security as never);
+  const service = new BacklogPlanApplicationService(
+    { generate: vi.fn() } as never,
+    store,
+    jobs,
+    features as never,
+    new ProjectFeatureSerializer(security as never),
+    new FeatureTransitionService(),
+    settings as never
+  );
+  return { service, features, store, jobs };
 }
-
-describe('createApplyHandler', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockGetAll.mockResolvedValue([]);
-    mockCreate.mockResolvedValue({ id: 'feature-created' });
-    mockUpdate.mockResolvedValue({});
-    mockDelete.mockResolvedValue(true);
-    mockClearBacklogPlan.mockResolvedValue(undefined);
-  });
-
-  it('applies default feature model and planning settings when backlog plan additions omit them', async () => {
-    const settingsService = {
-      getGlobalSettings: vi.fn().mockResolvedValue({
+const input = {
+  projectPath: '/tmp/project',
+  plan: {
+    changes: [
+      {
+        type: 'add' as const,
+        feature: { id: 'feature-from-plan', title: 'Created from plan', description: 'desc' },
+      },
+    ],
+    dependencyUpdates: [],
+  },
+};
+describe('native backlog apply use case with explicit feature/store/settings ports', () => {
+  it('applies global default model/planning/approval settings when additions omit them', async () => {
+    const { service, features, store, jobs } = fixture(
+      {
         defaultFeatureModel: { model: 'codex-gpt-5.2-codex', reasoningEffort: 'high' },
         defaultPlanningMode: 'spec',
         defaultRequirePlanApproval: true,
-      }),
-      getProjectSettings: vi.fn().mockResolvedValue({}),
-    } as any;
-
-    const req = {
-      body: {
-        projectPath: '/tmp/project',
-        plan: {
-          changes: [
-            {
-              type: 'add',
-              feature: {
-                id: 'feature-from-plan',
-                title: 'Created from plan',
-                description: 'desc',
-              },
-            },
-          ],
-        },
       },
-    } as any;
-    const res = createMockRes();
-
-    await createApplyHandler(settingsService)(req, res as any);
-
-    expect(mockCreate).toHaveBeenCalledWith(
-      '/tmp/project',
-      expect.objectContaining({
-        model: 'codex-gpt-5.2-codex',
-        reasoningEffort: 'high',
-        planningMode: 'spec',
-        requirePlanApproval: true,
-      })
+      {}
     );
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        success: true,
-      })
-    );
+    try {
+      expect(await service.apply(input as never)).toMatchObject({ success: true });
+      expect(features.create).toHaveBeenCalledWith(
+        '/tmp/project',
+        expect.objectContaining({
+          model: 'codex-gpt-5.2-codex',
+          reasoningEffort: 'high',
+          planningMode: 'spec',
+          requirePlanApproval: true,
+        })
+      );
+      expect(store.clear).toHaveBeenCalledWith('/tmp/project');
+    } finally {
+      await jobs.onModuleDestroy();
+    }
   });
-
-  it('uses project default feature model override and enforces no approval for skip mode', async () => {
-    const settingsService = {
-      getGlobalSettings: vi.fn().mockResolvedValue({
+  it('uses project model override and enforces no approval in skip mode', async () => {
+    const { service, features, jobs } = fixture(
+      {
         defaultFeatureModel: { model: 'claude-opus' },
         defaultPlanningMode: 'skip',
         defaultRequirePlanApproval: true,
-      }),
-      getProjectSettings: vi.fn().mockResolvedValue({
+      },
+      {
         defaultFeatureModel: {
           model: 'GLM-4.7',
           providerId: 'provider-glm',
           thinkingLevel: 'adaptive',
         },
-      }),
-    } as any;
-
-    const req = {
-      body: {
-        projectPath: '/tmp/project',
-        plan: {
-          changes: [
-            {
-              type: 'add',
-              feature: {
-                id: 'feature-from-plan',
-                title: 'Created from plan',
-              },
-            },
-          ],
-        },
-      },
-    } as any;
-    const res = createMockRes();
-
-    await createApplyHandler(settingsService)(req, res as any);
-
-    expect(mockCreate).toHaveBeenCalledWith(
-      '/tmp/project',
-      expect.objectContaining({
-        model: 'GLM-4.7',
-        providerId: 'provider-glm',
-        thinkingLevel: 'adaptive',
-        planningMode: 'skip',
-        requirePlanApproval: false,
-      })
+      }
     );
+    try {
+      await service.apply(input as never);
+      expect(features.create).toHaveBeenCalledWith(
+        '/tmp/project',
+        expect.objectContaining({
+          model: 'GLM-4.7',
+          providerId: 'provider-glm',
+          thinkingLevel: 'adaptive',
+          planningMode: 'skip',
+          requirePlanApproval: false,
+        })
+      );
+    } finally {
+      await jobs.onModuleDestroy();
+    }
   });
 });

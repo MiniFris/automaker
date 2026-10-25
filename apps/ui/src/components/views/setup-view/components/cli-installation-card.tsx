@@ -53,7 +53,7 @@ export function CliInstallationCard({
           <CopyableCommandField key={index} label={cmd.label} command={cmd.command} />
         ))}
 
-        {isInstalling && <TerminalOutput lines={installProgress.output} />}
+        {installProgress.output.length > 0 && <TerminalOutput lines={installProgress.output} />}
 
         <Button
           onClick={onInstall}
@@ -64,12 +64,12 @@ export function CliInstallationCard({
           {isInstalling ? (
             <>
               <Spinner size="sm" variant="foreground" className="mr-2" />
-              {translate('Installing...')}
+              {translate('Loading instructions...')}
             </>
           ) : (
             <>
               <Download className="w-4 h-4 mr-2" />
-              {translate('Auto Install')}
+              {translate('Show installation instructions')}
             </>
           )}
         </Button>

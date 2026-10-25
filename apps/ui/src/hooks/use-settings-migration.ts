@@ -14,12 +14,13 @@
  * 6. Returns a promise that resolves when hydration is complete
  *
  * IMPORTANT: localStorage values are intentionally NOT deleted after migration.
- * This allows users to switch back to older versions of Automaker if needed.
+ * This preserves the original browser backup. It does not make backend downgrade safe.
  *
  * Sync functions for incremental updates:
  * - syncSettingsToServer: Writes global settings to file
- * - syncCredentialsToServer: Writes API keys to file
  * - syncProjectSettingsToServer: Writes project-specific overrides
+ *
+ * Credentials are imported separately through target-confirmed setup commands.
  */
 
 import { useEffect, useState, useRef } from 'react';
@@ -988,27 +989,6 @@ export async function syncSettingsToServer(): Promise<boolean> {
     return result.success;
   } catch (error) {
     logger.error('Failed to sync settings:', error);
-    return false;
-  }
-}
-
-/**
- * Sync API credentials to file-based server storage
- *
- * @param apiKeys - Partial credential object with optional anthropic, google, openai keys
- * @returns Promise resolving to true if sync succeeded, false otherwise
- */
-export async function syncCredentialsToServer(apiKeys: {
-  anthropic?: string;
-  google?: string;
-  openai?: string;
-}): Promise<boolean> {
-  try {
-    const api = getHttpApiClient();
-    const result = await api.settings.updateCredentials({ apiKeys });
-    return result.success;
-  } catch (error) {
-    logger.error('Failed to sync credentials:', error);
     return false;
   }
 }

@@ -1,33 +1,26 @@
+import { createNativeWorktreeHttp } from '../../helpers/native-worktree-http.js';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { once } from 'node:events';
-import express from 'express';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { SettingsService } from '@/services/settings-service.js';
 import { ManagedSSH } from '@/services/execution-environment/ssh.js';
 import { ProjectGitService, workspaceAlias } from '@/services/execution-environment/project-git.js';
 import { FeatureWorkspaceService } from '@/services/execution-environment/feature-workspace.js';
-import { getManagedTestRunnerService } from '@/services/execution-environment/test-runner.js';
-import { createWorktreeRoutes } from '@/routes/worktree/index.js';
+import { ManagedTestRunnerService } from '@/services/execution-environment/test-runner.js';
 import { createEventEmitter } from '@/lib/events.js';
-import { authMiddleware } from '@/lib/auth.js';
 import { sshPeer, testSSHKey } from '../../helpers/ssh-peer.js';
-
-// Auth initializes at import time. Never read real controller credentials/session files.
-vi.hoisted(() => {
-  vi.stubEnv('AUTOMAKER_API_KEY', 'fixture-secret');
-  vi.stubEnv('DATA_DIR', `/tmp/automaker-manual-tests-auth-${process.pid}`);
-});
 
 const exec = promisify(execFile);
 describe.skipIf(process.platform !== 'linux')('manual test runner on real SSH', () => {
+  let native: Awaited<ReturnType<typeof createNativeWorktreeHttp>>;
   let root: string, project: string, checkout: string, settings: SettingsService;
   let peer: Awaited<ReturnType<typeof sshPeer>>;
-  let tests: ReturnType<typeof getManagedTestRunnerService>;
-  let server: ReturnType<ReturnType<typeof express>['listen']>, url: string;
+  let tests: ManagedTestRunnerService;
+  let server: import('node:http').Server, url: string;
   let events: ReturnType<typeof createEventEmitter>;
   let received: Array<{ type: string; payload: Record<string, unknown> }>;
   const signal = () => new AbortController().signal;
@@ -125,19 +118,14 @@ describe.skipIf(process.platform !== 'linux')('manual test runner on real SSH', 
     events.subscribe((type, payload) =>
       received.push({ type, payload: payload as Record<string, unknown> })
     );
-    tests = getManagedTestRunnerService(settings, events);
     vi.stubEnv('AUTOMAKER_API_KEY', 'fixture-secret');
-    const app = express();
-    app.use(express.json());
-    app.use('/worktree', authMiddleware, createWorktreeRoutes(events, settings));
-    server = app.listen(0, '127.0.0.1');
-    await once(server, 'listening');
-    url = `http://127.0.0.1:${(server.address() as { port: number }).port}/worktree`;
+    native = await createNativeWorktreeHttp({ root, settings, events, apiKey: 'fixture-secret' });
+    tests = native.managedTests;
+    server = native.server;
+    url = native.url + '/api/worktree';
   }, 15000);
   afterEach(async () => {
-    await tests?.cleanup();
-    server?.closeAllConnections();
-    if (server) await new Promise<void>((resolve) => server.close(() => resolve()));
+    await native?.close();
     await peer?.close();
     await fs.rm(root, { recursive: true, force: true });
     vi.unstubAllEnvs();
@@ -154,10 +142,13 @@ describe.skipIf(process.platform !== 'linux')('manual test runner on real SSH', 
     expect(peer.commands).toHaveLength(count);
   });
   it('runs the project command on target, streams/finalizes in order and never copies controller env', async () => {
+    const before = peer.commands.length;
+    const rejected = await start('true', project, { command: 'touch CONTROLLER_INJECTION' });
+    expect(rejected.httpStatus).toBe(400);
+    expect(peer.commands).toHaveLength(before);
     const response = await start(
       "cat source.txt; printf '%s\\n' \"$AUTOMAKER_API_KEY\"; printf '%s\\n' \"$CI\"; echo once >> effects; sleep 0.3; printf 'Готово\\n'",
-      project,
-      { command: 'touch CONTROLLER_INJECTION' }
+      project
     );
     expect(response.success).toBe(true);
     const session = await finished(response.result.sessionId);
@@ -196,11 +187,15 @@ describe.skipIf(process.platform !== 'linux')('manual test runner on real SSH', 
   });
   it('rejects malformed/traversal arguments before target commands, and requires configured tests', async () => {
     const before = peer.commands.length;
-    for (const testFile of ['../escape.ts', '/absolute.ts', '', {}, 'a\0b'])
-      expect((await start('true', project, { testFile })).code).toBe('TEST_FILE_INVALID');
+    for (const testFile of ['../escape.ts', '/absolute.ts', '', {}, 'a\0b']) {
+      const response = await start('true', project, { testFile });
+      expect(response.httpStatus).toBe(400);
+      if (typeof testFile === 'string' && testFile.length > 0)
+        expect(response.code).toBe('TEST_FILE_INVALID');
+    }
     expect((await start('')).code).toBe('TEST_COMMAND_MISSING');
     expect(peer.commands).toHaveLength(before);
-    expect((await post('start-tests', { worktreePath: {} })).code).toBe('TEST_REQUEST_INVALID');
+    expect((await post('start-tests', { worktreePath: {} })).httpStatus).toBe(400);
   });
   it(
     'reserves concurrent creates and stops the original target after removing its profile/default',

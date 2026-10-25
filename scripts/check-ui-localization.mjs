@@ -81,6 +81,33 @@ function scan(dir, metadata = false) {
 }
 scan(path.join(root, 'apps/ui/src'));
 scan(path.join(root, 'libs/types/src'), true);
+// This server response contains curated interface copy, not model output or user data.
+// Include every supported platform's messages so new diagnostics cannot silently miss translation.
+const dockerDiagnostics = ts.createSourceFile(
+  'docker-diagnostics.ts',
+  fs.readFileSync(
+    path.join(root, 'apps/server/src/services/execution-environment/docker-diagnostics.ts'),
+    'utf8'
+  ),
+  ts.ScriptTarget.Latest,
+  true
+);
+function collectDiagnosticText(node) {
+  if (ts.isStringLiteral(node) && /\s/.test(node.text)) keys.add(node.text);
+  ts.forEachChild(node, collectDiagnosticText);
+}
+function visitDiagnostic(node) {
+  if (
+    (ts.isVariableDeclaration(node) &&
+      ['messages', 'remediation'].includes(node.name.getText(dockerDiagnostics))) ||
+    (ts.isCallExpression(node) &&
+      node.expression.getText(dockerDiagnostics) === 'remediation.push') ||
+    (ts.isPropertyAssignment(node) && node.name.getText(dockerDiagnostics) === 'documentation')
+  )
+    collectDiagnosticText(node);
+  else ts.forEachChild(node, visitDiagnostic);
+}
+visitDiagnostic(dockerDiagnostics);
 const sorted = [...keys].sort();
 if (process.argv.includes('--keys')) {
   await new Promise((resolve) =>

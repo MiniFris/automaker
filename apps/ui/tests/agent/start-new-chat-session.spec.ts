@@ -1,7 +1,7 @@
 /**
  * Start New Chat Session E2E Test
  *
- * Happy path: Start a new agent chat session
+ * Happy path: Create a chat, stream a reply and reload persisted history.
  */
 
 import { test, expect } from '@playwright/test';
@@ -59,7 +59,50 @@ test.describe('Agent Chat Session', () => {
     cleanupTempDir(TEST_TEMP_DIR);
   });
 
-  test('should start a new agent chat session', async ({ page }) => {
+  test('lists, opens and stops a real held chat from Running Agents', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await setupRealProject(page, projectPath, projectName, { setAsCurrent: true });
+    await authenticateForTests(page);
+    await page.goto('/');
+    await waitForNetworkIdle(page);
+    await navigateToAgent(page);
+    const creation = page.waitForResponse(
+      (response) =>
+        response.url().endsWith('/api/sessions') && response.request().method() === 'POST'
+    );
+    await clickNewSessionButton(page);
+    const { session } = await (await creation).json();
+    try {
+      await page.getByTestId('agent-input').fill('[test] hold Running Agents chat');
+      await page.getByTestId('send-message').click();
+      await expect(page.getByTestId('message-list')).toContainText(
+        'Mock agent output for testing.'
+      );
+      await page.goto('/running-agents');
+      await expect(page.getByRole('button', { name: 'Open Chat', exact: true })).toBeVisible();
+      await page.getByRole('button', { name: 'Open Chat', exact: true }).click();
+      await expect(page.getByTestId('message-list')).toContainText(
+        '[test] hold Running Agents chat'
+      );
+      await page.goto('/running-agents');
+      const stop = page.waitForResponse(
+        (response) =>
+          response.url().endsWith('/api/agent/stop') && response.request().method() === 'POST'
+      );
+      await page.getByRole('button', { name: 'Stop', exact: true }).click();
+      expect((await stop).status()).toBe(200);
+      await expect(page.getByRole('button', { name: 'Open Chat', exact: true })).toHaveCount(0);
+    } finally {
+      const response = await page.request.post('/api/agent/stop', {
+        data: { sessionId: session.id },
+      });
+      expect(response.status()).toBe(200);
+    }
+  });
+
+  test('should start a chat, receive streamed output and restore history after reload', async ({
+    page,
+  }) => {
     // Ensure desktop viewport so SessionManager sidebar is visible (hidden below 1024px)
     await page.setViewportSize({ width: 1280, height: 720 });
 
@@ -76,7 +119,12 @@ test.describe('Agent Chat Session', () => {
     await expect(page.locator('[data-testid="agent-view"]')).toBeVisible({ timeout: 10000 });
 
     // Click new session button
+    const creation = page.waitForResponse(
+      (response) =>
+        response.url().endsWith('/api/sessions') && response.request().method() === 'POST'
+    );
     await clickNewSessionButton(page);
+    const { session } = await (await creation).json();
 
     // Wait for new session to appear in the list
     await waitForNewSession(page, { timeout: 10000 });
@@ -91,5 +139,17 @@ test.describe('Agent Chat Session', () => {
 
     // Verify the agent input is visible
     await expect(page.locator('[data-testid="agent-input"]')).toBeVisible();
+    const prompt = 'Verify the Nest chat persistence boundary using the test provider.';
+    await page.getByTestId('agent-input').fill(prompt);
+    await page.getByTestId('send-message').click();
+    await expect(messageList).toContainText(prompt);
+    await expect(messageList).toContainText('Mock agent output for testing.');
+    await expect(page.getByTestId('stop-agent')).toHaveCount(0);
+
+    await page.reload();
+    await expect(page.getByTestId('agent-view')).toBeVisible();
+    await page.getByTestId(`session-item-${session.id}`).click();
+    await expect(page.getByTestId('message-list')).toContainText(prompt);
+    await expect(page.getByTestId('message-list')).toContainText('Mock agent output for testing.');
   });
 });

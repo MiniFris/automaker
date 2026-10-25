@@ -58,7 +58,7 @@ runs:
       # Explicitly install Linux bindings needed for build tools
       run: |
         npm install --no-save --force --ignore-scripts \
-          @rollup/rollup-linux-x64-gnu@4.53.3 \
+          @rollup/rollup-linux-x64-gnu@4.65.0 \
           @tailwindcss/oxide-linux-x64-gnu@4.1.17
 
     - name: Build shared packages

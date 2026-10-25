@@ -7,6 +7,7 @@ import { CheckCircle2, AlertCircle, RefreshCw, Bot, Cloud } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { CliStatus } from '../shared/types';
 import { OpenCodeIcon } from '@/components/ui/provider-icon';
+import { PassiveAuthStatus } from './passive-auth-status';
 
 export interface OpenCodeProviderInfo {
   id: string;
@@ -47,6 +48,8 @@ export type OpencodeAuthMethod =
 
 export interface OpencodeAuthStatus {
   authenticated: boolean;
+  authenticationChecked?: boolean;
+  hasAuthFile?: boolean;
   method: OpencodeAuthMethod;
   hasApiKey?: boolean;
   hasEnvApiKey?: boolean;
@@ -190,7 +193,8 @@ export function OpencodeCliStatus({
   onRefresh,
 }: OpencodeCliStatusProps) {
   useUiLocale();
-  const authenticatedProviders = providers.filter((p) => p.authenticated);
+  const authenticatedProviders =
+    authStatus?.authenticationChecked === false ? [] : providers.filter((p) => p.authenticated);
   if (!status) return <OpencodeCliStatusSkeleton />;
 
   return (
@@ -269,7 +273,14 @@ export function OpencodeCliStatus({
             </div>
 
             {/* Authentication Status - consider both direct auth and provider auth */}
-            {authStatus?.authenticated || authenticatedProviders.length > 0 ? (
+            {authStatus?.authenticationChecked === false ? (
+              <PassiveAuthStatus
+                provider="opencode"
+                hasCredentialsHint={authStatus.hasApiKey || authStatus.hasEnvApiKey}
+                hasConfigFile={authStatus.hasAuthFile}
+                onRefresh={onRefresh}
+              />
+            ) : authStatus?.authenticated || authenticatedProviders.length > 0 ? (
               <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
                 <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center border border-emerald-500/20 shrink-0">
                   <CheckCircle2 className="w-5 h-5 text-emerald-500" />

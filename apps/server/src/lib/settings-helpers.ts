@@ -744,7 +744,13 @@ export async function resolveProviderContext(
 ): Promise<ProviderContextResult> {
   // Direct endpoint identities are resolved strictly by prepareDirectExecution,
   // never through Claude fallback/model mappings or case-insensitive matching.
-  if (isDirectModel(modelId)) return { provider: undefined, credentials: undefined, resolvedModel: undefined, modelConfig: undefined };
+  if (isDirectModel(modelId))
+    return {
+      provider: undefined,
+      credentials: undefined,
+      resolvedModel: undefined,
+      modelConfig: undefined,
+    };
   try {
     const globalSettings = await settingsService.getGlobalSettings();
     const credentials = await settingsService.getCredentials();
@@ -849,7 +855,13 @@ export async function getProviderByModelId(
   settingsService: SettingsService,
   logPrefix = '[SettingsHelper]'
 ): Promise<ProviderByModelIdResult> {
-  if (isDirectModel(modelId)) return { provider: undefined, credentials: undefined, resolvedModel: undefined, modelConfig: undefined };
+  if (isDirectModel(modelId))
+    return {
+      provider: undefined,
+      credentials: undefined,
+      resolvedModel: undefined,
+      modelConfig: undefined,
+    };
   try {
     const globalSettings = await settingsService.getGlobalSettings();
     const credentials = await settingsService.getCredentials();

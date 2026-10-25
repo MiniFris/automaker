@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { CopilotProvider, CopilotErrorCode } from '@/providers/copilot-provider.js';
 import { collectAsyncGenerator } from '../../utils/helpers.js';
 import { CopilotClient } from '@github/copilot-sdk';
+import * as fsPromises from 'fs/promises';
 
 const createSessionMock = vi.fn();
 const resumeSessionMock = vi.fn();
@@ -17,6 +18,7 @@ function createMockSession(sessionId = 'test-session') {
       }
     }),
     destroy: vi.fn().mockResolvedValue(undefined),
+    abort: vi.fn().mockResolvedValue(undefined),
     on: vi.fn().mockImplementation((handler: (event: any) => void) => {
       eventHandler = handler;
     }),
@@ -27,7 +29,7 @@ function createMockSession(sessionId = 'test-session') {
 vi.mock('@github/copilot-sdk', () => ({
   CopilotClient: vi.fn().mockImplementation(() => ({
     start: vi.fn().mockResolvedValue(undefined),
-    stop: vi.fn().mockResolvedValue(undefined),
+    stop: vi.fn().mockResolvedValue([]),
     createSession: createSessionMock,
     resumeSession: resumeSessionMock,
   })),
@@ -53,6 +55,7 @@ vi.mock('fs', async (importOriginal) => {
 
 // Mock fs/promises
 vi.mock('fs/promises', () => ({
+  stat: vi.fn(),
   access: vi.fn().mockRejectedValue(new Error('Not found')),
   readFile: vi.fn().mockRejectedValue(new Error('Not found')),
   mkdir: vi.fn().mockResolvedValue(undefined),
@@ -61,16 +64,134 @@ vi.mock('fs/promises', () => ({
 // Import execSync after mocking
 import { execSync } from 'child_process';
 import * as fs from 'fs';
+import { ProviderCleanupError } from '@/providers/provider-execution-scope.js';
 
 describe('copilot-provider.ts', () => {
   let provider: CopilotProvider;
 
+  it('passes a fresh application environment to each SDK client without global mutation', async () => {
+    let snapshot: Readonly<NodeJS.ProcessEnv> = Object.freeze({
+      GITHUB_TOKEN: 'app-token-fixture',
+    });
+    const environment = vi.fn(async () => snapshot);
+    const isolated = new CopilotProvider({}, environment);
+    const original = process.env.GITHUB_TOKEN;
+    await collectAsyncGenerator(isolated.executeQuery({ prompt: 'Fixture', cwd: '/fixture' }));
+    expect(vi.mocked(CopilotClient).mock.calls.at(-1)?.[0]?.env).toEqual(snapshot);
+    snapshot = Object.freeze({});
+    await collectAsyncGenerator(isolated.executeQuery({ prompt: 'Fixture', cwd: '/fixture' }));
+    expect(vi.mocked(CopilotClient).mock.calls.at(-1)?.[0]?.env).toEqual({});
+    expect(environment).toHaveBeenCalledTimes(2);
+    expect(process.env.GITHUB_TOKEN).toBe(original);
+    await isolated.dispose();
+  });
+
+  function ownedClient(session: ReturnType<typeof createMockSession>) {
+    const client = {
+      start: vi.fn().mockResolvedValue(undefined),
+      stop: vi.fn().mockImplementation(async () => {
+        try {
+          await session.destroy();
+          return [];
+        } catch (error) {
+          return [error];
+        }
+      }),
+      createSession: vi.fn().mockResolvedValue(session),
+    };
+    vi.mocked(CopilotClient).mockImplementationOnce(function () {
+      return client as any;
+    });
+    return client;
+  }
+
+  it('early return destroys the SDK session and stops its client exactly once', async () => {
+    const session = createMockSession();
+    const client = ownedClient(session);
+    const stream = provider.executeQuery({ prompt: 'Fixture', cwd: '/fixture' });
+    await stream.next();
+    await stream.return(undefined);
+    await provider.dispose();
+    expect(session.destroy).toHaveBeenCalledTimes(1);
+    expect(client.stop).toHaveBeenCalledTimes(1);
+  });
+
+  it('wakes an idle event bridge on abort and waits for destroy before completing disposal', async () => {
+    const session = createMockSession();
+    let listener!: (event: any) => void;
+    const unsubscribe = vi.fn();
+    session.on.mockImplementation((handler) => {
+      listener = handler;
+      return unsubscribe;
+    });
+    session.send.mockImplementation(async () => {
+      listener({ type: 'assistant.message', data: { content: 'Partial' } });
+    });
+    let release!: () => void;
+    session.destroy.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          release = resolve;
+        })
+    );
+    const client = ownedClient(session);
+    const parent = new AbortController();
+    const stream = provider.executeQuery({
+      prompt: 'Fixture',
+      cwd: '/fixture',
+      abortController: parent,
+    });
+    await stream.next();
+    const next = stream.next().catch((error) => error);
+    parent.abort();
+    await vi.waitFor(() => expect(session.destroy).toHaveBeenCalledTimes(1));
+    let disposed = false;
+    const disposing = provider.dispose().then(() => {
+      disposed = true;
+    });
+    expect(client.stop).toHaveBeenCalledTimes(1);
+    expect(session.abort).toHaveBeenCalledTimes(1);
+    await Promise.resolve();
+    expect(disposed).toBe(false);
+    release();
+    expect((await next).name).toBe('AbortError');
+    await disposing;
+    expect(client.stop).toHaveBeenCalledTimes(1);
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['destroy', 'stop-throw', 'stop-errors'] as const)(
+    'fails closed for %s cleanup failure and still attempts client.stop',
+    async (failure) => {
+      const session = createMockSession();
+      const client = ownedClient(session);
+      if (failure === 'destroy')
+        session.destroy.mockRejectedValueOnce(new Error('private cleanup detail'));
+      if (failure === 'stop-throw')
+        client.stop.mockRejectedValueOnce(new Error('private cleanup detail'));
+      if (failure === 'stop-errors')
+        client.stop.mockResolvedValueOnce([new Error('private cleanup detail')]);
+      await expect(
+        collectAsyncGenerator(provider.executeQuery({ prompt: 'Fixture', cwd: '/fixture' }))
+      ).rejects.toBeInstanceOf(ProviderCleanupError);
+      expect(client.stop).toHaveBeenCalledTimes(1);
+      expect(session.destroy).toHaveBeenCalledTimes(failure === 'destroy' ? 1 : 0);
+      await expect(provider.dispose()).rejects.not.toThrow('private cleanup detail');
+      await expect(
+        provider.executeQuery({ prompt: 'No replacement', cwd: '/fixture' }).next()
+      ).rejects.toThrow('not accepting');
+    }
+  );
+
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(fsPromises.stat)
+      .mockReset()
+      .mockRejectedValue(Object.assign(new Error('Not found'), { code: 'ENOENT' }));
     vi.mocked(CopilotClient).mockImplementation(function () {
       return {
         start: vi.fn().mockResolvedValue(undefined),
-        stop: vi.fn().mockResolvedValue(undefined),
+        stop: vi.fn().mockResolvedValue([]),
         createSession: createSessionMock,
         resumeSession: resumeSessionMock,
       } as any;
@@ -102,10 +223,11 @@ describe('copilot-provider.ts', () => {
     });
 
     provider = new CopilotProvider();
-    delete process.env.GITHUB_TOKEN;
+    vi.stubEnv('GITHUB_TOKEN', '');
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     vi.restoreAllMocks();
   });
 
@@ -166,87 +288,69 @@ describe('copilot-provider.ts', () => {
   });
 
   describe('checkAuth', () => {
-    it('should return authenticated status when gh CLI is logged in', async () => {
-      // Set up mocks BEFORE creating provider to ensure CLI detection succeeds
-      vi.mocked(fs.existsSync).mockReturnValue(true);
-      vi.mocked(execSync).mockImplementation((cmd: string) => {
-        // CLI path detection (which/where command)
-        if (cmd.startsWith('which ') || cmd.startsWith('where ')) {
-          return '/usr/local/bin/copilot';
-        }
-        if (cmd.includes('--version')) {
-          return '1.0.0';
-        }
-        if (cmd.includes('gh auth status')) {
-          return 'Logged in to github.com account testuser';
-        }
-        return '';
-      });
-
-      // Create fresh provider with the mock in place
-      const freshProvider = new CopilotProvider();
-      const status = await freshProvider.checkAuth();
-      expect(status.authenticated).toBe(true);
-      expect(status.method).toBe('oauth');
-      expect(status.login).toBe('testuser');
+    it('does not treat a directory as a configuration file', async () => {
+      vi.mocked(fsPromises.stat).mockResolvedValueOnce({ isFile: () => false } as never);
+      expect((await new CopilotProvider({}, async () => ({})).checkAuth()).hasConfigFile).toBe(
+        false
+      );
     });
 
-    it('should return unauthenticated when gh auth fails', async () => {
-      // Set up mocks BEFORE creating provider
-      vi.mocked(fs.existsSync).mockReturnValue(true);
-      vi.mocked(execSync).mockImplementation((cmd: string) => {
-        // CLI path detection (which/where command)
-        if (cmd.startsWith('which ') || cmd.startsWith('where ')) {
-          return '/usr/local/bin/copilot';
-        }
-        if (cmd.includes('--version')) {
-          return '1.0.0';
-        }
-        if (cmd.includes('gh auth status')) {
-          throw new Error('Not logged in');
-        }
-        if (cmd.includes('copilot auth status')) {
-          throw new Error('Not logged in');
-        }
-        return '';
+    it('redacts filesystem failures without inventing credential hints', async () => {
+      vi.mocked(fsPromises.stat).mockRejectedValueOnce(new Error('private-token /private/config'));
+      const result = await new CopilotProvider({}, async () => ({})).checkAuth();
+      expect(result).toMatchObject({
+        authenticated: false,
+        authenticationChecked: false,
+        hasConfigFile: false,
+        error: 'Local configuration could not be inspected.',
       });
-
-      // Create fresh provider with the mock in place
-      const freshProvider = new CopilotProvider();
-      const status = await freshProvider.checkAuth();
-      expect(status.authenticated).toBe(false);
-      expect(status.method).toBe('none');
+      expect(JSON.stringify(result)).not.toContain('private-token');
     });
 
-    it('should detect GITHUB_TOKEN environment variable', async () => {
-      process.env.GITHUB_TOKEN = 'test-token';
-
-      // Set up mocks BEFORE creating provider
-      vi.mocked(fs.existsSync).mockReturnValue(true);
-      vi.mocked(execSync).mockImplementation((cmd: string) => {
-        // CLI path detection (which/where command)
-        if (cmd.startsWith('which ') || cmd.startsWith('where ')) {
-          return '/usr/local/bin/copilot';
-        }
-        if (cmd.includes('--version')) {
-          return '1.0.0';
-        }
-        if (cmd.includes('gh auth status')) {
-          throw new Error('Not logged in');
-        }
-        if (cmd.includes('copilot auth status')) {
-          throw new Error('Not logged in');
-        }
-        return '';
+    it('does not launch auth commands or turn CLI installation into authentication', async () => {
+      const freshProvider = new CopilotProvider({}, async () => ({}));
+      vi.mocked(execSync).mockClear();
+      expect(await freshProvider.checkAuth()).toMatchObject({
+        authenticated: false,
+        authenticationChecked: false,
+        method: 'none',
+        hasEnvToken: false,
+        hasConfigFile: false,
       });
+      expect(execSync).not.toHaveBeenCalled();
+    });
 
-      // Create fresh provider with the mock in place
-      const freshProvider = new CopilotProvider();
-      const status = await freshProvider.checkAuth();
-      expect(status.authenticated).toBe(true);
-      expect(status.method).toBe('oauth');
+    it('uses the application snapshot, not the ambient token, and never verifies token presence', async () => {
+      const original = process.env.GITHUB_TOKEN;
+      const environment = vi.fn(async () => ({ GITHUB_TOKEN: 'application-private-fixture' }));
+      const status = await new CopilotProvider({}, environment).checkAuth();
+      expect(status).toMatchObject({
+        authenticated: false,
+        authenticationChecked: false,
+        method: 'oauth',
+        hasEnvToken: true,
+      });
+      expect(environment).toHaveBeenCalledTimes(1);
+      expect(JSON.stringify(status)).not.toContain('application-private-fixture');
+      expect(process.env.GITHUB_TOKEN).toBe(original);
+    });
 
-      delete process.env.GITHUB_TOKEN;
+    it('reports file presence without reading token or identity', async () => {
+      const promises = await import('fs/promises');
+      vi.mocked(promises.stat).mockResolvedValueOnce({ isFile: () => true } as never);
+      vi.mocked(promises.readFile).mockClear();
+      const status = await new CopilotProvider({}, async () => ({
+        GH_CONFIG_DIR: '/application/gh-config',
+      })).checkAuth();
+      expect(promises.stat).toHaveBeenLastCalledWith(
+        expect.stringMatching(/application[\\/]gh-config[\\/]hosts.yml$/)
+      );
+      expect(status).toMatchObject({
+        authenticated: false,
+        authenticationChecked: false,
+        hasConfigFile: true,
+      });
+      expect(promises.readFile).not.toHaveBeenCalled();
     });
   });
 
@@ -273,7 +377,7 @@ describe('copilot-provider.ts', () => {
       const status = await freshProvider.detectInstallation();
       expect(status.installed).toBe(true);
       expect(status.version).toBe('1.2.3');
-      expect(status.authenticated).toBe(true);
+      expect(status.authenticated).toBe(false);
     });
   });
 

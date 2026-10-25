@@ -254,7 +254,7 @@ export async function abortRebase(worktreePath: string): Promise<boolean> {
     await execGitCommand(['rebase', '--abort'], worktreePath);
     return true;
   } catch (err) {
-    logger.warn('Failed to abort rebase after conflict', err instanceof Error ? err.message : err);
+    logger.warn('Failed to abort rebase after conflict.');
     return false;
   }
 }

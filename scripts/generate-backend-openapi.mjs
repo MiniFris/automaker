@@ -1,0 +1,652 @@
+#!/usr/bin/env node
+// Source inspection only: never import a controller, provider or application runtime.
+import { readFile, writeFile } from 'node:fs/promises';
+import { resolve, dirname, relative } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import ts from 'typescript';
+import { z } from 'zod';
+import { API_CONTRACT_VERSION } from '@automaker/contracts';
+import { binaryOperationContract } from './backend-binary-contracts.mjs';
+
+const root = resolve(import.meta.dirname, '..');
+const output = resolve(root, 'docs/backend-nestjs-migration/artifacts/openapi.json');
+const sourceCache = new Map();
+const schemaCache = new Map();
+const components = {};
+const optionalInputs = new Map();
+
+async function source(file) {
+  if (!sourceCache.has(file))
+    sourceCache.set(
+      file,
+      ts.createSourceFile(file, await readFile(file, 'utf8'), ts.ScriptTarget.Latest, true)
+    );
+  return sourceCache.get(file);
+}
+
+async function resolveSchema(file, name, seen = new Set(), io = 'input') {
+  const key = `${file}#${name}#${io}`;
+  if (seen.has(key)) throw new Error(`Schema export cycle: ${key}`);
+  seen.add(key);
+  if (schemaCache.has(key)) return schemaCache.get(key);
+  const ast = await source(file);
+  for (const node of ast.statements) {
+    if (!ts.isImportDeclaration(node) && !ts.isExportDeclaration(node)) continue;
+    if (!node.moduleSpecifier || !ts.isStringLiteral(node.moduleSpecifier)) continue;
+    const bindings = ts.isImportDeclaration(node)
+      ? node.importClause?.namedBindings
+      : node.exportClause;
+    let exportedName = name;
+    if (bindings) {
+      if (!ts.isNamedImports(bindings) && !ts.isNamedExports(bindings)) continue;
+      const binding = bindings.elements.find((item) => item.name.text === name);
+      if (!binding) continue;
+      exportedName = (binding.propertyName ?? binding.name).text;
+    } else if (ts.isImportDeclaration(node)) continue;
+    const specifier = node.moduleSpecifier.text;
+    let found;
+    if (
+      specifier === '@automaker/contracts' ||
+      specifier.startsWith('@automaker/contracts/domains/')
+    ) {
+      const shared = await import(specifier);
+      const schema = shared[exportedName];
+      if (schema && typeof schema.safeParse === 'function') {
+        const id = `${specifier === '@automaker/contracts' ? 'shared' : specifier.split('/').at(-1)}.${exportedName}${io === 'output' ? '.Response' : ''}`;
+        components[id] = z.toJSONSchema(schema, { io });
+        if (io === 'input')
+          optionalInputs.set(`#/components/schemas/${id}`, schema.safeParse(undefined).success);
+        found = { $ref: `#/components/schemas/${id}` };
+      }
+    } else if (specifier.startsWith('.')) {
+      found = await resolveSchema(
+        resolve(dirname(file), specifier.replace(/\.js$/, '.ts')),
+        exportedName,
+        new Set(seen),
+        io
+      );
+    }
+    if (found) {
+      schemaCache.set(key, found);
+      return found;
+    }
+  }
+  return undefined;
+}
+
+function decorators(node) {
+  return ts.canHaveDecorators(node) ? (ts.getDecorators(node) ?? []) : [];
+}
+
+// Recognize an explicit early rejection of the whole decorated input, not a partial object.
+function guardedInputSchema(method, parameterName) {
+  for (const statement of method.body?.statements ?? []) {
+    if (
+      !ts.isIfStatement(statement) ||
+      !ts.isPrefixUnaryExpression(statement.expression) ||
+      statement.expression.operator !== ts.SyntaxKind.ExclamationToken
+    )
+      continue;
+    const success = statement.expression.operand;
+    if (
+      !ts.isPropertyAccessExpression(success) ||
+      success.name.text !== 'success' ||
+      !ts.isCallExpression(success.expression)
+    )
+      continue;
+    const call = success.expression;
+    if (
+      !ts.isPropertyAccessExpression(call.expression) ||
+      call.expression.name.text !== 'safeParse' ||
+      !ts.isIdentifier(call.expression.expression) ||
+      call.arguments.length !== 1 ||
+      !ts.isIdentifier(call.arguments[0]) ||
+      call.arguments[0].text !== parameterName
+    )
+      continue;
+    if (
+      !ts.isBlock(statement.thenStatement) ||
+      !statement.thenStatement.statements.some(
+        (child) => ts.isReturnStatement(child) && !child.expression
+      )
+    )
+      continue;
+    return call.expression.expression.text;
+  }
+  return undefined;
+}
+
+/** Prove createParamDecorator returns one shared parse, possibly through local pure projection helpers. */
+export function contextSchemaName(ast, exportedName) {
+  const factory = ast.statements
+    .filter(ts.isImportDeclaration)
+    .flatMap((node) =>
+      ts.isStringLiteral(node.moduleSpecifier) &&
+      node.moduleSpecifier.text === '@nestjs/common' &&
+      node.importClause?.namedBindings &&
+      ts.isNamedImports(node.importClause.namedBindings)
+        ? node.importClause.namedBindings.elements
+            .filter((item) => (item.propertyName ?? item.name).text === 'createParamDecorator')
+            .map((item) => item.name.text)
+        : []
+    );
+  const declarations = ast.statements.flatMap((node) =>
+    ts.isVariableStatement(node) ? [...node.declarationList.declarations] : []
+  );
+  const declaration = declarations.find(
+    (node) => ts.isIdentifier(node.name) && node.name.text === exportedName
+  );
+  const call = declaration?.initializer;
+  if (
+    !call ||
+    !ts.isCallExpression(call) ||
+    !ts.isIdentifier(call.expression) ||
+    !factory.includes(call.expression.text) ||
+    call.arguments.length !== 1
+  )
+    return undefined;
+  const seen = new Set();
+  function returned(fn) {
+    if (!fn?.body || seen.has(fn)) return undefined;
+    seen.add(fn);
+    let expression;
+    if (!ts.isBlock(fn.body)) expression = fn.body;
+    else {
+      const returns = [];
+      function visit(node) {
+        if (node !== fn.body && ts.isFunctionLike(node)) return;
+        if (ts.isReturnStatement(node)) returns.push(node);
+        ts.forEachChild(node, visit);
+      }
+      visit(fn.body);
+      if (returns.length !== 1) return undefined;
+      expression = returns[0].expression;
+    }
+    if (!expression || !ts.isCallExpression(expression)) return undefined;
+    const callee = expression.expression;
+    if (
+      ts.isPropertyAccessExpression(callee) &&
+      callee.name.text === 'parse' &&
+      ts.isIdentifier(callee.expression)
+    )
+      return callee.expression.text;
+    if (!ts.isIdentifier(callee)) return undefined;
+    return returned(
+      ast.statements.find(
+        (node) => ts.isFunctionDeclaration(node) && node.name?.text === callee.text
+      )
+    );
+  }
+  const callback = call.arguments[0];
+  return ts.isArrowFunction(callback) || ts.isFunctionExpression(callback)
+    ? returned(callback)
+    : undefined;
+}
+
+async function contextContract(file, name) {
+  const ast = await source(file);
+  for (const node of ast.statements) {
+    if (
+      !ts.isImportDeclaration(node) ||
+      !ts.isStringLiteral(node.moduleSpecifier) ||
+      !node.moduleSpecifier.text.startsWith('.')
+    )
+      continue;
+    const bindings = node.importClause?.namedBindings;
+    if (!bindings || !ts.isNamedImports(bindings)) continue;
+    const binding = bindings.elements.find((item) => item.name.text === name);
+    if (!binding) continue;
+    const target = resolve(dirname(file), node.moduleSpecifier.text.replace(/\.js$/, '.ts'));
+    const schemaName = contextSchemaName(
+      await source(target),
+      (binding.propertyName ?? binding.name).text
+    );
+    if (schemaName) return resolveSchema(target, schemaName);
+  }
+  return undefined;
+}
+
+export function ownsResponseBody(method, parameter, decorator, allowStatus = false) {
+  const options = decorator.arguments[0];
+  const passthrough =
+    options &&
+    ts.isObjectLiteralExpression(options) &&
+    options.properties.some(
+      (p) =>
+        ts.isPropertyAssignment(p) &&
+        p.name.getText() === 'passthrough' &&
+        p.initializer.kind === ts.SyntaxKind.TrueKeyword
+    );
+  if (!passthrough || !ts.isIdentifier(parameter.name)) return true;
+  const fluent = new Set([
+    'cookie',
+    'clearCookie',
+    'setHeader',
+    'header',
+    'append',
+    'on',
+    'once',
+    'off',
+    'removeListener',
+  ]);
+  if (allowStatus) fluent.add('status');
+  const reads = new Set(['writableEnded', 'writableFinished', 'destroyed', 'headersSent']);
+  const seen = new Set();
+  function usesBody(owner, name) {
+    const key = `${owner.pos}:${name}`;
+    if (seen.has(key) || !owner.body) return true;
+    seen.add(key);
+    let manual = false;
+    function allowed(reference) {
+      let expression = reference;
+      while (
+        ts.isPropertyAccessExpression(expression.parent) &&
+        expression.parent.expression === expression
+      ) {
+        const access = expression.parent;
+        if (reads.has(access.name.text)) {
+          const use = access.parent;
+          return !(
+            (ts.isBinaryExpression(use) &&
+              use.left === access &&
+              use.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
+              use.operatorToken.kind <= ts.SyntaxKind.LastAssignment) ||
+            ts.isDeleteExpression(use) ||
+            ((ts.isPrefixUnaryExpression(use) || ts.isPostfixUnaryExpression(use)) &&
+              [ts.SyntaxKind.PlusPlusToken, ts.SyntaxKind.MinusMinusToken].includes(use.operator))
+          );
+        }
+        if (!fluent.has(access.name.text)) return false;
+        const call = access.parent;
+        if (!ts.isCallExpression(call) || call.expression !== access) return false;
+        if (['on', 'once'].includes(access.name.text)) {
+          const listener = call.arguments[1];
+          const local =
+            ts.isIdentifier(listener ?? {}) &&
+            owner.body.statements
+              .flatMap((statement) =>
+                ts.isVariableStatement(statement) ? [...statement.declarationList.declarations] : []
+              )
+              .find(
+                (declaration) =>
+                  ts.isIdentifier(declaration.name) && declaration.name.text === listener.text
+              )?.initializer;
+          // EventEmitter binds ordinary callbacks to Response itself. Only lexical
+          // arrows can be inspected here without granting an implicit body writer.
+          if (
+            !listener ||
+            (!ts.isArrowFunction(listener) && (!local || !ts.isArrowFunction(local)))
+          )
+            return false;
+        }
+        expression = call;
+      }
+      if (expression !== reference) return ts.isExpressionStatement(expression.parent);
+      const call = reference.parent;
+      if (!ts.isCallExpression(call)) return false;
+      const index = call.arguments.indexOf(reference);
+      if (
+        index < 0 ||
+        !ts.isPropertyAccessExpression(call.expression) ||
+        call.expression.expression.kind !== ts.SyntaxKind.ThisKeyword
+      )
+        return false;
+      const container = owner.parent;
+      if (!ts.isClassDeclaration(container)) return false;
+      const helper = container.members.find(
+        (member) =>
+          ts.isMethodDeclaration(member) && member.name.getText() === call.expression.name.text
+      );
+      const input = helper?.parameters[index];
+      return !!input && ts.isIdentifier(input.name) && !usesBody(helper, input.name.text);
+    }
+    function visit(node) {
+      if (ts.isIdentifier(node) && node.text === name && !allowed(node)) manual = true;
+      ts.forEachChild(node, visit);
+    }
+    visit(owner.body);
+    seen.delete(key);
+    return manual;
+  }
+  return usesBody(method, parameter.name.text);
+}
+
+async function operation(endpoint) {
+  const ast = await source(resolve(root, endpoint.source));
+  const handler = endpoint.middleware[0];
+  const [className, methodName] = handler.split('.');
+  const controller = ast.statements.find(
+    (n) => ts.isClassDeclaration(n) && n.name?.text === className
+  );
+  const method = controller?.members.find(
+    (n) => ts.isMethodDeclaration(n) && n.name.getText(ast) === methodName
+  );
+  if (!method) throw new Error(`Cannot resolve controller handler ${handler}`);
+  const parameters = [];
+  const unresolved = [];
+  const contexts = [];
+  let requestBody;
+  for (const parameter of method.parameters) {
+    for (const decorator of decorators(parameter)) {
+      const call = decorator.expression;
+      if (!ts.isCallExpression(call) || !ts.isIdentifier(call.expression)) continue;
+      if (call.expression.text === 'Req') {
+        unresolved.push({
+          in: 'request',
+          reason: 'Raw request access is not a shared input contract.',
+        });
+        continue;
+      }
+      const location = { Body: 'body', Query: 'query', Param: 'path' }[call.expression.text];
+      if (!location) {
+        if (['Res', 'Next'].includes(call.expression.text)) continue;
+        const schema = await contextContract(resolve(root, endpoint.source), call.expression.text);
+        if (schema)
+          contexts.push({
+            decorator: call.expression.text,
+            schema,
+            representation: 'validated normalized transport context',
+          });
+        else
+          unresolved.push({
+            in: 'request-context',
+            decorator: call.expression.text,
+            reason: 'No shared parse proof for the parameter decorator.',
+          });
+        continue;
+      }
+      const field = call.arguments.find(ts.isStringLiteral)?.text;
+      const pipe = call.arguments.find(
+        (a) => ts.isNewExpression(a) && a.expression.getText(ast) === 'ZodValidationPipe'
+      );
+      const schemaName =
+        pipe?.arguments?.[0]?.getText(ast) ??
+        (ts.isIdentifier(parameter.name)
+          ? guardedInputSchema(method, parameter.name.text)
+          : undefined);
+      const schema = schemaName
+        ? await resolveSchema(resolve(root, endpoint.source), schemaName)
+        : undefined;
+      if (!schema)
+        unresolved.push({
+          in: location,
+          ...(field && { name: field }),
+          ...(schemaName && { schema: schemaName }),
+        });
+      if (location === 'body') {
+        requestBody = {
+          required: !parameter.questionToken && !(schema && optionalInputs.get(schema.$ref)),
+          content: { 'application/json': { schema: schema ?? {} } },
+        };
+      } else if (field) {
+        parameters.push({
+          name: field,
+          in: location,
+          required:
+            location === 'path' ||
+            (!parameter.questionToken && !(schema && optionalInputs.get(schema.$ref))),
+          schema: schema ?? { type: 'string' },
+        });
+      } else if (schema) {
+        const definition = components[schema.$ref.split('/').at(-1)];
+        for (const [name, property] of Object.entries(definition.properties ?? {}))
+          parameters.push({
+            name,
+            in: location,
+            required: location === 'path' || !!definition.required?.includes(name),
+            schema: property,
+          });
+      }
+    }
+  }
+  // Express-style placeholders must be declared, including handlers using @Req.
+  for (const match of endpoint.path.matchAll(/:([A-Za-z0-9_]+)/g))
+    if (!parameters.some((p) => p.in === 'path' && p.name === match[1]))
+      parameters.push({ name: match[1], in: 'path', required: true, schema: { type: 'string' } });
+  const statusDecorator = decorators(method)
+    .map((d) => d.expression)
+    .find((d) => ts.isCallExpression(d) && d.expression.getText(ast) === 'HttpCode');
+  const status =
+    statusDecorator?.arguments?.[0]?.getText(ast) ?? (endpoint.method === 'POST' ? '201' : '200');
+  // Manual @Res methods own their status/content. Header-only passthrough remains serialized.
+  const responseParameters = method.parameters.flatMap((parameter) =>
+    decorators(parameter).flatMap((d) =>
+      ts.isCallExpression(d.expression) && d.expression.expression.getText(ast) === 'Res'
+        ? [{ parameter, decorator: d.expression }]
+        : []
+    )
+  );
+  const ownsResponse = responseParameters.some(({ parameter, decorator }) =>
+    ownsResponseBody(method, parameter, decorator, true)
+  );
+  const dynamicStatus =
+    !ownsResponse &&
+    responseParameters.some(({ parameter, decorator }) =>
+      ownsResponseBody(method, parameter, decorator)
+    );
+  const returns = [];
+  function collectReturns(node) {
+    if (node !== method.body && ts.isFunctionLike(node)) return;
+    if (ts.isReturnStatement(node)) returns.push(node);
+    ts.forEachChild(node, collectReturns);
+  }
+  if (method.body) collectReturns(method.body);
+  const returned = returns.length === 1 ? returns[0].expression : undefined;
+  const parsed =
+    returned &&
+    ts.isCallExpression(returned) &&
+    ts.isPropertyAccessExpression(returned.expression) &&
+    returned.expression.name.text === 'parse' &&
+    ts.isIdentifier(returned.expression.expression)
+      ? returned.expression.expression.text
+      : undefined;
+  const manualSchema =
+    ownsResponse && responseParameters.length === 1
+      ? manuallyParsedResponseSchema(
+          method,
+          responseParameters[0].parameter,
+          responseParameters[0].decorator
+        )
+      : undefined;
+  const schemaName = !ownsResponse ? parsed : manualSchema;
+  const responseSchema = schemaName
+    ? await resolveSchema(resolve(root, endpoint.source), schemaName, new Set(), 'output')
+    : undefined;
+  const binary = await binaryOperationContract(handler, (file) =>
+    readFile(resolve(root, file), 'utf8')
+  );
+  return {
+    operationId: handler.replace('.', '_'),
+    tags: [endpoint.group],
+    'x-source': `${endpoint.source}:${endpoint.line}`,
+    'x-access': endpoint.access,
+    'x-request-contract': unresolved.length ? 'incomplete' : 'shared-or-no-input',
+    ...(unresolved.length && { 'x-unresolved-inputs': unresolved }),
+    ...(contexts.length && { 'x-request-context-contracts': contexts }),
+    // Response schemas are not inferred from TypeScript annotations or arbitrary examples.
+    'x-response-contract': binary
+      ? binary['x-response-contract']
+      : responseSchema
+        ? 'shared-runtime'
+        : 'unverified',
+    ...(parameters.length && { parameters }),
+    ...(requestBody && { requestBody }),
+    ...(binary && { 'x-binary-runtime-proof': binary['x-binary-runtime-proof'] }),
+    responses: binary
+      ? binary.responses
+      : ownsResponse && !manualSchema
+        ? {
+            default: {
+              description:
+                'Status and body controlled by the handler; response contract not yet shared.',
+            },
+          }
+        : dynamicStatus || manualSchema
+          ? {
+              default: {
+                description: responseSchema
+                  ? 'Handler selects the status; Nest serializes the shared validated response body.'
+                  : 'Handler selects the status; response schema not yet verified.',
+                ...(responseSchema && {
+                  content: { 'application/json': { schema: responseSchema } },
+                }),
+              },
+              '4XX': {
+                description: 'Handler or middleware error; full error schema not yet verified.',
+              },
+              '5XX': {
+                description: 'Handler or middleware error; full error schema not yet verified.',
+              },
+            }
+          : {
+              [status]: responseSchema
+                ? {
+                    description: 'Response validated by the shared runtime schema.',
+                    content: { 'application/json': { schema: responseSchema } },
+                  }
+                : { description: 'Successful response; response schema not yet verified.' },
+              default: { description: 'Error response; see endpoint implementation.' },
+            },
+  };
+}
+
+export function manuallyParsedResponseSchema(method, parameter, decorator) {
+  // Explicit manual JSON only. Passthrough can also serialize return values and
+  // therefore needs the separate return/ownership analysis above.
+  if (decorator.arguments.length || !ts.isIdentifier(parameter.name)) return undefined;
+  const name = parameter.name.text;
+  let schema,
+    writes = 0,
+    unsafe = false;
+  function visit(node) {
+    if (ts.isIdentifier(node) && node.text === name) {
+      let expression = node;
+      const read = node.parent;
+      if (
+        ts.isPropertyAccessExpression(read) &&
+        read.expression === node &&
+        ['destroyed', 'writableEnded', 'writableFinished', 'headersSent'].includes(read.name.text)
+      ) {
+        const use = read.parent;
+        if (
+          (ts.isBinaryExpression(use) &&
+            use.left === read &&
+            use.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
+            use.operatorToken.kind <= ts.SyntaxKind.LastAssignment) ||
+          ts.isDeleteExpression(use) ||
+          (ts.isPrefixUnaryExpression(use) &&
+            [ts.SyntaxKind.PlusPlusToken, ts.SyntaxKind.MinusMinusToken].includes(use.operator)) ||
+          ts.isPostfixUnaryExpression(use)
+        )
+          unsafe = true;
+        return;
+      }
+      let body = false;
+      while (
+        ts.isPropertyAccessExpression(expression.parent) &&
+        expression.parent.expression === expression
+      ) {
+        const access = expression.parent,
+          call = access.parent;
+        if (
+          !ts.isCallExpression(call) ||
+          call.expression !== access ||
+          call.arguments.length !== 1 ||
+          body
+        ) {
+          unsafe = true;
+          return;
+        }
+        if (access.name.text === 'json') {
+          const parsed = call.arguments[0];
+          if (
+            !ts.isCallExpression(parsed) ||
+            parsed.arguments.length !== 1 ||
+            !ts.isPropertyAccessExpression(parsed.expression) ||
+            parsed.expression.name.text !== 'parse' ||
+            !ts.isIdentifier(parsed.expression.expression)
+          ) {
+            unsafe = true;
+            return;
+          }
+          const found = parsed.expression.expression.text;
+          if (schema && schema !== found) {
+            unsafe = true;
+            return;
+          }
+          schema = found;
+          writes++;
+          body = true;
+        } else if (access.name.text !== 'status') {
+          unsafe = true;
+          return;
+        }
+        expression = call;
+      }
+      if (expression === node || !ts.isExpressionStatement(expression.parent)) unsafe = true;
+      return;
+    }
+    ts.forEachChild(node, visit);
+  }
+  if (method.body) visit(method.body);
+  return !unsafe && writes ? schema : undefined;
+}
+
+export async function generateDocument() {
+  const inventory = JSON.parse(
+    await readFile(
+      resolve(root, 'docs/backend-nestjs-migration/artifacts/http-routes.json'),
+      'utf8'
+    )
+  );
+  const paths = {};
+  let incomplete = 0;
+  let sharedResponses = 0;
+  let binaryResponses = 0;
+  for (const endpoint of inventory.endpoints) {
+    if (endpoint.owner !== 'nestjs') throw new Error(`Non-native endpoint: ${endpoint.path}`);
+    const path = endpoint.path.replace(/:([A-Za-z0-9_]+)/g, '{$1}');
+    const key = endpoint.method.toLowerCase();
+    paths[path] ??= {};
+    if (paths[path][key]) throw new Error(`Duplicate route: ${key} ${path}`);
+    paths[path][key] = await operation(endpoint);
+    if (paths[path][key]['x-request-contract'] === 'incomplete') incomplete++;
+    if (paths[path][key]['x-response-contract'] === 'shared-runtime') sharedResponses++;
+    if (paths[path][key]['x-response-contract'] === 'shared-binary-runtime') binaryResponses++;
+  }
+  return {
+    openapi: '3.1.0',
+    info: {
+      title: 'Automaker HTTP API',
+      version: API_CONTRACT_VERSION,
+      description:
+        'Generated from native routes and shared runtime contracts, including normalized request contexts and reviewed binary transport boundaries. Opaque legacy business values and middleware/global error envelopes retain their documented limits. JSON Schema cannot express every Zod refinement: runtime schemas remain authoritative.',
+    },
+    'x-coverage': {
+      operations: inventory.endpoints.length,
+      sharedOrNoInput: inventory.endpoints.length - incomplete,
+      incompleteInput: incomplete,
+      sharedRuntimeResponses: sharedResponses,
+      sharedBinaryResponses: binaryResponses,
+      unverifiedResponses: inventory.endpoints.length - sharedResponses - binaryResponses,
+    },
+    paths,
+    components: {
+      schemas: Object.fromEntries(
+        Object.entries(components).sort(([a], [b]) => a.localeCompare(b))
+      ),
+    },
+  };
+}
+
+if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
+  const content = `${JSON.stringify(await generateDocument(), null, 2)}\n`;
+  if (process.argv.includes('--check')) {
+    if ((await readFile(output, 'utf8')) !== content)
+      throw new Error('OpenAPI artifact is stale. Run npm run generate:backend:openapi.');
+    console.log('Backend OpenAPI artifact is up to date.');
+  } else {
+    await writeFile(output, content);
+    console.log(`Generated ${relative(root, output)}`);
+  }
+}

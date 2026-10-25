@@ -9,47 +9,36 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { getHttpApiClient } from '@/lib/http-api-client';
 import { queryKeys } from '@/lib/query-keys';
 import { toast } from 'sonner';
-
-interface ApplyProfileInput {
-  profileId: 'strict' | 'development';
-  scope: 'global' | 'project';
-}
+import type { CursorProfileRequest } from '@automaker/contracts';
 
 /**
  * Apply a Cursor permission profile
  *
- * @param projectPath - Optional path to the project (required for project scope)
  * @returns Mutation for applying permission profiles
  *
  * @example
  * ```tsx
- * const applyMutation = useApplyCursorProfile(projectPath);
- * applyMutation.mutate({ profileId: 'development', scope: 'project' });
+ * const applyMutation = useApplyCursorProfile();
+ * applyMutation.mutate({ profileId: 'development', confirmed: true, target });
  * ```
  */
-export function useApplyCursorProfile(projectPath?: string) {
+export function useApplyCursorProfile() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: ApplyProfileInput) => {
-      const { profileId, scope } = input;
+    mutationFn: async (input: CursorProfileRequest) => {
       const api = getHttpApiClient();
-      const result = await api.setup.applyCursorPermissionProfile(
-        profileId,
-        scope,
-        scope === 'project' ? projectPath : undefined
-      );
-
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to apply profile');
-      }
+      const result = await api.setup.applyCursorPermissionProfile(input);
 
       return result;
     },
     onSuccess: (result) => {
       // Invalidate permissions cache
       queryClient.invalidateQueries({
-        queryKey: queryKeys.cursorPermissions.permissions(projectPath),
+        queryKey:
+          result.target.scope === 'global'
+            ? queryKeys.cursorPermissions.all
+            : queryKeys.cursorPermissions.permissions(result.target.projectPath),
       });
       toast.success(result.message || translate('Profile applied'));
     },

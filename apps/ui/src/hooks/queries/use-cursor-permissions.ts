@@ -14,6 +14,8 @@ export interface CursorPermissionsData {
   activeProfile: CursorPermissionProfile | null;
   effectivePermissions: { allow: string[]; deny: string[] } | null;
   hasProjectConfig: boolean;
+  globalConfigPath?: string;
+  projectConfigPath?: string;
   availableProfiles: Array<{
     id: string;
     name: string;
@@ -49,6 +51,8 @@ export function useCursorPermissionsQuery(projectPath?: string, enabled = true) 
         activeProfile: result.activeProfile || null,
         effectivePermissions: result.effectivePermissions || null,
         hasProjectConfig: result.hasProjectConfig || false,
+        globalConfigPath: result.globalTarget?.configPath,
+        projectConfigPath: result.projectTarget?.configPath,
         availableProfiles: result.availableProfiles || [],
       };
     },

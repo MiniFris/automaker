@@ -52,7 +52,8 @@ export function ModelSelector({
   const selectedProvider = getModelProvider(selectedModel);
 
   // Check if Cursor CLI is available
-  const isCursorAvailable = cursorCliStatus?.installed && cursorCliStatus?.auth?.authenticated;
+  // Selection availability is not proof of provider authentication.
+  const isCursorAvailable = cursorCliStatus?.installed && cursorCliStatus.connected === true;
 
   // Check if Codex CLI is available
   // @ts-expect-error - codexCliStatus uses CliStatus type but should use CodexCliStatus which has auth
@@ -312,7 +313,7 @@ export function ModelSelector({
               <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
               <div className="text-sm text-amber-400">
                 {translate(
-                  'Cursor CLI is not installed or authenticated. Configure it in Settings → AI Providers.'
+                  'Cursor CLI installation or Automaker connection is unavailable. Configure it in Settings → AI Providers.'
                 )}
               </div>
             </div>

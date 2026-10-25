@@ -1,11 +1,10 @@
-import {
-  findCodexCliPath,
-  getCodexAuthPath,
-  systemPathExists,
-  systemPathReadFile,
-} from '@automaker/platform';
+import { CodexUsageRuntime } from '../core/platform/codex-usage.runtime.js';
+import { legacyCodexUsageRuntime } from './codex-usage-compat.js';
 import { createLogger } from '@automaker/utils';
-import type { CodexAppServerService } from './codex-app-server-service.js';
+import {
+  CodexAppServerCleanupError,
+  type CodexAppServerService,
+} from './codex-app-server-service.js';
 
 const logger = createLogger('CodexUsage');
 
@@ -36,7 +35,6 @@ export interface CodexUsageData {
  * Falls back to auth file parsing if app-server is unavailable.
  */
 export class CodexUsageService {
-  private cachedCliPath: string | null = null;
   private appServerService: CodexAppServerService | null = null;
   private accountPlanTypeArray: CodexPlanType[] = [
     'free',
@@ -47,7 +45,10 @@ export class CodexUsageService {
     'edu',
   ];
 
-  constructor(appServerService?: CodexAppServerService) {
+  constructor(
+    appServerService?: CodexAppServerService,
+    private readonly runtime: CodexUsageRuntime = legacyCodexUsageRuntime
+  ) {
     this.appServerService = appServerService || null;
   }
 
@@ -55,8 +56,7 @@ export class CodexUsageService {
    * Check if Codex CLI is available on the system
    */
   async isAvailable(): Promise<boolean> {
-    this.cachedCliPath = await findCodexCliPath();
-    return Boolean(this.cachedCliPath);
+    return Boolean((await this.runtime.snapshot()).cliPath);
   }
 
   /**
@@ -68,14 +68,12 @@ export class CodexUsageService {
    */
   async fetchUsageData(): Promise<CodexUsageData> {
     logger.info('[fetchUsageData] Starting...');
-    const cliPath = this.cachedCliPath || (await findCodexCliPath());
+    const cliPath = (await this.runtime.snapshot()).cliPath;
 
     if (!cliPath) {
       logger.error('[fetchUsageData] Codex CLI not found');
       throw new Error('Codex CLI not found. Please install it with: npm install -g @openai/codex');
     }
-
-    logger.info(`[fetchUsageData] Using CLI path: ${cliPath}`);
 
     // Try to get usage from Codex app-server (most reliable method)
     const appServerUsage = await this.fetchFromAppServer();
@@ -184,6 +182,7 @@ export class CodexUsageService {
       );
       return result;
     } catch (error) {
+      if (error instanceof CodexAppServerCleanupError) throw error;
       logger.error('[fetchFromAppServer] Failed:', error);
       return null;
     }
@@ -195,16 +194,8 @@ export class CodexUsageService {
    */
   private async getPlanTypeFromAuthFile(): Promise<CodexPlanType> {
     try {
-      const authFilePath = getCodexAuthPath();
-      logger.info(`[getPlanTypeFromAuthFile] Auth file path: ${authFilePath}`);
-      const exists = systemPathExists(authFilePath);
-
-      if (!exists) {
-        logger.warn('[getPlanTypeFromAuthFile] Auth file does not exist');
-        return 'unknown';
-      }
-
-      const authContent = await systemPathReadFile(authFilePath);
+      const { authFilePath } = await this.runtime.snapshot();
+      const authContent = await this.runtime.readAuth(authFilePath);
       const authData = JSON.parse(authContent);
 
       if (!authData.tokens?.id_token) {
@@ -218,14 +209,8 @@ export class CodexUsageService {
         return 'unknown';
       }
 
-      logger.info('[getPlanTypeFromAuthFile] JWT claims keys:', Object.keys(claims));
-
       // Extract plan type from nested OpenAI auth object with type validation
       const openaiAuthClaim = claims['https://api.openai.com/auth'];
-      logger.info(
-        '[getPlanTypeFromAuthFile] OpenAI auth claim:',
-        JSON.stringify(openaiAuthClaim, null, 2)
-      );
 
       let accountType: string | undefined;
       let isSubscriptionExpired = false;
@@ -268,15 +253,11 @@ export class CodexUsageService {
 
       // If subscription is expired, treat as free plan
       if (isSubscriptionExpired && accountType && accountType !== 'free') {
-        logger.info(`Subscription expired, using "free" instead of "${accountType}"`);
         accountType = 'free';
       }
 
       if (accountType) {
         const normalizedType = accountType.toLowerCase() as CodexPlanType;
-        logger.info(
-          `[getPlanTypeFromAuthFile] Account type: "${accountType}", normalized: "${normalizedType}"`
-        );
         if (this.accountPlanTypeArray.includes(normalizedType)) {
           logger.info(`[getPlanTypeFromAuthFile] Returning plan type: ${normalizedType}`);
           return normalizedType;
@@ -284,8 +265,8 @@ export class CodexUsageService {
       } else {
         logger.info('[getPlanTypeFromAuthFile] No account type found in claims');
       }
-    } catch (error) {
-      logger.error('[getPlanTypeFromAuthFile] Failed to get plan type from auth file:', error);
+    } catch {
+      logger.warn('[getPlanTypeFromAuthFile] Local plan metadata unavailable.');
     }
 
     logger.info('[getPlanTypeFromAuthFile] Returning unknown');

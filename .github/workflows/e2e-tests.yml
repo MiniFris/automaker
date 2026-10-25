@@ -47,7 +47,7 @@ jobs:
         run: |
           echo "Starting backend server..."
           # Start server in background and save PID
-          npm run start --workspace=apps/server > backend.log 2>&1 &
+          npm run dev:e2e --workspace=apps/server > backend.log 2>&1 &
           SERVER_PID=$!
           echo "Server started with PID: $SERVER_PID"
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
@@ -60,8 +60,6 @@ jobs:
           AUTOMAKER_API_KEY: test-api-key-for-e2e-tests
           # Reduce log noise in CI
           AUTOMAKER_HIDE_API_KEY: 'true'
-          # Avoid real API calls during CI
-          AUTOMAKER_MOCK_AGENT: 'true'
           # Simulate containerized environment to skip sandbox confirmation dialogs
           IS_CONTAINERIZED: 'true'
 

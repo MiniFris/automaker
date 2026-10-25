@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LocalExecutionEnvironment } from '@/services/execution-environment/local.js';
 import { issueEnvironment } from '@/services/execution-environment/runtime.js';
 import { ToolRegistry } from '@/providers/openai-compatible/tool-registry.js';
@@ -22,8 +22,25 @@ describe('Local execution environment / real temporary files and subprocesses', 
     environment = issueEnvironment(await LocalExecutionEnvironment.create(cwd));
   });
   afterEach(async () => {
+    vi.unstubAllEnvs();
     await fs.rm(temporary, { recursive: true, force: true });
   });
+  it.skipIf(process.platform === 'win32')(
+    'captures standalone inherited variables before awaiting cwd resolution and preserves its compatibility environment',
+    async () => {
+      vi.stubEnv('OWNED_LOCAL_SNAPSHOT', 'standalone');
+      vi.stubEnv('AUTOMAKER_API_KEY', 'standalone-compatibility-key');
+      const pending = LocalExecutionEnvironment.create(cwd);
+      vi.stubEnv('OWNED_LOCAL_SNAPSHOT', 'ambient-change');
+      vi.stubEnv('AUTOMAKER_API_KEY', 'ambient-key-change');
+      const standalone = await pending;
+      const result = await standalone.exec(
+        'printf "%s:%s" "$OWNED_LOCAL_SNAPSHOT" "$AUTOMAKER_API_KEY"',
+        signal()
+      );
+      expect(result.output).toBe('standalone:standalone-compatibility-key');
+    }
+  );
   const invoke = async (registry: ToolRegistry, name: string, args: unknown) =>
     JSON.parse(
       (
@@ -33,6 +50,29 @@ describe('Local execution environment / real temporary files and subprocesses', 
         )
       ).content
     );
+  it('separates actual child stderr only for the trusted opt-in and retains the shared byte cap/default combined output', async () => {
+    const command = node("process.stdout.write('out');process.stderr.write('diagnostic')");
+    const separated = await environment.exec(command, signal(), {
+      captureStderrSeparately: true,
+      maxOutputBytes: 100,
+    });
+    expect(separated).toMatchObject({
+      exitCode: 0,
+      output: 'out',
+      stderr: 'diagnostic',
+      truncated: false,
+    });
+    const combined = await environment.exec(command, signal(), { maxOutputBytes: 100 });
+    expect(combined.output).toContain('out');
+    expect(combined.output).toContain('diagnostic');
+    expect(combined).not.toHaveProperty('stderr');
+    const capped = await environment.exec(command, signal(), {
+      captureStderrSeparately: true,
+      maxOutputBytes: 5,
+    });
+    expect(Buffer.byteLength(capped.output) + Buffer.byteLength(capped.stderr ?? '')).toBe(5);
+    expect(capped.truncated).toBe(true);
+  });
   it('reads and writes outside cwd with ordinary OS permissions, not workspace confinement', async () => {
     const file = path.join(temporary, 'outside.txt');
     await environment.writeFile(file, Buffer.from('outside'), signal());

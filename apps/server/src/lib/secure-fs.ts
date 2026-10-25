@@ -9,6 +9,9 @@ export const {
   // Async methods
   access,
   readFile,
+  pipeFile,
+  writeStream,
+  withFileStreams,
   writeFile,
   mkdir,
   readdir,
@@ -16,6 +19,7 @@ export const {
   rm,
   unlink,
   copyFile,
+  link,
   appendFile,
   rename,
   lstat,

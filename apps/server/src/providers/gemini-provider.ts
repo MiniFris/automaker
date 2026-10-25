@@ -1,3 +1,4 @@
+import type { HostCliDiscovery } from '../core/platform/host-cli-discovery.js';
 /**
  * Gemini Provider - Executes queries using the Gemini CLI
  *
@@ -9,10 +10,10 @@
  * Based on https://github.com/google-gemini/gemini-cli
  */
 
-import { execSync } from 'child_process';
+import { execSync, execFile } from 'child_process';
+import { promisify } from 'node:util';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import * as os from 'os';
 import { CliProvider, type CliSpawnConfig, type CliErrorInfo } from './cli-provider.js';
 import type {
   ProviderConfig,
@@ -27,6 +28,12 @@ import { createLogger, isAbortError } from '@automaker/utils';
 import type { SubprocessOptions } from '@automaker/platform';
 import { remoteCliRuntime } from './environment-execution.js';
 import { normalizeTodos } from './tool-normalization.js';
+import { ExecutionEnvironmentError } from '../services/execution-environment/runtime.js';
+import {
+  GEMINI_INSTALL_COMMAND,
+  geminiPolicyTools,
+  prepareGeminiPolicy,
+} from './gemini-tool-policy.js';
 
 // Create logger for this module
 const logger = createLogger('GeminiProvider');
@@ -181,10 +188,15 @@ function normalizeGeminiToolInput(
  * - Streaming JSON output
  */
 export class GeminiProvider extends CliProvider {
-  constructor(config: ProviderConfig = {}) {
-    super(config);
-    // Trigger CLI detection on construction
-    this.ensureCliDetected();
+  protected featureCapabilities() {
+    return { vision: false, tools: true, reasoning: false, mcp: false, remoteExecution: true };
+  }
+  constructor(
+    config: ProviderConfig = {},
+    environment?: import('./cli-provider.js').CliEnvironmentReader,
+    hostDiscovery?: HostCliDiscovery
+  ) {
+    super(config, environment, hostDiscovery);
   }
 
   // ==========================================================================
@@ -205,19 +217,19 @@ export class GeminiProvider extends CliProvider {
       npxPackage: '@google/gemini-cli', // Official Google Gemini CLI package
       commonPaths: {
         linux: [
-          path.join(os.homedir(), '.local/bin/gemini'),
+          path.join(this.hostHome(), '.local/bin/gemini'),
           '/usr/local/bin/gemini',
-          path.join(os.homedir(), '.npm-global/bin/gemini'),
+          path.join(this.hostHome(), '.npm-global/bin/gemini'),
         ],
         darwin: [
-          path.join(os.homedir(), '.local/bin/gemini'),
+          path.join(this.hostHome(), '.local/bin/gemini'),
           '/usr/local/bin/gemini',
           '/opt/homebrew/bin/gemini',
-          path.join(os.homedir(), '.npm-global/bin/gemini'),
+          path.join(this.hostHome(), '.npm-global/bin/gemini'),
         ],
         win32: [
-          path.join(os.homedir(), 'AppData', 'Roaming', 'npm', 'gemini.cmd'),
-          path.join(os.homedir(), '.npm-global', 'gemini.cmd'),
+          path.join(this.hostHome(), 'AppData', 'Roaming', 'npm', 'gemini.cmd'),
+          path.join(this.hostHome(), '.npm-global', 'gemini.cmd'),
         ],
       },
     };
@@ -240,6 +252,7 @@ export class GeminiProvider extends CliProvider {
   }
 
   buildCliArgs(options: ExecuteOptions): string[] {
+    this.validateToolPolicy(options);
     // Model comes in stripped of provider prefix (e.g., '2.5-flash' from 'gemini-2.5-flash')
     // We need to add 'gemini-' back since it's part of the actual CLI model name
     const bareModel = options.model || '2.5-flash';
@@ -262,7 +275,9 @@ export class GeminiProvider extends CliProvider {
 
     // YOLO mode for automatic approval (required for non-interactive use)
     // Use explicit approval-mode for clearer semantics
-    cliArgs.push('--approval-mode', 'yolo');
+    const restricted = geminiPolicyTools(options) !== undefined;
+    cliArgs.push('--approval-mode', restricted ? 'default' : 'yolo');
+    if (restricted) cliArgs.push('--extensions', 'none');
 
     // Force headless (non-interactive) mode with --prompt flag.
     // The actual prompt content is passed via stdin (see buildSubprocessOptions()),
@@ -529,7 +544,7 @@ export class GeminiProvider extends CliProvider {
 
     return {
       code: GeminiErrorCode.UNKNOWN,
-      message: stderr || `Gemini CLI exited with code ${exitCode}`,
+      message: `Gemini CLI failed (exit code ${exitCode ?? 'unknown'}). Check the provider configuration and retry.`,
       recoverable: false,
     };
   }
@@ -538,13 +553,15 @@ export class GeminiProvider extends CliProvider {
    * Override install instructions for Gemini-specific guidance
    */
   protected getInstallInstructions(): string {
-    return 'Install with: npm install -g @google/gemini-cli (or visit https://github.com/google-gemini/gemini-cli)';
+    return `Install with: ${GEMINI_INSTALL_COMMAND} (or visit https://github.com/google-gemini/gemini-cli)`;
   }
 
   /**
    * Execute a prompt using Gemini CLI with streaming
    */
-  async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+  protected async *execute(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+    // Reject before local detection, workspace preparation or remote dispatch.
+    this.validateToolPolicy(options);
     const runtime = remoteCliRuntime(options);
     if (!runtime) this.ensureCliDetected();
 
@@ -560,66 +577,91 @@ export class GeminiProvider extends CliProvider {
       );
     }
 
-    // Ensure .geminiignore exists in the working directory to prevent Gemini CLI
-    // from scanning .git and node_modules directories during startup. This reduces
-    // startup time significantly (reported: 35s → 11s) by skipping large directories
-    // that Gemini CLI would otherwise traverse for context discovery.
-    if (!runtime) await this.ensureGeminiIgnore(options.cwd || process.cwd());
-
-    // Embed system prompt into the user prompt so Gemini CLI receives
-    // project context (CLAUDE.md, CODE_QUALITY.md, etc.) that would
-    // otherwise be silently dropped since Gemini CLI has no --system-prompt flag.
-    const effectiveOptions = this.embedSystemPromptIntoPrompt(options);
-
-    // Build CLI args for headless execution.
-    const cliArgs = this.buildCliArgs(effectiveOptions);
-
-    const subprocessOptions = this.buildSubprocessOptions(effectiveOptions, cliArgs);
-
-    let sessionId: string | undefined;
-
-    logger.debug(`GeminiProvider.executeQuery called with model: "${options.model}"`);
-
+    if (
+      geminiPolicyTools(options) !== undefined &&
+      !runtime &&
+      (this.useWsl || this.detectedStrategy === 'npx' || process.platform === 'win32')
+    ) {
+      throw new ExecutionEnvironmentError(
+        'GEMINI_TOOL_POLICY_UNSUPPORTED',
+        'Gemini restricted execution requires a native version-bound CLI runtime.'
+      );
+    }
+    const policy = await prepareGeminiPolicy(options, runtime, (args) =>
+      this.probeToolPolicy(options, args)
+    );
     try {
-      for await (const rawEvent of this.streamProcess(options, subprocessOptions)) {
-        const event = rawEvent as GeminiStreamEvent;
+      // Ensure .geminiignore exists in the working directory to prevent Gemini CLI
+      // from scanning .git and node_modules directories during startup. This reduces
+      // startup time significantly (reported: 35s → 11s) by skipping large directories
+      // that Gemini CLI would otherwise traverse for context discovery.
+      if (!runtime && !policy) await this.ensureGeminiIgnore(options.cwd || process.cwd());
 
-        // Capture session ID from init event
-        if (event.type === 'init') {
-          const initEvent = event as GeminiInitEvent;
-          sessionId = initEvent.session_id;
-          logger.debug(`Session started: ${sessionId}, model: ${initEvent.model}`);
-        }
+      // Embed system prompt into the user prompt so Gemini CLI receives
+      // project context (CLAUDE.md, CODE_QUALITY.md, etc.) that would
+      // otherwise be silently dropped since Gemini CLI has no --system-prompt flag.
+      const effectiveOptions = this.embedSystemPromptIntoPrompt(options);
 
-        // Normalize and yield the event
-        const normalized = this.normalizeEvent(event);
-        if (normalized) {
-          if (!normalized.session_id && sessionId) {
-            normalized.session_id = sessionId;
+      // Build CLI args for headless execution.
+      const cliArgs = this.buildCliArgs(effectiveOptions);
+      if (policy) cliArgs.push('--admin-policy', policy.file);
+
+      // Explicit tools: [] has already been enforced by the per-run admin policy.
+      // The generic remote CLI guard must not replace that policy with a blanket rejection.
+      const subprocessOptions = this.controlledFailureOptions(
+        this.buildSubprocessOptions(
+          policy ? { ...effectiveOptions, tools: undefined } : effectiveOptions,
+          cliArgs
+        )
+      );
+
+      let sessionId: string | undefined;
+
+      logger.debug(`GeminiProvider.executeQuery called with model: "${options.model}"`);
+
+      try {
+        for await (const rawEvent of this.streamProcess(options, subprocessOptions)) {
+          const event = rawEvent as GeminiStreamEvent;
+
+          // Capture session ID from init event
+          if (event.type === 'init') {
+            const initEvent = event as GeminiInitEvent;
+            sessionId = initEvent.session_id;
+            logger.debug(`Session started: ${sessionId}, model: ${initEvent.model}`);
           }
-          yield normalized;
-        }
-      }
-    } catch (error) {
-      if (isAbortError(error)) {
-        logger.debug('Query aborted');
-        return;
-      }
 
-      // Map CLI errors to GeminiError
-      if (error instanceof Error && 'stderr' in error) {
-        const errorInfo = this.mapError(
-          (error as { stderr?: string }).stderr || error.message,
-          (error as { exitCode?: number | null }).exitCode ?? null
-        );
-        throw this.createError(
-          errorInfo.code as GeminiErrorCode,
-          errorInfo.message,
-          errorInfo.recoverable,
-          errorInfo.suggestion
-        );
+          // Normalize and yield the event
+          const normalized = this.normalizeEvent(event);
+          if (normalized) {
+            if (!normalized.session_id && sessionId) {
+              normalized.session_id = sessionId;
+            }
+            yield normalized;
+          }
+        }
+      } catch (error) {
+        if (isAbortError(error)) {
+          logger.debug('Query aborted');
+          return;
+        }
+
+        // Map CLI errors to GeminiError
+        if (error instanceof Error && 'stderr' in error) {
+          const errorInfo = this.mapError(
+            (error as { stderr?: string }).stderr || error.message,
+            (error as { exitCode?: number | null }).exitCode ?? null
+          );
+          throw this.createError(
+            errorInfo.code as GeminiErrorCode,
+            errorInfo.message,
+            errorInfo.recoverable,
+            errorInfo.suggestion
+          );
+        }
+        throw error;
       }
-      throw error;
+    } finally {
+      await policy?.close();
     }
   }
 
@@ -695,10 +737,15 @@ export class GeminiProvider extends CliProvider {
     if (!this.cliPath) return null;
 
     try {
+      if (this.hostDiscovery)
+        return this.hostDiscovery
+          .runSync(this.cliPath, ['--version'], await this.readEnvironment())
+          .trim();
       const result = execSync(`"${this.cliPath}" --version`, {
         encoding: 'utf8',
         timeout: 5000,
         stdio: 'pipe',
+        env: await this.readEnvironment(),
       }).trim();
       return result;
     } catch {
@@ -707,146 +754,41 @@ export class GeminiProvider extends CliProvider {
   }
 
   /**
-   * Check authentication status
-   *
-   * Uses a fast credential check approach:
-   * 1. Check for GEMINI_API_KEY environment variable
-   * 2. Check for Google Cloud credentials
-   * 3. Check for Gemini settings file with stored credentials
-   * 4. Quick CLI auth test with --help (fast, doesn't make API calls)
+   * Passive local hints only. Settings/token presence is not proof of identity,
+   * permissions or quota. Never read OAuth credentials or run an auth query.
    */
   async checkAuth(): Promise<GeminiAuthStatus> {
-    this.ensureCliDetected();
-    if (!this.cliPath) {
-      logger.debug('checkAuth: CLI not found');
-      return { authenticated: false, method: 'none' };
-    }
-
-    logger.debug('checkAuth: Starting credential check');
-
-    // Determine the likely auth method based on environment
-    const hasApiKey = !!process.env.GEMINI_API_KEY;
-    const hasEnvApiKey = hasApiKey;
-    const hasVertexAi = !!(
-      process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.GOOGLE_CLOUD_PROJECT
+    const environment = await this.readEnvironment();
+    const hasApiKey = !!(environment.GEMINI_API_KEY?.trim() || environment.GOOGLE_API_KEY?.trim());
+    const hasVertexConfig = !!(
+      environment.GOOGLE_API_KEY?.trim() ||
+      environment.GOOGLE_APPLICATION_CREDENTIALS?.trim() ||
+      environment.GOOGLE_CLOUD_PROJECT?.trim()
     );
-
-    logger.debug(`checkAuth: hasApiKey=${hasApiKey}, hasVertexAi=${hasVertexAi}`);
-
-    // Check for Gemini credentials file (~/.gemini/settings.json)
-    const geminiConfigDir = path.join(os.homedir(), '.gemini');
-    const settingsPath = path.join(geminiConfigDir, 'settings.json');
-    let hasCredentialsFile = false;
-    let authType: string | null = null;
-
+    let hasConfigFile = false;
+    let error: string | undefined;
+    const home = environment.HOME || environment.USERPROFILE || this.hostHome();
     try {
-      await fs.access(settingsPath);
-      logger.debug(`checkAuth: Found settings file at ${settingsPath}`);
-      try {
-        const content = await fs.readFile(settingsPath, 'utf8');
-        const settings = JSON.parse(content);
-
-        // Auth config is at security.auth.selectedType (e.g., "oauth-personal", "oauth-adc", "api-key")
-        const selectedType = settings?.security?.auth?.selectedType;
-        if (selectedType) {
-          hasCredentialsFile = true;
-          authType = selectedType;
-          logger.debug(`checkAuth: Settings file has auth config, selectedType=${selectedType}`);
-        } else {
-          logger.debug(`checkAuth: Settings file found but no auth type configured`);
-        }
-      } catch (e) {
-        logger.debug(`checkAuth: Failed to parse settings file: ${e}`);
-      }
-    } catch {
-      logger.debug('checkAuth: No settings file found');
+      hasConfigFile = (await fs.stat(path.join(home, '.gemini', 'settings.json'))).isFile();
+    } catch (failure) {
+      if (
+        !(failure && typeof failure === 'object' && 'code' in failure && failure.code === 'ENOENT')
+      )
+        error = 'Local configuration could not be inspected.';
     }
-
-    // If we have an API key, we're authenticated
-    if (hasApiKey) {
-      logger.debug('checkAuth: Using API key authentication');
-      return {
-        authenticated: true,
-        method: 'api_key',
-        hasApiKey,
-        hasEnvApiKey,
-        hasCredentialsFile,
-      };
-    }
-
-    // If we have Vertex AI credentials, we're authenticated
-    if (hasVertexAi) {
-      logger.debug('checkAuth: Using Vertex AI authentication');
-      return {
-        authenticated: true,
-        method: 'vertex_ai',
-        hasApiKey,
-        hasEnvApiKey,
-        hasCredentialsFile,
-      };
-    }
-
-    // Check if settings file indicates configured authentication
-    if (hasCredentialsFile && authType) {
-      // OAuth types: "oauth-personal", "oauth-adc"
-      // API key type: "api-key"
-      // Code assist: "code-assist" (requires IDE integration)
-      if (authType.startsWith('oauth')) {
-        logger.debug(`checkAuth: OAuth authentication configured (${authType})`);
-        return {
-          authenticated: true,
-          method: 'google_login',
-          hasApiKey,
-          hasEnvApiKey,
-          hasCredentialsFile,
-        };
-      }
-
-      if (authType === 'api-key') {
-        logger.debug('checkAuth: API key authentication configured in settings');
-        return {
-          authenticated: true,
-          method: 'api_key',
-          hasApiKey,
-          hasEnvApiKey,
-          hasCredentialsFile,
-        };
-      }
-
-      if (authType === 'code-assist' || authType === 'codeassist') {
-        logger.debug('checkAuth: Code Assist auth configured but requires local server');
-        return {
-          authenticated: false,
-          method: 'google_login',
-          hasApiKey,
-          hasEnvApiKey,
-          hasCredentialsFile,
-          error:
-            'Code Assist authentication requires IDE integration. Please use "gemini" CLI to log in with a different method, or set GEMINI_API_KEY.',
-        };
-      }
-
-      // Unknown auth type but something is configured
-      logger.debug(`checkAuth: Unknown auth type configured: ${authType}`);
-      return {
-        authenticated: true,
-        method: 'google_login',
-        hasApiKey,
-        hasEnvApiKey,
-        hasCredentialsFile,
-      };
-    }
-
-    // No credentials found
-    logger.debug('checkAuth: No valid credentials found');
     return {
       authenticated: false,
-      method: 'none',
+      authenticationChecked: false,
+      method: environment.GEMINI_API_KEY?.trim()
+        ? 'api_key'
+        : hasVertexConfig
+          ? 'vertex_ai'
+          : 'none',
       hasApiKey,
-      hasEnvApiKey,
-      hasCredentialsFile,
-      error:
-        'No authentication configured. Run "gemini" interactively to log in, or set GEMINI_API_KEY.',
+      hasEnvApiKey: hasApiKey,
+      hasConfigFile,
+      hasVertexConfig,
+      ...(error && { error }),
     };
   }
 
@@ -863,7 +805,7 @@ export class GeminiProvider extends CliProvider {
       version: version || undefined,
       path: this.cliPath || undefined,
       method: 'cli',
-      hasApiKey: !!process.env.GEMINI_API_KEY,
+      hasApiKey: !!auth.hasApiKey,
       authenticated: auth.authenticated,
     };
   }
@@ -888,6 +830,7 @@ export class GeminiProvider extends CliProvider {
       description: config.description,
       supportsTools: true,
       supportsVision: config.supportsVision,
+      hasReasoning: config.supportsThinking,
       contextWindow: config.contextWindow,
     }));
   }
@@ -898,5 +841,54 @@ export class GeminiProvider extends CliProvider {
   supportsFeature(feature: string): boolean {
     const supported = ['tools', 'text', 'streaming', 'vision', 'thinking'];
     return supported.includes(feature);
+  }
+
+  private validateToolPolicy(options: ExecuteOptions): void {
+    geminiPolicyTools(options);
+  }
+
+  private async probeToolPolicy(options: ExecuteOptions, args: string[]): Promise<string> {
+    const signal = options.abortController?.signal ?? new AbortController().signal;
+    try {
+      const subprocess = super.buildSubprocessOptions({ ...options, tools: undefined }, args);
+      const runtime = remoteCliRuntime(options);
+      if (!runtime) {
+        const result = await promisify(execFile)(subprocess.command, subprocess.args, {
+          cwd: options.cwd,
+          env: await this.readEnvironment(),
+          signal,
+          timeout: 5000,
+          maxBuffer: 65_536,
+          encoding: 'utf8',
+          windowsHide: true,
+        });
+        return result.stdout;
+      }
+      const abort = new AbortController();
+      let stdout = '',
+        bytes = 0;
+      const result = await runtime.runProcess!(
+        {
+          command: subprocess.command,
+          args: subprocess.args,
+          timeoutMs: 5000,
+          idleTimeoutMs: 5000,
+        },
+        AbortSignal.any([signal, abort.signal]),
+        (stream, data) => {
+          bytes += data.length;
+          if (bytes > 65_536) abort.abort();
+          else if (stream === 'stdout') stdout += data.toString('utf8');
+        }
+      );
+      if (result.exitCode !== 0 || bytes > 65_536) throw new Error('CLI probe failed.');
+      return stdout;
+    } catch {
+      signal.throwIfAborted();
+      throw new ExecutionEnvironmentError(
+        'GEMINI_TOOL_POLICY_UNSUPPORTED',
+        'Gemini CLI version and policy capabilities could not be confirmed. No model query was started.'
+      );
+    }
   }
 }

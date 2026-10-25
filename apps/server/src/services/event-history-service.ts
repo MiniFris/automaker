@@ -12,8 +12,9 @@
  */
 
 import { createLogger } from '@automaker/utils';
-import * as secureFs from '../lib/secure-fs.js';
-import { getEventHistoryIndexPath, getEventPath, ensureEventHistoryDir } from '@automaker/platform';
+import { ProjectEventStorage, type ProjectEventFilesystem } from './project-event-storage.js';
+import { UnknownOutcomeDomainError, ValidationDomainError } from '../core/errors/domain-errors.js';
+import { getEventHistoryIndexPath, getEventPath } from '@automaker/platform';
 import type {
   StoredEvent,
   StoredEventIndex,
@@ -29,41 +30,33 @@ const logger = createLogger('EventHistoryService');
 /** Maximum events to keep in the index (oldest are pruned) */
 const MAX_EVENTS_IN_INDEX = 1000;
 
-/**
- * Atomic file write - write to temp file then rename
- */
-async function atomicWriteJson(filePath: string, data: unknown): Promise<void> {
-  const tempPath = `${filePath}.tmp.${Date.now()}`;
-  const content = JSON.stringify(data, null, 2);
-
-  try {
-    await secureFs.writeFile(tempPath, content, 'utf-8');
-    await secureFs.rename(tempPath, filePath);
-  } catch (error) {
-    try {
-      await secureFs.unlink(tempPath);
-    } catch {
-      // Ignore cleanup errors
-    }
-    throw error;
-  }
-}
-
-/**
- * Safely read JSON file with fallback to default
- */
-async function readJsonFile<T>(filePath: string, defaultValue: T): Promise<T> {
-  try {
-    const content = (await secureFs.readFile(filePath, 'utf-8')) as string;
-    return JSON.parse(content) as T;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      return defaultValue;
-    }
-    logger.error(`Error reading ${filePath}:`, error);
-    return defaultValue;
-  }
-}
+const validId = (id: unknown): id is string =>
+  typeof id === 'string' && id.length > 0 && id !== 'index' && !/[\\/\0]/.test(id);
+const validIndex = (value: unknown): value is StoredEventIndex => {
+  const index = value as Partial<StoredEventIndex> | null;
+  return (
+    !!index &&
+    index.version === 1 &&
+    Array.isArray(index.events) &&
+    index.events.every(
+      (event) =>
+        !!event &&
+        validId(event.id) &&
+        typeof event.trigger === 'string' &&
+        typeof event.timestamp === 'string'
+    )
+  );
+};
+const validEvent = (value: unknown): value is StoredEvent => {
+  const event = value as Partial<StoredEvent> | null;
+  return (
+    !!event &&
+    validId(event.id) &&
+    typeof event.trigger === 'string' &&
+    typeof event.timestamp === 'string' &&
+    typeof event.projectPath === 'string'
+  );
+};
 
 /**
  * Input for storing a new event
@@ -83,6 +76,20 @@ export interface StoreEventInput {
  * EventHistoryService - Manages persistent storage of events
  */
 export class EventHistoryService {
+  private readonly storage: ProjectEventStorage;
+
+  constructor(filesystem: ProjectEventFilesystem, canonicalProject: (project: string) => string) {
+    this.storage = new ProjectEventStorage(filesystem, 'Event history', canonicalProject);
+  }
+
+  beforeApplicationShutdown(): Promise<void> {
+    return this.storage.close();
+  }
+
+  private eventPath(project: string, id: string): string {
+    if (!validId(id)) throw new ValidationDomainError('Invalid event ID.');
+    return getEventPath(project, id);
+  }
   /**
    * Store a new event to history
    *
@@ -90,40 +97,68 @@ export class EventHistoryService {
    * @returns Promise resolving to the stored event
    */
   async storeEvent(input: StoreEventInput): Promise<StoredEvent> {
-    const { projectPath, trigger, featureId, featureName, error, errorType, passes, metadata } =
-      input;
+    return this.storage.run(input.projectPath, async () => {
+      const { projectPath, trigger, featureId, featureName, error, errorType, passes, metadata } =
+        input;
 
-    // Ensure events directory exists
-    await ensureEventHistoryDir(projectPath);
+      const indexPath = getEventHistoryIndexPath(projectPath);
+      const index = await this.storage.read(indexPath, DEFAULT_EVENT_HISTORY_INDEX, validIndex);
 
-    const eventId = `evt-${Date.now()}-${randomUUID().slice(0, 8)}`;
-    const timestamp = new Date().toISOString();
-    const projectName = this.extractProjectName(projectPath);
+      const eventId = `evt-${Date.now()}-${randomUUID().slice(0, 8)}`;
+      const timestamp = new Date().toISOString();
+      const projectName = this.extractProjectName(projectPath);
 
-    const event: StoredEvent = {
-      id: eventId,
-      trigger,
-      timestamp,
-      projectPath,
-      projectName,
-      featureId,
-      featureName,
-      error,
-      errorType,
-      passes,
-      metadata,
-    };
+      const event: StoredEvent = {
+        id: eventId,
+        trigger,
+        timestamp,
+        projectPath,
+        projectName,
+        featureId,
+        featureName,
+        error,
+        errorType,
+        passes,
+        metadata,
+      };
 
-    // Write the full event to its own file
-    const eventPath = getEventPath(projectPath, eventId);
-    await atomicWriteJson(eventPath, event);
+      // Write the full event to its own file
+      const eventPath = this.eventPath(projectPath, eventId);
+      index.events.unshift({
+        id: event.id,
+        trigger: event.trigger,
+        timestamp: event.timestamp,
+        featureName: event.featureName,
+        featureId: event.featureId,
+      });
+      const removed = index.events.splice(MAX_EVENTS_IN_INDEX);
+      await this.storage.write(eventPath, event);
+      try {
+        await this.storage.write(indexPath, index);
+      } catch (error) {
+        let committed: StoredEventIndex;
+        try {
+          committed = await this.storage.read(indexPath, DEFAULT_EVENT_HISTORY_INDEX, validIndex);
+        } catch {
+          throw new UnknownOutcomeDomainError('Event index commit could not be confirmed.');
+        }
+        // An IO failure can be reported after rename committed. Keep any referenced event.
+        try {
+          if (!committed.events.some((item) => item.id === eventId))
+            await this.storage.remove(eventPath);
+        } catch {
+          throw new UnknownOutcomeDomainError('Event publication cleanup could not be confirmed.');
+        }
+        throw error;
+      }
+      // The committed index is authoritative. Never remove a still-referenced event.
+      for (const oldEvent of removed)
+        await this.storage.remove(this.eventPath(projectPath, oldEvent.id));
 
-    // Update the index
-    await this.addToIndex(projectPath, event);
+      logger.info(`Stored event ${eventId} (${trigger}) for project ${projectName}`);
 
-    logger.info(`Stored event ${eventId} (${trigger}) for project ${projectName}`);
-
-    return event;
+      return event;
+    });
   }
 
   /**
@@ -134,41 +169,47 @@ export class EventHistoryService {
    * @returns Promise resolving to array of event summaries
    */
   async getEvents(projectPath: string, filter?: EventHistoryFilter): Promise<StoredEventSummary[]> {
-    const indexPath = getEventHistoryIndexPath(projectPath);
-    const index = await readJsonFile<StoredEventIndex>(indexPath, DEFAULT_EVENT_HISTORY_INDEX);
+    return this.storage.run(projectPath, async () => {
+      const indexPath = getEventHistoryIndexPath(projectPath);
+      const index = await this.storage.read<StoredEventIndex>(
+        indexPath,
+        DEFAULT_EVENT_HISTORY_INDEX,
+        validIndex
+      );
 
-    let events = [...index.events];
+      let events = [...index.events];
 
-    // Apply filters
-    if (filter) {
-      if (filter.trigger) {
-        events = events.filter((e) => e.trigger === filter.trigger);
+      // Apply filters
+      if (filter) {
+        if (filter.trigger) {
+          events = events.filter((e) => e.trigger === filter.trigger);
+        }
+        if (filter.featureId) {
+          events = events.filter((e) => e.featureId === filter.featureId);
+        }
+        if (filter.since) {
+          const sinceDate = new Date(filter.since).getTime();
+          events = events.filter((e) => new Date(e.timestamp).getTime() >= sinceDate);
+        }
+        if (filter.until) {
+          const untilDate = new Date(filter.until).getTime();
+          events = events.filter((e) => new Date(e.timestamp).getTime() <= untilDate);
+        }
       }
-      if (filter.featureId) {
-        events = events.filter((e) => e.featureId === filter.featureId);
-      }
-      if (filter.since) {
-        const sinceDate = new Date(filter.since).getTime();
-        events = events.filter((e) => new Date(e.timestamp).getTime() >= sinceDate);
-      }
-      if (filter.until) {
-        const untilDate = new Date(filter.until).getTime();
-        events = events.filter((e) => new Date(e.timestamp).getTime() <= untilDate);
-      }
-    }
 
-    // Sort by timestamp (newest first)
-    events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      // Sort by timestamp (newest first)
+      events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-    // Apply pagination
-    if (filter?.offset) {
-      events = events.slice(filter.offset);
-    }
-    if (filter?.limit) {
-      events = events.slice(0, filter.limit);
-    }
+      // Apply pagination
+      if (filter?.offset) {
+        events = events.slice(filter.offset);
+      }
+      if (filter?.limit) {
+        events = events.slice(0, filter.limit);
+      }
 
-    return events;
+      return events;
+    });
   }
 
   /**
@@ -179,17 +220,13 @@ export class EventHistoryService {
    * @returns Promise resolving to the full event or null if not found
    */
   async getEvent(projectPath: string, eventId: string): Promise<StoredEvent | null> {
-    const eventPath = getEventPath(projectPath, eventId);
-    try {
-      const content = (await secureFs.readFile(eventPath, 'utf-8')) as string;
-      return JSON.parse(content) as StoredEvent;
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        return null;
-      }
-      logger.error(`Error reading event ${eventId}:`, error);
-      return null;
-    }
+    return this.storage.run(projectPath, async () => {
+      const file = this.eventPath(projectPath, eventId);
+      const event = await this.storage.read<StoredEvent | null>(file, null, validEvent);
+      if (event && event.id !== eventId)
+        throw new SyntaxError('Stored event identity is inconsistent.');
+      return event;
+    });
   }
 
   /**
@@ -200,31 +237,17 @@ export class EventHistoryService {
    * @returns Promise resolving to true if deleted
    */
   async deleteEvent(projectPath: string, eventId: string): Promise<boolean> {
-    // Remove from index
-    const indexPath = getEventHistoryIndexPath(projectPath);
-    const index = await readJsonFile<StoredEventIndex>(indexPath, DEFAULT_EVENT_HISTORY_INDEX);
-
-    const initialLength = index.events.length;
-    index.events = index.events.filter((e) => e.id !== eventId);
-
-    if (index.events.length === initialLength) {
-      return false; // Event not found in index
-    }
-
-    await atomicWriteJson(indexPath, index);
-
-    // Delete the event file
-    const eventPath = getEventPath(projectPath, eventId);
-    try {
-      await secureFs.unlink(eventPath);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        logger.error(`Error deleting event file ${eventId}:`, error);
-      }
-    }
-
-    logger.info(`Deleted event ${eventId}`);
-    return true;
+    return this.storage.run(projectPath, async () => {
+      const eventPath = this.eventPath(projectPath, eventId);
+      const indexPath = getEventHistoryIndexPath(projectPath);
+      const index = await this.storage.read(indexPath, DEFAULT_EVENT_HISTORY_INDEX, validIndex);
+      const remaining = index.events.filter((event) => event.id !== eventId);
+      if (remaining.length === index.events.length) return false;
+      await this.storage.write(indexPath, { ...index, events: remaining });
+      await this.storage.remove(eventPath);
+      logger.info(`Deleted event ${eventId}`);
+      return true;
+    });
   }
 
   /**
@@ -234,28 +257,15 @@ export class EventHistoryService {
    * @returns Promise resolving to number of events cleared
    */
   async clearEvents(projectPath: string): Promise<number> {
-    const indexPath = getEventHistoryIndexPath(projectPath);
-    const index = await readJsonFile<StoredEventIndex>(indexPath, DEFAULT_EVENT_HISTORY_INDEX);
-
-    const count = index.events.length;
-
-    // Delete all event files
-    for (const event of index.events) {
-      const eventPath = getEventPath(projectPath, event.id);
-      try {
-        await secureFs.unlink(eventPath);
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-          logger.error(`Error deleting event file ${event.id}:`, error);
-        }
-      }
-    }
-
-    // Reset the index
-    await atomicWriteJson(indexPath, DEFAULT_EVENT_HISTORY_INDEX);
-
-    logger.info(`Cleared ${count} events for project`);
-    return count;
+    return this.storage.run(projectPath, async () => {
+      const indexPath = getEventHistoryIndexPath(projectPath);
+      const index = await this.storage.read(indexPath, DEFAULT_EVENT_HISTORY_INDEX, validIndex);
+      await this.storage.write(indexPath, DEFAULT_EVENT_HISTORY_INDEX);
+      for (const event of index.events)
+        await this.storage.remove(this.eventPath(projectPath, event.id));
+      logger.info(`Cleared ${index.events.length} events for project`);
+      return index.events.length;
+    });
   }
 
   /**
@@ -275,59 +285,10 @@ export class EventHistoryService {
   }
 
   /**
-   * Add an event to the index (internal)
-   */
-  private async addToIndex(projectPath: string, event: StoredEvent): Promise<void> {
-    const indexPath = getEventHistoryIndexPath(projectPath);
-    const index = await readJsonFile<StoredEventIndex>(indexPath, DEFAULT_EVENT_HISTORY_INDEX);
-
-    const summary: StoredEventSummary = {
-      id: event.id,
-      trigger: event.trigger,
-      timestamp: event.timestamp,
-      featureName: event.featureName,
-      featureId: event.featureId,
-    };
-
-    // Add to beginning (newest first)
-    index.events.unshift(summary);
-
-    // Prune old events if over limit
-    if (index.events.length > MAX_EVENTS_IN_INDEX) {
-      const removed = index.events.splice(MAX_EVENTS_IN_INDEX);
-      // Delete the pruned event files
-      for (const oldEvent of removed) {
-        const eventPath = getEventPath(projectPath, oldEvent.id);
-        try {
-          await secureFs.unlink(eventPath);
-        } catch {
-          // Ignore deletion errors for pruned events
-        }
-      }
-      logger.info(`Pruned ${removed.length} old events from history`);
-    }
-
-    await atomicWriteJson(indexPath, index);
-  }
-
-  /**
    * Extract project name from path
    */
   private extractProjectName(projectPath: string): string {
     const parts = projectPath.split(/[/\\]/);
     return parts[parts.length - 1] || projectPath;
   }
-}
-
-// Singleton instance
-let eventHistoryServiceInstance: EventHistoryService | null = null;
-
-/**
- * Get the singleton event history service instance
- */
-export function getEventHistoryService(): EventHistoryService {
-  if (!eventHistoryServiceInstance) {
-    eventHistoryServiceInstance = new EventHistoryService();
-  }
-  return eventHistoryServiceInstance;
 }

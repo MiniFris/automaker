@@ -1,61 +1,49 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { createCreateHandler } from '@/routes/worktree/routes/create.js';
-import { AUTOMAKER_INITIAL_COMMIT_MESSAGE } from '@/routes/worktree/common.js';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import * as fs from 'fs/promises';
-import * as os from 'os';
-import * as path from 'path';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { expect, it } from 'vitest';
+import { createNativeWorktreeHttp } from '../../../helpers/native-worktree-http.js';
 
-const execAsync = promisify(exec);
-
-describe('worktree create route - repositories without commits', () => {
-  let repoPath: string | null = null;
-
-  async function initRepoWithoutCommit() {
-    repoPath = await fs.mkdtemp(path.join(os.tmpdir(), 'automaker-no-commit-'));
-    // Initialize with 'main' as the default branch (matching GitHub's standard)
-    await execAsync('git init --initial-branch=main', { cwd: repoPath });
-    // Don't set git config - use environment variables in commit operations instead
-    // to avoid affecting user's git config
-    // Intentionally skip creating an initial commit
-  }
-
-  afterEach(async () => {
-    if (!repoPath) {
-      return;
-    }
-    await fs.rm(repoPath, { recursive: true, force: true });
-    repoPath = null;
-  });
-
-  it('creates an initial commit before adding a worktree when HEAD is missing', async () => {
-    await initRepoWithoutCommit();
-    const handler = createCreateHandler();
-
-    const json = vi.fn();
-    const status = vi.fn().mockReturnThis();
-    const req = {
-      body: { projectPath: repoPath, branchName: 'feature/no-head' },
-    } as any;
-    const res = {
-      json,
-      status,
-    } as any;
-
-    await handler(req, res);
-
-    expect(status).not.toHaveBeenCalled();
-    expect(json).toHaveBeenCalled();
-    const payload = json.mock.calls[0][0];
-    expect(payload.success).toBe(true);
-
-    const { stdout: commitCount } = await execAsync('git rev-list --count HEAD', {
-      cwd: repoPath!,
+const exec = promisify(execFile);
+it('creates the compatible initial commit before native worktree creation in an unborn repository', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'native-unborn-worktree-'));
+  let runtime: Awaited<ReturnType<typeof createNativeWorktreeHttp>> | undefined;
+  try {
+    await exec('git', ['init', '--initial-branch=main'], { cwd: root });
+    runtime = await createNativeWorktreeHttp({
+      root,
+      environment: { HOME: root, ALLOWED_ROOT_DIRECTORY: root },
     });
-    expect(Number(commitCount.trim())).toBeGreaterThan(0);
-
-    const { stdout: latestMessage } = await execAsync('git log -1 --pretty=%B', { cwd: repoPath! });
-    expect(latestMessage.trim()).toBe(AUTOMAKER_INITIAL_COMMIT_MESSAGE);
-  });
+    const post = async (action: string, body: object) => {
+      const response = await fetch(`${runtime!.url}/api/worktree/${action}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-api-key': runtime!.apiKey },
+        body: JSON.stringify(body),
+      });
+      return { status: response.status, body: await response.json() };
+    };
+    const inspected = await post('environment', { projectPath: root });
+    expect(inspected.status).toBe(200);
+    const created = await post('create', {
+      projectPath: root,
+      branchName: 'feature/no-head',
+      environmentTargetId: inspected.body.executionEnvironment.targetId,
+    });
+    expect(created.status).toBe(200);
+    expect(created.body.success).toBe(true);
+    expect(
+      Number((await exec('git', ['rev-list', '--count', 'HEAD'], { cwd: root })).stdout.trim())
+    ).toBeGreaterThan(0);
+    expect((await exec('git', ['log', '-1', '--pretty=%B'], { cwd: root })).stdout.trim()).toBe(
+      'chore: automaker initial commit'
+    );
+    expect(
+      (await exec('git', ['worktree', 'list', '--porcelain'], { cwd: root })).stdout
+    ).toContain('branch refs/heads/feature/no-head');
+  } finally {
+    await runtime?.close();
+    await fs.rm(root, { recursive: true, force: true });
+  }
 });

@@ -3,6 +3,8 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import { constants, createReadStream } from 'node:fs';
+import { performance } from 'node:perf_hooks';
+import { waitForLinuxProcessGroupExit } from '../../core/platform/linux-process-group.js';
 import {
   ExecutionEnvironmentError,
   type ExecutionEnvironment,
@@ -11,6 +13,49 @@ import {
 } from './runtime.js';
 
 const writes = new Map<string, Promise<void>>();
+
+/** Native children inherit host tooling settings, never backend transport/profile variables. */
+export function captureNativeLocalEnvironment(
+  environment: Readonly<NodeJS.ProcessEnv>
+): Readonly<NodeJS.ProcessEnv> {
+  const applicationVariables = new Set(['PORT', 'DATA_DIR', 'AUTOMAKER_API_KEY', 'NODE_PATH']);
+  return Object.freeze(
+    Object.fromEntries(
+      Object.entries(environment).filter(([name]) => !applicationVariables.has(name.toUpperCase()))
+    )
+  );
+}
+
+/** Plain snapshots need case-insensitive Windows environment lookup after leaving process.env. */
+export function localComspec(environment: Readonly<NodeJS.ProcessEnv>): string {
+  return Object.entries(environment).find(([name]) => name.toLowerCase() === 'comspec')?.[1] ?? '';
+}
+
+/** Preserve legacy node:child_process.exec cmd semantics only for explicit callers. */
+export function localShellInvocation(
+  command: string,
+  platform: NodeJS.Platform,
+  windowsShell?: 'cmd',
+  comspec = process.env.comspec ?? process.env.ComSpec
+): { command: string; args: string[]; windowsVerbatimArguments?: boolean } {
+  if (platform !== 'win32') return { command: '/bin/sh', args: ['-c', command] };
+  if (windowsShell === 'cmd') {
+    const shell = comspec || 'cmd.exe';
+    return /^(?:.*\\)?cmd(?:\.exe)?$/i.test(shell)
+      ? { command: shell, args: ['/d', '/s', '/c', `"${command}"`], windowsVerbatimArguments: true }
+      : { command: shell, args: ['-c', command] };
+  }
+  return {
+    command: 'powershell.exe',
+    args: [
+      '-NoLogo',
+      '-NoProfile',
+      '-NonInteractive',
+      '-Command',
+      '[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new(); ' + command,
+    ],
+  };
+}
 
 /** Not a sandbox. Explicit consent grants the normal filesystem/process rights of Automaker. */
 export class LocalExecutionEnvironment implements ExecutionEnvironment {
@@ -22,12 +67,20 @@ export class LocalExecutionEnvironment implements ExecutionEnvironment {
     remove: true,
     sandboxed: false,
   });
-  private constructor(readonly cwd: string) {}
-  static async create(cwd: string): Promise<LocalExecutionEnvironment> {
+  private constructor(
+    readonly cwd: string,
+    private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>
+  ) {}
+  static async create(
+    cwd: string,
+    environment: Readonly<NodeJS.ProcessEnv> = process.env
+  ): Promise<LocalExecutionEnvironment> {
+    // Capture before the first await; standalone callers retain the legacy inherited variables.
+    const hostEnvironment = Object.freeze({ ...environment });
     const absolute = await fs.realpath(cwd);
     if (!(await fs.stat(absolute)).isDirectory())
       throw new ExecutionEnvironmentError('INVALID_CWD', 'Working directory must exist.');
-    return new LocalExecutionEnvironment(absolute);
+    return new LocalExecutionEnvironment(absolute, hostEnvironment);
   }
   private resolve(target: string): string {
     if (!target || /\0/.test(target))
@@ -181,42 +234,51 @@ export class LocalExecutionEnvironment implements ExecutionEnvironment {
   async exec(
     command: string,
     signal: AbortSignal,
-    options: { cwd?: string; timeoutMs?: number; maxOutputBytes?: number } = {}
-  ): Promise<EnvironmentCommandResult> {
+    options: {
+      cwd?: string;
+      timeoutMs?: number;
+      maxOutputBytes?: number;
+      windowsShell?: 'cmd';
+      /** Trusted internal callers may preserve stdout/stderr separation. */
+      captureStderrSeparately?: boolean;
+    } = {}
+  ): Promise<EnvironmentCommandResult & { stderr?: string }> {
     signal.throwIfAborted();
     const deadline = AbortSignal.timeout(options.timeoutMs ?? 180_000);
     const combined = AbortSignal.any([signal, deadline]);
     const cwd = options.cwd ? this.resolve(options.cwd) : this.cwd;
     const windows = process.platform === 'win32';
-    const executable = windows ? 'powershell.exe' : '/bin/sh';
-    const args = windows
-      ? [
-          '-NoLogo',
-          '-NoProfile',
-          '-NonInteractive',
-          '-Command',
-          '[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new(); ' + command,
-        ]
-      : ['-c', command];
+    const invocation = localShellInvocation(
+      command,
+      this.platform,
+      options.windowsShell,
+      localComspec(this.hostEnvironment)
+    );
     const maximum = Math.min(options.maxOutputBytes ?? 12_000, 1_048_576);
     return new Promise((resolve, reject) => {
-      const child = spawn(executable, args, {
+      const child = spawn(invocation.command, invocation.args, {
         cwd,
-        env: { ...process.env },
+        env: { ...this.hostEnvironment },
         detached: !windows,
         windowsHide: true,
+        windowsVerbatimArguments: invocation.windowsVerbatimArguments,
         stdio: ['ignore', 'pipe', 'pipe'],
       });
       const chunks: Buffer[] = [];
+      const stderrChunks: Buffer[] = [];
       let bytes = 0;
       let truncated = false;
       let failure: Error | undefined;
       let exited = false;
       let cleanup: Promise<void> | undefined;
       let cleanupTimer: ReturnType<typeof setTimeout> | undefined;
+      let cleanupDeadline: number | undefined;
+      const cleanupController = new AbortController();
       const stop = () => {
         if (cleanup) return;
+        cleanupDeadline = performance.now() + 2000;
         cleanupTimer = setTimeout(() => {
+          cleanupController.abort();
           combined.removeEventListener('abort', stop);
           child.stdout.destroy();
           child.stderr.destroy();
@@ -235,6 +297,7 @@ export class LocalExecutionEnvironment implements ExecutionEnvironment {
                 return;
               }
               const killer = spawn('taskkill.exe', ['/PID', String(child.pid), '/T', '/F'], {
+                env: { ...this.hostEnvironment },
                 windowsHide: true,
                 stdio: 'ignore',
                 timeout: 1500,
@@ -245,25 +308,29 @@ export class LocalExecutionEnvironment implements ExecutionEnvironment {
               });
               killer.once('close', () => done());
             })
-          : Promise.resolve().then(() => {
+          : Promise.resolve().then(async () => {
               if (!child.pid) return;
               try {
                 process.kill(-child.pid, 'SIGKILL');
               } catch (error) {
                 if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error;
               }
+              if (process.platform === 'linux')
+                await waitForLinuxProcessGroupExit(child.pid, cleanupController.signal);
             });
         // Cleanup failures are awaited and reported by the close handler, never unhandled rejections.
         void cleanup.catch(() => {});
       };
-      const consume = (chunk: Buffer) => {
+      const consume = (chunk: Buffer, target = chunks) => {
         const remaining = Math.max(0, maximum - bytes);
         if (chunk.length > remaining) truncated = true;
-        if (remaining) chunks.push(chunk.subarray(0, remaining));
+        if (remaining) target.push(chunk.subarray(0, remaining));
         bytes += Math.min(chunk.length, remaining);
       };
-      child.stdout.on('data', consume);
-      child.stderr.on('data', consume);
+      child.stdout.on('data', (chunk: Buffer) => consume(chunk));
+      child.stderr.on('data', (chunk: Buffer) =>
+        consume(chunk, options.captureStderrSeparately ? stderrChunks : chunks)
+      );
       child.once('error', (error) => {
         failure = error;
       });
@@ -276,15 +343,20 @@ export class LocalExecutionEnvironment implements ExecutionEnvironment {
       if (combined.aborted) stop();
       child.once('close', (code) => {
         void (async () => {
-          clearTimeout(cleanupTimer);
-          combined.removeEventListener('abort', stop);
           try {
             await cleanup;
+            // An overdue timer may not have run yet after event-loop contention.
+            if (cleanupDeadline !== undefined && performance.now() >= cleanupDeadline)
+              throw new Error('Local cleanup deadline exceeded.');
           } catch {
             throw new ExecutionEnvironmentError(
               'PROCESS_CLEANUP_FAILED',
               'Local process cleanup failed; inspect running processes before retrying.'
             );
+          } finally {
+            clearTimeout(cleanupTimer);
+            combined.removeEventListener('abort', stop);
+            cleanupController.abort();
           }
           if (combined.aborted)
             throw new ExecutionEnvironmentError(
@@ -300,6 +372,9 @@ export class LocalExecutionEnvironment implements ExecutionEnvironment {
             exitCode: code ?? 1,
             output: Buffer.concat(chunks).toString('utf8'),
             truncated,
+            ...(options.captureStderrSeparately && {
+              stderr: Buffer.concat(stderrChunks).toString('utf8'),
+            }),
           });
         })().catch(reject);
       });

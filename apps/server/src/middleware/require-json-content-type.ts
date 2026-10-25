@@ -41,6 +41,7 @@ export function requireJsonContentType(req: Request, res: Response, next: NextFu
     res.status(415).json({
       success: false,
       error: 'Unsupported Media Type',
+      errorCode: 'UNSUPPORTED_MEDIA_TYPE',
       message: 'Content-Type header must be application/json',
     });
     return;

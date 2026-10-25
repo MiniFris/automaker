@@ -1,11 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AgentService } from '@/services/agent-service.js';
-import { ProviderFactory } from '@/providers/provider-factory.js';
+import {
+  createTestAgentState,
+  createTestAgentProviders,
+  createTestAgentEvents,
+} from '../../helpers/agent-state.js';
+import type { ProviderRegistry } from '@/modules/providers/provider-registry.service.js';
 import * as fs from 'fs/promises';
 import * as imageHandler from '@automaker/utils';
 import * as promptBuilder from '@automaker/utils';
 import * as contextLoader from '@automaker/utils';
 import { collectAsyncGenerator } from '../../utils/helpers.js';
+import * as testFilesystem from '../../../src/lib/secure-fs.js';
 
 // Create a shared mock logger instance for assertions using vi.hoisted
 const mockLogger = vi.hoisted(() => ({
@@ -16,7 +22,6 @@ const mockLogger = vi.hoisted(() => ({
 }));
 
 vi.mock('fs/promises');
-vi.mock('@/providers/provider-factory.js');
 vi.mock('@automaker/utils', async () => {
   const actual = await vi.importActual<typeof import('@automaker/utils')>('@automaker/utils');
   return {
@@ -28,6 +33,24 @@ vi.mock('@automaker/utils', async () => {
   };
 });
 
+const providers = {
+  providerForModel: vi.fn(),
+  providerNameForModel: vi.fn(),
+  supportsVision: vi.fn().mockReturnValue(true),
+};
+
+function mockStoredFiles(metadata: Record<string, unknown> = {}, messages: unknown[] = []) {
+  vi.mocked(fs.readFile).mockImplementation(async (file) => {
+    const name = String(file);
+    if (name.includes('agent-queue-deliveries') || name.includes('agent-executions'))
+      throw Object.assign(new Error('Missing fixture delivery'), { code: 'ENOENT' });
+    if (name.endsWith('sessions-metadata.json')) return JSON.stringify(metadata);
+    if (name.endsWith('-queue.json')) return '[]';
+    if (name.endsWith('.json')) return JSON.stringify(messages);
+    throw Object.assign(new Error('Missing fixture file'), { code: 'ENOENT' });
+  });
+}
+
 describe('agent-service.ts', () => {
   let service: AgentService;
   const mockEvents = {
@@ -37,7 +60,17 @@ describe('agent-service.ts', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    service = new AgentService('/test/data', mockEvents as any);
+    vi.mocked(fs.readdir).mockRejectedValue(
+      Object.assign(new Error('Missing fixture directory'), { code: 'ENOENT' })
+    );
+    vi.mocked(fs.readFile).mockRejectedValue(
+      Object.assign(new Error('Missing fixture file'), { code: 'ENOENT' })
+    );
+    service = new AgentService(
+      ...createTestAgentState('/test/data', createTestAgentEvents(mockEvents)),
+      undefined,
+      ...createTestAgentProviders(providers as unknown as ProviderRegistry)
+    );
 
     // Mock loadContextFiles to return empty context by default
     vi.mocked(contextLoader.loadContextFiles).mockResolvedValue({
@@ -84,7 +117,7 @@ describe('agent-service.ts', () => {
         },
       ];
 
-      vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify(existingMessages));
+      mockStoredFiles({}, existingMessages);
 
       const result = await service.startConversation({
         sessionId: 'session-1',
@@ -126,7 +159,15 @@ describe('agent-service.ts', () => {
       // First call reads metadata file and session file via ensureSession (2 calls)
       // Since no metadata or messages exist, a fresh session is created without loading queue state.
       // Second call should reuse in-memory session (no additional calls)
-      expect(fs.readFile).toHaveBeenCalledTimes(2);
+      expect(
+        vi
+          .mocked(fs.readFile)
+          .mock.calls.filter(
+            ([file]) =>
+              !String(file).includes('agent-queue-deliveries') &&
+              !String(file).includes('agent-executions')
+          )
+      ).toHaveLength(2);
     });
   });
 
@@ -171,7 +212,7 @@ describe('agent-service.ts', () => {
         },
       };
 
-      vi.mocked(ProviderFactory.getProviderForModel).mockReturnValue(mockProvider as any);
+      vi.mocked(providers.providerForModel).mockReturnValue(mockProvider as any);
 
       vi.mocked(promptBuilder.buildPromptWithImages).mockResolvedValue({
         content: 'Hello',
@@ -226,7 +267,7 @@ describe('agent-service.ts', () => {
         },
       };
 
-      vi.mocked(ProviderFactory.getProviderForModel).mockReturnValue(mockProvider as any);
+      vi.mocked(providers.providerForModel).mockReturnValue(mockProvider as any);
 
       vi.mocked(promptBuilder.buildPromptWithImages).mockResolvedValue({
         content: 'Hello',
@@ -279,7 +320,7 @@ describe('agent-service.ts', () => {
         },
       };
 
-      vi.mocked(ProviderFactory.getProviderForModel).mockReturnValue(mockProvider as any);
+      vi.mocked(providers.providerForModel).mockReturnValue(mockProvider as any);
 
       vi.mocked(promptBuilder.buildPromptWithImages).mockResolvedValue({
         content: 'Hello',
@@ -318,7 +359,7 @@ describe('agent-service.ts', () => {
         },
       };
 
-      vi.mocked(ProviderFactory.getProviderForModel).mockReturnValue(mockProvider as any);
+      vi.mocked(providers.providerForModel).mockReturnValue(mockProvider as any);
 
       vi.mocked(imageHandler.readImageAsBase64).mockResolvedValue({
         base64: 'base64data',
@@ -338,35 +379,65 @@ describe('agent-service.ts', () => {
         imagePaths: ['/path/test.png'],
       });
 
-      expect(imageHandler.readImageAsBase64).toHaveBeenCalledWith('/path/test.png');
+      expect(imageHandler.readImageAsBase64).toHaveBeenCalledWith('/path/test.png', testFilesystem);
     });
 
-    it('should handle failed image loading gracefully', async () => {
+    it('rejects ambiguous image IO before building content or invoking the provider', async () => {
       const mockProvider = {
         getName: () => 'claude',
-        executeQuery: async function* () {
+        executeQuery: vi.fn(async function* () {
           yield {
             type: 'result',
             subtype: 'success',
           };
-        },
+        }),
       };
 
-      vi.mocked(ProviderFactory.getProviderForModel).mockReturnValue(mockProvider as any);
+      vi.mocked(providers.providerForModel).mockReturnValue(mockProvider as any);
 
-      vi.mocked(imageHandler.readImageAsBase64).mockRejectedValue(new Error('Image not found'));
+      const failure = Object.assign(new Error('Image read failed'), { code: 'EIO' });
+      vi.mocked(imageHandler.readImageAsBase64).mockRejectedValue(failure);
 
       vi.mocked(promptBuilder.buildPromptWithImages).mockResolvedValue({
         content: 'Check image',
         hasImages: false,
       });
 
+      await expect(
+        service.sendMessage({
+          sessionId: 'session-1',
+          message: 'Check this',
+          imagePaths: ['/path/test.png'],
+        })
+      ).rejects.toBe(failure);
+
+      expect(mockLogger.error).toHaveBeenCalled();
+      expect(promptBuilder.buildPromptWithImages).not.toHaveBeenCalled();
+      expect(mockProvider.executeQuery).not.toHaveBeenCalled();
+    });
+
+    it('continues without a genuinely missing image and still invokes the provider', async () => {
+      const mockProvider = {
+        getName: () => 'claude',
+        executeQuery: vi.fn(async function* () {
+          yield { type: 'result', subtype: 'success' };
+        }),
+      };
+      vi.mocked(providers.providerForModel).mockReturnValue(mockProvider as any);
+      vi.mocked(imageHandler.readImageAsBase64).mockRejectedValue(
+        Object.assign(new Error('Missing image'), { code: 'ENOENT' })
+      );
+      vi.mocked(promptBuilder.buildPromptWithImages).mockResolvedValue({
+        content: 'Text without missing image',
+        hasImages: false,
+      });
       await service.sendMessage({
         sessionId: 'session-1',
-        message: 'Check this',
-        imagePaths: ['/path/test.png'],
+        message: 'Continue text',
+        imagePaths: ['/path/missing.png'],
       });
-
+      expect(promptBuilder.buildPromptWithImages).toHaveBeenCalledOnce();
+      expect(mockProvider.executeQuery).toHaveBeenCalledOnce();
       expect(mockLogger.error).toHaveBeenCalled();
     });
 
@@ -381,7 +452,7 @@ describe('agent-service.ts', () => {
         },
       };
 
-      vi.mocked(ProviderFactory.getProviderForModel).mockReturnValue(mockProvider as any);
+      vi.mocked(providers.providerForModel).mockReturnValue(mockProvider as any);
 
       vi.mocked(promptBuilder.buildPromptWithImages).mockResolvedValue({
         content: 'Hello',
@@ -394,7 +465,9 @@ describe('agent-service.ts', () => {
         model: 'claude-sonnet-4-6',
       });
 
-      expect(ProviderFactory.getProviderForModel).toHaveBeenCalledWith('claude-sonnet-4-6');
+      expect(providers.providerForModel).toHaveBeenCalledWith('claude-sonnet-4-6', {
+        throwOnDisconnected: true,
+      });
     });
 
     it('should save session messages', async () => {
@@ -408,7 +481,7 @@ describe('agent-service.ts', () => {
         },
       };
 
-      vi.mocked(ProviderFactory.getProviderForModel).mockReturnValue(mockProvider as any);
+      vi.mocked(providers.providerForModel).mockReturnValue(mockProvider as any);
 
       vi.mocked(promptBuilder.buildPromptWithImages).mockResolvedValue({
         content: 'Hello',
@@ -436,8 +509,8 @@ describe('agent-service.ts', () => {
         },
       };
 
-      vi.mocked(ProviderFactory.getProviderForModelName).mockReturnValue('gemini');
-      vi.mocked(ProviderFactory.getProviderForModel).mockReturnValue(mockProvider as any);
+      vi.mocked(providers.providerNameForModel).mockReturnValue('gemini');
+      vi.mocked(providers.providerForModel).mockReturnValue(mockProvider as any);
       vi.mocked(promptBuilder.buildPromptWithImages).mockResolvedValue({
         content: 'Hello',
         hasImages: false,
@@ -467,6 +540,35 @@ describe('agent-service.ts', () => {
       // Should return success
       const result = await service.stopExecution('session-1');
       expect(result.success).toBeDefined();
+    });
+
+    it('persists and publishes interrupted state before shutdown', async () => {
+      const error: any = new Error('ENOENT');
+      error.code = 'ENOENT';
+      vi.mocked(fs.readFile).mockRejectedValue(error);
+      vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+      const controller = new AbortController();
+      await service.startConversation({ sessionId: 'session-1' });
+      const session = (service as any).sessions.get('session-1');
+      session.isRunning = true;
+      session.abortController = controller;
+
+      await expect(service.interruptActiveSessions('shutdown')).resolves.toBe(1);
+
+      expect(controller.signal.aborted).toBe(true);
+      expect(session.isRunning).toBe(false);
+      expect(session.messages.at(-1)).toMatchObject({
+        content: 'Interrupted: shutdown',
+        isError: true,
+      });
+      expect(mockEvents.emit).toHaveBeenCalledWith(
+        'agent:stream',
+        expect.objectContaining({
+          sessionId: 'session-1',
+          type: 'error',
+          errorType: 'interruption',
+        })
+      );
     });
   });
 
@@ -528,7 +630,7 @@ describe('agent-service.ts', () => {
         },
       };
 
-      vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify(metadata));
+      mockStoredFiles(metadata);
       vi.mocked(fs.writeFile).mockResolvedValue(undefined);
       vi.mocked(fs.mkdir).mockResolvedValue(undefined);
 
@@ -570,7 +672,7 @@ describe('agent-service.ts', () => {
         },
       };
 
-      vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify(metadata));
+      mockStoredFiles(metadata);
       vi.mocked(fs.writeFile).mockResolvedValue(undefined);
 
       await service.clearSdkSessionId('session-1');
@@ -594,7 +696,7 @@ describe('agent-service.ts', () => {
         },
       };
 
-      vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify(metadata));
+      mockStoredFiles(metadata);
       vi.mocked(fs.writeFile).mockResolvedValue(undefined);
 
       await service.clearSdkSessionId('session-1');
@@ -647,7 +749,11 @@ describe('agent-service.ts', () => {
       initAllowedPaths();
 
       const { AgentService } = await import('@/services/agent-service.js');
-      const testService = new AgentService('/test/data', mockEvents as any);
+      const testService = new AgentService(
+        ...createTestAgentState('/test/data', createTestAgentEvents(mockEvents)),
+        undefined,
+        ...createTestAgentProviders(providers as unknown as ProviderRegistry)
+      );
       vi.mocked(fs.readFile).mockResolvedValue('{}');
       vi.mocked(fs.writeFile).mockResolvedValue(undefined);
 
@@ -681,7 +787,7 @@ describe('agent-service.ts', () => {
     });
 
     it('should set model for existing session', async () => {
-      vi.mocked(fs.readFile).mockResolvedValue('{"session-1": {}}');
+      mockStoredFiles({ 'session-1': { id: 'session-1' } });
       const result = await service.setSessionModel('session-1', 'claude-sonnet-4-6');
 
       expect(result).toBe(true);

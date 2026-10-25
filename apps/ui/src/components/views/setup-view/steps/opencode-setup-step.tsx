@@ -1,5 +1,6 @@
+import { canAttemptCliProvider } from '@/lib/provider-readiness';
 import { translate, useUiLocale } from '@/lib/i18n';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,6 +36,7 @@ interface OpencodeCliStatus {
   path?: string | null;
   auth?: {
     authenticated: boolean;
+    authenticationChecked?: boolean;
     method: string;
   };
   installCommand?: string;
@@ -46,7 +48,6 @@ export function OpencodeSetupStep({ onNext, onBack, onSkip }: OpencodeSetupStepP
   const { opencodeCliStatus, setOpencodeCliStatus } = useSetupStore();
   const [isChecking, setIsChecking] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const checkStatus = useCallback(async () => {
     setIsChecking(true);
@@ -86,11 +87,6 @@ export function OpencodeSetupStep({ onNext, onBack, onSkip }: OpencodeSetupStepP
   useEffect(() => {
     checkStatus();
     // Cleanup polling on unmount
-    return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-      }
-    };
   }, [checkStatus]);
 
   const copyCommand = (command: string) => {
@@ -108,47 +104,7 @@ export function OpencodeSetupStep({ onNext, onBack, onSkip }: OpencodeSetupStepP
       toast.info(translate('Login command copied! Paste in terminal to authenticate.'));
 
       // Poll for auth status
-      let attempts = 0;
-      const maxAttempts = 60; // 2 minutes with 2s interval
-
-      pollIntervalRef.current = setInterval(async () => {
-        attempts++;
-
-        try {
-          const api = getElectronAPI();
-          if (!api.setup?.getOpencodeStatus) {
-            return;
-          }
-          const result = await api.setup.getOpencodeStatus();
-
-          if (result.auth?.authenticated) {
-            if (pollIntervalRef.current) {
-              clearInterval(pollIntervalRef.current);
-              pollIntervalRef.current = null;
-            }
-            setOpencodeCliStatus({
-              ...opencodeCliStatus,
-              installed: result.installed ?? true,
-              version: result.version,
-              path: result.path,
-              auth: result.auth,
-            } as OpencodeCliStatus);
-            setIsLoggingIn(false);
-            toast.success(translate('Successfully logged in to OpenCode!'));
-          }
-        } catch {
-          // Ignore polling errors
-        }
-
-        if (attempts >= maxAttempts) {
-          if (pollIntervalRef.current) {
-            clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-          }
-          setIsLoggingIn(false);
-          toast.error(translate('Login timed out. Please try again.'));
-        }
-      }, 2000);
+      setIsLoggingIn(false);
     } catch (error) {
       logger.error('Login failed:', error);
       toast.error(translate('Failed to start login process'));
@@ -156,12 +112,14 @@ export function OpencodeSetupStep({ onNext, onBack, onSkip }: OpencodeSetupStepP
     }
   };
 
-  const isReady = opencodeCliStatus?.installed && opencodeCliStatus?.auth?.authenticated;
+  const isReady = canAttemptCliProvider(opencodeCliStatus, opencodeCliStatus?.auth);
 
   const getStatusBadge = () => {
     if (isChecking) {
       return <StatusBadge status="checking" label={translate('Checking...')} />;
     }
+    if (opencodeCliStatus?.installed && opencodeCliStatus.auth?.authenticationChecked === false)
+      return <StatusBadge status="unverified" label={translate('Authentication not checked')} />;
     if (opencodeCliStatus?.auth?.authenticated) {
       return <StatusBadge status="authenticated" label={translate('Ready')} />;
     }
@@ -222,13 +180,15 @@ export function OpencodeSetupStep({ onNext, onBack, onSkip }: OpencodeSetupStepP
           </div>
           <CardDescription>
             {opencodeCliStatus?.installed
-              ? opencodeCliStatus.auth?.authenticated
-                ? translate('Authenticated via {value1}{value2}', {
-                    value1:
-                      opencodeCliStatus.auth.method === 'api_key' ? 'API Key' : 'Browser Login',
-                    value2: opencodeCliStatus.version ? ` (v${opencodeCliStatus.version})` : '',
-                  })
-                : translate('Installed but not authenticated')
+              ? opencodeCliStatus.auth?.authenticationChecked === false
+                ? translate('Authentication not checked')
+                : opencodeCliStatus.auth?.authenticated
+                  ? translate('Authenticated via {value1}{value2}', {
+                      value1:
+                        opencodeCliStatus.auth.method === 'api_key' ? 'API Key' : 'Browser Login',
+                      value2: opencodeCliStatus.version ? ` (v${opencodeCliStatus.version})` : '',
+                    })
+                  : translate('Installed but not authenticated')
               : translate('Not installed on your system')}
           </CardDescription>
         </CardHeader>

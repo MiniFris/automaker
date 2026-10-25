@@ -7,10 +7,7 @@ import express from 'express';
 import { expect, it, vi } from 'vitest';
 import type { Browser } from 'playwright';
 import type { ViteDevServer } from 'vite';
-import { SettingsService } from '@/services/settings-service.js';
-import { createOpenAICompatibleSettingsRoutes } from '@/routes/settings/openai-compatible.js';
-import { createExecutionEnvironmentSettingsRoutes } from '@/routes/settings/execution-environments.js';
-import { ManagedDocker } from '@/services/execution-environment/docker.js';
+import { nativeSettings, diagnosticRunner } from '../helpers/native-settings.js';
 import { sshPeer, testSSHKey } from '../helpers/ssh-peer.js';
 
 // Explicit opt-in: no downloads, no shared app/settings server, no real model requests.
@@ -24,6 +21,7 @@ it.skipIf(!process.env.DIRECT_PROVIDER_BROWSER_EXECUTABLE)(
     let browser: Browser | undefined;
     let vite: ViteDevServer | undefined;
     let appServer: Server | undefined;
+    let backend: Awaited<ReturnType<typeof nativeSettings>> | undefined;
     let upstream: Server | undefined;
     let remotePeer: Awaited<ReturnType<typeof sshPeer>> | undefined;
     const calls: Array<{ path: string; auth?: string }> = [];
@@ -72,8 +70,13 @@ it.skipIf(!process.env.DIRECT_PROVIDER_BROWSER_EXECUTABLE)(
         });
       });
       const upstreamUrl = (await listen(upstream)) + '/v1/';
-      const settings = new SettingsService(path.join(temporary, 'data'));
-      const docker = new ManagedDocker(settings);
+      backend = await nativeSettings(temporary);
+      const docker = backend.docker;
+      diagnosticRunner(backend, async () => ({
+        code: 0,
+        stdout: JSON.stringify('29.1.0'),
+        stderr: '',
+      }));
       const prepare = vi.spyOn(docker, 'probe').mockResolvedValue({
         connection: 'available',
         containerLifecycle: 'verified',
@@ -83,15 +86,6 @@ it.skipIf(!process.env.DIRECT_PROVIDER_BROWSER_EXECUTABLE)(
       });
       const app = express();
       app.use(express.json());
-      app.use('/api/settings/openai-compatible', createOpenAICompatibleSettingsRoutes(settings));
-      app.use(
-        '/api/settings/execution-environments',
-        createExecutionEnvironmentSettingsRoutes(
-          settings,
-          async () => ({ code: 0, stdout: '"29.1.0"', stderr: '' }),
-          docker
-        )
-      );
       appServer = createServer(app);
       const origin = await listen(appServer);
       const uiRoot = path.resolve(import.meta.dirname, '../../../ui');
@@ -102,7 +96,7 @@ it.skipIf(!process.env.DIRECT_PROVIDER_BROWSER_EXECUTABLE)(
         cacheDir: path.join(temporary, 'vite-cache'),
         logLevel: 'error',
         resolve: { alias: { '@': path.join(uiRoot, 'src') }, dedupe: ['react', 'react-dom'] },
-        define: { 'import.meta.env.VITE_SERVER_URL': JSON.stringify(origin) },
+        define: { 'import.meta.env.VITE_SERVER_URL': JSON.stringify(backend.origin) },
         optimizeDeps: {
           entries: [path.join(uiRoot, 'tests/browser-fixtures/direct-provider.tsx')],
         },
@@ -204,12 +198,25 @@ it.skipIf(!process.env.DIRECT_PROVIDER_BROWSER_EXECUTABLE)(
       await page.getByRole('button', { name: 'Enable Local execution', exact: true }).click();
       await page.getByText('Local access confirmed (global scope).', { exact: true }).waitFor();
       await page.reload();
-      await page.getByRole('button', { name: 'Edit', exact: true }).click();
+      await page
+        .getByRole('button', { name: 'Edit', exact: true })
+        .click()
+        .catch(async (error) => {
+          throw new Error(
+            `${error.message}; reload errors: ${pageErrors.join('; ')}; network/console: ${bootstrapDiagnostics.join('; ')}; body: ${(await page.locator('body').innerText()).slice(0, 1500)}`
+          );
+        });
       expect(await page.getByLabel(/New API key/).inputValue()).toBe('');
       expect(await page.getByLabel('Model ID').inputValue()).toBe('direct-Vendor/Exact:Tag');
       await page.getByText('Local access confirmed (global scope).', { exact: true }).waitFor();
       expect(prepare).not.toHaveBeenCalled();
-      await page.getByLabel('Default execution environment').selectOption('auto');
+      await page.getByRole('combobox', { name: 'Default execution environment' }).click();
+      await page
+        .getByRole('option', {
+          name: 'Auto — prefer managed Docker; local fallback requires confirmation',
+          exact: true,
+        })
+        .click();
       await page.getByRole('button', { name: 'Save environment configuration' }).click();
       await page.getByRole('button', { name: 'Allow Auto Local fallback' }).waitFor();
       await page.getByRole('checkbox', { name: /Allow image download\/build/ }).check();
@@ -223,10 +230,24 @@ it.skipIf(!process.env.DIRECT_PROVIDER_BROWSER_EXECUTABLE)(
       await page
         .getByRole('checkbox', { name: /I accept full Local access if Docker preflight/ })
         .check();
+      const consentResponse = page.waitForResponse((response) =>
+        response.url().endsWith('/auto/confirm')
+      );
       await page.getByRole('button', { name: 'Allow Auto Local fallback' }).click();
-      await page.getByText(/Auto Local fallback confirmed \(global scope\)/).waitFor();
+      expect(await (await consentResponse).json()).toMatchObject({ success: true });
+      await page
+        .getByText(
+          'Auto Local fallback confirmed (global scope). The actual environment is pinned for the session/task.',
+          { exact: true }
+        )
+        .waitFor();
       await page.reload();
-      await page.getByText(/Auto Local fallback confirmed \(global scope\)/).waitFor();
+      await page
+        .getByText(
+          'Auto Local fallback confirmed (global scope). The actual environment is pinned for the session/task.',
+          { exact: true }
+        )
+        .waitFor();
       expect(prepare).toHaveBeenCalledTimes(1);
       // Actual SSH peer: global setup is explicit; reload must not reconnect/install again.
       const privateKey = testSSHKey();
@@ -239,9 +260,8 @@ it.skipIf(!process.env.DIRECT_PROVIDER_BROWSER_EXECUTABLE)(
       await page.getByLabel('SSH user', { exact: true }).fill('developer');
       await page.getByLabel('Remote projects base path').fill(path.join(remoteRoot, 'projects'));
       await page.getByLabel('SSH credential ID (empty = server ssh-agent)').fill('browser-ssh');
-      await page
-        .getByLabel('Default execution environment')
-        .selectOption({ label: 'Browser SSH (SSH)' });
+      await page.getByRole('combobox', { name: 'Default execution environment' }).click();
+      await page.getByRole('option', { name: 'Browser SSH (SSH)', exact: true }).click();
       await page.getByRole('button', { name: 'Save environment configuration' }).click();
       await page.getByRole('button', { name: 'Inspect SSH host fingerprint' }).waitFor();
       expect(remotePeer.authentications).toBe(0);
@@ -281,6 +301,7 @@ it.skipIf(!process.env.DIRECT_PROVIDER_BROWSER_EXECUTABLE)(
     } finally {
       await browser?.close();
       await vite?.close();
+      await backend?.close();
       await remotePeer?.close();
       for (const server of [appServer, upstream])
         if (server) {

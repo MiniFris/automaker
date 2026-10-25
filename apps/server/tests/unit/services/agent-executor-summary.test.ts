@@ -1,3 +1,4 @@
+import * as executionFilesystem from '../../../src/lib/secure-fs.js';
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { AgentExecutor } from '../../../src/services/agent-executor.js';
 import type { TypedEventBus } from '../../../src/services/typed-event-bus.js';
@@ -64,7 +65,8 @@ describe('AgentExecutor Summary Extraction', () => {
       mockEventBus,
       mockFeatureStateManager,
       mockPlanApprovalService,
-      null
+      null,
+      executionFilesystem
     );
 
     const previousContent = `Some previous work.
@@ -126,7 +128,8 @@ describe('AgentExecutor Summary Extraction', () => {
       mockEventBus,
       mockFeatureStateManager,
       mockPlanApprovalService,
-      null
+      null,
+      executionFilesystem
     );
 
     const previousContent = `Some previous work.
@@ -176,7 +179,8 @@ describe('AgentExecutor Summary Extraction', () => {
       mockEventBus,
       mockFeatureStateManager,
       mockPlanApprovalService,
-      null
+      null,
+      executionFilesystem
     );
 
     const mockProvider = {
@@ -237,7 +241,8 @@ describe('AgentExecutor Summary Extraction', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        null
+        null,
+        executionFilesystem
       );
 
       // Content without a summary tag (extraction will fail)
@@ -290,7 +295,8 @@ describe('AgentExecutor Summary Extraction', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        null
+        null,
+        executionFilesystem
       );
 
       // Content without a summary tag
@@ -339,7 +345,8 @@ describe('AgentExecutor Summary Extraction', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        null
+        null,
+        executionFilesystem
       );
 
       // Empty/whitespace-only content
@@ -388,7 +395,8 @@ describe('AgentExecutor Summary Extraction', () => {
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        null
+        null,
+        executionFilesystem
       );
 
       // Content WITH a summary tag

@@ -4,7 +4,11 @@ import { once } from 'node:events';
 import { WebSocket, WebSocketServer } from 'ws';
 import { afterEach, beforeEach, it, expect, vi } from 'vitest';
 import { PreviewGateway } from '@/services/execution-environment/preview-gateway.js';
-import { PREVIEW_BOOTSTRAP } from '@/services/execution-environment/preview-policy.js';
+import {
+  PREVIEW_BOOTSTRAP,
+  PREVIEW_PORT_FIRST,
+  PREVIEW_PORT_LAST,
+} from '@/services/execution-environment/preview-policy.js';
 
 let target: Server, gateway: PreviewGateway, origin: string, cookie: string;
 let targetHeaders: Record<string, unknown>;
@@ -37,7 +41,7 @@ beforeEach(async () => {
   target.listen(0, '127.0.0.1');
   await once(target, 'listening');
   gateway = new PreviewGateway();
-  for (let port = 3100; port <= 3119; port++) {
+  for (let port = PREVIEW_PORT_FIRST; port <= PREVIEW_PORT_LAST; port++) {
     try {
       await gateway.listen(port);
       break;

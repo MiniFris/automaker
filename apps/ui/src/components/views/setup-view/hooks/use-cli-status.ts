@@ -12,6 +12,9 @@ interface CliStatusApiResponse {
   path?: string;
   auth?: {
     authenticated: boolean;
+    authenticationChecked?: boolean;
+    oauthTokenValid?: boolean;
+    apiKeyValid?: boolean;
     method: string;
     hasCredentialsFile?: boolean;
     hasToken?: boolean;
@@ -94,10 +97,15 @@ export function useCliStatus({
 
             setAuthStatus({
               authenticated: result.auth.authenticated,
+              authenticationChecked: result.auth.authenticationChecked,
+              hasStoredApiKey: result.auth.hasStoredApiKey,
+              hasStoredOAuthToken: result.auth.hasStoredOAuthToken,
               method,
-              hasCredentialsFile: false,
-              oauthTokenValid: result.auth.hasStoredOAuthToken || result.auth.hasEnvOAuthToken,
-              apiKeyValid: result.auth.hasStoredApiKey || result.auth.hasEnvApiKey,
+              hasCredentialsFile: result.auth.hasCredentialsFile ?? false,
+              oauthTokenValid:
+                result.auth.authenticationChecked === false ? false : result.auth.oauthTokenValid,
+              apiKeyValid:
+                result.auth.authenticationChecked === false ? false : result.auth.apiKeyValid,
               hasEnvOAuthToken: result.auth.hasEnvOAuthToken,
               hasEnvApiKey: result.auth.hasEnvApiKey,
             });
@@ -113,6 +121,7 @@ export function useCliStatus({
 
             setAuthStatus({
               authenticated: result.auth.authenticated,
+              authenticationChecked: result.auth.authenticationChecked,
               method,
               hasAuthFile: result.auth.hasAuthFile ?? false,
               hasApiKey: result.auth.hasApiKey ?? false,

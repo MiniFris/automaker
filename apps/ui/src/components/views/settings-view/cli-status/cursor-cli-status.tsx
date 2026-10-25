@@ -1,18 +1,20 @@
 import { translate, useUiLocale } from '@/lib/i18n';
-import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { SkeletonPulse } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import { CheckCircle2, AlertCircle, RefreshCw, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CursorIcon } from '@/components/ui/provider-icon';
-import { getElectronAPI } from '@/lib/electron';
-import { toast } from 'sonner';
+import { PassiveAuthenticationNotice } from '@/components/shared/passive-authentication-notice';
+import { ProviderDisconnectButton, ProviderReconnectButton } from './provider-connection-button';
 
 interface CursorStatus {
   installed: boolean;
   version?: string;
   authenticated: boolean;
+  connected?: boolean;
+  hasEnvApiKey?: boolean;
+  hasCredentialsFile?: boolean;
   method?: string;
 }
 
@@ -207,79 +209,6 @@ export function ModelConfigSkeleton() {
 
 export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStatusProps) {
   useUiLocale();
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [isDeauthenticating, setIsDeauthenticating] = useState(false);
-
-  const handleSignIn = useCallback(async () => {
-    setIsAuthenticating(true);
-    try {
-      const api = getElectronAPI();
-      // Check if authCursor method exists on the API
-      const authCursor = (api?.setup as Record<string, unknown> | undefined)?.authCursor as
-        | (() => Promise<{ success: boolean; error?: string }>)
-        | undefined;
-      if (!authCursor) {
-        toast.error(translate('Authentication Failed'), {
-          description: translate('Cursor authentication is not available'),
-        });
-        return;
-      }
-      const result = await authCursor();
-
-      if (result.success) {
-        toast.success(translate('Signed In'), {
-          description: translate('Successfully authenticated Cursor CLI'),
-        });
-        onRefresh();
-      } else if (result.error) {
-        toast.error(translate('Authentication Failed'), {
-          description: result.error,
-        });
-      }
-    } catch (error) {
-      toast.error(translate('Authentication Failed'), {
-        description: error instanceof Error ? error.message : 'Unknown error',
-      });
-    } finally {
-      setIsAuthenticating(false);
-    }
-  }, [onRefresh]);
-
-  const handleSignOut = useCallback(async () => {
-    setIsDeauthenticating(true);
-    try {
-      const api = getElectronAPI();
-      // Check if deauthCursor method exists on the API
-      const deauthCursor = (api?.setup as Record<string, unknown> | undefined)?.deauthCursor as
-        | (() => Promise<{ success: boolean; error?: string }>)
-        | undefined;
-      if (!deauthCursor) {
-        toast.error(translate('Sign Out Failed'), {
-          description: translate('Cursor sign out is not available'),
-        });
-        return;
-      }
-      const result = await deauthCursor();
-
-      if (result.success) {
-        toast.success(translate('Signed Out'), {
-          description: translate('Successfully signed out from Cursor CLI'),
-        });
-        // Refresh status after successful logout
-        onRefresh();
-      } else if (result.error) {
-        toast.error(translate('Sign Out Failed'), {
-          description: result.error,
-        });
-      }
-    } catch (error) {
-      toast.error(translate('Sign Out Failed'), {
-        description: error instanceof Error ? error.message : 'Unknown error',
-      });
-    } finally {
-      setIsDeauthenticating(false);
-    }
-  }, [onRefresh]);
 
   if (!status) return <CursorCliStatusSkeleton />;
 
@@ -345,60 +274,14 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
               </div>
             </div>
 
-            {/* Authentication Status */}
-            {status.authenticated ? (
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center border border-emerald-500/20 shrink-0">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-emerald-400">
-                    {translate('Authenticated')}
-                  </p>
-                  <div className="text-xs text-emerald-400/70 mt-1.5">
-                    <p>
-                      {translate('Method:')}{' '}
-                      <span className="font-mono">
-                        {status.method === 'api_key'
-                          ? translate('API Key')
-                          : translate('Browser Login')}
-                      </span>
-                    </p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSignOut}
-                    disabled={isDeauthenticating}
-                    className="mt-3 h-8 text-xs"
-                  >
-                    {isDeauthenticating ? translate('Signing Out...') : translate('Sign Out')}
-                  </Button>
-                </div>
-              </div>
+            <PassiveAuthenticationNotice
+              hasCredentialsHint={status.hasEnvApiKey}
+              hasConfigFile={status.hasCredentialsFile}
+            />
+            {status.connected === false ? (
+              <ProviderReconnectButton provider="cursor" onRefresh={onRefresh} />
             ) : (
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center border border-amber-500/20 shrink-0 mt-0.5">
-                  <XCircle className="w-5 h-5 text-amber-500" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-amber-400">
-                    {translate('Not Authenticated')}
-                  </p>
-                  <p className="text-xs text-amber-400/70 mt-1">
-                    {translate('Click Sign In below to get authentication instructions.')}
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSignIn}
-                    disabled={isAuthenticating}
-                    className="mt-3 h-8 text-xs"
-                  >
-                    {isAuthenticating ? translate('Requesting...') : translate('Sign In')}
-                  </Button>
-                </div>
-              </div>
+              <ProviderDisconnectButton provider="cursor" onRefresh={onRefresh} />
             )}
           </div>
         ) : (

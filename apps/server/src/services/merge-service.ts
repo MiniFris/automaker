@@ -7,6 +7,82 @@
 import { createLogger, isValidBranchName, isValidRemoteName } from '@automaker/utils';
 import { type EventEmitter } from '../lib/events.js';
 import { execGitCommand } from '@automaker/git-utils';
+import { githubCommandEnvironment } from '../core/platform/git-command-environment.js';
+import {
+  LocalExecutionEnvironment,
+  captureNativeLocalEnvironment,
+} from './execution-environment/local.js';
+import { ExecutionEnvironmentError } from './execution-environment/runtime.js';
+import { uncertainExecution } from './feature-execution-uncertainty.js';
+
+const commandOutput = new WeakMap<object, string>();
+
+/** Classify only the confirmed Git absence; diagnostics never leave this module. */
+export function isMissingGitRepository(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    /fatal: not a git repository(?:[ :(]|$)/i.test(commandOutput.get(error) ?? '')
+  );
+}
+
+/** Trusted code-only port. Never accepts execution authority from an HTTP body. */
+export interface MergeCommandExecutor {
+  readonly signal: AbortSignal;
+  execute(args: string[], cwd: string, environment?: NodeJS.ProcessEnv): Promise<string>;
+}
+
+export function createLocalMergeExecutor(
+  hostEnvironment: Readonly<NodeJS.ProcessEnv>,
+  signal: AbortSignal
+): MergeCommandExecutor {
+  const captured = captureNativeLocalEnvironment(hostEnvironment);
+  const environment = githubCommandEnvironment(captured);
+  // Reuse repository sanitization without broadening the application's tool PATH.
+  const capturedPath =
+    process.platform === 'win32'
+      ? Object.entries(captured).find(([key]) => key.toUpperCase() === 'PATH')?.[1]
+      : captured.PATH;
+  if (capturedPath === undefined) delete environment.PATH;
+  else environment.PATH = capturedPath;
+  const snapshot = Object.freeze(environment);
+  return {
+    signal,
+    async execute(args, cwd, overrides) {
+      signal.throwIfAborted();
+      const runtime = await LocalExecutionEnvironment.create(cwd, { ...snapshot, ...overrides });
+      const quote = (value: string) =>
+        process.platform === 'win32'
+          ? "'" + value.replaceAll("'", "''") + "'"
+          : "'" + value.replaceAll("'", "'\\''") + "'";
+      const command =
+        (process.platform === 'win32' ? '& ' : 'exec ') + ['git', ...args].map(quote).join(' ');
+      const result = await runtime.exec(command, signal, {
+        maxOutputBytes: 1048576,
+        captureStderrSeparately: true,
+      });
+      if (result.truncated)
+        throw new Error('Git command output exceeded the safe limit. Inspect repository state.');
+      if (result.exitCode !== 0) {
+        // Kept private for conflict classification, never emitted or logged.
+        const failure = new Error('Git command failed.');
+        commandOutput.set(failure, result.output + '\n' + (result.stderr ?? ''));
+        throw failure;
+      }
+      return result.output;
+    },
+  };
+}
+
+function preserveInterruptedExecution(error: unknown, executor?: MergeCommandExecutor): void {
+  if (
+    uncertainExecution(error) ||
+    executor?.signal.aborted ||
+    (error instanceof ExecutionEnvironmentError && error.code === 'PROCESS_INTERRUPTED')
+  )
+    throw error;
+}
+
 const logger = createLogger('MergeService');
 
 export interface MergeOptions {
@@ -49,8 +125,11 @@ export async function performMerge(
   worktreePath: string,
   targetBranch: string = 'main',
   options?: MergeOptions,
-  emitter?: EventEmitter
+  emitter?: EventEmitter,
+  executor?: MergeCommandExecutor
 ): Promise<MergeServiceResult> {
+  const execute = executor ? executor.execute.bind(executor) : execGitCommand;
+  executor?.signal.throwIfAborted();
   if (!projectPath || !branchName || !worktreePath) {
     return {
       success: false,
@@ -76,8 +155,9 @@ export async function performMerge(
 
   // Validate source branch exists (using safe array-based command)
   try {
-    await execGitCommand(['rev-parse', '--verify', branchName], projectPath);
-  } catch {
+    await execute(['rev-parse', '--verify', branchName], projectPath);
+  } catch (error) {
+    preserveInterruptedExecution(error, executor);
     return {
       success: false,
       error: `Branch "${branchName}" does not exist`,
@@ -86,8 +166,9 @@ export async function performMerge(
 
   // Validate target branch exists (using safe array-based command)
   try {
-    await execGitCommand(['rev-parse', '--verify', mergeTo], projectPath);
-  } catch {
+    await execute(['rev-parse', '--verify', mergeTo], projectPath);
+  } catch (error) {
+    preserveInterruptedExecution(error, executor);
     return {
       success: false,
       error: `Target branch "${mergeTo}" does not exist`,
@@ -111,12 +192,12 @@ export async function performMerge(
 
   // Fetch latest from remote before merging to ensure we have up-to-date refs
   try {
-    await execGitCommand(['fetch', remote], projectPath);
+    await execute(['fetch', remote], projectPath);
   } catch (fetchError) {
+    preserveInterruptedExecution(fetchError, executor);
     logger.warn('Failed to fetch from remote before merge; proceeding with local refs', {
       remote,
       projectPath,
-      error: (fetchError as Error).message,
     });
     // Non-fatal: proceed with local refs if fetch fails (e.g. offline)
   }
@@ -133,8 +214,9 @@ export async function performMerge(
   try {
     // Set LC_ALL=C so git always emits English output regardless of the system
     // locale, making text-based conflict detection reliable.
-    await execGitCommand(mergeArgs, projectPath, { LC_ALL: 'C' });
+    await execute(mergeArgs, projectPath, { LC_ALL: 'C' });
   } catch (mergeError: unknown) {
+    preserveInterruptedExecution(mergeError, executor);
     // Check if this is a merge conflict.  We use a multi-layer strategy so
     // that detection is reliable even when locale settings vary or git's text
     // output changes across versions:
@@ -153,7 +235,9 @@ export async function performMerge(
     //
     // hasConflicts is true when ANY of the three layers returns positive.
     const err = mergeError as { stdout?: string; stderr?: string; message?: string };
-    const output = `${err.stdout || ''} ${err.stderr || ''} ${err.message || ''}`;
+    const privateOutput =
+      typeof mergeError === 'object' && mergeError !== null ? commandOutput.get(mergeError) : '';
+    const output = `${privateOutput || ''} ${err.stdout || ''} ${err.stderr || ''} ${err.message || ''}`;
 
     // Layer 1 – text matching (locale-safe because we set LC_ALL=C above).
     const textIndicatesConflict =
@@ -164,11 +248,9 @@ export async function performMerge(
     let conflictFiles: string[] | undefined;
     let diffIndicatesConflict = false;
     try {
-      const diffOutput = await execGitCommand(
-        ['diff', '--name-only', '--diff-filter=U'],
-        projectPath,
-        { LC_ALL: 'C' }
-      );
+      const diffOutput = await execute(['diff', '--name-only', '--diff-filter=U'], projectPath, {
+        LC_ALL: 'C',
+      });
       const files = diffOutput
         .trim()
         .split('\n')
@@ -177,7 +259,8 @@ export async function performMerge(
         diffIndicatesConflict = true;
         conflictFiles = files;
       }
-    } catch {
+    } catch (error) {
+      preserveInterruptedExecution(error, executor);
       // If we can't get the file list, leave conflictFiles undefined so callers
       // can distinguish "no conflicts" (empty array) from "unknown due to diff failure" (undefined)
     }
@@ -185,7 +268,7 @@ export async function performMerge(
     // Layer 3: check for unmerged paths via machine-readable git status.
     let hasUnmergedPaths = false;
     try {
-      const statusOutput = await execGitCommand(['status', '--porcelain'], projectPath, {
+      const statusOutput = await execute(['status', '--porcelain'], projectPath, {
         LC_ALL: 'C',
       });
       // Unmerged status codes occupy the first two characters of each line.
@@ -206,7 +289,8 @@ export async function performMerge(
         // Deduplicate (e.g. rename entries can appear twice)
         conflictFiles = [...new Set(parsedFiles)];
       }
-    } catch {
+    } catch (error) {
+      preserveInterruptedExecution(error, executor);
       // git status failing is itself a sign something is wrong; leave
       // hasUnmergedPaths as false and rely on the other layers.
     }
@@ -229,27 +313,27 @@ export async function performMerge(
     emitter?.emit('merge:error', {
       branchName,
       targetBranch: mergeTo,
-      error: err.message || String(mergeError),
+      error: 'Git merge failed. Inspect repository state.',
     });
 
     // Re-throw non-conflict errors
-    throw mergeError;
+    throw new Error('Git merge failed. Inspect repository state.');
   }
 
   // If squash merge, need to commit (using safe array-based command)
   if (options?.squash) {
     const squashMessage = options?.message || `Merge ${branchName} (squash)`;
     try {
-      await execGitCommand(['commit', '-m', squashMessage], projectPath);
+      await execute(['commit', '-m', squashMessage], projectPath);
     } catch (commitError: unknown) {
-      const err = commitError as { message?: string };
+      preserveInterruptedExecution(commitError, executor);
       // Emit merge:error so subscribers always receive either merge:success or merge:error
       emitter?.emit('merge:error', {
         branchName,
         targetBranch: mergeTo,
-        error: err.message || String(commitError),
+        error: 'Squash merge commit failed. Inspect repository state.',
       });
-      throw commitError;
+      throw new Error('Squash merge commit failed. Inspect repository state.');
     }
   }
 
@@ -260,14 +344,16 @@ export async function performMerge(
   if (options?.deleteWorktreeAndBranch) {
     // Remove the worktree
     try {
-      await execGitCommand(['worktree', 'remove', worktreePath, '--force'], projectPath);
+      await execute(['worktree', 'remove', worktreePath, '--force'], projectPath);
       worktreeDeleted = true;
-    } catch {
+    } catch (error) {
+      preserveInterruptedExecution(error, executor);
       // Try with prune if remove fails
       try {
-        await execGitCommand(['worktree', 'prune'], projectPath);
+        await execute(['worktree', 'prune'], projectPath);
         worktreeDeleted = true;
-      } catch {
+      } catch (error) {
+        preserveInterruptedExecution(error, executor);
         logger.warn(`Failed to remove worktree: ${worktreePath}`);
       }
     }
@@ -275,9 +361,10 @@ export async function performMerge(
     // Delete the branch (but not main/master)
     if (branchName !== 'main' && branchName !== 'master') {
       try {
-        await execGitCommand(['branch', '-D', branchName], projectPath);
+        await execute(['branch', '-D', branchName], projectPath);
         branchDeleted = true;
-      } catch {
+      } catch (error) {
+        preserveInterruptedExecution(error, executor);
         logger.warn(`Failed to delete branch: ${branchName}`);
       }
     }

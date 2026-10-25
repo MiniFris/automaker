@@ -5,6 +5,13 @@ import { getHttpApiClient } from '@/lib/http-api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 /** Explicit target-side operations only. No connection, installation or credential copy on mount. */
 export function RemoteProviderSetup({ projectPath }: { projectPath: string }) {
@@ -48,22 +55,26 @@ export function RemoteProviderSetup({ projectPath }: { projectPath: string }) {
       </p>
       <fieldset disabled={busy} className="space-y-3">
         <Label htmlFor="remote-sdk-provider">{translate('SDK provider')}</Label>
-        <select
-          id="remote-sdk-provider"
-          className="rounded-md border bg-background p-2"
+        <Select
+          disabled={busy}
           value={provider}
-          onChange={(event) => {
-            setProvider(event.target.value as RemoteSdkProvider);
+          onValueChange={(value) => {
+            setProvider(value as RemoteSdkProvider);
             setStatus(undefined);
             setKey('');
             setAccepted(false);
             setMessage('');
           }}
         >
-          <option value="claude">{translate('Claude')}</option>
-          <option value="codex">{translate('Codex')}</option>
-          <option value="copilot">{translate('Copilot')}</option>
-        </select>
+          <SelectTrigger id="remote-sdk-provider">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="claude">{translate('Claude')}</SelectItem>
+            <SelectItem value="codex">{translate('Codex')}</SelectItem>
+            <SelectItem value="copilot">{translate('Copilot')}</SelectItem>
+          </SelectContent>
+        </Select>
         <Button
           variant="outline"
           onClick={() => void action(() => api.inspectProvider(projectPath, provider))}

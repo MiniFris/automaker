@@ -101,6 +101,11 @@ export function MCPServerCard({
                       {testState.error}
                     </div>
                   )}
+                  {testState?.status === 'success' && testState.toolsError && (
+                    <div className="text-xs text-amber-600 mt-1 line-clamp-2 break-words">
+                      {translate('Connected; tools unavailable')}: {testState.toolsError}
+                    </div>
+                  )}
                 </div>
               </button>
             </CollapsibleTrigger>

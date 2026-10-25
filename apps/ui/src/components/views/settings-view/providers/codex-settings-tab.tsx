@@ -68,6 +68,7 @@ export function CodexSettingsTab() {
             installCommands?: { npm?: string; macos?: string; windows?: string };
             auth?: {
               authenticated: boolean;
+              authenticationChecked?: boolean;
               method: string;
               hasApiKey?: boolean;
             };
@@ -94,6 +95,7 @@ export function CodexSettingsTab() {
           if (result.auth) {
             setCodexAuthStatus({
               authenticated: result.auth.authenticated,
+              authenticationChecked: result.auth.authenticationChecked,
               method: result.auth.method as
                 | 'cli_authenticated'
                 | 'api_key'
@@ -126,6 +128,7 @@ export function CodexSettingsTab() {
             installCommands?: { npm?: string; macos?: string; windows?: string };
             auth?: {
               authenticated: boolean;
+              authenticationChecked?: boolean;
               method: string;
               hasApiKey?: boolean;
             };
@@ -151,6 +154,7 @@ export function CodexSettingsTab() {
         if (result.auth) {
           setCodexAuthStatus({
             authenticated: result.auth.authenticated,
+            authenticationChecked: result.auth.authenticationChecked,
             method: result.auth.method as 'cli_authenticated' | 'api_key' | 'api_key_env' | 'none',
             hasAuthFile: result.auth.method === 'cli_authenticated',
             hasApiKey: result.auth.hasApiKey,

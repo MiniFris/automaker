@@ -1,3 +1,11 @@
+import * as executionFilesystem from '../../../src/lib/secure-fs.js';
+import { PipelineService } from '../../../src/services/pipeline-service.js';
+import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
+import {
+  createTestAgentState,
+  createTestAgentProviders,
+  createTestAgentEvents,
+} from '../../helpers/agent-state.js';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -9,8 +17,11 @@ import { toDirectModelId } from '@automaker/types';
 import { SettingsService } from '@/services/settings-service.js';
 import { AgentService } from '@/services/agent-service.js';
 import { AgentExecutor } from '@/services/agent-executor.js';
-import { ProviderFactory } from '@/providers/provider-factory.js';
-import { prepareDirectExecution } from '@/providers/openai-compatible/execution.js';
+import {
+  prepareDirectExecution,
+  runDirectShellCommand,
+} from '@/providers/openai-compatible/execution.js';
+import { LocalExecutionEnvironment } from '@/services/execution-environment/local.js';
 import { simpleQuery, streamingQuery } from '@/providers/simple-query-service.js';
 import { getPhaseModelWithOverrides } from '@/lib/settings-helpers.js';
 import { createEventEmitter } from '@/lib/events.js';
@@ -18,6 +29,7 @@ import { TypedEventBus } from '@/services/typed-event-bus.js';
 import type { FeatureStateManager } from '@/services/feature-state-manager.js';
 import type { PlanApprovalService } from '@/services/plan-approval-service.js';
 import { PipelineOrchestrator } from '@/services/pipeline-orchestrator.js';
+import { ConcurrencyManager } from '@/services/concurrency-manager.js';
 import { EnvironmentBindingStore } from '@/services/execution-environment/bindings.js';
 
 type RequestBody = {
@@ -133,13 +145,16 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     for (const providerId of ['first', 'second'])
       expect(
         (
-          await simpleQuery({
-            prompt: 'Text',
-            model,
-            providerId,
-            settingsService: settings,
-            cwd: root,
-          })
+          await simpleQuery(
+            {
+              prompt: 'Text',
+              model,
+              providerId,
+              settingsService: settings,
+              cwd: root,
+            },
+            createTestProviderRegistry(settings)
+          )
         ).text
       ).toBe('Completed once');
     expect(requests.map((request) => request.auth)).toEqual([
@@ -155,16 +170,22 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
 
   it('never chooses a direct endpoint by model alone and never falls back to Claude', async () => {
     await expect(
-      simpleQuery({ prompt: 'Text', model, settingsService: settings, cwd: root })
+      simpleQuery(
+        { prompt: 'Text', model, settingsService: settings, cwd: root },
+        createTestProviderRegistry(settings)
+      )
     ).rejects.toThrow('providerId');
     await expect(
-      simpleQuery({
-        prompt: 'Text',
-        model,
-        providerId: 'missing',
-        settingsService: settings,
-        cwd: root,
-      })
+      simpleQuery(
+        {
+          prompt: 'Text',
+          model,
+          providerId: 'missing',
+          settingsService: settings,
+          cwd: root,
+        },
+        createTestProviderRegistry(settings)
+      )
     ).rejects.toThrow('providerId');
     expect(requests).toHaveLength(0);
   });
@@ -290,16 +311,19 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     };
     const onText = vi.fn();
     const onToolUse = vi.fn();
-    const result = await streamingQuery({
-      prompt: 'Read answer',
-      cwd: root,
-      model,
-      providerId: 'first',
-      settingsService: settings,
-      readOnly: true,
-      onText,
-      onToolUse,
-    });
+    const result = await streamingQuery(
+      {
+        prompt: 'Read answer',
+        cwd: root,
+        model,
+        providerId: 'first',
+        settingsService: settings,
+        readOnly: true,
+        onText,
+        onToolUse,
+      },
+      createTestProviderRegistry(settings)
+    );
     expect(result.text).toBe('The answer is 41');
     expect(onText.mock.calls.flat().join('')).toBe('The answer is 41');
     expect(onToolUse).toHaveBeenCalledTimes(1);
@@ -321,12 +345,15 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     const phase = await getPhaseModelWithOverrides('enhancementModel', settings, root);
     expect(phase.isProjectOverride).toBe(true);
     expect(phase.phaseModel.providerId).toBe('second');
-    await simpleQuery({
-      prompt: 'Text',
-      cwd: root,
-      ...phase.phaseModel,
-      settingsService: settings,
-    });
+    await simpleQuery(
+      {
+        prompt: 'Text',
+        cwd: root,
+        ...phase.phaseModel,
+        settingsService: settings,
+      },
+      createTestProviderRegistry(settings)
+    );
     expect(requests[0].auth).toBe('Bearer second-private-key');
   });
 
@@ -339,13 +366,21 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     const events = createEventEmitter();
     const emitted: unknown[] = [];
     events.subscribe((_type, data) => emitted.push(data));
-    const first = new AgentService(settings.getDataDirectory(), events, settings);
+    const first = new AgentService(
+      ...createTestAgentState(settings.getDataDirectory(), createTestAgentEvents(events)),
+      settings,
+      ...createTestAgentProviders(createTestProviderRegistry(settings))
+    );
     await first.initialize();
     const session = await first.createSession('Direct chat', root, root, model, 'second');
     expect(
       (await first.sendMessage({ sessionId: session.id, message: 'First question' })).success
     ).toBe(true);
-    const restarted = new AgentService(settings.getDataDirectory(), events, settings);
+    const restarted = new AgentService(
+      ...createTestAgentState(settings.getDataDirectory(), createTestAgentEvents(events)),
+      settings,
+      ...createTestAgentProviders(createTestProviderRegistry(settings))
+    );
     await restarted.initialize();
     expect(
       (await restarted.sendMessage({ sessionId: session.id, message: 'Follow up' })).success
@@ -381,13 +416,21 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
 
   it('binds queued prompts to the selected endpoint/model and reloads the queue after restart', async () => {
     const events = createEventEmitter();
-    const service = new AgentService(settings.getDataDirectory(), events, settings);
+    const service = new AgentService(
+      ...createTestAgentState(settings.getDataDirectory(), createTestAgentEvents(events)),
+      settings,
+      ...createTestAgentProviders(createTestProviderRegistry(settings))
+    );
     await service.initialize();
     const session = await service.createSession('Queue', root, root, model, 'first');
     const queued = await service.addToQueue(session.id, { message: 'Queued' });
     expect(queued.queuedPrompt).toMatchObject({ model, providerId: 'first' });
     await service.setSessionModel(session.id, model, 'second');
-    const restarted = new AgentService(settings.getDataDirectory(), events, settings);
+    const restarted = new AgentService(
+      ...createTestAgentState(settings.getDataDirectory(), createTestAgentEvents(events)),
+      settings,
+      ...createTestAgentProviders(createTestProviderRegistry(settings))
+    );
     expect((await restarted.getQueue(session.id)).queue?.[0]).toMatchObject({
       model,
       providerId: 'first',
@@ -409,7 +452,11 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       else finish(res);
     };
     const events = createEventEmitter();
-    const service = new AgentService(settings.getDataDirectory(), events, settings);
+    const service = new AgentService(
+      ...createTestAgentState(settings.getDataDirectory(), createTestAgentEvents(events)),
+      settings,
+      ...createTestAgentProviders(createTestProviderRegistry(settings))
+    );
     await service.initialize();
     const session = await service.createSession('Coding', root, root, model, 'first');
     expect(
@@ -431,7 +478,13 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
         updateFeaturePlanSpec: vi.fn(),
         updateTaskStatus: vi.fn(),
       } as unknown as FeatureStateManager;
-      const executor = new AgentExecutor(bus, state, {} as PlanApprovalService, settings);
+      const executor = new AgentExecutor(
+        bus,
+        state,
+        {} as PlanApprovalService,
+        settings,
+        executionFilesystem
+      );
       const waitForApproval = vi.fn(async () => {
         expect(requests[0].body.tools?.some((tool) => tool.function.name === 'Write')).toBe(false);
         await expect(fs.stat(path.join(root, 'approved.txt'))).rejects.toThrow();
@@ -459,7 +512,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
           model,
           providerId: 'first',
           effectiveBareModel: endpoint.models[0].id,
-          provider: ProviderFactory.getProviderForModel(model),
+          provider: createTestProviderRegistry(settings).providerForModel(model),
           abortController: new AbortController(),
           planningMode: 'spec',
           requirePlanApproval: true,
@@ -496,7 +549,11 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     const events = createEventEmitter();
     const emitted: unknown[] = [];
     events.subscribe((_type, event) => emitted.push(event));
-    const service = new AgentService(settings.getDataDirectory(), events, settings);
+    const service = new AgentService(
+      ...createTestAgentState(settings.getDataDirectory(), createTestAgentEvents(events)),
+      settings,
+      ...createTestAgentProviders(createTestProviderRegistry(settings))
+    );
     await service.initialize();
     const session = await service.createSession('Invalid selection', root, root, model, 'missing');
     const failure = await service
@@ -525,7 +582,8 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
         updateTaskStatus: vi.fn(),
       } as unknown as FeatureStateManager,
       {} as PlanApprovalService,
-      settings
+      settings,
+      executionFilesystem
     );
     const waitForApproval = vi.fn();
     const buildTaskPrompt = vi.fn(() => 'Execute the pending task');
@@ -538,7 +596,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
         model,
         providerId: 'second',
         effectiveBareModel: endpoint.models[0].id,
-        provider: ProviderFactory.getProviderForModel(model),
+        provider: createTestProviderRegistry(settings).providerForModel(model),
         abortController: new AbortController(),
         existingApprovedPlanContent: 'Previously approved plan',
         persistedTasks: [
@@ -563,13 +621,25 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
   });
 
   it('routes a pipeline step through AgentExecutor to the selected direct endpoint', async () => {
+    const manager = new ConcurrencyManager();
+    const run = manager.acquire({
+      projectPath: root,
+      featureId: 'pipeline-feature',
+      isAutoMode: false,
+    });
     const events = createEventEmitter();
     const bus = new TypedEventBus(events);
     const state = {
       updateFeaturePlanSpec: vi.fn(),
       updateTaskStatus: vi.fn(),
     } as unknown as FeatureStateManager;
-    const executor = new AgentExecutor(bus, state, {} as PlanApprovalService, settings);
+    const executor = new AgentExecutor(
+      bus,
+      state,
+      {} as PlanApprovalService,
+      settings,
+      executionFilesystem
+    );
     handler = (_body, res) => finish(res, '<summary>Pipeline complete</summary>');
     const routed = vi.fn(
       async (
@@ -592,7 +662,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
             model: routedModel,
             providerId: controls.providerId,
             effectiveBareModel: endpoint.models[0].id,
-            provider: ProviderFactory.getProviderForModel(routedModel),
+            provider: createTestProviderRegistry(settings).providerForModel(routedModel),
             status: controls.status,
             systemPrompt: controls.systemPrompt,
           },
@@ -608,18 +678,19 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     const pipeline = new PipelineOrchestrator(
       bus,
       state,
-      executor,
       {} as never,
-      {} as never,
-      {} as never,
+      manager,
       settings,
       vi.fn(),
       vi.fn(async () => ({ files: [], formattedPrompt: '' })),
       vi.fn(() => 'Feature implementation'),
       vi.fn(),
-      routed
+      routed,
+      new PipelineService(),
+      executionFilesystem
     );
     await pipeline.executePipeline({
+      run,
       projectPath: root,
       featureId: 'pipeline-feature',
       feature: {
@@ -643,10 +714,8 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       workDir: root,
       worktreePath: null,
       branchName: null,
-      abortController: new AbortController(),
+      abortController: run.abortController,
       autoLoadClaudeMd: true,
-      testAttempts: 0,
-      maxTestAttempts: 1,
     });
     expect(routed).toHaveBeenCalledTimes(1);
     expect(requests).toHaveLength(1);
@@ -700,7 +769,9 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       { model, providerId: 'first' }
     );
     const messages = [];
-    for await (const message of ProviderFactory.getProviderForModel(model).executeQuery(prepared))
+    for await (const message of createTestProviderRegistry(settings)
+      .providerForModel(model)
+      .executeQuery(prepared))
       messages.push(message);
     expect(messages.at(-1)).toMatchObject({ type: 'result', subtype: 'success' });
     expect(await fs.readFile(path.join(root, 'result.txt'), 'utf8')).toBe('42');
@@ -717,9 +788,9 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       settings,
       { model, providerId: 'first' }
     );
-    for await (const _message of ProviderFactory.getProviderForModel(model).executeQuery(
-      prepared
-    )) {
+    for await (const _message of createTestProviderRegistry(settings)
+      .providerForModel(model)
+      .executeQuery(prepared)) {
       /* drain */
     }
     expect(requests[0].body.tools?.map((tool) => tool.function.name)).toEqual([
@@ -738,10 +809,12 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
       { model, providerId: 'first' }
     );
     const messages = [];
-    for await (const message of ProviderFactory.getProviderForModel(model).executeQuery({
-      ...prepared,
-      executionEnvironmentRuntime: { type: 'local', cwd: root, capabilities: { shell: true } },
-    }))
+    for await (const message of createTestProviderRegistry(settings)
+      .providerForModel(model)
+      .executeQuery({
+        ...prepared,
+        executionEnvironmentRuntime: { type: 'local', cwd: root, capabilities: { shell: true } },
+      }))
       messages.push(message);
     expect(messages.at(-1)).toMatchObject({ type: 'result', subtype: 'error_during_execution' });
     expect(requests).toHaveLength(0);
@@ -749,7 +822,14 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
 
   it('restores a pinned Local chat after restart without switching to a new global Docker selection', async () => {
     await new EnvironmentBindingStore(settings).confirm(root);
-    const first = new AgentService(settings.getDataDirectory(), createEventEmitter(), settings);
+    const first = new AgentService(
+      ...createTestAgentState(
+        settings.getDataDirectory(),
+        createTestAgentEvents(createEventEmitter())
+      ),
+      settings,
+      ...createTestAgentProviders(createTestProviderRegistry(settings))
+    );
     await first.initialize();
     const session = await first.createSession('Pinned Local', root, root, model, 'first');
     await first.sendMessage({
@@ -764,7 +844,14 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     )!.executionEnvironment;
     expect(original?.type).toBe('local');
     await settings.updateProjectSettings(root, { executionEnvironment: { mode: 'auto' } });
-    const restarted = new AgentService(settings.getDataDirectory(), createEventEmitter(), settings);
+    const restarted = new AgentService(
+      ...createTestAgentState(
+        settings.getDataDirectory(),
+        createTestAgentEvents(createEventEmitter())
+      ),
+      settings,
+      ...createTestAgentProviders(createTestProviderRegistry(settings))
+    );
     await restarted.initialize();
     await restarted.sendMessage({ sessionId: session.id, message: 'Continue pinned chat' });
     expect(
@@ -773,56 +860,30 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
     expect(requests).toHaveLength(2);
   });
 
-  function testPipeline() {
-    const hostRunner = { startTests: vi.fn() };
-    const pipeline = new PipelineOrchestrator(
-      new TypedEventBus(createEventEmitter()),
-      {} as never,
-      {} as never,
-      hostRunner as never,
-      {} as never,
-      {} as never,
-      settings,
-      vi.fn(),
-      vi.fn(),
-      vi.fn(),
-      vi.fn(),
-      vi.fn()
-    );
-    const context = {
+  const standaloneShell = (command: string) =>
+    runDirectShellCommand(settings, root, command, new AbortController().signal, {
       projectPath: root,
-      featureId: 'sandbox-tests',
-      feature: { id: 'sandbox-tests', model, providerId: 'first' },
-      workDir: root,
-      abortController: new AbortController(),
-      maxTestAttempts: 1,
-    } as never;
-    return { pipeline, hostRunner, context };
-  }
-
-  it('fails closed rather than running direct pipeline tests on the host without a sandbox', async () => {
-    const { pipeline, hostRunner, context } = testPipeline();
-    expect(await pipeline.executeTestStep(context, 'must-not-run-on-host')).toMatchObject({
-      success: false,
-      testsPassed: false,
-      message: expect.stringContaining('Host execution is disabled'),
+      runKey: 'feature:' + root + ':sandbox-tests',
     });
-    expect(hostRunner.startTests).not.toHaveBeenCalled();
-    expect(requests).toHaveLength(0);
+  it('keeps standalone Direct shell compatibility fail-closed without a configured sandbox', async () => {
+    const host = vi.spyOn(LocalExecutionEnvironment.prototype, 'exec');
+    try {
+      await expect(standaloneShell('must-not-run-on-host')).rejects.toThrow(
+        'Host execution is disabled'
+      );
+      expect(host).not.toHaveBeenCalled();
+      expect(requests).toHaveLength(0);
+    } finally {
+      host.mockRestore();
+    }
   });
-  it('uses the confirmed Local backend for direct pipeline tests, not the legacy test runner', async () => {
+  it('executes the standalone shell helper in the confirmed Local runtime', async () => {
     await new EnvironmentBindingStore(settings).confirm(root);
-    const { pipeline, hostRunner, context } = testPipeline();
-    expect(await pipeline.executeTestStep(context, 'test "$(cat answer.txt)" = "41"')).toEqual({
-      success: true,
-      testsPassed: true,
-    });
-    expect(hostRunner.startTests).not.toHaveBeenCalled();
+    expect((await standaloneShell('test "$(cat answer.txt)" = "41"')).exitCode).toBe(0);
     expect(requests).toHaveLength(0);
   });
-
   it.skipIf(!process.env.DIRECT_AGENT_DOCKER_TEST_IMAGE)(
-    'executes automatic direct pipeline tests only inside the configured real Docker sandbox',
+    'executes the standalone shell helper inside its configured real Docker sandbox',
     async () => {
       await settings.updateGlobalSettings({
         openaiCompatibleAgentSettings: {
@@ -830,12 +891,7 @@ describe.skipIf(process.platform !== 'linux')('direct provider / application int
           shell: { backend: 'docker', image: process.env.DIRECT_AGENT_DOCKER_TEST_IMAGE! },
         },
       });
-      const { pipeline, hostRunner, context } = testPipeline();
-      expect(await pipeline.executeTestStep(context, 'test "$(cat answer.txt)" = "41"')).toEqual({
-        success: true,
-        testsPassed: true,
-      });
-      expect(hostRunner.startTests).not.toHaveBeenCalled();
+      expect((await standaloneShell('test "$(cat answer.txt)" = "41"')).exitCode).toBe(0);
       expect(requests).toHaveLength(0);
     },
     20_000

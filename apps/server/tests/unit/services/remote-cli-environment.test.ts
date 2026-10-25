@@ -1,3 +1,11 @@
+import * as executionFilesystem from '../../../src/lib/secure-fs.js';
+import { PipelineService } from '../../../src/services/pipeline-service.js';
+import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
+import {
+  createTestAgentState,
+  createTestAgentProviders,
+  createTestAgentEvents,
+} from '../../helpers/agent-state.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -13,14 +21,11 @@ import {
   prepareDirectExecution,
   runDirectShellCommand,
 } from '@/providers/openai-compatible/execution.js';
-import { ProviderFactory } from '@/providers/provider-factory.js';
 import { AgentService } from '@/services/agent-service.js';
 import { createEventEmitter } from '@/lib/events.js';
 import { AutoModeServiceFacade } from '@/services/auto-mode/facade.js';
 import { FeatureLoader } from '@/services/feature-loader.js';
 import { WorktreeResolver } from '@/services/worktree-resolver.js';
-import { PipelineOrchestrator } from '@/services/pipeline-orchestrator.js';
-import { TypedEventBus } from '@/services/typed-event-bus.js';
 import { SSH_WORKER } from '@/services/execution-environment/ssh-worker.js';
 import { sshDigest } from '@/services/execution-environment/ssh-state.js';
 import { SSHTransportError } from '@/services/execution-environment/ssh-transport.js';
@@ -141,9 +146,11 @@ const send=event=>process.stdout.write(JSON.stringify(event)+'\\n');
           { model, projectPath: project, runKey: `chat:${model}` }
         );
         const messages = [];
-        for await (const message of ProviderFactory.getProviderForModel(model, {
-          throwOnDisconnected: false,
-        }).executeQuery(prepared))
+        for await (const message of createTestProviderRegistry(settings)
+          .providerForModel(model, {
+            throwOnDisconnected: false,
+          })
+          .executeQuery(prepared))
           messages.push(message);
         expect(messages.some((message) => message.type === 'assistant')).toBe(true);
         expect(messages.some((message) => message.type === 'result')).toBe(true);
@@ -161,7 +168,14 @@ const send=event=>process.stdout.write(JSON.stringify(event)+'\\n');
       15000
     );
     it('uses the real chat service without controller context and keeps the binding on restart/default change', async () => {
-      const service = new AgentService(settings.getDataDirectory(), createEventEmitter(), settings);
+      const service = new AgentService(
+        ...createTestAgentState(
+          settings.getDataDirectory(),
+          createTestAgentEvents(createEventEmitter())
+        ),
+        settings,
+        ...createTestAgentProviders(createTestProviderRegistry(settings))
+      );
       await service.initialize();
       const session = await service.createSession('Remote CLI', project, project, 'cursor-auto');
       expect(
@@ -177,9 +191,12 @@ const send=event=>process.stdout.write(JSON.stringify(event)+'\\n');
         executionEnvironment: { default: { mode: 'local' }, profiles: [] },
       });
       const restarted = new AgentService(
-        settings.getDataDirectory(),
-        createEventEmitter(),
-        settings
+        ...createTestAgentState(
+          settings.getDataDirectory(),
+          createTestAgentEvents(createEventEmitter())
+        ),
+        settings,
+        ...createTestAgentProviders(createTestProviderRegistry(settings))
       );
       await restarted.initialize();
       expect(
@@ -212,9 +229,11 @@ const send=event=>process.stdout.write(JSON.stringify(event)+'\\n');
         }
       );
       expect(prepared.cwd).toBe(run.environment.cwd);
-      for await (const _message of ProviderFactory.getProviderForModel(feature.model, {
-        throwOnDisconnected: false,
-      }).executeQuery(prepared)) {
+      for await (const _message of createTestProviderRegistry(settings)
+        .providerForModel(feature.model, {
+          throwOnDisconnected: false,
+        })
+        .executeQuery(prepared)) {
         /* drain */
       }
       expect(
@@ -233,7 +252,7 @@ const send=event=>process.stdout.write(JSON.stringify(event)+'\\n');
       expect(await fs.readFile(path.join(checkout, 'cli-result.txt'), 'utf8')).toBe('remote-only');
       await expect(fs.stat(path.join(project, '.git'))).rejects.toThrow();
     }, 20000);
-    it('runs the real Kanban facade and pipeline tests without invoking controller worktree/test services', async () => {
+    it('runs the real Kanban facade and pinned SSH command without invoking controller worktree services', async () => {
       const loader = new FeatureLoader();
       const feature = await loader.create(project, {
         id: 'facade-cli',
@@ -248,6 +267,9 @@ const send=event=>process.stdout.write(JSON.stringify(event)+'\\n');
       });
       const events = createEventEmitter();
       const facade = AutoModeServiceFacade.create(project, {
+        filesystem: executionFilesystem,
+        pipeline: new PipelineService(),
+        providerRegistry: createTestProviderRegistry(settings),
         events,
         settingsService: settings,
         featureLoader: loader,
@@ -270,40 +292,13 @@ const send=event=>process.stdout.write(JSON.stringify(event)+'\\n');
       expect(invocation).toContain('REMOTE_CONTEXT');
       expect(invocation).not.toContain('STALE_CONTROLLER_CONTEXT_MUST_NOT_LEAK');
       expect(localWorktrees).not.toHaveBeenCalled();
-      const hostRunner = { startTests: vi.fn() };
-      const pipeline = new PipelineOrchestrator(
-        new TypedEventBus(events),
-        {} as never,
-        {} as never,
-        hostRunner as never,
-        new WorktreeResolver(settings),
-        {} as never,
-        settings,
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn()
-      );
+      expect(run.environment.type).toBe('ssh');
       expect(
-        await pipeline.executeTestStep(
-          {
-            projectPath: project,
-            featureId: feature.id,
-            feature,
-            steps: [],
-            workDir: project,
-            worktreePath: null,
-            branchName: 'main',
-            abortController: new AbortController(),
-            autoLoadClaudeMd: false,
-            testAttempts: 0,
-            maxTestAttempts: 1,
-          },
-          'test "$(cat cli-result.txt)" = remote-only'
-        )
-      ).toMatchObject({ success: true, testsPassed: true });
-      expect(hostRunner.startTests).not.toHaveBeenCalled();
+        (await run.environment.exec('test "$(cat cli-result.txt)" = remote-only', active()))
+          .exitCode
+      ).toBe(0);
+      expect(localWorktrees).not.toHaveBeenCalled();
+
       const commit = await facade.commitFeature(feature.id);
       expect(commit).toMatch(/^[a-f0-9]{40,64}$/);
       await facade.mergeSSHFeature(feature.id);
@@ -315,9 +310,11 @@ const send=event=>process.stdout.write(JSON.stringify(event)+'\\n');
         settings,
         { model: 'cursor-auto', projectPath: project, runKey: 'chat:readonly' }
       );
-      for await (const _message of ProviderFactory.getProviderForModel('cursor-auto', {
-        throwOnDisconnected: false,
-      }).executeQuery(prepared)) {
+      for await (const _message of createTestProviderRegistry(settings)
+        .providerForModel('cursor-auto', {
+          throwOnDisconnected: false,
+        })
+        .executeQuery(prepared)) {
         /* drain */
       }
       const invocation = JSON.parse(

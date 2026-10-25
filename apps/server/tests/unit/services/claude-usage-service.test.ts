@@ -56,7 +56,14 @@ describe('claude-usage-service.ts', () => {
       const result = await service.isAvailable();
 
       expect(result).toBe(true);
-      expect(spawn).toHaveBeenCalledWith('which', ['claude']);
+      expect(spawn).toHaveBeenCalledWith(
+        'which',
+        ['claude'],
+        expect.objectContaining({
+          env: expect.any(Object),
+          cwd: process.cwd(),
+        })
+      );
     });
 
     it('should return false when Claude CLI is not available', async () => {
@@ -102,7 +109,14 @@ describe('claude-usage-service.ts', () => {
 
       await ptyService.isAvailable();
 
-      expect(spawn).toHaveBeenCalledWith('where', ['claude']);
+      expect(spawn).toHaveBeenCalledWith(
+        'where',
+        ['claude'],
+        expect.objectContaining({
+          env: expect.any(Object),
+          cwd: process.cwd(),
+        })
+      );
     });
   });
 
@@ -525,6 +539,26 @@ Resets Jan 15, 3pm
   });
 
   describe('executeClaudeUsageCommandPty', () => {
+    it('reports an explicit trust requirement without approving it or sending usage commands', async () => {
+      const service = new ClaudeUsageService();
+      let onData!: (data: string) => void;
+      const terminal = {
+        onData: vi.fn((callback) => {
+          onData = callback;
+        }),
+        onExit: vi.fn(),
+        write: vi.fn(),
+        kill: vi.fn(),
+      };
+      vi.mocked(pty.spawn).mockReturnValue(terminal as never);
+      const query = service.fetchUsageData();
+      const assertion = expect(query).rejects.toThrow('TRUST_PROMPT_PENDING');
+      await Promise.resolve();
+      onData('Quick safety check: Yes, I trust this folder');
+      await assertion;
+      expect(terminal.write).not.toHaveBeenCalled();
+      expect(terminal.kill).toHaveBeenCalledOnce();
+    });
     // Note: The service now uses PTY for all platforms, using process.cwd() as the working directory
     beforeEach(() => {
       vi.mocked(os.platform).mockReturnValue('win32');
@@ -554,6 +588,7 @@ Resets in 2h
       vi.mocked(pty.spawn).mockReturnValue(mockPty as any);
 
       const promise = ptyService.fetchUsageData();
+      await Promise.resolve();
 
       // Simulate data
       dataCallback!(mockOutput);
@@ -596,6 +631,7 @@ Resets in 2h
       vi.mocked(pty.spawn).mockReturnValue(mockPty as any);
 
       const promise = ptyService.fetchUsageData();
+      await Promise.resolve();
 
       // Simulate seeing usage data
       dataCallback!(mockOutput);
@@ -630,6 +666,7 @@ Resets in 2h
       vi.mocked(pty.spawn).mockReturnValue(mockPty as any);
 
       const promise = ptyService.fetchUsageData();
+      await Promise.resolve();
 
       // Send data containing the authentication error pattern the service looks for
       dataCallback!('"type":"authentication_error"');
@@ -656,6 +693,7 @@ Resets in 2h
       vi.mocked(pty.spawn).mockReturnValue(mockPty as any);
 
       const promise = ptyService.fetchUsageData();
+      await Promise.resolve();
 
       // Advance time past timeout (45 seconds)
       vi.advanceTimersByTime(46000);
@@ -686,6 +724,7 @@ Resets in 2h
       vi.mocked(pty.spawn).mockReturnValue(mockPty as any);
 
       const promise = ptyService.fetchUsageData();
+      await Promise.resolve();
 
       // Simulate receiving usage data
       dataCallback!('Current session\n65% left\nResets in 2h');
@@ -721,6 +760,7 @@ Resets in 2h
       vi.mocked(pty.spawn).mockReturnValue(mockPty as any);
 
       ptyService.fetchUsageData();
+      await Promise.resolve();
 
       // Simulate seeing usage data
       dataCallback!('Current session\n65% left');

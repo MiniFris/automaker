@@ -9,11 +9,12 @@ import { ManagedDocker, DockerExecutionEnvironment } from './docker.js';
 import { ManagedSSH, SSHExecutionEnvironment } from './ssh.js';
 import { boundRuntime } from './bound-runtime.js';
 import { ExecutionEnvironmentError, type ExecutionEnvironment } from './runtime.js';
+import { LocalExecutionEnvironment } from './local.js';
 import { nodeCommand } from './ssh-transport.js';
 import { PROJECT_GIT_WORKER } from './project-git-worker.js';
 
 const fail = (code: string, message: string): never => {
-  throw new ExecutionEnvironmentError(code, message);
+  throw new ExecutionEnvironmentError(code, message, code === 'GIT_REMOTE_ADD_FAILED' ? 500 : 400);
 };
 const identityHash = (value: unknown) =>
   createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -31,8 +32,40 @@ export const gitReadActions = new Set([
   'list-remotes',
   'commit-log',
   'branch-commit-log',
+  'stash-list',
+  'init-script-get',
+  'commit-message-context',
+  'pr-description-context',
+  'pr-info',
 ]);
-export const gitWriteActions = new Set(['stage-files', 'commit', 'create']);
+export const gitWriteActions = new Set([
+  'stage-files',
+  'commit',
+  'create',
+  'abort-operation',
+  'continue-operation',
+  'add-remote',
+  'set-tracking',
+  'stash-push',
+  'stash-apply',
+  'stash-drop',
+  'checkout-branch',
+  'switch-branch',
+  'discard-changes',
+  'pull',
+  'push',
+  'sync',
+  'rebase',
+  'cherry-pick',
+  'merge',
+  'delete',
+  'init-git',
+  'init-script-put',
+  'init-script-delete',
+  'run-init-script',
+  'update-pr-number',
+  'create-pr',
+]);
 export function workspaceAlias(binding: ExecutionEnvironmentBinding) {
   const root = binding.ssh?.remotePath ?? binding.projectPath;
   const cwd = binding.runtimeCwd ?? binding.cwd;
@@ -51,14 +84,23 @@ export interface ProjectGitTarget {
 
 /** Resolves only saved project targets / pinned workspaces; no preparation or fallback on poll. */
 export class ProjectGitService {
+  private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>;
   constructor(
     private readonly settings: SettingsService,
     private readonly docker = new ManagedDocker(settings),
-    private readonly ssh = new ManagedSSH(settings)
-  ) {}
+    private readonly ssh = new ManagedSSH(settings),
+    hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
+  ) {
+    this.hostEnvironment = Object.freeze({ ...hostEnvironment });
+  }
 
   async pinnedEntries(projectPath: string) {
-    const pins = await new EnvironmentBindingStore(this.settings).workspaceBindings(projectPath);
+    const pins = await new EnvironmentBindingStore(
+      this.settings,
+      undefined,
+      undefined,
+      this.hostEnvironment
+    ).workspaceBindings(projectPath);
     return pins.flatMap((pin) => {
       const alias = workspaceAlias(pin);
       if (
@@ -107,7 +149,12 @@ export class ProjectGitService {
     const projectPath = await fs.realpath(rootHint);
     validatePath(projectPath);
     const alias = path.resolve(projectPath, path.relative(rootHint, normalized));
-    const store = new EnvironmentBindingStore(this.settings);
+    const store = new EnvironmentBindingStore(
+      this.settings,
+      undefined,
+      undefined,
+      this.hostEnvironment
+    );
     const pins = await store.workspaceBindings(projectPath);
     let binding = featureId
       ? await store.peek(projectPath, `feature:${projectPath}:${featureId}`)
@@ -133,7 +180,7 @@ export class ProjectGitService {
         );
       if (binding.type === 'legacy' || (binding.type === 'local' && !binding.featureWorkspace))
         return undefined;
-      runtime = await boundRuntime(binding, this.settings);
+      runtime = await boundRuntime(binding, this.settings, this.hostEnvironment);
       root = binding.ssh?.remotePath ?? projectPath;
       identity = binding;
     } else {
@@ -199,6 +246,38 @@ export class ProjectGitService {
     };
   }
 
+  /** Resolve a managed target or an explicit controller-local target without preparing either. */
+  async resolveOrLocal(requested: string, featureId?: string): Promise<ProjectGitTarget> {
+    const managed = await this.resolve(requested, featureId);
+    if (managed) return managed;
+    const normalized = path.resolve(requested);
+    const separator = path.sep + '.worktrees' + path.sep;
+    const rootHint = normalized.includes(separator)
+      ? normalized.slice(0, normalized.indexOf(separator))
+      : normalized;
+    validatePath(rootHint);
+    const projectPath = await fs.realpath(rootHint);
+    const alias = await fs.realpath(path.resolve(projectPath, path.relative(rootHint, normalized)));
+    validatePath(alias);
+    const runtime = await LocalExecutionEnvironment.create(alias, this.hostEnvironment);
+    const targetId = identityHash(['local', projectPath, alias]);
+    return {
+      environment: {
+        type: 'local',
+        projectPath,
+        path: alias,
+        runtimeCwd: runtime.cwd,
+        root: projectPath,
+        pinned: false,
+        targetId,
+      },
+      runtime,
+      root: projectPath,
+      identity: ['local', projectPath, alias],
+      workspaceBranch: featureId,
+    };
+  }
+
   async run(
     target: ProjectGitTarget,
     action: string,
@@ -216,7 +295,12 @@ export class ProjectGitService {
         'Inspect this workspace again before changing it: its saved environment target must match the one shown by the UI. No Git mutation was dispatched.'
       );
     if (target.binding) {
-      await new EnvironmentBindingStore(this.settings).bind({
+      await new EnvironmentBindingStore(
+        this.settings,
+        undefined,
+        undefined,
+        this.hostEnvironment
+      ).bind({
         projectPath: target.binding.projectPath,
         cwd: target.binding.cwd,
         existingId: target.binding.id,
@@ -233,11 +317,26 @@ export class ProjectGitService {
       await this.docker.start(runtime.binding, signal);
       await this.docker.verifyStorage(runtime.binding, signal);
     }
+    let workerBody: Record<string, unknown> = {
+      ...body,
+      workspaceBranch: target.workspaceBranch,
+    };
+    if (['merge', 'delete'].includes(action) && typeof body.worktreePath === 'string') {
+      const source = (
+        await new EnvironmentBindingStore(
+          this.settings,
+          undefined,
+          undefined,
+          this.hostEnvironment
+        ).workspaceBindings(target.environment.projectPath)
+      ).find((binding) => workspaceAlias(binding) === path.resolve(body.worktreePath as string));
+      if (source) workerBody = { ...workerBody, sourceBindingId: source.id };
+    }
     const result = await target.runtime.exec(
       nodeCommand(PROJECT_GIT_WORKER, [
         JSON.stringify({
           action,
-          body: { ...body, workspaceBranch: target.workspaceBranch },
+          body: workerBody,
           root: target.root,
           cwd: target.runtime.cwd,
           controllerRoot: target.environment.projectPath,
@@ -291,6 +390,27 @@ export class ProjectGitService {
       ...response!,
       executionEnvironment: described(resolvedCwd, target.binding),
     };
+    if (action === 'merge' || action === 'delete') {
+      const lifecycle = (action === 'merge' ? value.result : value.deleted) as
+        | {
+            worktreeDeleted?: boolean;
+            deleted?: { worktreeDeleted?: boolean };
+            deletedBindingId?: string;
+          }
+        | undefined;
+      if (
+        (lifecycle?.worktreeDeleted || lifecycle?.deleted?.worktreeDeleted) &&
+        lifecycle.deletedBindingId
+      ) {
+        await new EnvironmentBindingStore(
+          this.settings,
+          undefined,
+          undefined,
+          this.hostEnvironment
+        ).removeWorkspaceBinding(target.environment.projectPath, lifecycle.deletedBindingId);
+        delete lifecycle.deletedBindingId;
+      }
+    }
     if (Array.isArray(value.worktrees)) {
       const pins = await this.pinnedEntries(target.environment.projectPath);
       const currentIdentity = identityHash(

@@ -684,6 +684,9 @@ export function useAutoMode(worktree?: WorktreeInfo) {
               projectPath: event.projectPath || currentProject?.path || '',
               planContent: event.planContent,
               planningMode: event.planningMode,
+              approvalToken: event.approvalToken,
+              planVersion: event.planVersion,
+              approvalRunId: event.approvalRunId,
             });
           }
           break;

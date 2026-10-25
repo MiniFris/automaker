@@ -10,6 +10,12 @@ export interface SubprocessOptions {
   args: string[];
   cwd: string;
   env?: Record<string, string>;
+  /** Set false to use only env, without falling back to process.env. Defaults to true. */
+  inheritEnv?: boolean;
+  /** Explicit shell for existing Windows .cmd/npx handling; never read ambient COMSPEC when supplied. */
+  shell?: string;
+  /** Trusted adapter diagnostic policy; raw stderr is never logged when supplied. */
+  processFailureMessage?: (stderr: string, exitCode: number | null) => string;
   abortController?: AbortController;
   timeout?: number; // Milliseconds of no output before timeout
   /**
@@ -42,7 +48,7 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
   const { command, args, cwd, env, abortController, timeout = 30000, stdinData } = options;
 
   const processEnv = {
-    ...process.env,
+    ...(options.inheritEnv === false ? {} : process.env),
     ...env,
   };
 
@@ -63,7 +69,7 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
     env: processEnv,
     // Use 'pipe' for stdin when we need to write data, otherwise 'ignore'
     stdio: [stdinData ? 'pipe' : 'ignore', 'pipe', 'pipe'],
-    shell: needsShell,
+    shell: needsShell ? (options.shell ?? true) : false,
   });
 
   // Write stdin data if provided
@@ -94,7 +100,7 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
     childProcess.stderr.on('data', (data: Buffer) => {
       const text = data.toString();
       stderrOutput += text;
-      console.warn(`[SubprocessManager] stderr: ${text}`);
+      if (!options.processFailureMessage) console.warn(`[SubprocessManager] stderr: ${text}`);
     });
   }
 
@@ -194,10 +200,13 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
         try {
           eventQueue.push(JSON.parse(trimmed));
         } catch (parseError) {
-          console.error(`[SubprocessManager] Failed to parse JSONL line: ${trimmed}`, parseError);
+          if (!options.processFailureMessage)
+            console.error(`[SubprocessManager] Failed to parse JSONL line: ${trimmed}`, parseError);
           eventQueue.push({
             type: 'error',
-            error: `Failed to parse output: ${trimmed}`,
+            error: options.processFailureMessage
+              ? 'Failed to parse CLI output. Check the provider configuration and retry.'
+              : `Failed to parse output: ${trimmed}`,
           });
         }
       }
@@ -218,13 +227,16 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
         try {
           eventQueue.push(JSON.parse(lineBuffer.trim()));
         } catch (parseError) {
-          console.error(
-            `[SubprocessManager] Failed to parse final JSONL line: ${lineBuffer}`,
-            parseError
-          );
+          if (!options.processFailureMessage)
+            console.error(
+              `[SubprocessManager] Failed to parse final JSONL line: ${lineBuffer}`,
+              parseError
+            );
           eventQueue.push({
             type: 'error',
-            error: `Failed to parse output: ${lineBuffer}`,
+            error: options.processFailureMessage
+              ? 'Failed to parse CLI output. Check the provider configuration and retry.'
+              : `Failed to parse output: ${lineBuffer}`,
           });
         }
         lineBuffer = '';
@@ -292,7 +304,9 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
 
   // Handle non-zero exit codes
   if (exitCode !== 0 && exitCode !== null) {
-    const errorMessage = stderrOutput || `Process exited with code ${exitCode}`;
+    const errorMessage = options.processFailureMessage
+      ? options.processFailureMessage(stderrOutput, exitCode)
+      : stderrOutput || `Process exited with code ${exitCode}`;
     console.error(`[SubprocessManager] Process failed: ${errorMessage}`);
     yield {
       type: 'error',
@@ -313,7 +327,7 @@ export async function spawnProcess(options: SubprocessOptions): Promise<Subproce
   const { command, args, cwd, env, abortController, stdinData } = options;
 
   const processEnv = {
-    ...process.env,
+    ...(options.inheritEnv === false ? {} : process.env),
     ...env,
   };
 
@@ -327,7 +341,7 @@ export async function spawnProcess(options: SubprocessOptions): Promise<Subproce
       cwd,
       env: processEnv,
       stdio: [stdinData ? 'pipe' : 'ignore', 'pipe', 'pipe'],
-      shell: needsShell,
+      shell: needsShell ? (options.shell ?? true) : false,
     });
 
     if (stdinData && childProcess.stdin) {

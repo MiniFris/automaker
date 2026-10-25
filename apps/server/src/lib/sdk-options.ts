@@ -359,6 +359,8 @@ export interface SystemPromptConfig {
  * Options configuration for creating SDK options
  */
 export interface CreateSdkOptionsConfig {
+  /** Explicit application policy; direct legacy constructors retain the old default. */
+  validateWorkingDirectory?: (cwd: string) => void;
   /** Working directory for the agent */
   cwd: string;
 
@@ -417,7 +419,7 @@ export type {
  */
 export function createSpecGenerationOptions(config: CreateSdkOptionsConfig): Options {
   // Validate working directory before creating options
-  validateWorkingDirectory(config.cwd);
+  (config.validateWorkingDirectory ?? validateWorkingDirectory)(config.cwd);
 
   // Build CLAUDE.md auto-loading options if enabled
   const claudeMdOptions = buildClaudeMdOptions(config);
@@ -453,7 +455,7 @@ export function createSpecGenerationOptions(config: CreateSdkOptionsConfig): Opt
  */
 export function createFeatureGenerationOptions(config: CreateSdkOptionsConfig): Options {
   // Validate working directory before creating options
-  validateWorkingDirectory(config.cwd);
+  (config.validateWorkingDirectory ?? validateWorkingDirectory)(config.cwd);
 
   // Build CLAUDE.md auto-loading options if enabled
   const claudeMdOptions = buildClaudeMdOptions(config);
@@ -486,7 +488,7 @@ export function createFeatureGenerationOptions(config: CreateSdkOptionsConfig): 
  */
 export function createSuggestionsOptions(config: CreateSdkOptionsConfig): Options {
   // Validate working directory before creating options
-  validateWorkingDirectory(config.cwd);
+  (config.validateWorkingDirectory ?? validateWorkingDirectory)(config.cwd);
 
   // Build CLAUDE.md auto-loading options if enabled
   const claudeMdOptions = buildClaudeMdOptions(config);
@@ -518,7 +520,7 @@ export function createSuggestionsOptions(config: CreateSdkOptionsConfig): Option
  */
 export function createChatOptions(config: CreateSdkOptionsConfig): Options {
   // Validate working directory before creating options
-  validateWorkingDirectory(config.cwd);
+  (config.validateWorkingDirectory ?? validateWorkingDirectory)(config.cwd);
 
   // Model priority: explicit model > session model > chat default
   const effectiveModel = config.model || config.sessionModel;
@@ -556,7 +558,7 @@ export function createChatOptions(config: CreateSdkOptionsConfig): Options {
  */
 export function createAutoModeOptions(config: CreateSdkOptionsConfig): Options {
   // Validate working directory before creating options
-  validateWorkingDirectory(config.cwd);
+  (config.validateWorkingDirectory ?? validateWorkingDirectory)(config.cwd);
 
   // Build CLAUDE.md auto-loading options if enabled
   const claudeMdOptions = buildClaudeMdOptions(config);
@@ -593,7 +595,7 @@ export function createCustomOptions(
   }
 ): Options {
   // Validate working directory before creating options
-  validateWorkingDirectory(config.cwd);
+  (config.validateWorkingDirectory ?? validateWorkingDirectory)(config.cwd);
 
   // Build CLAUDE.md auto-loading options if enabled
   const claudeMdOptions = buildClaudeMdOptions(config);

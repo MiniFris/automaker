@@ -1,3 +1,32 @@
+import { createSetupClient } from './http-domains/setup';
+import { createWorktreeClient } from './http-domains/worktree';
+import { createModelClient } from './http-domains/model';
+import { createZaiClient } from './http-domains/zai';
+import { createFeaturesClient } from './http-domains/features';
+import { createAutoModeClient } from './http-domains/autoMode';
+import { createEnhancePromptClient } from './http-domains/enhancePrompt';
+import { createGitClient } from './http-domains/git';
+import { createSpecRegenerationClient } from './http-domains/specRegeneration';
+import { createRunningAgentsClient } from './http-domains/runningAgents';
+import { createGithubClient } from './http-domains/github';
+import { createWorkspaceClient } from './http-domains/workspace';
+import { createAgentClient } from './http-domains/agent';
+import { createTemplatesClient } from './http-domains/templates';
+import { createSettingsClient } from './http-domains/settings';
+import { createExecutionEnvironmentsClient } from './http-domains/executionEnvironments';
+import { createModelTimeoutsClient } from './http-domains/modelTimeouts';
+import { createDirectEndpointsClient } from './http-domains/directEndpoints';
+import { createSessionsClient } from './http-domains/sessions';
+import { createClaudeClient } from './http-domains/claude';
+import { createCodexClient } from './http-domains/codex';
+import { createGeminiClient } from './http-domains/gemini';
+import { createContextClient } from './http-domains/context';
+import { createBacklogPlanClient } from './http-domains/backlogPlan';
+import { createIdeationClient } from './http-domains/ideation';
+import { createNotificationsClient } from './http-domains/notifications';
+import { createEventHistoryClient } from './http-domains/eventHistory';
+import { createMcpClient } from './http-domains/mcp';
+import { createPipelineClient } from './http-domains/pipeline';
 /**
  * HTTP API Client for web mode
  *
@@ -6,24 +35,8 @@
  */
 
 import { createLogger } from '@automaker/utils/logger';
-import type {
-  ExecutionEnvironmentSettings,
-  ExecutionEnvironmentSettingsResponse,
-  ExecutionEnvironmentSelection,
-  DockerConnectionDiagnostic,
-  DockerPreparationResult,
-  SSHHostKey,
-  SSHDiagnostic,
-  ProjectGitEnvironment,
-  DevServerEnvironmentMetadata,
-  ModelTimeoutSettings,
-  ModelTimeoutProvider,
-} from '@automaker/types';
-import type {
-  OpenAICompatibleEndpoint,
-  OpenAICompatibleEndpointStatus,
-  DirectAgentSettings,
-} from '@automaker/types';
+import { translate } from './i18n';
+import type { ProjectGitEnvironment, DevServerEnvironmentMetadata } from '@automaker/types';
 import type {
   ElectronAPI,
   FileResult,
@@ -35,38 +48,14 @@ import type {
   AutoModeAPI,
   FeaturesAPI,
   SpecRegenerationAPI,
-  AutoModeEvent,
-  SpecRegenerationEvent,
   GitHubAPI,
-  IssueValidationInput,
-  IssueValidationEvent,
   IdeationAPI,
-  IdeaCategory,
-  AnalysisSuggestion,
-  StartSessionOptions,
-  CreateIdeaInput,
-  UpdateIdeaInput,
-  ConvertToFeatureOptions,
   NotificationsAPI,
   EventHistoryAPI,
-  CreatePROptions,
 } from './electron';
-import type {
-  IdeationContextSources,
-  EventHistoryFilter,
-  IdeationStreamEvent,
-  IdeationAnalysisEvent,
-  Notification,
-} from '@automaker/types';
-import type { Message, SessionListItem } from '@/types/electron';
-import type {
-  ClaudeUsageResponse,
-  CodexUsageResponse,
-  GeminiUsage,
-  ZaiUsageResponse,
-} from '@/store/app-store';
-import type { WorktreeAPI, GitAPI, ModelDefinition, ProviderStatus } from '@/types/electron';
-import type { ModelId, ThinkingLevel, ReasoningEffort, Feature } from '@automaker/types';
+import type { Notification } from '@automaker/types';
+import type { WorktreeAPI, GitAPI } from '@/types/electron';
+import type { Feature } from '@automaker/types';
 import { getGlobalFileBrowser } from '@/contexts/file-browser-context';
 
 const logger = createLogger('HttpClient');
@@ -601,7 +590,7 @@ export const checkSandboxEnvironment = async (): Promise<{
   }
 };
 
-type EventType =
+export type EventType =
   | 'agent:stream'
   | 'auto-mode:event'
   | 'spec-regeneration:event'
@@ -743,9 +732,9 @@ export interface TestLogsResponse {
   error?: string;
 }
 
-type EventCallback = (payload: unknown) => void;
+export type EventCallback = (payload: unknown) => void;
 
-interface EnhancePromptResult {
+export interface EnhancePromptResult {
   success: boolean;
   enhancedText?: string;
   error?: string;
@@ -1067,20 +1056,26 @@ export class HttpApiClient implements ElectronAPI {
       signal,
     });
 
-    if (response.status === 401 || response.status === 403) {
+    if (response.status === 401) {
       handleUnauthorized();
       throw new Error('Unauthorized');
     }
 
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      let forbiddenDomain = false;
       try {
         const errorData = await response.json();
+        forbiddenDomain = errorData.errorCode === 'FORBIDDEN';
         if (errorData.error) {
           errorMessage = errorData.error;
         }
       } catch {
         // If parsing JSON fails, use status text
+      }
+      if (response.status === 403 && !forbiddenDomain) {
+        handleUnauthorized();
+        throw new Error('Unauthorized');
       }
       throw new Error(errorMessage);
     }
@@ -1465,534 +1460,25 @@ export class HttpApiClient implements ElectronAPI {
     };
     error?: string;
   }> {
-    return this.get('/api/setup/claude-status');
+    return this.setup.getClaudeStatus();
   }
 
   // Model API
-  model = {
-    getAvailable: async (): Promise<{
-      success: boolean;
-      models?: ModelDefinition[];
-      error?: string;
-    }> => {
-      return this.get('/api/models/available');
-    },
-    checkProviders: async (): Promise<{
-      success: boolean;
-      providers?: Record<string, ProviderStatus>;
-      error?: string;
-    }> => {
-      return this.get('/api/models/providers');
-    },
-  };
+  model = createModelClient({ get: this.get.bind(this) });
 
   // Setup API
-  setup = {
-    getClaudeStatus: (): Promise<{
-      success: boolean;
-      status?: string;
-      installed?: boolean;
-      method?: string;
-      version?: string;
-      path?: string;
-      auth?: {
-        authenticated: boolean;
-        method: string;
-        hasCredentialsFile?: boolean;
-        hasToken?: boolean;
-        hasStoredOAuthToken?: boolean;
-        hasStoredApiKey?: boolean;
-        hasEnvApiKey?: boolean;
-        hasEnvOAuthToken?: boolean;
-        hasCliAuth?: boolean;
-        hasRecentActivity?: boolean;
-      };
-      error?: string;
-    }> => this.get('/api/setup/claude-status'),
-
-    installClaude: (): Promise<{
-      success: boolean;
-      message?: string;
-      error?: string;
-    }> => this.post('/api/setup/install-claude'),
-
-    authClaude: (): Promise<{
-      success: boolean;
-      token?: string;
-      requiresManualAuth?: boolean;
-      terminalOpened?: boolean;
-      command?: string;
-      error?: string;
-      message?: string;
-      output?: string;
-    }> => this.post('/api/setup/auth-claude'),
-
-    deauthClaude: (): Promise<{
-      success: boolean;
-      requiresManualDeauth?: boolean;
-      command?: string;
-      message?: string;
-      error?: string;
-    }> => this.post('/api/setup/deauth-claude'),
-
-    storeApiKey: (
-      provider: string,
-      apiKey: string
-    ): Promise<{
-      success: boolean;
-      error?: string;
-    }> => this.post('/api/setup/store-api-key', { provider, apiKey }),
-
-    deleteApiKey: (
-      provider: string
-    ): Promise<{
-      success: boolean;
-      error?: string;
-      message?: string;
-    }> => this.post('/api/setup/delete-api-key', { provider }),
-
-    getApiKeys: (): Promise<{
-      success: boolean;
-      hasAnthropicKey: boolean;
-      hasGoogleKey: boolean;
-      hasOpenaiKey: boolean;
-    }> => this.get('/api/setup/api-keys'),
-
-    getPlatform: (): Promise<{
-      success: boolean;
-      platform: string;
-      arch: string;
-      homeDir: string;
-      isWindows: boolean;
-      isMac: boolean;
-      isLinux: boolean;
-    }> => this.get('/api/setup/platform'),
-
-    verifyClaudeAuth: (
-      authMethod?: 'cli' | 'api_key',
-      apiKey?: string
-    ): Promise<{
-      success: boolean;
-      authenticated: boolean;
-      authType?: 'oauth' | 'api_key' | 'cli';
-      error?: string;
-    }> => this.post('/api/setup/verify-claude-auth', { authMethod, apiKey }),
-
-    getGhStatus: (): Promise<{
-      success: boolean;
-      installed: boolean;
-      authenticated: boolean;
-      version: string | null;
-      path: string | null;
-      user: string | null;
-      error?: string;
-    }> => this.get('/api/setup/gh-status'),
-
-    // Cursor CLI methods
-    getCursorStatus: (): Promise<{
-      success: boolean;
-      installed?: boolean;
-      version?: string | null;
-      path?: string | null;
-      auth?: {
-        authenticated: boolean;
-        method: string;
-      };
-      installCommand?: string;
-      loginCommand?: string;
-      error?: string;
-    }> => this.get('/api/setup/cursor-status'),
-
-    authCursor: (): Promise<{
-      success: boolean;
-      token?: string;
-      requiresManualAuth?: boolean;
-      terminalOpened?: boolean;
-      command?: string;
-      message?: string;
-      output?: string;
-    }> => this.post('/api/setup/auth-cursor'),
-
-    deauthCursor: (): Promise<{
-      success: boolean;
-      requiresManualDeauth?: boolean;
-      command?: string;
-      message?: string;
-      error?: string;
-    }> => this.post('/api/setup/deauth-cursor'),
-
-    authOpencode: (): Promise<{
-      success: boolean;
-      token?: string;
-      requiresManualAuth?: boolean;
-      terminalOpened?: boolean;
-      command?: string;
-      message?: string;
-      output?: string;
-    }> => this.post('/api/setup/auth-opencode'),
-
-    deauthOpencode: (): Promise<{
-      success: boolean;
-      requiresManualDeauth?: boolean;
-      command?: string;
-      message?: string;
-      error?: string;
-    }> => this.post('/api/setup/deauth-opencode'),
-
-    getCursorConfig: (
-      projectPath: string
-    ): Promise<{
-      success: boolean;
-      config?: {
-        defaultModel?: string;
-        models?: string[];
-        mcpServers?: string[];
-        rules?: string[];
-      };
-      availableModels?: Array<{
-        id: string;
-        label: string;
-        description: string;
-        hasThinking: boolean;
-        tier: 'free' | 'pro';
-      }>;
-      error?: string;
-    }> => this.get(`/api/setup/cursor-config?projectPath=${encodeURIComponent(projectPath)}`),
-
-    setCursorDefaultModel: (
-      projectPath: string,
-      model: string
-    ): Promise<{
-      success: boolean;
-      model?: string;
-      error?: string;
-    }> => this.post('/api/setup/cursor-config/default-model', { projectPath, model }),
-
-    setCursorModels: (
-      projectPath: string,
-      models: string[]
-    ): Promise<{
-      success: boolean;
-      models?: string[];
-      error?: string;
-    }> => this.post('/api/setup/cursor-config/models', { projectPath, models }),
-
-    // Cursor CLI Permissions
-    getCursorPermissions: (
-      projectPath?: string
-    ): Promise<{
-      success: boolean;
-      globalPermissions?: { allow: string[]; deny: string[] } | null;
-      projectPermissions?: { allow: string[]; deny: string[] } | null;
-      effectivePermissions?: { allow: string[]; deny: string[] } | null;
-      activeProfile?: 'strict' | 'development' | 'custom' | null;
-      hasProjectConfig?: boolean;
-      availableProfiles?: Array<{
-        id: string;
-        name: string;
-        description: string;
-        permissions: { allow: string[]; deny: string[] };
-      }>;
-      error?: string;
-    }> =>
-      this.get(
-        `/api/setup/cursor-permissions${projectPath ? `?projectPath=${encodeURIComponent(projectPath)}` : ''}`
-      ),
-
-    applyCursorPermissionProfile: (
-      profileId: 'strict' | 'development',
-      scope: 'global' | 'project',
-      projectPath?: string
-    ): Promise<{
-      success: boolean;
-      message?: string;
-      scope?: string;
-      profileId?: string;
-      error?: string;
-    }> => this.post('/api/setup/cursor-permissions/profile', { profileId, scope, projectPath }),
-
-    setCursorCustomPermissions: (
-      projectPath: string,
-      permissions: { allow: string[]; deny: string[] }
-    ): Promise<{
-      success: boolean;
-      message?: string;
-      permissions?: { allow: string[]; deny: string[] };
-      error?: string;
-    }> => this.post('/api/setup/cursor-permissions/custom', { projectPath, permissions }),
-
-    deleteCursorProjectPermissions: (
-      projectPath: string
-    ): Promise<{
-      success: boolean;
-      message?: string;
-      error?: string;
-    }> =>
-      this.httpDelete(
-        `/api/setup/cursor-permissions?projectPath=${encodeURIComponent(projectPath)}`
-      ),
-
-    getCursorExampleConfig: (
-      profileId?: 'strict' | 'development'
-    ): Promise<{
-      success: boolean;
-      profileId?: string;
-      config?: string;
-      error?: string;
-    }> =>
-      this.get(
-        `/api/setup/cursor-permissions/example${profileId ? `?profileId=${profileId}` : ''}`
-      ),
-
-    // Codex CLI methods
-    getCodexStatus: (): Promise<{
-      success: boolean;
-      status?: string;
-      installed?: boolean;
-      method?: string;
-      version?: string;
-      path?: string;
-      auth?: {
-        authenticated: boolean;
-        method: string;
-        hasAuthFile?: boolean;
-        hasOAuthToken?: boolean;
-        hasApiKey?: boolean;
-        hasStoredApiKey?: boolean;
-        hasEnvApiKey?: boolean;
-      };
-      error?: string;
-    }> => this.get('/api/setup/codex-status'),
-
-    installCodex: (): Promise<{
-      success: boolean;
-      message?: string;
-      error?: string;
-    }> => this.post('/api/setup/install-codex'),
-
-    authCodex: (): Promise<{
-      success: boolean;
-      token?: string;
-      requiresManualAuth?: boolean;
-      terminalOpened?: boolean;
-      command?: string;
-      error?: string;
-      message?: string;
-      output?: string;
-    }> => this.post('/api/setup/auth-codex'),
-
-    deauthCodex: (): Promise<{
-      success: boolean;
-      requiresManualDeauth?: boolean;
-      command?: string;
-      message?: string;
-      error?: string;
-    }> => this.post('/api/setup/deauth-codex'),
-
-    verifyCodexAuth: (
-      authMethod: 'cli' | 'api_key',
-      apiKey?: string
-    ): Promise<{
-      success: boolean;
-      authenticated: boolean;
-      error?: string;
-    }> => this.post('/api/setup/verify-codex-auth', { authMethod, apiKey }),
-
-    // OpenCode CLI methods
-    getOpencodeStatus: (): Promise<{
-      success: boolean;
-      status?: string;
-      installed?: boolean;
-      method?: string;
-      version?: string;
-      path?: string;
-      recommendation?: string;
-      installCommands?: {
-        macos?: string;
-        linux?: string;
-        npm?: string;
-      };
-      auth?: {
-        authenticated: boolean;
-        method: string;
-        hasAuthFile?: boolean;
-        hasOAuthToken?: boolean;
-        hasApiKey?: boolean;
-        hasStoredApiKey?: boolean;
-        hasEnvApiKey?: boolean;
-      };
-      error?: string;
-    }> => this.get('/api/setup/opencode-status'),
-
-    // OpenCode Dynamic Model Discovery
-    getOpencodeModels: (
-      refresh?: boolean
-    ): Promise<{
-      success: boolean;
-      models?: Array<{
-        id: string;
-        name: string;
-        modelString: string;
-        provider: string;
-        description: string;
-        supportsTools: boolean;
-        supportsVision: boolean;
-        tier: string;
-        default?: boolean;
-      }>;
-      count?: number;
-      cached?: boolean;
-      error?: string;
-    }> => this.get(`/api/setup/opencode/models${refresh ? '?refresh=true' : ''}`),
-
-    refreshOpencodeModels: (): Promise<{
-      success: boolean;
-      models?: Array<{
-        id: string;
-        name: string;
-        modelString: string;
-        provider: string;
-        description: string;
-        supportsTools: boolean;
-        supportsVision: boolean;
-        tier: string;
-        default?: boolean;
-      }>;
-      count?: number;
-      error?: string;
-    }> => this.post('/api/setup/opencode/models/refresh'),
-
-    getOpencodeProviders: (): Promise<{
-      success: boolean;
-      providers?: Array<{
-        id: string;
-        name: string;
-        authenticated: boolean;
-        authMethod?: 'oauth' | 'api_key';
-      }>;
-      authenticated?: Array<{
-        id: string;
-        name: string;
-        authenticated: boolean;
-        authMethod?: 'oauth' | 'api_key';
-      }>;
-      error?: string;
-    }> => this.get('/api/setup/opencode/providers'),
-
-    clearOpencodeCache: (): Promise<{
-      success: boolean;
-      message?: string;
-      error?: string;
-    }> => this.post('/api/setup/opencode/cache/clear'),
-
-    // Gemini CLI methods
-    getGeminiStatus: (): Promise<{
-      success: boolean;
-      status?: string;
-      installed?: boolean;
-      method?: string;
-      version?: string;
-      path?: string;
-      recommendation?: string;
-      installCommands?: {
-        macos?: string;
-        linux?: string;
-        npm?: string;
-      };
-      auth?: {
-        authenticated: boolean;
-        method: string;
-        hasApiKey?: boolean;
-        hasEnvApiKey?: boolean;
-        error?: string;
-      };
-      loginCommand?: string;
-      installCommand?: string;
-      error?: string;
-    }> => this.get('/api/setup/gemini-status'),
-
-    authGemini: (): Promise<{
-      success: boolean;
-      requiresManualAuth?: boolean;
-      command?: string;
-      message?: string;
-      error?: string;
-    }> => this.post('/api/setup/auth-gemini'),
-
-    deauthGemini: (): Promise<{
-      success: boolean;
-      requiresManualDeauth?: boolean;
-      command?: string;
-      message?: string;
-      error?: string;
-    }> => this.post('/api/setup/deauth-gemini'),
-
-    // Copilot SDK methods
-    getCopilotStatus: (): Promise<{
-      success: boolean;
-      status?: string;
-      installed?: boolean;
-      method?: string;
-      version?: string;
-      path?: string;
-      recommendation?: string;
-      auth?: {
-        authenticated: boolean;
-        method: string;
-        login?: string;
-        host?: string;
-        error?: string;
-      };
-      loginCommand?: string;
-      installCommand?: string;
-      error?: string;
-    }> => this.get('/api/setup/copilot-status'),
-
-    onInstallProgress: (
-      callback: (progress: { cli?: string; data?: string; type?: string }) => void
-    ) => {
-      return this.subscribeToEvent('agent:stream', callback as EventCallback);
+  setup = createSetupClient(
+    {
+      get: this.get.bind(this),
+      post: this.post.bind(this),
+      httpDelete: this.httpDelete.bind(this),
+      subscribeToEvent: this.subscribeToEvent.bind(this),
     },
-
-    onAuthProgress: (
-      callback: (progress: { cli?: string; data?: string; type?: string }) => void
-    ) => {
-      return this.subscribeToEvent('agent:stream', callback as EventCallback);
-    },
-  };
+    { confirm: (message) => window.confirm(message), translate }
+  );
 
   // z.ai API
-  zai = {
-    getStatus: (): Promise<{
-      success: boolean;
-      available: boolean;
-      message?: string;
-      hasApiKey?: boolean;
-      hasEnvApiKey?: boolean;
-      error?: string;
-    }> => this.get('/api/zai/status'),
-
-    getUsage: (): Promise<ZaiUsageResponse> => this.get('/api/zai/usage'),
-
-    configure: (
-      apiToken?: string,
-      apiHost?: string
-    ): Promise<{
-      success: boolean;
-      message?: string;
-      isAvailable?: boolean;
-      error?: string;
-    }> => this.post('/api/zai/configure', { apiToken, apiHost }),
-
-    verify: (
-      apiKey: string
-    ): Promise<{
-      success: boolean;
-      authenticated: boolean;
-      message?: string;
-      error?: string;
-    }> => this.post('/api/zai/verify', { apiKey }),
-  };
+  zai = createZaiClient({ get: this.get.bind(this), post: this.post.bind(this) });
 
   // Features API
   features: FeaturesAPI & {
@@ -2076,1586 +1562,130 @@ export class HttpApiClient implements ElectronAPI {
       conflictCount?: number;
       error?: string;
     }>;
-  } = {
-    getAll: (projectPath: string) =>
-      this.get(`/api/features/list?projectPath=${encodeURIComponent(projectPath)}`),
-    get: (projectPath: string, featureId: string) =>
-      this.post('/api/features/get', { projectPath, featureId }),
-    create: (projectPath: string, feature: Feature) =>
-      this.post('/api/features/create', { projectPath, feature }),
-    update: (
-      projectPath: string,
-      featureId: string,
-      updates: Partial<Feature>,
-      descriptionHistorySource?: 'enhance' | 'edit',
-      enhancementMode?: 'improve' | 'technical' | 'simplify' | 'acceptance' | 'ux-reviewer',
-      preEnhancementDescription?: string
-    ) =>
-      this.post('/api/features/update', {
-        projectPath,
-        featureId,
-        updates,
-        descriptionHistorySource,
-        enhancementMode,
-        preEnhancementDescription,
-      }),
-    delete: (projectPath: string, featureId: string) =>
-      this.post('/api/features/delete', { projectPath, featureId }),
-    getAgentOutput: (projectPath: string, featureId: string) =>
-      this.post('/api/features/agent-output', { projectPath, featureId }),
-    generateTitle: (description: string, projectPath?: string) =>
-      this.post('/api/features/generate-title', { description, projectPath }),
-    bulkUpdate: (projectPath: string, featureIds: string[], updates: Partial<Feature>) =>
-      this.post('/api/features/bulk-update', { projectPath, featureIds, updates }),
-    bulkDelete: (projectPath: string, featureIds: string[]) =>
-      this.post('/api/features/bulk-delete', { projectPath, featureIds }),
-    export: (
-      projectPath: string,
-      options?: {
-        featureIds?: string[];
-        format?: 'json' | 'yaml';
-        includeHistory?: boolean;
-        includePlanSpec?: boolean;
-        category?: string;
-        status?: string;
-        prettyPrint?: boolean;
-        metadata?: Record<string, unknown>;
-      }
-    ): Promise<{
-      success: boolean;
-      data?: string;
-      format?: 'json' | 'yaml';
-      contentType?: string;
-      filename?: string;
-      error?: string;
-    }> => this.post('/api/features/export', { projectPath, ...options }),
-    import: (
-      projectPath: string,
-      data: string,
-      options?: {
-        overwrite?: boolean;
-        preserveBranchInfo?: boolean;
-        targetCategory?: string;
-      }
-    ): Promise<{
-      success: boolean;
-      importedCount?: number;
-      failedCount?: number;
-      results?: Array<{
-        success: boolean;
-        featureId?: string;
-        importedAt: string;
-        warnings?: string[];
-        errors?: string[];
-        wasOverwritten?: boolean;
-      }>;
-      error?: string;
-    }> => this.post('/api/features/import', { projectPath, data, ...options }),
-    checkConflicts: (
-      projectPath: string,
-      data: string
-    ): Promise<{
-      success: boolean;
-      hasConflicts?: boolean;
-      conflicts?: Array<{
-        featureId: string;
-        title?: string;
-        existingTitle?: string;
-        hasConflict: boolean;
-      }>;
-      totalFeatures?: number;
-      conflictCount?: number;
-      error?: string;
-    }> => this.post('/api/features/check-conflicts', { projectPath, data }),
-    getOrphaned: (
-      projectPath: string
-    ): Promise<{
-      success: boolean;
-      orphanedFeatures?: Array<{ feature: Feature; missingBranch: string }>;
-      error?: string;
-    }> => this.post('/api/features/orphaned', { projectPath }),
-    resolveOrphaned: (
-      projectPath: string,
-      featureId: string,
-      action: 'delete' | 'create-worktree' | 'move-to-branch',
-      targetBranch?: string | null
-    ): Promise<{
-      success: boolean;
-      action?: string;
-      worktreePath?: string;
-      branchName?: string;
-      error?: string;
-    }> =>
-      this.post('/api/features/orphaned/resolve', { projectPath, featureId, action, targetBranch }),
-    bulkResolveOrphaned: (
-      projectPath: string,
-      featureIds: string[],
-      action: 'delete' | 'create-worktree' | 'move-to-branch',
-      targetBranch?: string | null
-    ): Promise<{
-      success: boolean;
-      resolvedCount?: number;
-      failedCount?: number;
-      results?: Array<{ featureId: string; success: boolean; action?: string; error?: string }>;
-      error?: string;
-    }> =>
-      this.post('/api/features/orphaned/bulk-resolve', {
-        projectPath,
-        featureIds,
-        action,
-        targetBranch,
-      }),
-  };
+  } = createFeaturesClient({ get: this.get.bind(this), post: this.post.bind(this) });
 
   // Auto Mode API
-  autoMode: AutoModeAPI = {
-    start: (projectPath: string, branchName?: string | null, maxConcurrency?: number) =>
-      this.post('/api/auto-mode/start', { projectPath, branchName, maxConcurrency }),
-    stop: (projectPath: string, branchName?: string | null) =>
-      this.post('/api/auto-mode/stop', { projectPath, branchName }),
-    stopFeature: (featureId: string) => this.post('/api/auto-mode/stop-feature', { featureId }),
-    status: (projectPath?: string, branchName?: string | null) =>
-      this.post('/api/auto-mode/status', { projectPath, branchName }),
-    runFeature: (
-      projectPath: string,
-      featureId: string,
-      useWorktrees?: boolean,
-      worktreePath?: string
-    ) =>
-      this.post('/api/auto-mode/run-feature', {
-        projectPath,
-        featureId,
-        useWorktrees,
-        worktreePath,
-      }),
-    verifyFeature: (projectPath: string, featureId: string) =>
-      this.post('/api/auto-mode/verify-feature', { projectPath, featureId }),
-    resumeFeature: (projectPath: string, featureId: string, useWorktrees?: boolean) =>
-      this.post('/api/auto-mode/resume-feature', {
-        projectPath,
-        featureId,
-        useWorktrees,
-      }),
-    contextExists: (projectPath: string, featureId: string) =>
-      this.post('/api/auto-mode/context-exists', { projectPath, featureId }),
-    analyzeProject: (projectPath: string) =>
-      this.post('/api/auto-mode/analyze-project', { projectPath }),
-    followUpFeature: (
-      projectPath: string,
-      featureId: string,
-      prompt: string,
-      imagePaths?: string[],
-      useWorktrees?: boolean
-    ) =>
-      this.post('/api/auto-mode/follow-up-feature', {
-        projectPath,
-        featureId,
-        prompt,
-        imagePaths,
-        useWorktrees,
-      }),
-    mergeEnvironmentFeature: (
-      projectPath: string,
-      featureId: string
-    ): Promise<{ success: boolean; error?: string }> =>
-      this.post('/api/auto-mode/merge-environment-feature', {
-        projectPath,
-        featureId,
-        accepted: true,
-      }),
-    mergeSSHFeature: (
-      projectPath: string,
-      featureId: string
-    ): Promise<{ success: boolean; error?: string }> =>
-      this.post('/api/auto-mode/merge-ssh-feature', { projectPath, featureId, accepted: true }),
-    commitFeature: (projectPath: string, featureId: string, worktreePath?: string) =>
-      this.post('/api/auto-mode/commit-feature', {
-        projectPath,
-        featureId,
-        worktreePath,
-      }),
-    approvePlan: (
-      projectPath: string,
-      featureId: string,
-      approved: boolean,
-      editedPlan?: string,
-      feedback?: string
-    ) =>
-      this.post('/api/auto-mode/approve-plan', {
-        projectPath,
-        featureId,
-        approved,
-        editedPlan,
-        feedback,
-      }),
-    resumeInterrupted: (projectPath: string) =>
-      this.post('/api/auto-mode/resume-interrupted', { projectPath }),
-    onEvent: (callback: (event: AutoModeEvent) => void) => {
-      return this.subscribeToEvent('auto-mode:event', callback as EventCallback);
-    },
-  };
+  autoMode: AutoModeAPI = createAutoModeClient({
+    post: this.post.bind(this),
+    subscribeToEvent: this.subscribeToEvent.bind(this),
+  });
 
   // Enhance Prompt API
-  enhancePrompt = {
-    enhance: (
-      originalText: string,
-      enhancementMode: string,
-      model?: string,
-      thinkingLevel?: string,
-      projectPath?: string,
-      providerId?: string
-    ): Promise<EnhancePromptResult> =>
-      this.post('/api/enhance-prompt', {
-        originalText,
-        enhancementMode,
-        model,
-        thinkingLevel,
-        projectPath,
-        providerId,
-      }),
-  };
+  enhancePrompt = createEnhancePromptClient({ post: this.post.bind(this) });
 
   // Worktree API
-  worktree: WorktreeAPI = {
-    mergeFeature: (
-      projectPath: string,
-      branchName: string,
-      worktreePath: string,
-      targetBranch?: string,
-      options?: object
-    ) =>
-      this.post('/api/worktree/merge', {
-        projectPath,
-        branchName,
-        worktreePath,
-        targetBranch,
-        options,
-      }),
-    getInfo: (projectPath: string, featureId: string) =>
-      this.post('/api/worktree/info', { projectPath, featureId }),
-    getStatus: (projectPath: string, featureId: string) =>
-      this.post('/api/worktree/status', { projectPath, featureId }),
-    list: (projectPath: string) => this.post('/api/worktree/list', { projectPath }),
-    listAll: (projectPath: string, includeDetails?: boolean, forceRefreshGitHub?: boolean) =>
-      this.post('/api/worktree/list', { projectPath, includeDetails, forceRefreshGitHub }),
-    create: (projectPath: string, branchName: string, baseBranch?: string) =>
-      this.post('/api/worktree/create', {
-        projectPath,
-        branchName,
-        baseBranch,
-      }),
-    delete: (projectPath: string, worktreePath: string, deleteBranch?: boolean) =>
-      this.post('/api/worktree/delete', {
-        projectPath,
-        worktreePath,
-        deleteBranch,
-      }),
-    commit: (worktreePath: string, message: string, files?: string[]) =>
-      this.post('/api/worktree/commit', { worktreePath, message, files }),
-    generateCommitMessage: (
-      worktreePath: string,
-      model?: string,
-      thinkingLevel?: string,
-      providerId?: string
-    ) =>
-      this.post('/api/worktree/generate-commit-message', {
-        worktreePath,
-        model,
-        thinkingLevel,
-        providerId,
-      }),
-    generatePRDescription: (
-      worktreePath: string,
-      baseBranch?: string,
-      model?: string,
-      thinkingLevel?: string,
-      providerId?: string
-    ) =>
-      this.post('/api/worktree/generate-pr-description', {
-        worktreePath,
-        baseBranch,
-        model,
-        thinkingLevel,
-        providerId,
-      }),
-    push: (worktreePath: string, force?: boolean, remote?: string, autoResolve?: boolean) =>
-      this.post('/api/worktree/push', { worktreePath, force, remote, autoResolve }),
-    sync: (worktreePath: string, remote?: string) =>
-      this.post('/api/worktree/sync', { worktreePath, remote }),
-    setTracking: (worktreePath: string, remote: string, branch?: string) =>
-      this.post('/api/worktree/set-tracking', { worktreePath, remote, branch }),
-    createPR: (worktreePath: string, options?: CreatePROptions) =>
-      this.post('/api/worktree/create-pr', { worktreePath, ...options }),
-    updatePRNumber: (worktreePath: string, prNumber: number, projectPath?: string) =>
-      this.post('/api/worktree/update-pr-number', { worktreePath, prNumber, projectPath }),
-    getDiffs: (projectPath: string, featureId: string) =>
-      this.post('/api/worktree/diffs', { projectPath, featureId }),
-    getFileDiff: (projectPath: string, featureId: string, filePath: string) =>
-      this.post('/api/worktree/file-diff', {
-        projectPath,
-        featureId,
-        filePath,
-      }),
-    stageFiles: (worktreePath: string, files: string[], operation: 'stage' | 'unstage') =>
-      this.post('/api/worktree/stage-files', { worktreePath, files, operation }),
-    pull: (worktreePath: string, remote?: string, stashIfNeeded?: boolean, remoteBranch?: string) =>
-      this.post('/api/worktree/pull', { worktreePath, remote, remoteBranch, stashIfNeeded }),
-    checkoutBranch: (
-      worktreePath: string,
-      branchName: string,
-      baseBranch?: string,
-      stashChanges?: boolean,
-      includeUntracked?: boolean
-    ) =>
-      this.post('/api/worktree/checkout-branch', {
-        worktreePath,
-        branchName,
-        baseBranch,
-        stashChanges,
-        includeUntracked,
-      }),
-    checkChanges: (worktreePath: string) =>
-      this.post('/api/worktree/check-changes', { worktreePath }),
-    listBranches: (worktreePath: string, includeRemote?: boolean, signal?: AbortSignal) =>
-      this.post('/api/worktree/list-branches', { worktreePath, includeRemote }, signal),
-    switchBranch: (worktreePath: string, branchName: string) =>
-      this.post('/api/worktree/switch-branch', { worktreePath, branchName }),
-    listRemotes: (worktreePath: string) =>
-      this.post('/api/worktree/list-remotes', { worktreePath }),
-    addRemote: (worktreePath: string, remoteName: string, remoteUrl: string) =>
-      this.post('/api/worktree/add-remote', { worktreePath, remoteName, remoteUrl }),
-    openInEditor: (worktreePath: string, editorCommand?: string) =>
-      this.post('/api/worktree/open-in-editor', { worktreePath, editorCommand }),
-    getDefaultEditor: () => this.get('/api/worktree/default-editor'),
-    getAvailableEditors: () => this.get('/api/worktree/available-editors'),
-    refreshEditors: () => this.post('/api/worktree/refresh-editors', {}),
-    getAvailableTerminals: () => this.get('/api/worktree/available-terminals'),
-    getDefaultTerminal: () => this.get('/api/worktree/default-terminal'),
-    refreshTerminals: () => this.post('/api/worktree/refresh-terminals', {}),
-    openInExternalTerminal: (worktreePath: string, terminalId?: string) =>
-      this.post('/api/worktree/open-in-external-terminal', { worktreePath, terminalId }),
-    initGit: (projectPath: string) => this.post('/api/worktree/init-git', { projectPath }),
-    startDevServer: async (projectPath: string, worktreePath: string) => {
-      const inspected = await this.executionEnvironments.inspectGit(worktreePath);
-      if (!inspected.success || !inspected.executionEnvironment)
-        throw new Error(
-          inspected.error || 'Cannot inspect the dev environment. No command was started.'
-        );
-      return this.post<Awaited<ReturnType<WorktreeAPI['startDevServer']>>>(
-        '/api/worktree/start-dev',
-        { projectPath, worktreePath, environmentTargetId: inspected.executionEnvironment.targetId }
-      );
-    },
-    stopDevServer: (worktreePath: string, sessionId?: string) =>
-      this.post('/api/worktree/stop-dev', { worktreePath, ...(sessionId && { sessionId }) }),
-    listDevServers: () => this.post('/api/worktree/list-dev-servers', {}),
-    getDevServerLogs: (worktreePath: string, sessionId?: string): Promise<DevServerLogsResponse> =>
-      this.get(
-        `/api/worktree/dev-server-logs?worktreePath=${encodeURIComponent(worktreePath)}${sessionId ? '&sessionId=' + encodeURIComponent(sessionId) : ''}`
-      ),
-    onDevServerLogEvent: (callback: (event: DevServerLogEvent) => void) => {
-      const unsub0 = this.subscribeToEvent('dev-server:starting', (payload) =>
-        callback({ type: 'dev-server:starting', payload: payload as DevServerStartingEvent })
-      );
-      const unsub1 = this.subscribeToEvent('dev-server:started', (payload) =>
-        callback({ type: 'dev-server:started', payload: payload as DevServerStartedEvent })
-      );
-      const unsub2 = this.subscribeToEvent('dev-server:output', (payload) =>
-        callback({ type: 'dev-server:output', payload: payload as DevServerOutputEvent })
-      );
-      const unsub3 = this.subscribeToEvent('dev-server:stopped', (payload) =>
-        callback({ type: 'dev-server:stopped', payload: payload as DevServerStoppedEvent })
-      );
-      const unsub4 = this.subscribeToEvent('dev-server:url-detected', (payload) =>
-        callback({ type: 'dev-server:url-detected', payload: payload as DevServerUrlDetectedEvent })
-      );
-      return () => {
-        unsub0();
-        unsub1();
-        unsub2();
-        unsub3();
-        unsub4();
-      };
-    },
-    getPRInfo: (worktreePath: string, branchName: string) =>
-      this.post('/api/worktree/pr-info', { worktreePath, branchName }),
-    // Init script methods
-    getInitScript: (projectPath: string) =>
-      this.get(`/api/worktree/init-script?projectPath=${encodeURIComponent(projectPath)}`),
-    setInitScript: (projectPath: string, content: string) =>
-      this.put('/api/worktree/init-script', { projectPath, content }),
-    deleteInitScript: (projectPath: string) =>
-      this.httpDelete('/api/worktree/init-script', { projectPath }),
-    runInitScript: (projectPath: string, worktreePath: string, branch: string) =>
-      this.post('/api/worktree/run-init-script', { projectPath, worktreePath, branch }),
-    discardChanges: (worktreePath: string, files?: string[]) =>
-      this.post('/api/worktree/discard-changes', { worktreePath, files }),
-    onInitScriptEvent: (
-      callback: (event: {
-        type: 'worktree:init-started' | 'worktree:init-output' | 'worktree:init-completed';
-        payload: unknown;
-      }) => void
-    ) => {
-      // Note: subscribeToEvent callback receives (payload) not (_, payload)
-      const unsub1 = this.subscribeToEvent('worktree:init-started', (payload) =>
-        callback({ type: 'worktree:init-started', payload })
-      );
-      const unsub2 = this.subscribeToEvent('worktree:init-output', (payload) =>
-        callback({ type: 'worktree:init-output', payload })
-      );
-      const unsub3 = this.subscribeToEvent('worktree:init-completed', (payload) =>
-        callback({ type: 'worktree:init-completed', payload })
-      );
-      return () => {
-        unsub1();
-        unsub2();
-        unsub3();
-      };
-    },
-    // Test runner methods
-    startTests: async (
-      worktreePath: string,
-      options?: { projectPath?: string; testFile?: string }
-    ) => {
-      const inspected = await this.executionEnvironments.inspectGit(worktreePath);
-      if (!inspected.success || !inspected.executionEnvironment)
-        throw new Error(
-          inspected.error || 'Cannot inspect the test environment. No tests were started.'
-        );
-      return this.post<Awaited<ReturnType<WorktreeAPI['startTests']>>>(
-        '/api/worktree/start-tests',
-        {
-          worktreePath,
-          ...options,
-          environmentTargetId: inspected.executionEnvironment.targetId,
-        }
-      );
-    },
-    stopTests: (sessionId: string) => this.post('/api/worktree/stop-tests', { sessionId }),
-    getCommitLog: (worktreePath: string, limit?: number) =>
-      this.post('/api/worktree/commit-log', { worktreePath, limit }),
-    stashPush: (worktreePath: string, message?: string, files?: string[]) =>
-      this.post('/api/worktree/stash-push', { worktreePath, message, files }),
-    stashList: (worktreePath: string) => this.post('/api/worktree/stash-list', { worktreePath }),
-    stashApply: (worktreePath: string, stashIndex: number, pop?: boolean) =>
-      this.post('/api/worktree/stash-apply', { worktreePath, stashIndex, pop }),
-    stashDrop: (worktreePath: string, stashIndex: number) =>
-      this.post('/api/worktree/stash-drop', { worktreePath, stashIndex }),
-    cherryPick: (worktreePath: string, commitHashes: string[], options?: { noCommit?: boolean }) =>
-      this.post('/api/worktree/cherry-pick', { worktreePath, commitHashes, options }),
-    rebase: (worktreePath: string, ontoBranch: string, remote?: string) =>
-      this.post('/api/worktree/rebase', { worktreePath, ontoBranch, remote }),
-    abortOperation: (worktreePath: string) =>
-      this.post('/api/worktree/abort-operation', { worktreePath }),
-    continueOperation: (worktreePath: string) =>
-      this.post('/api/worktree/continue-operation', { worktreePath }),
-    getBranchCommitLog: (worktreePath: string, branchName?: string, limit?: number) =>
-      this.post('/api/worktree/branch-commit-log', { worktreePath, branchName, limit }),
-    getTestLogs: (worktreePath?: string, sessionId?: string): Promise<TestLogsResponse> => {
-      const params = new URLSearchParams();
-      if (worktreePath) params.append('worktreePath', worktreePath);
-      if (sessionId) params.append('sessionId', sessionId);
-      return this.get(`/api/worktree/test-logs?${params.toString()}`);
-    },
-    onTestRunnerEvent: (callback: (event: TestRunnerEvent) => void) => {
-      const unsub1 = this.subscribeToEvent('test-runner:started', (payload) =>
-        callback({ type: 'test-runner:started', payload: payload as TestRunnerStartedEvent })
-      );
-      const unsub2 = this.subscribeToEvent('test-runner:output', (payload) =>
-        callback({ type: 'test-runner:output', payload: payload as TestRunnerOutputEvent })
-      );
-      const unsub3 = this.subscribeToEvent('test-runner:completed', (payload) =>
-        callback({ type: 'test-runner:completed', payload: payload as TestRunnerCompletedEvent })
-      );
-      return () => {
-        unsub1();
-        unsub2();
-        unsub3();
-      };
-    },
-  };
+  worktree: WorktreeAPI = createWorktreeClient({
+    post: this.post.bind(this),
+    get: this.get.bind(this),
+    put: this.put.bind(this),
+    httpDelete: this.httpDelete.bind(this),
+    subscribeToEvent: this.subscribeToEvent.bind(this),
+    inspectGit: (project) => this.executionEnvironments.inspectGit(project),
+  });
 
   // Git API
-  git: GitAPI = {
-    getDiffs: (projectPath: string) => this.post('/api/git/diffs', { projectPath }),
-    getFileDiff: (projectPath: string, filePath: string) =>
-      this.post('/api/git/file-diff', { projectPath, filePath }),
-    stageFiles: (projectPath: string, files: string[], operation: 'stage' | 'unstage') =>
-      this.post('/api/git/stage-files', { projectPath, files, operation }),
-    getDetails: (projectPath: string, filePath?: string) =>
-      this.post('/api/git/details', { projectPath, filePath }),
-    getEnhancedStatus: (projectPath: string) =>
-      this.post('/api/git/enhanced-status', { projectPath }),
-  };
+  git: GitAPI = createGitClient({ post: this.post.bind(this) });
 
   // Spec Regeneration API
-  specRegeneration: SpecRegenerationAPI = {
-    create: (
-      projectPath: string,
-      projectOverview: string,
-      generateFeatures?: boolean,
-      analyzeProject?: boolean,
-      maxFeatures?: number
-    ) =>
-      this.post('/api/spec-regeneration/create', {
-        projectPath,
-        projectOverview,
-        generateFeatures,
-        analyzeProject,
-        maxFeatures,
-      }),
-    generate: (
-      projectPath: string,
-      projectDefinition: string,
-      generateFeatures?: boolean,
-      analyzeProject?: boolean,
-      maxFeatures?: number
-    ) =>
-      this.post('/api/spec-regeneration/generate', {
-        projectPath,
-        projectDefinition,
-        generateFeatures,
-        analyzeProject,
-        maxFeatures,
-      }),
-    generateFeatures: (projectPath: string, maxFeatures?: number) =>
-      this.post('/api/spec-regeneration/generate-features', {
-        projectPath,
-        maxFeatures,
-      }),
-    sync: (projectPath: string) => this.post('/api/spec-regeneration/sync', { projectPath }),
-    stop: (projectPath?: string) => this.post('/api/spec-regeneration/stop', { projectPath }),
-    status: (projectPath?: string) =>
-      this.get(
-        projectPath
-          ? `/api/spec-regeneration/status?projectPath=${encodeURIComponent(projectPath)}`
-          : '/api/spec-regeneration/status'
-      ),
-    onEvent: (callback: (event: SpecRegenerationEvent) => void) => {
-      return this.subscribeToEvent('spec-regeneration:event', callback as EventCallback);
-    },
-  };
+  specRegeneration: SpecRegenerationAPI = createSpecRegenerationClient({
+    post: this.post.bind(this),
+    get: this.get.bind(this),
+    subscribeToEvent: this.subscribeToEvent.bind(this),
+  });
 
   // Running Agents API
-  runningAgents = {
-    getAll: (): Promise<{
-      success: boolean;
-      runningAgents?: Array<{
-        featureId: string;
-        projectPath: string;
-        projectName: string;
-        isAutoMode: boolean;
-      }>;
-      totalCount?: number;
-      error?: string;
-    }> => this.get('/api/running-agents'),
-  };
+  runningAgents = createRunningAgentsClient({ get: this.get.bind(this) });
 
   // GitHub API
-  github: GitHubAPI = {
-    checkRemote: (projectPath: string) => this.post('/api/github/check-remote', { projectPath }),
-    listIssues: (projectPath: string) => this.post('/api/github/issues', { projectPath }),
-    listPRs: (projectPath: string) => this.post('/api/github/prs', { projectPath }),
-    validateIssue: (
-      projectPath: string,
-      issue: IssueValidationInput,
-      model?: ModelId,
-      thinkingLevel?: ThinkingLevel,
-      reasoningEffort?: ReasoningEffort,
-      providerId?: string
-    ) =>
-      this.post('/api/github/validate-issue', {
-        projectPath,
-        ...issue,
-        model,
-        thinkingLevel,
-        reasoningEffort,
-        providerId,
-      }),
-    getValidationStatus: (projectPath: string, issueNumber?: number) =>
-      this.post('/api/github/validation-status', { projectPath, issueNumber }),
-    stopValidation: (projectPath: string, issueNumber: number) =>
-      this.post('/api/github/validation-stop', { projectPath, issueNumber }),
-    getValidations: (projectPath: string, issueNumber?: number) =>
-      this.post('/api/github/validations', { projectPath, issueNumber }),
-    markValidationViewed: (projectPath: string, issueNumber: number) =>
-      this.post('/api/github/validation-mark-viewed', { projectPath, issueNumber }),
-    onValidationEvent: (callback: (event: IssueValidationEvent) => void) =>
-      this.subscribeToEvent('issue-validation:event', callback as EventCallback),
-    getIssueComments: (projectPath: string, issueNumber: number, cursor?: string) =>
-      this.post('/api/github/issue-comments', { projectPath, issueNumber, cursor }),
-    getPRReviewComments: (projectPath: string, prNumber: number) =>
-      this.post('/api/github/pr-review-comments', { projectPath, prNumber }),
-    resolveReviewThread: (projectPath: string, threadId: string, resolve: boolean) =>
-      this.post('/api/github/resolve-pr-comment', { projectPath, threadId, resolve }),
-  };
+  github: GitHubAPI = createGithubClient({
+    post: this.post.bind(this),
+    subscribeToEvent: this.subscribeToEvent.bind(this),
+  });
 
   // Workspace API
-  workspace = {
-    getConfig: (): Promise<{
-      success: boolean;
-      configured: boolean;
-      workspaceDir?: string;
-      defaultDir?: string | null;
-      error?: string;
-    }> => this.get('/api/workspace/config'),
-
-    getDirectories: (): Promise<{
-      success: boolean;
-      directories?: Array<{ name: string; path: string }>;
-      error?: string;
-    }> => this.get('/api/workspace/directories'),
-  };
+  workspace = createWorkspaceClient({ get: this.get.bind(this) });
 
   // Agent API
-  agent = {
-    start: (
-      sessionId: string,
-      workingDirectory?: string
-    ): Promise<{
-      success: boolean;
-      messages?: Message[];
-      error?: string;
-    }> => this.post('/api/agent/start', { sessionId, workingDirectory }),
-
-    send: (
-      sessionId: string,
-      message: string,
-      workingDirectory?: string,
-      imagePaths?: string[],
-      model?: string,
-      thinkingLevel?: string,
-      providerId?: string
-    ): Promise<{ success: boolean; error?: string }> =>
-      this.post('/api/agent/send', {
-        sessionId,
-        message,
-        workingDirectory,
-        imagePaths,
-        model,
-        thinkingLevel,
-        providerId,
-      }),
-
-    getHistory: (
-      sessionId: string
-    ): Promise<{
-      success: boolean;
-      messages?: Message[];
-      isRunning?: boolean;
-      error?: string;
-    }> => this.post('/api/agent/history', { sessionId }),
-
-    stop: (sessionId: string): Promise<{ success: boolean; error?: string }> =>
-      this.post('/api/agent/stop', { sessionId }),
-
-    clear: (sessionId: string): Promise<{ success: boolean; error?: string }> =>
-      this.post('/api/agent/clear', { sessionId }),
-
-    onStream: (callback: (data: unknown) => void): (() => void) => {
-      return this.subscribeToEvent('agent:stream', callback as EventCallback);
-    },
-
-    // Queue management
-    queueAdd: (
-      sessionId: string,
-      message: string,
-      imagePaths?: string[],
-      model?: string,
-      thinkingLevel?: string,
-      providerId?: string
-    ): Promise<{
-      success: boolean;
-      queuedPrompt?: {
-        id: string;
-        message: string;
-        imagePaths?: string[];
-        model?: string;
-        thinkingLevel?: string;
-        addedAt: string;
-      };
-      error?: string;
-    }> =>
-      this.post('/api/agent/queue/add', {
-        sessionId,
-        message,
-        imagePaths,
-        model,
-        thinkingLevel,
-        providerId,
-      }),
-
-    queueList: (
-      sessionId: string
-    ): Promise<{
-      success: boolean;
-      queue?: Array<{
-        id: string;
-        message: string;
-        imagePaths?: string[];
-        model?: string;
-        thinkingLevel?: string;
-        addedAt: string;
-      }>;
-      error?: string;
-    }> => this.post('/api/agent/queue/list', { sessionId }),
-
-    queueRemove: (
-      sessionId: string,
-      promptId: string
-    ): Promise<{ success: boolean; error?: string }> =>
-      this.post('/api/agent/queue/remove', { sessionId, promptId }),
-
-    queueClear: (sessionId: string): Promise<{ success: boolean; error?: string }> =>
-      this.post('/api/agent/queue/clear', { sessionId }),
-  };
+  agent = createAgentClient({
+    post: this.post.bind(this),
+    subscribeToEvent: this.subscribeToEvent.bind(this),
+  });
 
   // Templates API
-  templates = {
-    clone: (
-      repoUrl: string,
-      projectName: string,
-      parentDir: string
-    ): Promise<{
-      success: boolean;
-      projectPath?: string;
-      projectName?: string;
-      error?: string;
-    }> => this.post('/api/templates/clone', { repoUrl, projectName, parentDir }),
-  };
+  templates = createTemplatesClient({ post: this.post.bind(this) });
 
   // Settings API - persistent file-based settings
-  settings = {
-    // Get settings status (check if migration needed)
-    getStatus: (): Promise<{
-      success: boolean;
-      hasGlobalSettings: boolean;
-      hasCredentials: boolean;
-      dataDir: string;
-      needsMigration: boolean;
-    }> => this.get('/api/settings/status'),
+  settings = createSettingsClient({
+    get: this.get.bind(this),
+    put: this.put.bind(this),
+    post: this.post.bind(this),
+  });
 
-    // Global settings
-    getGlobal: (): Promise<{
-      success: boolean;
-      settings?: {
-        version: number;
-        theme: string;
-        sidebarOpen: boolean;
-        chatHistoryOpen: boolean;
-        maxConcurrency: number;
-        defaultSkipTests: boolean;
-        enableDependencyBlocking: boolean;
-        useWorktrees: boolean;
-        defaultPlanningMode: string;
-        defaultRequirePlanApproval: boolean;
-        muteDoneSound: boolean;
-        enhancementModel: string;
-        keyboardShortcuts: Record<string, string>;
-        projects: unknown[];
-        trashedProjects: unknown[];
-        projectHistory: string[];
-        projectHistoryIndex: number;
-        lastProjectDir?: string;
-        recentFolders: string[];
-        worktreePanelCollapsed: boolean;
-        lastSelectedSessionByProject: Record<string, string>;
-        mcpServers?: Array<{
-          id: string;
-          name: string;
-          description?: string;
-          type?: 'stdio' | 'sse' | 'http';
-          command?: string;
-          args?: string[];
-          env?: Record<string, string>;
-          url?: string;
-          headers?: Record<string, string>;
-          enabled?: boolean;
-        }>;
-        eventHooks?: Array<{
-          id: string;
-          trigger: string;
-          enabled: boolean;
-          action: Record<string, unknown>;
-          name?: string;
-        }>;
-        ntfyEndpoints?: Array<{
-          id: string;
-          name: string;
-          serverUrl: string;
-          topic: string;
-          authType: string;
-          enabled: boolean;
-        }>;
-      };
-      error?: string;
-    }> => this.get('/api/settings/global'),
+  executionEnvironments = createExecutionEnvironmentsClient({
+    post: this.post.bind(this),
+    put: this.put.bind(this),
+  });
 
-    updateGlobal: (
-      updates: Record<string, unknown>
-    ): Promise<{
-      success: boolean;
-      settings?: Record<string, unknown>;
-      error?: string;
-    }> => this.put('/api/settings/global', updates),
+  modelTimeouts = createModelTimeoutsClient({ get: this.get.bind(this), put: this.put.bind(this) });
 
-    // Credentials (masked for security)
-    getCredentials: (): Promise<{
-      success: boolean;
-      credentials?: {
-        anthropic: { configured: boolean; masked: string };
-        google: { configured: boolean; masked: string };
-        openai: { configured: boolean; masked: string };
-      };
-      error?: string;
-    }> => this.get('/api/settings/credentials'),
-
-    updateCredentials: (updates: {
-      apiKeys?: { anthropic?: string; google?: string; openai?: string };
-    }): Promise<{
-      success: boolean;
-      credentials?: {
-        anthropic: { configured: boolean; masked: string };
-        google: { configured: boolean; masked: string };
-        openai: { configured: boolean; masked: string };
-      };
-      error?: string;
-    }> => this.put('/api/settings/credentials', updates),
-
-    // Project settings
-    getProject: (
-      projectPath: string
-    ): Promise<{
-      success: boolean;
-      settings?: {
-        version: number;
-        theme?: string;
-        useWorktrees?: boolean;
-        currentWorktree?: { path: string | null; branch: string };
-        worktrees?: Array<{
-          path: string;
-          branch: string;
-          isMain: boolean;
-          hasChanges?: boolean;
-          changedFilesCount?: number;
-        }>;
-        boardBackground?: {
-          imagePath: string | null;
-          imageVersion?: number;
-          cardOpacity: number;
-          columnOpacity: number;
-          columnBorderEnabled: boolean;
-          cardGlassmorphism: boolean;
-          cardBorderEnabled: boolean;
-          cardBorderOpacity: number;
-          hideScrollbar: boolean;
-        };
-        worktreePanelVisible?: boolean;
-        showInitScriptIndicator?: boolean;
-        defaultDeleteBranchWithWorktree?: boolean;
-        autoDismissInitScriptIndicator?: boolean;
-        worktreeCopyFiles?: string[];
-        pinnedWorktreesCount?: number;
-        worktreeDropdownThreshold?: number;
-        alwaysUseWorktreeDropdown?: boolean;
-        lastSelectedSessionId?: string;
-        testCommand?: string;
-      };
-      error?: string;
-    }> => this.post('/api/settings/project', { projectPath }),
-
-    updateProject: (
-      projectPath: string,
-      updates: Record<string, unknown>
-    ): Promise<{
-      success: boolean;
-      settings?: Record<string, unknown>;
-      error?: string;
-    }> => this.put('/api/settings/project', { projectPath, updates }),
-
-    // Migration from localStorage
-    migrate: (data: {
-      'automaker-storage'?: string;
-      'automaker-setup'?: string;
-      'worktree-panel-collapsed'?: string;
-      'file-browser-recent-folders'?: string;
-      'automaker:lastProjectDir'?: string;
-    }): Promise<{
-      success: boolean;
-      migratedGlobalSettings: boolean;
-      migratedCredentials: boolean;
-      migratedProjectCount: number;
-      errors: string[];
-    }> => this.post('/api/settings/migrate', { data }),
-
-    // Filesystem agents discovery (read-only)
-    discoverAgents: (
-      projectPath?: string,
-      sources?: Array<'user' | 'project'>
-    ): Promise<{
-      success: boolean;
-      agents?: Array<{
-        name: string;
-        definition: {
-          description: string;
-          prompt: string;
-          tools?: string[];
-          model?: 'sonnet' | 'opus' | 'haiku' | 'inherit';
-        };
-        source: 'user' | 'project';
-        filePath: string;
-      }>;
-      error?: string;
-    }> => this.post('/api/settings/agents/discover', { projectPath, sources }),
-  };
-
-  executionEnvironments = {
-    inspectGit: (
-      path: string
-    ): Promise<{
-      success: boolean;
-      executionEnvironment?: import('@automaker/types').ProjectGitEnvironment;
-      error?: string;
-    }> => this.post('/api/git/environment', { projectPath: path }),
-    inspectProvider: (
-      projectPath: string,
-      provider: import('@automaker/types').RemoteSdkProvider
-    ): Promise<{
-      success: boolean;
-      status?: import('@automaker/types').RemoteProviderStatus;
-      error?: string;
-    }> =>
-      this.post('/api/settings/execution-environments/providers/inspect', {
-        projectPath,
-        provider,
-      }),
-    installProvider: (
-      projectPath: string,
-      provider: import('@automaker/types').RemoteSdkProvider,
-      targetId: string
-    ): Promise<{
-      success: boolean;
-      status?: import('@automaker/types').RemoteProviderStatus;
-      error?: string;
-    }> =>
-      this.post('/api/settings/execution-environments/providers/install', {
-        projectPath,
-        provider,
-        targetId,
-        accepted: true,
-      }),
-    saveProviderKey: (
-      projectPath: string,
-      provider: import('@automaker/types').RemoteSdkProvider,
-      targetId: string,
-      apiKey: string
-    ): Promise<{
-      success: boolean;
-      status?: import('@automaker/types').RemoteProviderStatus;
-      error?: string;
-    }> =>
-      this.post('/api/settings/execution-environments/providers/key', {
-        projectPath,
-        provider,
-        targetId,
-        apiKey,
-        accepted: true,
-      }),
-    clearProviderKey: (
-      projectPath: string,
-      provider: import('@automaker/types').RemoteSdkProvider,
-      targetId: string
-    ): Promise<{
-      success: boolean;
-      status?: import('@automaker/types').RemoteProviderStatus;
-      error?: string;
-    }> =>
-      this.post('/api/settings/execution-environments/providers/key', {
-        projectPath,
-        provider,
-        targetId,
-        clear: true,
-        accepted: true,
-      }),
-    inspectFeature: (
-      projectPath: string,
-      featureId: string
-    ): Promise<{
-      success: boolean;
-      binding?: import('@automaker/types').ExecutionEnvironmentBinding | null;
-      selectedType?: string;
-      error?: string;
-    }> =>
-      this.post('/api/settings/execution-environments/feature/inspect', { projectPath, featureId }),
-    scanSSH: (
-      profileId: string
-    ): Promise<{ success: boolean; hostKey?: SSHHostKey; error?: string }> =>
-      this.post('/api/settings/execution-environments/ssh/scan', { profileId }),
-    trustSSH: (
-      profileId: string,
-      fingerprint: string,
-      replace = false
-    ): Promise<ExecutionEnvironmentSettingsResponse> =>
-      this.post('/api/settings/execution-environments/ssh/trust', {
-        profileId,
-        fingerprint,
-        replace,
-        accepted: true,
-      }),
-    saveSSHKey: (
-      profileId: string,
-      privateKey: string,
-      passphrase?: string
-    ): Promise<ExecutionEnvironmentSettingsResponse> =>
-      this.post('/api/settings/execution-environments/ssh/key', {
-        profileId,
-        privateKey,
-        passphrase: passphrase || undefined,
-      }),
-    clearSSHKey: (profileId: string): Promise<ExecutionEnvironmentSettingsResponse> =>
-      this.post('/api/settings/execution-environments/ssh/key', { profileId, clear: true }),
-    checkSSH: (
-      profileId: string,
-      projectPath?: string
-    ): Promise<{ success: boolean; diagnostic?: SSHDiagnostic; error?: string }> =>
-      this.post('/api/settings/execution-environments/ssh/check', { profileId, projectPath }),
-    prepareSSH: (profileId: string): Promise<ExecutionEnvironmentSettingsResponse> =>
-      this.post('/api/settings/execution-environments/ssh/prepare', { profileId, accepted: true }),
-    prepareSSHProject: (
-      profileId: string,
-      projectPath: string,
-      source:
-        | { method: 'import' }
-        | { method: 'clone'; repositoryUrl: string }
-        | { method: 'existing'; remotePath: string }
-    ): Promise<ExecutionEnvironmentSettingsResponse> =>
-      this.post('/api/settings/execution-environments/ssh/project', {
-        profileId,
-        projectPath,
-        source,
-        accepted: true,
-      }),
-    recoverSSH: (
-      profileId: string,
-      projectPath: string
-    ): Promise<ExecutionEnvironmentSettingsResponse> =>
-      this.post('/api/settings/execution-environments/ssh/recover', {
-        profileId,
-        projectPath,
-        accepted: true,
-      }),
-    prepareDocker: (
-      projectPath?: string,
-      profileId?: string
-    ): Promise<{ success: boolean; preparation?: DockerPreparationResult; error?: string }> =>
-      this.post('/api/settings/execution-environments/docker/prepare', {
-        projectPath,
-        profileId,
-        accepted: true,
-      }),
-    confirmAutoFallback: (projectPath?: string): Promise<ExecutionEnvironmentSettingsResponse> =>
-      this.post('/api/settings/execution-environments/auto/confirm', {
-        projectPath,
-        accepted: true,
-        warningVersion: 1,
-      }),
-    revokeAutoFallback: (projectPath?: string): Promise<ExecutionEnvironmentSettingsResponse> =>
-      this.post('/api/settings/execution-environments/auto/revoke', { projectPath }),
-    confirmLocal: (projectPath?: string): Promise<ExecutionEnvironmentSettingsResponse> =>
-      this.post('/api/settings/execution-environments/local/confirm', {
-        projectPath,
-        accepted: true,
-        warningVersion: 1,
-      }),
-    revokeLocal: (projectPath?: string): Promise<ExecutionEnvironmentSettingsResponse> =>
-      this.post('/api/settings/execution-environments/local/revoke', { projectPath }),
-    inspect: (projectPath?: string): Promise<ExecutionEnvironmentSettingsResponse> =>
-      this.post('/api/settings/execution-environments/inspect', { projectPath }),
-    saveGlobal: (
-      settings: ExecutionEnvironmentSettings
-    ): Promise<ExecutionEnvironmentSettingsResponse> =>
-      this.put('/api/settings/execution-environments/global', { settings }),
-    saveProject: (
-      projectPath: string,
-      selection: ExecutionEnvironmentSelection | null
-    ): Promise<ExecutionEnvironmentSettingsResponse> =>
-      this.put('/api/settings/execution-environments/project', { projectPath, selection }),
-    checkDocker: (
-      profileId?: string
-    ): Promise<{ success: boolean; diagnostic?: DockerConnectionDiagnostic; error?: string }> =>
-      this.post('/api/settings/execution-environments/docker/check', { profileId }),
-  };
-
-  modelTimeouts = {
-    getProvider: (
-      provider: ModelTimeoutProvider
-    ): Promise<{ success: boolean; timeouts?: ModelTimeoutSettings; error?: string }> =>
-      this.get('/api/settings/model-timeouts/' + provider),
-    saveProvider: (
-      provider: ModelTimeoutProvider,
-      timeouts: ModelTimeoutSettings
-    ): Promise<{ success: boolean; timeouts?: ModelTimeoutSettings; error?: string }> =>
-      this.put('/api/settings/model-timeouts/' + provider, { timeouts }),
-    get: (): Promise<{ success: boolean; timeouts?: ModelTimeoutSettings; error?: string }> =>
-      this.get('/api/settings/model-timeouts'),
-    save: (
-      timeouts: ModelTimeoutSettings
-    ): Promise<{ success: boolean; timeouts?: ModelTimeoutSettings; error?: string }> =>
-      this.put('/api/settings/model-timeouts', { timeouts }),
-  };
-
-  directEndpoints = {
-    list: (): Promise<{
-      success: boolean;
-      endpoints: OpenAICompatibleEndpointStatus[];
-      agentSettings: DirectAgentSettings;
-      error?: string;
-    }> => this.get('/api/settings/openai-compatible'),
-    save: (
-      endpoint: OpenAICompatibleEndpoint,
-      apiKey?: string,
-      clearKey?: boolean
-    ): Promise<{
-      success: boolean;
-      endpoints: OpenAICompatibleEndpointStatus[];
-      agentSettings: DirectAgentSettings;
-      error?: string;
-    }> => this.put('/api/settings/openai-compatible/endpoint', { endpoint, apiKey, clearKey }),
-    remove: (
-      providerId: string
-    ): Promise<{
-      success: boolean;
-      endpoints: OpenAICompatibleEndpointStatus[];
-      agentSettings: DirectAgentSettings;
-      error?: string;
-    }> => this.post('/api/settings/openai-compatible/remove', { providerId }),
-    saveAgent: (
-      settings: DirectAgentSettings
-    ): Promise<{
-      success: boolean;
-      endpoints: OpenAICompatibleEndpointStatus[];
-      agentSettings: DirectAgentSettings;
-      error?: string;
-    }> => this.put('/api/settings/openai-compatible/agent', settings),
-    models: (
-      providerId: string
-    ): Promise<{ success: boolean; models?: string[]; error?: string }> =>
-      this.post('/api/settings/openai-compatible/models', { providerId }),
-    test: (
-      providerId: string,
-      modelId: string,
-      tools = false
-    ): Promise<{ success: boolean; verified?: boolean; error?: string }> =>
-      this.post('/api/settings/openai-compatible/test', { providerId, modelId, tools }),
-  };
+  directEndpoints = createDirectEndpointsClient({
+    get: this.get.bind(this),
+    put: this.put.bind(this),
+    post: this.post.bind(this),
+  });
 
   // Sessions API
-  sessions = {
-    list: (
-      includeArchived?: boolean
-    ): Promise<{
-      success: boolean;
-      sessions?: SessionListItem[];
-      error?: string;
-    }> => this.get(`/api/sessions?includeArchived=${includeArchived || false}`),
-
-    create: (
-      name: string,
-      projectPath: string,
-      workingDirectory?: string
-    ): Promise<{
-      success: boolean;
-      session?: {
-        id: string;
-        name: string;
-        projectPath: string;
-        workingDirectory?: string;
-        createdAt: string;
-        updatedAt: string;
-      };
-      error?: string;
-    }> => this.post('/api/sessions', { name, projectPath, workingDirectory }),
-
-    update: (
-      sessionId: string,
-      name?: string,
-      tags?: string[]
-    ): Promise<{ success: boolean; error?: string }> =>
-      this.put(`/api/sessions/${sessionId}`, { name, tags }),
-
-    archive: (sessionId: string): Promise<{ success: boolean; error?: string }> =>
-      this.post(`/api/sessions/${sessionId}/archive`, {}),
-
-    unarchive: (sessionId: string): Promise<{ success: boolean; error?: string }> =>
-      this.post(`/api/sessions/${sessionId}/unarchive`, {}),
-
-    delete: (sessionId: string): Promise<{ success: boolean; error?: string }> =>
-      this.httpDelete(`/api/sessions/${sessionId}`),
-  };
+  sessions = createSessionsClient({
+    get: this.get.bind(this),
+    post: this.post.bind(this),
+    put: this.put.bind(this),
+    httpDelete: this.httpDelete.bind(this),
+  });
 
   // Claude API
-  claude = {
-    getUsage: (): Promise<ClaudeUsageResponse> => this.get('/api/claude/usage'),
-  };
+  claude = createClaudeClient({ get: this.get.bind(this) });
 
   // Codex API
-  codex = {
-    getUsage: (): Promise<CodexUsageResponse> => this.get('/api/codex/usage'),
-    getModels: (
-      refresh = false
-    ): Promise<{
-      success: boolean;
-      models?: Array<{
-        id: string;
-        label: string;
-        description: string;
-        hasThinking: boolean;
-        supportsVision: boolean;
-        tier: 'premium' | 'standard' | 'basic';
-        isDefault: boolean;
-      }>;
-      cachedAt?: number;
-      error?: string;
-    }> => {
-      const url = `/api/codex/models${refresh ? '?refresh=true' : ''}`;
-      return this.get(url);
-    },
-  };
+  codex = createCodexClient({ get: this.get.bind(this) });
 
   // Gemini API
-  gemini = {
-    getUsage: (): Promise<GeminiUsage> => this.get('/api/gemini/usage'),
-  };
+  gemini = createGeminiClient({ get: this.get.bind(this) });
 
   // Context API
-  context = {
-    describeImage: (
-      imagePath: string
-    ): Promise<{
-      success: boolean;
-      description?: string;
-      error?: string;
-    }> => this.post('/api/context/describe-image', { imagePath }),
-
-    describeFile: (
-      filePath: string
-    ): Promise<{
-      success: boolean;
-      description?: string;
-      error?: string;
-    }> => this.post('/api/context/describe-file', { filePath }),
-  };
+  context = createContextClient({ post: this.post.bind(this) });
 
   // Backlog Plan API
-  backlogPlan = {
-    generate: (
-      projectPath: string,
-      prompt: string,
-      model?: string,
-      branchName?: string,
-      providerId?: string
-    ): Promise<{ success: boolean; error?: string }> =>
-      this.post('/api/backlog-plan/generate', {
-        projectPath,
-        prompt,
-        model,
-        branchName,
-        providerId,
-      }),
-
-    stop: (): Promise<{ success: boolean; error?: string }> =>
-      this.post('/api/backlog-plan/stop', {}),
-
-    status: (
-      projectPath: string
-    ): Promise<{
-      success: boolean;
-      isRunning?: boolean;
-      savedPlan?: {
-        savedAt: string;
-        prompt: string;
-        model?: string;
-        result: {
-          changes: Array<{
-            type: 'add' | 'update' | 'delete';
-            featureId?: string;
-            feature?: Record<string, unknown>;
-            reason: string;
-          }>;
-          summary: string;
-          dependencyUpdates: Array<{
-            featureId: string;
-            removedDependencies: string[];
-            addedDependencies: string[];
-          }>;
-        };
-      } | null;
-      error?: string;
-    }> => this.get(`/api/backlog-plan/status?projectPath=${encodeURIComponent(projectPath)}`),
-
-    apply: (
-      projectPath: string,
-      plan: {
-        changes: Array<{
-          type: 'add' | 'update' | 'delete';
-          featureId?: string;
-          feature?: Record<string, unknown>;
-          reason: string;
-        }>;
-        summary: string;
-        dependencyUpdates: Array<{
-          featureId: string;
-          removedDependencies: string[];
-          addedDependencies: string[];
-        }>;
-      },
-      branchName?: string
-    ): Promise<{ success: boolean; appliedChanges?: string[]; error?: string }> =>
-      this.post('/api/backlog-plan/apply', { projectPath, plan, branchName }),
-
-    clear: (projectPath: string): Promise<{ success: boolean; error?: string }> =>
-      this.post('/api/backlog-plan/clear', { projectPath }),
-
-    onEvent: (callback: (data: unknown) => void): (() => void) => {
-      return this.subscribeToEvent('backlog-plan:event', callback as EventCallback);
-    },
-  };
+  backlogPlan = createBacklogPlanClient({
+    post: this.post.bind(this),
+    get: this.get.bind(this),
+    subscribeToEvent: this.subscribeToEvent.bind(this),
+  });
 
   // Ideation API - brainstorming and idea management
-  ideation: IdeationAPI = {
-    startSession: (projectPath: string, options?: StartSessionOptions) =>
-      this.post('/api/ideation/session/start', { projectPath, options }),
-
-    getSession: (projectPath: string, sessionId: string) =>
-      this.post('/api/ideation/session/get', { projectPath, sessionId }),
-
-    sendMessage: (
-      sessionId: string,
-      message: string,
-      options?: { imagePaths?: string[]; model?: string }
-    ) => this.post('/api/ideation/session/message', { sessionId, message, options }),
-
-    stopSession: (sessionId: string) => this.post('/api/ideation/session/stop', { sessionId }),
-
-    listIdeas: (projectPath: string) => this.post('/api/ideation/ideas/list', { projectPath }),
-
-    createIdea: (projectPath: string, idea: CreateIdeaInput) =>
-      this.post('/api/ideation/ideas/create', { projectPath, idea }),
-
-    getIdea: (projectPath: string, ideaId: string) =>
-      this.post('/api/ideation/ideas/get', { projectPath, ideaId }),
-
-    updateIdea: (projectPath: string, ideaId: string, updates: UpdateIdeaInput) =>
-      this.post('/api/ideation/ideas/update', { projectPath, ideaId, updates }),
-
-    deleteIdea: (projectPath: string, ideaId: string) =>
-      this.post('/api/ideation/ideas/delete', { projectPath, ideaId }),
-
-    analyzeProject: (projectPath: string) => this.post('/api/ideation/analyze', { projectPath }),
-
-    generateSuggestions: (
-      projectPath: string,
-      promptId: string,
-      category: IdeaCategory,
-      count?: number,
-      contextSources?: IdeationContextSources
-    ) =>
-      this.post('/api/ideation/suggestions/generate', {
-        projectPath,
-        promptId,
-        category,
-        count,
-        contextSources,
-      }),
-
-    convertToFeature: (projectPath: string, ideaId: string, options?: ConvertToFeatureOptions) =>
-      this.post('/api/ideation/convert', { projectPath, ideaId, ...options }),
-
-    addSuggestionToBoard: (
-      projectPath: string,
-      suggestion: AnalysisSuggestion
-    ): Promise<{ success: boolean; featureId?: string; error?: string }> =>
-      this.post('/api/ideation/add-suggestion', { projectPath, suggestion }),
-
-    getPrompts: () => this.get('/api/ideation/prompts'),
-
-    onStream: (callback: (event: IdeationStreamEvent) => void): (() => void) => {
-      return this.subscribeToEvent('ideation:stream', callback as EventCallback);
-    },
-
-    onAnalysisEvent: (callback: (event: IdeationAnalysisEvent) => void): (() => void) => {
-      return this.subscribeToEvent('ideation:analysis', callback as EventCallback);
-    },
-  };
+  ideation: IdeationAPI = createIdeationClient({
+    post: this.post.bind(this),
+    get: this.get.bind(this),
+    subscribeToEvent: this.subscribeToEvent.bind(this),
+  });
 
   // Notifications API - project-level notifications
   notifications: NotificationsAPI & {
     onNotificationCreated: (callback: (notification: Notification) => void) => () => void;
-  } = {
-    list: (projectPath: string) => this.post('/api/notifications/list', { projectPath }),
-
-    getUnreadCount: (projectPath: string) =>
-      this.post('/api/notifications/unread-count', { projectPath }),
-
-    markAsRead: (projectPath: string, notificationId?: string) =>
-      this.post('/api/notifications/mark-read', { projectPath, notificationId }),
-
-    dismiss: (projectPath: string, notificationId?: string) =>
-      this.post('/api/notifications/dismiss', { projectPath, notificationId }),
-
-    onNotificationCreated: (callback: (notification: Notification) => void): (() => void) => {
-      return this.subscribeToEvent('notification:created', callback as EventCallback);
-    },
-  };
+  } = createNotificationsClient({
+    post: this.post.bind(this),
+    subscribeToEvent: this.subscribeToEvent.bind(this),
+  });
 
   // Event History API - stored events for debugging and replay
-  eventHistory: EventHistoryAPI = {
-    list: (projectPath: string, filter?: EventHistoryFilter) =>
-      this.post('/api/event-history/list', { projectPath, filter }),
-
-    get: (projectPath: string, eventId: string) =>
-      this.post('/api/event-history/get', { projectPath, eventId }),
-
-    delete: (projectPath: string, eventId: string) =>
-      this.post('/api/event-history/delete', { projectPath, eventId }),
-
-    clear: (projectPath: string) => this.post('/api/event-history/clear', { projectPath }),
-
-    replay: (projectPath: string, eventId: string, hookIds?: string[]) =>
-      this.post('/api/event-history/replay', { projectPath, eventId, hookIds }),
-  };
+  eventHistory: EventHistoryAPI = createEventHistoryClient({ post: this.post.bind(this) });
 
   // MCP API - Test MCP server connections and list tools
   // SECURITY: Only accepts serverId, not arbitrary serverConfig, to prevent
   // drive-by command execution attacks. Servers must be saved first.
-  mcp = {
-    testServer: (
-      serverId: string
-    ): Promise<{
-      success: boolean;
-      tools?: Array<{
-        name: string;
-        description?: string;
-        inputSchema?: Record<string, unknown>;
-        enabled: boolean;
-      }>;
-      error?: string;
-      connectionTime?: number;
-      serverInfo?: {
-        name?: string;
-        version?: string;
-      };
-    }> => this.post('/api/mcp/test', { serverId }),
-
-    listTools: (
-      serverId: string
-    ): Promise<{
-      success: boolean;
-      tools?: Array<{
-        name: string;
-        description?: string;
-        inputSchema?: Record<string, unknown>;
-        enabled: boolean;
-      }>;
-      error?: string;
-    }> => this.post('/api/mcp/tools', { serverId }),
-  };
+  mcp = createMcpClient({ post: this.post.bind(this) });
 
   // Pipeline API - custom workflow pipeline steps
-  pipeline = {
-    getConfig: (
-      projectPath: string
-    ): Promise<{
-      success: boolean;
-      config?: {
-        version: 1;
-        steps: Array<{
-          id: string;
-          name: string;
-          order: number;
-          instructions: string;
-          colorClass: string;
-          createdAt: string;
-          updatedAt: string;
-        }>;
-      };
-      error?: string;
-    }> => this.post('/api/pipeline/config', { projectPath }),
-
-    saveConfig: (
-      projectPath: string,
-      config: {
-        version: 1;
-        steps: Array<{
-          id: string;
-          name: string;
-          order: number;
-          instructions: string;
-          colorClass: string;
-          createdAt: string;
-          updatedAt: string;
-        }>;
-      }
-    ): Promise<{ success: boolean; error?: string }> =>
-      this.post('/api/pipeline/config/save', { projectPath, config }),
-
-    addStep: (
-      projectPath: string,
-      step: {
-        name: string;
-        order: number;
-        instructions: string;
-        colorClass: string;
-      }
-    ): Promise<{
-      success: boolean;
-      step?: {
-        id: string;
-        name: string;
-        order: number;
-        instructions: string;
-        colorClass: string;
-        createdAt: string;
-        updatedAt: string;
-      };
-      error?: string;
-    }> => this.post('/api/pipeline/steps/add', { projectPath, step }),
-
-    updateStep: (
-      projectPath: string,
-      stepId: string,
-      updates: Partial<{
-        name: string;
-        order: number;
-        instructions: string;
-        colorClass: string;
-      }>
-    ): Promise<{
-      success: boolean;
-      step?: {
-        id: string;
-        name: string;
-        order: number;
-        instructions: string;
-        colorClass: string;
-        createdAt: string;
-        updatedAt: string;
-      };
-      error?: string;
-    }> => this.post('/api/pipeline/steps/update', { projectPath, stepId, updates }),
-
-    deleteStep: (
-      projectPath: string,
-      stepId: string
-    ): Promise<{ success: boolean; error?: string }> =>
-      this.post('/api/pipeline/steps/delete', { projectPath, stepId }),
-
-    reorderSteps: (
-      projectPath: string,
-      stepIds: string[]
-    ): Promise<{ success: boolean; error?: string }> =>
-      this.post('/api/pipeline/steps/reorder', { projectPath, stepIds }),
-  };
+  pipeline = createPipelineClient({ post: this.post.bind(this) });
 }
 
 // Singleton instance

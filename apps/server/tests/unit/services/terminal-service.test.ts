@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { TerminalService, getTerminalService } from '@/services/terminal-service.js';
+import { TerminalService } from '@/services/terminal-service.js';
 import * as pty from 'node-pty';
 import * as os from 'os';
 import * as path from 'path';
@@ -67,6 +67,9 @@ describe('terminal-service.ts', () => {
       resize: vi.fn(),
       kill: vi.fn(),
     };
+    mockPtyProcess.kill.mockImplementation(() => {
+      for (const [exit] of mockPtyProcess.onExit.mock.calls) exit({ exitCode: 0 });
+    });
 
     vi.mocked(pty.spawn).mockReturnValue(mockPtyProcess);
     vi.mocked(os.homedir).mockReturnValue('/home/user');
@@ -81,8 +84,8 @@ describe('terminal-service.ts', () => {
     vi.mocked(secureFs.stat).mockResolvedValue({ isDirectory: () => true } as any);
   });
 
-  afterEach(() => {
-    service.cleanup();
+  afterEach(async () => {
+    await service.cleanup();
   });
 
   describe('detectShell', () => {
@@ -407,6 +410,7 @@ describe('terminal-service.ts', () => {
       // Simulate exit event
       const onExitHandler = mockPtyProcess.onExit.mock.calls[0][0];
       onExitHandler({ exitCode: 0 });
+      await service.cleanup();
 
       expect(session).not.toBeNull();
       expect(exitCallback).toHaveBeenCalledWith(session!.id, 0);
@@ -470,6 +474,83 @@ describe('terminal-service.ts', () => {
     });
   });
 
+  it('awaits explicit stop proof while preserving the boolean compatibility API', async () => {
+    const session = await service.createSession();
+    mockPtyProcess.kill.mockImplementation(() => {});
+    const stopping = service.stopSession(session!.id);
+    let settled = false;
+    void stopping.then(() => {
+      settled = true;
+    });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    expect(service.getSession(session!.id)).toBe(session);
+    expect(service.isSessionClosing(session!.id)).toBe(true);
+    expect(service.write(session!.id, 'must not execute')).toBe(false);
+    for (const [exit] of mockPtyProcess.onExit.mock.calls) exit({ exitCode: 0 });
+    expect(await stopping).toBe(true);
+    expect(service.getSession(session!.id)).toBeUndefined();
+    expect(await service.stopSession(session!.id)).toBe(false);
+  });
+
+  it('uses only the injected preflight filesystem, path resolver and snapshot home', async () => {
+    const stat = vi.fn().mockResolvedValue({ isDirectory: () => true });
+    const resolvePath = vi.fn((candidate: string) => path.resolve('/native', candidate));
+    const native = new TerminalService(undefined, 2, {
+      filesystem: { stat } as never,
+      resolvePath,
+      homeDirectory: '/snapshot-home',
+      fallbackDirectory: '/application',
+    });
+    const resolve = (
+      native as unknown as { resolveWorkingDirectory: (value?: string) => Promise<string> }
+    ).resolveWorkingDirectory.bind(native);
+    expect(await resolve()).toBe('/snapshot-home');
+    expect(await resolve('project')).toBe('/native/project');
+    expect(resolvePath).toHaveBeenCalledWith('project');
+    expect(stat).toHaveBeenCalledWith('/native/project');
+    stat.mockRejectedValueOnce(Object.assign(new Error('missing'), { code: 'ENOENT' }));
+    expect(await resolve('missing')).toBe('/snapshot-home');
+    expect(stat).toHaveBeenLastCalledWith('/snapshot-home');
+    await native.cleanup();
+  });
+
+  it('does not use ambient home when the native host snapshot is missing HOME', async () => {
+    const stat = vi.fn().mockResolvedValue({ isDirectory: () => true });
+    const native = new TerminalService(undefined, 2, {
+      filesystem: { stat } as never,
+      resolvePath: (candidate) => candidate,
+      fallbackDirectory: '/application',
+    });
+    const home = vi.mocked(os.homedir);
+    home.mockClear();
+    const resolve = (
+      native as unknown as { resolveWorkingDirectory: (value?: string) => Promise<string> }
+    ).resolveWorkingDirectory.bind(native);
+    expect(await resolve()).toBe('/application');
+    expect(stat).toHaveBeenCalledWith('/application');
+    expect(home).not.toHaveBeenCalled();
+    await native.cleanup();
+  });
+
+  it('does not launch a PTY or fall back after native requested-directory DENIED/EIO', async () => {
+    for (const code of ['EACCES', 'EIO']) {
+      const error = Object.assign(new Error('native preflight failed'), { code });
+      const stat = vi.fn().mockRejectedValue(error);
+      const native = new TerminalService(undefined, 2, {
+        filesystem: { stat } as never,
+        resolvePath: (candidate) => candidate,
+        homeDirectory: '/home',
+        fallbackDirectory: '/application',
+      });
+      vi.mocked(pty.spawn).mockClear();
+      await expect(native.createSession({ cwd: '/requested' })).rejects.toBe(error);
+      expect(stat).toHaveBeenCalledExactlyOnceWith('/requested');
+      expect(pty.spawn).not.toHaveBeenCalled();
+      await native.cleanup();
+    }
+  });
+
   describe('killSession', () => {
     it('should kill existing session', async () => {
       vi.useFakeTimers();
@@ -478,15 +559,18 @@ describe('terminal-service.ts', () => {
       vi.spyOn(process, 'env', 'get').mockReturnValue({ SHELL: '/bin/bash' });
 
       const session = await service.createSession();
+      mockPtyProcess.kill.mockImplementation(() => {});
       const result = service.killSession(session!.id);
 
       expect(result).toBe(true);
       expect(mockPtyProcess.kill).toHaveBeenCalledWith('SIGTERM');
 
-      // Session is removed after SIGKILL timeout (1 second)
-      vi.advanceTimersByTime(1000);
+      await vi.advanceTimersByTimeAsync(1000);
 
       expect(mockPtyProcess.kill).toHaveBeenCalledWith('SIGKILL');
+      expect(service.getSession(session!.id)).toBe(session);
+      for (const [exit] of mockPtyProcess.onExit.mock.calls) exit({ exitCode: 0 });
+      await service.cleanup();
       expect(service.getSession(session!.id)).toBeUndefined();
 
       vi.useRealTimers();
@@ -510,7 +594,45 @@ describe('terminal-service.ts', () => {
       const result = service.killSession(session!.id);
 
       expect(result).toBe(false);
+      expect(service.getSession(session!.id)).toBe(session);
+      for (const [exit] of mockPtyProcess.onExit.mock.calls) exit({ exitCode: 0 });
     });
+  });
+
+  it('retains uncertain identities and closes admission after failed shutdown', async () => {
+    vi.useFakeTimers();
+    try {
+      const uncertain = new TerminalService(undefined, 1);
+      const session = await uncertain.createSession();
+      mockPtyProcess.kill.mockImplementation(() => {});
+      const closing = uncertain.cleanup();
+      const rejected = expect(closing).rejects.toMatchObject({ code: 'TERMINAL_CLEANUP_FAILED' });
+      await vi.advanceTimersByTimeAsync(3500);
+      await rejected;
+      expect(uncertain.getSession(session!.id)).toBe(session);
+      expect(await uncertain.createSession()).toBeNull();
+      expect(uncertain.write(session!.id, 'must not execute')).toBe(false);
+      expect(uncertain.resize(session!.id, 80, 24)).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('drains a creation already awaiting filesystem work without exposing its late PTY', async () => {
+    let release!: (value: unknown) => void;
+    vi.mocked(secureFs.stat).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        }) as never
+    );
+    const creating = service.createSession({ cwd: '/project' });
+    const closing = service.cleanup();
+    expect(await service.createSession()).toBeNull();
+    release({ isDirectory: () => true });
+    expect(await creating).toBeNull();
+    await closing;
+    expect(service.getAllSessions()).toEqual([]);
   });
 
   describe('getSession', () => {
@@ -609,7 +731,7 @@ describe('terminal-service.ts', () => {
       const session1 = await service.createSession();
       const session2 = await service.createSession();
 
-      service.cleanup();
+      await service.cleanup();
 
       expect(session1).not.toBeNull();
       expect(session2).not.toBeNull();
@@ -628,7 +750,9 @@ describe('terminal-service.ts', () => {
 
       await service.createSession();
 
-      expect(() => service.cleanup()).not.toThrow();
+      const cleanup = service.cleanup();
+      for (const [exit] of mockPtyProcess.onExit.mock.calls) exit({ exitCode: 0 });
+      await expect(cleanup).resolves.toBeUndefined();
     });
   });
 
@@ -670,12 +794,12 @@ describe('terminal-service.ts', () => {
     }
   });
 
-  describe('getTerminalService', () => {
-    it('should return singleton instance', () => {
-      const instance1 = getTerminalService();
-      const instance2 = getTerminalService();
+  describe('explicit TerminalService ownership', () => {
+    it('creates independent service owners', () => {
+      const instance1 = new TerminalService();
+      const instance2 = new TerminalService();
 
-      expect(instance1).toBe(instance2);
+      expect(instance1).not.toBe(instance2);
     });
   });
 });

@@ -1,3 +1,4 @@
+import type { HostCliDiscovery } from '../core/platform/host-cli-discovery.js';
 /**
  * Copilot Provider - Executes queries using the GitHub Copilot SDK
  *
@@ -13,9 +14,9 @@
 import { execSync } from 'child_process';
 import { remoteCliRuntime } from './environment-execution.js';
 import { executeRemoteSdk } from './remote-sdk.js';
+import { ProviderCleanupError } from './provider-execution-scope.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import * as os from 'os';
 import { CliProvider, type CliSpawnConfig, type CliErrorInfo } from './cli-provider.js';
 import type {
   ProviderConfig,
@@ -249,12 +250,17 @@ function normalizeCopilotToolInput(
  * - Per-execution working directory support
  */
 export class CopilotProvider extends CliProvider {
+  protected featureCapabilities() {
+    return { vision: false, tools: true, reasoning: false, mcp: false, remoteExecution: true };
+  }
   private runtimeModels: CopilotRuntimeModel[] | null = null;
 
-  constructor(config: ProviderConfig = {}) {
-    super(config);
-    // Trigger CLI detection on construction
-    this.ensureCliDetected();
+  constructor(
+    config: ProviderConfig = {},
+    environment?: import('./cli-provider.js').CliEnvironmentReader,
+    hostDiscovery?: HostCliDiscovery
+  ) {
+    super(config, environment, hostDiscovery);
   }
 
   // ==========================================================================
@@ -275,19 +281,19 @@ export class CopilotProvider extends CliProvider {
       npxPackage: '@github/copilot', // Official GitHub Copilot CLI package
       commonPaths: {
         linux: [
-          path.join(os.homedir(), '.local/bin/copilot'),
+          path.join(this.hostHome(), '.local/bin/copilot'),
           '/usr/local/bin/copilot',
-          path.join(os.homedir(), '.npm-global/bin/copilot'),
+          path.join(this.hostHome(), '.npm-global/bin/copilot'),
         ],
         darwin: [
-          path.join(os.homedir(), '.local/bin/copilot'),
+          path.join(this.hostHome(), '.local/bin/copilot'),
           '/usr/local/bin/copilot',
           '/opt/homebrew/bin/copilot',
-          path.join(os.homedir(), '.npm-global/bin/copilot'),
+          path.join(this.hostHome(), '.npm-global/bin/copilot'),
         ],
         win32: [
-          path.join(os.homedir(), 'AppData', 'Roaming', 'npm', 'copilot.cmd'),
-          path.join(os.homedir(), '.npm-global', 'copilot.cmd'),
+          path.join(this.hostHome(), 'AppData', 'Roaming', 'npm', 'copilot.cmd'),
+          path.join(this.hostHome(), '.npm-global', 'copilot.cmd'),
         ],
       },
     };
@@ -510,7 +516,7 @@ export class CopilotProvider extends CliProvider {
 
     return {
       code: CopilotErrorCode.UNKNOWN,
-      message: stderr || `Copilot CLI exited with code ${exitCode}`,
+      message: `Copilot CLI failed (exit code ${exitCode ?? 'unknown'}). Check the provider configuration and retry.`,
       recoverable: false,
     };
   }
@@ -528,7 +534,7 @@ export class CopilotProvider extends CliProvider {
    * Creates a new CopilotClient for each execution with the correct working directory.
    * Streams tool execution events in real-time for UI display.
    */
-  async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+  protected async *execute(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
     if (remoteCliRuntime(options)) {
       yield* executeRemoteSdk('copilot', options, (event) => this.normalizeEvent(event));
       return;
@@ -538,11 +544,11 @@ export class CopilotProvider extends CliProvider {
     // Note: We don't use validateBareModelId here because Copilot's model IDs
     // legitimately contain prefixes like claude-, gemini-, gpt- which are the
     // actual model names from the Copilot CLI. We only need to ensure the
-    // copilot- prefix has been stripped by the ProviderFactory.
+    // The application strips the copilot- prefix before calling the adapter.
     if (options.model?.startsWith('copilot-')) {
       throw new Error(
         `[CopilotProvider] Model ID should not have 'copilot-' prefix. Got: '${options.model}'. ` +
-          `The ProviderFactory should strip this prefix before passing to the provider.`
+          `The application should strip this prefix before passing to the provider.`
       );
     }
 
@@ -570,9 +576,11 @@ export class CopilotProvider extends CliProvider {
 
     // Create a client for this execution with the correct working directory
     const client = new CopilotClient({
+      cliPath: this.cliPath,
       logLevel: 'warning',
       autoRestart: false,
       cwd: workingDirectory,
+      env: await this.readEnvironment(),
     });
 
     // Use an async queue to bridge callback-based SDK events to async generator
@@ -598,11 +606,50 @@ export class CopilotProvider extends CliProvider {
       });
     };
 
-    // Declare session outside try so it's accessible in the catch block for cleanup.
     let session: CopilotSession | undefined;
+    let unsubscribe: (() => void) | undefined;
+    let closing = false;
+    const signal = options.abortController?.signal;
+    const abort = () => {
+      const finished = sessionComplete;
+      sessionComplete = true;
+      resolveWaiting?.();
+      resolveWaiting = null;
+      if (session && !finished) {
+        // Wake the event bridge immediately. Final destroy/stop, not this best-effort
+        // RPC, confirms that owned SDK resources have finished.
+        try {
+          void session.abort().catch(() => undefined);
+        } catch {
+          /* stop still runs */
+        }
+      }
+    };
+    const cleanup = async () => {
+      closing = true;
+      let failed = false;
+      try {
+        unsubscribe?.();
+      } catch {
+        failed = true;
+      }
+      try {
+        // The SDK stop contract owns destruction of every created/resumed session.
+        // Calling session.destroy() first would leave it in the client's map and
+        // make stop destroy the same session a second time.
+        const errors = await client.stop();
+        if (errors.length) failed = true;
+      } catch {
+        failed = true;
+      }
+      if (failed) throw new ProviderCleanupError();
+    };
+    signal?.addEventListener('abort', abort, { once: true });
 
     try {
+      signal?.throwIfAborted();
       await client.start();
+      signal?.throwIfAborted();
       logger.debug(`CopilotClient started with cwd: ${workingDirectory}`);
 
       const sessionOptions: CopilotSessionOptions = {
@@ -628,10 +675,8 @@ export class CopilotProvider extends CliProvider {
           session = await resumableClient.resumeSession(options.sdkSessionId, sessionOptions);
           sessionResumed = true;
           logger.debug(`Resumed Copilot session: ${session.sessionId}`);
-        } catch (resumeError) {
-          logger.warn(
-            `Failed to resume Copilot session "${options.sdkSessionId}", creating a new session: ${resumeError}`
-          );
+        } catch {
+          logger.warn('Failed to resume Copilot session; creating a new session');
           session = await client.createSession(sessionOptions);
         }
       } else {
@@ -644,7 +689,9 @@ export class CopilotProvider extends CliProvider {
       logger.debug(`Session ${sessionResumed ? 'resumed' : 'created'}: ${sessionId}`);
 
       // Set up event handler to push events to queue
-      activeSession.on((event: SdkEvent) => {
+      signal?.throwIfAborted();
+      unsubscribe = activeSession.on((event: SdkEvent) => {
+        if (closing) return;
         logger.debug(`SDK event: ${event.type}`);
 
         if (event.type === 'session.idle') {
@@ -667,16 +714,16 @@ export class CopilotProvider extends CliProvider {
       // Process events as they arrive
       while (!sessionComplete || eventQueue.length > 0) {
         await waitForEvent();
+        signal?.throwIfAborted();
 
         // Check for errors first (before processing events to avoid race condition)
         if (sessionError) {
-          await activeSession.destroy();
-          await client.stop();
           throw sessionError;
         }
 
         // Process all queued events
         while (eventQueue.length > 0) {
+          signal?.throwIfAborted();
           const event = eventQueue.shift()!;
           const normalized = this.normalizeEvent(event);
           if (normalized) {
@@ -688,28 +735,7 @@ export class CopilotProvider extends CliProvider {
           }
         }
       }
-
-      // Cleanup
-      await activeSession.destroy();
-      await client.stop();
-      logger.debug('CopilotClient stopped successfully');
     } catch (error) {
-      // Ensure session is destroyed and client is stopped on error to prevent leaks.
-      // The session may have been created/resumed before the error occurred.
-      if (session) {
-        try {
-          await session.destroy();
-        } catch (sessionCleanupError) {
-          logger.debug(`Failed to destroy session during cleanup: ${sessionCleanupError}`);
-        }
-      }
-      try {
-        await client.stop();
-      } catch (cleanupError) {
-        // Log but don't throw cleanup errors - the original error is more important
-        logger.debug(`Failed to stop client during cleanup: ${cleanupError}`);
-      }
-
       if (isAbortError(error)) {
         logger.debug('Query aborted');
         return;
@@ -717,8 +743,8 @@ export class CopilotProvider extends CliProvider {
 
       // Map errors to CopilotError
       if (error instanceof Error) {
-        logger.error(`Copilot SDK error: ${error.message}`);
         const errorInfo = this.mapError(error.message, null);
+        logger.error('Copilot SDK error', { code: errorInfo.code });
         throw this.createError(
           errorInfo.code as CopilotErrorCode,
           errorInfo.message,
@@ -727,6 +753,9 @@ export class CopilotProvider extends CliProvider {
         );
       }
       throw error;
+    } finally {
+      signal?.removeEventListener('abort', abort);
+      await cleanup();
     }
   }
 
@@ -759,10 +788,15 @@ export class CopilotProvider extends CliProvider {
     if (!this.cliPath) return null;
 
     try {
+      if (this.hostDiscovery)
+        return this.hostDiscovery
+          .runSync(this.cliPath, ['--version'], await this.readEnvironment())
+          .trim();
       const result = execSync(`"${this.cliPath}" --version`, {
         encoding: 'utf8',
         timeout: 5000,
         stdio: 'pipe',
+        env: await this.readEnvironment(),
       }).trim();
       return result;
     } catch {
@@ -771,108 +805,37 @@ export class CopilotProvider extends CliProvider {
   }
 
   /**
-   * Check authentication status
-   *
-   * Uses GitHub CLI (gh) to check Copilot authentication status.
-   * The Copilot CLI relies on gh auth for authentication.
+   * Passive local hints only. Token/configuration presence is not authentication,
+   * GitHub identity, or proof of a Copilot subscription. Never launch auth commands.
    */
   async checkAuth(): Promise<CopilotAuthStatus> {
-    this.ensureCliDetected();
-    if (!this.cliPath) {
-      logger.debug('checkAuth: CLI not found');
-      return { authenticated: false, method: 'none' };
-    }
-
-    logger.debug('checkAuth: Starting credential check');
-
-    // Try to check GitHub CLI authentication status first
-    // The Copilot CLI uses gh auth for authentication
+    const environment = await this.readEnvironment();
+    const hasEnvToken = !!environment.GITHUB_TOKEN?.trim();
+    const configDirectory =
+      environment.GH_CONFIG_DIR ||
+      path.join(
+        environment.XDG_CONFIG_HOME ||
+          path.join(environment.HOME || environment.USERPROFILE || this.hostHome(), '.config'),
+        'gh'
+      );
+    let hasConfigFile = false;
+    let error: string | undefined;
     try {
-      const ghStatus = execSync('gh auth status --hostname github.com', {
-        encoding: 'utf8',
-        timeout: 10000,
-        stdio: 'pipe',
-      });
-
-      logger.debug(`checkAuth: gh auth status output: ${ghStatus.substring(0, 200)}`);
-
-      // Parse gh auth status output
-      const loggedInMatch = ghStatus.match(/Logged in to github\.com account (\S+)/);
-      if (loggedInMatch) {
-        return {
-          authenticated: true,
-          method: 'oauth',
-          login: loggedInMatch[1],
-          host: 'github.com',
-        };
-      }
-
-      // Check for token auth
-      if (ghStatus.includes('Logged in') || ghStatus.includes('Token:')) {
-        return {
-          authenticated: true,
-          method: 'oauth',
-          host: 'github.com',
-        };
-      }
-    } catch (ghError) {
-      logger.debug(`checkAuth: gh auth status failed: ${ghError}`);
+      // Do not read or parse the file's token/identity into an HTTP status.
+      hasConfigFile = (await fs.stat(path.join(configDirectory, 'hosts.yml'))).isFile();
+    } catch (failure) {
+      if (
+        !(failure && typeof failure === 'object' && 'code' in failure && failure.code === 'ENOENT')
+      )
+        error = 'Local configuration could not be inspected.';
     }
-
-    // Try Copilot-specific auth check if gh is not available
-    try {
-      const result = execSync(`"${this.cliPath}" auth status`, {
-        encoding: 'utf8',
-        timeout: 10000,
-        stdio: 'pipe',
-      });
-
-      logger.debug(`checkAuth: copilot auth status output: ${result.substring(0, 200)}`);
-
-      if (result.includes('authenticated') || result.includes('logged in')) {
-        return {
-          authenticated: true,
-          method: 'cli',
-        };
-      }
-    } catch (copilotError) {
-      logger.debug(`checkAuth: copilot auth status failed: ${copilotError}`);
-    }
-
-    // Check for GITHUB_TOKEN environment variable
-    if (process.env.GITHUB_TOKEN) {
-      logger.debug('checkAuth: Found GITHUB_TOKEN environment variable');
-      return {
-        authenticated: true,
-        method: 'oauth',
-        statusMessage: 'Using GITHUB_TOKEN environment variable',
-      };
-    }
-
-    // Check for gh config file
-    const ghConfigPath = path.join(os.homedir(), '.config', 'gh', 'hosts.yml');
-    try {
-      await fs.access(ghConfigPath);
-      const content = await fs.readFile(ghConfigPath, 'utf8');
-      if (content.includes('github.com') && content.includes('oauth_token')) {
-        logger.debug('checkAuth: Found gh config with oauth_token');
-        return {
-          authenticated: true,
-          method: 'oauth',
-          host: 'github.com',
-        };
-      }
-    } catch {
-      logger.debug('checkAuth: No gh config found');
-    }
-
-    // No credentials found
-    logger.debug('checkAuth: No valid credentials found');
     return {
       authenticated: false,
-      method: 'none',
-      error:
-        'No authentication configured. Run "gh auth login" or install GitHub Copilot extension.',
+      authenticationChecked: false,
+      method: hasEnvToken ? 'oauth' : 'none',
+      hasEnvToken,
+      hasConfigFile,
+      ...(error && { error }),
     };
   }
 
@@ -887,11 +850,19 @@ export class CopilotProvider extends CliProvider {
 
     try {
       // Try to list models using the CLI
-      const result = execSync(`"${this.cliPath}" models list --format json`, {
-        encoding: 'utf8',
-        timeout: 15000,
-        stdio: 'pipe',
-      });
+      const result = this.hostDiscovery
+        ? this.hostDiscovery.runSync(
+            this.cliPath,
+            ['models', 'list', '--format', 'json'],
+            await this.readEnvironment(),
+            15000
+          )
+        : execSync(`"${this.cliPath}" models list --format json`, {
+            encoding: 'utf8',
+            timeout: 15000,
+            stdio: 'pipe',
+            env: await this.readEnvironment(),
+          });
 
       const models = JSON.parse(result) as CopilotRuntimeModel[];
       this.runtimeModels = models;

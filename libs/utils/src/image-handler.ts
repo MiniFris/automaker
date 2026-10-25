@@ -41,8 +41,11 @@ export function getMimeTypeForImage(imagePath: string): string {
  * @returns Promise resolving to image data with base64 encoding
  * @throws Error if file cannot be read
  */
-export async function readImageAsBase64(imagePath: string): Promise<ImageData> {
-  const imageBuffer = (await secureFs.readFile(imagePath)) as Buffer;
+export async function readImageAsBase64(
+  imagePath: string,
+  filesystem: Pick<typeof secureFs, 'readFile'> = secureFs
+): Promise<ImageData> {
+  const imageBuffer = (await filesystem.readFile(imagePath)) as Buffer;
   const base64Data = imageBuffer.toString('base64');
   const mimeType = getMimeTypeForImage(imagePath);
 
@@ -64,7 +67,8 @@ export async function readImageAsBase64(imagePath: string): Promise<ImageData> {
  */
 export async function convertImagesToContentBlocks(
   imagePaths: string[],
-  workDir?: string
+  workDir?: string,
+  filesystem?: Pick<typeof secureFs, 'readFile'>
 ): Promise<ImageContentBlock[]> {
   const blocks: ImageContentBlock[] = [];
 
@@ -74,7 +78,7 @@ export async function convertImagesToContentBlocks(
       const absolutePath =
         workDir && !path.isAbsolute(imagePath) ? path.join(workDir, imagePath) : imagePath;
 
-      const imageData = await readImageAsBase64(absolutePath);
+      const imageData = await readImageAsBase64(absolutePath, filesystem);
 
       blocks.push({
         type: 'image',
@@ -85,6 +89,8 @@ export async function convertImagesToContentBlocks(
         },
       });
     } catch (error) {
+      // Explicit application ports fail closed; legacy callers retain best-effort images.
+      if (filesystem && (error as NodeJS.ErrnoException)?.code !== 'ENOENT') throw error;
       console.error(`[ImageHandler] Failed to load image ${imagePath}:`, error);
       // Continue processing other images
     }

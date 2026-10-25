@@ -11,8 +11,6 @@ import type { FeatureLoader } from '@/services/feature-loader.js';
 import * as secureFs from '@/lib/secure-fs.js';
 import { atomicWriteJson, readJsonWithRecovery } from '@automaker/utils';
 import { getFeatureDir, getFeaturesDir } from '@automaker/platform';
-import { getNotificationService } from '@/services/notification-service.js';
-import { pipelineService } from '@/services/pipeline-service.js';
 
 /**
  * Helper to normalize paths for cross-platform test compatibility.
@@ -41,26 +39,23 @@ vi.mock('@automaker/platform', () => ({
   getFeaturesDir: vi.fn(),
 }));
 
-vi.mock('@/services/notification-service.js', () => ({
-  getNotificationService: vi.fn(() => ({
-    createNotification: vi.fn(),
-  })),
-}));
-
-vi.mock('@/services/pipeline-service.js', () => ({
-  pipelineService: {
-    getStepIdFromStatus: vi.fn((status: string) => {
-      if (status.startsWith('pipeline_')) return status.replace('pipeline_', '');
-      return null;
-    }),
-    getStep: vi.fn(),
-  },
-}));
+const pipelineService = {
+  getStepIdFromStatus: vi.fn((status: string) => {
+    if (status.startsWith('pipeline_')) return status.replace('pipeline_', '');
+    return null;
+  }),
+  getStep: vi.fn(),
+};
 
 describe('FeatureStateManager', () => {
   let manager: FeatureStateManager;
   let mockEvents: EventEmitter;
   let mockFeatureLoader: FeatureLoader;
+  let notificationServiceRef: { createNotification: ReturnType<typeof vi.fn> };
+  const notificationService = {
+    createNotification: (...args: Parameters<typeof notificationServiceRef.createNotification>) =>
+      notificationServiceRef.createNotification(...args),
+  };
 
   const mockFeature: Feature = {
     id: 'feature-123',
@@ -82,9 +77,50 @@ describe('FeatureStateManager', () => {
 
     mockFeatureLoader = {
       syncFeatureToAppSpec: vi.fn(),
+      get: vi.fn(async (project, id) => {
+        try {
+          return (
+            await readJsonWithRecovery(
+              path.join(getFeatureDir(project, id), 'feature.json'),
+              null,
+              { maxBackups: 3, autoRestore: true }
+            )
+          ).data;
+        } catch {
+          return null;
+        }
+      }),
+      listIds: vi.fn(async (project) => {
+        try {
+          return (await secureFs.readdir(getFeaturesDir(project), { withFileTypes: true }))
+            .filter((entry) => entry.isDirectory())
+            .map((entry) => entry.name);
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
+          throw error;
+        }
+      }),
+      mutate: vi.fn(async (project, id, mutation) => {
+        const file = path.join(getFeatureDir(project, id), 'feature.json');
+        const feature = (
+          await readJsonWithRecovery<Feature | null>(file, null, {
+            maxBackups: 3,
+            autoRestore: true,
+          })
+        ).data;
+        if (!feature || (await mutation(feature)) === false) return null;
+        await atomicWriteJson(file, feature, { backupCount: 3 });
+        return feature;
+      }),
     } as unknown as FeatureLoader;
+    notificationServiceRef = { createNotification: vi.fn() };
 
-    manager = new FeatureStateManager(mockEvents, mockFeatureLoader);
+    manager = new FeatureStateManager(
+      mockEvents,
+      mockFeatureLoader,
+      notificationService as any,
+      pipelineService as never
+    );
 
     // Default mocks
     (getFeatureDir as Mock).mockReturnValue('/project/.automaker/features/feature-123');
@@ -262,7 +298,7 @@ describe('FeatureStateManager', () => {
 
     it('should create notification for waiting_approval status', async () => {
       const mockNotificationService = { createNotification: vi.fn() };
-      (getNotificationService as Mock).mockReturnValue(mockNotificationService);
+      notificationServiceRef = mockNotificationService;
       (readJsonWithRecovery as Mock).mockResolvedValue({
         data: { ...mockFeature },
         recovered: false,
@@ -281,7 +317,7 @@ describe('FeatureStateManager', () => {
 
     it('should use feature.title as notification title for waiting_approval status', async () => {
       const mockNotificationService = { createNotification: vi.fn() };
-      (getNotificationService as Mock).mockReturnValue(mockNotificationService);
+      notificationServiceRef = mockNotificationService;
       const featureWithTitle: Feature = {
         ...mockFeature,
         title: 'My Awesome Feature Title',
@@ -306,7 +342,7 @@ describe('FeatureStateManager', () => {
 
     it('should fallback to featureId as notification title when feature.title is undefined in waiting_approval notification', async () => {
       const mockNotificationService = { createNotification: vi.fn() };
-      (getNotificationService as Mock).mockReturnValue(mockNotificationService);
+      notificationServiceRef = mockNotificationService;
       const featureWithoutTitle: Feature = {
         ...mockFeature,
         title: undefined,
@@ -331,7 +367,7 @@ describe('FeatureStateManager', () => {
 
     it('should handle empty string title by using featureId as notification title in waiting_approval notification', async () => {
       const mockNotificationService = { createNotification: vi.fn() };
-      (getNotificationService as Mock).mockReturnValue(mockNotificationService);
+      notificationServiceRef = mockNotificationService;
       const featureWithEmptyTitle: Feature = {
         ...mockFeature,
         title: '',
@@ -356,7 +392,7 @@ describe('FeatureStateManager', () => {
 
     it('should create notification for verified status', async () => {
       const mockNotificationService = { createNotification: vi.fn() };
-      (getNotificationService as Mock).mockReturnValue(mockNotificationService);
+      notificationServiceRef = mockNotificationService;
       (readJsonWithRecovery as Mock).mockResolvedValue({
         data: { ...mockFeature },
         recovered: false,
@@ -375,7 +411,7 @@ describe('FeatureStateManager', () => {
 
     it('should use feature.title as notification title for verified status', async () => {
       const mockNotificationService = { createNotification: vi.fn() };
-      (getNotificationService as Mock).mockReturnValue(mockNotificationService);
+      notificationServiceRef = mockNotificationService;
       const featureWithTitle: Feature = {
         ...mockFeature,
         title: 'My Awesome Feature Title',
@@ -400,7 +436,7 @@ describe('FeatureStateManager', () => {
 
     it('should fallback to featureId as notification title when feature.title is undefined in verified notification', async () => {
       const mockNotificationService = { createNotification: vi.fn() };
-      (getNotificationService as Mock).mockReturnValue(mockNotificationService);
+      notificationServiceRef = mockNotificationService;
       const featureWithoutTitle: Feature = {
         ...mockFeature,
         title: undefined,
@@ -425,7 +461,7 @@ describe('FeatureStateManager', () => {
 
     it('should handle empty string title by using featureId as notification title in verified notification', async () => {
       const mockNotificationService = { createNotification: vi.fn() };
-      (getNotificationService as Mock).mockReturnValue(mockNotificationService);
+      notificationServiceRef = mockNotificationService;
       const featureWithEmptyTitle: Feature = {
         ...mockFeature,
         title: '',
@@ -561,10 +597,25 @@ describe('FeatureStateManager', () => {
 
   describe('resetStuckFeatures', () => {
     it('keeps an interrupted direct feature out of the automatic ready/backlog queue', async () => {
-      (secureFs.readdir as Mock).mockResolvedValue([{ name: 'feature-123', isDirectory: () => true }]);
-      (readJsonWithRecovery as Mock).mockResolvedValue({ data: { ...mockFeature, model: 'direct-Vendor/Model:Tag', providerId: 'endpoint', status: 'in_progress', planSpec: { status: 'approved', version: 1, reviewedByUser: true } }, recovered: false, source: 'main' });
+      (secureFs.readdir as Mock).mockResolvedValue([
+        { name: 'feature-123', isDirectory: () => true },
+      ]);
+      (readJsonWithRecovery as Mock).mockResolvedValue({
+        data: {
+          ...mockFeature,
+          model: 'direct-Vendor/Model:Tag',
+          providerId: 'endpoint',
+          status: 'in_progress',
+          planSpec: { status: 'approved', version: 1, reviewedByUser: true },
+        },
+        recovered: false,
+        source: 'main',
+      });
       await manager.resetStuckFeatures('/project');
-      expect((atomicWriteJson as Mock).mock.calls[0][1]).toMatchObject({ status: 'interrupted', providerId: 'endpoint' });
+      expect((atomicWriteJson as Mock).mock.calls[0][1]).toMatchObject({
+        status: 'interrupted',
+        providerId: 'endpoint',
+      });
     });
 
     it('should reset in_progress features to ready if has approved plan', async () => {
@@ -739,6 +790,41 @@ describe('FeatureStateManager', () => {
   });
 
   describe('updateFeaturePlanSpec', () => {
+    it('propagates persistence failure so approval cannot report a successful decision', async () => {
+      (readJsonWithRecovery as Mock).mockResolvedValue({
+        data: { ...mockFeature },
+        recovered: false,
+        source: 'main',
+      });
+      (atomicWriteJson as Mock).mockRejectedValueOnce(new Error('plan persistence failed'));
+      await expect(
+        manager.updateFeaturePlanSpec('/project', 'feature-123', { status: 'approved' })
+      ).rejects.toThrow('plan persistence failed');
+    });
+    it('preserves an explicit execution plan version when content changes', async () => {
+      (readJsonWithRecovery as Mock).mockResolvedValue({
+        data: {
+          ...mockFeature,
+          planSpec: {
+            status: 'generating',
+            version: 3,
+            content: 'Previous plan',
+            reviewedByUser: false,
+          },
+        },
+        recovered: false,
+        source: 'main',
+      });
+      await manager.updateFeaturePlanSpec('/project', 'feature-123', {
+        status: 'generated',
+        version: 3,
+        content: 'Plan revision 3',
+      });
+      const savedFeature = (atomicWriteJson as Mock).mock.calls[0][1] as Feature;
+      expect(savedFeature.planSpec?.version).toBe(3);
+      expect(savedFeature.planSpec?.content).toBe('Plan revision 3');
+    });
+
     it('should update planSpec with partial updates', async () => {
       (readJsonWithRecovery as Mock).mockResolvedValue({
         data: { ...mockFeature },
@@ -1383,7 +1469,7 @@ describe('FeatureStateManager', () => {
 
     it('should ignore events with no type', async () => {
       const mockNotificationService = { createNotification: vi.fn() };
-      (getNotificationService as Mock).mockReturnValue(mockNotificationService);
+      notificationServiceRef = mockNotificationService;
 
       await subscribeCallback('auto-mode:event', {});
 
@@ -1392,7 +1478,7 @@ describe('FeatureStateManager', () => {
 
     it('should ignore non-error events', async () => {
       const mockNotificationService = { createNotification: vi.fn() };
-      (getNotificationService as Mock).mockReturnValue(mockNotificationService);
+      notificationServiceRef = mockNotificationService;
 
       await subscribeCallback('auto-mode:event', {
         type: 'auto_mode_feature_complete',
@@ -1405,7 +1491,7 @@ describe('FeatureStateManager', () => {
 
     it('should create auto_mode_error notification with gesture name as title when no featureId', async () => {
       const mockNotificationService = { createNotification: vi.fn() };
-      (getNotificationService as Mock).mockReturnValue(mockNotificationService);
+      notificationServiceRef = mockNotificationService;
 
       await subscribeCallback('auto-mode:event', {
         type: 'auto_mode_error',
@@ -1425,7 +1511,7 @@ describe('FeatureStateManager', () => {
 
     it('should use error field instead of message when available', async () => {
       const mockNotificationService = { createNotification: vi.fn() };
-      (getNotificationService as Mock).mockReturnValue(mockNotificationService);
+      notificationServiceRef = mockNotificationService;
 
       await subscribeCallback('auto-mode:event', {
         type: 'auto_mode_error',
@@ -1444,7 +1530,7 @@ describe('FeatureStateManager', () => {
 
     it('should use feature title as notification title for feature error with featureId', async () => {
       const mockNotificationService = { createNotification: vi.fn() };
-      (getNotificationService as Mock).mockReturnValue(mockNotificationService);
+      notificationServiceRef = mockNotificationService;
       (readJsonWithRecovery as Mock).mockResolvedValue({
         data: { ...mockFeature, title: 'Login Page Feature' },
         recovered: false,
@@ -1474,7 +1560,7 @@ describe('FeatureStateManager', () => {
 
     it('should ignore auto_mode_feature_complete without passes=false', async () => {
       const mockNotificationService = { createNotification: vi.fn() };
-      (getNotificationService as Mock).mockReturnValue(mockNotificationService);
+      notificationServiceRef = mockNotificationService;
 
       await subscribeCallback('auto-mode:event', {
         type: 'auto_mode_feature_complete',
@@ -1487,7 +1573,7 @@ describe('FeatureStateManager', () => {
 
     it('should handle missing projectPath gracefully', async () => {
       const mockNotificationService = { createNotification: vi.fn() };
-      (getNotificationService as Mock).mockReturnValue(mockNotificationService);
+      notificationServiceRef = mockNotificationService;
 
       await subscribeCallback('auto-mode:event', {
         type: 'auto_mode_error',
@@ -1498,9 +1584,9 @@ describe('FeatureStateManager', () => {
     });
 
     it('should handle notification service failures gracefully', async () => {
-      (getNotificationService as Mock).mockImplementation(() => {
-        throw new Error('Service unavailable');
-      });
+      notificationServiceRef = {
+        createNotification: vi.fn().mockRejectedValue(new Error('Service unavailable')),
+      };
 
       // Should not throw - the callback returns void so we just call it and wait for async work
       subscribeCallback('auto-mode:event', {
@@ -1520,7 +1606,12 @@ describe('FeatureStateManager', () => {
       (mockEvents.subscribe as Mock).mockReturnValue(unsubscribeFn);
 
       // Create a new manager to get a fresh subscription
-      const newManager = new FeatureStateManager(mockEvents, mockFeatureLoader);
+      const newManager = new FeatureStateManager(
+        mockEvents,
+        mockFeatureLoader,
+        null,
+        pipelineService as never
+      );
 
       // Call destroy
       newManager.destroy();
@@ -1533,7 +1624,12 @@ describe('FeatureStateManager', () => {
       const unsubscribeFn = vi.fn();
       (mockEvents.subscribe as Mock).mockReturnValue(unsubscribeFn);
 
-      const newManager = new FeatureStateManager(mockEvents, mockFeatureLoader);
+      const newManager = new FeatureStateManager(
+        mockEvents,
+        mockFeatureLoader,
+        null,
+        pipelineService as never
+      );
 
       // Call destroy multiple times
       newManager.destroy();

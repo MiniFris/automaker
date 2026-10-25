@@ -93,6 +93,18 @@ describe('auto-loop-coordinator.ts', () => {
     vi.useRealTimers();
   });
 
+  it('interrupts scheduling for shutdown while preserving persisted recovery state', async () => {
+    await coordinator.startAutoLoopForProject('/test/project', 'feature-branch');
+    expect(coordinator.isAutoLoopRunningForProject('/test/project', 'feature-branch')).toBe(true);
+    coordinator.interruptForShutdown();
+    coordinator.interruptForShutdown();
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(coordinator.getActiveWorktrees()).toEqual([]);
+    expect(mockClearExecutionState).not.toHaveBeenCalled();
+    expect(mockExecuteFeature).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   describe('getWorktreeAutoLoopKey', () => {
     it('returns correct key for main worktree (null branch)', () => {
       const key = getWorktreeAutoLoopKey('/test/project', null);

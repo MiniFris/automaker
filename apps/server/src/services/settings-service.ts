@@ -7,11 +7,13 @@
  * - Per-project settings ({projectPath}/.automaker/settings.json)
  */
 
-import { createLogger, atomicWriteJson, DEFAULT_BACKUP_COUNT } from '@automaker/utils';
-import * as secureFs from '../lib/secure-fs.js';
-import os from 'os';
+import { createLogger } from '@automaker/utils';
+import {
+  validateCredentialPolicy,
+  SETUP_CREDENTIAL_ENV,
+  type SetupCredentialProvider,
+} from '../providers/credential-policy.js';
 import path from 'path';
-import fs from 'fs/promises';
 import { parseOpenAICompatibleEndpoints } from '../providers/openai-compatible/config.js';
 import { parseDirectAgentSettings } from '../providers/openai-compatible/execution.js';
 import {
@@ -23,8 +25,6 @@ import {
   getGlobalSettingsPath,
   getCredentialsPath,
   getProjectSettingsPath,
-  ensureDataDir,
-  ensureAutomakerDir,
 } from '@automaker/platform';
 import type {
   GlobalSettings,
@@ -62,51 +62,15 @@ import {
   migrateCursorModelIds,
   migrateOpencodeModelIds,
 } from '@automaker/types';
+import { SettingsFileRepository } from '../modules/settings/settings-file.repository.js';
+import { SettingsMutationQueue } from './settings-mutation-queue.js';
+import type {
+  LegacyProfileImporter,
+  LegacyProfileImportResult,
+} from '../modules/settings/legacy-profile-importer.js';
+import { LegacyProfileImportError } from '../core/platform/legacy-profile-import.error.js';
 
 const logger = createLogger('SettingsService');
-
-/**
- * Wrapper for readJsonFile from utils that uses the local secureFs
- * to maintain compatibility with the server's secure file system
- */
-async function readJsonFile<T>(filePath: string, defaultValue: T): Promise<T> {
-  try {
-    const content = (await secureFs.readFile(filePath, 'utf-8')) as string;
-    return JSON.parse(content) as T;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      return defaultValue;
-    }
-    logger.error(`Error reading ${filePath}:`, error);
-    return defaultValue;
-  }
-}
-
-/**
- * Check if a file exists
- */
-async function fileExists(filePath: string): Promise<boolean> {
-  try {
-    await secureFs.access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Write settings atomically with backup support
- */
-async function writeSettingsJson(
-  filePath: string,
-  data: unknown,
-  privateFile = false
-): Promise<void> {
-  await atomicWriteJson(filePath, data, {
-    backupCount: DEFAULT_BACKUP_COUNT,
-    ...(privateFile && { mode: 0o600 }),
-  });
-}
 
 /**
  * SettingsService - Manages persistent storage of user settings and credentials
@@ -122,8 +86,11 @@ async function writeSettingsJson(
  * Updates use deep merge for nested objects like keyboardShortcuts and apiKeys.
  */
 export class SettingsService {
-  private providerTimeoutWrites: Promise<unknown> = Promise.resolve();
+  private readonly mutations = new SettingsMutationQueue();
   private dataDir: string;
+  private legacyInitialized = false;
+  private legacyRequested = false;
+  private legacyPending?: Promise<LegacyProfileImportResult>;
 
   getDataDirectory(): string {
     return this.dataDir;
@@ -134,8 +101,24 @@ export class SettingsService {
    *
    * @param dataDir - Absolute path to global data directory (e.g., ~/.automaker)
    */
-  constructor(dataDir: string) {
+  constructor(
+    dataDir: string,
+    private readonly files: SettingsFileRepository = new SettingsFileRepository(),
+    private readonly legacyImport?: Pick<LegacyProfileImporter, 'migrate'>,
+    private readonly automaticLegacyImport = false
+  ) {
     this.dataDir = dataDir;
+    if (legacyImport)
+      files.setInitializationBarrier(async () => {
+        if (this.legacyInitialized || (!this.automaticLegacyImport && !this.legacyRequested))
+          return;
+        const result = await this.migrateFromLegacyElectronPath();
+        if (result.errors.length) throw new LegacyProfileImportError();
+      });
+  }
+
+  beforeApplicationShutdown(): Promise<void> {
+    return this.mutations.close();
   }
 
   // ============================================================================
@@ -154,8 +137,12 @@ export class SettingsService {
    * @returns Promise resolving to complete GlobalSettings object
    */
   async getGlobalSettings(): Promise<GlobalSettings> {
+    return this.readGlobalSettings(true);
+  }
+
+  private async readGlobalSettings(persistMigrations: boolean): Promise<GlobalSettings> {
     const settingsPath = getGlobalSettingsPath(this.dataDir);
-    const settings = await readJsonFile<GlobalSettings>(settingsPath, DEFAULT_GLOBAL_SETTINGS);
+    const settings = await this.files.read<GlobalSettings>(settingsPath, DEFAULT_GLOBAL_SETTINGS);
 
     // Migrate legacy enhancementModel/validationModel to phaseModels
     const migratedPhaseModels = this.migratePhaseModels(settings);
@@ -267,12 +254,18 @@ export class SettingsService {
     }
 
     // Save migrated settings if needed
-    if (needsSave) {
+    if (needsSave && persistMigrations) {
       try {
-        await ensureDataDir(this.dataDir);
-        await writeSettingsJson(settingsPath, result);
+        result = await this.mutations.run('global', async () => {
+          // A queued command may have committed since this query read the file.
+          const latest = await this.readGlobalSettings(false);
+          await this.files.ensureDirectory(this.dataDir);
+          await this.files.write(settingsPath, latest);
+          return latest;
+        });
         logger.info('Settings migration complete');
       } catch (error) {
+        if (this.files.scoped) throw error;
         logger.error('Failed to save migrated settings:', error);
       }
     }
@@ -565,27 +558,29 @@ export class SettingsService {
     timeouts: ModelTimeoutSettings
   ): Promise<void> {
     const parsed = parseProviderModelTimeoutSettings({ [provider]: timeouts });
-    const write = this.providerTimeoutWrites.then(async () => {
-      const global = await this.getGlobalSettings();
-      await this.updateGlobalSettings({
+    await this.mutations.run('global', async () => {
+      const global = await this.readGlobalSettings(false);
+      await this.updateGlobalSettingsNow({
         providerModelTimeouts: { ...global.providerModelTimeouts, ...parsed },
       });
     });
-    this.providerTimeoutWrites = write.catch(() => {});
-    await write;
   }
 
   async updateGlobalSettings(updates: Partial<GlobalSettings>): Promise<GlobalSettings> {
+    return this.mutations.run('global', () => this.updateGlobalSettingsNow(updates));
+  }
+
+  private async updateGlobalSettingsNow(updates: Partial<GlobalSettings>): Promise<GlobalSettings> {
     if (
       ['openaiCompatibleApiKeys', 'openaiCompatibleConnection', 'apiKey', 'credentials'].some(
         (key) => Object.hasOwn(updates, key)
       )
     )
       throw new Error('Secrets must be updated through credentials, not global settings.');
-    await ensureDataDir(this.dataDir);
+    await this.files.ensureDirectory(this.dataDir);
     const settingsPath = getGlobalSettingsPath(this.dataDir);
 
-    const current = await this.getGlobalSettings();
+    const current = await this.readGlobalSettings(false);
 
     // Guard against destructive "empty array/object" overwrites.
     // During auth transitions, the UI can briefly have default/empty state and accidentally
@@ -773,7 +768,7 @@ export class SettingsService {
       updated.autoModeByWorktree = mergedAutoModeByWorktree;
     }
 
-    await writeSettingsJson(settingsPath, updated);
+    await this.files.write(settingsPath, updated);
     logger.info('Global settings updated');
 
     return updated;
@@ -788,7 +783,7 @@ export class SettingsService {
    */
   async hasGlobalSettings(): Promise<boolean> {
     const settingsPath = getGlobalSettingsPath(this.dataDir);
-    return fileExists(settingsPath);
+    return this.files.exists(settingsPath);
   }
 
   // ============================================================================
@@ -806,7 +801,11 @@ export class SettingsService {
    */
   async getCredentials(): Promise<Credentials> {
     const credentialsPath = getCredentialsPath(this.dataDir);
-    const credentials = await readJsonFile<Credentials>(credentialsPath, DEFAULT_CREDENTIALS);
+    const credentials = await this.files.read<Credentials>(
+      credentialsPath,
+      DEFAULT_CREDENTIALS,
+      true
+    );
 
     return {
       ...DEFAULT_CREDENTIALS,
@@ -829,6 +828,43 @@ export class SettingsService {
    * @returns Promise resolving to complete updated Credentials object
    */
   async updateCredentials(updates: Partial<Credentials>): Promise<Credentials> {
+    return this.mutations.run('credentials', () => this.updateCredentialsNow(updates));
+  }
+
+  async setSetupCredential(provider: SetupCredentialProvider, value: string | null): Promise<void> {
+    if (
+      !Object.hasOwn(SETUP_CREDENTIAL_ENV, provider) ||
+      (value !== null &&
+        (typeof value !== 'string' ||
+          !value ||
+          value.length > 8192 ||
+          /[\x00-\x20\x7f]/.test(value)))
+    )
+      throw new Error('Invalid application credential update.');
+    await this.mutations.run('credentials', async () => {
+      const current = await this.getCredentials();
+      validateCredentialPolicy(current);
+      await this.updateCredentialsNow({
+        disabledBootstrapApiKeys: {
+          ...current.disabledBootstrapApiKeys,
+          [provider]: value === null,
+          ...(value && provider === 'anthropic' ? { anthropic_oauth_token: true } : {}),
+          ...(value && provider === 'anthropic_oauth_token' ? { anthropic: true } : {}),
+        },
+        ...(provider === 'anthropic_oauth_token'
+          ? {
+              anthropicOAuthToken: value ?? '',
+              ...(value && { apiKeys: { anthropic: '' } as Credentials['apiKeys'] }),
+            }
+          : {
+              apiKeys: { [provider]: value ?? '' } as Credentials['apiKeys'],
+              ...(value && provider === 'anthropic' && { anthropicOAuthToken: '' }),
+            }),
+      });
+    });
+  }
+
+  private async updateCredentialsNow(updates: Partial<Credentials>): Promise<Credentials> {
     if (updates.openaiCompatibleApiKeys !== undefined) {
       const keys = updates.openaiCompatibleApiKeys;
       if (
@@ -841,10 +877,38 @@ export class SettingsService {
       )
         throw new Error('Invalid OpenAI-compatible credentials.');
     }
-    await ensureDataDir(this.dataDir);
+    await this.files.ensureDirectory(this.dataDir);
     const credentialsPath = getCredentialsPath(this.dataDir);
 
     const current = await this.getCredentials();
+    const isExistingMask = (incoming: string, stored: string): boolean =>
+      stored.length >= 8 && incoming === `${stored.slice(0, 4)}...${stored.slice(-4)}`;
+    if (updates.apiKeys) {
+      updates = {
+        ...updates,
+        apiKeys: Object.fromEntries(
+          Object.entries(updates.apiKeys).filter(
+            ([provider, incoming]) =>
+              typeof incoming !== 'string' ||
+              !isExistingMask(
+                incoming,
+                current.apiKeys[provider as keyof Credentials['apiKeys']] ?? ''
+              )
+          )
+        ) as Credentials['apiKeys'],
+      };
+    }
+    if (updates.openaiCompatibleApiKeys) {
+      updates = {
+        ...updates,
+        openaiCompatibleApiKeys: Object.fromEntries(
+          Object.entries(updates.openaiCompatibleApiKeys).filter(
+            ([credentialId, incoming]) =>
+              !isExistingMask(incoming, current.openaiCompatibleApiKeys?.[credentialId] ?? '')
+          )
+        ),
+      };
+    }
     const updated: Credentials = {
       ...current,
       ...updates,
@@ -867,7 +931,8 @@ export class SettingsService {
       };
     }
 
-    await writeSettingsJson(credentialsPath, updated, true);
+    validateCredentialPolicy(updated);
+    await this.files.write(credentialsPath, updated, true);
     logger.info('Credentials updated');
 
     return updated;
@@ -924,7 +989,7 @@ export class SettingsService {
    */
   async hasCredentials(): Promise<boolean> {
     const credentialsPath = getCredentialsPath(this.dataDir);
-    return fileExists(credentialsPath);
+    return this.files.exists(credentialsPath);
   }
 
   // ============================================================================
@@ -943,7 +1008,7 @@ export class SettingsService {
    */
   async getProjectSettings(projectPath: string): Promise<ProjectSettings> {
     const settingsPath = getProjectSettingsPath(projectPath);
-    const settings = await readJsonFile<ProjectSettings>(settingsPath, DEFAULT_PROJECT_SETTINGS);
+    const settings = await this.files.read<ProjectSettings>(settingsPath, DEFAULT_PROJECT_SETTINGS);
 
     return {
       ...DEFAULT_PROJECT_SETTINGS,
@@ -965,6 +1030,16 @@ export class SettingsService {
     projectPath: string,
     updates: Partial<ProjectSettings>
   ): Promise<ProjectSettings> {
+    const canonical = this.files.directory(projectPath);
+    return this.mutations.run(`project:${canonical}`, () =>
+      this.updateProjectSettingsNow(canonical, updates)
+    );
+  }
+
+  private async updateProjectSettingsNow(
+    projectPath: string,
+    updates: Partial<ProjectSettings>
+  ): Promise<ProjectSettings> {
     if (Object.hasOwn(updates, 'executionEnvironment')) {
       updates = {
         ...updates,
@@ -974,7 +1049,7 @@ export class SettingsService {
             : parseEnvironmentSelection(updates.executionEnvironment),
       };
     }
-    await ensureAutomakerDir(projectPath);
+    await this.files.ensureDirectory(path.join(projectPath, '.automaker'));
     const settingsPath = getProjectSettingsPath(projectPath);
 
     const current = await this.getProjectSettings(projectPath);
@@ -1037,7 +1112,7 @@ export class SettingsService {
       delete updated.testCommand;
     }
 
-    await writeSettingsJson(settingsPath, updated);
+    await this.files.write(settingsPath, updated);
     logger.info(`Project settings updated for ${projectPath}`);
 
     return updated;
@@ -1051,7 +1126,7 @@ export class SettingsService {
    */
   async hasProjectSettings(projectPath: string): Promise<boolean> {
     const settingsPath = getProjectSettingsPath(projectPath);
-    return fileExists(settingsPath);
+    return this.files.exists(settingsPath);
   }
 
   // ============================================================================
@@ -1062,8 +1137,8 @@ export class SettingsService {
    * Migrate settings from localStorage to file-based storage
    *
    * Called during onboarding when UI detects localStorage data but no settings files.
-   * Extracts global settings, credentials, and per-project settings from various
-   * localStorage keys and writes them to the new file-based storage.
+   * Extracts global and per-project settings from localStorage.
+   * Credentials are NOT imported here; they require target-confirmed commands.
    * Collects errors but continues on partial failures.
    *
    * @param localStorageData - Object containing localStorage key/value pairs to migrate
@@ -1079,12 +1154,14 @@ export class SettingsService {
     success: boolean;
     migratedGlobalSettings: boolean;
     migratedCredentials: boolean;
+    credentialImportRequired: boolean;
     migratedProjectCount: number;
     errors: string[];
   }> {
     const errors: string[] = [];
     let migratedGlobalSettings = false;
-    let migratedCredentials = false;
+    const migratedCredentials = false;
+    let credentialImportRequired = false;
     let migratedProjectCount = 0;
 
     try {
@@ -1094,8 +1171,8 @@ export class SettingsService {
         try {
           const parsed = JSON.parse(localStorageData['automaker-storage']);
           appState = parsed.state || parsed;
-        } catch (e) {
-          errors.push(`Failed to parse automaker-storage: ${e}`);
+        } catch {
+          errors.push('Failed to parse automaker-storage.');
         }
       }
 
@@ -1105,8 +1182,8 @@ export class SettingsService {
         try {
           const parsed = JSON.parse(localStorageData['automaker-setup']);
           setupState = parsed.state || parsed;
-        } catch (e) {
-          errors.push(`Failed to parse automaker-setup: ${e}`);
+        } catch {
+          errors.push('Failed to parse automaker-setup.');
         }
       }
 
@@ -1179,24 +1256,13 @@ export class SettingsService {
       migratedGlobalSettings = true;
       logger.info('Migrated global settings from localStorage');
 
-      // Extract and save credentials
-      if (appState.apiKeys) {
-        const apiKeys = appState.apiKeys as {
-          anthropic?: string;
-          google?: string;
-          openai?: string;
-        };
-        await this.updateCredentials({
-          apiKeys: {
-            anthropic: apiKeys.anthropic || '',
-            google: apiKeys.google || '',
-            openai: apiKeys.openai || '',
-            zai: '',
-          },
-        });
-        migratedCredentials = true;
-        logger.info('Migrated credentials from localStorage');
-      }
+      // Settings migration is not consent to replace keys or private deletion policy.
+      // Keep legacy browser data intact; import uses target-confirmed setup commands.
+      credentialImportRequired = !!(
+        appState.apiKeys &&
+        typeof appState.apiKeys === 'object' &&
+        Object.values(appState.apiKeys).some((value) => typeof value === 'string' && !!value.trim())
+      );
 
       // Migrate per-project settings
       const boardBackgroundByProject = appState.boardBackgroundByProject as
@@ -1256,8 +1322,8 @@ export class SettingsService {
             await this.updateProjectSettings(projectPath, projectSettings);
             migratedProjectCount++;
           }
-        } catch (e) {
-          errors.push(`Failed to migrate project settings for ${projectPath}: ${e}`);
+        } catch {
+          errors.push('Failed to migrate project settings.');
         }
       }
 
@@ -1267,16 +1333,18 @@ export class SettingsService {
         success: errors.length === 0,
         migratedGlobalSettings,
         migratedCredentials,
+        credentialImportRequired,
         migratedProjectCount,
         errors,
       };
-    } catch (error) {
-      logger.error('Migration failed:', error);
-      errors.push(`Migration failed: ${error}`);
+    } catch {
+      logger.error('Migration failed.');
+      errors.push('Migration failed.');
       return {
         success: false,
         migratedGlobalSettings,
         migratedCredentials,
+        credentialImportRequired,
         migratedProjectCount,
         errors,
       };
@@ -1295,202 +1363,27 @@ export class SettingsService {
     return this.dataDir;
   }
 
-  /**
-   * Get the legacy Electron userData directory path
-   *
-   * Returns the platform-specific path where Electron previously stored settings
-   * before the migration to shared data directories.
-   *
-   * @returns Absolute path to legacy userData directory
-   */
-  private getLegacyElectronUserDataPath(): string {
-    const homeDir = os.homedir();
-
-    switch (process.platform) {
-      case 'darwin':
-        // macOS: ~/Library/Application Support/Automaker
-        return path.join(homeDir, 'Library', 'Application Support', 'Automaker');
-      case 'win32':
-        // Windows: %APPDATA%\Automaker
-        return path.join(
-          process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming'),
-          'Automaker'
-        );
-      default:
-        // Linux and others: ~/.config/Automaker
-        return path.join(process.env.XDG_CONFIG_HOME || path.join(homeDir, '.config'), 'Automaker');
-    }
-  }
-
-  /**
-   * Migrate entire data directory from legacy Electron userData location to new shared data directory
-   *
-   * This handles the migration from when Electron stored data in the platform-specific
-   * userData directory (e.g., ~/.config/Automaker) to the new shared ./data directory.
-   *
-   * Migration only occurs if:
-   * 1. The new location does NOT have settings.json
-   * 2. The legacy location DOES have settings.json
-   *
-   * Migrates all files and directories including:
-   * - settings.json (global settings)
-   * - credentials.json (API keys)
-   * - sessions-metadata.json (chat session metadata)
-   * - agent-sessions/ (conversation histories)
-   * - Any other files in the data directory
-   *
-   * @returns Promise resolving to migration result
-   */
-  async migrateFromLegacyElectronPath(): Promise<{
-    migrated: boolean;
-    migratedFiles: string[];
-    legacyPath: string;
-    errors: string[];
-  }> {
-    const legacyPath = this.getLegacyElectronUserDataPath();
-    const migratedFiles: string[] = [];
-    const errors: string[] = [];
-
-    // Skip if legacy path is the same as current data dir (no migration needed)
-    if (path.resolve(legacyPath) === path.resolve(this.dataDir)) {
-      logger.debug('Legacy path same as current data dir, skipping migration');
-      return { migrated: false, migratedFiles, legacyPath, errors };
-    }
-
-    logger.info(`Checking for legacy data migration from: ${legacyPath}`);
-    logger.info(`Current data directory: ${this.dataDir}`);
-
-    // Check if new settings already exist
-    const newSettingsPath = getGlobalSettingsPath(this.dataDir);
-    let newSettingsExist = false;
-    try {
-      await fs.access(newSettingsPath);
-      newSettingsExist = true;
-    } catch {
-      // New settings don't exist, migration may be needed
-    }
-
-    if (newSettingsExist) {
-      logger.debug('Settings already exist in new location, skipping migration');
-      return { migrated: false, migratedFiles, legacyPath, errors };
-    }
-
-    // Check if legacy directory exists and has settings
-    const legacySettingsPath = path.join(legacyPath, 'settings.json');
-    let legacySettingsExist = false;
-    try {
-      await fs.access(legacySettingsPath);
-      legacySettingsExist = true;
-    } catch {
-      // Legacy settings don't exist
-    }
-
-    if (!legacySettingsExist) {
-      logger.debug('No legacy settings found, skipping migration');
-      return { migrated: false, migratedFiles, legacyPath, errors };
-    }
-
-    // Perform migration of specific application data files only
-    // (not Electron internal caches like Code Cache, GPU Cache, etc.)
-    logger.info('Found legacy data directory, migrating application data to new location...');
-
-    // Ensure new data directory exists
-    try {
-      await ensureDataDir(this.dataDir);
-    } catch (error) {
-      const msg = `Failed to create data directory: ${error}`;
-      logger.error(msg);
-      errors.push(msg);
-      return { migrated: false, migratedFiles, legacyPath, errors };
-    }
-
-    // Only migrate specific application data files/directories
-    const itemsToMigrate = [
-      'settings.json',
-      'credentials.json',
-      'sessions-metadata.json',
-      'agent-sessions',
-      '.api-key',
-      '.sessions',
-    ];
-
-    for (const item of itemsToMigrate) {
-      const srcPath = path.join(legacyPath, item);
-      const destPath = path.join(this.dataDir, item);
-
-      // Check if source exists
-      try {
-        await fs.access(srcPath);
-      } catch {
-        // Source doesn't exist, skip
-        continue;
+  /** Native composition supplies the narrow host importer; direct constructors never inspect HOME. */
+  migrateFromLegacyElectronPath(): Promise<LegacyProfileImportResult> {
+    this.legacyRequested = true;
+    if (!this.legacyImport)
+      return Promise.resolve({ migrated: false, migratedFiles: [], legacyPath: '', errors: [] });
+    if (this.legacyPending) return this.legacyPending;
+    const pending = Promise.resolve()
+      .then(() => this.legacyImport!.migrate())
+      .then((result) => {
+        if (!result.errors.length) this.legacyInitialized = true;
+        return result;
+      });
+    this.legacyPending = pending;
+    void pending.then(
+      () => {
+        if (this.legacyPending === pending) this.legacyPending = undefined;
+      },
+      () => {
+        if (this.legacyPending === pending) this.legacyPending = undefined;
       }
-
-      // Check if destination already exists
-      try {
-        await fs.access(destPath);
-        logger.debug(`Skipping ${item} - already exists in destination`);
-        continue;
-      } catch {
-        // Destination doesn't exist, proceed with copy
-      }
-
-      // Copy file or directory
-      try {
-        const stat = await fs.stat(srcPath);
-        if (stat.isDirectory()) {
-          await this.copyDirectory(srcPath, destPath);
-          migratedFiles.push(item + '/');
-          logger.info(`Migrated directory: ${item}/`);
-        } else {
-          const content = await fs.readFile(srcPath);
-          await fs.writeFile(destPath, content);
-          migratedFiles.push(item);
-          logger.info(`Migrated file: ${item}`);
-        }
-      } catch (error) {
-        const msg = `Failed to migrate ${item}: ${error}`;
-        logger.error(msg);
-        errors.push(msg);
-      }
-    }
-
-    if (migratedFiles.length > 0) {
-      logger.info(
-        `Migration complete. Migrated ${migratedFiles.length} item(s): ${migratedFiles.join(', ')}`
-      );
-      logger.info(`Legacy path: ${legacyPath}`);
-      logger.info(`New path: ${this.dataDir}`);
-    }
-
-    return {
-      migrated: migratedFiles.length > 0,
-      migratedFiles,
-      legacyPath,
-      errors,
-    };
-  }
-
-  /**
-   * Recursively copy a directory from source to destination
-   *
-   * @param srcDir - Source directory path
-   * @param destDir - Destination directory path
-   */
-  private async copyDirectory(srcDir: string, destDir: string): Promise<void> {
-    await fs.mkdir(destDir, { recursive: true });
-    const entries = await fs.readdir(srcDir, { withFileTypes: true });
-
-    for (const entry of entries) {
-      const srcPath = path.join(srcDir, entry.name);
-      const destPath = path.join(destDir, entry.name);
-
-      if (entry.isDirectory()) {
-        await this.copyDirectory(srcPath, destPath);
-      } else if (entry.isFile()) {
-        const content = await fs.readFile(srcPath);
-        await fs.writeFile(destPath, content);
-      }
-    }
+    );
+    return pending;
   }
 }

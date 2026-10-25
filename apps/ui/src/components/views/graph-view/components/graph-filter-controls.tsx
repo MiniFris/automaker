@@ -1,4 +1,5 @@
 import { translate, useUiLocale } from '@/lib/i18n';
+import { getFeatureCategoryLabel } from '@/lib/feature-category-labels';
 import { Panel } from '@xyflow/react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -130,7 +131,7 @@ export function GraphFilterControls({
     selectedCategories.length === 0
       ? translate('All Categories')
       : selectedCategories.length === 1
-        ? selectedCategories[0]
+        ? getFeatureCategoryLabel(selectedCategories[0])
         : translate('Categories: {count}', { count: selectedCategories.length });
 
   const statusButtonLabel =
@@ -240,7 +241,7 @@ export function GraphFilterControls({
                         checked={selectedCategories.includes(category)}
                         onCheckedChange={() => handleCategoryToggle(category)}
                       />
-                      <span className="text-sm truncate">{category}</span>
+                      <span className="text-sm truncate">{getFeatureCategoryLabel(category)}</span>
                     </div>
                   ))
                 )}

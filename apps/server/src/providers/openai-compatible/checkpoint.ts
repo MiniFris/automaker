@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { Writable } from 'node:stream';
 import { Ajv } from 'ajv';
 import { secureFs } from '@automaker/platform';
 import type { DirectAgentCheckpoint } from '@automaker/types';
@@ -121,12 +122,44 @@ export function parseCheckpoint(value: unknown): DirectAgentCheckpoint {
   return snapshot;
 }
 
-/** Opt-in server-owned persistence. Directory is supplied by the server, never by the model. */
-export class AgentCheckpointStore {
+export interface AgentCheckpointRepository {
+  save(checkpoint: DirectAgentCheckpoint): Promise<void>;
+  load(sessionId: string): Promise<DirectAgentCheckpoint>;
+}
+export type CheckpointFilesystem = Pick<
+  typeof secureFs,
+  'mkdir' | 'lstat' | 'pipeFile' | 'writeFile' | 'rename' | 'unlink'
+>;
+const MAX_CHECKPOINT_BYTES = 16 * 1024 * 1024;
+
+export class CheckpointCleanupError extends OpenAICompatibleError {
+  readonly code = 'DIRECT_CHECKPOINT_OUTCOME_UNKNOWN';
+  constructor() {
+    super('Agent checkpoint persistence outcome is unconfirmed.');
+  }
+}
+
+/** Native composition supplies scoped IO; the default remains standalone compatibility. */
+export class AgentCheckpointStore implements AgentCheckpointRepository {
   private readonly directory: string;
-  private readonly writes = new Map<string, Promise<void>>();
-  constructor(dataDirectory: string) {
+  private readonly lanes = new Map<string, Promise<unknown>>();
+  private readonly active = new Set<Promise<unknown>>();
+  private readonly unknown = new Set<string>();
+  private stopping = false;
+  private shutdown?: Promise<void>;
+  constructor(
+    dataDirectory: string,
+    private readonly filesystem: CheckpointFilesystem = secureFs,
+    private readonly options: { maxAccepted?: number; drainMs?: number } = {}
+  ) {
     this.directory = path.resolve(dataDirectory, 'direct-agent-checkpoints');
+    if (
+      !Number.isSafeInteger(options.maxAccepted ?? 64) ||
+      (options.maxAccepted ?? 64) < 1 ||
+      !Number.isSafeInteger(options.drainMs ?? 5000) ||
+      (options.drainMs ?? 5000) < 1
+    )
+      throw new TypeError('Invalid checkpoint lifecycle limits.');
   }
 
   private file(sessionId: string): string {
@@ -134,44 +167,143 @@ export class AgentCheckpointStore {
       throw new OpenAICompatibleError('Invalid checkpoint session ID.');
     return path.join(this.directory, `${sessionId}.json`);
   }
-
+  private run<T>(sessionId: string, operation: () => Promise<T>): Promise<T> {
+    this.file(sessionId);
+    if (
+      this.stopping ||
+      this.unknown.has(sessionId) ||
+      this.active.size + this.unknown.size >= (this.options.maxAccepted ?? 64)
+    )
+      return Promise.reject(new OpenAICompatibleError('Agent checkpoint storage is unavailable.'));
+    const previous = this.lanes.get(sessionId) ?? Promise.resolve();
+    const task = previous
+      .catch(() => {})
+      .then(() => {
+        if (this.unknown.has(sessionId)) throw new CheckpointCleanupError();
+        return operation();
+      });
+    this.lanes.set(sessionId, task);
+    this.active.add(task);
+    const finish = () => {
+      this.active.delete(task);
+      if (this.lanes.get(sessionId) === task) this.lanes.delete(sessionId);
+    };
+    void task.then(finish, finish);
+    return task;
+  }
   async save(checkpoint: DirectAgentCheckpoint): Promise<void> {
     const snapshot = parseCheckpoint(checkpoint);
-    const previous = this.writes.get(snapshot.sessionId) ?? Promise.resolve();
-    const write = previous.catch(() => {}).then(() => this.write(snapshot));
-    this.writes.set(snapshot.sessionId, write);
-    try {
-      await write;
-    } finally {
-      if (this.writes.get(snapshot.sessionId) === write) this.writes.delete(snapshot.sessionId);
-    }
+    return this.run(snapshot.sessionId, () => this.write(snapshot));
   }
-
-  private async write(snapshot: DirectAgentCheckpoint): Promise<void> {
-    const file = this.file(snapshot.sessionId);
-    const temp = `${file}.${randomUUID()}.tmp`;
+  private async directoryIsSafe(): Promise<void> {
+    const stat = await this.filesystem.lstat(this.directory);
+    if (!stat.isDirectory() || stat.isSymbolicLink())
+      throw new Error('Unsafe checkpoint directory');
+  }
+  private async read(
+    sessionId: string,
+    allowMissing = false
+  ): Promise<DirectAgentCheckpoint | undefined> {
+    await this.directoryIsSafe();
+    const file = this.file(sessionId);
+    let stat;
     try {
-      await secureFs.mkdir(this.directory, { recursive: true });
-      if ((await secureFs.lstat(this.directory)).isSymbolicLink())
-        throw new Error('Unsafe directory');
-      await secureFs.writeFile(temp, JSON.stringify(snapshot), { mode: 0o600, flag: 'wx' });
-      await secureFs.rename(temp, file);
+      stat = await this.filesystem.lstat(file);
+    } catch (error) {
+      if (allowMissing && (error as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
+      throw error;
+    }
+    if (!stat.isFile() || stat.isSymbolicLink() || stat.size > MAX_CHECKPOINT_BYTES)
+      throw new Error('Unsafe checkpoint file');
+    let bytes = 0;
+    const chunks: Buffer[] = [];
+    const sink = new Writable({
+      write(chunk: Buffer, _encoding, callback) {
+        bytes += chunk.byteLength;
+        if (bytes > MAX_CHECKPOINT_BYTES)
+          return callback(new Error('Checkpoint exceeds byte limit'));
+        chunks.push(Buffer.from(chunk));
+        callback();
+      },
+    });
+    await this.filesystem.pipeFile(file, sink, { maxBytes: MAX_CHECKPOINT_BYTES + 1 });
+    const parsed = parseCheckpoint(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+    if (parsed.sessionId !== sessionId) throw new Error('Checkpoint identity changed');
+    return parsed;
+  }
+  private async write(snapshot: DirectAgentCheckpoint): Promise<void> {
+    const file = this.file(snapshot.sessionId),
+      temporary = `${file}.${randomUUID()}.tmp`;
+    let temporaryAttempted = false,
+      renameAttempted = false;
+    try {
+      await this.filesystem.mkdir(this.directory, { recursive: true, mode: 0o700 });
+      const existing = await this.read(snapshot.sessionId, true);
+      if (existing) {
+        for (const key of [
+          'endpointId',
+          'modelId',
+          'workspace',
+          'requestHash',
+          'environmentBindingId',
+        ] as const)
+          if (existing[key] !== snapshot[key]) throw new Error('Checkpoint binding changed');
+        if (
+          JSON.stringify([...existing.tools].sort()) !== JSON.stringify([...snapshot.tools].sort())
+        )
+          throw new Error('Checkpoint tools changed');
+        for (const key of ['turns', 'toolCalls', 'outputChars', 'elapsedMs'] as const)
+          if (snapshot[key] < existing[key]) throw new Error('Checkpoint history moved backwards');
+      }
+      temporaryAttempted = true;
+      await this.filesystem.writeFile(temporary, JSON.stringify(snapshot), {
+        mode: 0o600,
+        flag: 'wx',
+      });
+      renameAttempted = true;
+      await this.filesystem.rename(temporary, file);
     } catch {
-      await secureFs.unlink(temp).catch(() => {});
+      if (renameAttempted) this.unknown.add(snapshot.sessionId);
+      if (temporaryAttempted) {
+        try {
+          await this.filesystem.unlink(temporary);
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT')
+            this.unknown.add(snapshot.sessionId);
+        }
+      }
       throw new OpenAICompatibleError('Agent checkpoint could not be saved.');
     }
   }
-
   async load(sessionId: string): Promise<DirectAgentCheckpoint> {
-    const file = this.file(sessionId);
-    try {
-      if ((await secureFs.lstat(this.directory)).isSymbolicLink())
-        throw new Error('Unsafe directory');
-      const stat = await secureFs.lstat(file);
-      if (!stat.isFile() || stat.size > 16 * 1024 * 1024) throw new Error('Unsafe checkpoint file');
-      return parseCheckpoint(JSON.parse((await secureFs.readFile(file, 'utf-8')) as string));
-    } catch {
-      throw new OpenAICompatibleError('Agent checkpoint could not be loaded.');
-    }
+    return this.run(sessionId, async () => {
+      try {
+        return (await this.read(sessionId))!;
+      } catch {
+        throw new OpenAICompatibleError('Agent checkpoint could not be loaded.');
+      }
+    });
+  }
+  close(): Promise<void> {
+    if (this.shutdown) return this.shutdown;
+    this.stopping = true;
+    this.shutdown = (async () => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        await Promise.race([
+          Promise.allSettled([...this.active]),
+          new Promise<never>((_resolve, reject) => {
+            timer = setTimeout(
+              () => reject(new CheckpointCleanupError()),
+              this.options.drainMs ?? 5000
+            );
+          }),
+        ]);
+        if (this.unknown.size) throw new CheckpointCleanupError();
+      } finally {
+        clearTimeout(timer);
+      }
+    })();
+    return this.shutdown;
   }
 }

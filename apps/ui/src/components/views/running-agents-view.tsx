@@ -19,6 +19,7 @@ import { AgentOutputModal } from './board-view/dialogs/agent-output-modal';
 import { useRunningAgents } from '@/hooks/queries';
 import { useStopFeature } from '@/hooks/mutations';
 import { getModelDisplayName } from '@/lib/utils';
+import { toast } from 'sonner';
 
 function formatFeatureId(featureId: string): string {
   // Strip 'feature-' prefix and timestamp for readability
@@ -32,13 +33,20 @@ function formatFeatureId(featureId: string): string {
 export function RunningAgentsView() {
   useUiLocale();
   const [selectedAgent, setSelectedAgent] = useState<RunningAgent | null>(null);
-  const { setCurrentProject, projects } = useAppStore();
+  const [stoppingChats, setStoppingChats] = useState<Set<string>>(() => new Set());
+  const {
+    setCurrentProject,
+    projects,
+    setCurrentWorktree,
+    worktreesByProject,
+    setLastSelectedSession,
+  } = useAppStore();
   const navigate = useNavigate();
 
   const logger = createLogger('RunningAgentsView');
 
   // Use React Query for running agents with auto-refresh
-  const { data, isLoading, isFetching, refetch } = useRunningAgents();
+  const { data, isLoading, isFetching, isError, refetch } = useRunningAgents();
 
   const runningAgents = data?.agents ?? [];
 
@@ -52,6 +60,28 @@ export function RunningAgentsView() {
   const handleStopAgent = useCallback(
     async (agent: RunningAgent) => {
       const api = getElectronAPI();
+      if (agent.kind === 'chat') {
+        if (!agent.sessionId || !api.agent) return;
+        const sessionId = agent.sessionId;
+        setStoppingChats((current) => new Set(current).add(sessionId));
+        try {
+          const result = await api.agent.stop(sessionId);
+          if (!result.success) throw new Error(result.error || 'Failed to stop agent');
+        } catch (error) {
+          logger.error('Failed to stop chat agent', { sessionId, error });
+          toast.error(translate('Failed to stop agent'), {
+            description: error instanceof Error ? error.message : undefined,
+          });
+        } finally {
+          setStoppingChats((current) => {
+            const next = new Set(current);
+            next.delete(sessionId);
+            return next;
+          });
+          refetch();
+        }
+        return;
+      }
       // Handle backlog plans separately - they use a different API
       const isBacklogPlan = agent.featureId.startsWith('backlog-plan:');
       if (isBacklogPlan && api.backlogPlan) {
@@ -93,14 +123,39 @@ export function RunningAgentsView() {
     [projects, setCurrentProject, navigate]
   );
 
-  const handleViewLogs = useCallback((agent: RunningAgent) => {
-    logger.debug('Opening running agent logs', {
-      featureId: agent.featureId,
-      projectPath: agent.projectPath,
-    });
-    setSelectedAgent(agent);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- logger is stable
-  }, []);
+  const handleViewLogs = useCallback(
+    (agent: RunningAgent) => {
+      if (agent.kind === 'chat') {
+        const project = projects.find((item) => item.path === agent.projectPath);
+        if (!project || !agent.sessionId) return;
+        const directory = agent.workingDirectory ?? agent.projectPath;
+        const worktree = worktreesByProject[project.path]?.find((item) => item.path === directory);
+        setCurrentProject(project);
+        setCurrentWorktree(
+          project.path,
+          directory === project.path ? null : directory,
+          worktree?.branch ?? ''
+        );
+        setLastSelectedSession(directory, agent.sessionId);
+        navigate({ to: '/agent' });
+        return;
+      }
+      logger.debug('Opening running agent logs', {
+        featureId: agent.featureId,
+        projectPath: agent.projectPath,
+      });
+      setSelectedAgent(agent);
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- logger is stable
+    },
+    [
+      projects,
+      worktreesByProject,
+      setCurrentProject,
+      setCurrentWorktree,
+      setLastSelectedSession,
+      navigate,
+    ]
+  );
 
   if (isLoading) {
     return (
@@ -120,13 +175,15 @@ export function RunningAgentsView() {
           </div>
           <div>
             <h1 className="text-2xl font-bold">{translate('Running Agents')}</h1>
-            <p className="text-sm text-muted-foreground">
-              {runningAgents.length === 0
-                ? translate('No agents currently running')
-                : translate('{value1} running across all projects', {
-                    value1: formatCount(runningAgents.length, 'agent'),
-                  })}
-            </p>
+            {!isError && (
+              <p className="text-sm text-muted-foreground">
+                {runningAgents.length === 0
+                  ? translate('No agents currently running')
+                  : translate('{value1} running across all projects', {
+                      value1: formatCount(runningAgents.length, 'agent'),
+                    })}
+              </p>
+            )}
           </div>
         </div>
         <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isFetching}>
@@ -140,7 +197,12 @@ export function RunningAgentsView() {
       </div>
 
       {/* Content */}
-      {runningAgents.length === 0 ? (
+      {isError && (
+        <p role="alert" className="text-destructive mb-4">
+          {translate('Failed to fetch running agents')}
+        </p>
+      )}
+      {runningAgents.length === 0 && !isError ? (
         <div className="flex-1 flex flex-col items-center justify-center text-center">
           <div className="p-4 rounded-full bg-muted/50 mb-4">
             <Bot className="h-12 w-12 text-muted-foreground" />
@@ -148,7 +210,7 @@ export function RunningAgentsView() {
           <h2 className="text-lg font-medium mb-2">{translate('No Running Agents')}</h2>
           <p className="text-muted-foreground max-w-md">
             {translate(
-              'Agents will appear here when they are actively working on features. Start an agent from the Kanban board by dragging a feature to "In Progress".'
+              'Agents will appear here while working on features or chat sessions. Start a feature from the Kanban board or send a message in Agent.'
             )}
           </p>
         </div>
@@ -157,7 +219,7 @@ export function RunningAgentsView() {
           <div className="space-y-3">
             {runningAgents.map((agent) => (
               <div
-                key={`${agent.projectPath}-${agent.featureId}`}
+                key={`${agent.kind ?? 'feature'}:${agent.projectPath}:${agent.featureId}`}
                 className="flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-accent/50 transition-colors"
               >
                 <div className="flex items-center gap-4 min-w-0">
@@ -212,10 +274,14 @@ export function RunningAgentsView() {
                     variant="ghost"
                     size="sm"
                     onClick={() => handleViewLogs(agent)}
+                    disabled={
+                      agent.kind === 'chat' &&
+                      !projects.some((project) => project.path === agent.projectPath)
+                    }
                     className="text-muted-foreground hover:text-foreground"
                   >
                     <FileText className="h-3.5 w-3.5 mr-1.5" />
-                    {translate('View Logs')}
+                    {translate(agent.kind === 'chat' ? 'Open Chat' : 'View Logs')}
                   </Button>
                   <Button
                     variant="ghost"
@@ -229,7 +295,11 @@ export function RunningAgentsView() {
                     variant="destructive"
                     size="sm"
                     onClick={() => handleStopAgent(agent)}
-                    disabled={stopFeature.isPending}
+                    disabled={
+                      agent.kind === 'chat'
+                        ? stoppingChats.has(agent.sessionId ?? '')
+                        : stopFeature.isPending
+                    }
                   >
                     <Square className="h-3.5 w-3.5 mr-1.5" />
                     {translate('Stop')}

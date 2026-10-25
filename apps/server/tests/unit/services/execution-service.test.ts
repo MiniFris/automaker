@@ -1,5 +1,7 @@
+import * as executionFilesystem from '../../../src/lib/secure-fs.js';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import path from 'path';
+import type { ProviderRegistry } from '../../../src/modules/providers/provider-registry.service.js';
 import type { Feature } from '@automaker/types';
 import { toDirectModelId } from '@automaker/types';
 import { SSHFeatureService } from '../../../src/services/execution-environment/ssh-feature.js';
@@ -30,7 +32,7 @@ import type {
 } from '../../../src/services/concurrency-manager.js';
 import type { WorktreeResolver } from '../../../src/services/worktree-resolver.js';
 import type { SettingsService } from '../../../src/services/settings-service.js';
-import { pipelineService } from '../../../src/services/pipeline-service.js';
+
 import * as secureFs from '../../../src/lib/secure-fs.js';
 import { getFeatureDir } from '@automaker/platform';
 import {
@@ -43,16 +45,16 @@ import { extractSummary } from '../../../src/services/spec-parser.js';
 import { resolveModelString } from '@automaker/model-resolver';
 
 // Mock pipelineService
-vi.mock('../../../src/services/pipeline-service.js', () => ({
-  pipelineService: {
-    getPipelineConfig: vi.fn(),
-    isPipelineStatus: vi.fn(),
-    getStepIdFromStatus: vi.fn(),
-  },
-}));
+const pipelineService = {
+  getPipelineConfig: vi.fn(),
+  isPipelineStatus: vi.fn(),
+  getStepIdFromStatus: vi.fn(),
+};
 
 // Mock secureFs
 vi.mock('../../../src/lib/secure-fs.js', () => ({
+  readdir: vi.fn(),
+  appendFile: vi.fn(),
   readFile: vi.fn(),
   writeFile: vi.fn(),
   mkdir: vi.fn(),
@@ -94,12 +96,7 @@ vi.mock('@automaker/model-resolver', () => ({
   DEFAULT_MODELS: { claude: 'claude-sonnet-4' },
 }));
 
-// Mock provider-factory
-vi.mock('../../../src/providers/provider-factory.js', () => ({
-  ProviderFactory: {
-    getProviderNameForModel: vi.fn().mockReturnValue('anthropic'),
-  },
-}));
+const providers = { providerNameForModel: vi.fn().mockReturnValue('claude') };
 
 // Mock spec-parser
 vi.mock('../../../src/services/spec-parser.js', () => ({
@@ -179,6 +176,28 @@ describe('execution-service.ts', () => {
     } as unknown as TypedEventBus;
 
     mockConcurrencyManager = {
+      acquireAsync: vi.fn((options) => Promise.resolve(mockConcurrencyManager.acquire(options))),
+      executeOwned: vi.fn((_run, _phase, action) => action()),
+      markExecutionUncertain: vi.fn(),
+      isCurrent: vi.fn().mockReturnValue(true),
+      coordinator: {
+        bind: vi.fn(() => ({
+          assertCurrent: vi.fn(),
+          transition: vi.fn(),
+          mutate: async (write) => {
+            await write();
+          },
+        })),
+        mutate: vi.fn(async (_manager, _run, write) => {
+          await write();
+          return true;
+        }),
+        status: vi.fn(async (_manager, _run, _status, write) => {
+          await write();
+          return true;
+        }),
+        acceptCompletion: vi.fn().mockReturnValue(true),
+      },
       acquire: vi.fn().mockImplementation(({ featureId, isAutoMode }) => ({
         ...createRunningFeature(featureId),
         isAutoMode: isAutoMode ?? false,
@@ -268,7 +287,10 @@ describe('execution-service.ts', () => {
       mockSignalPauseFn,
       mockRecordSuccessFn,
       mockSaveExecutionStateFn,
-      mockLoadContextFilesFn
+      mockLoadContextFilesFn,
+      providers as unknown as ProviderRegistry,
+      pipelineService as never,
+      executionFilesystem
     );
   });
 
@@ -299,7 +321,10 @@ describe('execution-service.ts', () => {
       mockSignalPauseFn,
       mockRecordSuccessFn,
       mockSaveExecutionStateFn,
-      mockLoadContextFilesFn
+      mockLoadContextFilesFn,
+      providers as unknown as ProviderRegistry,
+      pipelineService as never,
+      executionFilesystem
     );
     vi.mocked(mockLoadFeatureFn).mockResolvedValue({
       ...testFeature,
@@ -316,7 +341,9 @@ describe('execution-service.ts', () => {
         error: expect.stringContaining('SSH fixture unavailable'),
       })
     );
-    expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1', undefined);
+    expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1', {
+      expected: expect.objectContaining({ featureId: 'feature-1' }),
+    });
   });
 
   it.each([false, true])(
@@ -378,7 +405,10 @@ describe('execution-service.ts', () => {
         mockSignalPauseFn,
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
-        mockLoadContextFilesFn
+        mockLoadContextFilesFn,
+        providers as unknown as ProviderRegistry,
+        pipelineService as never,
+        executionFilesystem
       );
       await managed.executeFeature('/test/project', feature.id, true);
       expect(memory.recordUsage).toHaveBeenCalledWith(
@@ -436,7 +466,10 @@ describe('execution-service.ts', () => {
         mockSignalPauseFn,
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
-        mockLoadContextFilesFn
+        mockLoadContextFilesFn,
+        providers as unknown as ProviderRegistry,
+        pipelineService as never,
+        executionFilesystem
       );
       expect(svc).toBeInstanceOf(ExecutionService);
     });
@@ -532,7 +565,10 @@ describe('execution-service.ts', () => {
         mockSignalPauseFn,
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
-        mockLoadContextFilesFn
+        mockLoadContextFilesFn,
+        providers as unknown as ProviderRegistry,
+        pipelineService as never,
+        executionFilesystem
       );
 
       await svc.executeFeature('/test/project', 'nonexistent');
@@ -662,7 +698,10 @@ describe('execution-service.ts', () => {
         mockSignalPauseFn,
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
-        mockLoadContextFilesFn
+        mockLoadContextFilesFn,
+        providers as unknown as ProviderRegistry,
+        pipelineService as never,
+        executionFilesystem
       );
 
       await svc.executeFeature('/test/project', 'feature-1');
@@ -683,7 +722,9 @@ describe('execution-service.ts', () => {
     it('releases running feature in finally block', async () => {
       await service.executeFeature('/test/project', 'feature-1');
 
-      expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1', undefined);
+      expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1', {
+        expected: expect.objectContaining({ featureId: 'feature-1' }),
+      });
     });
 
     it('redirects to resumeFeature when context exists', async () => {
@@ -706,12 +747,21 @@ describe('execution-service.ts', () => {
         mockSignalPauseFn,
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
-        mockLoadContextFilesFn
+        mockLoadContextFilesFn,
+        providers as unknown as ProviderRegistry,
+        pipelineService as never,
+        executionFilesystem
       );
 
       await svc.executeFeature('/test/project', 'feature-1', true);
 
-      expect(mockResumeFeatureFn).toHaveBeenCalledWith('/test/project', 'feature-1', true, true);
+      expect(mockResumeFeatureFn).toHaveBeenCalledWith(
+        '/test/project',
+        'feature-1',
+        true,
+        true,
+        expect.objectContaining({ featureId: 'feature-1' })
+      );
       // Should not run agent
       expect(mockRunAgentFn).not.toHaveBeenCalled();
     });
@@ -764,7 +814,10 @@ describe('execution-service.ts', () => {
         mockSignalPauseFn,
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
-        mockLoadContextFilesFn
+        mockLoadContextFilesFn,
+        providers as unknown as ProviderRegistry,
+        pipelineService as never,
+        executionFilesystem
       );
 
       await svc.executeFeature('/test/project', 'feature-1');
@@ -801,7 +854,10 @@ describe('execution-service.ts', () => {
         mockSignalPauseFn,
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
-        mockLoadContextFilesFn
+        mockLoadContextFilesFn,
+        providers as unknown as ProviderRegistry,
+        pipelineService as never,
+        executionFilesystem
       );
 
       await svc.executeFeature('/test/project', 'feature-1');
@@ -841,7 +897,10 @@ describe('execution-service.ts', () => {
         mockSignalPauseFn,
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
-        mockLoadContextFilesFn
+        mockLoadContextFilesFn,
+        providers as unknown as ProviderRegistry,
+        pipelineService as never,
+        executionFilesystem
       );
 
       await svc.executeFeature('/test/project', 'feature-1');
@@ -872,7 +931,10 @@ describe('execution-service.ts', () => {
         mockSignalPauseFn,
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
-        mockLoadContextFilesFn
+        mockLoadContextFilesFn,
+        providers as unknown as ProviderRegistry,
+        pipelineService as never,
+        executionFilesystem
       );
     };
 
@@ -1170,7 +1232,10 @@ describe('execution-service.ts', () => {
         mockSignalPauseFn,
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
-        mockLoadContextFilesFn
+        mockLoadContextFilesFn,
+        providers as unknown as ProviderRegistry,
+        pipelineService as never,
+        executionFilesystem
       );
 
       await svc.executeFeature('/test/project', 'feature-1');
@@ -1205,7 +1270,10 @@ describe('execution-service.ts', () => {
         mockSignalPauseFn,
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
-        mockLoadContextFilesFn
+        mockLoadContextFilesFn,
+        providers as unknown as ProviderRegistry,
+        pipelineService as never,
+        executionFilesystem
       );
 
       await svc.executeFeature('/test/project', 'feature-1');
@@ -1238,7 +1306,10 @@ describe('execution-service.ts', () => {
         mockSignalPauseFn,
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
-        mockLoadContextFilesFn
+        mockLoadContextFilesFn,
+        providers as unknown as ProviderRegistry,
+        pipelineService as never,
+        executionFilesystem
       );
 
       await svc.executeFeature('/test/project', 'feature-1');
@@ -1273,7 +1344,10 @@ describe('execution-service.ts', () => {
         mockSignalPauseFn,
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
-        mockLoadContextFilesFn
+        mockLoadContextFilesFn,
+        providers as unknown as ProviderRegistry,
+        pipelineService as never,
+        executionFilesystem
       );
 
       await svc.executeFeature('/test/project', 'feature-1');
@@ -1308,7 +1382,10 @@ describe('execution-service.ts', () => {
         mockSignalPauseFn,
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
-        mockLoadContextFilesFn
+        mockLoadContextFilesFn,
+        providers as unknown as ProviderRegistry,
+        pipelineService as never,
+        executionFilesystem
       );
 
       await svc.executeFeature('/test/project', 'feature-1', false, true);
@@ -1353,7 +1430,10 @@ describe('execution-service.ts', () => {
         mockSignalPauseFn,
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
-        mockLoadContextFilesFn
+        mockLoadContextFilesFn,
+        providers as unknown as ProviderRegistry,
+        pipelineService as never,
+        executionFilesystem
       );
 
       await svc.executeFeature('/test/project', 'feature-1', false, false);
@@ -1392,12 +1472,17 @@ describe('execution-service.ts', () => {
         mockSignalPauseFn,
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
-        mockLoadContextFilesFn
+        mockLoadContextFilesFn,
+        providers as unknown as ProviderRegistry,
+        pipelineService as never,
+        executionFilesystem
       );
 
       await svc.executeFeature('/test/project', 'feature-1');
 
-      expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1', undefined);
+      expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1', {
+        expected: expect.objectContaining({ featureId: 'feature-1' }),
+      });
     });
   });
 
@@ -1427,7 +1512,10 @@ describe('execution-service.ts', () => {
 
       await service.stopFeature('feature-1');
 
-      expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1', { force: true });
+      expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1', {
+        force: true,
+        expected: expect.objectContaining({ featureId: 'feature-1' }),
+      });
     });
 
     it('immediately updates feature status to interrupted before subprocess terminates', async () => {
@@ -1455,7 +1543,10 @@ describe('execution-service.ts', () => {
 
       expect(result).toBe(true);
       expect(abortSpy).toHaveBeenCalled();
-      expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1', { force: true });
+      expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1', {
+        force: true,
+        expected: expect.objectContaining({ featureId: 'feature-1' }),
+      });
     });
   });
 
@@ -1543,7 +1634,10 @@ describe('execution-service.ts', () => {
         mockSignalPauseFn,
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
-        mockLoadContextFilesFn
+        mockLoadContextFilesFn,
+        providers as unknown as ProviderRegistry,
+        pipelineService as never,
+        executionFilesystem
       );
 
       await svc.executeFeature('/test/project', 'feature-1');
@@ -1623,7 +1717,10 @@ describe('execution-service.ts', () => {
         mockSignalPauseFn,
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
-        mockLoadContextFilesFn
+        mockLoadContextFilesFn,
+        providers as unknown as ProviderRegistry,
+        pipelineService as never,
+        executionFilesystem
       );
     };
 
@@ -1735,7 +1832,10 @@ describe('execution-service.ts', () => {
         mockSignalPauseFn,
         mockRecordSuccessFn,
         mockSaveExecutionStateFn,
-        mockLoadContextFilesFn
+        mockLoadContextFilesFn,
+        providers as unknown as ProviderRegistry,
+        pipelineService as never,
+        executionFilesystem
       );
     };
 

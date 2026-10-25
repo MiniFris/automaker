@@ -75,14 +75,14 @@ describe('dev-server-service.ts', () => {
     }
   });
 
-  describe('getDevServerService', () => {
-    it('should return a singleton instance', async () => {
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
+  describe('DevServerService', () => {
+    it('creates independent service owners', async () => {
+      const { DevServerService } = await import('@/services/dev-server-service.js');
 
-      const instance1 = getDevServerService();
-      const instance2 = getDevServerService();
+      const instance1 = new DevServerService();
+      const instance2 = new DevServerService();
 
-      expect(instance1).toBe(instance2);
+      expect(instance1).not.toBe(instance2);
     });
   });
 
@@ -90,8 +90,8 @@ describe('dev-server-service.ts', () => {
     it('should return error if worktree path does not exist', async () => {
       vi.mocked(secureFs.access).mockRejectedValueOnce(new Error('File not found'));
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       const result = await service.startDevServer('/project', '/nonexistent/worktree');
 
@@ -107,8 +107,8 @@ describe('dev-server-service.ts', () => {
         return undefined;
       });
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       const result = await service.startDevServer(testDir, testDir);
 
@@ -130,8 +130,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -151,8 +151,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -171,8 +171,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -190,8 +190,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -204,8 +204,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       // Start first server
       const result1 = await service.startDevServer(testDir, testDir);
@@ -223,8 +223,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       const result = await service.startDevServer(testDir, testDir);
 
@@ -237,8 +237,8 @@ describe('dev-server-service.ts', () => {
 
   describe('stopDevServer', () => {
     it('should return success if server not found', async () => {
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       const result = await service.stopDevServer('/nonexistent/path');
 
@@ -252,8 +252,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       // Start server
       await service.startDevServer(testDir, testDir);
@@ -268,8 +268,8 @@ describe('dev-server-service.ts', () => {
 
   describe('listDevServers', () => {
     it('should return empty list when no servers running', async () => {
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       const result = service.listDevServers();
 
@@ -283,8 +283,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -298,8 +298,8 @@ describe('dev-server-service.ts', () => {
 
   describe('isRunning', () => {
     it('should return false for non-running server', async () => {
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       expect(service.isRunning('/some/path')).toBe(false);
     });
@@ -310,8 +310,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -321,8 +321,8 @@ describe('dev-server-service.ts', () => {
 
   describe('getServerInfo', () => {
     it('should return undefined for non-running server', async () => {
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       expect(service.getServerInfo('/some/path')).toBeUndefined();
     });
@@ -333,8 +333,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -352,8 +352,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -370,8 +370,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -388,8 +388,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       // Start server
       await service.startDevServer(testDir, testDir);
@@ -412,8 +412,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -436,8 +436,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -457,8 +457,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       const result = await service.startDevServer(testDir, testDir);
 
@@ -480,8 +480,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -501,8 +501,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -528,8 +528,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -551,8 +551,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -574,8 +574,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -597,8 +597,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -620,8 +620,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -643,8 +643,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -664,8 +664,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -684,8 +684,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -710,8 +710,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -730,8 +730,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -750,8 +750,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       const result = await service.startDevServer(testDir, testDir);
       const allocatedPort = result.result?.port;
@@ -776,8 +776,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -797,8 +797,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       const result = await service.startDevServer(testDir, testDir);
 
@@ -823,8 +823,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -844,8 +844,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 
@@ -864,8 +864,8 @@ describe('dev-server-service.ts', () => {
       const mockProcess = createMockProcess();
       vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
-      const { getDevServerService } = await import('@/services/dev-server-service.js');
-      const service = getDevServerService();
+      const { DevServerService } = await import('@/services/dev-server-service.js');
+      const service = new DevServerService();
 
       await service.startDevServer(testDir, testDir);
 

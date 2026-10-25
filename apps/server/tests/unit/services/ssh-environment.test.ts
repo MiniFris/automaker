@@ -1,3 +1,9 @@
+import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
+import {
+  createTestAgentState,
+  createTestAgentProviders,
+  createTestAgentEvents,
+} from '../../helpers/agent-state.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -18,7 +24,6 @@ import {
   prepareDirectExecution,
   runDirectShellCommand,
 } from '@/providers/openai-compatible/execution.js';
-import { ProviderFactory } from '@/providers/provider-factory.js';
 import { AgentService } from '@/services/agent-service.js';
 import { createEventEmitter } from '@/lib/events.js';
 import { sshPeer, testSSHKey } from '../../helpers/ssh-peer.js';
@@ -548,9 +553,12 @@ describe.skipIf(process.platform !== 'linux')(
         });
         try {
           const service = new AgentService(
-            settings.getDataDirectory(),
-            createEventEmitter(),
-            settings
+            ...createTestAgentState(
+              settings.getDataDirectory(),
+              createTestAgentEvents(createEventEmitter())
+            ),
+            settings,
+            ...createTestAgentProviders(createTestProviderRegistry(settings))
           );
           await service.initialize();
           const session = await service.createSession('SSH', project, project, model, 'model');
@@ -588,9 +596,12 @@ describe.skipIf(process.platform !== 'linux')(
             executionEnvironment: { default: { mode: 'local' }, profiles: [] },
           });
           const restarted = new AgentService(
-            settings.getDataDirectory(),
-            createEventEmitter(),
-            settings
+            ...createTestAgentState(
+              settings.getDataDirectory(),
+              createTestAgentEvents(createEventEmitter())
+            ),
+            settings,
+            ...createTestAgentProviders(createTestProviderRegistry(settings))
           );
           await restarted.initialize();
           expect(
@@ -611,9 +622,9 @@ describe.skipIf(process.platform !== 'linux')(
             settings,
             { model, providerId: 'model', projectPath: project, runKey: `chat:${session.id}` }
           );
-          for await (const _message of ProviderFactory.getProviderForModel(model).executeQuery(
-            prepared
-          )) {
+          for await (const _message of createTestProviderRegistry(settings)
+            .providerForModel(model)
+            .executeQuery(prepared)) {
             /* drain */
           }
           expect(bodies.at(-1)!.tools?.map((tool) => tool.function.name)).toEqual([

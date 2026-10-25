@@ -1,6 +1,8 @@
+import { AutoModeController } from '@/modules/auto-mode/auto-mode.controller.js';
 import { describe, expect, it, vi } from 'vitest';
-import type { Request, Response } from 'express';
-import { createMergeSSHFeatureHandler } from '@/routes/auto-mode/routes/merge-ssh-feature.js';
+import { AutoModeApplicationService } from '@/modules/auto-mode/auto-mode-application.service.js';
+import { AutoModeMergeSchema } from '@/modules/auto-mode/auto-mode.schemas.js';
+import { ProjectRunContextRegistry } from '@/modules/auto-mode/project-run-context.registry.js';
 import type { AutoModeServiceCompat } from '@/services/auto-mode/index.js';
 
 describe('explicit SSH feature merge endpoint', () => {
@@ -8,8 +10,26 @@ describe('explicit SSH feature merge endpoint', () => {
     const mergeSSHFeature = vi.fn();
     if (failure) mergeSSHFeature.mockRejectedValue(new Error('Remote target diverged; no reset.'));
     const service = { mergeSSHFeature } as unknown as AutoModeServiceCompat;
-    const response = { status: vi.fn().mockReturnThis(), json: vi.fn() } as unknown as Response;
-    await createMergeSSHFeatureHandler(service)({ body } as Request, response);
+    const response = { status: vi.fn(), json: vi.fn() };
+    const parsed = AutoModeMergeSchema.safeParse(body);
+    if (!parsed.success) response.status(400);
+    else {
+      const application = new AutoModeApplicationService(
+        service,
+        service,
+        service,
+        new ProjectRunContextRegistry(),
+        {
+          launch: vi.fn(),
+        } as never
+      );
+      try {
+        response.json(await new AutoModeController(application).mergeSshFeature(parsed.data));
+      } catch (error) {
+        response.status((error as { getStatus(): number }).getStatus());
+        response.json((error as { getResponse(): unknown }).getResponse());
+      }
+    }
     return { mergeSSHFeature, response };
   }
   it.each([
@@ -51,13 +71,21 @@ describe('explicit SSH feature merge endpoint', () => {
       mergeEnvironmentFeature,
       mergeSSHFeature: vi.fn(),
     } as unknown as AutoModeServiceCompat;
-    const response = { status: vi.fn().mockReturnThis(), json: vi.fn() } as unknown as Response;
-    await createMergeSSHFeatureHandler(service, true)(
-      { body: { projectPath: '/project', featureId: 'task', accepted: true } } as Request,
-      response
+    const application = new AutoModeApplicationService(
+      service,
+      service,
+      service,
+      new ProjectRunContextRegistry(),
+      {
+        launch: vi.fn(),
+      } as never
+    );
+    const result = await application.mergeFeature(
+      { projectPath: '/project', featureId: 'task', accepted: true },
+      true
     );
     expect(mergeEnvironmentFeature).toHaveBeenCalledWith('/project', 'task');
     expect(service.mergeSSHFeature).not.toHaveBeenCalled();
-    expect(response.json).toHaveBeenCalledWith({ success: true });
+    expect(result).toEqual({ success: true });
   });
 });

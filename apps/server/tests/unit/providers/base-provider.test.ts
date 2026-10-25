@@ -7,14 +7,18 @@ import type {
   InstallationStatus,
   ModelDefinition,
 } from '@automaker/types';
+import { terminalReason } from '@/providers/provider-contract.js';
 
 // Concrete implementation for testing the abstract class
 class TestProvider extends BaseProvider {
+  protected featureCapabilities() {
+    return { vision: true, reasoning: true };
+  }
   getName(): string {
     return 'test-provider';
   }
 
-  async *executeQuery(_options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+  protected async *execute(_options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
     yield { type: 'text', text: 'test response' };
   }
 
@@ -23,7 +27,18 @@ class TestProvider extends BaseProvider {
   }
 
   getAvailableModels(): ModelDefinition[] {
-    return [{ id: 'test-model-1', name: 'Test Model 1', description: 'A test model' }];
+    return [
+      {
+        id: 'test-model-1',
+        modelString: 'model-1',
+        provider: 'test-provider',
+        name: 'Test Model 1',
+        description: 'A test model',
+        supportsVision: true,
+        supportsTools: false,
+        hasReasoning: true,
+      },
+    ];
   }
 }
 
@@ -110,6 +125,46 @@ describe('base-provider.ts', () => {
       const provider = new TestProvider();
       expect(provider.supportsFeature('TOOLS')).toBe(false);
       expect(provider.supportsFeature('Text')).toBe(false);
+    });
+  });
+
+  describe('adapter contract', () => {
+    it('reports provider and model capabilities explicitly', () => {
+      const provider = new TestProvider();
+
+      expect(provider.getCapabilities()).toMatchObject({
+        text: true,
+        streaming: true,
+        vision: true,
+        tools: false,
+        reasoning: true,
+        mcp: false,
+        remoteExecution: false,
+        followUp: true,
+        cancellation: true,
+      });
+      expect(provider.getModelCapabilities('model-1')).toEqual({
+        vision: true,
+        tools: false,
+        reasoning: true,
+      });
+      expect(provider.getModelCapabilities('unknown')).toEqual({
+        vision: false,
+        tools: false,
+        reasoning: false,
+      });
+    });
+
+    it('normalizes lifecycle operations and terminal reasons', async () => {
+      const provider = new TestProvider();
+      const controller = new AbortController();
+      provider.cancel(controller);
+
+      expect(controller.signal.aborted).toBe(true);
+      await expect(provider.dispose()).resolves.toBeUndefined();
+      expect(terminalReason({ type: 'result', subtype: 'success' })).toBe('completed');
+      expect(terminalReason({ type: 'result', subtype: 'error_max_turns' })).toBe('max-turns');
+      expect(terminalReason({ type: 'error', error: 'failed' })).toBe('failed');
     });
   });
 

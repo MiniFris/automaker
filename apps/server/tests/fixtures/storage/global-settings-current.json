@@ -1,0 +1,13 @@
+{
+  "projects": [
+    {
+      "id": "fixture-project",
+      "name": "Fixture Project",
+      "path": "/workspace/fixture-project"
+    }
+  ],
+  "serverLogLevel": "info",
+  "enableRequestLogging": false,
+  "defaultPlanningMode": "skip",
+  "defaultRequirePlanApproval": false
+}

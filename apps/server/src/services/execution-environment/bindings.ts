@@ -46,14 +46,26 @@ async function read(file: string): Promise<unknown | undefined> {
   }
 }
 
+export interface ExistingEnvironmentPreparation {
+  /** Trusted issued capabilities, never persisted or read from request JSON. */
+  runtime?: import('./runtime.js').ExecutionEnvironment;
+  dockerManager?: ManagedDocker;
+  binding?: ExecutionEnvironmentBinding;
+  selectionFingerprint: string;
+  descriptorFingerprint?: string;
+}
+
 export class EnvironmentBindingStore {
   readonly serverIdentity: string;
+  private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>;
   private readonly directory: string;
   constructor(
     private readonly settings: SettingsService,
     private readonly docker = new ManagedDocker(settings),
-    private readonly ssh = new ManagedSSH(settings)
+    private readonly ssh = new ManagedSSH(settings),
+    hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
   ) {
+    this.hostEnvironment = Object.freeze({ ...hostEnvironment });
     this.directory = path.join(settings.getDataDirectory(), 'execution-environments');
     const user = os.userInfo();
     this.serverIdentity = digest(
@@ -68,7 +80,7 @@ export class EnvironmentBindingStore {
   }
   /** Container hostnames change on recreation; consent belongs to the persisted installation. */
   private async consentIdentity(create = false): Promise<string | undefined> {
-    if (process.env.IS_CONTAINERIZED !== 'true') return this.serverIdentity;
+    if (this.hostEnvironment.IS_CONTAINERIZED !== 'true') return this.serverIdentity;
     const file = path.join(this.directory, 'container-installation.json');
     return serialized(file, async () => {
       let installation = (await read(file)) as { version?: number; id?: string } | undefined;
@@ -166,6 +178,28 @@ export class EnvironmentBindingStore {
     }
     return result;
   }
+  /** Remove one verified workspace routing record after its target workspace was deleted. */
+  async removeWorkspaceBinding(projectPath: string, id: string): Promise<boolean> {
+    if (!/^[a-f0-9]{64}$/.test(id))
+      throw new EnvironmentConfigurationError('Invalid workspace binding identity.');
+    const canonical = await fs.realpath(projectPath);
+    const file = path.join(this.directory, 'bindings', `${id}.json`);
+    return serialized(file, async () => {
+      const stored = (await read(file)) as { binding?: ExecutionEnvironmentBinding } | undefined;
+      if (!stored) return false;
+      if (
+        !stored.binding ||
+        stored.binding.version !== 1 ||
+        stored.binding.id !== id ||
+        stored.binding.projectPath !== canonical
+      )
+        throw new EnvironmentConfigurationError(
+          'Workspace binding does not match the deleted project workspace.'
+        );
+      await fs.unlink(file);
+      return true;
+    });
+  }
   async consent(projectPath?: string): Promise<LocalExecutionConsentStatus> {
     const projectScope = projectPath ? await fs.realpath(projectPath) : undefined;
     const identity = await this.consentIdentity();
@@ -197,7 +231,7 @@ export class EnvironmentBindingStore {
       confirmed: scope !== null,
       scope,
       legacy: !state.explicit,
-      serverContainerized: process.env.IS_CONTAINERIZED === 'true',
+      serverContainerized: this.hostEnvironment.IS_CONTAINERIZED === 'true',
       autoFallbackConfirmed: autoScope !== null,
       autoFallbackScope: autoScope,
     };
@@ -256,6 +290,9 @@ export class EnvironmentBindingStore {
     feature?: { targetBranch?: string | null };
     /** Internal reopen of a metadata-resolved binding, never a request-supplied grant. */
     existingId?: string;
+    /** Internal no-provisioning mode, accepted only from trusted preparation code. */
+    existingOnly?: boolean;
+    existingTarget?: ExistingEnvironmentPreparation;
   }): Promise<{ binding: ExecutionEnvironmentBinding; legacySettings?: DirectAgentSettings }> {
     const cwd = await fs.realpath(input.cwd);
     const projectPath = await fs.realpath(input.projectPath);
@@ -280,6 +317,16 @@ export class EnvironmentBindingStore {
           throw new EnvironmentConfigurationError(
             'Pinned environment no longer matches this server or working copy. Start a new session/task; no fallback was performed.'
           );
+        if (
+          input.existingTarget?.descriptorFingerprint !== undefined &&
+          input.existingTarget.descriptorFingerprint !==
+            JSON.stringify(binding.ssh ?? binding.docker ?? null)
+        )
+          throw new EnvironmentConfigurationError(
+            'The inspected execution target changed. No replacement was prepared.'
+          );
+        if (input.existingOnly && binding.featurePreparation)
+          throw new EnvironmentConfigurationError('Existing feature workspace is not prepared.');
         if (binding.type === 'local')
           await this.requireConsent(projectPath, !!binding.fallbackReason);
         if (binding.type === 'docker') {
@@ -287,7 +334,7 @@ export class EnvironmentBindingStore {
             throw new EnvironmentConfigurationError(
               'Pinned Docker descriptor is missing or does not match this project.'
             );
-          await this.docker.start(binding.docker, input.signal);
+          if (!input.existingOnly) await this.docker.start(binding.docker, input.signal);
           await this.docker.verifyStorage(binding.docker, input.signal);
         }
         if (binding.featurePreparation) {
@@ -302,7 +349,7 @@ export class EnvironmentBindingStore {
           const environment =
             binding.type === 'docker'
               ? new DockerExecutionEnvironment(this.docker, binding.docker!, projectPath)
-              : await LocalExecutionEnvironment.create(projectPath);
+              : await LocalExecutionEnvironment.create(projectPath, this.hostEnvironment);
           const prepared = await prepareManagedFeatureWorkspace({
             environment,
             directory: this.directory,
@@ -330,7 +377,7 @@ export class EnvironmentBindingStore {
           const environment =
             binding.type === 'docker'
               ? new DockerExecutionEnvironment(this.docker, binding.docker!, binding.runtimeCwd)
-              : await LocalExecutionEnvironment.create(binding.runtimeCwd);
+              : await LocalExecutionEnvironment.create(binding.runtimeCwd, this.hostEnvironment);
           await verifyManagedFeatureWorkspace(
             environment,
             projectPath,
@@ -381,6 +428,16 @@ export class EnvironmentBindingStore {
           'Pinned workspace binding disappeared. No new environment was prepared.'
         );
       const state = await this.configuration(projectPath);
+      if (
+        input.existingTarget &&
+        input.existingTarget.selectionFingerprint !==
+          JSON.stringify({ resolved: state.resolved, explicit: state.explicit })
+      )
+        throw new EnvironmentConfigurationError(
+          'The inspected environment selection changed. No replacement was prepared.'
+        );
+      if (input.existingOnly && (input.feature || input.sshFeature))
+        throw new EnvironmentConfigurationError('Analysis cannot prepare a feature workspace.');
       if (!['local', 'auto', 'docker', 'ssh'].includes(state.resolved.type))
         throw new EnvironmentConfigurationError(
           `Selected environment ${state.resolved.type} is not available for Direct execution yet. No Local fallback was performed.`
@@ -393,39 +450,67 @@ export class EnvironmentBindingStore {
       if (state.resolved.type === 'docker' || state.resolved.type === 'auto') {
         const context =
           state.resolved.profile?.type === 'docker' ? state.resolved.profile.context : undefined;
-        try {
-          // Only connection/mapping preflight errors can authorize Auto fallback. Build/create/
-          // storage failures (and all already pinned Docker runs) never downgrade or replay.
-          await this.docker.preflight(projectPath, cwd, context, input.signal);
-        } catch (error) {
-          if (
-            state.resolved.type !== 'auto' ||
-            !(error instanceof DockerPreflightError) ||
-            input.signal?.aborted
-          )
-            throw error;
-          await this.requireConsent(projectPath, true);
-          fallbackReason = 'docker-preflight-unavailable';
+        if (input.existingOnly) {
+          docker = await this.docker.existing(projectPath, context);
+          if (!docker)
+            throw new EnvironmentConfigurationError(
+              'Prepare the saved Docker project before analysis. No container was created or started.'
+            );
+          if (input.existingTarget?.descriptorFingerprint !== JSON.stringify(docker))
+            throw new EnvironmentConfigurationError('The inspected Docker target changed.');
+          await this.docker.verifyStorage(docker, input.signal);
+        } else {
+          try {
+            // Only connection/mapping preflight errors can authorize Auto fallback. Build/create/
+            // storage failures (and all already pinned Docker runs) never downgrade or replay.
+            await this.docker.preflight(projectPath, cwd, context, input.signal);
+          } catch (error) {
+            if (
+              state.resolved.type !== 'auto' ||
+              !(error instanceof DockerPreflightError) ||
+              input.signal?.aborted
+            )
+              throw error;
+            await this.requireConsent(projectPath, true);
+            fallbackReason = 'docker-preflight-unavailable';
+          }
+          if (!fallbackReason)
+            docker = await this.docker.prepare(projectPath, cwd, context, input.signal);
         }
-        if (!fallbackReason)
-          docker = await this.docker.prepare(projectPath, cwd, context, input.signal);
       } else if (state.resolved.type === 'ssh' && state.resolved.profile?.type === 'ssh') {
         const relative = path.relative(projectPath, cwd);
         if (relative === '..' || relative.startsWith('..' + path.sep) || path.isAbsolute(relative))
           throw new EnvironmentConfigurationError(
             'SSH working directory must be inside the project control-plane directory.'
           );
-        const result = await this.ssh.bind(
-          state.resolved.profile,
-          projectPath,
-          input.key ?? id,
-          relative,
-          input.signal,
-          input.sshFeature
-        );
-        ssh = result.binding;
-        runtimeCwd = result.runtimeCwd;
-        sshWorkspace = result.workspace;
+        if (input.existingOnly) {
+          const profile = state.resolved.profile;
+          const trusted = await this.ssh.state.trust(profile);
+          const saved = trusted
+            ? await this.ssh.state.project(profile, trusted.fingerprint, projectPath)
+            : undefined;
+          if (!saved?.ready)
+            throw new EnvironmentConfigurationError(
+              'Prepare the saved SSH checkout before analysis. No copy or clone was started.'
+            );
+          ssh = { ...saved, profile: JSON.parse(JSON.stringify(profile)) };
+          if (input.existingTarget?.descriptorFingerprint !== JSON.stringify(ssh))
+            throw new EnvironmentConfigurationError('The inspected SSH target changed.');
+          await this.ssh.verify(ssh, input.signal);
+          runtimeCwd = path.posix.join(ssh.remotePath, relative.split(path.sep).join('/'));
+        } else {
+          const result = await this.ssh.bind(
+            state.resolved.profile,
+            projectPath,
+            input.key ?? id,
+            relative,
+            input.signal,
+            input.sshFeature
+          );
+          ssh = result.binding;
+          runtimeCwd = result.runtimeCwd;
+          sshWorkspace = result.workspace;
+        }
       } else if (state.explicit) await this.requireConsent(projectPath);
       const binding: ExecutionEnvironmentBinding = {
         version: 1,
@@ -454,7 +539,7 @@ export class EnvironmentBindingStore {
         await atomicWriteJson(file, { binding }, { mode: 0o600 });
         const environment = docker
           ? new DockerExecutionEnvironment(this.docker, docker, projectPath)
-          : await LocalExecutionEnvironment.create(projectPath);
+          : await LocalExecutionEnvironment.create(projectPath, this.hostEnvironment);
         const prepared = await prepareManagedFeatureWorkspace({
           environment,
           directory: this.directory,

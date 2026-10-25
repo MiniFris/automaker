@@ -1,8 +1,11 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ExecutionEnvironmentSettingsResponse } from '@automaker/types';
 import { ExecutionEnvironmentSettings } from '@/components/shared/execution-environment-settings';
+import { selectOption, setupSelectMocks } from '../../utils/select';
+import { setUiLocale, translate } from '@/lib/i18n';
+import { diagnoseDockerConnection } from '../../../../server/src/services/execution-environment/docker-diagnostics';
 
 const api = vi.hoisted(() => ({
   inspect: vi.fn(),
@@ -23,6 +26,7 @@ describe('execution environment settings UI', () => {
   let client: QueryClient;
   let data: ExecutionEnvironmentSettingsResponse;
   beforeEach(() => {
+    setupSelectMocks();
     client = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     });
@@ -108,6 +112,9 @@ describe('execution environment settings UI', () => {
   afterEach(() => {
     cleanup();
     client.clear();
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+    setUiLocale('en');
   });
   async function open(projectPath?: string) {
     render(
@@ -196,7 +203,9 @@ describe('execution environment settings UI', () => {
   });
   it('shows global profiles and makes supported runtimes explicit', async () => {
     await open();
-    expect(screen.getByLabelText('Default execution environment')).toHaveValue('profile:docker');
+    expect(
+      screen.getByRole('combobox', { name: 'Default execution environment' })
+    ).toHaveTextContent('Project Docker (Docker)');
     expect(screen.getByRole('note')).toHaveTextContent(
       'confirmed Local and managed per-project Docker'
     );
@@ -289,14 +298,18 @@ describe('execution environment settings UI', () => {
   });
   it('saves a global default separately from provider and credential settings', async () => {
     await open();
-    fireEvent.change(screen.getByLabelText('Default execution environment'), {
-      target: { value: 'local' },
-    });
+    await selectOption('Default execution environment', 'Local — Automaker server environment');
     fireEvent.click(screen.getByRole('button', { name: 'Save environment configuration' }));
     await waitFor(() =>
       expect(api.saveGlobal).toHaveBeenCalledWith({ ...data.settings, default: { mode: 'local' } })
     );
     expect(api.saveProject).not.toHaveBeenCalled();
+  });
+  it('disables the shared environment selector while saving', async () => {
+    api.saveGlobal.mockReturnValue(new Promise(() => {}));
+    await open();
+    fireEvent.click(screen.getByRole('button', { name: 'Save environment configuration' }));
+    expect(screen.getByRole('combobox', { name: 'Default execution environment' })).toBeDisabled();
   });
   it('adds and saves a Docker context without creating a container or requesting an image ID', async () => {
     await open();
@@ -327,11 +340,12 @@ describe('execution environment settings UI', () => {
   it('supports an explicit project local override and resetting to inherit', async () => {
     await open('/project-a');
     const select = screen.getByLabelText('Project execution environment');
-    expect(select).toHaveValue('inherit');
+    expect(select.tagName).toBe('BUTTON');
+    expect(select).toHaveTextContent('Inherit global default');
     expect(screen.getByText(/Saved selection:/)).toHaveTextContent(
       'Project Docker (global default)'
     );
-    fireEvent.change(select, { target: { value: 'local' } });
+    await selectOption('Project execution environment', 'Local — Automaker server environment');
     fireEvent.click(screen.getByRole('button', { name: 'Save environment configuration' }));
     await waitFor(() =>
       expect(api.saveProject).toHaveBeenCalledWith('/project-a', { mode: 'local' })
@@ -339,7 +353,7 @@ describe('execution environment settings UI', () => {
     await screen.findByText(
       /Environment configuration saved. Local requires explicit confirmation/
     );
-    fireEvent.change(select, { target: { value: 'inherit' } });
+    await selectOption('Project execution environment', 'Inherit global default');
     fireEvent.click(screen.getByRole('button', { name: 'Save environment configuration' }));
     await waitFor(() => expect(api.saveProject).toHaveBeenCalledWith('/project-a', null));
     expect(api.saveGlobal).not.toHaveBeenCalled();
@@ -347,9 +361,7 @@ describe('execution environment settings UI', () => {
   });
   it('selects a reusable SSH profile without connecting or requesting a private key', async () => {
     await open('/project-a');
-    fireEvent.change(screen.getByLabelText('Project execution environment'), {
-      target: { value: 'profile:ssh' },
-    });
+    await selectOption('Project execution environment', 'Development server (SSH)');
     fireEvent.click(screen.getByRole('button', { name: 'Save environment configuration' }));
     await waitFor(() =>
       expect(api.saveProject).toHaveBeenCalledWith('/project-a', {
@@ -363,17 +375,15 @@ describe('execution environment settings UI', () => {
   it('shows Docker failure and remediation without claiming isolated readiness', async () => {
     await open('/project-a');
     fireEvent.click(screen.getByRole('button', { name: 'Check Docker access' }));
-    expect(await screen.findByText('Docker connection: permission-denied')).toBeInTheDocument();
+    expect(await screen.findByText('Docker connection: Docker access denied')).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent('group_add');
     expect(screen.getByRole('status')).toHaveTextContent('Isolated execution is not enabled');
     expect(api.checkDocker).toHaveBeenCalledWith('docker');
   });
   it('checks access when a user explicitly selects a saved Docker environment', async () => {
     await open('/project-a');
-    fireEvent.change(screen.getByLabelText('Project execution environment'), {
-      target: { value: 'profile:docker' },
-    });
-    expect(await screen.findByText('Docker connection: permission-denied')).toBeInTheDocument();
+    await selectOption('Project execution environment', 'Project Docker (Docker)');
+    expect(await screen.findByText('Docker connection: Docker access denied')).toBeInTheDocument();
     expect(api.checkDocker).toHaveBeenCalledWith('docker');
     expect(api.saveProject).not.toHaveBeenCalled();
   });
@@ -385,7 +395,9 @@ describe('execution environment settings UI', () => {
     });
     await open('/project-a');
     fireEvent.click(screen.getByRole('button', { name: 'Check Docker access' }));
-    expect(await screen.findByText('Docker connection: available')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Docker connection: Docker Engine is reachable')
+    ).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent(
       'Container lifecycle: not tested. Project storage: not tested.'
     );
@@ -403,13 +415,50 @@ describe('execution environment settings UI', () => {
     };
     await open('/project-a');
     expect(screen.getByRole('alert')).toHaveTextContent('There is no local fallback');
-    expect(screen.getByLabelText('Project execution environment')).toHaveValue('profile:deleted');
+    expect(
+      screen.getByRole('combobox', { name: 'Project execution environment' })
+    ).toHaveTextContent('Missing profile: deleted');
+  });
+  it('localizes the actual Docker server diagnostic and switches back without changing its data', async () => {
+    vi.stubEnv('IS_CONTAINERIZED', 'true');
+    const diagnostic = await diagnoseDockerConnection(undefined, undefined, async () => ({
+      code: null,
+      stdout: '',
+      stderr: '',
+      errorCode: 'ENOENT',
+    }));
+    const original = JSON.stringify(diagnostic);
+    api.checkDocker.mockResolvedValue({ success: true, diagnostic });
+    await open();
+    fireEvent.click(screen.getByRole('button', { name: 'Check Docker access' }));
+    await screen.findByText('Docker connection: Docker CLI is missing');
+    act(() => setUiLocale('ru'));
+    expect(screen.getByRole('heading', { name: /Docker CLI не найден/ })).toBeInTheDocument();
+    for (const text of [diagnostic.message, ...diagnostic.remediation]) {
+      expect(translate(text)).not.toBe(text);
+      expect(screen.getByText(translate(text))).toBeInTheDocument();
+    }
+    for (const link of diagnostic.documentation) {
+      expect(translate(link.label)).not.toBe(link.label);
+      expect(screen.getByRole('link', { name: translate(link.label) })).toHaveAttribute(
+        'href',
+        link.url
+      );
+    }
+    act(() => setUiLocale('en'));
+    expect(screen.getByText(diagnostic.message)).toBeInTheDocument();
+    expect(JSON.stringify(diagnostic)).toBe(original);
   });
   it('requires confirmation before removing a profile', async () => {
     await open();
     vi.spyOn(window, 'confirm').mockReturnValue(false);
     fireEvent.click(screen.getAllByRole('button', { name: 'Remove profile' })[0]);
-    expect(screen.getByRole('option', { name: 'Project Docker (Docker)' })).toBeInTheDocument();
+    fireEvent.keyDown(screen.getByRole('combobox', { name: 'Default execution environment' }), {
+      key: 'Enter',
+    });
+    expect(
+      await screen.findByRole('option', { name: 'Project Docker (Docker)' })
+    ).toBeInTheDocument();
   });
   it('displays server save failures without claiming a successful configuration', async () => {
     api.saveProject.mockResolvedValue({

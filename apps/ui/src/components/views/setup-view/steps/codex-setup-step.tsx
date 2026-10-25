@@ -1,6 +1,7 @@
 // @ts-nocheck - Codex setup wizard with Electron API integration
 import { useLocalizedMemo } from '@/lib/i18n';
 import { translate } from '@/lib/i18n';
+import { verifyCodexWithConsent } from '@/lib/codex-verification-consent';
 import { useUiLocale } from '@/lib/i18n';
 import { useCallback } from 'react';
 import { useSetupStore } from '@/store/setup-store';
@@ -30,13 +31,12 @@ export function CodexSetupStep({ onNext, onBack, onSkip }: CodexSetupStepProps) 
   );
 
   const installApi = useCallback(
-    () => getElectronAPI().setup?.installCodex() || Promise.reject(),
+    (signal?: AbortSignal) => getElectronAPI().setup?.installCodex(signal) || Promise.reject(),
     []
   );
 
   const verifyAuthApi = useCallback(
-    (method: 'cli' | 'api_key', apiKey?: string) =>
-      getElectronAPI().setup?.verifyCodexAuth(method, apiKey) || Promise.reject(),
+    (method: 'cli' | 'api_key', apiKey?: string) => verifyCodexWithConsent(method, apiKey),
     []
   );
 

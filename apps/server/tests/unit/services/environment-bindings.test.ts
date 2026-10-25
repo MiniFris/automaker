@@ -124,16 +124,19 @@ describe('server-owned environment grants and immutable bindings', () => {
   });
   it('does not carry container consent to a different OS user or host execution', async () => {
     vi.stubEnv('IS_CONTAINERIZED', 'true');
+    store = new EnvironmentBindingStore(settings);
     await store.confirm();
     const user = os.userInfo();
     const userInfo = vi.spyOn(os, 'userInfo').mockReturnValue({ ...user, uid: user.uid + 1 });
     expect((await new EnvironmentBindingStore(settings).consent()).confirmed).toBe(false);
     userInfo.mockRestore();
     vi.stubEnv('IS_CONTAINERIZED', 'false');
+    expect((await store.consent()).confirmed).toBe(true); // Existing owner keeps its captured mode.
     expect((await new EnvironmentBindingStore(settings).consent()).confirmed).toBe(false);
   });
   it('requires new confirmation if the persisted container identity is lost and fails closed if corrupt', async () => {
     vi.stubEnv('IS_CONTAINERIZED', 'true');
+    store = new EnvironmentBindingStore(settings);
     await store.confirm();
     const file = path.join(
       settings.getDataDirectory(),

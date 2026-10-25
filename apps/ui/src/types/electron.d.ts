@@ -1,6 +1,7 @@
 /**
  * Electron API type definitions
  */
+import type { PendingPlanApprovalResponse } from '@automaker/contracts';
 
 import type {
   ClaudeUsageResponse,
@@ -301,7 +302,9 @@ export type AutoModeEvent =
       branchName?: string | null;
       planContent: string;
       planningMode: 'lite' | 'spec' | 'full';
-      planVersion?: number;
+      planVersion: number;
+      approvalToken: string;
+      approvalRunId: string;
     }
   | {
       type: 'plan_auto_approved';
@@ -599,12 +602,19 @@ export interface AutoModeAPI {
     error?: string;
   }>;
 
+  pendingPlanApproval: (
+    projectPath: string,
+    featureId: string
+  ) => Promise<PendingPlanApprovalResponse>;
   approvePlan: (
     projectPath: string,
     featureId: string,
     approved: boolean,
     editedPlan?: string,
-    feedback?: string
+    feedback?: string,
+    approvalToken?: string,
+    planVersion?: number,
+    approvalRunId?: string
   ) => Promise<{
     success: boolean;
     error?: string;

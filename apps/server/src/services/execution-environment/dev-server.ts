@@ -1,4 +1,3 @@
-import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { SettingsService } from '../settings-service.js';
 import type { EventEmitter } from '../../lib/events.js';
@@ -8,7 +7,8 @@ import { ExecutionEnvironmentError } from './runtime.js';
 import { ManagedTerminalPty } from './terminal.js';
 import { shellQuote } from './ssh-transport.js';
 import { PreviewGateway } from './preview-gateway.js';
-import { PREVIEW_PORT_FIRST, PREVIEW_PORT_LAST } from './preview-policy.js';
+import { PreviewPolicy } from '../../core/config/preview-policy.js';
+import { legacyPreviewPolicy, legacyPreviewPathResolver } from './preview-policy.compat.js';
 import { openPreviewTunnel } from './preview-tunnel.js';
 
 function fail(code: string, message: string): never {
@@ -40,7 +40,9 @@ export class ManagedDevServerService {
   private closing = false;
   constructor(
     private readonly settings: SettingsService,
-    private readonly events: EventEmitter
+    private readonly events: EventEmitter,
+    private readonly preview: PreviewPolicy = legacyPreviewPolicy(),
+    private readonly resolveAlias: (alias?: string) => string = legacyPreviewPathResolver()
   ) {}
   owns(id: string) {
     return id.startsWith('managed-dev-');
@@ -48,7 +50,7 @@ export class ManagedDevServerService {
   find(alias?: string, id?: string) {
     if (id) return this.sessions.get(id);
     const matches = [...this.sessions.values()].filter(
-      (s) => s.target.environment.path === path.resolve(alias ?? '.')
+      (s) => s.target.environment.path === this.resolveAlias(alias)
     );
     return matches.find((s) => !s.finished) ?? matches.at(-1);
   }
@@ -60,7 +62,7 @@ export class ManagedDevServerService {
       targetPort: s.gateway.port + 1000,
       url: s.gateway.url,
       urlDetected: s.ready,
-      preserveUrlHost: !!process.env.AUTOMAKER_PREVIEW_PUBLIC_URL,
+      preserveUrlHost: !!this.preview.config.publicUrl,
       executionEnvironment: s.target.environment,
       command: s.command,
       startedAt: s.startedAt,
@@ -150,8 +152,8 @@ export class ManagedDevServerService {
         {},
         AbortSignal.timeout(30000)
       );
-      for (let port = PREVIEW_PORT_FIRST; port <= PREVIEW_PORT_LAST; port++) {
-        const candidate = new PreviewGateway();
+      for (let port = this.preview.config.firstPort; port <= this.preview.config.lastPort; port++) {
+        const candidate = new PreviewGateway(this.preview);
         try {
           await candidate.listen(port);
         } catch (error) {
@@ -204,7 +206,7 @@ export class ManagedDevServerService {
       const leader = pty.runtimePid,
         capturedGateway = gateway;
       gateway.attach(() =>
-        openPreviewTunnel(target, this.settings, capturedGateway.port + 1000, leader)
+        openPreviewTunnel(target, this.settings, capturedGateway.port + 1000, leader, this.preview)
       );
       let settle!: () => void;
       const settled = new Promise<void>((resolve) => {
@@ -318,13 +320,4 @@ export class ManagedDevServerService {
       [...this.sessions.values()].map((s) => this.stop(s.sessionId).catch(() => {}))
     );
   }
-}
-const services = new WeakMap<SettingsService, ManagedDevServerService>();
-export function getManagedDevServerService(settings: SettingsService, events: EventEmitter) {
-  let service = services.get(settings);
-  if (!service) {
-    service = new ManagedDevServerService(settings, events);
-    services.set(settings, service);
-  }
-  return service;
 }

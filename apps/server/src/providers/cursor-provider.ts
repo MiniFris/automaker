@@ -1,3 +1,4 @@
+import type { HostCliDiscovery } from '../core/platform/host-cli-discovery.js';
 /**
  * Cursor Provider - Executes queries using cursor-agent CLI
  *
@@ -13,7 +14,6 @@
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 import { findCliInWsl, isWslAvailable } from '@automaker/platform';
 import {
   CliProvider,
@@ -30,7 +30,6 @@ import type {
   ContentBlock,
 } from './types.js';
 import { validateBareModelId } from '@automaker/types';
-import { validateApiKey } from '../lib/auth-utils.js';
 import { getEffectivePermissions, detectProfile } from '../services/cursor-config-service.js';
 import {
   type CursorStreamEvent,
@@ -262,17 +261,24 @@ export interface CursorError extends Error {
  * - Text block deduplication (Cursor sends duplicate chunks)
  */
 export class CursorProvider extends CliProvider {
+  protected featureCapabilities() {
+    return { vision: false, tools: true, reasoning: false, mcp: false, remoteExecution: true };
+  }
   /**
    * Version data directory where cursor-agent stores versions
    * The install script creates versioned folders like:
    *   ~/.local/share/cursor-agent/versions/2025.12.17-996666f/cursor-agent
    */
-  private static VERSIONS_DIR = path.join(os.homedir(), '.local/share/cursor-agent/versions');
+  private get versionsDirectory() {
+    return path.join(this.hostHome(), '.local/share/cursor-agent/versions');
+  }
 
-  constructor(config: ProviderConfig = {}) {
-    super(config);
-    // Trigger CLI detection on construction (eager for Cursor)
-    this.ensureCliDetected();
+  constructor(
+    config: ProviderConfig = {},
+    environment?: import('./cli-provider.js').CliEnvironmentReader,
+    hostDiscovery?: HostCliDiscovery
+  ) {
+    super(config, environment, hostDiscovery);
   }
 
   // ==========================================================================
@@ -292,13 +298,16 @@ export class CursorProvider extends CliProvider {
       windowsStrategy: 'direct',
       commonPaths: {
         linux: [
-          path.join(os.homedir(), '.local/bin/cursor-agent'), // Primary symlink location
+          path.join(this.hostHome(), '.local/bin/cursor-agent'), // Primary symlink location
           '/usr/local/bin/cursor-agent',
         ],
-        darwin: [path.join(os.homedir(), '.local/bin/cursor-agent'), '/usr/local/bin/cursor-agent'],
+        darwin: [
+          path.join(this.hostHome(), '.local/bin/cursor-agent'),
+          '/usr/local/bin/cursor-agent',
+        ],
         win32: [
           path.join(
-            process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'),
+            this.hostValue('LOCALAPPDATA') || path.join(this.hostHome(), 'AppData', 'Local'),
             'Programs',
             'Cursor',
             'resources',
@@ -307,7 +316,7 @@ export class CursorProvider extends CliProvider {
             'cursor-agent.exe'
           ),
           path.join(
-            process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'),
+            this.hostValue('LOCALAPPDATA') || path.join(this.hostHome(), 'AppData', 'Local'),
             'Programs',
             'Cursor',
             'resources',
@@ -316,7 +325,7 @@ export class CursorProvider extends CliProvider {
             'cursor-agent.cmd'
           ),
           path.join(
-            process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'),
+            this.hostValue('LOCALAPPDATA') || path.join(this.hostHome(), 'AppData', 'Local'),
             'Programs',
             'Cursor',
             'resources',
@@ -325,13 +334,13 @@ export class CursorProvider extends CliProvider {
             'cursor.exe'
           ),
           path.join(
-            process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'),
+            this.hostValue('LOCALAPPDATA') || path.join(this.hostHome(), 'AppData', 'Local'),
             'Programs',
             'Cursor',
             'cursor.exe'
           ),
           path.join(
-            process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'),
+            this.hostValue('LOCALAPPDATA') || path.join(this.hostHome(), 'AppData', 'Local'),
             'Programs',
             'cursor',
             'resources',
@@ -340,7 +349,7 @@ export class CursorProvider extends CliProvider {
             'cursor-agent.exe'
           ),
           path.join(
-            process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'),
+            this.hostValue('LOCALAPPDATA') || path.join(this.hostHome(), 'AppData', 'Local'),
             'Programs',
             'cursor',
             'resources',
@@ -349,7 +358,7 @@ export class CursorProvider extends CliProvider {
             'cursor-agent.cmd'
           ),
           path.join(
-            process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'),
+            this.hostValue('LOCALAPPDATA') || path.join(this.hostHome(), 'AppData', 'Local'),
             'Programs',
             'cursor',
             'resources',
@@ -358,40 +367,40 @@ export class CursorProvider extends CliProvider {
             'cursor.exe'
           ),
           path.join(
-            process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'),
+            this.hostValue('LOCALAPPDATA') || path.join(this.hostHome(), 'AppData', 'Local'),
             'Programs',
             'cursor',
             'cursor.exe'
           ),
           path.join(
-            process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'),
+            this.hostValue('APPDATA') || path.join(this.hostHome(), 'AppData', 'Roaming'),
             'npm',
             'cursor-agent.cmd'
           ),
           path.join(
-            process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'),
+            this.hostValue('APPDATA') || path.join(this.hostHome(), 'AppData', 'Roaming'),
             'npm',
             'cursor.cmd'
           ),
           path.join(
-            process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'),
+            this.hostValue('APPDATA') || path.join(this.hostHome(), 'AppData', 'Roaming'),
             '.npm-global',
             'bin',
             'cursor-agent.cmd'
           ),
           path.join(
-            process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'),
+            this.hostValue('APPDATA') || path.join(this.hostHome(), 'AppData', 'Roaming'),
             '.npm-global',
             'bin',
             'cursor.cmd'
           ),
           path.join(
-            process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'),
+            this.hostValue('LOCALAPPDATA') || path.join(this.hostHome(), 'AppData', 'Local'),
             'pnpm',
             'cursor-agent.cmd'
           ),
           path.join(
-            process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'),
+            this.hostValue('LOCALAPPDATA') || path.join(this.hostHome(), 'AppData', 'Local'),
             'pnpm',
             'cursor.cmd'
           ),
@@ -467,6 +476,17 @@ export class CursorProvider extends CliProvider {
    * Made public as required by CliProvider abstract method
    */
   normalizeEvent(event: unknown): ProviderMessage | null {
+    // Subprocess diagnostics already passed the trusted controlled mapper.
+    if (
+      event &&
+      typeof event === 'object' &&
+      'type' in event &&
+      event.type === 'error' &&
+      'error' in event &&
+      typeof event.error === 'string'
+    ) {
+      return { type: 'error', error: event.error };
+    }
     const cursorEvent = event as CursorStreamEvent;
 
     switch (cursorEvent.type) {
@@ -599,6 +619,7 @@ export class CursorProvider extends CliProvider {
   protected detectCli(): CliDetectionResult {
     if (process.platform === 'win32') {
       const findInPath = (command: string): string | null => {
+        if (this.hostDiscovery) return this.hostDiscovery.findInPath(command);
         try {
           const result = execSync(`where ${command}`, {
             encoding: 'utf8',
@@ -624,6 +645,10 @@ export class CursorProvider extends CliProvider {
 
       const supportsCursorAgentSubcommand = (cliPath: string) => {
         try {
+          if (this.hostDiscovery) {
+            this.hostDiscovery.runSync(cliPath, ['agent', '--version']);
+            return true;
+          }
           execSync(`"${cliPath}" agent --version`, {
             encoding: 'utf8',
             timeout: 5000,
@@ -663,14 +688,20 @@ export class CursorProvider extends CliProvider {
       }
 
       const wslLogger = (msg: string) => logger.debug(msg);
-      if (isWslAvailable({ logger: wslLogger })) {
-        const wslResult = findCliInWsl('cursor-agent', { logger: wslLogger });
+      if (
+        this.hostDiscovery
+          ? this.hostDiscovery.wslAvailable()
+          : isWslAvailable({ logger: wslLogger })
+      ) {
+        const wslResult = this.hostDiscovery
+          ? this.hostDiscovery.findWsl('cursor-agent')
+          : findCliInWsl('cursor-agent', { logger: wslLogger });
         if (wslResult) {
           logger.debug(
             `Using cursor-agent via WSL (${wslResult.distribution || 'default'}): ${wslResult.wslPath}`
           );
           return {
-            cliPath: 'wsl.exe',
+            cliPath: this.hostDiscovery?.wslExecutable() ?? 'wsl.exe',
             useWsl: true,
             wslCliPath: wslResult.wslPath,
             wslDistribution: wslResult.distribution,
@@ -691,16 +722,16 @@ export class CursorProvider extends CliProvider {
 
     // Cursor-specific: Check versions directory for any installed version
     // This handles cases where cursor-agent is installed but not in PATH
-    if (fs.existsSync(CursorProvider.VERSIONS_DIR)) {
+    if (fs.existsSync(this.versionsDirectory)) {
       try {
         const versions = fs
-          .readdirSync(CursorProvider.VERSIONS_DIR)
+          .readdirSync(this.versionsDirectory)
           .filter((v) => !v.startsWith('.'))
           .sort()
           .reverse(); // Most recent first
 
         for (const version of versions) {
-          const versionPath = path.join(CursorProvider.VERSIONS_DIR, version, 'cursor-agent');
+          const versionPath = path.join(this.versionsDirectory, version, 'cursor-agent');
           if (fs.existsSync(versionPath)) {
             logger.debug(`Found cursor-agent version ${version} at: ${versionPath}`);
             return {
@@ -720,7 +751,7 @@ export class CursorProvider extends CliProvider {
     const cursorPaths = [
       '/usr/bin/cursor',
       '/usr/local/bin/cursor',
-      path.join(os.homedir(), '.local/bin/cursor'),
+      path.join(this.hostHome(), '.local/bin/cursor'),
       '/opt/cursor/cursor',
     ];
 
@@ -819,7 +850,7 @@ export class CursorProvider extends CliProvider {
 
     return {
       code: CursorErrorCode.UNKNOWN,
-      message: stderr || `Cursor agent exited with code ${exitCode}`,
+      message: `Cursor agent failed (exit code ${exitCode ?? 'unknown'}). Check the provider configuration and retry.`,
       recoverable: false,
     };
   }
@@ -841,7 +872,7 @@ export class CursorProvider extends CliProvider {
    * - Session ID tracking from system init events
    * - Text block deduplication (Cursor sends duplicate chunks)
    */
-  async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+  protected async *execute(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
     const runtime = remoteCliRuntime(options);
     if (!runtime) this.ensureCliDetected();
 
@@ -876,7 +907,9 @@ export class CursorProvider extends CliProvider {
     const promptText = this.extractPromptText(effectiveOptions);
 
     const cliArgs = this.buildCliArgs(effectiveOptions);
-    const subprocessOptions = this.buildSubprocessOptions(options, cliArgs);
+    const subprocessOptions = this.controlledFailureOptions(
+      this.buildSubprocessOptions(options, cliArgs)
+    );
 
     // Pass prompt via stdin to avoid shell interpretation of special characters
     // like $(), backticks, etc. that may appear in file content
@@ -891,7 +924,7 @@ export class CursorProvider extends CliProvider {
     logger.debug(`CursorProvider.executeQuery called with model: "${options.model}"`);
 
     // Get effective permissions for this project and detect the active profile
-    if (!runtime) {
+    if (!runtime && !this.hostDiscovery) {
       const effectivePermissions = await getEffectivePermissions(options.cwd || process.cwd());
       const activeProfile = detectProfile(effectivePermissions);
       logger.debug(
@@ -901,8 +934,8 @@ export class CursorProvider extends CliProvider {
 
     // Debug: log raw events when AUTOMAKER_DEBUG_RAW_OUTPUT is enabled
     const debugRawEvents =
-      process.env.AUTOMAKER_DEBUG_RAW_OUTPUT === 'true' ||
-      process.env.AUTOMAKER_DEBUG_RAW_OUTPUT === '1';
+      this.hostValue('AUTOMAKER_DEBUG_RAW_OUTPUT') === 'true' ||
+      this.hostValue('AUTOMAKER_DEBUG_RAW_OUTPUT') === '1';
 
     try {
       for await (const rawEvent of this.streamProcess(options, subprocessOptions)) {
@@ -1088,6 +1121,23 @@ export class CursorProvider extends CliProvider {
     if (!this.cliPath) return null;
 
     try {
+      if (this.hostDiscovery) {
+        if (this.useWsl && this.wslCliPath)
+          return this.hostDiscovery
+            .runSync(this.hostDiscovery.wslExecutable()!, [
+              ...(this.wslDistribution ? ['-d', this.wslDistribution] : []),
+              this.wslCliPath,
+              '--version',
+            ])
+            .trim();
+        return this.hostDiscovery
+          .runSync(
+            this.cliPath,
+            this.cliPath.includes('cursor-agent') ? ['--version'] : ['agent', '--version'],
+            await this.readEnvironment()
+          )
+          .trim();
+      }
       if (this.useWsl && this.wslCliPath) {
         const result = execInWsl(`${this.wslCliPath} --version`, {
           timeout: 5000,
@@ -1105,6 +1155,7 @@ export class CursorProvider extends CliProvider {
         encoding: 'utf8',
         timeout: 5000,
         stdio: 'pipe',
+        env: await this.readEnvironment(),
       }).trim();
       return result;
     } catch {
@@ -1116,93 +1167,49 @@ export class CursorProvider extends CliProvider {
    * Check authentication status
    */
   async checkAuth(): Promise<CursorAuthStatus> {
-    this.ensureCliDetected();
-    if (!this.cliPath) {
-      return { authenticated: false, method: 'none' };
-    }
-
-    // Check for API key in environment with validation
-    if (process.env.CURSOR_API_KEY) {
-      const validation = validateApiKey(process.env.CURSOR_API_KEY, 'cursor');
-      if (!validation.isValid) {
-        logger.warn('Cursor API key validation failed:', validation.error);
-        return { authenticated: false, method: 'api_key', error: validation.error };
-      }
-      return { authenticated: true, method: 'api_key' };
-    }
-
-    // For WSL mode, check credentials inside WSL
-    if (this.useWsl && this.wslCliPath) {
-      const wslOpts = { timeout: 5000, distribution: this.wslDistribution };
-
-      // Check for credentials file inside WSL
-      const wslCredPaths = [
-        '$HOME/.cursor/credentials.json',
-        '$HOME/.config/cursor/credentials.json',
-      ];
-
-      for (const credPath of wslCredPaths) {
-        const content = execInWsl(`sh -c "cat ${credPath} 2>/dev/null || echo ''"`, wslOpts);
-        if (content && content.trim()) {
-          try {
-            const creds = JSON.parse(content);
-            if (creds.accessToken || creds.token) {
-              return { authenticated: true, method: 'login', hasCredentialsFile: true };
-            }
-          } catch {
-            // Invalid credentials file
-          }
-        }
-      }
-
-      // Try running --version to check if CLI works
-      const versionResult = execInWsl(`${this.wslCliPath} --version`, {
-        timeout: 10000,
-        distribution: this.wslDistribution,
-      });
-      if (versionResult) {
-        return { authenticated: true, method: 'login' };
-      }
-
-      return { authenticated: false, method: 'none' };
-    }
-
-    // Native mode (Linux/macOS) - check local credentials
-    const credentialPaths = [
-      path.join(os.homedir(), '.cursor', 'credentials.json'),
-      path.join(os.homedir(), '.config', 'cursor', 'credentials.json'),
-    ];
-
-    for (const credPath of credentialPaths) {
-      if (fs.existsSync(credPath)) {
-        try {
-          const content = fs.readFileSync(credPath, 'utf8');
-          const creds = JSON.parse(content);
-          if (creds.accessToken || creds.token) {
-            return { authenticated: true, method: 'login', hasCredentialsFile: true };
-          }
-        } catch {
-          // Invalid credentials file
-        }
+    const environment = await this.readEnvironment();
+    const hasEnvApiKey = !!environment.CURSOR_API_KEY?.trim();
+    const home = environment.HOME || environment.USERPROFILE || this.hostHome();
+    const credentialPaths = environment.CURSOR_CONFIG_DIR
+      ? [
+          path.join(
+            this.hostDiscovery
+              ? this.hostDiscovery.resolve(environment.CURSOR_CONFIG_DIR)
+              : environment.CURSOR_CONFIG_DIR,
+            'credentials.json'
+          ),
+        ]
+      : [
+          path.join(home, '.cursor', 'credentials.json'),
+          path.join(
+            this.hostDiscovery
+              ? this.hostDiscovery.resolve(
+                  environment.XDG_CONFIG_HOME || path.join(home, '.config')
+                )
+              : environment.XDG_CONFIG_HOME || path.join(home, '.config'),
+            'cursor',
+            'credentials.json'
+          ),
+        ];
+    let hasCredentialsFile = false;
+    let error: string | undefined;
+    for (const file of credentialPaths) {
+      try {
+        hasCredentialsFile ||= (await fs.promises.stat(file)).isFile();
+      } catch (failure) {
+        if ((failure as NodeJS.ErrnoException).code !== 'ENOENT')
+          error = 'Local configuration could not be inspected.';
       }
     }
-
-    // Try running a simple command to check auth
-    try {
-      execSync(`"${this.cliPath}" --version`, {
-        encoding: 'utf8',
-        timeout: 10000,
-        env: { ...process.env },
-      });
-      return { authenticated: true, method: 'login' };
-    } catch (error: unknown) {
-      const execError = error as { stderr?: string };
-      if (execError.stderr?.includes('not authenticated') || execError.stderr?.includes('log in')) {
-        return { authenticated: false, method: 'none' };
-      }
-    }
-
-    return { authenticated: false, method: 'none' };
+    return {
+      authenticated: false,
+      authenticationChecked: false,
+      scope: 'host',
+      method: hasEnvApiKey ? 'api_key' : 'none',
+      hasEnvApiKey,
+      hasCredentialsFile,
+      ...(error && { error }),
+    };
   }
 
   /**
@@ -1224,7 +1231,7 @@ export class CursorProvider extends CliProvider {
       version: version || undefined,
       path: displayPath,
       method: this.useWsl ? 'wsl' : 'cli',
-      hasApiKey: !!process.env.CURSOR_API_KEY,
+      hasApiKey: !!auth.hasEnvApiKey,
       authenticated: auth.authenticated,
     };
   }

@@ -6,20 +6,24 @@
  * not just at the API layer. This provides defense-in-depth security.
  *
  * This module also implements:
- * - Concurrency limiting via p-limit to prevent ENFILE/EMFILE errors
+ * - Bounded owner queues and concurrency limiting to prevent ENFILE/EMFILE errors
  * - Retry logic with exponential backoff for transient file descriptor errors
  */
 
 import fs from 'fs/promises';
 import fsSync, { type Dirent, type Stats } from 'fs';
 import path from 'path';
-import pLimit from 'p-limit';
-import { validatePath } from './security.js';
+import { pipeline } from 'node:stream/promises';
+import { Readable, Transform, type Writable } from 'node:stream';
+import { SecureFsQueue, type SecureFsLifecycleOptions } from './secure-fs-queue.js';
+export { SecureFsAdmissionError, SecureFsCleanupError } from './secure-fs-queue.js';
+export type { SecureFsLifecycleOptions } from './secure-fs-queue.js';
+import { validatePath as legacyValidatePath } from './security.js';
 
 /**
  * Configuration for file operation throttling
  */
-interface ThrottleConfig {
+export interface ThrottleConfig {
   /** Maximum concurrent file operations (default: 100) */
   maxConcurrency: number;
   /** Maximum retry attempts for ENFILE/EMFILE errors (default: 3) */
@@ -37,89 +41,193 @@ const DEFAULT_CONFIG: ThrottleConfig = {
   maxDelay: 5000,
 };
 
-let config: ThrottleConfig = { ...DEFAULT_CONFIG };
-let fsLimit = pLimit(config.maxConcurrency);
+export interface WriteFileOptions {
+  encoding?: BufferEncoding;
+  mode?: number;
+  flag?: string;
+}
 
-/**
- * Configure the file operation throttling settings
- * @param newConfig - Partial configuration to merge with defaults
- */
-export function configureThrottling(newConfig: Partial<ThrottleConfig>): void {
-  const newConcurrency = newConfig.maxConcurrency;
+export interface WriteFileSyncOptions {
+  encoding?: BufferEncoding;
+  mode?: number;
+  flag?: string;
+}
 
-  if (newConcurrency !== undefined && newConcurrency !== config.maxConcurrency) {
-    if (fsLimit.activeCount > 0 || fsLimit.pendingCount > 0) {
-      throw new Error(
-        `[SecureFS] Cannot change maxConcurrency while operations are in flight. Active: ${fsLimit.activeCount}, Pending: ${fsLimit.pendingCount}`
-      );
+/** Independent validator, throttle configuration and queue for one owner. */
+export function createSecureFs(
+  policy: (candidate: string, options?: { followFinalSymlink: boolean }) => string,
+  lifecycle: SecureFsLifecycleOptions = {}
+) {
+  let config: ThrottleConfig = { ...DEFAULT_CONFIG };
+  const queue = new SecureFsQueue(lifecycle);
+  function validatePath(candidate: string, options?: { followFinalSymlink: boolean }): string {
+    queue.assertOpen();
+    const result = policy(candidate, options);
+    queue.assertOpen();
+    return result;
+  }
+  function owned<Args extends unknown[], Result>(operation: (...args: Args) => Promise<Result>) {
+    return (...args: Args): Promise<Result> => queue.run(() => operation(...args));
+  }
+
+  /** Own the complete stream lifetime, including descriptor close and cancellation. */
+  async function pipeFile(
+    filePath: string,
+    destination: Writable,
+    options: { signal?: AbortSignal; maxBytes?: number } = {}
+  ): Promise<void> {
+    options.signal?.throwIfAborted();
+    const canonical = validatePath(filePath);
+    if (
+      options.maxBytes !== undefined &&
+      (!Number.isSafeInteger(options.maxBytes) || options.maxBytes < 0)
+    )
+      throw new RangeError('Invalid file byte limit.');
+    const source =
+      options.maxBytes === 0
+        ? Readable.from([])
+        : fsSync.createReadStream(
+            validatePath(canonical),
+            options.maxBytes === undefined ? {} : { end: options.maxBytes - 1 }
+          );
+    await pipeline(source, destination, { signal: options.signal });
+  }
+
+  async function writeStream(
+    filePath: string,
+    source: Readable,
+    options: { signal?: AbortSignal; maxBytes: number; mode?: number }
+  ): Promise<void> {
+    options.signal?.throwIfAborted();
+    if (!Number.isSafeInteger(options.maxBytes) || options.maxBytes < 0)
+      throw new RangeError('Invalid file byte limit.');
+    const canonical = validatePath(filePath);
+    let bytes = 0;
+    const limit = new Transform({
+      transform(chunk, _encoding, callback) {
+        bytes += chunk.byteLength;
+        callback(
+          bytes > options.maxBytes
+            ? Object.assign(new Error('Stream exceeds the byte limit.'), {
+                code: 'STREAM_BYTE_LIMIT',
+              })
+            : null,
+          bytes > options.maxBytes ? undefined : chunk
+        );
+      },
+    });
+    await pipeline(
+      source,
+      limit,
+      fsSync.createWriteStream(validatePath(canonical), {
+        flags: 'wx',
+        mode: options.mode ?? 0o600,
+      }),
+      { signal: options.signal }
+    );
+  }
+
+  /** One transfer may both read and write without recursively taking queue slots. */
+  async function withFileStreams<T>(
+    operation: (streams: {
+      pipeFile: typeof pipeFile;
+      writeStream: typeof writeStream;
+    }) => Promise<T>
+  ): Promise<T> {
+    let active = true;
+    const pending = new Set<Promise<unknown>>();
+    const scoped =
+      <Args extends unknown[], Result>(method: (...args: Args) => Promise<Result>) =>
+      (...args: Args): Promise<Result> => {
+        if (!active) return Promise.reject(new Error('File stream scope is closed.'));
+        const result = method(...args);
+        pending.add(result);
+        void result.then(
+          () => pending.delete(result),
+          () => pending.delete(result)
+        );
+        return result;
+      };
+    try {
+      return await operation({ pipeFile: scoped(pipeFile), writeStream: scoped(writeStream) });
+    } finally {
+      active = false;
+      await Promise.allSettled([...pending]);
     }
-    fsLimit = pLimit(newConcurrency);
   }
 
-  config = { ...config, ...newConfig };
-}
+  /**
+   * Configure the file operation throttling settings
+   * @param newConfig - Partial configuration to merge with defaults
+   */
+  function configureThrottling(newConfig: Partial<ThrottleConfig>): void {
+    queue.assertOpen();
+    const newConcurrency = newConfig.maxConcurrency;
 
-/**
- * Get the current throttling configuration
- */
-export function getThrottlingConfig(): Readonly<ThrottleConfig> {
-  return { ...config };
-}
+    if (newConcurrency !== undefined && newConcurrency !== config.maxConcurrency) {
+      queue.configureConcurrency(newConcurrency);
+    }
 
-/**
- * Get the number of pending operations in the queue
- */
-export function getPendingOperations(): number {
-  return fsLimit.pendingCount;
-}
-
-/**
- * Get the number of active operations currently running
- */
-export function getActiveOperations(): number {
-  return fsLimit.activeCount;
-}
-
-/**
- * Error codes that indicate file descriptor exhaustion
- */
-const FILE_DESCRIPTOR_ERROR_CODES = new Set(['ENFILE', 'EMFILE']);
-
-/**
- * Check if an error is a file descriptor exhaustion error
- */
-function isFileDescriptorError(error: unknown): boolean {
-  if (error && typeof error === 'object' && 'code' in error) {
-    return FILE_DESCRIPTOR_ERROR_CODES.has((error as { code: string }).code);
+    config = { ...config, ...newConfig };
   }
-  return false;
-}
 
-/**
- * Calculate delay with exponential backoff and jitter
- */
-function calculateDelay(attempt: number): number {
-  const exponentialDelay = config.baseDelay * Math.pow(2, attempt);
-  const jitter = Math.random() * config.baseDelay;
-  return Math.min(exponentialDelay + jitter, config.maxDelay);
-}
+  /**
+   * Get the current throttling configuration
+   */
+  function getThrottlingConfig(): Readonly<ThrottleConfig> {
+    return { ...config };
+  }
 
-/**
- * Sleep for a specified duration
- */
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+  /**
+   * Get the number of pending operations in the queue
+   */
+  function getPendingOperations(): number {
+    return queue.pendingCount;
+  }
 
-/**
- * Execute a file operation with throttling and retry logic
- */
-async function executeWithRetry<T>(operation: () => Promise<T>, operationName: string): Promise<T> {
-  return fsLimit(async () => {
+  /**
+   * Get the number of active operations currently running
+   */
+  function getActiveOperations(): number {
+    return queue.activeCount;
+  }
+
+  /**
+   * Error codes that indicate file descriptor exhaustion
+   */
+  const FILE_DESCRIPTOR_ERROR_CODES = new Set(['ENFILE', 'EMFILE']);
+
+  /**
+   * Check if an error is a file descriptor exhaustion error
+   */
+  function isFileDescriptorError(error: unknown): boolean {
+    if (error && typeof error === 'object' && 'code' in error) {
+      return FILE_DESCRIPTOR_ERROR_CODES.has((error as { code: string }).code);
+    }
+    return false;
+  }
+
+  /**
+   * Calculate delay with exponential backoff and jitter
+   */
+  function calculateDelay(attempt: number): number {
+    const exponentialDelay = config.baseDelay * Math.pow(2, attempt);
+    const jitter = Math.random() * config.baseDelay;
+    return Math.min(exponentialDelay + jitter, config.maxDelay);
+  }
+
+  /**
+   * Execute a file operation with throttling and retry logic
+   */
+  async function executeWithRetry<T>(
+    operation: () => Promise<T>,
+    operationName: string
+  ): Promise<T> {
     let lastError: unknown;
 
     for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
       try {
+        queue.assertOpen();
         return await operation();
       } catch (error) {
         lastError = error;
@@ -127,9 +235,9 @@ async function executeWithRetry<T>(operation: () => Promise<T>, operationName: s
         if (isFileDescriptorError(error) && attempt < config.maxRetries) {
           const delay = calculateDelay(attempt);
           console.warn(
-            `[SecureFS] ${operationName}: File descriptor error (attempt ${attempt + 1}/${config.maxRetries + 1}), retrying in ${delay}ms`
+            `[SecureFS] ${operationName.split('(')[0]}: File descriptor error (attempt ${attempt + 1}/${config.maxRetries + 1}), retrying in ${delay}ms`
           );
-          await sleep(delay);
+          await queue.retryDelay(delay);
           continue;
         }
 
@@ -138,492 +246,590 @@ async function executeWithRetry<T>(operation: () => Promise<T>, operationName: s
     }
 
     throw lastError;
-  });
-}
+  }
 
-/**
- * Wrapper around fs.access that validates path first
- */
-export async function access(filePath: string, mode?: number): Promise<void> {
-  const validatedPath = validatePath(filePath);
-  return executeWithRetry(() => fs.access(validatedPath, mode), `access(${filePath})`);
-}
+  /**
+   * Wrapper around fs.access that validates path first
+   */
+  async function access(filePath: string, mode?: number): Promise<void> {
+    const validatedPath = validatePath(filePath);
+    return executeWithRetry(
+      () => fs.access(validatePath(validatedPath), mode),
+      `access(${filePath})`
+    );
+  }
 
-/**
- * Wrapper around fs.readFile that validates path first
- */
-export async function readFile(
-  filePath: string,
-  encoding?: BufferEncoding
-): Promise<string | Buffer> {
-  const validatedPath = validatePath(filePath);
-  return executeWithRetry<string | Buffer>(() => {
+  /**
+   * Wrapper around fs.readFile that validates path first
+   */
+  async function readFile(filePath: string, encoding?: BufferEncoding): Promise<string | Buffer> {
+    const validatedPath = validatePath(filePath);
+    return executeWithRetry<string | Buffer>(() => {
+      if (encoding) {
+        return fs.readFile(validatePath(validatedPath), encoding);
+      }
+      return fs.readFile(validatePath(validatedPath));
+    }, `readFile(${filePath})`);
+  }
+
+  /**
+   * Wrapper around fs.writeFile that validates path first
+   */
+  async function writeFile(
+    filePath: string,
+    data: string | Buffer,
+    optionsOrEncoding?: BufferEncoding | WriteFileOptions
+  ): Promise<void> {
+    const validatedPath = validatePath(filePath);
+    return executeWithRetry(
+      () => fs.writeFile(validatePath(validatedPath), data, optionsOrEncoding),
+      `writeFile(${filePath})`
+    );
+  }
+
+  /**
+   * Wrapper around fs.mkdir that validates path first
+   */
+  async function mkdir(
+    dirPath: string,
+    options?: { recursive?: boolean; mode?: number }
+  ): Promise<string | undefined> {
+    const validatedPath = validatePath(dirPath);
+    return executeWithRetry(
+      () => fs.mkdir(validatePath(validatedPath), options),
+      `mkdir(${dirPath})`
+    );
+  }
+
+  /**
+   * Wrapper around fs.readdir that validates path first
+   */
+  async function readdir(
+    dirPath: string,
+    options?: { withFileTypes?: false; encoding?: BufferEncoding }
+  ): Promise<string[]>;
+  async function readdir(
+    dirPath: string,
+    options: { withFileTypes: true; encoding?: BufferEncoding }
+  ): Promise<Dirent[]>;
+  async function readdir(
+    dirPath: string,
+    options?: { withFileTypes?: boolean; encoding?: BufferEncoding }
+  ): Promise<string[] | Dirent[]> {
+    const validatedPath = validatePath(dirPath);
+    return executeWithRetry<string[] | Dirent[]>(() => {
+      if (options?.withFileTypes === true) {
+        return fs.readdir(validatePath(validatedPath), { withFileTypes: true });
+      }
+      return fs.readdir(validatePath(validatedPath));
+    }, `readdir(${dirPath})`);
+  }
+
+  /**
+   * Wrapper around fs.stat that validates path first
+   */
+  async function stat(filePath: string): Promise<ReturnType<typeof fs.stat>> {
+    const validatedPath = validatePath(filePath);
+    return executeWithRetry(() => fs.stat(validatePath(validatedPath)), `stat(${filePath})`);
+  }
+
+  /**
+   * Wrapper around fs.rm that validates path first
+   */
+  async function rm(
+    filePath: string,
+    options?: { recursive?: boolean; force?: boolean }
+  ): Promise<void> {
+    const validatedPath = validatePath(filePath, { followFinalSymlink: false });
+    return executeWithRetry(
+      () => fs.rm(validatePath(validatedPath, { followFinalSymlink: false }), options),
+      `rm(${filePath})`
+    );
+  }
+
+  /**
+   * Wrapper around fs.unlink that validates path first
+   */
+  async function unlink(filePath: string): Promise<void> {
+    const validatedPath = validatePath(filePath, { followFinalSymlink: false });
+    return executeWithRetry(
+      () => fs.unlink(validatePath(validatedPath, { followFinalSymlink: false })),
+      `unlink(${filePath})`
+    );
+  }
+
+  /**
+   * Wrapper around fs.copyFile that validates both paths first
+   */
+  async function copyFile(src: string, dest: string, mode?: number): Promise<void> {
+    const validatedSrc = validatePath(src);
+    const validatedDest = validatePath(dest);
+    return executeWithRetry(
+      () => fs.copyFile(validatePath(validatedSrc), validatePath(validatedDest), mode),
+      `copyFile(${src}, ${dest})`
+    );
+  }
+
+  /** Atomic same-volume publication without replacing an existing destination. */
+  async function link(src: string, dest: string): Promise<void> {
+    const source = validatePath(src);
+    const destination = validatePath(dest, { followFinalSymlink: false });
+    return executeWithRetry(
+      () => fs.link(validatePath(source), validatePath(destination, { followFinalSymlink: false })),
+      'link'
+    );
+  }
+
+  /**
+   * Wrapper around fs.appendFile that validates path first
+   */
+  async function appendFile(
+    filePath: string,
+    data: string | Buffer,
+    encoding?: BufferEncoding
+  ): Promise<void> {
+    const validatedPath = validatePath(filePath);
+    return executeWithRetry(
+      () => fs.appendFile(validatePath(validatedPath), data, encoding),
+      `appendFile(${filePath})`
+    );
+  }
+
+  /**
+   * Wrapper around fs.rename that validates both paths first
+   */
+  async function rename(oldPath: string, newPath: string): Promise<void> {
+    const validatedOldPath = validatePath(oldPath, { followFinalSymlink: false });
+    const validatedNewPath = validatePath(newPath, { followFinalSymlink: false });
+    return executeWithRetry(
+      () =>
+        fs.rename(
+          validatePath(validatedOldPath, { followFinalSymlink: false }),
+          validatePath(validatedNewPath, { followFinalSymlink: false })
+        ),
+      `rename(${oldPath}, ${newPath})`
+    );
+  }
+
+  /**
+   * Wrapper around fs.lstat that validates path first
+   * Returns file stats without following symbolic links
+   */
+  async function lstat(filePath: string): Promise<ReturnType<typeof fs.lstat>> {
+    const validatedPath = validatePath(filePath, { followFinalSymlink: false });
+    return executeWithRetry(
+      () => fs.lstat(validatePath(validatedPath, { followFinalSymlink: false })),
+      `lstat(${filePath})`
+    );
+  }
+
+  /**
+   * Wrapper around path.join that returns resolved path
+   * Does NOT validate - use this for path construction, then pass to other operations
+   */
+  function joinPath(...pathSegments: string[]): string {
+    return path.join(...pathSegments);
+  }
+
+  /**
+   * Wrapper around path.resolve that returns resolved path
+   * Does NOT validate - use this for path construction, then pass to other operations
+   */
+  function resolvePath(...pathSegments: string[]): string {
+    return path.resolve(...pathSegments);
+  }
+
+  // =============================================================================
+  // Synchronous File System Methods
+  // =============================================================================
+
+  /**
+   * Synchronous wrapper around fs.existsSync that validates path first
+   */
+  function existsSync(filePath: string): boolean {
+    const validatedPath = validatePath(filePath);
+    return fsSync.existsSync(validatePath(validatedPath));
+  }
+
+  /**
+   * Synchronous wrapper around fs.readFileSync that validates path first
+   */
+  function readFileSync(filePath: string, encoding?: BufferEncoding): string | Buffer {
+    const validatedPath = validatePath(filePath);
     if (encoding) {
-      return fs.readFile(validatedPath, encoding);
+      return fsSync.readFileSync(validatePath(validatedPath), encoding);
     }
-    return fs.readFile(validatedPath);
-  }, `readFile(${filePath})`);
-}
+    return fsSync.readFileSync(validatePath(validatedPath));
+  }
 
-/**
- * Options for writeFile
- */
-export interface WriteFileOptions {
-  encoding?: BufferEncoding;
-  mode?: number;
-  flag?: string;
-}
+  /**
+   * Synchronous wrapper around fs.writeFileSync that validates path first
+   */
+  function writeFileSync(
+    filePath: string,
+    data: string | Buffer,
+    options?: WriteFileSyncOptions
+  ): void {
+    const validatedPath = validatePath(filePath);
+    fsSync.writeFileSync(validatePath(validatedPath), data, options);
+  }
 
-/**
- * Wrapper around fs.writeFile that validates path first
- */
-export async function writeFile(
-  filePath: string,
-  data: string | Buffer,
-  optionsOrEncoding?: BufferEncoding | WriteFileOptions
-): Promise<void> {
-  const validatedPath = validatePath(filePath);
-  return executeWithRetry(
-    () => fs.writeFile(validatedPath, data, optionsOrEncoding),
-    `writeFile(${filePath})`
-  );
-}
+  /**
+   * Synchronous wrapper around fs.mkdirSync that validates path first
+   */
+  function mkdirSync(
+    dirPath: string,
+    options?: { recursive?: boolean; mode?: number }
+  ): string | undefined {
+    const validatedPath = validatePath(dirPath);
+    return fsSync.mkdirSync(validatePath(validatedPath), options);
+  }
 
-/**
- * Wrapper around fs.mkdir that validates path first
- */
-export async function mkdir(
-  dirPath: string,
-  options?: { recursive?: boolean; mode?: number }
-): Promise<string | undefined> {
-  const validatedPath = validatePath(dirPath);
-  return executeWithRetry(() => fs.mkdir(validatedPath, options), `mkdir(${dirPath})`);
-}
-
-/**
- * Wrapper around fs.readdir that validates path first
- */
-export async function readdir(
-  dirPath: string,
-  options?: { withFileTypes?: false; encoding?: BufferEncoding }
-): Promise<string[]>;
-export async function readdir(
-  dirPath: string,
-  options: { withFileTypes: true; encoding?: BufferEncoding }
-): Promise<Dirent[]>;
-export async function readdir(
-  dirPath: string,
-  options?: { withFileTypes?: boolean; encoding?: BufferEncoding }
-): Promise<string[] | Dirent[]> {
-  const validatedPath = validatePath(dirPath);
-  return executeWithRetry<string[] | Dirent[]>(() => {
+  /**
+   * Synchronous wrapper around fs.readdirSync that validates path first
+   */
+  function readdirSync(dirPath: string, options?: { withFileTypes?: false }): string[];
+  function readdirSync(dirPath: string, options: { withFileTypes: true }): Dirent[];
+  function readdirSync(
+    dirPath: string,
+    options?: { withFileTypes?: boolean }
+  ): string[] | Dirent[] {
+    const validatedPath = validatePath(dirPath);
     if (options?.withFileTypes === true) {
-      return fs.readdir(validatedPath, { withFileTypes: true });
+      return fsSync.readdirSync(validatePath(validatedPath), { withFileTypes: true });
     }
-    return fs.readdir(validatedPath);
-  }, `readdir(${dirPath})`);
-}
-
-/**
- * Wrapper around fs.stat that validates path first
- */
-export async function stat(filePath: string): Promise<ReturnType<typeof fs.stat>> {
-  const validatedPath = validatePath(filePath);
-  return executeWithRetry(() => fs.stat(validatedPath), `stat(${filePath})`);
-}
-
-/**
- * Wrapper around fs.rm that validates path first
- */
-export async function rm(
-  filePath: string,
-  options?: { recursive?: boolean; force?: boolean }
-): Promise<void> {
-  const validatedPath = validatePath(filePath);
-  return executeWithRetry(() => fs.rm(validatedPath, options), `rm(${filePath})`);
-}
-
-/**
- * Wrapper around fs.unlink that validates path first
- */
-export async function unlink(filePath: string): Promise<void> {
-  const validatedPath = validatePath(filePath);
-  return executeWithRetry(() => fs.unlink(validatedPath), `unlink(${filePath})`);
-}
-
-/**
- * Wrapper around fs.copyFile that validates both paths first
- */
-export async function copyFile(src: string, dest: string, mode?: number): Promise<void> {
-  const validatedSrc = validatePath(src);
-  const validatedDest = validatePath(dest);
-  return executeWithRetry(
-    () => fs.copyFile(validatedSrc, validatedDest, mode),
-    `copyFile(${src}, ${dest})`
-  );
-}
-
-/**
- * Wrapper around fs.appendFile that validates path first
- */
-export async function appendFile(
-  filePath: string,
-  data: string | Buffer,
-  encoding?: BufferEncoding
-): Promise<void> {
-  const validatedPath = validatePath(filePath);
-  return executeWithRetry(
-    () => fs.appendFile(validatedPath, data, encoding),
-    `appendFile(${filePath})`
-  );
-}
-
-/**
- * Wrapper around fs.rename that validates both paths first
- */
-export async function rename(oldPath: string, newPath: string): Promise<void> {
-  const validatedOldPath = validatePath(oldPath);
-  const validatedNewPath = validatePath(newPath);
-  return executeWithRetry(
-    () => fs.rename(validatedOldPath, validatedNewPath),
-    `rename(${oldPath}, ${newPath})`
-  );
-}
-
-/**
- * Wrapper around fs.lstat that validates path first
- * Returns file stats without following symbolic links
- */
-export async function lstat(filePath: string): Promise<ReturnType<typeof fs.lstat>> {
-  const validatedPath = validatePath(filePath);
-  return executeWithRetry(() => fs.lstat(validatedPath), `lstat(${filePath})`);
-}
-
-/**
- * Wrapper around path.join that returns resolved path
- * Does NOT validate - use this for path construction, then pass to other operations
- */
-export function joinPath(...pathSegments: string[]): string {
-  return path.join(...pathSegments);
-}
-
-/**
- * Wrapper around path.resolve that returns resolved path
- * Does NOT validate - use this for path construction, then pass to other operations
- */
-export function resolvePath(...pathSegments: string[]): string {
-  return path.resolve(...pathSegments);
-}
-
-// =============================================================================
-// Synchronous File System Methods
-// =============================================================================
-
-/**
- * Options for writeFileSync
- */
-export interface WriteFileSyncOptions {
-  encoding?: BufferEncoding;
-  mode?: number;
-  flag?: string;
-}
-
-/**
- * Synchronous wrapper around fs.existsSync that validates path first
- */
-export function existsSync(filePath: string): boolean {
-  const validatedPath = validatePath(filePath);
-  return fsSync.existsSync(validatedPath);
-}
-
-/**
- * Synchronous wrapper around fs.readFileSync that validates path first
- */
-export function readFileSync(filePath: string, encoding?: BufferEncoding): string | Buffer {
-  const validatedPath = validatePath(filePath);
-  if (encoding) {
-    return fsSync.readFileSync(validatedPath, encoding);
-  }
-  return fsSync.readFileSync(validatedPath);
-}
-
-/**
- * Synchronous wrapper around fs.writeFileSync that validates path first
- */
-export function writeFileSync(
-  filePath: string,
-  data: string | Buffer,
-  options?: WriteFileSyncOptions
-): void {
-  const validatedPath = validatePath(filePath);
-  fsSync.writeFileSync(validatedPath, data, options);
-}
-
-/**
- * Synchronous wrapper around fs.mkdirSync that validates path first
- */
-export function mkdirSync(
-  dirPath: string,
-  options?: { recursive?: boolean; mode?: number }
-): string | undefined {
-  const validatedPath = validatePath(dirPath);
-  return fsSync.mkdirSync(validatedPath, options);
-}
-
-/**
- * Synchronous wrapper around fs.readdirSync that validates path first
- */
-export function readdirSync(dirPath: string, options?: { withFileTypes?: false }): string[];
-export function readdirSync(dirPath: string, options: { withFileTypes: true }): Dirent[];
-export function readdirSync(
-  dirPath: string,
-  options?: { withFileTypes?: boolean }
-): string[] | Dirent[] {
-  const validatedPath = validatePath(dirPath);
-  if (options?.withFileTypes === true) {
-    return fsSync.readdirSync(validatedPath, { withFileTypes: true });
-  }
-  return fsSync.readdirSync(validatedPath);
-}
-
-/**
- * Synchronous wrapper around fs.statSync that validates path first
- */
-export function statSync(filePath: string): Stats {
-  const validatedPath = validatePath(filePath);
-  return fsSync.statSync(validatedPath);
-}
-
-/**
- * Synchronous wrapper around fs.accessSync that validates path first
- */
-export function accessSync(filePath: string, mode?: number): void {
-  const validatedPath = validatePath(filePath);
-  fsSync.accessSync(validatedPath, mode);
-}
-
-/**
- * Synchronous wrapper around fs.unlinkSync that validates path first
- */
-export function unlinkSync(filePath: string): void {
-  const validatedPath = validatePath(filePath);
-  fsSync.unlinkSync(validatedPath);
-}
-
-/**
- * Synchronous wrapper around fs.rmSync that validates path first
- */
-export function rmSync(filePath: string, options?: { recursive?: boolean; force?: boolean }): void {
-  const validatedPath = validatePath(filePath);
-  fsSync.rmSync(validatedPath, options);
-}
-
-// =============================================================================
-// Environment File Operations
-// =============================================================================
-
-/**
- * Read and parse an .env file from a validated path
- * Returns a record of key-value pairs
- */
-export async function readEnvFile(envPath: string): Promise<Record<string, string>> {
-  const validatedPath = validatePath(envPath);
-  try {
-    const content = await executeWithRetry(
-      () => fs.readFile(validatedPath, 'utf-8'),
-      `readEnvFile(${envPath})`
-    );
-    return parseEnvContent(content);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      return {};
-    }
-    throw error;
-  }
-}
-
-/**
- * Read and parse an .env file synchronously from a validated path
- */
-export function readEnvFileSync(envPath: string): Record<string, string> {
-  const validatedPath = validatePath(envPath);
-  try {
-    const content = fsSync.readFileSync(validatedPath, 'utf-8');
-    return parseEnvContent(content);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      return {};
-    }
-    throw error;
-  }
-}
-
-/**
- * Parse .env file content into a record
- */
-function parseEnvContent(content: string): Record<string, string> {
-  const result: Record<string, string> = {};
-  const lines = content.split('\n');
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    // Skip empty lines and comments
-    if (!trimmed || trimmed.startsWith('#')) {
-      continue;
-    }
-    const equalIndex = trimmed.indexOf('=');
-    if (equalIndex > 0) {
-      const key = trimmed.slice(0, equalIndex).trim();
-      const value = trimmed.slice(equalIndex + 1).trim();
-      result[key] = value;
-    }
+    return fsSync.readdirSync(validatePath(validatedPath));
   }
 
-  return result;
-}
+  /**
+   * Synchronous wrapper around fs.statSync that validates path first
+   */
+  function statSync(filePath: string): Stats {
+    const validatedPath = validatePath(filePath);
+    return fsSync.statSync(validatePath(validatedPath));
+  }
 
-/**
- * Write or update a key-value pair in an .env file
- * Preserves existing content and comments
- */
-export async function writeEnvKey(envPath: string, key: string, value: string): Promise<void> {
-  const validatedPath = validatePath(envPath);
+  /**
+   * Synchronous wrapper around fs.accessSync that validates path first
+   */
+  function accessSync(filePath: string, mode?: number): void {
+    const validatedPath = validatePath(filePath);
+    fsSync.accessSync(validatePath(validatedPath), mode);
+  }
 
-  let content = '';
-  try {
-    content = await executeWithRetry(
-      () => fs.readFile(validatedPath, 'utf-8'),
-      `readFile(${envPath})`
-    );
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+  /**
+   * Synchronous wrapper around fs.unlinkSync that validates path first
+   */
+  function unlinkSync(filePath: string): void {
+    const validatedPath = validatePath(filePath, { followFinalSymlink: false });
+    fsSync.unlinkSync(validatePath(validatedPath, { followFinalSymlink: false }));
+  }
+
+  /**
+   * Synchronous wrapper around fs.rmSync that validates path first
+   */
+  function rmSync(filePath: string, options?: { recursive?: boolean; force?: boolean }): void {
+    const validatedPath = validatePath(filePath, { followFinalSymlink: false });
+    fsSync.rmSync(validatePath(validatedPath, { followFinalSymlink: false }), options);
+  }
+
+  // =============================================================================
+  // Environment File Operations
+  // =============================================================================
+
+  /**
+   * Read and parse an .env file from a validated path
+   * Returns a record of key-value pairs
+   */
+  async function readEnvFile(envPath: string): Promise<Record<string, string>> {
+    const validatedPath = validatePath(envPath);
+    try {
+      const content = await executeWithRetry(
+        () => fs.readFile(validatePath(validatedPath), 'utf-8'),
+        `readEnvFile(${envPath})`
+      );
+      return parseEnvContent(content);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return {};
+      }
       throw error;
     }
-    // File doesn't exist, will create new one
   }
 
-  const newContent = updateEnvContent(content, key, value);
-  await executeWithRetry(() => fs.writeFile(validatedPath, newContent), `writeFile(${envPath})`);
-}
-
-/**
- * Write or update a key-value pair in an .env file (synchronous)
- */
-export function writeEnvKeySync(envPath: string, key: string, value: string): void {
-  const validatedPath = validatePath(envPath);
-
-  let content = '';
-  try {
-    content = fsSync.readFileSync(validatedPath, 'utf-8');
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+  /**
+   * Read and parse an .env file synchronously from a validated path
+   */
+  function readEnvFileSync(envPath: string): Record<string, string> {
+    const validatedPath = validatePath(envPath);
+    try {
+      const content = fsSync.readFileSync(validatePath(validatedPath), 'utf-8');
+      return parseEnvContent(content);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return {};
+      }
       throw error;
     }
-    // File doesn't exist, will create new one
   }
 
-  const newContent = updateEnvContent(content, key, value);
-  fsSync.writeFileSync(validatedPath, newContent);
-}
+  /**
+   * Parse .env file content into a record
+   */
+  function parseEnvContent(content: string): Record<string, string> {
+    const result: Record<string, string> = {};
+    const lines = content.split('\n');
 
-/**
- * Remove a key from an .env file
- */
-export async function removeEnvKey(envPath: string, key: string): Promise<void> {
-  const validatedPath = validatePath(envPath);
-
-  let content = '';
-  try {
-    content = await executeWithRetry(
-      () => fs.readFile(validatedPath, 'utf-8'),
-      `readFile(${envPath})`
-    );
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      return; // File doesn't exist, nothing to remove
-    }
-    throw error;
-  }
-
-  const newContent = removeEnvKeyFromContent(content, key);
-  await executeWithRetry(() => fs.writeFile(validatedPath, newContent), `writeFile(${envPath})`);
-}
-
-/**
- * Remove a key from an .env file (synchronous)
- */
-export function removeEnvKeySync(envPath: string, key: string): void {
-  const validatedPath = validatePath(envPath);
-
-  let content = '';
-  try {
-    content = fsSync.readFileSync(validatedPath, 'utf-8');
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      return; // File doesn't exist, nothing to remove
-    }
-    throw error;
-  }
-
-  const newContent = removeEnvKeyFromContent(content, key);
-  fsSync.writeFileSync(validatedPath, newContent);
-}
-
-/**
- * Update .env content with a new key-value pair
- */
-function updateEnvContent(content: string, key: string, value: string): string {
-  const lines = content.split('\n');
-  const keyPrefix = `${key}=`;
-  let found = false;
-
-  const newLines = lines.map((line) => {
-    if (line.trim().startsWith(keyPrefix)) {
-      found = true;
-      return `${key}=${value}`;
-    }
-    return line;
-  });
-
-  if (!found) {
-    // Add the key at the end
-    if (newLines.length > 0 && newLines[newLines.length - 1].trim() !== '') {
-      newLines.push(`${key}=${value}`);
-    } else {
-      // Replace last empty line or add to empty file
-      if (newLines.length === 0 || (newLines.length === 1 && newLines[0] === '')) {
-        newLines[0] = `${key}=${value}`;
-      } else {
-        newLines[newLines.length - 1] = `${key}=${value}`;
+    for (const line of lines) {
+      const trimmed = line.trim();
+      // Skip empty lines and comments
+      if (!trimmed || trimmed.startsWith('#')) {
+        continue;
+      }
+      const equalIndex = trimmed.indexOf('=');
+      if (equalIndex > 0) {
+        const key = trimmed.slice(0, equalIndex).trim();
+        const value = trimmed.slice(equalIndex + 1).trim();
+        result[key] = value;
       }
     }
+
+    return result;
   }
 
-  // Ensure file ends with newline
-  let result = newLines.join('\n');
-  if (!result.endsWith('\n')) {
-    result += '\n';
+  /**
+   * Write or update a key-value pair in an .env file
+   * Preserves existing content and comments
+   */
+  async function writeEnvKey(envPath: string, key: string, value: string): Promise<void> {
+    const validatedPath = validatePath(envPath);
+
+    let content = '';
+    try {
+      content = await executeWithRetry(
+        () => fs.readFile(validatePath(validatedPath), 'utf-8'),
+        `readFile(${envPath})`
+      );
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        throw error;
+      }
+      // File doesn't exist, will create new one
+    }
+
+    const newContent = updateEnvContent(content, key, value);
+    await executeWithRetry(
+      () => fs.writeFile(validatePath(validatedPath), newContent),
+      `writeFile(${envPath})`
+    );
   }
-  return result;
+
+  /**
+   * Write or update a key-value pair in an .env file (synchronous)
+   */
+  function writeEnvKeySync(envPath: string, key: string, value: string): void {
+    const validatedPath = validatePath(envPath);
+
+    let content = '';
+    try {
+      content = fsSync.readFileSync(validatePath(validatedPath), 'utf-8');
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        throw error;
+      }
+      // File doesn't exist, will create new one
+    }
+
+    const newContent = updateEnvContent(content, key, value);
+    fsSync.writeFileSync(validatePath(validatedPath), newContent);
+  }
+
+  /**
+   * Remove a key from an .env file
+   */
+  async function removeEnvKey(envPath: string, key: string): Promise<void> {
+    const validatedPath = validatePath(envPath);
+
+    let content = '';
+    try {
+      content = await executeWithRetry(
+        () => fs.readFile(validatePath(validatedPath), 'utf-8'),
+        `readFile(${envPath})`
+      );
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return; // File doesn't exist, nothing to remove
+      }
+      throw error;
+    }
+
+    const newContent = removeEnvKeyFromContent(content, key);
+    await executeWithRetry(
+      () => fs.writeFile(validatePath(validatedPath), newContent),
+      `writeFile(${envPath})`
+    );
+  }
+
+  /**
+   * Remove a key from an .env file (synchronous)
+   */
+  function removeEnvKeySync(envPath: string, key: string): void {
+    const validatedPath = validatePath(envPath);
+
+    let content = '';
+    try {
+      content = fsSync.readFileSync(validatePath(validatedPath), 'utf-8');
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return; // File doesn't exist, nothing to remove
+      }
+      throw error;
+    }
+
+    const newContent = removeEnvKeyFromContent(content, key);
+    fsSync.writeFileSync(validatePath(validatedPath), newContent);
+  }
+
+  /**
+   * Update .env content with a new key-value pair
+   */
+  function updateEnvContent(content: string, key: string, value: string): string {
+    const lines = content.split('\n');
+    const keyPrefix = `${key}=`;
+    let found = false;
+
+    const newLines = lines.map((line) => {
+      if (line.trim().startsWith(keyPrefix)) {
+        found = true;
+        return `${key}=${value}`;
+      }
+      return line;
+    });
+
+    if (!found) {
+      // Add the key at the end
+      if (newLines.length > 0 && newLines[newLines.length - 1].trim() !== '') {
+        newLines.push(`${key}=${value}`);
+      } else {
+        // Replace last empty line or add to empty file
+        if (newLines.length === 0 || (newLines.length === 1 && newLines[0] === '')) {
+          newLines[0] = `${key}=${value}`;
+        } else {
+          newLines[newLines.length - 1] = `${key}=${value}`;
+        }
+      }
+    }
+
+    // Ensure file ends with newline
+    let result = newLines.join('\n');
+    if (!result.endsWith('\n')) {
+      result += '\n';
+    }
+    return result;
+  }
+
+  /**
+   * Remove a key from .env content
+   */
+  function removeEnvKeyFromContent(content: string, key: string): string {
+    const lines = content.split('\n');
+    const keyPrefix = `${key}=`;
+    const newLines = lines.filter((line) => !line.trim().startsWith(keyPrefix));
+
+    // Remove trailing empty lines
+    while (newLines.length > 0 && newLines[newLines.length - 1].trim() === '') {
+      newLines.pop();
+    }
+
+    // Ensure file ends with newline if there's content
+    let result = newLines.join('\n');
+    if (result.length > 0 && !result.endsWith('\n')) {
+      result += '\n';
+    }
+    return result;
+  }
+
+  return {
+    configureThrottling,
+    getThrottlingConfig,
+    getPendingOperations,
+    getActiveOperations,
+    close: () => queue.close(),
+    access: owned(access),
+    readFile: owned(readFile),
+    pipeFile: owned(pipeFile),
+    writeStream: owned(writeStream),
+    withFileStreams: owned(withFileStreams),
+    writeFile: owned(writeFile),
+    mkdir: owned(mkdir),
+    readdir: owned(readdir) as typeof readdir,
+    stat: owned(stat),
+    rm: owned(rm),
+    unlink: owned(unlink),
+    copyFile: owned(copyFile),
+    link: owned(link),
+    appendFile: owned(appendFile),
+    rename: owned(rename),
+    lstat: owned(lstat),
+    joinPath,
+    resolvePath,
+    existsSync,
+    readFileSync,
+    writeFileSync,
+    mkdirSync,
+    readdirSync,
+    statSync,
+    accessSync,
+    unlinkSync,
+    rmSync,
+    readEnvFile: owned(readEnvFile),
+    readEnvFileSync,
+    writeEnvKey: owned(writeEnvKey),
+    writeEnvKeySync,
+    removeEnvKey: owned(removeEnvKey),
+    removeEnvKeySync,
+  };
 }
 
-/**
- * Remove a key from .env content
- */
-function removeEnvKeyFromContent(content: string, key: string): string {
-  const lines = content.split('\n');
-  const keyPrefix = `${key}=`;
-  const newLines = lines.filter((line) => !line.trim().startsWith(keyPrefix));
+export type ScopedSecureFilesystem = ReturnType<typeof createSecureFs>;
 
-  // Remove trailing empty lines
-  while (newLines.length > 0 && newLines[newLines.length - 1].trim() === '') {
-    newLines.pop();
-  }
-
-  // Ensure file ends with newline if there's content
-  let result = newLines.join('\n');
-  if (result.length > 0 && !result.endsWith('\n')) {
-    result += '\n';
-  }
-  return result;
-}
+// Backward-compatible legacy API; native owners use the factory explicitly.
+export const {
+  configureThrottling,
+  getThrottlingConfig,
+  getPendingOperations,
+  getActiveOperations,
+  access,
+  readFile,
+  pipeFile,
+  writeStream,
+  withFileStreams,
+  writeFile,
+  mkdir,
+  readdir,
+  stat,
+  rm,
+  unlink,
+  copyFile,
+  link,
+  appendFile,
+  rename,
+  lstat,
+  joinPath,
+  resolvePath,
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  readdirSync,
+  statSync,
+  accessSync,
+  unlinkSync,
+  rmSync,
+  readEnvFile,
+  readEnvFileSync,
+  writeEnvKey,
+  writeEnvKeySync,
+  removeEnvKey,
+  removeEnvKeySync,
+} = createSecureFs(legacyValidatePath, { maxOperations: Infinity });

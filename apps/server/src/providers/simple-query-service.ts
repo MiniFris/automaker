@@ -1,3 +1,4 @@
+import type { AgentCheckpointRepository } from './openai-compatible/checkpoint.js';
 /**
  * Simple Query Service - Simplified interface for basic AI queries
  *
@@ -14,7 +15,6 @@
  * - Eliminates duplicate extractTextFromStream() functions
  */
 
-import { ProviderFactory } from './provider-factory.js';
 import type {
   ThinkingLevel,
   ReasoningEffort,
@@ -26,6 +26,7 @@ import { stripProviderPrefix, isDirectModel } from '@automaker/types';
 import type { ExecuteOptions } from '@automaker/types';
 import type { SettingsService } from '../services/settings-service.js';
 import { prepareDirectExecution } from './openai-compatible/execution.js';
+import type { ProviderRegistry } from '../modules/providers/provider-registry.service.js';
 
 /**
  * Options for simple query execution
@@ -116,13 +117,19 @@ const DEFAULT_MODEL = 'claude-sonnet-4-6';
  *   systemPrompt: 'You are a title generator...',
  *   maxTurns: 1,
  *   allowedTools: [],
- * });
+ * }, providerRegistry);
  * console.log(result.text); // "Add user authentication"
  * ```
  */
-export async function simpleQuery(options: SimpleQueryOptions): Promise<SimpleQueryResult> {
+export async function simpleQuery(
+  options: SimpleQueryOptions,
+  providerRegistry: ProviderRegistry,
+  hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env,
+  checkpointRepository?: AgentCheckpointRepository
+): Promise<SimpleQueryResult> {
+  options.abortController?.signal.throwIfAborted();
   const model = options.model || DEFAULT_MODEL;
-  const provider = ProviderFactory.getProviderForModel(model);
+  const provider = providerRegistry.providerForModel(model);
   const bareModel = stripProviderPrefix(model);
 
   let responseText = '';
@@ -148,7 +155,14 @@ export async function simpleQuery(options: SimpleQueryOptions): Promise<SimpleQu
     credentials: options.credentials, // Pass credentials for resolving 'credentials' apiKeySource
   };
 
-  const executeOptions = await prepareDirectExecution(providerOptions, options.settingsService, { model, providerId: options.providerId }, 'text');
+  const executeOptions = await prepareDirectExecution(
+    providerOptions,
+    options.settingsService,
+    { model, providerId: options.providerId },
+    'text',
+    hostEnvironment,
+    checkpointRepository
+  );
   for await (const msg of provider.executeQuery(executeOptions)) {
     // Handle error messages
     if (msg.type === 'error') {
@@ -203,12 +217,18 @@ export async function simpleQuery(options: SimpleQueryOptions): Promise<SimpleQu
  *   allowedTools: ['Read', 'Glob', 'Grep'],
  *   onText: (text) => emitProgress(text),
  *   onToolUse: (tool, input) => emitToolUse(tool, input),
- * });
+ * }, providerRegistry);
  * ```
  */
-export async function streamingQuery(options: StreamingQueryOptions): Promise<SimpleQueryResult> {
+export async function streamingQuery(
+  options: StreamingQueryOptions,
+  providerRegistry: ProviderRegistry,
+  hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env,
+  checkpointRepository?: AgentCheckpointRepository
+): Promise<SimpleQueryResult> {
+  options.abortController?.signal.throwIfAborted();
   const model = options.model || DEFAULT_MODEL;
-  const provider = ProviderFactory.getProviderForModel(model);
+  const provider = providerRegistry.providerForModel(model);
   const bareModel = stripProviderPrefix(model);
 
   let responseText = '';
@@ -234,7 +254,17 @@ export async function streamingQuery(options: StreamingQueryOptions): Promise<Si
     credentials: options.credentials, // Pass credentials for resolving 'credentials' apiKeySource
   };
 
-  const executeOptions = await prepareDirectExecution({ ...providerOptions, ...(isDirectModel(model) && { tools: options.allowedTools ?? ['Read', 'Glob', 'Grep'] }) }, options.settingsService, { model, providerId: options.providerId });
+  const executeOptions = await prepareDirectExecution(
+    {
+      ...providerOptions,
+      ...(isDirectModel(model) && { tools: options.allowedTools ?? ['Read', 'Glob', 'Grep'] }),
+    },
+    options.settingsService,
+    { model, providerId: options.providerId },
+    'agent',
+    hostEnvironment,
+    checkpointRepository
+  );
   for await (const msg of provider.executeQuery(executeOptions)) {
     // Handle error messages
     if (msg.type === 'error') {

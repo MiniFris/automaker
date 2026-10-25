@@ -72,6 +72,8 @@ export function OpencodeSettingsTab() {
     const auth = cliStatusData.auth as typeof cliStatusData.auth & { error?: string };
     return {
       authenticated: auth.authenticated,
+      authenticationChecked: auth.authenticationChecked,
+      hasAuthFile: auth.hasAuthFile,
       method: (auth.method as OpencodeAuthStatus['method']) || 'none',
       hasApiKey: auth.hasApiKey,
       hasEnvApiKey: auth.hasEnvApiKey,

@@ -172,11 +172,15 @@ export async function readAllWorktreeMetadata(
 /**
  * Delete worktree metadata for a branch
  */
-export async function deleteWorktreeMetadata(projectPath: string, branch: string): Promise<void> {
+export async function deleteWorktreeMetadata(
+  projectPath: string,
+  branch: string,
+  filesystem: Pick<typeof secureFs, 'rm'> = secureFs
+): Promise<void> {
   const metadataDir = getWorktreeMetadataDir(projectPath, branch);
   try {
-    await secureFs.rm(metadataDir, { recursive: true, force: true });
-  } catch {
-    // Ignore errors if directory doesn't exist
+    await filesystem.rm(metadataDir, { recursive: true, force: true });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException)?.code !== 'ENOENT') throw error;
   }
 }

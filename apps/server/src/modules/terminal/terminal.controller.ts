@@ -1,0 +1,286 @@
+import {
+  TerminalStatusResponseSchema,
+  TerminalAuthenticationResponseSchema,
+  TerminalMutationResponseSchema,
+  TerminalSessionsResponseSchema,
+  TerminalSessionResponseSchema,
+  TerminalCreatedSessionResponseSchema,
+  TerminalSettingsResponseSchema,
+} from '@automaker/contracts/domains/terminal-responses';
+import {
+  TerminalAuthenticationSchema,
+  TerminalCreateSessionSchema,
+  TerminalResizeSchema,
+  TerminalSessionIdSchema,
+  TerminalSettingsSchema,
+} from '@automaker/contracts/domains/terminal';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Inject,
+  Param,
+  Post,
+  Put,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import type { Response } from 'express';
+import { TerminalLogoutToken } from '../../core/http/request-context.decorators.js';
+import type { TerminalLogoutContext } from '@automaker/contracts/domains/request-context';
+import { AllowedPathFields, AllowedPathGuard } from '../../core/security/index.js';
+import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
+import { ExecutionEnvironmentError } from '../../services/execution-environment/runtime.js';
+import { terminalCleanupError } from '../../services/terminal-session-lifecycle.js';
+import {
+  MAX_MAX_SESSIONS,
+  MIN_MAX_SESSIONS,
+  TerminalService,
+} from '../../services/terminal-service.js';
+import { TerminalAccessGuard, TerminalAccessService } from './terminal-access.service.js';
+
+@Controller('terminal')
+export class TerminalController {
+  constructor(
+    @Inject(TerminalService) private readonly terminal: TerminalService,
+    @Inject(TerminalAccessService) private readonly access: TerminalAccessService
+  ) {}
+
+  @Get('status')
+  status() {
+    return TerminalStatusResponseSchema.parse({
+      success: true,
+      data: {
+        enabled: this.access.enabled,
+        passwordRequired: this.access.passwordRequired,
+        platform: this.terminal.getPlatformInfo(),
+      },
+    });
+  }
+
+  @Post('auth')
+  @HttpCode(200)
+  authenticate(
+    @Body(new ZodValidationPipe(TerminalAuthenticationSchema)) body: { password?: unknown },
+    @Res() response: Response
+  ) {
+    const result = this.access.authenticate(body?.password);
+    response.status(result.status).json(TerminalAuthenticationResponseSchema.parse(result.body));
+  }
+
+  @Post('logout')
+  @HttpCode(200)
+  logout(@TerminalLogoutToken() context: TerminalLogoutContext) {
+    this.access.logout(context.token);
+    return TerminalMutationResponseSchema.parse({ success: true });
+  }
+
+  @Get('sessions')
+  @UseGuards(TerminalAccessGuard)
+  sessions() {
+    return TerminalSessionsResponseSchema.parse({
+      success: true,
+      data: this.terminal.getAllSessions(),
+    });
+  }
+
+  @Get('sessions/:id')
+  @UseGuards(TerminalAccessGuard)
+  session(
+    @Param('id', new ZodValidationPipe(TerminalSessionIdSchema)) id: string,
+    @Res() response: Response
+  ) {
+    const session = this.terminal.getSession(id);
+    if (session && this.terminal.isSessionClosing(id)) {
+      response.status(503).json(
+        TerminalSessionResponseSchema.parse({
+          success: false,
+          errorCode: 'UNAVAILABLE',
+          error: 'Terminal cleanup is pending or unconfirmed. No shell was recreated.',
+        })
+      );
+      return;
+    }
+    if (!session) {
+      response.status(404).json(
+        TerminalSessionResponseSchema.parse({
+          success: false,
+          error: 'Terminal session ended; create a new terminal explicitly.',
+        })
+      );
+      return;
+    }
+    response.json(
+      TerminalSessionResponseSchema.parse({
+        success: true,
+        data: {
+          id: session.id,
+          cwd: session.cwd,
+          shell: session.shell,
+          executionEnvironment: session.executionEnvironment,
+        },
+      })
+    );
+  }
+
+  @Post('sessions')
+  @HttpCode(200)
+  @UseGuards(TerminalAccessGuard, AllowedPathGuard)
+  @AllowedPathFields('cwd?')
+  async createSession(@Body() body: Record<string, unknown>, @Res() response: Response) {
+    const { cwd, cols, rows, shell, environmentTargetId } = body ?? {};
+    if (!TerminalCreateSessionSchema.safeParse(body).success) {
+      response.status(400).json(
+        TerminalCreatedSessionResponseSchema.parse({
+          success: false,
+          error: 'Invalid terminal options',
+        })
+      );
+      return;
+    }
+    try {
+      const session = await this.terminal.createSession({
+        cwd: cwd as string | undefined,
+        cols: (cols as number | undefined) || 80,
+        rows: (rows as number | undefined) || 24,
+        shell: shell as string | undefined,
+        environmentTargetId: environmentTargetId as string | undefined,
+      });
+      if (response.destroyed && session) {
+        this.terminal.killSession(session.id);
+        return;
+      }
+      if (!session) {
+        response.status(429).json(
+          TerminalCreatedSessionResponseSchema.parse({
+            success: false,
+            error: 'Maximum terminal sessions reached',
+            details: `Server limit is ${this.terminal.getMaxSessions()} concurrent sessions. Please close unused terminals.`,
+            currentSessions: this.terminal.getSessionCount(),
+            maxSessions: this.terminal.getMaxSessions(),
+          })
+        );
+        return;
+      }
+      response.json(
+        TerminalCreatedSessionResponseSchema.parse({
+          success: true,
+          data: {
+            id: session.id,
+            cwd: session.cwd,
+            shell: session.shell,
+            createdAt: session.createdAt,
+            executionEnvironment: session.executionEnvironment,
+          },
+        })
+      );
+    } catch (error) {
+      response.status(error instanceof ExecutionEnvironmentError ? 400 : 500).json(
+        TerminalCreatedSessionResponseSchema.parse({
+          success: false,
+          code: error instanceof ExecutionEnvironmentError ? error.code : undefined,
+          error:
+            error instanceof ExecutionEnvironmentError
+              ? error.message
+              : 'Failed to create terminal session',
+          details: error instanceof Error ? error.message : String(error),
+        })
+      );
+    }
+  }
+
+  @Delete('sessions/:id')
+  @UseGuards(TerminalAccessGuard)
+  async deleteSession(
+    @Param('id', new ZodValidationPipe(TerminalSessionIdSchema)) id: string,
+    @Res() response: Response
+  ) {
+    try {
+      if (!(await this.terminal.stopSession(id))) {
+        response
+          .status(404)
+          .json(
+            TerminalMutationResponseSchema.parse({ success: false, error: 'Session not found' })
+          );
+        return;
+      }
+      response.json(TerminalMutationResponseSchema.parse({ success: true }));
+    } catch {
+      const error = terminalCleanupError();
+      response.status(503).json(
+        TerminalMutationResponseSchema.parse({
+          success: false,
+          errorCode: 'UNAVAILABLE',
+          code: error.code,
+          error: error.message,
+        })
+      );
+    }
+  }
+
+  @Post('sessions/:id/resize')
+  @HttpCode(200)
+  @UseGuards(TerminalAccessGuard)
+  resize(
+    @Param('id', new ZodValidationPipe(TerminalSessionIdSchema)) id: string,
+    @Body() body: { cols?: unknown; rows?: unknown },
+    @Res() response: Response
+  ) {
+    const { cols, rows } = body;
+    if (!TerminalResizeSchema.safeParse(body).success) {
+      response.status(400).json(
+        TerminalMutationResponseSchema.parse({
+          success: false,
+          error: 'cols (1–1000) and rows (1–500) must be integers',
+        })
+      );
+      return;
+    }
+    if (!this.terminal.resize(id, cols as number, rows as number)) {
+      response
+        .status(404)
+        .json(TerminalMutationResponseSchema.parse({ success: false, error: 'Session not found' }));
+      return;
+    }
+    response.json(TerminalMutationResponseSchema.parse({ success: true }));
+  }
+
+  @Get('settings')
+  @UseGuards(TerminalAccessGuard)
+  settings() {
+    return TerminalSettingsResponseSchema.parse({
+      success: true,
+      data: {
+        maxSessions: this.terminal.getMaxSessions(),
+        currentSessions: this.terminal.getSessionCount(),
+      },
+    });
+  }
+
+  @Put('settings')
+  @UseGuards(TerminalAccessGuard)
+  updateSettings(@Body() body: { maxSessions?: unknown }, @Res() response: Response) {
+    const { maxSessions } = body;
+    if (!TerminalSettingsSchema.safeParse(body).success) {
+      response.status(400).json(
+        TerminalSettingsResponseSchema.parse({
+          success: false,
+          error: `maxSessions must be an integer between ${MIN_MAX_SESSIONS} and ${MAX_MAX_SESSIONS}`,
+        })
+      );
+      return;
+    }
+    if (typeof maxSessions === 'number') this.terminal.setMaxSessions(maxSessions);
+    response.json(
+      TerminalSettingsResponseSchema.parse({
+        success: true,
+        data: {
+          maxSessions: this.terminal.getMaxSessions(),
+          currentSessions: this.terminal.getSessionCount(),
+        },
+      })
+    );
+  }
+}

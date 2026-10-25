@@ -1,3 +1,4 @@
+import type { FeatureExecutionIntents } from '../feature-execution-intents.js';
 /**
  * GlobalAutoModeService - Global operations for auto-mode that span across all projects
  *
@@ -19,7 +20,10 @@ import { AutoLoopCoordinator } from '../auto-loop-coordinator.js';
 import { FeatureStateManager } from '../feature-state-manager.js';
 import { FeatureLoader } from '../feature-loader.js';
 import type { SettingsService } from '../settings-service.js';
+import type { NotificationService } from '../notification-service.js';
 import type { SharedServices, AutoModeStatus, RunningAgentInfo } from './types.js';
+import type { PipelineService } from '../pipeline-service.js';
+import { FeatureRunCoordinator } from '../../modules/orchestration/feature-run-coordinator.service.js';
 
 const logger = createLogger('GlobalAutoModeService');
 
@@ -35,19 +39,32 @@ export class GlobalAutoModeService {
   private readonly worktreeResolver: WorktreeResolver;
   private readonly featureStateManager: FeatureStateManager;
   private readonly featureLoader: FeatureLoader;
+  private disposal?: Promise<void>;
 
   constructor(
     events: EventEmitter,
     settingsService: SettingsService | null,
-    featureLoader: FeatureLoader = new FeatureLoader()
+    featureLoader: FeatureLoader = new FeatureLoader(),
+    notificationService: NotificationService | null = null,
+    pipeline: PipelineService,
+    coordinator?: FeatureRunCoordinator,
+    executionIntents?: FeatureExecutionIntents,
+    hostEnvironment?: Readonly<NodeJS.ProcessEnv>
   ) {
     this.featureLoader = featureLoader;
     this.eventBus = new TypedEventBus(events);
-    this.worktreeResolver = new WorktreeResolver(settingsService);
-    this.concurrencyManager = new ConcurrencyManager((p) =>
-      this.worktreeResolver.getCurrentBranch(p)
+    this.worktreeResolver = new WorktreeResolver(settingsService, hostEnvironment);
+    this.concurrencyManager = new ConcurrencyManager(
+      (p) => this.worktreeResolver.getCurrentBranch(p),
+      coordinator,
+      executionIntents
     );
-    this.featureStateManager = new FeatureStateManager(events, featureLoader);
+    this.featureStateManager = new FeatureStateManager(
+      events,
+      featureLoader,
+      notificationService,
+      pipeline
+    );
 
     // Create AutoLoopCoordinator with callbacks
     // IMPORTANT: This coordinator is for MONITORING ONLY (getActiveProjects, getActiveWorktrees).
@@ -107,7 +124,18 @@ export class GlobalAutoModeService {
       concurrencyManager: this.concurrencyManager,
       autoLoopCoordinator: this.autoLoopCoordinator,
       worktreeResolver: this.worktreeResolver,
+      featureStateManager: this.featureStateManager,
     };
+  }
+
+  onModuleDestroy(): Promise<void> {
+    return (this.disposal ??= Promise.allSettled([
+      this.featureStateManager.destroy(),
+      this.worktreeResolver.close(),
+    ]).then((results) => {
+      const failure = results.find((result) => result.status === 'rejected');
+      if (failure?.status === 'rejected') throw failure.reason;
+    }));
   }
 
   // ===========================================================================

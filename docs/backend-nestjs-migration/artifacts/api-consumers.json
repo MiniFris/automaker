@@ -1,0 +1,5463 @@
+{
+  "schemaVersion": 1,
+  "sourceRoot": "apps/ui/src",
+  "summary": {
+    "references": 298,
+    "serverEndpoints": 318,
+    "endpointsWithDetectedConsumers": 284
+  },
+  "references": [
+    {
+      "method": "POST",
+      "path": "/api/agent/clear",
+      "source": "apps/ui/src/lib/http-domains/agent.ts",
+      "line": 50
+    },
+    {
+      "method": "POST",
+      "path": "/api/agent/history",
+      "source": "apps/ui/src/lib/http-domains/agent.ts",
+      "line": 44
+    },
+    {
+      "method": "POST",
+      "path": "/api/agent/queue/add",
+      "source": "apps/ui/src/lib/http-domains/agent.ts",
+      "line": 76
+    },
+    {
+      "method": "POST",
+      "path": "/api/agent/queue/clear",
+      "source": "apps/ui/src/lib/http-domains/agent.ts",
+      "line": 108
+    },
+    {
+      "method": "POST",
+      "path": "/api/agent/queue/list",
+      "source": "apps/ui/src/lib/http-domains/agent.ts",
+      "line": 99
+    },
+    {
+      "method": "POST",
+      "path": "/api/agent/queue/remove",
+      "source": "apps/ui/src/lib/http-domains/agent.ts",
+      "line": 105
+    },
+    {
+      "method": "POST",
+      "path": "/api/agent/send",
+      "source": "apps/ui/src/lib/http-domains/agent.ts",
+      "line": 27
+    },
+    {
+      "method": "POST",
+      "path": "/api/agent/start",
+      "source": "apps/ui/src/lib/http-domains/agent.ts",
+      "line": 16
+    },
+    {
+      "method": "POST",
+      "path": "/api/agent/stop",
+      "source": "apps/ui/src/lib/http-domains/agent.ts",
+      "line": 47
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 410
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 482
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 88
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/status",
+      "source": "apps/ui/src/components/views/login-view.tsx",
+      "line": 146
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/status",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 385
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/status",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 453
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/token",
+      "source": "apps/ui/src/components/views/terminal-view/terminal-panel.tsx",
+      "line": 645
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/token",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 820
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/analyze-project",
+      "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+      "line": 41
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/approve-plan",
+      "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+      "line": 95
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/commit-feature",
+      "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+      "line": 75
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/context-exists",
+      "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+      "line": 39
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/follow-up-feature",
+      "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+      "line": 49
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/merge-environment-feature",
+      "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+      "line": 60
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/merge-ssh-feature",
+      "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+      "line": 69
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/pending-plan-approval",
+      "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+      "line": 81
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/resume-feature",
+      "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+      "line": 33
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/resume-interrupted",
+      "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+      "line": 106
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/run-feature",
+      "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+      "line": 24
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/start",
+      "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+      "line": 11
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/status",
+      "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+      "line": 17
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/stop-feature",
+      "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+      "line": 15
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/stop",
+      "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+      "line": 13
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/verify-feature",
+      "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+      "line": 31
+    },
+    {
+      "method": "POST",
+      "path": "/api/backlog-plan/apply",
+      "source": "apps/ui/src/lib/http-domains/backlogPlan.ts",
+      "line": 59
+    },
+    {
+      "method": "POST",
+      "path": "/api/backlog-plan/clear",
+      "source": "apps/ui/src/lib/http-domains/backlogPlan.ts",
+      "line": 62
+    },
+    {
+      "method": "POST",
+      "path": "/api/backlog-plan/generate",
+      "source": "apps/ui/src/lib/http-domains/backlogPlan.ts",
+      "line": 16
+    },
+    {
+      "method": "GET",
+      "path": "/api/backlog-plan/status",
+      "source": "apps/ui/src/lib/http-domains/backlogPlan.ts",
+      "line": 52
+    },
+    {
+      "method": "POST",
+      "path": "/api/backlog-plan/stop",
+      "source": "apps/ui/src/lib/http-domains/backlogPlan.ts",
+      "line": 25
+    },
+    {
+      "method": "GET",
+      "path": "/api/claude/usage",
+      "source": "apps/ui/src/lib/http-domains/claude.ts",
+      "line": 6
+    },
+    {
+      "method": "GET",
+      "path": "/api/codex/models",
+      "source": "apps/ui/src/store/app-store.ts",
+      "line": 2892
+    },
+    {
+      "method": "GET",
+      "path": "/api/codex/usage",
+      "source": "apps/ui/src/lib/http-domains/codex.ts",
+      "line": 6
+    },
+    {
+      "method": "POST",
+      "path": "/api/context/describe-file",
+      "source": "apps/ui/src/lib/http-domains/context.ts",
+      "line": 19
+    },
+    {
+      "method": "POST",
+      "path": "/api/context/describe-image",
+      "source": "apps/ui/src/lib/http-domains/context.ts",
+      "line": 11
+    },
+    {
+      "method": "POST",
+      "path": "/api/enhance-prompt",
+      "source": "apps/ui/src/lib/http-domains/enhancePrompt.ts",
+      "line": 14
+    },
+    {
+      "method": "POST",
+      "path": "/api/event-history/clear",
+      "source": "apps/ui/src/lib/http-domains/eventHistory.ts",
+      "line": 18
+    },
+    {
+      "method": "POST",
+      "path": "/api/event-history/delete",
+      "source": "apps/ui/src/lib/http-domains/eventHistory.ts",
+      "line": 16
+    },
+    {
+      "method": "POST",
+      "path": "/api/event-history/get",
+      "source": "apps/ui/src/lib/http-domains/eventHistory.ts",
+      "line": 13
+    },
+    {
+      "method": "POST",
+      "path": "/api/event-history/list",
+      "source": "apps/ui/src/lib/http-domains/eventHistory.ts",
+      "line": 10
+    },
+    {
+      "method": "POST",
+      "path": "/api/event-history/replay",
+      "source": "apps/ui/src/lib/http-domains/eventHistory.ts",
+      "line": 21
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/agent-output",
+      "source": "apps/ui/src/lib/http-domains/features.ts",
+      "line": 115
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/bulk-delete",
+      "source": "apps/ui/src/lib/http-domains/features.ts",
+      "line": 121
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/bulk-update",
+      "source": "apps/ui/src/lib/http-domains/features.ts",
+      "line": 119
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/check-conflicts",
+      "source": "apps/ui/src/lib/http-domains/features.ts",
+      "line": 179
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/create",
+      "source": "apps/ui/src/lib/http-domains/features.ts",
+      "line": 95
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/delete",
+      "source": "apps/ui/src/lib/http-domains/features.ts",
+      "line": 113
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/export",
+      "source": "apps/ui/src/lib/http-domains/features.ts",
+      "line": 141
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/generate-title",
+      "source": "apps/ui/src/lib/http-domains/features.ts",
+      "line": 117
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/get",
+      "source": "apps/ui/src/lib/http-domains/features.ts",
+      "line": 93
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/import",
+      "source": "apps/ui/src/lib/http-domains/features.ts",
+      "line": 163
+    },
+    {
+      "method": "GET",
+      "path": "/api/features/list",
+      "source": "apps/ui/src/lib/http-domains/features.ts",
+      "line": 91
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/orphaned/bulk-resolve",
+      "source": "apps/ui/src/lib/http-domains/features.ts",
+      "line": 217
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/orphaned/resolve",
+      "source": "apps/ui/src/lib/http-domains/features.ts",
+      "line": 199
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/orphaned",
+      "source": "apps/ui/src/lib/http-domains/features.ts",
+      "line": 186
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/update",
+      "source": "apps/ui/src/lib/http-domains/features.ts",
+      "line": 104
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/copy",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 1348
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/delete-board-background",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 1444
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/delete",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 1335
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/download",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 1373
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/exists",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 1294
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/exists",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 1324
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/mkdir",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 1316
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/move",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 1356
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/readdir",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 1320
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/read",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 1308
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/save-board-background",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 1435
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/save-image",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 1421
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/stat",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 1331
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/validate-path",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 1264
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/write",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 1312
+    },
+    {
+      "method": "GET",
+      "path": "/api/gemini/usage",
+      "source": "apps/ui/src/lib/http-domains/gemini.ts",
+      "line": 6
+    },
+    {
+      "method": "POST",
+      "path": "/api/git/details",
+      "source": "apps/ui/src/lib/http-domains/git.ts",
+      "line": 12
+    },
+    {
+      "method": "POST",
+      "path": "/api/git/diffs",
+      "source": "apps/ui/src/lib/http-domains/git.ts",
+      "line": 6
+    },
+    {
+      "method": "POST",
+      "path": "/api/git/enhanced-status",
+      "source": "apps/ui/src/lib/http-domains/git.ts",
+      "line": 14
+    },
+    {
+      "method": "POST",
+      "path": "/api/git/environment",
+      "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+      "line": 22
+    },
+    {
+      "method": "POST",
+      "path": "/api/git/file-diff",
+      "source": "apps/ui/src/lib/http-domains/git.ts",
+      "line": 8
+    },
+    {
+      "method": "POST",
+      "path": "/api/git/stage-files",
+      "source": "apps/ui/src/lib/http-domains/git.ts",
+      "line": 10
+    },
+    {
+      "method": "POST",
+      "path": "/api/github/check-remote",
+      "source": "apps/ui/src/lib/http-domains/github.ts",
+      "line": 11
+    },
+    {
+      "method": "POST",
+      "path": "/api/github/issue-comments",
+      "source": "apps/ui/src/lib/http-domains/github.ts",
+      "line": 41
+    },
+    {
+      "method": "POST",
+      "path": "/api/github/issues",
+      "source": "apps/ui/src/lib/http-domains/github.ts",
+      "line": 12
+    },
+    {
+      "method": "POST",
+      "path": "/api/github/pr-review-comments",
+      "source": "apps/ui/src/lib/http-domains/github.ts",
+      "line": 43
+    },
+    {
+      "method": "POST",
+      "path": "/api/github/prs",
+      "source": "apps/ui/src/lib/http-domains/github.ts",
+      "line": 13
+    },
+    {
+      "method": "POST",
+      "path": "/api/github/resolve-pr-comment",
+      "source": "apps/ui/src/lib/http-domains/github.ts",
+      "line": 45
+    },
+    {
+      "method": "POST",
+      "path": "/api/github/validate-issue",
+      "source": "apps/ui/src/lib/http-domains/github.ts",
+      "line": 22
+    },
+    {
+      "method": "POST",
+      "path": "/api/github/validation-mark-viewed",
+      "source": "apps/ui/src/lib/http-domains/github.ts",
+      "line": 37
+    },
+    {
+      "method": "POST",
+      "path": "/api/github/validation-status",
+      "source": "apps/ui/src/lib/http-domains/github.ts",
+      "line": 31
+    },
+    {
+      "method": "POST",
+      "path": "/api/github/validation-stop",
+      "source": "apps/ui/src/lib/http-domains/github.ts",
+      "line": 33
+    },
+    {
+      "method": "POST",
+      "path": "/api/github/validations",
+      "source": "apps/ui/src/lib/http-domains/github.ts",
+      "line": 35
+    },
+    {
+      "method": "GET",
+      "path": "/api/health/detailed",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 1409
+    },
+    {
+      "method": "GET",
+      "path": "/api/health/environment",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 571
+    },
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "source": "apps/ui/src/lib/electron.ts",
+      "line": 1143
+    },
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 1199
+    },
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 155
+    },
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "source": "apps/ui/src/routes/__root.tsx",
+      "line": 119
+    },
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "source": "apps/ui/src/routes/__root.tsx",
+      "line": 918
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/add-suggestion",
+      "source": "apps/ui/src/lib/http-domains/ideation.ts",
+      "line": 75
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/analyze",
+      "source": "apps/ui/src/lib/http-domains/ideation.ts",
+      "line": 51
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/convert",
+      "source": "apps/ui/src/lib/http-domains/ideation.ts",
+      "line": 69
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/ideas/create",
+      "source": "apps/ui/src/lib/http-domains/ideation.ts",
+      "line": 39
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/ideas/delete",
+      "source": "apps/ui/src/lib/http-domains/ideation.ts",
+      "line": 48
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/ideas/get",
+      "source": "apps/ui/src/lib/http-domains/ideation.ts",
+      "line": 42
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/ideas/list",
+      "source": "apps/ui/src/lib/http-domains/ideation.ts",
+      "line": 36
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/ideas/update",
+      "source": "apps/ui/src/lib/http-domains/ideation.ts",
+      "line": 45
+    },
+    {
+      "method": "GET",
+      "path": "/api/ideation/prompts",
+      "source": "apps/ui/src/lib/http-domains/ideation.ts",
+      "line": 77
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/session/get",
+      "source": "apps/ui/src/lib/http-domains/ideation.ts",
+      "line": 26
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/session/message",
+      "source": "apps/ui/src/lib/http-domains/ideation.ts",
+      "line": 32
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/session/start",
+      "source": "apps/ui/src/lib/http-domains/ideation.ts",
+      "line": 23
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/session/stop",
+      "source": "apps/ui/src/lib/http-domains/ideation.ts",
+      "line": 34
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/suggestions/generate",
+      "source": "apps/ui/src/lib/http-domains/ideation.ts",
+      "line": 60
+    },
+    {
+      "method": "POST",
+      "path": "/api/mcp/test",
+      "source": "apps/ui/src/lib/http-domains/mcp.ts",
+      "line": 21
+    },
+    {
+      "method": "POST",
+      "path": "/api/mcp/tools",
+      "source": "apps/ui/src/lib/http-domains/mcp.ts",
+      "line": 34
+    },
+    {
+      "method": "GET",
+      "path": "/api/models/available",
+      "source": "apps/ui/src/lib/http-domains/model.ts",
+      "line": 11
+    },
+    {
+      "method": "GET",
+      "path": "/api/models/providers",
+      "source": "apps/ui/src/lib/http-domains/model.ts",
+      "line": 18
+    },
+    {
+      "method": "POST",
+      "path": "/api/notifications/dismiss",
+      "source": "apps/ui/src/lib/http-domains/notifications.ts",
+      "line": 21
+    },
+    {
+      "method": "POST",
+      "path": "/api/notifications/list",
+      "source": "apps/ui/src/lib/http-domains/notifications.ts",
+      "line": 12
+    },
+    {
+      "method": "POST",
+      "path": "/api/notifications/mark-read",
+      "source": "apps/ui/src/lib/http-domains/notifications.ts",
+      "line": 18
+    },
+    {
+      "method": "POST",
+      "path": "/api/notifications/unread-count",
+      "source": "apps/ui/src/lib/http-domains/notifications.ts",
+      "line": 15
+    },
+    {
+      "method": "POST",
+      "path": "/api/pipeline/config/save",
+      "source": "apps/ui/src/lib/http-domains/pipeline.ts",
+      "line": 39
+    },
+    {
+      "method": "POST",
+      "path": "/api/pipeline/config",
+      "source": "apps/ui/src/lib/http-domains/pipeline.ts",
+      "line": 22
+    },
+    {
+      "method": "POST",
+      "path": "/api/pipeline/steps/add",
+      "source": "apps/ui/src/lib/http-domains/pipeline.ts",
+      "line": 61
+    },
+    {
+      "method": "POST",
+      "path": "/api/pipeline/steps/delete",
+      "source": "apps/ui/src/lib/http-domains/pipeline.ts",
+      "line": 90
+    },
+    {
+      "method": "POST",
+      "path": "/api/pipeline/steps/reorder",
+      "source": "apps/ui/src/lib/http-domains/pipeline.ts",
+      "line": 96
+    },
+    {
+      "method": "POST",
+      "path": "/api/pipeline/steps/update",
+      "source": "apps/ui/src/lib/http-domains/pipeline.ts",
+      "line": 84
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/overview",
+      "source": "apps/ui/src/hooks/use-multi-project-status.ts",
+      "line": 52
+    },
+    {
+      "method": "GET",
+      "path": "/api/running-agents",
+      "source": "apps/ui/src/lib/http-domains/runningAgents.ts",
+      "line": 15
+    },
+    {
+      "method": "POST",
+      "path": "/api/sessions/:sessionId/archive",
+      "source": "apps/ui/src/lib/http-domains/sessions.ts",
+      "line": 42
+    },
+    {
+      "method": "POST",
+      "path": "/api/sessions/:sessionId/unarchive",
+      "source": "apps/ui/src/lib/http-domains/sessions.ts",
+      "line": 45
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/sessions/:sessionId",
+      "source": "apps/ui/src/lib/http-domains/sessions.ts",
+      "line": 48
+    },
+    {
+      "method": "PUT",
+      "path": "/api/sessions/:sessionId",
+      "source": "apps/ui/src/lib/http-domains/sessions.ts",
+      "line": 39
+    },
+    {
+      "method": "GET",
+      "path": "/api/sessions",
+      "source": "apps/ui/src/lib/http-domains/sessions.ts",
+      "line": 15
+    },
+    {
+      "method": "POST",
+      "path": "/api/sessions",
+      "source": "apps/ui/src/lib/http-domains/sessions.ts",
+      "line": 32
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/agents/discover",
+      "source": "apps/ui/src/lib/http-domains/settings.ts",
+      "line": 174
+    },
+    {
+      "method": "GET",
+      "path": "/api/settings/credentials",
+      "source": "apps/ui/src/lib/http-domains/settings.ts",
+      "line": 87
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/auto/confirm",
+      "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+      "line": 166
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/auto/revoke",
+      "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+      "line": 172
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/docker/check",
+      "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+      "line": 195
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/docker/prepare",
+      "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+      "line": 160
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/feature/inspect",
+      "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+      "line": 92
+    },
+    {
+      "method": "PUT",
+      "path": "/api/settings/execution-environments/global",
+      "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+      "line": 186
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/inspect",
+      "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+      "line": 182
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/local/confirm",
+      "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+      "line": 174
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/local/revoke",
+      "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+      "line": 180
+    },
+    {
+      "method": "PUT",
+      "path": "/api/settings/execution-environments/project",
+      "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+      "line": 191
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/providers/inspect",
+      "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+      "line": 31
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/providers/install",
+      "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+      "line": 44
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/providers/key",
+      "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+      "line": 60
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/providers/key",
+      "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+      "line": 76
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/ssh/check",
+      "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+      "line": 127
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/ssh/key",
+      "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+      "line": 116
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/ssh/key",
+      "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+      "line": 122
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/ssh/prepare",
+      "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+      "line": 129
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/ssh/project",
+      "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+      "line": 141
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/ssh/recover",
+      "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+      "line": 151
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/ssh/scan",
+      "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+      "line": 99
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/ssh/trust",
+      "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+      "line": 105
+    },
+    {
+      "method": "GET",
+      "path": "/api/settings/global",
+      "source": "apps/ui/src/lib/http-domains/settings.ts",
+      "line": 68
+    },
+    {
+      "method": "PUT",
+      "path": "/api/settings/global",
+      "source": "apps/ui/src/lib/http-domains/settings.ts",
+      "line": 76
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/migrate",
+      "source": "apps/ui/src/lib/http-domains/settings.ts",
+      "line": 154
+    },
+    {
+      "method": "GET",
+      "path": "/api/settings/model-timeouts/:dynamic",
+      "source": "apps/ui/src/lib/http-domains/modelTimeouts.ts",
+      "line": 9
+    },
+    {
+      "method": "PUT",
+      "path": "/api/settings/model-timeouts/:dynamic",
+      "source": "apps/ui/src/lib/http-domains/modelTimeouts.ts",
+      "line": 14
+    },
+    {
+      "method": "GET",
+      "path": "/api/settings/model-timeouts",
+      "source": "apps/ui/src/lib/http-domains/modelTimeouts.ts",
+      "line": 16
+    },
+    {
+      "method": "PUT",
+      "path": "/api/settings/model-timeouts",
+      "source": "apps/ui/src/lib/http-domains/modelTimeouts.ts",
+      "line": 20
+    },
+    {
+      "method": "PUT",
+      "path": "/api/settings/openai-compatible/agent",
+      "source": "apps/ui/src/lib/http-domains/directEndpoints.ts",
+      "line": 43
+    },
+    {
+      "method": "PUT",
+      "path": "/api/settings/openai-compatible/endpoint",
+      "source": "apps/ui/src/lib/http-domains/directEndpoints.ts",
+      "line": 27
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/openai-compatible/models",
+      "source": "apps/ui/src/lib/http-domains/directEndpoints.ts",
+      "line": 47
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/openai-compatible/remove",
+      "source": "apps/ui/src/lib/http-domains/directEndpoints.ts",
+      "line": 35
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/openai-compatible/test",
+      "source": "apps/ui/src/lib/http-domains/directEndpoints.ts",
+      "line": 53
+    },
+    {
+      "method": "GET",
+      "path": "/api/settings/openai-compatible",
+      "source": "apps/ui/src/lib/http-domains/directEndpoints.ts",
+      "line": 17
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/project",
+      "source": "apps/ui/src/lib/http-domains/settings.ts",
+      "line": 129
+    },
+    {
+      "method": "PUT",
+      "path": "/api/settings/project",
+      "source": "apps/ui/src/lib/http-domains/settings.ts",
+      "line": 138
+    },
+    {
+      "method": "GET",
+      "path": "/api/settings/status",
+      "source": "apps/ui/src/lib/http-api-client.ts",
+      "line": 532
+    },
+    {
+      "method": "GET",
+      "path": "/api/settings/status",
+      "source": "apps/ui/src/lib/http-domains/settings.ts",
+      "line": 12
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/api-keys",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 337
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/auth-claude",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 238
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/auth-codex",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 240
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/auth-copilot",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 246
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/auth-cursor",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 242
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/auth-gemini",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 244
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/auth-opencode",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 248
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/claude-status",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 287
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/claude-verification-target",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 351
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/codex-status",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 582
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/codex-verification-target",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 615
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/connection-target",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 258
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/copilot-status",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 754
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/credential-target",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 321
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/cursor-config/default-model",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 469
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/cursor-config/models",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 483
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/cursor-config/target",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 460
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/cursor-config",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 453
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/cursor-permissions/custom",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 537
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/cursor-permissions/example",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 559
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/cursor-permissions/profile",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 528
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/cursor-permissions/target",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 519
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/setup/cursor-permissions",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 546
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/cursor-permissions",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 513
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/cursor-status",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/deauth-claude",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 181
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/deauth-codex",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 183
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/deauth-copilot",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 189
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/deauth-cursor",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 185
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/deauth-gemini",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 187
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/deauth-opencode",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 191
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/delete-api-key",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 110
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/gemini-status",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 725
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/gh-status",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 379
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/github-authentication-target",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 383
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/install-claude",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 292
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/install-codex",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 587
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/opencode-status",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 659
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/opencode/cache/clear",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 720
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/opencode/models/refresh",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 697
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/opencode/models",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 680
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/opencode/models",
+      "source": "apps/ui/src/store/app-store.ts",
+      "line": 2962
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/opencode/providers",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 714
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/platform",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 347
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/store-api-key",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 109
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/verify-claude-auth",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 363
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/verify-codex-auth",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 627
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/verify-github-auth",
+      "source": "apps/ui/src/lib/http-domains/setup.ts",
+      "line": 391
+    },
+    {
+      "method": "POST",
+      "path": "/api/spec-regeneration/create",
+      "source": "apps/ui/src/lib/http-domains/specRegeneration.ts",
+      "line": 16
+    },
+    {
+      "method": "POST",
+      "path": "/api/spec-regeneration/generate-features",
+      "source": "apps/ui/src/lib/http-domains/specRegeneration.ts",
+      "line": 38
+    },
+    {
+      "method": "POST",
+      "path": "/api/spec-regeneration/generate",
+      "source": "apps/ui/src/lib/http-domains/specRegeneration.ts",
+      "line": 30
+    },
+    {
+      "method": "POST",
+      "path": "/api/spec-regeneration/stop",
+      "source": "apps/ui/src/lib/http-domains/specRegeneration.ts",
+      "line": 43
+    },
+    {
+      "method": "POST",
+      "path": "/api/spec-regeneration/sync",
+      "source": "apps/ui/src/lib/http-domains/specRegeneration.ts",
+      "line": 42
+    },
+    {
+      "method": "POST",
+      "path": "/api/templates/clone",
+      "source": "apps/ui/src/lib/http-domains/templates.ts",
+      "line": 14
+    },
+    {
+      "method": "GET",
+      "path": "/api/workspace/config",
+      "source": "apps/ui/src/lib/http-domains/workspace.ts",
+      "line": 11
+    },
+    {
+      "method": "GET",
+      "path": "/api/workspace/directories",
+      "source": "apps/ui/src/lib/http-domains/workspace.ts",
+      "line": 17
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/abort-operation",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 255
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/add-remote",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 131
+    },
+    {
+      "method": "GET",
+      "path": "/api/worktree/available-editors",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 135
+    },
+    {
+      "method": "GET",
+      "path": "/api/worktree/available-terminals",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 137
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/branch-commit-log",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 259
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/check-changes",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 123
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/checkout-branch",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 115
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/cherry-pick",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 251
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/commit-log",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 241
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/commit",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 59
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/continue-operation",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 257
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/create-pr",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 93
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/create",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 47
+    },
+    {
+      "method": "GET",
+      "path": "/api/worktree/default-editor",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 134
+    },
+    {
+      "method": "GET",
+      "path": "/api/worktree/default-terminal",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 138
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/delete",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 53
+    },
+    {
+      "method": "GET",
+      "path": "/api/worktree/dev-server-logs",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 158
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/diffs",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 97
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/discard-changes",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 197
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/file-diff",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 99
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/generate-commit-message",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 66
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/generate-pr-description",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 79
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/info",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 40
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/init-git",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 142
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/worktree/init-script",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 193
+    },
+    {
+      "method": "GET",
+      "path": "/api/worktree/init-script",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 189
+    },
+    {
+      "method": "PUT",
+      "path": "/api/worktree/init-script",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 191
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/list-branches",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 125
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/list-dev-servers",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 156
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/list-remotes",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 129
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/list",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 43
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/list",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 45
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/merge",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 32
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/open-in-editor",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 133
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/open-in-external-terminal",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 141
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/pr-info",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 186
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/pull",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 107
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/push",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 87
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/rebase",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 253
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/refresh-editors",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 136
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/refresh-terminals",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 139
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/run-init-script",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 195
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/set-tracking",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 91
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/stage-files",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 105
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/start-dev",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 149
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/start-tests",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 230
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/stash-apply",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 247
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/stash-drop",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 249
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/stash-list",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 245
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/stash-push",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 243
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/status",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 42
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/stop-dev",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 155
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/stop-tests",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 239
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/switch-branch",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 127
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/sync",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 89
+    },
+    {
+      "method": "GET",
+      "path": "/api/worktree/test-logs",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 264
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/update-pr-number",
+      "source": "apps/ui/src/lib/http-domains/worktree.ts",
+      "line": 95
+    },
+    {
+      "method": "POST",
+      "path": "/api/zai/configure",
+      "source": "apps/ui/src/lib/http-domains/zai.ts",
+      "line": 25
+    },
+    {
+      "method": "GET",
+      "path": "/api/zai/status",
+      "source": "apps/ui/src/lib/http-domains/zai.ts",
+      "line": 13
+    },
+    {
+      "method": "GET",
+      "path": "/api/zai/usage",
+      "source": "apps/ui/src/lib/http-domains/zai.ts",
+      "line": 15
+    },
+    {
+      "method": "POST",
+      "path": "/api/zai/verify",
+      "source": "apps/ui/src/lib/http-domains/zai.ts",
+      "line": 34
+    }
+  ],
+  "endpoints": [
+    {
+      "method": "POST",
+      "path": "/api/agent/clear",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/agent/clear",
+          "source": "apps/ui/src/lib/http-domains/agent.ts",
+          "line": 50
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/agent/history",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/agent/history",
+          "source": "apps/ui/src/lib/http-domains/agent.ts",
+          "line": 44
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/agent/model",
+      "consumers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/agent/queue/add",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/agent/queue/add",
+          "source": "apps/ui/src/lib/http-domains/agent.ts",
+          "line": 76
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/agent/queue/clear",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/agent/queue/clear",
+          "source": "apps/ui/src/lib/http-domains/agent.ts",
+          "line": 108
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/agent/queue/list",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/agent/queue/list",
+          "source": "apps/ui/src/lib/http-domains/agent.ts",
+          "line": 99
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/agent/queue/remove",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/agent/queue/remove",
+          "source": "apps/ui/src/lib/http-domains/agent.ts",
+          "line": 105
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/agent/send",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/agent/send",
+          "source": "apps/ui/src/lib/http-domains/agent.ts",
+          "line": 27
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/agent/start",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/agent/start",
+          "source": "apps/ui/src/lib/http-domains/agent.ts",
+          "line": 16
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/agent/stop",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/agent/stop",
+          "source": "apps/ui/src/lib/http-domains/agent.ts",
+          "line": 47
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/auth/login",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 410
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/auth/logout",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 482
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/logout",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 88
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/status",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/auth/status",
+          "source": "apps/ui/src/components/views/login-view.tsx",
+          "line": 146
+        },
+        {
+          "method": "GET",
+          "path": "/api/auth/status",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 385
+        },
+        {
+          "method": "GET",
+          "path": "/api/auth/status",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 453
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/token",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/auth/token",
+          "source": "apps/ui/src/components/views/terminal-view/terminal-panel.tsx",
+          "line": 645
+        },
+        {
+          "method": "GET",
+          "path": "/api/auth/token",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 820
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/analyze-project",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/auto-mode/analyze-project",
+          "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+          "line": 41
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/approve-plan",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/auto-mode/approve-plan",
+          "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+          "line": 95
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/commit-feature",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/auto-mode/commit-feature",
+          "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+          "line": 75
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/context-exists",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/auto-mode/context-exists",
+          "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+          "line": 39
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/follow-up-feature",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/auto-mode/follow-up-feature",
+          "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+          "line": 49
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/merge-environment-feature",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/auto-mode/merge-environment-feature",
+          "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+          "line": 60
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/merge-ssh-feature",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/auto-mode/merge-ssh-feature",
+          "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+          "line": 69
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/pending-plan-approval",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/auto-mode/pending-plan-approval",
+          "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+          "line": 81
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/reconcile",
+      "consumers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/resume-feature",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/auto-mode/resume-feature",
+          "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+          "line": 33
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/resume-interrupted",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/auto-mode/resume-interrupted",
+          "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+          "line": 106
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/run-feature",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/auto-mode/run-feature",
+          "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+          "line": 24
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/start",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/auto-mode/start",
+          "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/status",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/auto-mode/status",
+          "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+          "line": 17
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/stop-feature",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/auto-mode/stop-feature",
+          "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+          "line": 15
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/stop",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/auto-mode/stop",
+          "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+          "line": 13
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auto-mode/verify-feature",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/auto-mode/verify-feature",
+          "source": "apps/ui/src/lib/http-domains/autoMode.ts",
+          "line": 31
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/backlog-plan/apply",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/backlog-plan/apply",
+          "source": "apps/ui/src/lib/http-domains/backlogPlan.ts",
+          "line": 59
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/backlog-plan/clear",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/backlog-plan/clear",
+          "source": "apps/ui/src/lib/http-domains/backlogPlan.ts",
+          "line": 62
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/backlog-plan/generate",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/backlog-plan/generate",
+          "source": "apps/ui/src/lib/http-domains/backlogPlan.ts",
+          "line": 16
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/backlog-plan/status",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/backlog-plan/status",
+          "source": "apps/ui/src/lib/http-domains/backlogPlan.ts",
+          "line": 52
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/backlog-plan/stop",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/backlog-plan/stop",
+          "source": "apps/ui/src/lib/http-domains/backlogPlan.ts",
+          "line": 25
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/claude/usage",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/claude/usage",
+          "source": "apps/ui/src/lib/http-domains/claude.ts",
+          "line": 6
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/codex/models",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/codex/models",
+          "source": "apps/ui/src/store/app-store.ts",
+          "line": 2892
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/codex/usage",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/codex/usage",
+          "source": "apps/ui/src/lib/http-domains/codex.ts",
+          "line": 6
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/context/describe-file",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/context/describe-file",
+          "source": "apps/ui/src/lib/http-domains/context.ts",
+          "line": 19
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/context/describe-image",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/context/describe-image",
+          "source": "apps/ui/src/lib/http-domains/context.ts",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enhance-prompt",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/enhance-prompt",
+          "source": "apps/ui/src/lib/http-domains/enhancePrompt.ts",
+          "line": 14
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/event-history/clear",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/event-history/clear",
+          "source": "apps/ui/src/lib/http-domains/eventHistory.ts",
+          "line": 18
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/event-history/delete",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/event-history/delete",
+          "source": "apps/ui/src/lib/http-domains/eventHistory.ts",
+          "line": 16
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/event-history/get",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/event-history/get",
+          "source": "apps/ui/src/lib/http-domains/eventHistory.ts",
+          "line": 13
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/event-history/list",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/event-history/list",
+          "source": "apps/ui/src/lib/http-domains/eventHistory.ts",
+          "line": 10
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/event-history/replay",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/event-history/replay",
+          "source": "apps/ui/src/lib/http-domains/eventHistory.ts",
+          "line": 21
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/agent-output",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/features/agent-output",
+          "source": "apps/ui/src/lib/http-domains/features.ts",
+          "line": 115
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/bulk-delete",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/features/bulk-delete",
+          "source": "apps/ui/src/lib/http-domains/features.ts",
+          "line": 121
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/bulk-update",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/features/bulk-update",
+          "source": "apps/ui/src/lib/http-domains/features.ts",
+          "line": 119
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/check-conflicts",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/features/check-conflicts",
+          "source": "apps/ui/src/lib/http-domains/features.ts",
+          "line": 179
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/create",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/features/create",
+          "source": "apps/ui/src/lib/http-domains/features.ts",
+          "line": 95
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/delete",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/features/delete",
+          "source": "apps/ui/src/lib/http-domains/features.ts",
+          "line": 113
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/export",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/features/export",
+          "source": "apps/ui/src/lib/http-domains/features.ts",
+          "line": 141
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/generate-title",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/features/generate-title",
+          "source": "apps/ui/src/lib/http-domains/features.ts",
+          "line": 117
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/get",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/features/get",
+          "source": "apps/ui/src/lib/http-domains/features.ts",
+          "line": 93
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/import",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/features/import",
+          "source": "apps/ui/src/lib/http-domains/features.ts",
+          "line": 163
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/features/list",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/features/list",
+          "source": "apps/ui/src/lib/http-domains/features.ts",
+          "line": 91
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/list",
+      "consumers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/orphaned/bulk-resolve",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/features/orphaned/bulk-resolve",
+          "source": "apps/ui/src/lib/http-domains/features.ts",
+          "line": 217
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/orphaned/resolve",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/features/orphaned/resolve",
+          "source": "apps/ui/src/lib/http-domains/features.ts",
+          "line": 199
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/orphaned",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/features/orphaned",
+          "source": "apps/ui/src/lib/http-domains/features.ts",
+          "line": 186
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/raw-output",
+      "consumers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/features/update",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/features/update",
+          "source": "apps/ui/src/lib/http-domains/features.ts",
+          "line": 104
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/browse-project-files",
+      "consumers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/browse",
+      "consumers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/copy",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/fs/copy",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 1348
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/delete-board-background",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/fs/delete-board-background",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 1444
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/delete",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/fs/delete",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 1335
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/download",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/fs/download",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 1373
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/exists",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/fs/exists",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 1294
+        },
+        {
+          "method": "POST",
+          "path": "/api/fs/exists",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 1324
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/fs/image",
+      "consumers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/mkdir",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/fs/mkdir",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 1316
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/move",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/fs/move",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 1356
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/readdir",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/fs/readdir",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 1320
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/read",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/fs/read",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 1308
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/resolve-directory",
+      "consumers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/save-board-background",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/fs/save-board-background",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 1435
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/save-image",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/fs/save-image",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 1421
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/stat",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/fs/stat",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 1331
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/validate-path",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/fs/validate-path",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 1264
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/fs/write",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/fs/write",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 1312
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/gemini/status",
+      "consumers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/gemini/usage",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/gemini/usage",
+          "source": "apps/ui/src/lib/http-domains/gemini.ts",
+          "line": 6
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/git/details",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/git/details",
+          "source": "apps/ui/src/lib/http-domains/git.ts",
+          "line": 12
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/git/diffs",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/git/diffs",
+          "source": "apps/ui/src/lib/http-domains/git.ts",
+          "line": 6
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/git/enhanced-status",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/git/enhanced-status",
+          "source": "apps/ui/src/lib/http-domains/git.ts",
+          "line": 14
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/git/environment",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/git/environment",
+          "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+          "line": 22
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/git/file-diff",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/git/file-diff",
+          "source": "apps/ui/src/lib/http-domains/git.ts",
+          "line": 8
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/git/stage-files",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/git/stage-files",
+          "source": "apps/ui/src/lib/http-domains/git.ts",
+          "line": 10
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/github/check-remote",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/github/check-remote",
+          "source": "apps/ui/src/lib/http-domains/github.ts",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/github/issue-comments",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/github/issue-comments",
+          "source": "apps/ui/src/lib/http-domains/github.ts",
+          "line": 41
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/github/issues",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/github/issues",
+          "source": "apps/ui/src/lib/http-domains/github.ts",
+          "line": 12
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/github/pr-review-comments",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/github/pr-review-comments",
+          "source": "apps/ui/src/lib/http-domains/github.ts",
+          "line": 43
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/github/prs",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/github/prs",
+          "source": "apps/ui/src/lib/http-domains/github.ts",
+          "line": 13
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/github/resolve-pr-comment",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/github/resolve-pr-comment",
+          "source": "apps/ui/src/lib/http-domains/github.ts",
+          "line": 45
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/github/validate-issue",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/github/validate-issue",
+          "source": "apps/ui/src/lib/http-domains/github.ts",
+          "line": 22
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/github/validation-delete",
+      "consumers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/github/validation-mark-viewed",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/github/validation-mark-viewed",
+          "source": "apps/ui/src/lib/http-domains/github.ts",
+          "line": 37
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/github/validation-status",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/github/validation-status",
+          "source": "apps/ui/src/lib/http-domains/github.ts",
+          "line": 31
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/github/validation-stop",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/github/validation-stop",
+          "source": "apps/ui/src/lib/http-domains/github.ts",
+          "line": 33
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/github/validations",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/github/validations",
+          "source": "apps/ui/src/lib/http-domains/github.ts",
+          "line": 35
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/health/detailed",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/health/detailed",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 1409
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/health/environment",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/health/environment",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 571
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/health/live",
+      "consumers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/health/ready",
+      "consumers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/health",
+          "source": "apps/ui/src/lib/electron.ts",
+          "line": 1143
+        },
+        {
+          "method": "GET",
+          "path": "/api/health",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 1199
+        },
+        {
+          "method": "GET",
+          "path": "/api/health",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 155
+        },
+        {
+          "method": "GET",
+          "path": "/api/health",
+          "source": "apps/ui/src/routes/__root.tsx",
+          "line": 119
+        },
+        {
+          "method": "GET",
+          "path": "/api/health",
+          "source": "apps/ui/src/routes/__root.tsx",
+          "line": 918
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/add-suggestion",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/ideation/add-suggestion",
+          "source": "apps/ui/src/lib/http-domains/ideation.ts",
+          "line": 75
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/analysis",
+      "consumers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/analyze",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/ideation/analyze",
+          "source": "apps/ui/src/lib/http-domains/ideation.ts",
+          "line": 51
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/convert",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/ideation/convert",
+          "source": "apps/ui/src/lib/http-domains/ideation.ts",
+          "line": 69
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/ideas/create",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/ideation/ideas/create",
+          "source": "apps/ui/src/lib/http-domains/ideation.ts",
+          "line": 39
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/ideas/delete",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/ideation/ideas/delete",
+          "source": "apps/ui/src/lib/http-domains/ideation.ts",
+          "line": 48
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/ideas/get",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/ideation/ideas/get",
+          "source": "apps/ui/src/lib/http-domains/ideation.ts",
+          "line": 42
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/ideas/list",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/ideation/ideas/list",
+          "source": "apps/ui/src/lib/http-domains/ideation.ts",
+          "line": 36
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/ideas/update",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/ideation/ideas/update",
+          "source": "apps/ui/src/lib/http-domains/ideation.ts",
+          "line": 45
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/ideation/prompts/:category",
+      "consumers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/ideation/prompts",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/ideation/prompts",
+          "source": "apps/ui/src/lib/http-domains/ideation.ts",
+          "line": 77
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/session/get",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/ideation/session/get",
+          "source": "apps/ui/src/lib/http-domains/ideation.ts",
+          "line": 26
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/session/message",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/ideation/session/message",
+          "source": "apps/ui/src/lib/http-domains/ideation.ts",
+          "line": 32
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/session/start",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/ideation/session/start",
+          "source": "apps/ui/src/lib/http-domains/ideation.ts",
+          "line": 23
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/session/stop",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/ideation/session/stop",
+          "source": "apps/ui/src/lib/http-domains/ideation.ts",
+          "line": 34
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/ideation/suggestions/generate",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/ideation/suggestions/generate",
+          "source": "apps/ui/src/lib/http-domains/ideation.ts",
+          "line": 60
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/mcp/test",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/mcp/test",
+          "source": "apps/ui/src/lib/http-domains/mcp.ts",
+          "line": 21
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/mcp/tools",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/mcp/tools",
+          "source": "apps/ui/src/lib/http-domains/mcp.ts",
+          "line": 34
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/metrics",
+      "consumers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/models/available",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/models/available",
+          "source": "apps/ui/src/lib/http-domains/model.ts",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/models/providers",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/models/providers",
+          "source": "apps/ui/src/lib/http-domains/model.ts",
+          "line": 18
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/notifications/dismiss",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/notifications/dismiss",
+          "source": "apps/ui/src/lib/http-domains/notifications.ts",
+          "line": 21
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/notifications/list",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/notifications/list",
+          "source": "apps/ui/src/lib/http-domains/notifications.ts",
+          "line": 12
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/notifications/mark-read",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/notifications/mark-read",
+          "source": "apps/ui/src/lib/http-domains/notifications.ts",
+          "line": 18
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/notifications/unread-count",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/notifications/unread-count",
+          "source": "apps/ui/src/lib/http-domains/notifications.ts",
+          "line": 15
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/pipeline/config/save",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/pipeline/config/save",
+          "source": "apps/ui/src/lib/http-domains/pipeline.ts",
+          "line": 39
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/pipeline/config",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/pipeline/config",
+          "source": "apps/ui/src/lib/http-domains/pipeline.ts",
+          "line": 22
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/pipeline/steps/add",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/pipeline/steps/add",
+          "source": "apps/ui/src/lib/http-domains/pipeline.ts",
+          "line": 61
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/pipeline/steps/delete",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/pipeline/steps/delete",
+          "source": "apps/ui/src/lib/http-domains/pipeline.ts",
+          "line": 90
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/pipeline/steps/reorder",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/pipeline/steps/reorder",
+          "source": "apps/ui/src/lib/http-domains/pipeline.ts",
+          "line": 96
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/pipeline/steps/update",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/pipeline/steps/update",
+          "source": "apps/ui/src/lib/http-domains/pipeline.ts",
+          "line": 84
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects/overview",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/projects/overview",
+          "source": "apps/ui/src/hooks/use-multi-project-status.ts",
+          "line": 52
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/running-agents",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/running-agents",
+          "source": "apps/ui/src/lib/http-domains/runningAgents.ts",
+          "line": 15
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/sessions/:sessionId/archive",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/sessions/:sessionId/archive",
+          "source": "apps/ui/src/lib/http-domains/sessions.ts",
+          "line": 42
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/sessions/:sessionId/unarchive",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/sessions/:sessionId/unarchive",
+          "source": "apps/ui/src/lib/http-domains/sessions.ts",
+          "line": 45
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/sessions/:sessionId",
+      "consumers": [
+        {
+          "method": "DELETE",
+          "path": "/api/sessions/:sessionId",
+          "source": "apps/ui/src/lib/http-domains/sessions.ts",
+          "line": 48
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/sessions/:sessionId",
+      "consumers": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/sessions/:sessionId",
+      "consumers": [
+        {
+          "method": "PUT",
+          "path": "/api/sessions/:sessionId",
+          "source": "apps/ui/src/lib/http-domains/sessions.ts",
+          "line": 39
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/sessions",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/sessions",
+          "source": "apps/ui/src/lib/http-domains/sessions.ts",
+          "line": 15
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/sessions",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/sessions",
+          "source": "apps/ui/src/lib/http-domains/sessions.ts",
+          "line": 32
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/agents/discover",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/settings/agents/discover",
+          "source": "apps/ui/src/lib/http-domains/settings.ts",
+          "line": 174
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/settings/credentials",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/settings/credentials",
+          "source": "apps/ui/src/lib/http-domains/settings.ts",
+          "line": 87
+        }
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/settings/credentials",
+      "consumers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/auto/confirm",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/settings/execution-environments/auto/confirm",
+          "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+          "line": 166
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/auto/revoke",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/settings/execution-environments/auto/revoke",
+          "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+          "line": 172
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/docker/check",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/settings/execution-environments/docker/check",
+          "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+          "line": 195
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/docker/prepare",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/settings/execution-environments/docker/prepare",
+          "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+          "line": 160
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/feature/inspect",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/settings/execution-environments/feature/inspect",
+          "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+          "line": 92
+        }
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/settings/execution-environments/global",
+      "consumers": [
+        {
+          "method": "PUT",
+          "path": "/api/settings/execution-environments/global",
+          "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+          "line": 186
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/inspect",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/settings/execution-environments/inspect",
+          "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+          "line": 182
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/local/confirm",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/settings/execution-environments/local/confirm",
+          "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+          "line": 174
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/local/revoke",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/settings/execution-environments/local/revoke",
+          "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+          "line": 180
+        }
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/settings/execution-environments/project",
+      "consumers": [
+        {
+          "method": "PUT",
+          "path": "/api/settings/execution-environments/project",
+          "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+          "line": 191
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/providers/inspect",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/settings/execution-environments/providers/inspect",
+          "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+          "line": 31
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/providers/install",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/settings/execution-environments/providers/install",
+          "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+          "line": 44
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/providers/key",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/settings/execution-environments/providers/key",
+          "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+          "line": 60
+        },
+        {
+          "method": "POST",
+          "path": "/api/settings/execution-environments/providers/key",
+          "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+          "line": 76
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/ssh/check",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/settings/execution-environments/ssh/check",
+          "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+          "line": 127
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/ssh/key",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/settings/execution-environments/ssh/key",
+          "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+          "line": 116
+        },
+        {
+          "method": "POST",
+          "path": "/api/settings/execution-environments/ssh/key",
+          "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+          "line": 122
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/ssh/prepare",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/settings/execution-environments/ssh/prepare",
+          "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+          "line": 129
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/ssh/project",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/settings/execution-environments/ssh/project",
+          "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+          "line": 141
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/ssh/recover",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/settings/execution-environments/ssh/recover",
+          "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+          "line": 151
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/ssh/scan",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/settings/execution-environments/ssh/scan",
+          "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+          "line": 99
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/execution-environments/ssh/trust",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/settings/execution-environments/ssh/trust",
+          "source": "apps/ui/src/lib/http-domains/executionEnvironments.ts",
+          "line": 105
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/settings/global",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/settings/global",
+          "source": "apps/ui/src/lib/http-domains/settings.ts",
+          "line": 68
+        }
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/settings/global",
+      "consumers": [
+        {
+          "method": "PUT",
+          "path": "/api/settings/global",
+          "source": "apps/ui/src/lib/http-domains/settings.ts",
+          "line": 76
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/migrate",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/settings/migrate",
+          "source": "apps/ui/src/lib/http-domains/settings.ts",
+          "line": 154
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/settings/model-timeouts/:provider",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/settings/model-timeouts/:dynamic",
+          "source": "apps/ui/src/lib/http-domains/modelTimeouts.ts",
+          "line": 9
+        }
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/settings/model-timeouts/:provider",
+      "consumers": [
+        {
+          "method": "PUT",
+          "path": "/api/settings/model-timeouts/:dynamic",
+          "source": "apps/ui/src/lib/http-domains/modelTimeouts.ts",
+          "line": 14
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/settings/model-timeouts",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/settings/model-timeouts",
+          "source": "apps/ui/src/lib/http-domains/modelTimeouts.ts",
+          "line": 16
+        }
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/settings/model-timeouts",
+      "consumers": [
+        {
+          "method": "PUT",
+          "path": "/api/settings/model-timeouts",
+          "source": "apps/ui/src/lib/http-domains/modelTimeouts.ts",
+          "line": 20
+        }
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/settings/openai-compatible/agent",
+      "consumers": [
+        {
+          "method": "PUT",
+          "path": "/api/settings/openai-compatible/agent",
+          "source": "apps/ui/src/lib/http-domains/directEndpoints.ts",
+          "line": 43
+        }
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/settings/openai-compatible/endpoint",
+      "consumers": [
+        {
+          "method": "PUT",
+          "path": "/api/settings/openai-compatible/endpoint",
+          "source": "apps/ui/src/lib/http-domains/directEndpoints.ts",
+          "line": 27
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/openai-compatible/models",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/settings/openai-compatible/models",
+          "source": "apps/ui/src/lib/http-domains/directEndpoints.ts",
+          "line": 47
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/openai-compatible/remove",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/settings/openai-compatible/remove",
+          "source": "apps/ui/src/lib/http-domains/directEndpoints.ts",
+          "line": 35
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/openai-compatible/test",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/settings/openai-compatible/test",
+          "source": "apps/ui/src/lib/http-domains/directEndpoints.ts",
+          "line": 53
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/settings/openai-compatible",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/settings/openai-compatible",
+          "source": "apps/ui/src/lib/http-domains/directEndpoints.ts",
+          "line": 17
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/settings/project",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/settings/project",
+          "source": "apps/ui/src/lib/http-domains/settings.ts",
+          "line": 129
+        }
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/settings/project",
+      "consumers": [
+        {
+          "method": "PUT",
+          "path": "/api/settings/project",
+          "source": "apps/ui/src/lib/http-domains/settings.ts",
+          "line": 138
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/settings/status",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/settings/status",
+          "source": "apps/ui/src/lib/http-api-client.ts",
+          "line": 532
+        },
+        {
+          "method": "GET",
+          "path": "/api/settings/status",
+          "source": "apps/ui/src/lib/http-domains/settings.ts",
+          "line": 12
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/api-keys",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/setup/api-keys",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 337
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/auth-claude",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/setup/auth-claude",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 238
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/auth-codex",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/setup/auth-codex",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 240
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/auth-copilot",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/setup/auth-copilot",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 246
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/auth-cursor",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/setup/auth-cursor",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 242
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/auth-gemini",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/setup/auth-gemini",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 244
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/auth-opencode",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/setup/auth-opencode",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 248
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/claude-status",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/setup/claude-status",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 287
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/claude-verification-target",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/setup/claude-verification-target",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 351
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/codex-status",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/setup/codex-status",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 582
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/codex-verification-target",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/setup/codex-verification-target",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 615
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/connection-target",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/setup/connection-target",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 258
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/copilot-status",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/setup/copilot-status",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 754
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/copilot/cache/clear",
+      "consumers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/copilot/models/refresh",
+      "consumers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/copilot/models",
+      "consumers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/credential-target",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/setup/credential-target",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 321
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/cursor-config/default-model",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/setup/cursor-config/default-model",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 469
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/cursor-config/models",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/setup/cursor-config/models",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 483
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/cursor-config/target",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/setup/cursor-config/target",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 460
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/cursor-config",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/setup/cursor-config",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 453
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/cursor-permissions/custom",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/setup/cursor-permissions/custom",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 537
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/cursor-permissions/example",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/setup/cursor-permissions/example",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 559
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/cursor-permissions/profile",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/setup/cursor-permissions/profile",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 528
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/cursor-permissions/target",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/setup/cursor-permissions/target",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 519
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/setup/cursor-permissions",
+      "consumers": [
+        {
+          "method": "DELETE",
+          "path": "/api/setup/cursor-permissions",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 546
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/cursor-permissions",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/setup/cursor-permissions",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 513
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/cursor-status",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/setup/cursor-status",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 401
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/deauth-claude",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/setup/deauth-claude",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 181
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/deauth-codex",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/setup/deauth-codex",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 183
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/deauth-copilot",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/setup/deauth-copilot",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 189
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/deauth-cursor",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/setup/deauth-cursor",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 185
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/deauth-gemini",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/setup/deauth-gemini",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 187
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/deauth-opencode",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/setup/deauth-opencode",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 191
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/delete-api-key",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/setup/delete-api-key",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 110
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/gemini-status",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/setup/gemini-status",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 725
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/gh-status",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/setup/gh-status",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 379
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/github-authentication-target",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/setup/github-authentication-target",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 383
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/install-claude",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/setup/install-claude",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 292
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/install-codex",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/setup/install-codex",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 587
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/opencode-status",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/setup/opencode-status",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 659
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/opencode/cache/clear",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/setup/opencode/cache/clear",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 720
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/opencode/models/refresh",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/setup/opencode/models/refresh",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 697
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/opencode/models",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/setup/opencode/models",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 680
+        },
+        {
+          "method": "GET",
+          "path": "/api/setup/opencode/models",
+          "source": "apps/ui/src/store/app-store.ts",
+          "line": 2962
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/opencode/providers",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/setup/opencode/providers",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 714
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup/platform",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/setup/platform",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 347
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/store-api-key",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/setup/store-api-key",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 109
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/verify-claude-auth",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/setup/verify-claude-auth",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 363
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/verify-codex-auth",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/setup/verify-codex-auth",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 627
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup/verify-github-auth",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/setup/verify-github-auth",
+          "source": "apps/ui/src/lib/http-domains/setup.ts",
+          "line": 391
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/spec-regeneration/create",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/spec-regeneration/create",
+          "source": "apps/ui/src/lib/http-domains/specRegeneration.ts",
+          "line": 16
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/spec-regeneration/generate-features",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/spec-regeneration/generate-features",
+          "source": "apps/ui/src/lib/http-domains/specRegeneration.ts",
+          "line": 38
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/spec-regeneration/generate",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/spec-regeneration/generate",
+          "source": "apps/ui/src/lib/http-domains/specRegeneration.ts",
+          "line": 30
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/spec-regeneration/status",
+      "consumers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/spec-regeneration/stop",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/spec-regeneration/stop",
+          "source": "apps/ui/src/lib/http-domains/specRegeneration.ts",
+          "line": 43
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/spec-regeneration/sync",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/spec-regeneration/sync",
+          "source": "apps/ui/src/lib/http-domains/specRegeneration.ts",
+          "line": 42
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/templates/clone",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/templates/clone",
+          "source": "apps/ui/src/lib/http-domains/templates.ts",
+          "line": 14
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/terminal/auth",
+      "consumers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/terminal/logout",
+      "consumers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/terminal/sessions/:id/resize",
+      "consumers": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/terminal/sessions/:id",
+      "consumers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/terminal/sessions/:id",
+      "consumers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/terminal/sessions",
+      "consumers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/terminal/sessions",
+      "consumers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/terminal/settings",
+      "consumers": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/terminal/settings",
+      "consumers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/terminal/status",
+      "consumers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/workspace/config",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/workspace/config",
+          "source": "apps/ui/src/lib/http-domains/workspace.ts",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/workspace/directories",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/workspace/directories",
+          "source": "apps/ui/src/lib/http-domains/workspace.ts",
+          "line": 17
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/abort-operation",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/abort-operation",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 255
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/add-remote",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/add-remote",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 131
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/worktree/available-editors",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/worktree/available-editors",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 135
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/worktree/available-terminals",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/worktree/available-terminals",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 137
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/branch-commit-log",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/branch-commit-log",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 259
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/check-changes",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/check-changes",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 123
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/checkout-branch",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/checkout-branch",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 115
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/cherry-pick",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/cherry-pick",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 251
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/commit-log",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/commit-log",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 241
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/commit",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/commit",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 59
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/continue-operation",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/continue-operation",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 257
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/create-pr",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/create-pr",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 93
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/create",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/create",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 47
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/worktree/default-editor",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/worktree/default-editor",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 134
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/worktree/default-terminal",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/worktree/default-terminal",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 138
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/delete",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/delete",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 53
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/worktree/dev-server-logs",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/worktree/dev-server-logs",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 158
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/diffs",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/diffs",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 97
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/discard-changes",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/discard-changes",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 197
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/environment",
+      "consumers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/file-diff",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/file-diff",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 99
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/generate-commit-message",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/generate-commit-message",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 66
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/generate-pr-description",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/generate-pr-description",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 79
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/info",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/info",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 40
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/init-git",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/init-git",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 142
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/worktree/init-script",
+      "consumers": [
+        {
+          "method": "DELETE",
+          "path": "/api/worktree/init-script",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 193
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/worktree/init-script",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/worktree/init-script",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 189
+        }
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/worktree/init-script",
+      "consumers": [
+        {
+          "method": "PUT",
+          "path": "/api/worktree/init-script",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 191
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/list-branches",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/list-branches",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 125
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/list-dev-servers",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/list-dev-servers",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 156
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/list-remotes",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/list-remotes",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 129
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/list",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/list",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 43
+        },
+        {
+          "method": "POST",
+          "path": "/api/worktree/list",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 45
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/merge",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/merge",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 32
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/migrate",
+      "consumers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/open-in-editor",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/open-in-editor",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 133
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/open-in-external-terminal",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/open-in-external-terminal",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 141
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/open-in-terminal",
+      "consumers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/pr-info",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/pr-info",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 186
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/pull",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/pull",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 107
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/push",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/push",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 87
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/rebase",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/rebase",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 253
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/refresh-editors",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/refresh-editors",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 136
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/refresh-terminals",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/refresh-terminals",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 139
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/run-init-script",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/run-init-script",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 195
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/set-tracking",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/set-tracking",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 91
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/stage-files",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/stage-files",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 105
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/start-dev",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/start-dev",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 149
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/start-tests",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/start-tests",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 230
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/stash-apply",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/stash-apply",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 247
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/stash-drop",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/stash-drop",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 249
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/stash-list",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/stash-list",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 245
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/stash-push",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/stash-push",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 243
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/status",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/status",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 42
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/stop-dev",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/stop-dev",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 155
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/stop-tests",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/stop-tests",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 239
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/switch-branch",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/switch-branch",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 127
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/sync",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/sync",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 89
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/worktree/test-logs",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/worktree/test-logs",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 264
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/worktree/update-pr-number",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/worktree/update-pr-number",
+          "source": "apps/ui/src/lib/http-domains/worktree.ts",
+          "line": 95
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/zai/configure",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/zai/configure",
+          "source": "apps/ui/src/lib/http-domains/zai.ts",
+          "line": 25
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/zai/status",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/zai/status",
+          "source": "apps/ui/src/lib/http-domains/zai.ts",
+          "line": 13
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/zai/usage",
+      "consumers": [
+        {
+          "method": "GET",
+          "path": "/api/zai/usage",
+          "source": "apps/ui/src/lib/http-domains/zai.ts",
+          "line": 15
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/zai/verify",
+      "consumers": [
+        {
+          "method": "POST",
+          "path": "/api/zai/verify",
+          "source": "apps/ui/src/lib/http-domains/zai.ts",
+          "line": 34
+        }
+      ]
+    }
+  ]
+}

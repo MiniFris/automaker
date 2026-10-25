@@ -25,16 +25,25 @@ export interface FeatureWorkspaceRun {
 
 /** One feature workspace for agents and app services; metadata stays on the controller. */
 export class FeatureWorkspaceService {
+  private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>;
   constructor(
     private readonly settings: SettingsService,
-    private readonly manager = new ManagedSSH(settings)
-  ) {}
+    private readonly manager = new ManagedSSH(settings),
+    hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
+  ) {
+    this.hostEnvironment = Object.freeze({ ...hostEnvironment });
+  }
 
   async projectBranch(
     projectPath: string,
     signal: AbortSignal
   ): Promise<string | null | undefined> {
-    const state = await new EnvironmentBindingStore(this.settings).configuration(projectPath);
+    const state = await new EnvironmentBindingStore(
+      this.settings,
+      undefined,
+      undefined,
+      this.hostEnvironment
+    ).configuration(projectPath);
     if (state.resolved.type !== 'ssh') return undefined;
     const profile = state.resolved.profile;
     if (profile?.type !== 'ssh')
@@ -75,7 +84,12 @@ export class FeatureWorkspaceService {
     signal: AbortSignal,
     create = true
   ): Promise<FeatureWorkspaceRun | undefined> {
-    const store = new EnvironmentBindingStore(this.settings);
+    const store = new EnvironmentBindingStore(
+      this.settings,
+      undefined,
+      undefined,
+      this.hostEnvironment
+    );
     const key = featureRunKey(projectPath, feature.id);
     const pinned = await store.peek(projectPath, key);
     const type = pinned?.type ?? (await store.configuration(projectPath)).resolved.type;
@@ -98,7 +112,10 @@ export class FeatureWorkspaceService {
           signal,
           feature: { targetBranch: feature.branchName },
         });
-        return { binding, environment: await boundRuntime(binding, this.settings) };
+        return {
+          binding,
+          environment: await boundRuntime(binding, this.settings, this.hostEnvironment),
+        };
       }
       return undefined;
     }
@@ -223,8 +240,14 @@ export class FeatureWorkspaceService {
     } else {
       if (
         binding.type === 'local' &&
-        !(await new EnvironmentBindingStore(this.settings).consent(binding.projectPath))
-          .autoFallbackConfirmed
+        !(
+          await new EnvironmentBindingStore(
+            this.settings,
+            undefined,
+            undefined,
+            this.hostEnvironment
+          ).consent(binding.projectPath)
+        ).autoFallbackConfirmed
       )
         throw new ExecutionEnvironmentError(
           'LOCAL_CONSENT_REQUIRED',

@@ -1,4 +1,5 @@
 import { translate, useUiLocale } from '@/lib/i18n';
+import { getDockerConnectionStatusLabel } from '@/lib/docker-diagnostic-labels';
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
@@ -13,11 +14,17 @@ import { getHttpApiClient } from '@/lib/http-api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { SSHEnvironmentSetup } from './ssh-environment-setup';
 import { RemoteProviderSetup } from './remote-provider-setup';
 
 export const ENVIRONMENT_SETTINGS_QUERY_KEY = ['settings', 'execution-environments'] as const;
-const selectStyle = 'rounded-md border bg-background p-2 text-sm w-full';
 function selectionValue(selection: ExecutionEnvironmentSelection | null): string {
   return selection?.mode === 'profile'
     ? `profile:${selection.profileId}`
@@ -497,29 +504,33 @@ function EnvironmentEditor({
             ? translate('Project execution environment')
             : translate('Default execution environment')}
         </Label>
-        <select
-          id="execution-selection"
-          className={selectStyle}
-          value={selection}
-          onChange={(event) => choose(event.target.value)}
-        >
-          {projectPath && <option value="inherit">{translate('Inherit global default')}</option>}
-          <option value="local">{translate('Local — Automaker server environment')}</option>
-          <option value="auto">
-            {translate('Auto — prefer managed Docker; local fallback requires confirmation')}
-          </option>
-          {config.profiles.map((item) => (
-            <option key={item.id} value={`profile:${item.id}`}>
-              {item.name} ({item.type === 'docker' ? translate('Docker') : 'SSH'})
-            </option>
-          ))}
-          {selection.startsWith('profile:') && effective?.mode === 'profile' && !profile && (
-            <option value={selection}>
-              {translate('Missing profile: ')}
-              {effective.profileId}
-            </option>
-          )}
-        </select>
+        <Select value={selection} onValueChange={choose} disabled={busy}>
+          <SelectTrigger id="execution-selection">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {projectPath && (
+              <SelectItem value="inherit">{translate('Inherit global default')}</SelectItem>
+            )}
+            <SelectItem value="local">
+              {translate('Local — Automaker server environment')}
+            </SelectItem>
+            <SelectItem value="auto">
+              {translate('Auto — prefer managed Docker; local fallback requires confirmation')}
+            </SelectItem>
+            {config.profiles.map((item) => (
+              <SelectItem key={item.id} value={`profile:${item.id}`}>
+                {item.name} ({item.type === 'docker' ? translate('Docker') : 'SSH'})
+              </SelectItem>
+            ))}
+            {selection.startsWith('profile:') && effective?.mode === 'profile' && !profile && (
+              <SelectItem value={selection}>
+                {translate('Missing profile: ')}
+                {effective.profileId}
+              </SelectItem>
+            )}
+          </SelectContent>
+        </Select>
         <p className="text-sm text-muted-foreground">
           {translate(
             'Local uses the server OS user, not root elevation. In a container installation, Local means the Automaker container. SSH is remote execution, not isolation by itself.'
@@ -698,9 +709,9 @@ function EnvironmentEditor({
         <div role="status" className="rounded-lg border p-4 space-y-3">
           <h3 className="font-medium">
             {translate('Docker connection: ')}
-            {diagnostic.status}
+            {getDockerConnectionStatusLabel(diagnostic.status)}
           </h3>
-          <p>{diagnostic.message}</p>
+          <p>{translate(diagnostic.message)}</p>
           <p>
             {translate(
               'Container lifecycle: not tested. Project storage: not tested. Isolated execution is not enabled by this check.'
@@ -708,7 +719,7 @@ function EnvironmentEditor({
           </p>
           <ul className="list-disc pl-5 space-y-2">
             {diagnostic.remediation.map((step) => (
-              <li key={step}>{step}</li>
+              <li key={step}>{translate(step)}</li>
             ))}
           </ul>
           <div className="flex flex-wrap gap-3">
@@ -720,7 +731,7 @@ function EnvironmentEditor({
                 target="_blank"
                 rel="noreferrer"
               >
-                {link.label}
+                {translate(link.label)}
               </a>
             ))}
           </div>

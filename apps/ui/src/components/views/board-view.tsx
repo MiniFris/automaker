@@ -1265,7 +1265,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         thinkingLevel: (modelEntry.thinkingLevel as ThinkingLevel) || 'none',
         reasoningEffort: modelEntry.reasoningEffort as ReasoningEffort,
         providerId: modelEntry.providerId,
-        branchName: addFeatureUseSelectedWorktreeBranch ? selectedWorktreeBranch : undefined,
+        branchName: addFeatureUseSelectedWorktreeBranch ? (selectedWorktreeBranch ?? '') : '',
         priority: 2,
         planningMode: useAppStore.getState().defaultPlanningMode ?? 'skip',
         requirePlanApproval: useAppStore.getState().defaultRequirePlanApproval ?? false,
@@ -1306,7 +1306,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         thinkingLevel: (modelEntry.thinkingLevel as ThinkingLevel) || 'none',
         reasoningEffort: modelEntry.reasoningEffort as ReasoningEffort,
         providerId: modelEntry.providerId,
-        branchName: addFeatureUseSelectedWorktreeBranch ? selectedWorktreeBranch : undefined,
+        branchName: addFeatureUseSelectedWorktreeBranch ? (selectedWorktreeBranch ?? '') : '',
         priority: 2,
         planningMode: useAppStore.getState().defaultPlanningMode ?? 'skip',
         requirePlanApproval: useAppStore.getState().defaultRequirePlanApproval ?? false,
@@ -1745,7 +1745,11 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           pendingPlanApproval.projectPath,
           pendingPlanApproval.featureId,
           true,
-          editedPlan
+          editedPlan,
+          undefined,
+          pendingPlanApproval.approvalToken,
+          pendingPlanApproval.planVersion,
+          pendingPlanApproval.approvalRunId
         );
 
         if (result.success) {
@@ -1801,7 +1805,10 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           pendingPlanApproval.featureId,
           false,
           undefined,
-          feedback
+          feedback,
+          pendingPlanApproval.approvalToken,
+          pendingPlanApproval.planVersion,
+          pendingPlanApproval.approvalRunId
         );
 
         if (result.success) {
@@ -1841,7 +1848,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
 
   // Handle opening approval dialog from feature card button
   const handleOpenApprovalDialog = useCallback(
-    (feature: Feature) => {
+    async (feature: Feature) => {
       if (!feature.planSpec?.content || !currentProject) return;
 
       // Determine the planning mode for approval (skip should never have a plan requiring approval)
@@ -1850,12 +1857,26 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         mode === 'lite' || mode === 'spec' || mode === 'full' ? mode : 'spec';
 
       // Re-open the approval dialog with the feature's plan data
-      setPendingPlanApproval({
-        featureId: feature.id,
-        projectPath: currentProject.path,
-        planContent: feature.planSpec.content,
-        planningMode: approvalMode,
-      });
+      try {
+        const api = getElectronAPI();
+        if (!api?.autoMode) throw new Error('Plan approval API not available');
+        const result = await api.autoMode.pendingPlanApproval(currentProject.path, feature.id);
+        if (!result.approval) {
+          toast.error(
+            translate('Plan approval is no longer active. Resume the feature to review its plan.')
+          );
+          return;
+        }
+        setPendingPlanApproval({
+          featureId: feature.id,
+          projectPath: currentProject.path,
+          planningMode: approvalMode,
+          ...result.approval,
+        });
+      } catch (error) {
+        logger.error('Failed to load plan approval:', error);
+        toast.error(translate('Failed to load plan approval'));
+      }
     },
     [currentProject, setPendingPlanApproval]
   );

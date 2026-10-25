@@ -3,11 +3,12 @@
  *
  * Key behaviors:
  * - Timeout stored in closure, wrapped resolve/reject ensures cleanup
- * - Recovery returns needsRecovery flag (caller handles execution)
+ * - Approval tickets are scoped to a project, feature, run and plan version
  * - Auto-reject on timeout (safety feature, not auto-approve)
  */
 
 import { createLogger } from '@automaker/utils';
+import { randomUUID } from 'node:crypto';
 import type { TypedEventBus } from './typed-event-bus.js';
 import type { FeatureStateManager } from './feature-state-manager.js';
 import type { SettingsService } from './settings-service.js';
@@ -42,15 +43,26 @@ interface PendingApproval {
   reject: (error: Error) => void;
   featureId: string;
   projectPath: string;
+  token: string;
+  planVersion: number;
+  runId: string;
+  recovery?: boolean;
 }
 
 /** Default timeout: 30 minutes */
 const DEFAULT_APPROVAL_TIMEOUT_MS = 30 * 60 * 1000;
 
+function shutdownError(): Error {
+  return Object.assign(new Error('Plan approval cancelled - application is shutting down'), {
+    name: 'AbortError',
+  });
+}
+
 /**
  * PlanApprovalService handles the plan approval workflow with lifecycle management.
  */
 export class PlanApprovalService {
+  private stopping = false;
   private pendingApprovals = new Map<string, PendingApproval>();
   private eventBus: TypedEventBus;
   private featureStateManager: FeatureStateManager;
@@ -72,10 +84,18 @@ export class PlanApprovalService {
   }
 
   /** Wait for plan approval with timeout (default 30 min). Rejects on timeout/cancellation. */
-  async waitForApproval(featureId: string, projectPath: string): Promise<PlanApprovalResult> {
-    const timeoutMs = await this.getTimeoutMs(projectPath);
-    const timeoutMinutes = Math.round(timeoutMs / 60000);
+  async waitForApproval(
+    featureId: string,
+    projectPath: string,
+    ticket?: { token: string; planVersion: number; runId: string; recovery?: boolean }
+  ): Promise<PlanApprovalResult> {
+    if (this.stopping) throw shutdownError();
     const key = this.approvalKey(projectPath, featureId);
+    const effectiveTicket = ticket ?? {
+      token: 'legacy-internal',
+      planVersion: 1,
+      runId: featureId,
+    };
 
     logger.info(`Registering pending approval for feature ${featureId} in project ${projectPath}`);
     logger.info(
@@ -106,9 +126,9 @@ export class PlanApprovalService {
 
       // Set up timeout to prevent indefinite waiting and memory leaks
       // Now timeoutId assignment happens after wrappers are defined
-      timeoutId = setTimeout(() => {
-        const pending = this.pendingApprovals.get(key);
-        if (pending) {
+      const expire = (timeoutMs: number) => {
+        const timeoutMinutes = Math.round(timeoutMs / 60000);
+        if (this.pendingApprovals.get(key) === pending) {
           logger.warn(
             `Plan approval for feature ${featureId} timed out after ${timeoutMinutes} minutes`
           );
@@ -119,28 +139,94 @@ export class PlanApprovalService {
             )
           );
         }
-      }, timeoutMs);
+      };
 
-      this.pendingApprovals.set(key, {
+      const pending: PendingApproval = {
         resolve: wrappedResolve,
         reject: wrappedReject,
         featureId,
         projectPath,
+        ...effectiveTicket,
+      };
+      this.pendingApprovals.set(key, pending);
+      timeoutId = setTimeout(
+        () => expire(DEFAULT_APPROVAL_TIMEOUT_MS),
+        DEFAULT_APPROVAL_TIMEOUT_MS
+      );
+      // Register synchronously: the executor publishes the ticket immediately after
+      // this call, and a connected client may respond before settings I/O finishes.
+      void this.getTimeoutMs(projectPath).then((timeoutMs) => {
+        if (this.pendingApprovals.get(key) !== pending) return;
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => expire(timeoutMs), timeoutMs);
       });
 
-      logger.info(
-        `Pending approval registered for feature ${featureId} (timeout: ${timeoutMinutes} minutes)`
-      );
+      logger.info(`Pending approval registered for feature ${featureId}`);
     });
   }
 
-  /** Resolve approval. Recovery path: returns needsRecovery=true if planSpec.status='generated'. */
+  /** Read the current ticket after reconnect without minting or replaying a decision. */
+  async getPendingApproval(
+    featureId: string,
+    projectPath: string,
+    canRecover: () => boolean = () => false
+  ) {
+    const key = this.approvalKey(projectPath, featureId);
+    let pending = this.pendingApprovals.get(key);
+    if (this.stopping || (!pending && !canRecover())) return null;
+    const feature = await this.featureStateManager.loadFeature(projectPath, featureId);
+    if (
+      this.stopping ||
+      this.pendingApprovals.get(key) !== pending ||
+      feature?.planSpec?.status !== 'generated' ||
+      feature.planSpec.reviewedByUser ||
+      ['completed', 'verified'].includes(feature.status ?? '')
+    )
+      return null;
+    if (!pending) {
+      if (!canRecover()) return null;
+      // A new process issues a fresh ticket only after its coordinator confirms
+      // there is no active run. Loading the plan never starts execution.
+      void this.waitForApproval(featureId, projectPath, {
+        token: randomUUID(),
+        runId: randomUUID(),
+        planVersion: feature.planSpec.version,
+        recovery: true,
+      }).catch(() => {
+        /* Recovery waits have no live executor to notify. */
+      });
+      pending = this.pendingApprovals.get(key);
+    }
+    if (!pending || feature.planSpec.version !== pending.planVersion) return null;
+    return {
+      approvalToken: pending.token,
+      approvalRunId: pending.runId,
+      planVersion: pending.planVersion,
+      planContent: feature.planSpec.content ?? '',
+    };
+  }
+
+  /** Consume the current ticket once; registry loss requires explicit run recovery. */
   async resolveApproval(
     featureId: string,
     approved: boolean,
-    options?: { editedPlan?: string; feedback?: string; projectPath?: string }
+    options?: {
+      editedPlan?: string;
+      feedback?: string;
+      projectPath?: string;
+      token?: string;
+      planVersion?: number;
+      runId?: string;
+    }
   ): Promise<ResolveApprovalResult> {
-    const { editedPlan, feedback, projectPath: projectPathFromClient } = options ?? {};
+    const {
+      editedPlan,
+      feedback,
+      projectPath: projectPathFromClient,
+      token,
+      planVersion,
+      runId,
+    } = options ?? {};
 
     logger.info(`resolveApproval called for feature ${featureId}, approved=${approved}`);
     logger.info(
@@ -165,78 +251,49 @@ export class PlanApprovalService {
       }
     }
 
-    if (!pending) {
-      logger.info(`No pending approval in Map for feature ${featureId}`);
-
-      // RECOVERY: If no pending approval but we have projectPath from client,
-      // check if feature's planSpec.status is 'generated' and handle recovery
-      if (projectPathFromClient) {
-        logger.info(`Attempting recovery with projectPath: ${projectPathFromClient}`);
-        const feature = await this.featureStateManager.loadFeature(
-          projectPathFromClient,
-          featureId
-        );
-
-        if (feature?.planSpec?.status === 'generated') {
-          logger.info(`Feature ${featureId} has planSpec.status='generated', performing recovery`);
-
-          if (approved) {
-            // Update planSpec to approved
-            await this.featureStateManager.updateFeaturePlanSpec(projectPathFromClient, featureId, {
-              status: 'approved',
-              approvedAt: new Date().toISOString(),
-              reviewedByUser: true,
-              content: editedPlan || feature.planSpec.content,
-            });
-
-            logger.info(`Recovery approval complete for feature ${featureId}`);
-
-            // Return needsRecovery flag - caller (AutoModeService) handles execution
-            return { success: true, needsRecovery: true };
-          } else {
-            // Rejection recovery
-            await this.featureStateManager.updateFeaturePlanSpec(projectPathFromClient, featureId, {
-              status: 'rejected',
-              reviewedByUser: true,
-            });
-
-            await this.featureStateManager.updateFeatureStatus(
-              projectPathFromClient,
-              featureId,
-              'backlog'
-            );
-
-            this.eventBus.emitAutoModeEvent('plan_rejected', {
-              featureId,
-              projectPath: projectPathFromClient,
-              feedback,
-            });
-
-            return { success: true };
-          }
-        }
-      }
-
-      logger.info(
-        `ERROR: No pending approval found for feature ${featureId} and recovery not possible`
-      );
+    if (!pending || !foundKey) {
+      logger.info(`No pending approval found for feature ${featureId}`);
       return {
         success: false,
         error: `No pending approval for feature ${featureId}`,
       };
     }
 
+    if (
+      (token ?? 'legacy-internal') !== pending.token ||
+      (planVersion ?? 1) !== pending.planVersion ||
+      (runId ?? featureId) !== pending.runId
+    ) {
+      logger.warn(`Rejected stale or invalid approval ticket for feature ${featureId}`);
+      return {
+        success: false,
+        error: 'Approval ticket is stale or invalid',
+      };
+    }
+
+    // Consume before the first awaited mutation so concurrent/replayed requests
+    // cannot approve the same plan twice.
+    this.pendingApprovals.delete(foundKey);
+
     logger.info(`Found pending approval for feature ${featureId}, proceeding...`);
 
     const { projectPath } = pending;
 
     // Update feature's planSpec status
-    await this.featureStateManager.updateFeaturePlanSpec(projectPath, featureId, {
-      status: approved ? 'approved' : 'rejected',
-      approvedAt: approved ? new Date().toISOString() : undefined,
-      reviewedByUser: true,
-      ...(editedPlan !== undefined && { content: editedPlan }), // Only update content if user provided an edited version
-    });
+    try {
+      await this.featureStateManager.updateFeaturePlanSpec(projectPath, featureId, {
+        status: approved ? 'approved' : 'rejected',
+        approvedAt: approved ? new Date().toISOString() : undefined,
+        reviewedByUser: true,
+        ...(editedPlan !== undefined && { content: editedPlan }),
+      });
+      if (pending.recovery && !approved) {
+        await this.featureStateManager.updateFeatureStatus(projectPath, featureId, 'backlog');
+      }
+    } catch (error) {
+      pending.reject(error instanceof Error ? error : new Error(String(error)));
+      throw error;
+    }
 
     // If rejected, emit event so client knows the rejection reason (even without feedback)
     if (!approved) {
@@ -250,14 +307,21 @@ export class PlanApprovalService {
     // Resolve the promise with all data including feedback
     // This triggers the wrapped resolve which clears the timeout
     pending.resolve({ approved, editedPlan, feedback });
-    if (foundKey) {
-      this.pendingApprovals.delete(foundKey);
-    }
-
-    return { success: true };
+    return pending.recovery && approved
+      ? { success: true, needsRecovery: true }
+      : { success: true };
   }
 
   /** Cancel approval (e.g., when feature stopped). Timeout cleared via wrapped reject. */
+  dispose(): void {
+    this.stopping = true;
+    const pending = [...this.pendingApprovals.values()];
+    this.pendingApprovals.clear();
+    for (const approval of pending) {
+      approval.reject(shutdownError());
+    }
+  }
+
   cancelApproval(featureId: string, projectPath?: string): void {
     logger.info(`cancelApproval called for feature ${featureId}`);
     logger.info(

@@ -1,4 +1,6 @@
 {
+  "Terminal cleanup could not be confirmed": "Не удалось подтвердить остановку терминала",
+  "The terminal was kept for retry. No new shell was started.": "Терминал сохранён для повторной попытки. Новая оболочка не запускалась.",
   "\n{value1} Task completed: {value2}\n": "\n\n{value1} Задача выполнена: {value2}\n\n",
   "\n⏸️ Plan generated - waiting for your approval...\n": "\n\n⏸️ План создан – ждем вашего утверждения...\n\n",
   "\n▶ Starting {value1}: {value2}\n": "\n\n▶ Начало {value1}: {value2}\n\n",
@@ -1695,7 +1697,7 @@
   "Enter plan content...": "Введите содержание плана...",
   "Enter project name": "Введите название проекта",
   "Enter project name...": "Введите название проекта...",
-  "Enter the API key shown in the server console to continue.": "Введите ключ API, показанный в консоли сервера, чтобы продолжить.",
+  "Enter the configured API key or the key stored in DATA_DIR/.api-key to continue.": "Введите настроенный ключ API или ключ из файла DATA_DIR/.api-key, чтобы продолжить.",
   "Enter the GitHub PR number to associate with this worktree. The PR info will be fetched from GitHub if available.": "Введите номер PR GitHub, который нужно связать с этим рабочим деревом. Информация о PR будет получена с GitHub, если она доступна.",
   "Enter value...": "Введите значение...",
   "Enter your markdown content here...": "Введите здесь содержимое уценки...",

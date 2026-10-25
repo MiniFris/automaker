@@ -70,7 +70,9 @@ describe('Direct API in the actual settings page', () => {
   it('opens execution environment settings through the real global sidebar', async () => {
     open();
     fireEvent.click(screen.getByRole('button', { name: 'Execution Environment' }));
-    expect(await screen.findByLabelText('Default execution environment')).toHaveValue('local');
+    expect(
+      await screen.findByRole('combobox', { name: 'Default execution environment' })
+    ).toHaveTextContent('Local — Automaker server environment');
     expect(mocks.inspectEnvironment).toHaveBeenCalledWith(undefined);
   });
 

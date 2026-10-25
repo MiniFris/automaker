@@ -6,7 +6,9 @@ import type {
   ResolvedExecutionEnvironment,
 } from '@automaker/types';
 
-export class EnvironmentConfigurationError extends Error {}
+export class EnvironmentConfigurationError extends Error {
+  readonly status = 400;
+}
 
 function record(value: unknown, keys: string[]): Record<string, unknown> {
   if (

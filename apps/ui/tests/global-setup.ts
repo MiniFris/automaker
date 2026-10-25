@@ -37,7 +37,7 @@ async function globalSetup(config: FullConfig) {
     } catch {
       throw new Error(
         `TEST_REUSE_SERVER is set but nothing is listening at ${baseURL}. ` +
-          'Start the UI and server first (e.g. from apps/ui: TEST_PORT=3107 TEST_SERVER_PORT=3108 pnpm dev; from apps/server: PORT=3108 pnpm run dev:test) or run tests without TEST_REUSE_SERVER.'
+          'Start the UI and server first (e.g. from apps/ui: TEST_PORT=3107 TEST_SERVER_PORT=3108 pnpm dev; from apps/server: PORT=3108 pnpm run dev:e2e) or run tests without TEST_REUSE_SERVER.'
       );
     }
   }

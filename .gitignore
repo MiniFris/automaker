@@ -14,6 +14,8 @@ out/
 # Automaker
 .automaker/images/
 .automaker/
+!/apps/server/tests/fixtures/storage/project/.automaker/
+!/apps/server/tests/fixtures/storage/project/.automaker/**
 /.automaker/*
 /.automaker/
 
