@@ -13,6 +13,13 @@ import {
 } from './event-history.schemas.js';
 import { EventHistoryApplicationService } from './event-history.service.js';
 import { EventReplayService } from './event-replay.service.js';
+import {
+  EventHistoryListResponseSchema,
+  EventHistoryReadResponseSchema,
+  EventHistoryDeleteResponseSchema,
+  EventHistoryClearResponseSchema,
+  EventHistoryReplayResponseSchema,
+} from '@automaker/contracts/domains/event-history';
 
 @Controller('event-history')
 @UseGuards(AllowedPathGuard)
@@ -26,41 +33,31 @@ export class EventHistoryController {
 
   @Post('list')
   @HttpCode(200)
-  list(
-    @Body(new ZodValidationPipe(EventListRequestSchema)) input: EventListRequest
-  ): Promise<Record<string, unknown>> {
-    return this.history.list(input);
+  async list(@Body(new ZodValidationPipe(EventListRequestSchema)) input: EventListRequest) {
+    return EventHistoryListResponseSchema.parse(await this.history.list(input));
   }
 
   @Post('get')
   @HttpCode(200)
-  get(
-    @Body(new ZodValidationPipe(EventByIdRequestSchema)) input: EventByIdRequest
-  ): Promise<Record<string, unknown>> {
-    return this.history.get(input);
+  async get(@Body(new ZodValidationPipe(EventByIdRequestSchema)) input: EventByIdRequest) {
+    return EventHistoryReadResponseSchema.parse(await this.history.get(input));
   }
 
   @Post('delete')
   @HttpCode(200)
-  delete(
-    @Body(new ZodValidationPipe(EventByIdRequestSchema)) input: EventByIdRequest
-  ): Promise<Record<string, unknown>> {
-    return this.history.delete(input);
+  async delete(@Body(new ZodValidationPipe(EventByIdRequestSchema)) input: EventByIdRequest) {
+    return EventHistoryDeleteResponseSchema.parse(await this.history.delete(input));
   }
 
   @Post('clear')
   @HttpCode(200)
-  clear(
-    @Body(new ZodValidationPipe(EventProjectRequestSchema)) input: EventProjectRequest
-  ): Promise<Record<string, unknown>> {
-    return this.history.clear(input);
+  async clear(@Body(new ZodValidationPipe(EventProjectRequestSchema)) input: EventProjectRequest) {
+    return EventHistoryClearResponseSchema.parse(await this.history.clear(input));
   }
 
   @Post('replay')
   @HttpCode(200)
-  replay(
-    @Body(new ZodValidationPipe(EventReplayRequestSchema)) input: EventReplayRequest
-  ): Promise<Record<string, unknown>> {
-    return this.replayService.replay(input);
+  async replay(@Body(new ZodValidationPipe(EventReplayRequestSchema)) input: EventReplayRequest) {
+    return EventHistoryReplayResponseSchema.parse(await this.replayService.replay(input));
   }
 }

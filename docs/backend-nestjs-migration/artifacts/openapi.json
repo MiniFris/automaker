@@ -9,8 +9,8 @@
     "operations": 318,
     "sharedOrNoInput": 296,
     "incompleteInput": 22,
-    "sharedRuntimeResponses": 18,
-    "unverifiedResponses": 300
+    "sharedRuntimeResponses": 30,
+    "unverifiedResponses": 288
   },
   "paths": {
     "/api/agent/clear": {
@@ -1252,10 +1252,10 @@
         "tags": [
           "event-history"
         ],
-        "x-source": "apps/server/src/modules/event-history/event-history.controller.ts:51",
+        "x-source": "apps/server/src/modules/event-history/event-history.controller.ts:52",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1268,7 +1268,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/event-history.EventHistoryClearResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -1282,10 +1289,10 @@
         "tags": [
           "event-history"
         ],
-        "x-source": "apps/server/src/modules/event-history/event-history.controller.ts:43",
+        "x-source": "apps/server/src/modules/event-history/event-history.controller.ts:46",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1298,7 +1305,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/event-history.EventHistoryDeleteResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -1312,10 +1326,10 @@
         "tags": [
           "event-history"
         ],
-        "x-source": "apps/server/src/modules/event-history/event-history.controller.ts:35",
+        "x-source": "apps/server/src/modules/event-history/event-history.controller.ts:40",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1328,7 +1342,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/event-history.EventHistoryReadResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -1342,10 +1363,10 @@
         "tags": [
           "event-history"
         ],
-        "x-source": "apps/server/src/modules/event-history/event-history.controller.ts:27",
+        "x-source": "apps/server/src/modules/event-history/event-history.controller.ts:34",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1358,7 +1379,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/event-history.EventHistoryListResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -1372,10 +1400,10 @@
         "tags": [
           "event-history"
         ],
-        "x-source": "apps/server/src/modules/event-history/event-history.controller.ts:59",
+        "x-source": "apps/server/src/modules/event-history/event-history.controller.ts:58",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -1388,7 +1416,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/event-history.EventHistoryReplayResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -3746,10 +3781,10 @@
         "tags": [
           "notifications"
         ],
-        "x-source": "apps/server/src/modules/notifications/notifications.controller.ts:46",
+        "x-source": "apps/server/src/modules/notifications/notifications.controller.ts:52",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -3762,7 +3797,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/notifications.NotificationDismissResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -3776,10 +3818,10 @@
         "tags": [
           "notifications"
         ],
-        "x-source": "apps/server/src/modules/notifications/notifications.controller.ts:21",
+        "x-source": "apps/server/src/modules/notifications/notifications.controller.ts:27",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -3792,7 +3834,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/notifications.NotificationsListResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -3806,10 +3855,10 @@
         "tags": [
           "notifications"
         ],
-        "x-source": "apps/server/src/modules/notifications/notifications.controller.ts:37",
+        "x-source": "apps/server/src/modules/notifications/notifications.controller.ts:43",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -3822,7 +3871,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/notifications.NotificationReadResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -3836,10 +3892,10 @@
         "tags": [
           "notifications"
         ],
-        "x-source": "apps/server/src/modules/notifications/notifications.controller.ts:29",
+        "x-source": "apps/server/src/modules/notifications/notifications.controller.ts:35",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -3852,7 +3908,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/notifications.NotificationCountResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -7073,10 +7136,10 @@
         "tags": [
           "templates"
         ],
-        "x-source": "apps/server/src/modules/templates/templates.controller.ts:10",
+        "x-source": "apps/server/src/modules/templates/templates.controller.ts:11",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "requestBody": {
           "required": true,
           "content": {
@@ -7089,7 +7152,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/templates.CloneTemplateResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -7355,13 +7425,20 @@
         "tags": [
           "workspace"
         ],
-        "x-source": "apps/server/src/modules/workspace/workspace.controller.ts:8",
+        "x-source": "apps/server/src/modules/workspace/workspace.controller.ts:12",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/workspace.WorkspaceConfigResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -7375,13 +7452,20 @@
         "tags": [
           "workspace"
         ],
-        "x-source": "apps/server/src/modules/workspace/workspace.controller.ts:13",
+        "x-source": "apps/server/src/modules/workspace/workspace.controller.ts:17",
         "x-access": "protected",
         "x-request-contract": "shared-or-no-input",
-        "x-response-contract": "unverified",
+        "x-response-contract": "shared-runtime",
         "responses": {
           "200": {
-            "description": "Successful response; response schema not yet verified."
+            "description": "Response validated by the shared runtime schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/workspace.WorkspaceDirectoriesResponseSchema.Response"
+                }
+              }
+            }
           },
           "default": {
             "description": "Error response; see endpoint implementation."
@@ -9629,6 +9713,289 @@
         ],
         "additionalProperties": false
       },
+      "event-history.EventHistoryClearResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "cleared": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "success",
+          "cleared"
+        ],
+        "additionalProperties": {}
+      },
+      "event-history.EventHistoryDeleteResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "additionalProperties": {}
+      },
+      "event-history.EventHistoryListResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "trigger": {
+                  "type": "string"
+                },
+                "timestamp": {
+                  "type": "string"
+                },
+                "featureId": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "featureName": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "trigger",
+                "timestamp"
+              ],
+              "additionalProperties": {}
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "success",
+          "events",
+          "total"
+        ],
+        "additionalProperties": {}
+      },
+      "event-history.EventHistoryReadResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "event": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "trigger": {
+                "type": "string"
+              },
+              "timestamp": {
+                "type": "string"
+              },
+              "featureId": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "featureName": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "projectPath": {
+                "type": "string"
+              },
+              "projectName": {
+                "type": "string"
+              },
+              "error": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "errorType": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "passes": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "metadata": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "trigger",
+              "timestamp",
+              "projectPath",
+              "projectName"
+            ],
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "success",
+          "event"
+        ],
+        "additionalProperties": {}
+      },
+      "event-history.EventHistoryReplayResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "result": {
+            "type": "object",
+            "properties": {
+              "eventId": {
+                "type": "string"
+              },
+              "hooksTriggered": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "hookResults": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "hookId": {
+                      "type": "string"
+                    },
+                    "hookName": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "error": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "durationMs": {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "hookId",
+                    "success",
+                    "durationMs"
+                  ],
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "required": [
+              "eventId",
+              "hooksTriggered",
+              "hookResults"
+            ],
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "success",
+          "result"
+        ],
+        "additionalProperties": {}
+      },
       "event-history.EventListRequestSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -10759,6 +11126,68 @@
           "serverId"
         ]
       },
+      "notifications.NotificationCountResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "success",
+          "count"
+        ],
+        "additionalProperties": {}
+      },
+      "notifications.NotificationDismissResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean",
+                "const": true
+              },
+              "dismissed": {
+                "type": "boolean",
+                "const": true
+              }
+            },
+            "required": [
+              "success",
+              "dismissed"
+            ],
+            "additionalProperties": {}
+          },
+          {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean",
+                "const": true
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "success",
+              "count"
+            ],
+            "additionalProperties": {}
+          }
+        ]
+      },
       "notifications.NotificationMutationRequestSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -10793,6 +11222,162 @@
           "projectPath"
         ],
         "additionalProperties": false
+      },
+      "notifications.NotificationReadResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean",
+                "const": true
+              },
+              "notification": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "createdAt": {
+                    "type": "string"
+                  },
+                  "read": {
+                    "type": "boolean"
+                  },
+                  "dismissed": {
+                    "type": "boolean"
+                  },
+                  "featureId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "projectPath": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "type",
+                  "title",
+                  "message",
+                  "createdAt",
+                  "read",
+                  "dismissed",
+                  "projectPath"
+                ],
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "success",
+              "notification"
+            ],
+            "additionalProperties": {}
+          },
+          {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean",
+                "const": true
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "success",
+              "count"
+            ],
+            "additionalProperties": {}
+          }
+        ]
+      },
+      "notifications.NotificationsListResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "notifications": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "createdAt": {
+                  "type": "string"
+                },
+                "read": {
+                  "type": "boolean"
+                },
+                "dismissed": {
+                  "type": "boolean"
+                },
+                "featureId": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "projectPath": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "type",
+                "title",
+                "message",
+                "createdAt",
+                "read",
+                "dismissed",
+                "projectPath"
+              ],
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "success",
+          "notifications"
+        ],
+        "additionalProperties": {}
       },
       "pipeline.PipelineAddSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -15324,6 +15909,28 @@
         ],
         "additionalProperties": false
       },
+      "templates.CloneTemplateResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "projectPath": {
+            "type": "string"
+          },
+          "projectName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "success",
+          "projectPath",
+          "projectName"
+        ],
+        "additionalProperties": {}
+      },
       "terminal.TerminalAuthenticationSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "anyOf": [
@@ -15434,6 +16041,144 @@
             "items": {}
           }
         ]
+      },
+      "workspace.WorkspaceConfigResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "workspaceDir": {
+                "type": "string"
+              },
+              "defaultDir": {
+                "type": "string"
+              },
+              "error": {
+                "type": "string"
+              },
+              "success": {
+                "type": "boolean",
+                "const": true
+              },
+              "configured": {
+                "type": "boolean",
+                "const": true
+              }
+            },
+            "required": [
+              "workspaceDir",
+              "defaultDir",
+              "success",
+              "configured"
+            ],
+            "additionalProperties": {}
+          },
+          {
+            "type": "object",
+            "properties": {
+              "workspaceDir": {
+                "type": "string"
+              },
+              "defaultDir": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "error": {
+                "type": "string"
+              },
+              "success": {
+                "type": "boolean",
+                "const": true
+              },
+              "configured": {
+                "type": "boolean",
+                "const": false
+              }
+            },
+            "required": [
+              "defaultDir",
+              "success",
+              "configured"
+            ],
+            "additionalProperties": {}
+          },
+          {
+            "type": "object",
+            "properties": {
+              "workspaceDir": {
+                "type": "string"
+              },
+              "defaultDir": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "error": {
+                "type": "string"
+              },
+              "success": {
+                "type": "boolean",
+                "const": true
+              },
+              "configured": {
+                "type": "boolean",
+                "const": false
+              }
+            },
+            "required": [
+              "error",
+              "success",
+              "configured"
+            ],
+            "additionalProperties": {}
+          }
+        ]
+      },
+      "workspace.WorkspaceDirectoriesResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "directories": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "path"
+              ],
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "success",
+          "directories"
+        ],
+        "additionalProperties": {}
       },
       "worktree.DevSessionSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",

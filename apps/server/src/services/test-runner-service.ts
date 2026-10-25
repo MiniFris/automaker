@@ -1,3 +1,8 @@
+import {
+  createOwnedLocalChild,
+  OwnedLocalChildCleanupError,
+  type OwnedLocalChild,
+} from './owned-local-child.js';
 /**
  * Test Runner Service
  *
@@ -49,6 +54,11 @@ export interface TestRunSession {
   command: string;
   /** The spawned child process */
   process: ChildProcess | null;
+  canonicalWorktreePath?: string;
+  owner?: OwnedLocalChild;
+  cleanupUnknown?: boolean;
+  stop?: Promise<void>;
+  finish?: () => void;
   /** When the test run started */
   startedAt: Date;
   /** When the test run finished (if completed) */
@@ -91,8 +101,12 @@ export interface TestRunResult {
  */
 class TestRunnerService {
   private readonly acceptedStarts = new Set<Promise<unknown>>();
+  private readonly startingWorktrees = new Set<string>();
   private closing = false;
   private cleanupPromise?: Promise<void>;
+  private get nativeOwnership(): boolean {
+    return Boolean(this.runtime) && process.platform === 'linux';
+  }
   constructor(private readonly runtime?: LocalProcessPreflight) {}
 
   private sessions: Map<string, TestRunSession> = new Map();
@@ -242,13 +256,43 @@ class TestRunnerService {
   ): Promise<TestRunResult> {
     if (this.runtime && this.closing)
       return Promise.resolve({ success: false, error: 'Test runner is shutting down' });
-    const accepted = this.startTestsInternal(worktreePath, options);
+    let canonical: string | undefined;
+    if (this.runtime) {
+      try {
+        canonical = this.runtime.resolvePath(worktreePath);
+      } catch (error) {
+        return Promise.reject(error);
+      }
+      const existing = [...this.sessions.values()].find(
+        (session) =>
+          (session.canonicalWorktreePath === canonical || session.worktreePath === worktreePath) &&
+          (session.status === 'pending' || session.status === 'running' || session.cleanupUnknown)
+      );
+      if (existing) {
+        if (existing.cleanupUnknown || existing.owner?.closing)
+          return Promise.reject(new OwnedLocalChildCleanupError());
+        return Promise.resolve({
+          success: false,
+          error: `Tests are already running for this worktree (session: ${existing.id})`,
+        });
+      }
+      if (this.startingWorktrees.has(canonical) || this.startingWorktrees.has(worktreePath))
+        return Promise.resolve({
+          success: false,
+          error: 'Tests are already starting for this worktree',
+        });
+      this.startingWorktrees.add(canonical);
+      this.startingWorktrees.add(worktreePath);
+    }
+    const accepted = this.startTestsInternal(worktreePath, options, canonical);
     if (this.runtime) {
       this.acceptedStarts.add(accepted);
-      void accepted.then(
-        () => this.acceptedStarts.delete(accepted),
-        () => this.acceptedStarts.delete(accepted)
-      );
+      const release = () => {
+        this.acceptedStarts.delete(accepted);
+        this.startingWorktrees.delete(canonical!);
+        this.startingWorktrees.delete(worktreePath);
+      };
+      void accepted.then(release, release);
     }
     return accepted;
   }
@@ -258,20 +302,23 @@ class TestRunnerService {
     options: {
       command: string;
       testFile?: string;
-    }
+    },
+    nativeCwd?: string
   ): Promise<TestRunResult> {
     const { command, testFile } = options;
 
     // Check if already running
     const existingSession = this.getActiveSession(worktreePath);
     if (existingSession) {
+      if (this.runtime && (existingSession.cleanupUnknown || existingSession.owner?.closing))
+        throw new OwnedLocalChildCleanupError();
       return {
         success: false,
         error: `Tests are already running for this worktree (session: ${existingSession.id})`,
       };
     }
 
-    const canonicalCwd = this.runtime ? this.runtime.resolvePath(worktreePath) : worktreePath;
+    const canonicalCwd = nativeCwd ?? worktreePath;
     if (
       !(this.runtime
         ? await localDirectoryExists(this.runtime, canonicalCwd)
@@ -285,6 +332,8 @@ class TestRunnerService {
 
     if (this.runtime && this.closing)
       return { success: false, error: 'Test runner is shutting down' };
+    if (this.runtime && this.getActiveSession(worktreePath))
+      return { success: false, error: 'Tests are already running for this worktree' };
     if (!command) {
       return {
         success: false,
@@ -312,6 +361,7 @@ class TestRunnerService {
     const session: TestRunSession = {
       id: sessionId,
       worktreePath,
+      canonicalWorktreePath: nativeCwd,
       command: finalCommand,
       process: null,
       startedAt: new Date(),
@@ -343,7 +393,7 @@ class TestRunnerService {
     });
 
     session.process = testProcess;
-    session.status = 'running';
+    session.status = this.nativeOwnership ? 'pending' : 'running';
 
     // Track if process failed early
     const status = { error: null as string | null, exited: false };
@@ -354,6 +404,7 @@ class TestRunnerService {
       finalStatus: TestRunStatus,
       errorMessage?: string
     ) => {
+      if (this.nativeOwnership && session.finishedAt !== null) return;
       session.finishedAt = new Date();
       session.exitCode = exitCode;
       session.status = finalStatus;
@@ -375,7 +426,7 @@ class TestRunnerService {
       }
 
       // Emit completed event
-      if (this.emitter && !session.stopping) {
+      if (this.emitter && (this.nativeOwnership || !session.stopping)) {
         this.emitter.emit('test-runner:completed', {
           sessionId: session.id,
           worktreePath: session.worktreePath,
@@ -406,7 +457,7 @@ class TestRunnerService {
     testProcess.on('error', (error) => {
       logger.error(`Process error for ${sessionId}:`, error);
       status.error = error.message;
-      cleanupAndFinish(null, 'error', error.message);
+      if (!this.nativeOwnership) cleanupAndFinish(null, 'error', error.message);
     });
 
     testProcess.on('exit', (code) => {
@@ -423,15 +474,65 @@ class TestRunnerService {
         finalStatus = 'failed';
       }
 
-      cleanupAndFinish(code, finalStatus);
+      if (!this.nativeOwnership) cleanupAndFinish(code, finalStatus);
     });
 
-    // Store session
+    // Retain identity before async ownership proof; no caller may replay this job.
     this.sessions.set(sessionId, session);
+    if (this.nativeOwnership) {
+      const owner = (this.runtime!.supervise ?? createOwnedLocalChild)(testProcess);
+      session.owner = owner;
+      session.finish = () =>
+        cleanupAndFinish(
+          testProcess.exitCode,
+          session.stopping
+            ? 'cancelled'
+            : status.error
+              ? 'error'
+              : testProcess.exitCode === 0
+                ? 'passed'
+                : 'failed',
+          status.error ?? undefined
+        );
+      void owner.completion().then(
+        () => session.finish!(),
+        () => this.markNativeSessionUnknown(session)
+      );
+      try {
+        await owner.ready();
+      } catch {
+        try {
+          await owner.close();
+        } catch {
+          this.markNativeSessionUnknown(session);
+          throw new OwnedLocalChildCleanupError();
+        }
+        session.finish();
+        return {
+          success: false,
+          error: 'Test process exited immediately. Check output for details.',
+        };
+      }
+      if (session.finishedAt === null) session.status = 'running';
+      if (this.closing) {
+        await this.stopTests(sessionId);
+        return { success: false, error: 'Test runner is shutting down' };
+      }
+    }
 
     // Wait a moment to see if the process fails immediately
     await new Promise((resolve) => setTimeout(resolve, 200));
 
+    if (this.runtime && this.closing) {
+      await this.stopTests(sessionId);
+      return { success: false, error: 'Test runner is shutting down' };
+    }
+    if (this.nativeOwnership && session.cleanupUnknown) throw new OwnedLocalChildCleanupError();
+    if (this.nativeOwnership && session.stopping) {
+      await session.owner!.completion();
+      return { success: false, error: 'Test run stopped before startup completed' };
+    }
+    if (this.nativeOwnership && (status.error || status.exited)) await session.owner!.completion();
     if (status.error) {
       return {
         success: false,
@@ -451,7 +552,7 @@ class TestRunnerService {
     }
 
     // Emit started event
-    if (this.emitter) {
+    if (this.emitter && (!this.runtime || session.finishedAt === null)) {
       this.emitter.emit('test-runner:started', {
         sessionId,
         worktreePath,
@@ -492,6 +593,28 @@ class TestRunnerService {
         success: false,
         error: `Test session not found: ${sessionId}`,
       };
+    }
+
+    if (
+      this.nativeOwnership &&
+      (session.status === 'running' || session.status === 'pending' || session.cleanupUnknown)
+    ) {
+      if (!session.owner) throw new OwnedLocalChildCleanupError();
+      session.stopping = true;
+      if (session.flushTimeout) clearTimeout(session.flushTimeout);
+      session.flushTimeout = null;
+      if (!session.stop)
+        session.stop = (async () => {
+          try {
+            await session.owner!.close();
+          } catch {
+            this.markNativeSessionUnknown(session);
+            throw new OwnedLocalChildCleanupError();
+          }
+          session.finish!();
+        })();
+      await session.stop;
+      return { success: true, result: { sessionId, message: 'Test run cancelled' } };
     }
 
     if (session.status !== 'running') {
@@ -550,7 +673,11 @@ class TestRunnerService {
    */
   getActiveSession(worktreePath: string): TestRunSession | undefined {
     for (const session of this.sessions.values()) {
-      if (session.worktreePath === worktreePath && session.status === 'running') {
+      if (
+        session.worktreePath === worktreePath &&
+        (session.status === 'running' ||
+          (this.nativeOwnership && (session.status === 'pending' || session.cleanupUnknown)))
+      ) {
         return session;
       }
     }
@@ -665,7 +792,27 @@ class TestRunnerService {
   /**
    * Cancel all running test sessions (for cleanup)
    */
+  private markNativeSessionUnknown(session: TestRunSession): void {
+    session.cleanupUnknown = true;
+    session.stopping = true;
+    if (session.flushTimeout) clearTimeout(session.flushTimeout);
+    session.flushTimeout = null;
+  }
+
   async cancelAll(): Promise<void> {
+    if (this.runtime) {
+      const results = await Promise.allSettled(
+        [...this.sessions.values()]
+          .filter(
+            (session) =>
+              session.status === 'running' || session.status === 'pending' || session.cleanupUnknown
+          )
+          .map((session) => this.stopTests(session.id))
+      );
+      if (results.some((result) => result.status === 'rejected'))
+        throw new OwnedLocalChildCleanupError();
+      return;
+    }
     logger.info(`Cancelling all ${this.sessions.size} test sessions`);
 
     for (const session of this.sessions.values()) {

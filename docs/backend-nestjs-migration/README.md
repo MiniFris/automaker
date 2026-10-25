@@ -11,7 +11,8 @@ application/infra границ этапа 11. Результаты возобн�
 Предыдущий checkpoint: [state transactions, execution filesystem и core contracts](artifacts/state-execution-contract-checkpoint.md).
 Предыдущий checkpoint: [agent storage, recovery и session contracts](artifacts/agent-storage-recovery-session-checkpoint.md).
 Предыдущий checkpoint: [native stores, terminal cleanup и retired routes](artifacts/native-stores-terminal-cleanup-checkpoint.md).
-Последний checkpoint: [source ports и service locator retirement](artifacts/source-ports-and-locators-checkpoint.md).
+Предыдущий checkpoint: [source ports и service locator retirement](artifacts/source-ports-and-locators-checkpoint.md).
+Последний checkpoint: [owned local processes и response contracts](artifacts/owned-process-response-checkpoint.md).
 Полная миграция ещё не завершена; checklist и результаты проверок ведутся
 в документах соответствующих этапов.
 

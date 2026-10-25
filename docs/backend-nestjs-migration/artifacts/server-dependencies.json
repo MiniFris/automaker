@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 532,
-    "internalEdges": 1855,
+    "files": 534,
+    "internalEdges": 1861,
     "stronglyConnectedComponents": 2
   },
   "layerEdges": {
-    "core -> core": 72,
+    "core -> core": 73,
     "core -> lib": 6,
     "core -> middleware": 1,
     "core -> services": 9,
@@ -34,11 +34,11 @@
     "routes -> routes": 158,
     "routes -> services": 90,
     "routes -> types": 2,
-    "services -> core": 27,
+    "services -> core": 29,
     "services -> lib": 67,
     "services -> modules": 17,
     "services -> providers": 16,
-    "services -> services": 311,
+    "services -> services": 314,
     "services -> types": 3,
     "tests -> lib": 2
   },
@@ -139,6 +139,7 @@
     ],
     "childProcess": [
       "apps/server/src/core/platform/codex-credential.runtime.ts",
+      "apps/server/src/core/platform/owned-local-child.runtime.ts",
       "apps/server/src/core/platform/setup-status.runtime.ts",
       "apps/server/src/lib/auth-utils.ts",
       "apps/server/src/lib/cli-detection.ts",
@@ -185,7 +186,9 @@
       "apps/server/src/services/execution-environment/ssh.ts",
       "apps/server/src/services/execution-environment/terminal.ts",
       "apps/server/src/services/init-script-service.ts",
+      "apps/server/src/services/local-process-preflight.ts",
       "apps/server/src/services/mcp-test-service.ts",
+      "apps/server/src/services/owned-local-child.ts",
       "apps/server/src/services/pr-service.ts",
       "apps/server/src/services/test-runner-service.ts",
       "apps/server/src/services/worktree-resolver.ts"
@@ -250,6 +253,7 @@
       "apps/server/src/services/local-process-preflight.ts",
       "apps/server/src/services/mcp-test-service.ts",
       "apps/server/src/services/ntfy-service.ts",
+      "apps/server/src/services/owned-local-child.ts",
       "apps/server/src/services/pipeline-config.repository.ts",
       "apps/server/src/services/pipeline-orchestrator.ts",
       "apps/server/src/services/plan-approval-service.ts",
@@ -269,9 +273,13 @@
     "@anthropic-ai/claude-agent-sdk": 3,
     "@automaker/contracts": 25,
     "@automaker/contracts/domains/auth": 1,
+    "@automaker/contracts/domains/event-history": 1,
     "@automaker/contracts/domains/ideation": 1,
+    "@automaker/contracts/domains/notifications": 1,
     "@automaker/contracts/domains/setup-query": 5,
+    "@automaker/contracts/domains/templates": 1,
     "@automaker/contracts/domains/terminal": 2,
+    "@automaker/contracts/domains/workspace": 1,
     "@automaker/dependency-resolver": 1,
     "@automaker/git-utils": 12,
     "@automaker/model-resolver": 20,
@@ -304,16 +312,16 @@
     "node-pty": 2,
     "node:async_hooks": 1,
     "node:buffer": 1,
-    "node:child_process": 13,
+    "node:child_process": 16,
     "node:crypto": 40,
     "node:events": 1,
-    "node:fs": 10,
-    "node:fs/promises": 20,
+    "node:fs": 11,
+    "node:fs/promises": 21,
     "node:http": 7,
     "node:net": 3,
     "node:os": 11,
     "node:path": 62,
-    "node:perf_hooks": 21,
+    "node:perf_hooks": 22,
     "node:stream": 6,
     "node:stream/web": 2,
     "node:string_decoder": 4,
@@ -791,6 +799,10 @@
     {
       "source": "apps/server/src/core/platform/legacy-profile-import.error.ts",
       "target": "apps/server/src/core/errors/index.ts"
+    },
+    {
+      "source": "apps/server/src/core/platform/owned-local-child.runtime.ts",
+      "target": "apps/server/src/core/platform/linux-process-group.ts"
     },
     {
       "source": "apps/server/src/core/platform/setup-status.runtime.ts",
@@ -6813,6 +6825,10 @@
       "target": "apps/server/src/services/local-process-preflight.ts"
     },
     {
+      "source": "apps/server/src/services/dev-server-service.ts",
+      "target": "apps/server/src/services/owned-local-child.ts"
+    },
+    {
       "source": "apps/server/src/services/event-history-service.ts",
       "target": "apps/server/src/core/errors/index.ts"
     },
@@ -7421,6 +7437,10 @@
       "target": "apps/server/src/lib/secure-fs.ts"
     },
     {
+      "source": "apps/server/src/services/local-process-preflight.ts",
+      "target": "apps/server/src/services/owned-local-child.ts"
+    },
+    {
       "source": "apps/server/src/services/mcp-test-service.ts",
       "target": "apps/server/src/services/settings-service.ts"
     },
@@ -7435,6 +7455,14 @@
     {
       "source": "apps/server/src/services/notification-service.ts",
       "target": "apps/server/src/services/project-event-storage.ts"
+    },
+    {
+      "source": "apps/server/src/services/owned-local-child.ts",
+      "target": "apps/server/src/core/errors/domain-errors.ts"
+    },
+    {
+      "source": "apps/server/src/services/owned-local-child.ts",
+      "target": "apps/server/src/core/platform/owned-local-child.runtime.ts"
     },
     {
       "source": "apps/server/src/services/pipeline-config.repository.ts",
@@ -7707,6 +7735,10 @@
     {
       "source": "apps/server/src/services/test-runner-service.ts",
       "target": "apps/server/src/services/local-process-preflight.ts"
+    },
+    {
+      "source": "apps/server/src/services/test-runner-service.ts",
+      "target": "apps/server/src/services/owned-local-child.ts"
     },
     {
       "source": "apps/server/src/services/typed-event-bus.ts",

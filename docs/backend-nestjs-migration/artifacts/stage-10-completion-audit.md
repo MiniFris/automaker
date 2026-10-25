@@ -39,9 +39,11 @@ checkpoint; wave 8 results are recorded separately by the owning checkpoint.
   [native stores](native-stores-terminal-cleanup-checkpoint.md) and
   [source ports](source-ports-and-locators-checkpoint.md). This does not establish
   that every remaining platform/config helper is scoped.
-- Native local DevServerService still kills port occupants in selection/stop paths;
-  dev/test PID-tree cleanup and early completion need owned-process proof. Current
-  local filesystem fixtures stop before allocation and do not kill host listeners.
+- Native local DevServerService no longer kills port occupants in selection/stop
+  paths. Linux dev/test use captured generation/group ownership and await cleanup;
+  native non-Linux lifecycle compatibility retains its separate tree-proof gate.
+  See [owned process checkpoint](owned-process-response-checkpoint.md). Positive
+  process fixtures use only private spawned groups and ephemeral listeners.
 - Removed 84 unreachable route files; 94 characterization files remain excluded
   from production. The last managed dev/test getter exports and their WeakMaps
   were removed; test fixtures now pass explicit owners. Getter/module-instance

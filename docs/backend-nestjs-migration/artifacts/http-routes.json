@@ -674,7 +674,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/event-history/event-history.controller.ts",
-      "line": 51,
+      "line": 52,
       "middleware": [
         "EventHistoryController.clear"
       ],
@@ -689,7 +689,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/event-history/event-history.controller.ts",
-      "line": 43,
+      "line": 46,
       "middleware": [
         "EventHistoryController.delete"
       ],
@@ -704,7 +704,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/event-history/event-history.controller.ts",
-      "line": 35,
+      "line": 40,
       "middleware": [
         "EventHistoryController.get"
       ],
@@ -719,7 +719,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/event-history/event-history.controller.ts",
-      "line": 27,
+      "line": 34,
       "middleware": [
         "EventHistoryController.list"
       ],
@@ -734,7 +734,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/event-history/event-history.controller.ts",
-      "line": 59,
+      "line": 58,
       "middleware": [
         "EventHistoryController.replay"
       ],
@@ -1964,7 +1964,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/notifications/notifications.controller.ts",
-      "line": 46,
+      "line": 52,
       "middleware": [
         "NotificationsController.dismiss"
       ],
@@ -1979,7 +1979,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/notifications/notifications.controller.ts",
-      "line": 21,
+      "line": 27,
       "middleware": [
         "NotificationsController.list"
       ],
@@ -1994,7 +1994,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/notifications/notifications.controller.ts",
-      "line": 37,
+      "line": 43,
       "middleware": [
         "NotificationsController.markRead"
       ],
@@ -2009,7 +2009,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/notifications/notifications.controller.ts",
-      "line": 29,
+      "line": 35,
       "middleware": [
         "NotificationsController.unreadCount"
       ],
@@ -3674,7 +3674,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/templates/templates.controller.ts",
-      "line": 10,
+      "line": 11,
       "middleware": [
         "TemplatesController.clone"
       ],
@@ -3839,7 +3839,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/workspace/workspace.controller.ts",
-      "line": 8,
+      "line": 12,
       "middleware": [
         "WorkspaceController.getConfig"
       ],
@@ -3854,7 +3854,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/workspace/workspace.controller.ts",
-      "line": 13,
+      "line": 17,
       "middleware": [
         "WorkspaceController.listDirectories"
       ],

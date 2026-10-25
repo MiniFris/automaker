@@ -8,6 +8,12 @@ import {
   type NotificationProjectRequest,
 } from './notifications.schemas.js';
 import { NotificationsApplicationService } from './notifications.service.js';
+import {
+  NotificationsListResponseSchema,
+  NotificationCountResponseSchema,
+  NotificationReadResponseSchema,
+  NotificationDismissResponseSchema,
+} from '@automaker/contracts/domains/notifications';
 
 @Controller('notifications')
 @UseGuards(AllowedPathGuard)
@@ -20,35 +26,35 @@ export class NotificationsController {
 
   @Post('list')
   @HttpCode(200)
-  list(
+  async list(
     @Body(new ZodValidationPipe(NotificationProjectRequestSchema)) input: NotificationProjectRequest
-  ): Promise<Record<string, unknown>> {
-    return this.notifications.list(input);
+  ) {
+    return NotificationsListResponseSchema.parse(await this.notifications.list(input));
   }
 
   @Post('unread-count')
   @HttpCode(200)
-  unreadCount(
+  async unreadCount(
     @Body(new ZodValidationPipe(NotificationProjectRequestSchema)) input: NotificationProjectRequest
-  ): Promise<Record<string, unknown>> {
-    return this.notifications.unreadCount(input);
+  ) {
+    return NotificationCountResponseSchema.parse(await this.notifications.unreadCount(input));
   }
 
   @Post('mark-read')
   @HttpCode(200)
-  markRead(
+  async markRead(
     @Body(new ZodValidationPipe(NotificationMutationRequestSchema))
     input: NotificationMutationRequest
-  ): Promise<Record<string, unknown>> {
-    return this.notifications.markRead(input);
+  ) {
+    return NotificationReadResponseSchema.parse(await this.notifications.markRead(input));
   }
 
   @Post('dismiss')
   @HttpCode(200)
-  dismiss(
+  async dismiss(
     @Body(new ZodValidationPipe(NotificationMutationRequestSchema))
     input: NotificationMutationRequest
-  ): Promise<Record<string, unknown>> {
-    return this.notifications.dismiss(input);
+  ) {
+    return NotificationDismissResponseSchema.parse(await this.notifications.dismiss(input));
   }
 }

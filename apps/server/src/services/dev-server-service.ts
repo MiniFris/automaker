@@ -1,3 +1,8 @@
+import {
+  createOwnedLocalChild,
+  OwnedLocalChildCleanupError,
+  type OwnedLocalChild,
+} from './owned-local-child.js';
 /**
  * Dev Server Service
  *
@@ -109,6 +114,11 @@ export interface DevServerInfo {
   port: number;
   url: string;
   process: ChildProcess | null;
+  canonicalWorktreePath?: string;
+  owner?: OwnedLocalChild;
+  cleanupUnknown?: boolean;
+  stop?: Promise<void>;
+  finish?: Promise<void>;
   startedAt: Date;
   // Scrollback buffer for log history (replay on reconnect)
   scrollbackBuffer: string;
@@ -149,6 +159,7 @@ const LIVERELOAD_PORTS = [35729, 35730, 35731] as const;
 export interface DevServerRuntime extends LocalProcessPreflight {
   stateFilesystem: AtomicWriteFilesystem;
   dataDirectory: string;
+  ports?: { first: number; last: number; available?: (port: number) => Promise<boolean> };
 }
 
 export class DevServerService {
@@ -157,6 +168,9 @@ export class DevServerService {
   private cleanupPromise?: Promise<void>;
   private stateFailure = false;
   private stateClosed = false;
+  private get nativeOwnership(): boolean {
+    return Boolean(this.runtime) && process.platform === 'linux';
+  }
   constructor(private readonly runtime?: DevServerRuntime) {
     if (runtime) this.dataDir = runtime.dataDirectory;
   }
@@ -283,6 +297,29 @@ export class DevServerService {
       logger.info(`Loading ${persistedInfo.length} dev servers from state`);
 
       for (const info of persistedInfo) {
+        if (this.runtime) {
+          // A state file and a busy port are descriptions, never process authority.
+          let canonicalWorktreePath: string | undefined;
+          try {
+            canonicalWorktreePath = this.runtime.resolvePath(info.worktreePath);
+          } catch {
+            /* Unowned descriptions may be outside this app; retain without authority. */
+          }
+          this.runningServers.set(info.worktreePath, {
+            ...info,
+            canonicalWorktreePath,
+            startedAt: new Date(info.startedAt),
+            process: null,
+            scrollbackBuffer: '',
+            outputBuffer: '',
+            flushTimeout: null,
+            stopping: true,
+            cleanupUnknown: true,
+            urlDetectionTimeout: null,
+          });
+          this.allocatedPorts.add(info.allocatedPort);
+          continue;
+        }
         // Check if the process is still running on the port
         // Since we can't reliably re-attach to the process for output,
         // we'll just check if the port is in use.
@@ -329,6 +366,7 @@ export class DevServerService {
    * @param server - The DevServerInfo entry to prune
    */
   private pruneStaleServer(worktreePath: string, server: DevServerInfo): void {
+    if (this.nativeOwnership) return; // Only the captured owner's completion may release native identity.
     if (server.flushTimeout) clearTimeout(server.flushTimeout);
     if (server.urlDetectionTimeout) clearTimeout(server.urlDetectionTimeout);
     // Use allocatedPort (immutable) to free the reserved slot; server.port may have
@@ -665,15 +703,30 @@ export class DevServerService {
    * Find the next available port, killing any process on it first
    */
   private async findAvailablePort(): Promise<number> {
-    let port = BASE_PORT;
+    const first = this.runtime?.ports?.first ?? BASE_PORT;
+    const last = this.runtime?.ports?.last ?? MAX_PORT;
+    let port = first;
 
-    while (port <= MAX_PORT) {
+    while (port <= last) {
       // Skip ports we've already allocated internally
       if (this.allocatedPorts.has(port)) {
         port++;
         continue;
       }
 
+      if (this.runtime) {
+        if (this.closing) throw new Error('Dev server is shutting down');
+        const available = await (this.runtime.ports?.available?.(port) ??
+          this.isPortAvailable(port));
+        if (this.closing) throw new Error('Dev server is shutting down');
+        // Another worktree may have completed the same probe while we awaited.
+        if (available && !this.allocatedPorts.has(port)) {
+          this.allocatedPorts.add(port);
+          return port;
+        }
+        port++;
+        continue;
+      }
       // Force kill any process on this port before checking availability
       // This ensures we can claim the port even if something stale is holding it
       this.killProcessOnPort(port);
@@ -688,7 +741,7 @@ export class DevServerService {
       port++;
     }
 
-    throw new Error(`No available ports found between ${BASE_PORT} and ${MAX_PORT}`);
+    throw new Error(`No available ports found between ${first} and ${last}`);
   }
 
   /**
@@ -789,13 +842,54 @@ export class DevServerService {
   ): ReturnType<DevServerService['startDevServerInternal']> {
     if (this.runtime && this.closing)
       return Promise.resolve({ success: false, error: 'Dev server is shutting down' });
-    const accepted = this.startDevServerInternal(projectPath, worktreePath, customCommand);
+    let canonical: string | undefined;
+    if (this.runtime) {
+      const raw = this.runningServers.get(worktreePath);
+      if (raw?.cleanupUnknown) return Promise.reject(new OwnedLocalChildCleanupError());
+      try {
+        canonical = this.runtime.resolvePath(worktreePath);
+      } catch (error) {
+        return Promise.reject(error);
+      }
+      const existing = [...this.runningServers.values()].find(
+        (server) =>
+          server.canonicalWorktreePath === canonical || server.worktreePath === worktreePath
+      );
+      if (existing) {
+        if (
+          existing.cleanupUnknown ||
+          (this.nativeOwnership && (!existing.owner || existing.stopping || existing.owner.closing))
+        )
+          return Promise.reject(new OwnedLocalChildCleanupError());
+        return Promise.resolve({
+          success: true,
+          result: {
+            worktreePath: existing.worktreePath,
+            port: existing.port,
+            url: existing.url,
+            message: `Dev server already running on port ${existing.port}`,
+          },
+        });
+      }
+      if (this.startingServers.has(canonical) || this.startingServers.has(worktreePath))
+        return Promise.resolve({ success: false, error: 'Dev server is already starting' });
+      this.startingServers.add(canonical);
+      this.startingServers.add(worktreePath);
+    }
+    const accepted = this.startDevServerInternal(
+      projectPath,
+      worktreePath,
+      customCommand,
+      canonical
+    );
     if (this.runtime) {
       this.acceptedStarts.add(accepted);
-      void accepted.then(
-        () => this.acceptedStarts.delete(accepted),
-        () => this.acceptedStarts.delete(accepted)
-      );
+      const release = () => {
+        this.acceptedStarts.delete(accepted);
+        this.startingServers.delete(canonical!);
+        this.startingServers.delete(worktreePath);
+      };
+      void accepted.then(release, release);
     }
     return accepted;
   }
@@ -803,7 +897,8 @@ export class DevServerService {
   private async startDevServerInternal(
     projectPath: string,
     worktreePath: string,
-    customCommand?: string
+    customCommand?: string,
+    nativeCwd?: string
   ): Promise<{
     success: boolean;
     result?: {
@@ -815,9 +910,19 @@ export class DevServerService {
     error?: string;
   }> {
     // Check if already running or starting
-    if (this.runningServers.has(worktreePath) || this.startingServers.has(worktreePath)) {
+    if (
+      !this.runtime &&
+      (this.runningServers.has(worktreePath) || this.startingServers.has(worktreePath))
+    ) {
       const existing = this.runningServers.get(worktreePath);
       if (existing) {
+        if (
+          this.runtime &&
+          (existing.cleanupUnknown ||
+            (this.nativeOwnership &&
+              (!existing.owner || existing.stopping || existing.owner.closing)))
+        )
+          throw new OwnedLocalChildCleanupError();
         return {
           success: true,
           result: {
@@ -834,10 +939,12 @@ export class DevServerService {
       };
     }
 
-    this.startingServers.add(worktreePath);
+    if (!this.runtime) this.startingServers.add(worktreePath);
+    let nativeReservation: number | undefined;
+    let spawned = false;
 
     try {
-      const canonicalCwd = this.runtime ? this.runtime.resolvePath(worktreePath) : worktreePath;
+      const canonicalCwd = nativeCwd ?? worktreePath;
       // Native preflight pins a directory; DENIED/EIO never become an absence.
       if (
         !(this.runtime
@@ -893,6 +1000,7 @@ export class DevServerService {
       let port: number;
       try {
         port = await this.findAvailablePort();
+        if (this.runtime) nativeReservation = port;
       } catch (error) {
         return {
           success: false,
@@ -905,12 +1013,10 @@ export class DevServerService {
 
       // Also kill common related ports (livereload, etc.)
       // Some dev servers use fixed ports for HMR/livereload regardless of main port
-      for (const relatedPort of LIVERELOAD_PORTS) {
-        this.killProcessOnPort(relatedPort);
+      if (!this.runtime) {
+        for (const relatedPort of LIVERELOAD_PORTS) this.killProcessOnPort(relatedPort);
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
-
-      // Small delay to ensure related ports are freed
-      await new Promise((resolve) => setTimeout(resolve, 100));
 
       if (this.runtime && this.closing) {
         this.allocatedPorts.delete(port);
@@ -943,8 +1049,10 @@ export class DevServerService {
         cwd: canonicalCwd,
         env,
         stdio: ['ignore', 'pipe', 'pipe'],
-        detached: false,
+        detached: this.nativeOwnership,
       });
+
+      spawned = true;
 
       // Track if process failed early using object to work around TypeScript narrowing
       const status = { error: null as string | null, exited: false };
@@ -954,6 +1062,7 @@ export class DevServerService {
       const fallbackHost = 'localhost';
       const serverInfo: DevServerInfo = {
         worktreePath,
+        canonicalWorktreePath: nativeCwd,
         allocatedPort: port, // Immutable: records which port we reserved; never changed after this point
         port,
         url: `http://${fallbackHost}:${port}`, // Initial URL, may be updated by detectUrlFromOutput
@@ -1017,21 +1126,68 @@ export class DevServerService {
         this.saveState().catch((err) => logger.error('Failed to save state in cleanup:', err));
       };
 
+      if (this.nativeOwnership) {
+        this.runningServers.set(worktreePath, serverInfo);
+        const owner = (this.runtime!.supervise ?? createOwnedLocalChild)(devProcess);
+        serverInfo.owner = owner;
+        void owner
+          .completion()
+          .then(
+            () => this.finishNativeServer(serverInfo, devProcess.exitCode),
+            () => this.markNativeServerUnknown(serverInfo)
+          )
+          .catch(() => this.markNativeServerUnknown(serverInfo));
+      }
+
       devProcess.on('error', (error) => {
         logger.error(`Process error:`, error);
         status.error = error.message;
-        cleanupAndEmitStop(null, error.message);
+        if (!this.nativeOwnership) cleanupAndEmitStop(null, error.message);
       });
 
       devProcess.on('exit', (code) => {
         logger.info(`Process for ${worktreePath} exited with code ${code}`);
         status.exited = true;
-        cleanupAndEmitStop(code);
+        if (!this.nativeOwnership) cleanupAndEmitStop(code);
       });
+
+      if (this.nativeOwnership) {
+        try {
+          await serverInfo.owner!.ready();
+        } catch {
+          try {
+            await serverInfo.owner!.close();
+          } catch {
+            this.markNativeServerUnknown(serverInfo);
+            throw new OwnedLocalChildCleanupError();
+          }
+          await this.finishNativeServer(serverInfo, devProcess.exitCode);
+          return {
+            success: false,
+            error: 'Dev server process exited immediately. Check server logs for details.',
+          };
+        }
+        if (this.closing) {
+          await this.stopDevServer(worktreePath);
+          return { success: false, error: 'Dev server is shutting down' };
+        }
+      }
 
       // Wait a moment to see if the process fails immediately
       await new Promise((resolve) => setTimeout(resolve, 500));
 
+      if (this.runtime && this.closing) {
+        await this.stopDevServer(worktreePath);
+        return { success: false, error: 'Dev server is shutting down' };
+      }
+      if (this.nativeOwnership && serverInfo.cleanupUnknown)
+        throw new OwnedLocalChildCleanupError();
+      if (this.nativeOwnership && serverInfo.stopping) {
+        await serverInfo.owner!.completion();
+        return { success: false, error: 'Dev server stopped before startup completed' };
+      }
+      if (this.nativeOwnership && (status.error || status.exited))
+        await serverInfo.owner!.completion();
       if (status.error) {
         return {
           success: false,
@@ -1047,7 +1203,7 @@ export class DevServerService {
       }
 
       // Server started successfully - add to running servers map
-      this.runningServers.set(worktreePath, serverInfo);
+      if (!this.nativeOwnership) this.runningServers.set(worktreePath, serverInfo);
 
       // Persist state change
       await this.saveState().catch((err) => {
@@ -1123,8 +1279,41 @@ export class DevServerService {
         },
       };
     } finally {
-      this.startingServers.delete(worktreePath);
+      if (!this.runtime) this.startingServers.delete(worktreePath);
+      else if (!spawned && nativeReservation !== undefined)
+        this.allocatedPorts.delete(nativeReservation);
     }
+  }
+
+  private markNativeServerUnknown(server: DevServerInfo): void {
+    if (this.runningServers.get(server.worktreePath) !== server) return;
+    server.cleanupUnknown = true;
+    server.stopping = true;
+    if (server.flushTimeout) clearTimeout(server.flushTimeout);
+    if (server.urlDetectionTimeout) clearTimeout(server.urlDetectionTimeout);
+    server.flushTimeout = null;
+    server.urlDetectionTimeout = null;
+  }
+
+  private finishNativeServer(server: DevServerInfo, exitCode: number | null): Promise<void> {
+    if (server.finish) return server.finish;
+    server.finish = (async () => {
+      if (this.runningServers.get(server.worktreePath) !== server) return;
+      if (server.flushTimeout) clearTimeout(server.flushTimeout);
+      if (server.urlDetectionTimeout) clearTimeout(server.urlDetectionTimeout);
+      server.flushTimeout = null;
+      server.urlDetectionTimeout = null;
+      this.runningServers.delete(server.worktreePath);
+      this.allocatedPorts.delete(server.allocatedPort);
+      await this.saveState();
+      this.emitter?.emit('dev-server:stopped', {
+        worktreePath: server.worktreePath,
+        port: server.port,
+        exitCode,
+        timestamp: new Date().toISOString(),
+      });
+    })();
+    return server.finish;
   }
 
   /**
@@ -1147,6 +1336,27 @@ export class DevServerService {
           worktreePath,
           message: `Dev server already stopped`,
         },
+      };
+    }
+
+    if (this.runtime && !server.process) throw new OwnedLocalChildCleanupError();
+    if (this.nativeOwnership) {
+      if (!server.owner) throw new OwnedLocalChildCleanupError();
+      server.stopping = true;
+      if (!server.stop)
+        server.stop = (async () => {
+          try {
+            await server.owner!.close();
+          } catch {
+            this.markNativeServerUnknown(server);
+            throw new OwnedLocalChildCleanupError();
+          }
+          await this.finishNativeServer(server, server.process?.exitCode ?? null);
+        })();
+      await server.stop;
+      return {
+        success: true,
+        result: { worktreePath, message: `Stopped dev server on port ${server.port}` },
       };
     }
 
@@ -1183,7 +1393,7 @@ export class DevServerService {
     // Kill the process; persisted/re-attached entries may not have a process handle.
     if (server.process && !server.process.killed) {
       server.process.kill('SIGTERM');
-    } else {
+    } else if (!this.runtime) {
       this.killProcessOnPort(server.port);
     }
 
@@ -1229,7 +1439,7 @@ export class DevServerService {
     const stalePaths: string[] = [];
     for (const [worktreePath, server] of this.runningServers) {
       // Check if exitCode is a number (not null/undefined) - indicates process has exited
-      if (server.process && typeof server.process.exitCode === 'number') {
+      if (!this.nativeOwnership && server.process && typeof server.process.exitCode === 'number') {
         logger.info(
           `Pruning stale server entry for ${worktreePath} (process exited with code ${server.process.exitCode})`
         );
@@ -1267,7 +1477,7 @@ export class DevServerService {
     const server = this.runningServers.get(worktreePath);
     if (!server) return false;
     // Prune stale entry if the process has exited
-    if (server.process && typeof server.process.exitCode === 'number') {
+    if (!this.nativeOwnership && server.process && typeof server.process.exitCode === 'number') {
       this.pruneStaleServer(worktreePath, server);
       return false;
     }
@@ -1282,7 +1492,7 @@ export class DevServerService {
     const server = this.runningServers.get(worktreePath);
     if (!server) return undefined;
     // Prune stale entry if the process has exited
-    if (server.process && typeof server.process.exitCode === 'number') {
+    if (!this.nativeOwnership && server.process && typeof server.process.exitCode === 'number') {
       this.pruneStaleServer(worktreePath, server);
       return undefined;
     }
@@ -1315,7 +1525,11 @@ export class DevServerService {
     }
 
     // Prune stale entry if the process has been killed or has exited
-    if (server.process && (server.process.killed || server.process.exitCode != null)) {
+    if (
+      !this.nativeOwnership &&
+      server.process &&
+      (server.process.killed || server.process.exitCode != null)
+    ) {
       this.pruneStaleServer(worktreePath, server);
       return {
         success: false,
@@ -1358,13 +1572,10 @@ export class DevServerService {
     } catch {
       failed = true;
     }
-    for (const worktreePath of this.runningServers.keys()) {
-      try {
-        await this.stopDevServer(worktreePath);
-      } catch {
-        failed = true;
-      }
-    }
+    const stopped = await Promise.allSettled(
+      [...this.runningServers.keys()].map((worktreePath) => this.stopDevServer(worktreePath))
+    );
+    if (stopped.some((result) => result.status === 'rejected')) failed = true;
     const saveDeadline = Date.now() + 5000;
     let observed: Promise<void>;
     do {

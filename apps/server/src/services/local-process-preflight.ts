@@ -1,8 +1,11 @@
+import type { ChildProcess } from 'node:child_process';
+import type { OwnedLocalChild } from './owned-local-child.js';
 import type * as Filesystem from '../lib/secure-fs.js';
 
 export interface LocalProcessPreflight {
   filesystem: Pick<typeof Filesystem, 'access' | 'stat'>;
   resolvePath: (candidate: string) => string;
+  supervise?: (child: ChildProcess) => OwnedLocalChild;
 }
 
 export function missingLocalPath(error: unknown): boolean {

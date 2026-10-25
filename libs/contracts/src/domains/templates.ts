@@ -10,3 +10,10 @@ export const CloneTemplateRequestSchema = z
   .strict();
 
 export type CloneTemplateRequest = z.infer<typeof CloneTemplateRequestSchema>;
+
+export const CloneTemplateResponseSchema = z.looseObject({
+  success: z.literal(true),
+  projectPath: z.string(),
+  projectName: z.string(),
+});
+export type CloneTemplateResponse = z.infer<typeof CloneTemplateResponseSchema>;
