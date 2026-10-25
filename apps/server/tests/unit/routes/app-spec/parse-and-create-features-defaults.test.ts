@@ -9,13 +9,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import path from 'path';
 
 // Use vi.hoisted to create mock functions that can be referenced in vi.mock factories
-const { mockMkdir, mockAtomicWriteJson, mockExtractJsonWithArray, mockCreateNotification } =
-  vi.hoisted(() => ({
-    mockMkdir: vi.fn().mockResolvedValue(undefined),
-    mockAtomicWriteJson: vi.fn().mockResolvedValue(undefined),
-    mockExtractJsonWithArray: vi.fn(),
-    mockCreateNotification: vi.fn().mockResolvedValue(undefined),
-  }));
+const { mockMkdir, mockAtomicWriteJson, mockExtractJsonWithArray } = vi.hoisted(() => ({
+  mockMkdir: vi.fn().mockResolvedValue(undefined),
+  mockAtomicWriteJson: vi.fn().mockResolvedValue(undefined),
+  mockExtractJsonWithArray: vi.fn(),
+}));
 
 vi.mock('@/lib/secure-fs.js', () => ({
   mkdir: mockMkdir,
@@ -40,14 +38,17 @@ vi.mock('@/lib/json-extractor.js', () => ({
   extractJsonWithArray: mockExtractJsonWithArray,
 }));
 
-vi.mock('@/services/notification-service.js', () => ({
-  getNotificationService: vi.fn(() => ({
-    createNotification: mockCreateNotification,
-  })),
-}));
-
 // Import after mocks are set up
-import { parseAndCreateFeatures } from '../../../../src/routes/app-spec/parse-and-create-features.js';
+import { parseAndCreateFeatures as nativeParse } from '../../../../src/modules/app-spec/parse-and-create-features.workflow.js';
+const parseAndCreateFeatures = (...args: [string, string, any, any?, any?]) =>
+  nativeParse(args[0], args[1], args[2], args[3], args[4], {
+    check() {},
+    writeFeature: (project: string, feature: any) =>
+      mockAtomicWriteJson(
+        path.join(project, '.automaker', 'features', feature.id, 'feature.json'),
+        feature
+      ),
+  } as any);
 
 describe('parseAndCreateFeatures - default fields', () => {
   const mockEvents = {
@@ -257,7 +258,9 @@ describe('parseAndCreateFeatures - default fields', () => {
   it('should emit error event when no valid JSON is found', async () => {
     mockExtractJsonWithArray.mockReturnValue(null);
 
-    await parseAndCreateFeatures(projectPath, 'invalid content', mockEvents);
+    await expect(
+      parseAndCreateFeatures(projectPath, 'invalid content', mockEvents)
+    ).rejects.toThrow('No valid JSON');
 
     expect(mockEvents.emit).toHaveBeenCalledWith(
       'spec-regeneration:event',

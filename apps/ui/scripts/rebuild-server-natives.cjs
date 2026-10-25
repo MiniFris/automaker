@@ -5,11 +5,11 @@
  * Rebuilds native modules in the server bundle for the target architecture
  */
 
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 const { promisify } = require('util');
 const path = require('path');
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 exports.default = async function (context) {
   const { appOutDir, electronPlatformName, arch, packager } = context;
@@ -40,17 +40,28 @@ exports.default = async function (context) {
 
   try {
     // Rebuild native modules for the target architecture
-    const rebuildCmd = `npx --yes @electron/rebuild --version=${electronVersion} --arch=${archStr} --force --module-dir="${serverNodeModulesPath}/.."`;
+    const serverRoot = path.dirname(serverNodeModulesPath);
+    const rebuildArgs = [
+      '--yes',
+      '@electron/rebuild',
+      `--version=${electronVersion}`,
+      `--arch=${archStr}`,
+      '--force',
+      `--module-dir=${serverRoot}`,
+    ];
 
-    console.log(`   Command: ${rebuildCmd}`);
+    console.log(`   Command: npx ${rebuildArgs.join(' ')}`);
 
-    const { stdout, stderr } = await execAsync(rebuildCmd);
+    // Running from the packaged server root is significant in a monorepo: if the
+    // hook inherits the repository cwd, electron-rebuild may resolve hoisted native
+    // packages from the workspace instead of the copied production dependency tree.
+    const { stdout, stderr } = await execFileAsync('npx', rebuildArgs, { cwd: serverRoot });
     if (stdout) console.log(stdout);
     if (stderr) console.error(stderr);
 
     console.log(`✅ Server native modules rebuilt successfully for ${archStr}\n`);
   } catch (error) {
     console.error(`❌ Failed to rebuild server native modules:`, error.message);
-    // Don't fail the build, just warn
+    throw error;
   }
 };

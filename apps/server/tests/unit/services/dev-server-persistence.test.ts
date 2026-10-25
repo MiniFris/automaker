@@ -71,8 +71,8 @@ describe('DevServerService Persistence & Sync', () => {
   });
 
   it('should emit dev-server:starting when startDevServer is called', async () => {
-    const { getDevServerService } = await import('@/services/dev-server-service.js');
-    const service = getDevServerService();
+    const { DevServerService } = await import('@/services/dev-server-service.js');
+    const service = new DevServerService();
     await service.initialize(testDataDir, mockEmitter as any);
 
     const mockProcess = createMockProcess();
@@ -88,8 +88,8 @@ describe('DevServerService Persistence & Sync', () => {
   });
 
   it('should prevent concurrent starts for the same worktree', async () => {
-    const { getDevServerService } = await import('@/services/dev-server-service.js');
-    const service = getDevServerService();
+    const { DevServerService } = await import('@/services/dev-server-service.js');
+    const service = new DevServerService();
     await service.initialize(testDataDir, mockEmitter as any);
 
     // Delay spawn to simulate long starting time
@@ -112,8 +112,8 @@ describe('DevServerService Persistence & Sync', () => {
   });
 
   it('should persist state to dev-servers.json when started', async () => {
-    const { getDevServerService } = await import('@/services/dev-server-service.js');
-    const service = getDevServerService();
+    const { DevServerService } = await import('@/services/dev-server-service.js');
+    const service = new DevServerService();
     await service.initialize(testDataDir, mockEmitter as any);
 
     const mockProcess = createMockProcess();
@@ -157,8 +157,8 @@ describe('DevServerService Persistence & Sync', () => {
     });
     vi.mocked(net.createServer).mockReturnValue(mockServer);
 
-    const { getDevServerService } = await import('@/services/dev-server-service.js');
-    const service = getDevServerService();
+    const { DevServerService } = await import('@/services/dev-server-service.js');
+    const service = new DevServerService();
     await service.initialize(testDataDir, mockEmitter as any);
 
     expect(service.isRunning(worktreeDir)).toBe(true);
@@ -188,8 +188,8 @@ describe('DevServerService Persistence & Sync', () => {
     mockServer.close = vi.fn();
     vi.mocked(net.createServer).mockReturnValue(mockServer);
 
-    const { getDevServerService } = await import('@/services/dev-server-service.js');
-    const service = getDevServerService();
+    const { DevServerService } = await import('@/services/dev-server-service.js');
+    const service = new DevServerService();
     await service.initialize(testDataDir, mockEmitter as any);
 
     expect(service.isRunning(worktreeDir)).toBe(false);
@@ -204,8 +204,8 @@ describe('DevServerService Persistence & Sync', () => {
   });
 
   it('should update persisted state when URL is detected', async () => {
-    const { getDevServerService } = await import('@/services/dev-server-service.js');
-    const service = getDevServerService();
+    const { DevServerService } = await import('@/services/dev-server-service.js');
+    const service = new DevServerService();
     await service.initialize(testDataDir, mockEmitter as any);
 
     const mockProcess = createMockProcess();

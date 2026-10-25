@@ -1,4 +1,5 @@
 import { translate, useUiLocale } from '@/lib/i18n';
+import { verifyClaudeWithConsent } from '@/lib/claude-verification-consent';
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -78,7 +79,7 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
   );
 
   const installApi = useCallback(
-    () => getElectronAPI().setup?.installClaude() || Promise.reject(),
+    (signal?: AbortSignal) => getElectronAPI().setup?.installClaude(signal) || Promise.reject(),
     []
   );
 
@@ -93,7 +94,7 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
   });
 
   const onInstallSuccess = useCallback(() => {
-    checkStatus();
+    return checkStatus();
   }, [checkStatus]);
 
   const { isInstalling, installProgress, install } = useCliInstallation({
@@ -108,10 +109,11 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
     provider: 'anthropic',
     onSuccess: () => {
       setClaudeAuthStatus({
-        authenticated: true,
+        authenticated: false,
+        authenticationChecked: false,
         method: 'api_key',
         hasCredentialsFile: false,
-        apiKeyValid: true,
+        apiKeyValid: false,
       });
       setApiKeys({ ...apiKeys, anthropic: apiKey });
       toast.success(translate('API key saved successfully!'));
@@ -133,7 +135,11 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
       }
 
       // Pass "cli" to verify CLI authentication only (ignores any API key)
-      const result = await api.setup.verifyClaudeAuth('cli');
+      const result = await verifyClaudeWithConsent('cli');
+      if (!result) {
+        setCliVerificationStatus('idle');
+        return;
+      }
 
       // Check for "Limit reached" error - treat as unverified
       const hasLimitReachedError =
@@ -143,20 +149,14 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
       if (result.authenticated && !hasLimitReachedError) {
         setCliVerificationStatus('verified');
         // Store the auth type for displaying specific success message
-        const authType = result.authType === 'oauth' ? 'oauth' : 'cli';
-        setCliAuthType(authType);
+        setCliAuthType('cli');
         setClaudeAuthStatus({
           authenticated: true,
-          method: authType === 'oauth' ? 'oauth_token' : 'cli_authenticated',
+          authenticationChecked: true,
+          method: 'cli_authenticated',
           hasCredentialsFile: claudeAuthStatus?.hasCredentialsFile || false,
-          oauthTokenValid: authType === 'oauth',
         });
-        // Show specific success message based on auth type
-        if (authType === 'oauth') {
-          toast.success(translate('Claude Code subscription detected and verified!'));
-        } else {
-          toast.success(translate('Claude CLI authentication verified!'));
-        }
+        toast.success(translate('Claude CLI authentication verified!'));
       } else {
         setCliVerificationStatus('error');
         setCliVerificationError(
@@ -197,12 +197,17 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
       }
 
       // Pass "api_key" to verify API key authentication only
-      const result = await api.setup.verifyClaudeAuth('api_key');
+      const result = await verifyClaudeWithConsent('api_key');
+      if (!result) {
+        setApiKeyVerificationStatus('idle');
+        return;
+      }
 
       if (result.authenticated) {
         setApiKeyVerificationStatus('verified');
         setClaudeAuthStatus({
           authenticated: true,
+          authenticationChecked: true,
           method: 'api_key',
           hasCredentialsFile: false,
           apiKeyValid: true,
@@ -414,7 +419,9 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
                       </div>
                     </div>
 
-                    {isInstalling && <TerminalOutput lines={installProgress.output} />}
+                    {installProgress.output.length > 0 && (
+                      <TerminalOutput lines={installProgress.output} />
+                    )}
 
                     <Button
                       onClick={install}
@@ -425,12 +432,12 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
                       {isInstalling ? (
                         <>
                           <Spinner size="sm" variant="foreground" className="mr-2" />
-                          {translate('Installing...')}
+                          {translate('Loading instructions...')}
                         </>
                       ) : (
                         <>
                           <Download className="w-4 h-4 mr-2" />
-                          {translate('Auto Install')}
+                          {translate('Show installation instructions')}
                         </>
                       )}
                     </Button>

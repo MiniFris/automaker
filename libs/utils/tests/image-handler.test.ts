@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
@@ -10,6 +10,21 @@ import {
 } from '../src/image-handler';
 
 describe('image-handler.ts', () => {
+  it('skips only true missing images with an explicit application reader', async () => {
+    const filesystem = {
+      readFile: vi.fn().mockRejectedValue(Object.assign(new Error('missing'), { code: 'ENOENT' })),
+    };
+    expect(await convertImagesToContentBlocks(['missing.png'], undefined, filesystem)).toEqual([]);
+    expect(filesystem.readFile).toHaveBeenCalledWith('missing.png');
+  });
+
+  it.each(['EIO', 'EACCES'])('propagates %s from an explicit image reader', async (code) => {
+    const failure = Object.assign(new Error(code), { code });
+    const filesystem = { readFile: vi.fn().mockRejectedValue(failure) };
+    await expect(convertImagesToContentBlocks(['image.png'], undefined, filesystem)).rejects.toBe(
+      failure
+    );
+  });
   let tempDir: string;
 
   beforeEach(async () => {

@@ -27,6 +27,8 @@ export const defaultFormData: ServerFormData = {
 export interface ServerTestState {
   status: 'idle' | 'testing' | 'success' | 'error';
   tools?: MCPToolDisplay[];
+  /** Connection succeeded, but the independently requested catalog is unknown. */
+  toolsError?: string;
   error?: string;
   connectionTime?: number;
 }

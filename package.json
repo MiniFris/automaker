@@ -4,7 +4,7 @@
   "license": "MIT",
   "private": true,
   "engines": {
-    "node": ">=22.0.0 <23.0.0"
+    "node": ">=22.22.3 <23.0.0"
   },
   "workspaces": [
     "apps/*",
@@ -31,7 +31,7 @@
     "dev:docker:rebuild": "docker compose build --no-cache && docker compose up",
     "dev:full": "npm run build:packages && concurrently \"npm run _dev:server\" \"npm run _dev:web\"",
     "build": "npm run build:packages && npm run build --workspace=apps/ui",
-    "build:packages": "npm run build -w @automaker/types && npm run build -w @automaker/platform && npm run build -w @automaker/utils -w @automaker/spec-parser && npm run build -w @automaker/prompts -w @automaker/model-resolver -w @automaker/dependency-resolver && npm run build -w @automaker/git-utils",
+    "build:packages": "npm run build -w @automaker/types -w @automaker/contracts && npm run build -w @automaker/platform && npm run build -w @automaker/utils -w @automaker/spec-parser && npm run build -w @automaker/prompts -w @automaker/model-resolver -w @automaker/dependency-resolver && npm run build -w @automaker/git-utils",
     "build:server": "npm run build:packages && npm run build --workspace=apps/server",
     "build:electron": "npm run build:packages && npm run build:electron --workspace=apps/ui",
     "build:electron:dir": "npm run build:packages && npm run build:electron:dir --workspace=apps/ui",
@@ -49,12 +49,34 @@
     "test:headed": "npm run test:headed --workspace=apps/ui",
     "test:ui": "npm run test --workspace=apps/ui -- --ui",
     "test:packages": "vitest run --project='!server'",
-    "test:server": "vitest run --project=server",
-    "test:server:coverage": "vitest run --project=server --coverage",
+    "test:ui:bootstrap": "npm run build --workspace=apps/ui && node apps/ui/scripts/smoke-bootstrap-recovery.mjs",
+    "test:server": "npm run test:server:unit && npm run test:server:contract",
+    "test:server:unit": "npm run test:unit --workspace=apps/server",
+    "test:server:contract": "npm run test:contract --workspace=apps/server",
+    "test:server:integration": "npm run test:integration --workspace=apps/server",
+    "test:server:ssh": "npm run test:ssh --workspace=apps/server",
+    "test:server:docker": "npm run test:docker --workspace=apps/server",
+    "test:server:e2e": "npm run test:e2e --workspace=apps/server",
+    "test:server:coverage": "npm run test:coverage --workspace=apps/server",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "test:all": "vitest run",
     "lint:lockfile": "node scripts/lint-lockfile.mjs",
+    "inventory:server": "node scripts/generate-server-route-inventory.mjs",
+    "inventory:server:check": "node scripts/generate-server-route-inventory.mjs --check",
+    "inventory:server-deps": "node scripts/generate-server-dependency-inventory.mjs",
+    "inventory:server-deps:check": "node scripts/generate-server-dependency-inventory.mjs --check",
+    "inventory:api-consumers": "node scripts/generate-server-api-consumer-inventory.mjs",
+    "inventory:api-consumers:check": "node scripts/generate-server-api-consumer-inventory.mjs --check",
+    "generate:backend:openapi": "node scripts/generate-backend-openapi.mjs",
+    "check:backend:openapi": "node scripts/generate-backend-openapi.mjs --check && node --test scripts/tests/backend-openapi.test.mjs scripts/tests/backend-response-ownership.test.mjs scripts/tests/backend-request-context-proof.test.mjs scripts/tests/backend-binary-contracts.test.mjs",
+    "baseline:server": "npm run build:server && node scripts/measure-server-baseline.mjs",
+    "check:server:performance": "npm run build:server && node scripts/measure-server-baseline.mjs --assert-budget",
+    "test:backend:performance-budget": "node --test scripts/tests/server-performance-budget.test.mjs",
+    "test:backend:architecture": "node --test scripts/tests/server-architecture-rules.test.mjs scripts/tests/server-module-graph.test.mjs",
+    "preflight:backend:downgrade": "node scripts/check-backend-downgrade.mjs",
+    "test:backend:downgrade": "node --test scripts/tests/backend-downgrade.test.mjs",
+    "smoke:server:lifecycle": "npm run build:server && node scripts/smoke-server-lifecycle.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "rebuild": "rm -rf node_modules apps/*/node_modules libs/*/node_modules && npm install",
@@ -74,9 +96,14 @@
     "husky": "9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "3.7.4",
-    "vitest": "4.0.16"
+    "vitest": "4.1.12"
   },
   "optionalDependencies": {
     "dmg-license": "^1.0.11"
+  },
+  "overrides": {
+    "@nestjs/platform-express": {
+      "multer": "2.5.0"
+    }
   }
 }

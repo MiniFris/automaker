@@ -13,7 +13,7 @@ export interface ProviderConfig {
   setValue: Dispatch<SetStateAction<string>>;
   showValue: boolean;
   setShowValue: Dispatch<SetStateAction<boolean>>;
-  hasStoredKey: string | null | undefined;
+  hasStoredKey: string | boolean | null | undefined;
   inputTestId: string;
   toggleTestId: string;
   testButton: {
@@ -33,6 +33,7 @@ export interface ProviderConfig {
 
 export interface ProviderConfigParams {
   apiKeys: ApiKeys;
+  configuredKeys?: Partial<Record<ProviderKey, boolean>>;
   anthropic: {
     value: string;
     setValue: Dispatch<SetStateAction<string>>;
@@ -73,6 +74,7 @@ export interface ProviderConfigParams {
 
 export const buildProviderConfigs = ({
   apiKeys,
+  configuredKeys = {},
   anthropic,
   openai,
   zai,
@@ -86,19 +88,19 @@ export const buildProviderConfigs = ({
     setValue: anthropic.setValue,
     showValue: anthropic.show,
     setShowValue: anthropic.setShow,
-    hasStoredKey: apiKeys.anthropic,
+    hasStoredKey: apiKeys.anthropic || !!configuredKeys.anthropic,
     inputTestId: 'anthropic-api-key-input',
     toggleTestId: 'toggle-anthropic-visibility',
     testButton: {
       onClick: anthropic.onTest,
-      disabled: !anthropic.value || anthropic.testing,
+      disabled: (!anthropic.value && !configuredKeys.anthropic) || anthropic.testing,
       loading: anthropic.testing,
       testId: 'test-claude-connection',
     },
     result: anthropic.result,
     resultTestId: 'test-connection-result',
     resultMessageTestId: 'test-connection-message',
-    descriptionPrefix: 'Used for Claude AI features. Get your key at',
+    descriptionPrefix: translate('Used for Claude AI features. Get your key at'),
     descriptionLinkHref: 'https://console.anthropic.com/account/keys',
     descriptionLinkText: 'console.anthropic.com',
     descriptionSuffix: '.',
@@ -112,19 +114,19 @@ export const buildProviderConfigs = ({
     setValue: openai.setValue,
     showValue: openai.show,
     setShowValue: openai.setShow,
-    hasStoredKey: apiKeys.openai,
+    hasStoredKey: apiKeys.openai || !!configuredKeys.openai,
     inputTestId: 'openai-api-key-input',
     toggleTestId: 'toggle-openai-visibility',
     testButton: {
       onClick: openai.onTest,
-      disabled: !openai.value || openai.testing,
+      disabled: (!openai.value && !configuredKeys.openai) || openai.testing,
       loading: openai.testing,
       testId: 'test-openai-connection',
     },
     result: openai.result,
     resultTestId: 'openai-test-connection-result',
     resultMessageTestId: 'openai-test-connection-message',
-    descriptionPrefix: 'Used for Codex and OpenAI features. Get your key at',
+    descriptionPrefix: translate('Used for Codex and OpenAI features. Get your key at'),
     descriptionLinkHref: 'https://platform.openai.com/api-keys',
     descriptionLinkText: 'platform.openai.com',
     descriptionSuffix: '.',
@@ -150,7 +152,7 @@ export const buildProviderConfigs = ({
     result: zai.result,
     resultTestId: 'zai-test-connection-result',
     resultMessageTestId: 'zai-test-connection-message',
-    descriptionPrefix: 'Used for z.ai usage tracking and GLM models. Get your key at',
+    descriptionPrefix: translate('Used for z.ai usage tracking and GLM models. Get your key at'),
     descriptionLinkHref: 'https://z.ai',
     descriptionLinkText: 'z.ai',
     descriptionSuffix: '.',

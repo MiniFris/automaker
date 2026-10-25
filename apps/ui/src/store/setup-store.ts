@@ -16,6 +16,7 @@ export interface CliStatus {
 export interface GhCliStatus {
   installed: boolean;
   authenticated: boolean;
+  authenticationChecked?: boolean;
   version: string | null;
   path: string | null;
   user: string | null;
@@ -25,10 +26,15 @@ export interface GhCliStatus {
 // Cursor CLI Status
 export interface CursorCliStatus {
   installed: boolean;
+  connected?: boolean;
   version?: string | null;
   path?: string | null;
   auth?: {
     authenticated: boolean;
+    authenticationChecked?: boolean;
+    scope?: 'host';
+    hasEnvApiKey?: boolean;
+    hasCredentialsFile?: boolean;
     method: string;
   };
   installCommand?: string;
@@ -43,6 +49,7 @@ export interface CodexCliStatus {
   path?: string | null;
   auth?: {
     authenticated: boolean;
+    authenticationChecked?: boolean;
     method: string;
   };
   installCommand?: string;
@@ -57,6 +64,7 @@ export interface OpencodeCliStatus {
   path?: string | null;
   auth?: {
     authenticated: boolean;
+    authenticationChecked?: boolean;
     method: string;
   };
   installCommand?: string;
@@ -67,10 +75,14 @@ export interface OpencodeCliStatus {
 // Gemini CLI Status
 export interface GeminiCliStatus {
   installed: boolean;
+  connected?: boolean;
   version?: string | null;
   path?: string | null;
   auth?: {
     authenticated: boolean;
+    authenticationChecked?: boolean;
+    hasConfigFile?: boolean;
+    hasVertexConfig?: boolean;
     method: string;
     hasApiKey?: boolean;
     hasEnvApiKey?: boolean;
@@ -87,6 +99,9 @@ export interface CopilotCliStatus {
   path?: string | null;
   auth?: {
     authenticated: boolean;
+    authenticationChecked?: boolean;
+    hasEnvToken?: boolean;
+    hasConfigFile?: boolean;
     method: string;
     login?: string;
     host?: string;
@@ -106,6 +121,7 @@ export type CodexAuthMethod =
 // Codex Auth Status
 export interface CodexAuthStatus {
   authenticated: boolean;
+  authenticationChecked?: boolean;
   method: CodexAuthMethod;
   hasAuthFile?: boolean;
   hasApiKey?: boolean;
@@ -144,6 +160,9 @@ export type ClaudeAuthMethod =
 // Claude Auth Status
 export interface ClaudeAuthStatus {
   authenticated: boolean;
+  authenticationChecked?: boolean;
+  hasStoredApiKey?: boolean;
+  hasStoredOAuthToken?: boolean;
   method: ClaudeAuthMethod;
   hasCredentialsFile?: boolean;
   oauthTokenValid?: boolean;

@@ -321,6 +321,9 @@ export interface AppState {
     projectPath: string;
     planContent: string;
     planningMode: 'lite' | 'spec' | 'full';
+    approvalToken: string;
+    planVersion: number;
+    approvalRunId: string;
   } | null;
 
   // Claude Usage Tracking
@@ -807,6 +810,9 @@ export interface AppActions {
       projectPath: string;
       planContent: string;
       planningMode: 'lite' | 'spec' | 'full';
+      approvalToken: string;
+      planVersion: number;
+      approvalRunId: string;
     } | null
   ) => void;
 

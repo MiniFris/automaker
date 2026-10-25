@@ -1,3 +1,5 @@
+import type { AgentCheckpointRepository } from '../../providers/openai-compatible/checkpoint.js';
+import type { ObserveOperation } from '../../core/observability/operation-observer.js';
 /**
  * Facade Types - Type definitions for AutoModeServiceFacade
  *
@@ -16,6 +18,11 @@ import type { AutoLoopCoordinator } from '../auto-loop-coordinator.js';
 import type { WorktreeResolver } from '../worktree-resolver.js';
 import type { TypedEventBus } from '../typed-event-bus.js';
 import type { ClaudeUsageService } from '../claude-usage-service.js';
+import type { NotificationService } from '../notification-service.js';
+import type { ProviderRegistry } from '../../modules/providers/provider-registry.service.js';
+import type { ToolPolicyService } from '../../modules/providers/tool-policy.service.js';
+import type { PipelineService } from '../pipeline-service.js';
+import type { FeatureStateManager } from '../feature-state-manager.js';
 
 // Re-export types from extracted services for route consumption
 export type { AutoModeConfig, ProjectAutoLoopState } from '../auto-loop-coordinator.js';
@@ -34,6 +41,8 @@ export type { ExecutionState } from '../recovery-service.js';
  * Shared services that can be passed to facades to enable state sharing
  */
 export interface SharedServices {
+  /** Global application owner; direct standalone fixtures may omit this capability. */
+  featureStateManager?: FeatureStateManager;
   /** TypedEventBus for typed event emission */
   eventBus: TypedEventBus;
   /** ConcurrencyManager for tracking running features across all projects */
@@ -48,6 +57,13 @@ export interface SharedServices {
  * Options for creating an AutoModeServiceFacade instance
  */
 export interface FacadeOptions {
+  observeOperation?: ObserveOperation;
+  /** Trusted application checkpoint storage, never a wire option. */
+  checkpointRepository?: AgentCheckpointRepository;
+  /** Native composition supplies a captured, sanitized Local child environment. */
+  hostEnvironment?: Readonly<NodeJS.ProcessEnv>;
+  /** Application-owned local output/context/memory IO. */
+  filesystem: import('../execution-filesystem.js').ExecutionFilesystem;
   /** EventEmitter for broadcasting events to clients */
   events: EventEmitter;
   /** SettingsService for reading project/global settings (optional) */
@@ -58,6 +74,16 @@ export interface FacadeOptions {
   sharedServices?: SharedServices;
   /** ClaudeUsageService for checking usage limits before picking up features (optional) */
   claudeUsageService?: ClaudeUsageService | null;
+  /** Notification service shared with HTTP and background workflows. */
+  notificationService?: NotificationService | null;
+  /** Explicit provider registry shared with the application composition root. */
+  providerRegistry: ProviderRegistry;
+  /** Central policy for provider-independent tool authorization. */
+  toolPolicy?: ToolPolicyService;
+  /** Native composition supplies its application-owned configuration service. */
+  pipeline: PipelineService;
+  /** Host-local validation is application-owned; bound remote cwd is not a host path. */
+  validateWorkingDirectory?: (cwd: string) => void;
 }
 
 /**

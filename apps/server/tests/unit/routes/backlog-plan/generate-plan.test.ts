@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BacklogPlanResult, ProviderMessage } from '@automaker/types';
+import type { ProviderRegistry } from '@/modules/providers/provider-registry.service.js';
 
 const {
   mockGetAll,
@@ -21,21 +22,11 @@ const {
   mockGetUseClaudeCodeSystemPromptSetting: vi.fn(),
 }));
 
-vi.mock('@/services/feature-loader.js', () => ({
-  FeatureLoader: class {
-    getAll = mockGetAll;
-  },
-}));
+const providers = {
+  providerForModel: vi.fn(() => ({ executeQuery: mockExecuteQuery })),
+} as unknown as ProviderRegistry;
 
-vi.mock('@/providers/provider-factory.js', () => ({
-  ProviderFactory: {
-    getProviderForModel: vi.fn(() => ({
-      executeQuery: mockExecuteQuery,
-    })),
-  },
-}));
-
-vi.mock('@/routes/backlog-plan/common.js', () => ({
+vi.mock('@/modules/backlog-plan/backlog-plan-errors.js', () => ({
   logger: {
     debug: vi.fn(),
     info: vi.fn(),
@@ -55,7 +46,15 @@ vi.mock('@/lib/settings-helpers.js', () => ({
   getPhaseModelWithOverrides: vi.fn(),
 }));
 
-import { generateBacklogPlan } from '@/routes/backlog-plan/generate-plan.js';
+import { generateBacklogPlan as nativeGenerate } from '@/modules/backlog-plan/generate-plan.workflow.js';
+const generateBacklogPlan = (
+  ...args: Parameters<typeof nativeGenerate> extends [...infer Input, unknown] ? Input : never
+) =>
+  nativeGenerate(...args, {
+    check: () => args[3].signal.throwIfAborted(),
+    features: { getAll: mockGetAll },
+    savePlan: mockSaveBacklogPlan,
+  } as never);
 
 function createMockEvents() {
   return {
@@ -120,7 +119,10 @@ describe('generateBacklogPlan', () => {
       events as any,
       abortController,
       undefined,
-      'claude-opus'
+      'claude-opus',
+      undefined,
+      undefined,
+      providers
     );
 
     expect(mockExecuteQuery).toHaveBeenCalledTimes(1);
@@ -137,8 +139,6 @@ describe('generateBacklogPlan', () => {
       type: 'backlog_plan_complete',
       result: partialResult,
     });
-    expect(mockSetRunningState).toHaveBeenCalledWith(false, null);
-    expect(mockSetRunningDetails).toHaveBeenCalledWith(null);
   });
 
   it('prefers parseable provider result over longer non-JSON accumulated text on exit', async () => {
@@ -204,7 +204,10 @@ describe('generateBacklogPlan', () => {
       events as any,
       abortController,
       undefined,
-      'claude-opus'
+      'claude-opus',
+      undefined,
+      undefined,
+      providers
     );
 
     expect(result).toEqual(recoveredResult);

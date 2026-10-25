@@ -12,6 +12,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 /** Secrets are transient form state, never returned by the API or saved in browser storage. */
 export function SSHEnvironmentSetup({
@@ -279,20 +286,26 @@ export function SSHEnvironmentSetup({
             <Label htmlFor={`ssh-source-${profile.id}`}>
               {translate('Initial remote checkout')}
             </Label>
-            <select
-              className="rounded-md border bg-background p-2 text-sm w-full"
-              id={`ssh-source-${profile.id}`}
+            <Select
+              disabled={busy}
               value={method}
-              onChange={(event) => setMethod(event.target.value as typeof method)}
+              onValueChange={(value) => setMethod(value as typeof method)}
             >
-              <option value="import">
-                {translate('Explicitly transfer this local project once')}
-              </option>
-              <option value="clone">{translate('Clone a repository on the SSH host')}</option>
-              <option value="existing">
-                {translate('Use an existing clean remote Git checkout')}
-              </option>
-            </select>
+              <SelectTrigger id={`ssh-source-${profile.id}`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="import">
+                  {translate('Explicitly transfer this local project once')}
+                </SelectItem>
+                <SelectItem value="clone">
+                  {translate('Clone a repository on the SSH host')}
+                </SelectItem>
+                <SelectItem value="existing">
+                  {translate('Use an existing clean remote Git checkout')}
+                </SelectItem>
+              </SelectContent>
+            </Select>
             {method === 'import' && (
               <p>
                 {translate(

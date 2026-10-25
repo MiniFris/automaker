@@ -33,11 +33,7 @@ export {
 } from './use-auto-mode-mutations';
 
 // Settings mutations
-export {
-  useUpdateGlobalSettings,
-  useUpdateProjectSettings,
-  useSaveCredentials,
-} from './use-settings-mutations';
+export { useUpdateGlobalSettings, useUpdateProjectSettings } from './use-settings-mutations';
 
 // Worktree mutations
 export {

@@ -332,29 +332,3 @@ export class InitScriptService {
     await this.runInitScript(options);
   }
 }
-
-// Singleton instance for convenience
-let initScriptService: InitScriptService | null = null;
-
-/**
- * Get the singleton InitScriptService instance
- */
-export function getInitScriptService(): InitScriptService {
-  if (!initScriptService) {
-    initScriptService = new InitScriptService();
-  }
-  return initScriptService;
-}
-
-// Export convenience functions that use the singleton
-export const getInitScriptPath = (projectPath: string) =>
-  getInitScriptService().getInitScriptPath(projectPath);
-
-export const hasInitScriptRun = (projectPath: string, branch: string) =>
-  getInitScriptService().hasInitScriptRun(projectPath, branch);
-
-export const runInitScript = (options: InitScriptOptions) =>
-  getInitScriptService().runInitScript(options);
-
-export const forceRunInitScript = (options: InitScriptOptions) =>
-  getInitScriptService().forceRunInitScript(options);

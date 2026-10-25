@@ -70,7 +70,7 @@ For complete details on contribution terms and rights assignment, please review 
 
 Before contributing to Automaker, ensure you have the following installed on your system:
 
-- **Node.js 18+** (tested with Node.js 22)
+- **Node.js 22** (required: >=22.22.3 <23.0.0)
   - Download from [nodejs.org](https://nodejs.org/)
   - Verify installation: `node --version`
 - **npm** (comes with Node.js)
@@ -138,20 +138,20 @@ Before contributing to Automaker, ensure you have the following installed on you
 
 **Common development commands:**
 
-| Command                  | Description                      |
-| ------------------------ | -------------------------------- |
-| `npm run dev`            | Interactive development launcher |
-| `npm run dev:web`        | Start in browser mode            |
-| `npm run dev:electron`   | Start desktop app                |
-| `npm run build`          | Build all packages and apps      |
-| `npm run build:packages` | Build shared packages only       |
-| `npm run lint`           | Run ESLint checks                |
-| `npm run format`         | Format code with Prettier        |
-| `npm run format:check`   | Check formatting without changes |
-| `npm run test`           | Run E2E tests (Playwright)       |
-| `npm run test:server`    | Run server unit tests            |
-| `npm run test:packages`  | Run package tests                |
-| `npm run test:all`       | Run all tests                    |
+| Command                  | Description                        |
+| ------------------------ | ---------------------------------- |
+| `npm run dev`            | Interactive development launcher   |
+| `npm run dev:web`        | Start in browser mode              |
+| `npm run dev:electron`   | Start desktop app                  |
+| `npm run build`          | Build all packages and apps        |
+| `npm run build:packages` | Build shared packages only         |
+| `npm run lint`           | Run ESLint checks                  |
+| `npm run format`         | Format code with Prettier          |
+| `npm run format:check`   | Check formatting without changes   |
+| `npm run test`           | Run E2E tests (Playwright)         |
+| `npm run test:server`    | Run server unit and contract tests |
+| `npm run test:packages`  | Run package tests                  |
+| `npm run test:all`       | Run all tests                      |
 
 ### Project Structure
 
@@ -161,7 +161,7 @@ Automaker is organized as an npm workspace monorepo:
 automaker/
 ├── apps/
 │   ├── ui/              # React + Vite + Electron frontend
-│   └── server/          # Express + WebSocket backend
+│   └── server/          # NestJS HTTP + raw WebSocket backend
 ├── libs/
 │   ├── @automaker/types/            # Shared TypeScript types
 │   ├── @automaker/utils/            # Utility functions
@@ -180,6 +180,10 @@ automaker/
 - Frontend code lives in `apps/ui/`
 - Backend code lives in `apps/server/`
 - Shared logic should be in the appropriate `libs/` package
+
+Backend changes follow the [backend architecture guide](docs/backend-architecture.md).
+It describes native module ownership, filesystem and execution ports, shutdown
+ordering, API compatibility and the checks required before committing a change.
 
 ---
 
@@ -574,14 +578,17 @@ The following checks must pass before your PR can be merged:
 
 #### CI Testing Environment
 
-For CI environments, Automaker supports a mock agent mode:
+Playwright starts a separate Nest test composition with explicit provider overrides:
 
 ```bash
-# Enable mock agent mode for CI testing
-AUTOMAKER_MOCK_AGENT=true npm run test
+# Start only the test backend (Playwright normally does this automatically)
+npm run dev:e2e --workspace=apps/server
 ```
 
-This allows tests to run without requiring a real Claude API connection.
+The test backend uses temporary storage and fake providers/auth probes without a real
+AI API connection. Login authentication and rate limits remain enabled. Production
+bootstrap does not support `AUTOMAKER_MOCK_AGENT`; do not use the test entrypoint for
+production or live-provider acceptance tests.
 
 #### Viewing CI Results
 
@@ -653,7 +660,7 @@ When creating a bug report, include:
 ### Environment
 
 - OS: Windows 11
-- Node.js: 22.11.0
+- Node.js: 22.22.3
 - Automaker: commit abc1234
 
 ### Steps to Reproduce

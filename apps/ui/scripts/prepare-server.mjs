@@ -21,6 +21,7 @@ const BUNDLE_DIR = join(APP_DIR, 'server-bundle');
 
 // Local workspace packages that need to be bundled
 const LOCAL_PACKAGES = [
+  '@automaker/contracts',
   '@automaker/types',
   '@automaker/utils',
   '@automaker/prompts',
@@ -71,7 +72,11 @@ for (const pkgName of LOCAL_PACKAGES) {
 
   // Copy package.json
   if (existsSync(join(srcDir, 'package.json'))) {
-    cpSync(join(srcDir, 'package.json'), join(destDir, 'package.json'));
+    const localPackage = JSON.parse(readFileSync(join(srcDir, 'package.json'), 'utf-8'));
+    // These packages are already compiled. File dependencies must not resolve
+    // development-only test runners and their optional peers during packaging.
+    delete localPackage.devDependencies;
+    writeFileSync(join(destDir, 'package.json'), JSON.stringify(localPackage, null, 2));
   }
 
   console.log(`   ✓ ${pkgName}`);
@@ -80,6 +85,7 @@ for (const pkgName of LOCAL_PACKAGES) {
 // Step 5: Create a minimal package.json for the server
 console.log('📝 Creating server package.json...');
 const serverPkg = JSON.parse(readFileSync(join(SERVER_DIR, 'package.json'), 'utf-8'));
+const rootPkg = JSON.parse(readFileSync(join(LIBS_DIR, '..', 'package.json'), 'utf-8'));
 
 // Replace local package versions with file: references
 const dependencies = { ...serverPkg.dependencies };
@@ -94,8 +100,10 @@ const bundlePkg = {
   name: '@automaker/server-bundle',
   version: serverPkg.version,
   type: 'module',
-  main: 'dist/index.js',
+  main: 'dist/main.js',
   dependencies,
+  // This standalone install must retain the workspace's security fixes.
+  overrides: rootPkg.overrides,
 };
 
 writeFileSync(join(BUNDLE_DIR, 'package.json'), JSON.stringify(bundlePkg, null, 2));

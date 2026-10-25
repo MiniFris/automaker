@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { setTimeout as delay } from 'node:timers/promises';
 import type { ResolvedOpenAICompatibleConnection } from '@automaker/types';
 import { chatCompletion } from '@/providers/openai-compatible/transport.js';
-import { discoverDirectModels } from '@/routes/settings/openai-compatible.js';
+import { DirectSettingsCommandService } from '@/modules/settings/direct-settings-command.service.js';
 import { agentLimits, AgentLoop } from '@/providers/openai-compatible/agent-loop.js';
 import { ToolRegistry } from '@/providers/openai-compatible/tool-registry.js';
 import {
@@ -130,12 +130,29 @@ it('uses an explicit discovery deadline independently of the ordinary generation
         })
     )
   );
-  const pending = discoverDirectModels(
-    connection({ timeoutMs: 10, timeouts: { modelDiscoveryTimeoutMs: 50 } }),
-    new AbortController().signal
+  const service = new DirectSettingsCommandService(
+    {
+      getGlobalSettings: async () => ({
+        modelTimeouts: { requestTimeoutMs: 10, modelDiscoveryTimeoutMs: 50 },
+        openaiCompatibleEndpoints: [
+          {
+            id: 'fixture',
+            name: 'Fixture',
+            enabled: true,
+            baseUrl: 'http://127.0.0.1:1/v1/',
+            protocol: 'chat-completions',
+            auth: { type: 'none' },
+            models: [],
+          },
+        ],
+      }),
+      getCredentials: async () => ({}),
+    } as never,
+    {} as never
   );
+  const pending = service.discoverModels({ providerId: 'fixture' }, new AbortController().signal);
   await vi.advanceTimersByTimeAsync(40);
-  expect(await pending).toEqual(['model']);
+  expect(await pending).toEqual({ success: true, models: ['model'] });
 });
 it('allows longer agent/tool budgets without the old one-hour/ten-minute clamps', () => {
   expect(

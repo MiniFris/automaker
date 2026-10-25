@@ -1,0 +1,89 @@
+import { Global, Module } from '@nestjs/common';
+import { APPLICATION_EVENTS } from '../../core/eventing/application-events.js';
+import { RuntimePathsService, PreviewPolicy, HOST_ENVIRONMENT } from '../../core/config/index.js';
+import { captureNativeLocalEnvironment } from '../../services/execution-environment/local.js';
+import { SECURE_FILESYSTEM, SecurityService } from '../../core/security/index.js';
+import type * as Filesystem from '../../lib/secure-fs.js';
+import type { EventEmitter } from '../../lib/events.js';
+import { DevServerService } from '../../services/dev-server-service.js';
+import { TestRunnerService } from '../../services/test-runner-service.js';
+import { SettingsService } from '../../services/settings-service.js';
+import { ManagedDevServerService } from '../../services/execution-environment/dev-server.js';
+import { ManagedTestRunnerService } from '../../services/execution-environment/test-runner.js';
+
+@Global()
+@Module({
+  providers: [
+    {
+      provide: ManagedDevServerService,
+      inject: [SettingsService, APPLICATION_EVENTS, PreviewPolicy, RuntimePathsService],
+      useFactory: (
+        settings: SettingsService,
+        events: EventEmitter,
+        preview: PreviewPolicy,
+        paths: RuntimePathsService
+      ) =>
+        new ManagedDevServerService(settings, events, preview, (alias) =>
+          paths.resolveFromWorkingDirectory(alias ?? '.')
+        ),
+    },
+    {
+      provide: ManagedTestRunnerService,
+      inject: [SettingsService, APPLICATION_EVENTS],
+      useFactory: (settings: SettingsService, events: EventEmitter) =>
+        new ManagedTestRunnerService(settings, events),
+    },
+    {
+      provide: DevServerService,
+      inject: [SECURE_FILESYSTEM, SecurityService, RuntimePathsService, HOST_ENVIRONMENT],
+      useFactory: (
+        filesystem: typeof Filesystem,
+        security: SecurityService,
+        paths: RuntimePathsService,
+        environment: Readonly<NodeJS.ProcessEnv>
+      ) =>
+        new DevServerService({
+          hostEnvironment: captureNativeLocalEnvironment(environment),
+          filesystem,
+          stateFilesystem: filesystem,
+          dataDirectory: paths.dataDirectory,
+          resolvePath: (candidate) =>
+            security.validateLocalPath(
+              paths.resolveFromWorkingDirectory(candidate),
+              'local dev server'
+            ),
+        }),
+    },
+    {
+      provide: TestRunnerService,
+      inject: [
+        APPLICATION_EVENTS,
+        SECURE_FILESYSTEM,
+        SecurityService,
+        RuntimePathsService,
+        HOST_ENVIRONMENT,
+      ],
+      useFactory: (
+        events: EventEmitter,
+        filesystem: typeof Filesystem,
+        security: SecurityService,
+        paths: RuntimePathsService,
+        environment: Readonly<NodeJS.ProcessEnv>
+      ) => {
+        const tests = new TestRunnerService({
+          hostEnvironment: captureNativeLocalEnvironment(environment),
+          filesystem,
+          resolvePath: (candidate) =>
+            security.validateLocalPath(
+              paths.resolveFromWorkingDirectory(candidate),
+              'local test runner'
+            ),
+        });
+        tests.setEventEmitter(events);
+        return tests;
+      },
+    },
+  ],
+  exports: [DevServerService, TestRunnerService, ManagedDevServerService, ManagedTestRunnerService],
+})
+export class LocalProcessRuntimeModule {}

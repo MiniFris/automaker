@@ -11,6 +11,35 @@ describe('gemini-provider.ts', () => {
   });
 
   describe('buildCliArgs', () => {
+    it.each([{ readOnly: true }, { allowedTools: ['UnknownTool'] }])(
+      'rejects unsupported policy instead of silently enabling YOLO: %j',
+      (policy) => {
+        expect(() =>
+          provider.buildCliArgs({
+            prompt: 'Plan',
+            model: '2.5-flash',
+            cwd: '/tmp/project',
+            ...policy,
+          })
+        ).toThrow('cannot enforce the requested tool policy');
+      }
+    );
+
+    it.each([{ allowedTools: [] }, { allowedTools: ['Read'] }, { tools: [] }, { tools: ['Read'] }])(
+      'uses restricted approval and disables extensions for a policy-bound query: %j',
+      (policy) => {
+        const args = provider.buildCliArgs({
+          prompt: 'Chat',
+          model: '2.5-flash',
+          cwd: '/tmp/project',
+          ...policy,
+        });
+        expect(args[args.indexOf('--approval-mode') + 1]).toBe('default');
+        expect(args[args.indexOf('--extensions') + 1]).toBe('none');
+        expect(args).not.toContain('yolo');
+      }
+    );
+
     it('should include --prompt with empty string to force headless mode', () => {
       const args = provider.buildCliArgs({
         prompt: 'Hello from Gemini',

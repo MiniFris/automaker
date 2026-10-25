@@ -25,9 +25,6 @@ const reuseServer = process.env.TEST_REUSE_SERVER === 'true';
 // Only skip backend startup when explicitly requested for E2E runs.
 // VITE_SERVER_URL may be set in user shells for local dev and should not affect tests.
 const useExternalBackend = process.env.TEST_USE_EXTERNAL_BACKEND === 'true';
-// Always use mock agent for tests (disables rate limiting, uses mock Claude responses)
-const mockAgent = true;
-
 // Auth state file written by global setup, reused by all tests to skip per-test login
 const AUTH_STATE_PATH = path.join(__dirname, 'tests/.auth/storage-state.json');
 
@@ -65,13 +62,12 @@ export default defineConfig({
     ? {}
     : {
         webServer: [
-          // Backend server - runs with mock agent enabled in CI
-          // Uses dev:test (no file watching) to avoid port conflicts from server restarts
+          // Separate Nest test composition; production bootstrap never enables mocks.
           ...(useExternalBackend
             ? []
             : [
                 {
-                  command: `cd ../server && npm run dev:test`,
+                  command: `cd ../server && npm run dev:e2e`,
                   url: `http://127.0.0.1:${serverPort}/api/health`,
                   // Don't reuse existing server to ensure we use the test API key
                   reuseExistingServer: false,
@@ -81,8 +77,6 @@ export default defineConfig({
                     PORT: String(serverPort),
                     // Ensure server can find git in CI/minimal env (worktree list, etc.)
                     PATH: e2eServerPath,
-                    // Enable mock agent in CI to avoid real API calls
-                    AUTOMAKER_MOCK_AGENT: mockAgent ? 'true' : 'false',
                     // Set a test API key for web mode authentication
                     AUTOMAKER_API_KEY:
                       process.env.AUTOMAKER_API_KEY || 'test-api-key-for-e2e-tests',

@@ -378,6 +378,17 @@ describe('settings-service.ts', () => {
 
       await fs.rm(newDataDir, { recursive: true, force: true });
     });
+
+    it('serializes concurrent updates without losing fields', async () => {
+      await Promise.all([
+        settingsService.updateGlobalSettings({ theme: 'light' }),
+        settingsService.updateGlobalSettings({ sidebarOpen: false }),
+      ]);
+
+      const settings = await settingsService.getGlobalSettings();
+      expect(settings.theme).toBe('light');
+      expect(settings.sidebarOpen).toBe(false);
+    });
   });
 
   describe('hasGlobalSettings', () => {
@@ -507,6 +518,19 @@ describe('settings-service.ts', () => {
       const updated = await settingsService.updateCredentials(updates);
 
       expect(updated.apiKeys.anthropic).toBe('sk-updated-anthropic');
+    });
+
+    it('does not persist a masked credential sent back by the UI', async () => {
+      await settingsService.updateCredentials({
+        apiKeys: { anthropic: 'sk-ant-api03-1234567890abcdef' },
+      });
+      await settingsService.updateCredentials({
+        apiKeys: { anthropic: 'sk-a...cdef' },
+      });
+
+      expect((await settingsService.getCredentials()).apiKeys.anthropic).toBe(
+        'sk-ant-api03-1234567890abcdef'
+      );
     });
   });
 
@@ -720,7 +744,7 @@ describe('settings-service.ts', () => {
       expect(settings.maxConcurrency).toBe(5);
     });
 
-    it('should migrate credentials from localStorage data', async () => {
+    it('preserves browser credential candidates without importing them through general migration', async () => {
       const localStorageData = {
         'automaker-storage': JSON.stringify({
           state: {
@@ -734,10 +758,11 @@ describe('settings-service.ts', () => {
       const result = await settingsService.migrateFromLocalStorage(localStorageData);
 
       expect(result.success).toBe(true);
-      expect(result.migratedCredentials).toBe(true);
+      expect(result.migratedCredentials).toBe(false);
+      expect(result.credentialImportRequired).toBe(true);
 
       const credentials = await settingsService.getCredentials();
-      expect(credentials.apiKeys.anthropic).toBe('sk-test-key');
+      expect(credentials.apiKeys.anthropic).toBe('');
     });
 
     it('should migrate project settings from localStorage data', async () => {

@@ -15,7 +15,7 @@ import type { EventEmitter } from '@/lib/events.js';
 import type { FeatureLoader } from '@/services/feature-loader.js';
 import { atomicWriteJson, readJsonWithRecovery } from '@automaker/utils';
 import { getFeatureDir } from '@automaker/platform';
-import { pipelineService } from '@/services/pipeline-service.js';
+import path from 'node:path';
 
 // Mock dependencies
 vi.mock('@/lib/secure-fs.js', () => ({
@@ -38,21 +38,13 @@ vi.mock('@automaker/platform', () => ({
   getFeaturesDir: vi.fn(),
 }));
 
-vi.mock('@/services/notification-service.js', () => ({
-  getNotificationService: vi.fn(() => ({
-    createNotification: vi.fn(),
-  })),
-}));
-
-vi.mock('@/services/pipeline-service.js', () => ({
-  pipelineService: {
-    getStepIdFromStatus: vi.fn((status: string) => {
-      if (status.startsWith('pipeline_')) return status.replace('pipeline_', '');
-      return null;
-    }),
-    getStep: vi.fn(),
-  },
-}));
+const pipelineService = {
+  getStepIdFromStatus: vi.fn((status: string) => {
+    if (status.startsWith('pipeline_')) return status.replace('pipeline_', '');
+    return null;
+  }),
+  getStep: vi.fn(),
+};
 
 describe('Pipeline Summary Accumulation (Integration)', () => {
   let manager: FeatureStateManager;
@@ -78,9 +70,26 @@ describe('Pipeline Summary Accumulation (Integration)', () => {
 
     const mockFeatureLoader = {
       syncFeatureToAppSpec: vi.fn(),
+      mutate: vi.fn(async (project, id, mutation) => {
+        const file = path.join(getFeatureDir(project, id), 'feature.json');
+        const feature = (
+          await readJsonWithRecovery<Feature | null>(file, null, {
+            maxBackups: 3,
+            autoRestore: true,
+          })
+        ).data;
+        if (!feature || (await mutation(feature)) === false) return null;
+        await atomicWriteJson(file, feature, { backupCount: 3 });
+        return feature;
+      }),
     } as unknown as FeatureLoader;
 
-    manager = new FeatureStateManager(mockEvents, mockFeatureLoader);
+    manager = new FeatureStateManager(
+      mockEvents,
+      mockFeatureLoader,
+      null,
+      pipelineService as never
+    );
 
     (getFeatureDir as Mock).mockReturnValue('/project/.automaker/features/pipeline-feature-1');
   });
@@ -577,9 +586,7 @@ describe('Pipeline Summary Accumulation (Integration)', () => {
       expect(callOrder).toEqual(['persist', 'emit']);
     });
 
-    it('should not emit event if persistence fails (error is caught silently)', async () => {
-      // Note: saveFeatureSummary catches errors internally and logs them
-      // It does NOT re-throw, so the method completes successfully even on error
+    it('propagates persistence failure without emitting a committed summary event', async () => {
       (pipelineService.getStep as Mock).mockResolvedValue({ name: 'Testing', id: 'step1' });
       (readJsonWithRecovery as Mock).mockResolvedValue({
         data: { ...baseFeature, status: 'pipeline_step1', summary: undefined },
@@ -588,8 +595,9 @@ describe('Pipeline Summary Accumulation (Integration)', () => {
       });
       (atomicWriteJson as Mock).mockRejectedValue(new Error('Disk full'));
 
-      // Method completes without throwing (error is logged internally)
-      await manager.saveFeatureSummary('/project', 'pipeline-feature-1', 'Summary');
+      await expect(
+        manager.saveFeatureSummary('/project', 'pipeline-feature-1', 'Summary')
+      ).rejects.toThrow('Disk full');
 
       // Event should NOT be emitted since persistence failed
       expect(mockEvents.emit).not.toHaveBeenCalled();

@@ -1,212 +1,284 @@
-import { spawn, type ChildProcess } from 'child_process';
-import readline from 'readline';
-import { findCodexCliPath } from '@automaker/platform';
-import { createLogger } from '@automaker/utils';
+import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import { StringDecoder } from 'node:string_decoder';
+import { performance } from 'node:perf_hooks';
+import type { BeforeApplicationShutdown, OnApplicationShutdown } from '@nestjs/common';
 import type {
   AppServerModelResponse,
   AppServerAccountResponse,
   AppServerRateLimitsResponse,
-  JsonRpcRequest,
 } from '@automaker/types';
+import { CodexUsageRuntime } from '../core/platform/codex-usage.runtime.js';
+import { legacyCodexUsageRuntime } from './codex-usage-compat.js';
+import { waitForLinuxProcessGroupExit } from '../core/platform/linux-process-group.js';
 
-const logger = createLogger('CodexAppServer');
+interface Limits {
+  requestMs: number;
+  killMs: number;
+  cleanupMs: number;
+}
+const defaults: Limits = { requestMs: 10000, killMs: 500, cleanupMs: 2000 };
 
-/**
- * CodexAppServerService
- *
- * Centralized service for communicating with Codex CLI's app-server via JSON-RPC protocol.
- * Handles process spawning, JSON-RPC messaging, and cleanup.
- *
- * Connection strategy: Spawn on-demand (new process for each method call)
- */
-export class CodexAppServerService {
-  private cachedCliPath: string | null = null;
+export class CodexAppServerCleanupError extends Error {
+  constructor() {
+    super('Codex app-server cleanup could not be confirmed.');
+  }
+}
 
-  /**
-   * Check if Codex CLI is available on the system
-   */
+/** Read-only RPC owner: no thread/turn creation, login, tools or approval handling. */
+export class CodexAppServerService implements BeforeApplicationShutdown, OnApplicationShutdown {
+  private readonly active = new Map<Promise<unknown>, AbortController>();
+  private closing: Promise<void> | undefined;
+  private poisoned = false;
+  constructor(
+    private readonly runtime: CodexUsageRuntime = legacyCodexUsageRuntime,
+    private readonly limits: Limits = defaults
+  ) {}
+
   async isAvailable(): Promise<boolean> {
-    this.cachedCliPath = await findCodexCliPath();
-    return Boolean(this.cachedCliPath);
+    this.assertAccepting();
+    return Boolean((await this.runtime.snapshot()).cliPath);
+  }
+  getModels(): Promise<AppServerModelResponse | null> {
+    return this.request('model/list', {});
+  }
+  getAccount(): Promise<AppServerAccountResponse | null> {
+    return this.request('account/read', { refreshToken: false });
+  }
+  getRateLimits(): Promise<AppServerRateLimitsResponse | null> {
+    return this.request('account/rateLimits/read', {});
   }
 
-  /**
-   * Fetch available models from app-server
-   */
-  async getModels(): Promise<AppServerModelResponse | null> {
-    const result = await this.executeJsonRpc<AppServerModelResponse>((sendRequest) => {
-      return sendRequest('model/list', {});
-    });
+  private assertAccepting(): void {
+    if (this.closing || this.poisoned) throw new Error('Codex app-server is unavailable.');
+  }
 
-    if (result) {
-      logger.info(`[getModels] ✓ Fetched ${result.data.length} models`);
+  private request<T>(method: string, params: unknown): Promise<T | null> {
+    try {
+      this.assertAccepting();
+    } catch (error) {
+      return Promise.reject(error);
     }
+    if (this.active.size >= 4) return Promise.reject(new Error('Codex app-server is busy.'));
+    const controller = new AbortController();
+    const pending = Promise.resolve().then(() => this.execute<T>(method, params, controller));
+    this.active.set(pending, controller);
+    void pending.then(
+      () => this.active.delete(pending),
+      () => this.active.delete(pending)
+    );
+    return pending;
+  }
 
+  private async execute<T>(
+    method: string,
+    params: unknown,
+    controller: AbortController
+  ): Promise<T | null> {
+    let child: ChildProcessWithoutNullStreams | undefined;
+    let closed = false;
+    let closedPromise: Promise<void> = Promise.resolve();
+    let timer: NodeJS.Timeout | undefined;
+    let cancelSnapshot: (() => void) | undefined;
+    const deadline = performance.now() + this.limits.requestMs;
+    const operation = async (): Promise<T | null> => {
+      try {
+        if (controller.signal.aborted) return null;
+        timer = setTimeout(() => controller.abort(), this.limits.requestMs);
+        const snapshot = await Promise.race([
+          this.runtime.snapshot(controller.signal),
+          new Promise<never>((_, reject) => {
+            cancelSnapshot = () => reject(new Error('Codex discovery cancelled.'));
+            controller.signal.addEventListener('abort', cancelSnapshot, { once: true });
+          }),
+        ]);
+        if (controller.signal.aborted || performance.now() >= deadline || !snapshot.cliPath)
+          return null;
+        child = spawn(snapshot.cliPath, ['app-server'], {
+          cwd: snapshot.workingDirectory,
+          env: { ...snapshot.environment, TERM: 'dumb' },
+          stdio: ['pipe', 'pipe', 'pipe'],
+          detached: process.platform !== 'win32',
+          shell: process.platform === 'win32' && snapshot.cliPath.toLowerCase().endsWith('.cmd'),
+        });
+        const processRef = child;
+        closedPromise = new Promise<void>((resolve) => {
+          child!.once('close', () => {
+            closed = true;
+            resolve();
+          });
+          child!.once('error', () => {
+            if (!child!.pid) {
+              closed = true;
+              resolve();
+            }
+          });
+        });
+        return await new Promise<T>((resolve, reject) => {
+          let buffer = '',
+            bytes = 0,
+            messages = 0,
+            ready = false;
+          const decoder = new StringDecoder('utf8');
+          const fail = () => reject(new Error('Codex app-server query failed.'));
+          controller.signal.addEventListener('abort', fail, { once: true });
+          processRef.once('error', fail);
+          processRef.once('close', fail);
+          processRef.stdin.on('error', fail);
+          processRef.stderr.on('data', () => {
+            /* Drain without retaining diagnostics or secrets. */
+          });
+          processRef.stdout.on('data', (chunk: Buffer) => {
+            if (controller.signal.aborted || performance.now() >= deadline) {
+              fail();
+              return;
+            }
+            bytes += chunk.length;
+            buffer += decoder.write(chunk);
+            if (bytes > 1048576 || buffer.length > 131072) {
+              fail();
+              return;
+            }
+            let newline: number;
+            while ((newline = buffer.indexOf('\n')) >= 0) {
+              const line = buffer.slice(0, newline);
+              buffer = buffer.slice(newline + 1);
+              if (!line.trim()) continue;
+              if (++messages > 1000) {
+                fail();
+                return;
+              }
+              try {
+                const message = JSON.parse(line);
+                if (
+                  !message ||
+                  typeof message !== 'object' ||
+                  Array.isArray(message) ||
+                  message.error ||
+                  ('id' in message && 'method' in message)
+                ) {
+                  fail();
+                  return;
+                }
+                if (message.id === 1 && !ready) {
+                  if (!message.result || typeof message.result !== 'object') {
+                    fail();
+                    return;
+                  }
+                  ready = true;
+                  processRef.stdin.write(
+                    JSON.stringify({ method: 'initialized', params: {} }) + '\n'
+                  );
+                  processRef.stdin.write(JSON.stringify({ id: 2, method, params }) + '\n');
+                } else if (message.id === 2 && ready) {
+                  if (!message.result || typeof message.result !== 'object') {
+                    fail();
+                    return;
+                  }
+                  resolve(message.result as T);
+                }
+              } catch {
+                fail();
+                return;
+              }
+            }
+          });
+          if (controller.signal.aborted) {
+            fail();
+            return;
+          }
+          processRef.stdin.write(
+            JSON.stringify({
+              id: 1,
+              method: 'initialize',
+              params: {
+                clientInfo: { name: 'automaker-usage', title: 'AutoMaker', version: '1.0.0' },
+              },
+            }) + '\n'
+          );
+        });
+      } catch {
+        return null; // Established unavailable/fallback result; never reflect raw CLI output.
+      }
+    };
+    const result = await operation();
+    clearTimeout(timer);
+    if (cancelSnapshot) controller.signal.removeEventListener('abort', cancelSnapshot);
+    if (child) {
+      try {
+        await this.cleanup(child, closedPromise, () => closed);
+      } catch {
+        this.poisoned = true;
+        throw new CodexAppServerCleanupError();
+      }
+    }
     return result;
   }
 
-  /**
-   * Fetch account information from app-server
-   */
-  async getAccount(): Promise<AppServerAccountResponse | null> {
-    return this.executeJsonRpc<AppServerAccountResponse>((sendRequest) => {
-      return sendRequest('account/read', { refreshToken: false });
-    });
-  }
-
-  /**
-   * Fetch rate limits from app-server
-   */
-  async getRateLimits(): Promise<AppServerRateLimitsResponse | null> {
-    return this.executeJsonRpc<AppServerRateLimitsResponse>((sendRequest) => {
-      return sendRequest('account/rateLimits/read', {});
-    });
-  }
-
-  /**
-   * Execute JSON-RPC requests via Codex app-server
-   *
-   * This method:
-   * 1. Spawns a new `codex app-server` process
-   * 2. Handles JSON-RPC initialization handshake
-   * 3. Executes user-provided requests
-   * 4. Cleans up the process
-   *
-   * @param requestFn - Function that receives sendRequest helper and returns a promise
-   * @returns Result of the JSON-RPC request or null on failure
-   */
-  private async executeJsonRpc<T>(
-    requestFn: (sendRequest: <R>(method: string, params?: unknown) => Promise<R>) => Promise<T>
-  ): Promise<T | null> {
-    let childProcess: ChildProcess | null = null;
-
+  private async cleanup(
+    child: ChildProcessWithoutNullStreams,
+    exited: Promise<void>,
+    closed: () => boolean
+  ): Promise<void> {
+    const observer = new AbortController();
+    const deadline = performance.now() + this.limits.cleanupMs;
+    const signal = (name: NodeJS.Signals) => {
+      try {
+        if (process.platform !== 'win32' && child.pid && child.pid > 1)
+          process.kill(-child.pid, name);
+        else if (!closed()) child.kill(name);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error;
+      }
+    };
+    let force: NodeJS.Timeout | undefined, watchdog: NodeJS.Timeout | undefined;
     try {
-      const cliPath = this.cachedCliPath || (await findCodexCliPath());
-
-      if (!cliPath) {
-        return null;
-      }
-
-      // On Windows, .cmd files must be run through shell
-      const needsShell = process.platform === 'win32' && cliPath.toLowerCase().endsWith('.cmd');
-
-      childProcess = spawn(cliPath, ['app-server'], {
-        cwd: process.cwd(),
-        env: {
-          ...process.env,
-          TERM: 'dumb',
-        },
-        stdio: ['pipe', 'pipe', 'pipe'],
-        shell: needsShell,
-      });
-
-      if (!childProcess.stdin || !childProcess.stdout) {
-        throw new Error('Failed to create stdio pipes');
-      }
-
-      // Setup readline for reading JSONL responses
-      const rl = readline.createInterface({
-        input: childProcess.stdout,
-        crlfDelay: Infinity,
-      });
-
-      // Message ID counter for JSON-RPC
-      let messageId = 0;
-      const pendingRequests = new Map<
-        number,
-        {
-          resolve: (value: unknown) => void;
-          reject: (error: Error) => void;
-          timeout: NodeJS.Timeout;
-        }
-      >();
-
-      // Process incoming messages
-      rl.on('line', (line) => {
-        if (!line.trim()) return;
-
+      child.stdin.end();
+      signal('SIGTERM');
+      force = setTimeout(() => {
         try {
-          const message = JSON.parse(line);
-
-          // Handle response to our request
-          if ('id' in message && message.id !== undefined) {
-            const pending = pendingRequests.get(message.id);
-            if (pending) {
-              clearTimeout(pending.timeout);
-              pendingRequests.delete(message.id);
-              if (message.error) {
-                pending.reject(new Error(message.error.message || 'Unknown error'));
-              } else {
-                pending.resolve(message.result);
-              }
-            }
-          }
-          // Ignore notifications (no id field)
+          signal('SIGKILL');
         } catch {
-          // Ignore parse errors for non-JSON lines
+          observer.abort();
         }
+      }, this.limits.killMs);
+      const timeout = new Promise<never>((_, reject) => {
+        watchdog = setTimeout(() => {
+          observer.abort();
+          reject(new Error('Cleanup deadline exceeded.'));
+        }, this.limits.cleanupMs);
       });
-
-      // Helper to send JSON-RPC request and wait for response
-      const sendRequest = <R>(method: string, params?: unknown): Promise<R> => {
-        return new Promise((resolve, reject) => {
-          const id = ++messageId;
-          const request: JsonRpcRequest = {
-            method,
-            id,
-            params: params ?? {},
-          };
-
-          // Set timeout for request (10 seconds)
-          const timeout = setTimeout(() => {
-            pendingRequests.delete(id);
-            reject(new Error(`Request timeout: ${method}`));
-          }, 10000);
-
-          pendingRequests.set(id, {
-            resolve: resolve as (value: unknown) => void,
-            reject,
-            timeout,
-          });
-
-          childProcess!.stdin!.write(JSON.stringify(request) + '\n');
-        });
-      };
-
-      // Helper to send notification (no response expected)
-      const sendNotification = (method: string, params?: unknown): void => {
-        const notification = params ? { method, params } : { method };
-        childProcess!.stdin!.write(JSON.stringify(notification) + '\n');
-      };
-
-      // 1. Initialize the app-server
-      await sendRequest('initialize', {
-        clientInfo: {
-          name: 'automaker',
-          title: 'AutoMaker',
-          version: '1.0.0',
-        },
-      });
-
-      // 2. Send initialized notification
-      sendNotification('initialized');
-
-      // 3. Execute user-provided requests
-      const result = await requestFn(sendRequest);
-
-      // Clean up
-      rl.close();
-      childProcess.kill('SIGTERM');
-
-      return result;
-    } catch (error) {
-      logger.error('[executeJsonRpc] Failed:', error);
-      return null;
+      await Promise.race([
+        timeout,
+        (async () => {
+          await exited;
+          if (process.platform === 'linux' && child.pid)
+            await waitForLinuxProcessGroupExit(child.pid, observer.signal);
+        })(),
+      ]);
+      if (performance.now() >= deadline) throw new Error('Cleanup deadline exceeded.');
     } finally {
-      // Ensure process is killed
-      if (childProcess && !childProcess.killed) {
-        childProcess.kill('SIGTERM');
-      }
+      clearTimeout(force);
+      clearTimeout(watchdog);
+      observer.abort();
+      child.stdin.destroy();
+      child.stdout.destroy();
+      child.stderr.destroy();
+      child.unref();
     }
+  }
+
+  beforeApplicationShutdown(): Promise<void> {
+    return this.onApplicationShutdown();
+  }
+
+  onApplicationShutdown(): Promise<void> {
+    if (!this.closing) {
+      this.closing = Promise.resolve().then(async () => {
+        await Promise.allSettled([...this.active.keys()]);
+        if (this.poisoned) throw new CodexAppServerCleanupError();
+      });
+      for (const controller of this.active.values()) controller.abort();
+    }
+    return this.closing;
   }
 }

@@ -1,0 +1,107 @@
+import { Body, Controller, Get, HttpCode, HttpException, Inject, Post, Res } from '@nestjs/common';
+import type { Response } from 'express';
+import {
+  ClientIdentity,
+  HttpAuthentication,
+  SessionCookie,
+} from '../http/request-context.decorators.js';
+import type {
+  ClientIdentityContext,
+  HttpAuthenticationContext,
+  SessionCookieContext,
+} from '@automaker/contracts/domains/request-context';
+import { UnauthorizedDomainError } from '../errors/index.js';
+import { ZodValidationPipe } from '../validation/zod-validation.pipe.js';
+import { AuthService } from './auth.service.js';
+import { LoginAttemptStore } from './login-attempt.store.js';
+import { Public } from './public.decorator.js';
+import { LoginRequestSchema, type LoginRequest } from './auth.schemas.js';
+import { RUNTIME_CONFIG, type RuntimeConfig } from '../config/index.js';
+import {
+  AuthStatusResponseSchema,
+  LoginResponseSchema,
+  WebSocketTokenResponseSchema,
+  LogoutResponseSchema,
+} from '@automaker/contracts/domains/auth';
+
+@Controller('auth')
+export class AuthController {
+  constructor(
+    @Inject(AuthService) private readonly auth: AuthService,
+    @Inject(LoginAttemptStore) private readonly attempts: LoginAttemptStore,
+    @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig
+  ) {}
+
+  @Public()
+  @Get('status')
+  async status(
+    @HttpAuthentication() context: HttpAuthenticationContext,
+    @Res({ passthrough: true }) response: Response
+  ): Promise<Record<string, unknown>> {
+    let authenticated = this.auth.isContextAuthenticated(context);
+    if (!authenticated && this.config.auth.autoLogin && this.config.environment !== 'production') {
+      response.cookie(
+        this.auth.sessionCookieName,
+        await this.auth.createSession(),
+        this.auth.sessionCookieOptions
+      );
+      authenticated = true;
+    }
+    return AuthStatusResponseSchema.parse({ success: true, authenticated, required: true });
+  }
+
+  @Public()
+  @Post('login')
+  @HttpCode(200)
+  async login(
+    @ClientIdentity() client: ClientIdentityContext,
+    @Res({ passthrough: true }) response: Response,
+    @Body(new ZodValidationPipe(LoginRequestSchema)) input: LoginRequest
+  ): Promise<Record<string, unknown>> {
+    const clientIp = client.clientId;
+    const rateLimit = this.attempts.check(clientIp);
+    if (!rateLimit.allowed)
+      throw new HttpException(
+        {
+          success: false,
+          error: 'Too many login attempts. Please try again later.',
+          retryAfter: rateLimit.retryAfterSeconds,
+        },
+        429
+      );
+    if (!this.auth.validateApiKey(input.apiKey)) {
+      this.attempts.recordFailure(clientIp);
+      throw new UnauthorizedDomainError('Invalid API key.');
+    }
+    this.attempts.reset(clientIp);
+    const token = await this.auth.createSession();
+    response.cookie(this.auth.sessionCookieName, token, this.auth.sessionCookieOptions);
+    return LoginResponseSchema.parse({ success: true, message: 'Logged in successfully.', token });
+  }
+
+  @Get('token')
+  token(): Record<string, unknown> {
+    return WebSocketTokenResponseSchema.parse({
+      success: true,
+      token: this.auth.issueWebSocketToken(),
+      expiresIn: 300,
+    });
+  }
+
+  @Public()
+  @Post('logout')
+  @HttpCode(200)
+  async logout(
+    @SessionCookie() cookie: SessionCookieContext,
+    @Res({ passthrough: true }) response: Response
+  ): Promise<Record<string, unknown>> {
+    const token = cookie.token as string | undefined;
+    if (token) await this.auth.invalidateSession(token);
+    response.cookie(this.auth.sessionCookieName, '', {
+      ...this.auth.sessionCookieOptions,
+      maxAge: 0,
+      expires: new Date(0),
+    });
+    return LogoutResponseSchema.parse({ success: true, message: 'Logged out successfully.' });
+  }
+}

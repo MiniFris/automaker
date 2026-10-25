@@ -1,4 +1,17 @@
 import { translate } from '@/lib/i18n';
+import { GEMINI_CLI_INSTALL_COMMAND } from '@automaker/contracts';
+import type { CursorSetupStatus } from '@automaker/contracts';
+import type {
+  PendingPlanApprovalResponse,
+  ProviderDisconnectRequest,
+  ProviderReconnectRequest,
+  ClaudeVerificationRequest,
+  ClaudeVerificationResponse,
+  CodexVerificationRequest,
+  CodexVerificationResponse,
+  CopilotSetupStatus,
+  GeminiSetupStatus,
+} from '@automaker/contracts';
 // Type definitions for Electron IPC API
 import type { SessionListItem, Message } from '@/types/electron';
 import type {
@@ -236,6 +249,9 @@ import { getHttpApiClient, getServerUrlSync } from './http-api-client';
 
 // Running Agent type
 export interface RunningAgent {
+  kind?: 'chat';
+  sessionId?: string;
+  workingDirectory?: string;
   featureId: string;
   projectPath: string;
   projectName: string;
@@ -622,12 +638,19 @@ export interface AutoModeAPI {
     featureId: string,
     worktreePath?: string
   ) => Promise<{ success: boolean; error?: string }>;
+  pendingPlanApproval: (
+    projectPath: string,
+    featureId: string
+  ) => Promise<PendingPlanApprovalResponse>;
   approvePlan: (
     projectPath: string,
     featureId: string,
     approved: boolean,
     editedPlan?: string,
-    feedback?: string
+    feedback?: string,
+    approvalToken?: string,
+    planVersion?: number,
+    approvalRunId?: string
   ) => Promise<{ success: boolean; error?: string }>;
   resumeInterrupted: (
     projectPath: string
@@ -909,6 +932,7 @@ export interface ElectronAPI {
         model?: string;
         thinkingLevel?: string;
         addedAt: string;
+        deliveryStatus?: 'interrupted';
       }>;
       error?: string;
     }>;
@@ -1019,17 +1043,6 @@ export interface ElectronAPI {
       };
       error?: string;
     }>;
-    updateCredentials: (updates: {
-      apiKeys?: { anthropic?: string; google?: string; openai?: string };
-    }) => Promise<{
-      success: boolean;
-      credentials?: {
-        anthropic: { configured: boolean; masked: string };
-        google: { configured: boolean; masked: string };
-        openai: { configured: boolean; masked: string };
-      };
-      error?: string;
-    }>;
     getProject: (projectPath: string) => Promise<{
       success: boolean;
       settings?: Record<string, unknown>;
@@ -1047,6 +1060,7 @@ export interface ElectronAPI {
       success: boolean;
       migratedGlobalSettings: boolean;
       migratedCredentials: boolean;
+      credentialImportRequired: boolean;
       migratedProjectCount: number;
       errors: string[];
     }>;
@@ -1574,6 +1588,7 @@ interface SetupAPI {
     path?: string;
     auth?: {
       authenticated: boolean;
+      authenticationChecked?: boolean;
       method: string;
       hasCredentialsFile?: boolean;
       hasToken?: boolean;
@@ -1586,12 +1601,12 @@ interface SetupAPI {
     };
     error?: string;
   }>;
-  installClaude: () => Promise<{
+  installClaude: (signal?: AbortSignal) => Promise<{
     success: boolean;
     message?: string;
     error?: string;
   }>;
-  authClaude: () => Promise<{
+  authClaude: (request: ProviderReconnectRequest) => Promise<{
     success: boolean;
     token?: string;
     requiresManualAuth?: boolean;
@@ -1601,7 +1616,7 @@ interface SetupAPI {
     message?: string;
     output?: string;
   }>;
-  deauthClaude?: () => Promise<{
+  deauthClaude?: (request: ProviderDisconnectRequest) => Promise<{
     success: boolean;
     requiresManualDeauth?: boolean;
     command?: string;
@@ -1628,36 +1643,20 @@ interface SetupAPI {
     isMac: boolean;
     isLinux: boolean;
   }>;
-  verifyClaudeAuth: (authMethod?: 'cli' | 'api_key') => Promise<{
-    success: boolean;
-    authenticated: boolean;
-    authType?: 'oauth' | 'api_key' | 'cli';
-    error?: string;
-  }>;
+  verifyClaudeAuth: (input: ClaudeVerificationRequest) => Promise<ClaudeVerificationResponse>;
   getGhStatus?: () => Promise<{
     success: boolean;
     installed: boolean;
     authenticated: boolean;
+    authenticationChecked?: boolean;
     version: string | null;
     path: string | null;
     user: string | null;
     error?: string;
   }>;
   // Cursor CLI methods
-  getCursorStatus?: () => Promise<{
-    success: boolean;
-    installed?: boolean;
-    version?: string | null;
-    path?: string | null;
-    auth?: {
-      authenticated: boolean;
-      method: string;
-    };
-    installCommand?: string;
-    loginCommand?: string;
-    error?: string;
-  }>;
-  authCursor?: () => Promise<{
+  getCursorStatus?: () => Promise<CursorSetupStatus>;
+  authCursor?: (request: ProviderReconnectRequest) => Promise<{
     success: boolean;
     token?: string;
     requiresManualAuth?: boolean;
@@ -1666,7 +1665,7 @@ interface SetupAPI {
     message?: string;
     output?: string;
   }>;
-  deauthCursor?: () => Promise<{
+  deauthCursor?: (request: ProviderDisconnectRequest) => Promise<{
     success: boolean;
     requiresManualDeauth?: boolean;
     command?: string;
@@ -1683,6 +1682,7 @@ interface SetupAPI {
     path?: string;
     auth?: {
       authenticated: boolean;
+      authenticationChecked?: boolean;
       method: string;
       hasAuthFile?: boolean;
       hasOAuthToken?: boolean;
@@ -1692,12 +1692,12 @@ interface SetupAPI {
     };
     error?: string;
   }>;
-  installCodex?: () => Promise<{
+  installCodex?: (signal?: AbortSignal) => Promise<{
     success: boolean;
     message?: string;
     error?: string;
   }>;
-  authCodex?: () => Promise<{
+  authCodex?: (request: ProviderReconnectRequest) => Promise<{
     success: boolean;
     token?: string;
     requiresManualAuth?: boolean;
@@ -1707,21 +1707,14 @@ interface SetupAPI {
     message?: string;
     output?: string;
   }>;
-  deauthCodex?: () => Promise<{
+  deauthCodex?: (request: ProviderDisconnectRequest) => Promise<{
     success: boolean;
     requiresManualDeauth?: boolean;
     command?: string;
     message?: string;
     error?: string;
   }>;
-  verifyCodexAuth?: (
-    authMethod: 'cli' | 'api_key',
-    apiKey?: string
-  ) => Promise<{
-    success: boolean;
-    authenticated: boolean;
-    error?: string;
-  }>;
+  verifyCodexAuth?: (input: CodexVerificationRequest) => Promise<CodexVerificationResponse>;
   // OpenCode CLI methods
   getOpencodeStatus?: () => Promise<{
     success: boolean;
@@ -1738,6 +1731,7 @@ interface SetupAPI {
     };
     auth?: {
       authenticated: boolean;
+      authenticationChecked?: boolean;
       method: string;
       hasAuthFile?: boolean;
       hasOAuthToken?: boolean;
@@ -1747,7 +1741,7 @@ interface SetupAPI {
     };
     error?: string;
   }>;
-  authOpencode?: () => Promise<{
+  authOpencode?: (request: ProviderReconnectRequest) => Promise<{
     success: boolean;
     token?: string;
     requiresManualAuth?: boolean;
@@ -1756,7 +1750,7 @@ interface SetupAPI {
     message?: string;
     output?: string;
   }>;
-  deauthOpencode?: () => Promise<{
+  deauthOpencode?: (request: ProviderDisconnectRequest) => Promise<{
     success: boolean;
     requiresManualDeauth?: boolean;
     command?: string;
@@ -1818,38 +1812,15 @@ interface SetupAPI {
     error?: string;
   }>;
   // Gemini CLI methods
-  getGeminiStatus?: () => Promise<{
-    success: boolean;
-    status?: string;
-    installed?: boolean;
-    method?: string;
-    version?: string;
-    path?: string;
-    recommendation?: string;
-    installCommands?: {
-      macos?: string;
-      linux?: string;
-      npm?: string;
-    };
-    auth?: {
-      authenticated: boolean;
-      method: string;
-      hasApiKey?: boolean;
-      hasEnvApiKey?: boolean;
-      error?: string;
-    };
-    loginCommand?: string;
-    installCommand?: string;
-    error?: string;
-  }>;
-  authGemini?: () => Promise<{
+  getGeminiStatus?: () => Promise<GeminiSetupStatus>;
+  authGemini?: (request: ProviderReconnectRequest) => Promise<{
     success: boolean;
     requiresManualAuth?: boolean;
     command?: string;
     message?: string;
     error?: string;
   }>;
-  deauthGemini?: () => Promise<{
+  deauthGemini?: (request: ProviderDisconnectRequest) => Promise<{
     success: boolean;
     requiresManualDeauth?: boolean;
     command?: string;
@@ -1857,25 +1828,7 @@ interface SetupAPI {
     error?: string;
   }>;
   // Copilot SDK methods
-  getCopilotStatus?: () => Promise<{
-    success: boolean;
-    status?: string;
-    installed?: boolean;
-    method?: string;
-    version?: string;
-    path?: string;
-    recommendation?: string;
-    auth?: {
-      authenticated: boolean;
-      method: string;
-      login?: string;
-      host?: string;
-      error?: string;
-    };
-    loginCommand?: string;
-    installCommand?: string;
-    error?: string;
-  }>;
+  getCopilotStatus?: () => Promise<CopilotSetupStatus>;
   onInstallProgress?: (
     callback: (progress: InstallProgressEvent) => void
   ) => (() => void) | undefined;
@@ -1886,7 +1839,7 @@ interface SetupAPI {
 function createMockSetupAPI(): SetupAPI {
   const mockStoreApiKey = async (provider: string, _apiKey: string) => {
     console.log('[Mock] Storing API key for:', provider);
-    return { success: true };
+    return { success: false, error: 'Mock environment - credential persistence unavailable' };
   };
 
   return {
@@ -1952,8 +1905,8 @@ function createMockSetupAPI(): SetupAPI {
     deleteApiKey: async (provider: string) => {
       console.log('[Mock] Deleting API key for:', provider);
       return {
-        success: true,
-        message: translate('API key for {value1} deleted', { value1: provider }),
+        success: false,
+        error: 'Mock environment - credential persistence unavailable',
       };
     },
 
@@ -1969,13 +1922,15 @@ function createMockSetupAPI(): SetupAPI {
       };
     },
 
-    verifyClaudeAuth: async (authMethod?: 'cli' | 'api_key') => {
-      console.log('[Mock] Verifying Claude auth with method:', authMethod);
+    verifyClaudeAuth: async (input: ClaudeVerificationRequest) => {
       // Mock always returns not authenticated
       return {
         success: true,
         authenticated: false,
         error: 'Mock environment - authentication not available',
+        target: input.target,
+        authType: input.target.authMethod,
+        verification: 'unverified' as const,
       };
     },
 
@@ -1985,6 +1940,7 @@ function createMockSetupAPI(): SetupAPI {
         success: true,
         installed: false,
         authenticated: false,
+        authenticationChecked: false,
         version: null,
         path: null,
         user: null,
@@ -1997,9 +1953,19 @@ function createMockSetupAPI(): SetupAPI {
       return {
         success: true,
         installed: false,
+        connected: true,
         version: null,
         path: null,
-        auth: { authenticated: false, method: 'none' },
+        auth: {
+          authenticated: false,
+          authenticationChecked: false,
+          scope: 'host',
+          method: 'none',
+          hasEnvApiKey: false,
+          hasCredentialsFile: false,
+        },
+        installCommand: 'curl https://cursor.com/install -fsS | bash',
+        loginCommand: 'cursor-agent login',
       };
     },
 
@@ -2058,11 +2024,13 @@ function createMockSetupAPI(): SetupAPI {
       };
     },
 
-    verifyCodexAuth: async (authMethod: 'cli' | 'api_key') => {
-      console.log('[Mock] Verifying Codex auth with method:', authMethod);
+    verifyCodexAuth: async (input: CodexVerificationRequest) => {
       return {
         success: true,
         authenticated: false,
+        target: input.target,
+        authType: input.target.authMethod,
+        verification: 'unverified' as const,
         error: 'Mock environment - authentication not available',
       };
     },
@@ -2137,9 +2105,21 @@ function createMockSetupAPI(): SetupAPI {
       console.log('[Mock] Getting Gemini status');
       return {
         success: true,
-        status: 'not_installed',
         installed: false,
-        auth: { authenticated: false, method: 'none' },
+        connected: true,
+        version: null,
+        path: null,
+        auth: {
+          authenticated: false,
+          authenticationChecked: false,
+          method: 'none',
+          hasApiKey: false,
+          hasEnvApiKey: false,
+          hasConfigFile: false,
+          hasVertexConfig: false,
+        },
+        installCommand: GEMINI_CLI_INSTALL_COMMAND,
+        loginCommand: 'gemini',
       };
     },
 
@@ -2166,9 +2146,19 @@ function createMockSetupAPI(): SetupAPI {
       console.log('[Mock] Getting Copilot status');
       return {
         success: true,
-        status: 'not_installed',
         installed: false,
-        auth: { authenticated: false, method: 'none' },
+        connected: true,
+        version: null,
+        path: null,
+        auth: {
+          authenticated: false,
+          authenticationChecked: false,
+          method: 'none',
+          hasEnvToken: false,
+          hasConfigFile: false,
+        },
+        installCommand: 'npm install -g @github/copilot',
+        loginCommand: 'gh auth login',
       };
     },
 
@@ -3406,12 +3396,16 @@ function createMockAutoModeAPI(): AutoModeAPI {
       return { success: true };
     },
 
+    pendingPlanApproval: async () => ({ success: true, approval: null }),
     approvePlan: async (
       projectPath: string,
       featureId: string,
       approved: boolean,
       editedPlan?: string,
-      feedback?: string
+      feedback?: string,
+      approvalToken?: string,
+      planVersion?: number,
+      approvalRunId?: string
     ) => {
       console.log('[Mock] Plan approval:', {
         projectPath,
@@ -3419,6 +3413,9 @@ function createMockAutoModeAPI(): AutoModeAPI {
         approved,
         editedPlan: editedPlan ? '[edited]' : undefined,
         feedback,
+        approvalToken,
+        planVersion,
+        approvalRunId,
       });
       return { success: true };
     },

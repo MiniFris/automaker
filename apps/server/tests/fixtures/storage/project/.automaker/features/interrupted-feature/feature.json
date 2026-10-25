@@ -1,0 +1,13 @@
+{
+  "id": "interrupted-feature",
+  "title": "Interrupted fixture",
+  "description": "Feature persisted while an agent was running",
+  "status": "interrupted",
+  "category": "backend",
+  "priority": 2,
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "updatedAt": "2026-01-01T00:01:00.000Z",
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "dependencies": []
+}

@@ -11,7 +11,7 @@
 // Main exports
 export { GlobalAutoModeService } from './global-service.js';
 export { AutoModeServiceFacade } from './facade.js';
-export { AutoModeServiceCompat } from './compat.js';
+export { AutoModeRuntime, AutoModeRuntime as AutoModeServiceCompat } from './runtime.js';
 
 // Convenience factory function
 import { AutoModeServiceFacade } from './facade.js';
@@ -33,6 +33,7 @@ import type { FacadeOptions } from './types.js';
  * const facade = createAutoModeFacade('/path/to/project', {
  *   events: eventEmitter,
  *   settingsService,
+ *   providerRegistry,
  * });
  *
  * // Start auto mode

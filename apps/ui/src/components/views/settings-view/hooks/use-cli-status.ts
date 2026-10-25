@@ -64,11 +64,13 @@ export function useCliStatus() {
             : 'none'; // Default authenticated to api_key, not none
         const authStatus = {
           authenticated: auth.authenticated,
+          authenticationChecked: auth.authenticationChecked,
+          hasStoredApiKey: auth.hasStoredApiKey,
+          hasStoredOAuthToken: auth.hasStoredOAuthToken,
           method,
           hasCredentialsFile: auth.hasCredentialsFile ?? false,
-          oauthTokenValid:
-            auth.oauthTokenValid || auth.hasStoredOAuthToken || auth.hasEnvOAuthToken,
-          apiKeyValid: auth.apiKeyValid || auth.hasStoredApiKey || auth.hasEnvApiKey,
+          oauthTokenValid: auth.authenticationChecked === false ? false : auth.oauthTokenValid,
+          apiKeyValid: auth.authenticationChecked === false ? false : auth.apiKeyValid,
           hasEnvOAuthToken: auth.hasEnvOAuthToken,
           hasEnvApiKey: auth.hasEnvApiKey,
         };

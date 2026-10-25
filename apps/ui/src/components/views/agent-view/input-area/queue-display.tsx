@@ -6,6 +6,7 @@ interface QueueItem {
   id: string;
   message: string;
   imagePaths?: string[];
+  deliveryStatus?: 'interrupted';
 }
 
 interface QueueDisplayProps {
@@ -22,6 +23,13 @@ export function QueueDisplay({ serverQueue, onRemoveFromQueue, onClearQueue }: Q
 
   return (
     <div className="mb-4 space-y-2">
+      {serverQueue.some((item) => item.deliveryStatus === 'interrupted') && (
+        <p role="alert" className="text-xs text-amber-600 dark:text-amber-400">
+          {translate(
+            'A queued request was interrupted. Its outcome may be unknown. Automatic queue processing is paused; inspect history and target changes before removing or resubmitting it.'
+          )}
+        </p>
+      )}
       <div className="flex items-center justify-between">
         <p className="text-xs font-medium text-muted-foreground">
           {formatCount(serverQueue.length, 'prompt')} {translate(' queued')}
@@ -43,6 +51,11 @@ export function QueueDisplay({ serverQueue, onRemoveFromQueue, onClearQueue }: Q
               {index + 1}.
             </span>
             <span className="flex-1 truncate text-foreground">{item.message}</span>
+            {item.deliveryStatus === 'interrupted' && (
+              <span className="text-xs text-amber-600 dark:text-amber-400">
+                {translate('Paused')}
+              </span>
+            )}
             {item.imagePaths && item.imagePaths.length > 0 && (
               <span className="text-xs text-muted-foreground">
                 +{formatCount(item.imagePaths.length, 'file')}

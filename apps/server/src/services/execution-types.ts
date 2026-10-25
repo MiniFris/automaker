@@ -9,6 +9,8 @@ import type { Feature, PlanningMode, ThinkingLevel, ReasoningEffort } from '@aut
 import type { loadContextFiles } from '@automaker/utils';
 import type { PipelineContext } from './pipeline-orchestrator.js';
 import type { FeatureMemoryWriter } from './execution-environment/memory.js';
+import type { RunningFeature } from './concurrency-manager.js';
+import type { FeatureRunPort } from './agent-executor-types.js';
 
 // =============================================================================
 // ExecutionService Callback Types
@@ -37,6 +39,9 @@ export type RunAgentFn = (
     reasoningEffort?: ReasoningEffort;
     providerId?: string;
     branchName?: string | null;
+    /** Trusted immutable feature-workspace cwd, never accepted from HTTP input. */
+    boundTargetCwd?: string;
+    runPort?: FeatureRunPort;
   }
 ) => Promise<void>;
 
@@ -97,7 +102,8 @@ export type ResumeFeatureFn = (
   projectPath: string,
   featureId: string,
   useWorktrees: boolean,
-  _calledInternally: boolean
+  _calledInternally: boolean,
+  expected?: RunningFeature
 ) => Promise<void>;
 
 /**
@@ -147,7 +153,7 @@ export type ExecuteFeatureFn = (
   useWorktrees: boolean,
   isAutoMode: boolean,
   providedWorktreePath?: string,
-  options?: { continuationPrompt?: string; _calledInternally?: boolean }
+  options?: { continuationPrompt?: string; _calledInternally?: boolean; _run?: RunningFeature }
 ) => Promise<void>;
 
 /**

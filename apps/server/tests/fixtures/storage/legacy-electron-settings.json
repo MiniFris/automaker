@@ -1,0 +1,10 @@
+{
+  "projects": [
+    {
+      "name": "Legacy Project",
+      "path": "C:\\workspace\\legacy-project"
+    }
+  ],
+  "autoLoadClaudeMd": true,
+  "useClaudeCodeSystemPrompt": true
+}

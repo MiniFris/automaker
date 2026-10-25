@@ -133,14 +133,15 @@ while(true){
  const end=pending.indexOf('\r\n\r\n');if(end<0)return;
  const length=Number(/Content-Length: (\d+)/i.exec(pending.subarray(0,end).toString())[1]);if(pending.length<end+4+length)return;
  const event=JSON.parse(pending.subarray(end+4,end+4+length));pending=pending.subarray(end+4+length);
+ const sessionId=event.params?.sessionId??'copilot-actual-session';
  let result={};
  if(event.method==='ping')result={protocolVersion:2,timestamp:Date.now()};
- if(event.method==='session.create'||event.method==='session.resume')result={sessionId:'copilot-actual-session'};
+ if(event.method==='session.create'||event.method==='session.resume'){result={sessionId};fs.writeFileSync('actual-sdk-session-id.txt',sessionId);}
  if(event.method==='session.send')result={messageId:'message'};
  if(event.id!==undefined)frame({jsonrpc:'2.0',id:event.id,result});
  if(event.method==='session.send'){
   fs.writeFileSync('actual-sdk-result.txt',event.params.prompt);
-  for(const [index,event]of [{type:'assistant.message',data:{content:answer,messageId:'message'}},{type:'session.idle',data:{}}].entries())frame({jsonrpc:'2.0',method:'session.event',params:{sessionId:'copilot-actual-session',event:{id:String(index),timestamp:new Date().toISOString(),parentId:null,...event}}});
+  for(const [index,event]of [{type:'assistant.message',data:{content:answer,messageId:'message'}},{type:'session.idle',data:{}}].entries())frame({jsonrpc:'2.0',method:'session.event',params:{sessionId,event:{id:String(index),timestamp:new Date().toISOString(),parentId:null,...event}}});
  }
 }
 });

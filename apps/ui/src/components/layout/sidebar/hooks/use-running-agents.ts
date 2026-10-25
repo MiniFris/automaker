@@ -1,37 +1,22 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { createLogger } from '@automaker/utils/logger';
 import { getElectronAPI } from '@/lib/electron';
+import { useRunningAgents as useRunningAgentsQuery } from '@/hooks/queries/use-running-agents';
 
 const logger = createLogger('RunningAgents');
 
 export function useRunningAgents() {
-  const [runningAgentsCount, setRunningAgentsCount] = useState(0);
+  const { data, refetch } = useRunningAgentsQuery();
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch running agents count function - used for initial load and event-driven updates
   const fetchRunningAgentsCount = useCallback(async () => {
     try {
-      const api = getElectronAPI();
-      if (api.runningAgents) {
-        logger.debug('Fetching running agents count');
-        const result = await api.runningAgents.getAll();
-        if (result.success && result.runningAgents) {
-          logger.debug('Running agents count fetched', {
-            count: result.runningAgents.length,
-          });
-          setRunningAgentsCount(result.runningAgents.length);
-        } else {
-          logger.debug('Running agents count fetch returned empty/failed', {
-            success: result.success,
-          });
-        }
-      } else {
-        logger.debug('Running agents API not available');
-      }
+      await refetch();
     } catch (error) {
       logger.error('Error fetching running agents count:', error);
     }
-  }, []);
+  }, [refetch]);
 
   // Debounced fetch to avoid excessive API calls from frequent events
   const debouncedFetchRunningAgentsCount = useCallback(() => {
@@ -127,6 +112,6 @@ export function useRunningAgents() {
   }, []);
 
   return {
-    runningAgentsCount,
+    runningAgentsCount: data?.count ?? 0,
   };
 }

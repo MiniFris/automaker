@@ -159,6 +159,7 @@ export function useResolveReviewThread(projectPath: string, prNumber: number) {
   const queryClient = useQueryClient();
 
   return useMutation({
+    retry: false,
     mutationFn: async ({ threadId, resolve }: { threadId: string; resolve: boolean }) => {
       const api = getElectronAPI();
       if (!api.github?.resolveReviewThread) {
@@ -171,7 +172,9 @@ export function useResolveReviewThread(projectPath: string, prNumber: number) {
         throw new Error(result.error || 'Failed to resolve review thread');
       }
 
-      return { isResolved: result.isResolved ?? resolve };
+      if (result.isResolved !== resolve)
+        throw new Error('GitHub thread mutation was not confirmed.');
+      return { isResolved: result.isResolved };
     },
     onSuccess: (_, variables) => {
       const action = variables.resolve ? 'resolved' : 'unresolved';

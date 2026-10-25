@@ -13,6 +13,12 @@ import { mkdirSafe } from './fs-utils.js';
 
 const logger = createLogger('AtomicWriter');
 
+/** Injectable file boundary for application-owned writes; legacy callers keep the default. */
+export type AtomicWriteFilesystem = Pick<
+  typeof secureFs,
+  'access' | 'lstat' | 'mkdir' | 'unlink' | 'rename' | 'copyFile' | 'writeFile' | 'readFile'
+>;
+
 /** Default maximum number of backup files to keep for crash recovery */
 export const DEFAULT_BACKUP_COUNT = 3;
 
@@ -20,6 +26,9 @@ export const DEFAULT_BACKUP_COUNT = 3;
  * Options for atomic write operations
  */
 export interface AtomicWriteOptions {
+  /** Disable promotion of an active writer's temporary file by recovery readers. */
+  recoverableTemporaryFiles?: boolean;
+  filesystem?: AtomicWriteFilesystem;
   /** Permission bits for a new temporary file (e.g. 0o600 for credentials). */
   mode?: number;
   /** Number of spaces for JSON indentation (default: 2) */
@@ -39,11 +48,12 @@ export interface AtomicWriteOptions {
  */
 export async function rotateBackups(
   filePath: string,
-  maxBackups: number = DEFAULT_BACKUP_COUNT
+  maxBackups: number = DEFAULT_BACKUP_COUNT,
+  filesystem: AtomicWriteFilesystem = secureFs
 ): Promise<void> {
   // Check if the source file exists before attempting backup
   try {
-    await secureFs.access(filePath);
+    await filesystem.access(filePath);
   } catch {
     // No existing file to backup
     return;
@@ -57,10 +67,10 @@ export async function rotateBackups(
     try {
       if (i === maxBackups) {
         // Delete the oldest backup
-        await secureFs.unlink(currentBackup);
+        await filesystem.unlink(currentBackup);
       } else {
         // Rename current backup to next slot
-        await secureFs.rename(currentBackup, nextBackup);
+        await filesystem.rename(currentBackup, nextBackup);
       }
     } catch {
       // Ignore errors - backup file may not exist
@@ -69,7 +79,7 @@ export async function rotateBackups(
 
   // Copy current file to .bak1
   try {
-    await secureFs.copyFile(filePath, `${filePath}.bak1`);
+    await filesystem.copyFile(filePath, `${filePath}.bak1`);
   } catch (error) {
     logger.warn(`Failed to create backup of ${filePath}:`, error);
     // Continue with write even if backup fails
@@ -100,30 +110,34 @@ export async function atomicWriteJson<T>(
   data: T,
   options: AtomicWriteOptions = {}
 ): Promise<void> {
-  const { indent = 2, backupCount = 0 } = options;
+  const { indent = 2, backupCount = 0, filesystem = secureFs } = options;
   const resolvedPath = path.resolve(filePath);
   // Use timestamp + random suffix to ensure uniqueness even for concurrent writes
   const uniqueSuffix = `${Date.now()}.${crypto.randomBytes(4).toString('hex')}`;
-  const tempPath = `${resolvedPath}.tmp.${uniqueSuffix}`;
+  const tempPath = `${resolvedPath}.${options.recoverableTemporaryFiles === false ? 'write' : 'tmp'}.${uniqueSuffix}`;
 
   // Always ensure parent directories exist before writing the temp file
   const dirPath = path.dirname(resolvedPath);
-  await mkdirSafe(dirPath);
+  await mkdirSafe(dirPath, filesystem);
 
   const content = JSON.stringify(data, null, indent);
 
   try {
     // Rotate backups before writing (if backups are enabled)
     if (backupCount > 0) {
-      await rotateBackups(resolvedPath, backupCount);
+      await rotateBackups(resolvedPath, backupCount, filesystem);
     }
 
-    await secureFs.writeFile(tempPath, content, options.mode === undefined ? 'utf-8' : { encoding: 'utf-8', mode: options.mode, flag: 'wx' });
-    await secureFs.rename(tempPath, resolvedPath);
+    await filesystem.writeFile(
+      tempPath,
+      content,
+      options.mode === undefined ? 'utf-8' : { encoding: 'utf-8', mode: options.mode, flag: 'wx' }
+    );
+    await filesystem.rename(tempPath, resolvedPath);
   } catch (error) {
     // Clean up temp file if it exists
     try {
-      await secureFs.unlink(tempPath);
+      await filesystem.unlink(tempPath);
     } catch {
       // Ignore cleanup errors - best effort
     }
@@ -148,17 +162,22 @@ export async function atomicWriteJson<T>(
  * const config = await readJsonFile('/path/to/config.json', { version: 1 });
  * ```
  */
-export async function readJsonFile<T>(filePath: string, defaultValue: T): Promise<T> {
+export async function readJsonFile<T>(
+  filePath: string,
+  defaultValue: T,
+  filesystem?: Pick<typeof secureFs, 'readFile'>
+): Promise<T> {
   const resolvedPath = path.resolve(filePath);
 
   try {
-    const content = (await secureFs.readFile(resolvedPath, 'utf-8')) as string;
+    const content = (await (filesystem ?? secureFs).readFile(resolvedPath, 'utf-8')) as string;
     return JSON.parse(content) as T;
   } catch (error) {
     const nodeError = error as NodeJS.ErrnoException;
     if (nodeError.code === 'ENOENT') {
       return defaultValue;
     }
+    if (filesystem && !(error instanceof SyntaxError)) throw error;
     logger.error(`Error reading JSON from ${resolvedPath}:`, error);
     return defaultValue;
   }
@@ -192,7 +211,7 @@ export async function updateJsonAtomically<T>(
   updater: (current: T) => T | Promise<T>,
   options: AtomicWriteOptions = {}
 ): Promise<void> {
-  const current = await readJsonFile(filePath, defaultValue);
+  const current = await readJsonFile(filePath, defaultValue, options.filesystem);
   const updated = await updater(current);
   await atomicWriteJson(filePath, updated, options);
 }
@@ -215,6 +234,9 @@ export interface ReadJsonRecoveryResult<T> {
  * Options for readJsonWithRecovery
  */
 export interface ReadJsonRecoveryOptions {
+  filesystem?: AtomicWriteFilesystem & Pick<typeof secureFs, 'readdir'>;
+  /** Reject ambiguous I/O/restore failures and unrecoverable corruption instead of using defaults. */
+  strictErrors?: boolean;
   /** Maximum number of backup files to check (.bak1, .bak2, etc.) Default: 3 */
   maxBackups?: number;
   /** Whether to automatically restore main file from backup when corrupted. Default: true */
@@ -276,18 +298,26 @@ export async function readJsonWithRecovery<T>(
   defaultValue: T,
   options: ReadJsonRecoveryOptions = {}
 ): Promise<ReadJsonRecoveryResult<T>> {
-  const { maxBackups = 3, autoRestore = true } = options;
+  const {
+    maxBackups = 3,
+    autoRestore = true,
+    filesystem = secureFs,
+    strictErrors = false,
+  } = options;
   const resolvedPath = path.resolve(filePath);
   const dirPath = path.dirname(resolvedPath);
   const fileName = path.basename(resolvedPath);
 
   // Try to read the main file first
   try {
-    const content = (await secureFs.readFile(resolvedPath, 'utf-8')) as string;
+    const content = (await filesystem.readFile(resolvedPath, 'utf-8')) as string;
     const data = JSON.parse(content) as T;
     return { data, recovered: false, source: 'main' };
   } catch (mainError) {
     const nodeError = mainError as NodeJS.ErrnoException;
+    let restoreFailed = false;
+    if (strictErrors && nodeError.code !== 'ENOENT' && !(mainError instanceof SyntaxError))
+      throw mainError;
     const errorMessage =
       nodeError.code === 'ENOENT'
         ? 'File does not exist'
@@ -298,7 +328,7 @@ export async function readJsonWithRecovery<T>(
 
     // Try to find and recover from temp files first (in case of interrupted write)
     try {
-      const files = (await secureFs.readdir(dirPath)) as string[];
+      const files = (await filesystem.readdir(dirPath)) as string[];
       const tempFiles = files
         .filter((f: string) => f.startsWith(`${fileName}.tmp.`))
         .sort()
@@ -307,7 +337,7 @@ export async function readJsonWithRecovery<T>(
       for (const tempFile of tempFiles) {
         const tempPath = path.join(dirPath, tempFile);
         try {
-          const content = (await secureFs.readFile(tempPath, 'utf-8')) as string;
+          const content = (await filesystem.readFile(tempPath, 'utf-8')) as string;
           const data = JSON.parse(content) as T;
 
           logger.info(`Recovered data from temp file: ${tempPath}`);
@@ -315,20 +345,31 @@ export async function readJsonWithRecovery<T>(
           // Optionally restore main file from temp
           if (autoRestore) {
             try {
-              await secureFs.rename(tempPath, resolvedPath);
+              await filesystem.rename(tempPath, resolvedPath);
               logger.info(`Restored main file from temp: ${tempPath}`);
             } catch (restoreError) {
+              restoreFailed = true;
+              if (strictErrors) throw restoreError;
               logger.warn(`Failed to restore main file from temp: ${restoreError}`);
             }
           }
 
           return { data, recovered: true, source: 'temp', error: errorMessage };
-        } catch {
+        } catch (error) {
+          if (
+            strictErrors &&
+            (restoreFailed ||
+              (!(error instanceof SyntaxError) &&
+                (error as NodeJS.ErrnoException).code !== 'ENOENT'))
+          )
+            throw error;
           // This temp file is also corrupted, try next
           continue;
         }
       }
-    } catch {
+    } catch (error) {
+      if (strictErrors && (restoreFailed || (error as NodeJS.ErrnoException).code !== 'ENOENT'))
+        throw error;
       // Could not read directory, skip temp file check
     }
 
@@ -336,7 +377,7 @@ export async function readJsonWithRecovery<T>(
     for (let i = 1; i <= maxBackups; i++) {
       const backupPath = `${resolvedPath}.bak${i}`;
       try {
-        const content = (await secureFs.readFile(backupPath, 'utf-8')) as string;
+        const content = (await filesystem.readFile(backupPath, 'utf-8')) as string;
         const data = JSON.parse(content) as T;
 
         logger.info(`Recovered data from backup: ${backupPath}`);
@@ -344,15 +385,23 @@ export async function readJsonWithRecovery<T>(
         // Optionally restore main file from backup
         if (autoRestore) {
           try {
-            await secureFs.copyFile(backupPath, resolvedPath);
+            await filesystem.copyFile(backupPath, resolvedPath);
             logger.info(`Restored main file from backup: ${backupPath}`);
           } catch (restoreError) {
+            restoreFailed = true;
+            if (strictErrors) throw restoreError;
             logger.warn(`Failed to restore main file from backup: ${restoreError}`);
           }
         }
 
         return { data, recovered: true, source: 'backup', error: errorMessage };
-      } catch {
+      } catch (error) {
+        if (
+          strictErrors &&
+          (restoreFailed ||
+            (!(error instanceof SyntaxError) && (error as NodeJS.ErrnoException).code !== 'ENOENT'))
+        )
+          throw error;
         // This backup doesn't exist or is corrupted, try next
         continue;
       }
@@ -360,6 +409,7 @@ export async function readJsonWithRecovery<T>(
 
     // All recovery attempts failed, return default
     logger.warn(`All recovery attempts failed for ${resolvedPath}, using default value`);
+    if (strictErrors && nodeError.code !== 'ENOENT') throw mainError;
     return { data: defaultValue, recovered: true, source: 'default', error: errorMessage };
   }
 }

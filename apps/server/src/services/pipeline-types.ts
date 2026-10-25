@@ -3,8 +3,10 @@
  */
 
 import type { Feature, PipelineStep, PipelineConfig } from '@automaker/types';
+import type { RunningFeature } from './concurrency-manager.js';
 
 export interface PipelineContext {
+  run?: RunningFeature;
   projectPath: string;
   featureId: string;
   feature: Feature;
@@ -15,8 +17,8 @@ export interface PipelineContext {
   abortController: AbortController;
   autoLoadClaudeMd: boolean;
   useClaudeCodeSystemPrompt?: boolean;
-  testAttempts: number;
-  maxTestAttempts: number;
+  /** Only supplied by the prepared immutable feature workspace, never a transport DTO. */
+  boundTargetCwd?: string;
 }
 
 export interface PipelineStatusInfo {
@@ -26,12 +28,6 @@ export interface PipelineStatusInfo {
   totalSteps: number;
   step: PipelineStep | null;
   config: PipelineConfig | null;
-}
-
-export interface StepResult {
-  success: boolean;
-  testsPassed?: boolean;
-  message?: string;
 }
 
 export interface MergeResult {
@@ -58,7 +54,7 @@ export type ExecuteFeatureFn = (
   useWorktrees: boolean,
   useScreenshots: boolean,
   model?: string,
-  options?: { _calledInternally?: boolean }
+  options?: { _calledInternally?: boolean; _run?: RunningFeature }
 ) => Promise<void>;
 
 export type RunAgentFn = (

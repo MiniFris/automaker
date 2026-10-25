@@ -1,9 +1,12 @@
+import { NtfyService } from '../../../src/services/ntfy-service.js';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { EventHookService } from '../../../src/services/event-hook-service.js';
 import type { EventEmitter, EventCallback, EventType } from '../../../src/lib/events.js';
 import type { SettingsService } from '../../../src/services/settings-service.js';
 import type { EventHistoryService } from '../../../src/services/event-history-service.js';
 import type { FeatureLoader } from '../../../src/services/feature-loader.js';
+import { ApplicationEventBusAdapter } from '../../../src/core/eventing/application-event-bus.adapter.js';
+import type { EventBus } from '../../../src/core/eventing/event-bus.js';
 
 // Mock global fetch for ntfy tests
 const originalFetch = global.fetch;
@@ -11,14 +14,13 @@ const originalFetch = global.fetch;
 /**
  * Create a mock EventEmitter for testing
  */
-function createMockEventEmitter(): EventEmitter & {
+function createMockEventEmitter(): EventBus & {
   subscribers: Set<EventCallback>;
   simulateEvent: (type: EventType, payload: unknown) => void;
 } {
   const subscribers = new Set<EventCallback>();
 
-  return {
-    subscribers,
+  const transport: EventEmitter = {
     emit(type: EventType, payload: unknown) {
       for (const callback of subscribers) {
         callback(type, payload);
@@ -30,12 +32,11 @@ function createMockEventEmitter(): EventEmitter & {
         subscribers.delete(callback);
       };
     },
-    simulateEvent(type: EventType, payload: unknown) {
-      for (const callback of subscribers) {
-        callback(type, payload);
-      }
-    },
   };
+  return Object.assign(new ApplicationEventBusAdapter(transport), {
+    subscribers,
+    simulateEvent: (type: EventType, payload: unknown) => transport.emit(type, payload),
+  });
 }
 
 /**
@@ -82,7 +83,7 @@ describe('EventHookService', () => {
   let mockFetch: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    service = new EventHookService();
+    service = new EventHookService(new NtfyService());
     mockEmitter = createMockEventEmitter();
     mockSettingsService = createMockSettingsService();
     mockEventHistoryService = createMockEventHistoryService();
@@ -92,29 +93,29 @@ describe('EventHookService', () => {
     global.fetch = mockFetch;
   });
 
-  afterEach(() => {
-    service.destroy();
+  afterEach(async () => {
+    await service.destroy();
     global.fetch = originalFetch;
   });
 
   describe('initialize', () => {
     it('should subscribe to the event emitter', () => {
       service.initialize(mockEmitter, mockSettingsService, mockEventHistoryService);
-      expect(mockEmitter.subscribers.size).toBe(1);
+      expect(mockEmitter.subscribers.size).toBe(3);
     });
 
     it('should log initialization', () => {
       service.initialize(mockEmitter, mockSettingsService);
-      expect(mockEmitter.subscribers.size).toBe(1);
+      expect(mockEmitter.subscribers.size).toBe(3);
     });
   });
 
   describe('destroy', () => {
-    it('should unsubscribe from the event emitter', () => {
+    it('should unsubscribe from the event emitter', async () => {
       service.initialize(mockEmitter, mockSettingsService);
-      expect(mockEmitter.subscribers.size).toBe(1);
+      expect(mockEmitter.subscribers.size).toBe(3);
 
-      service.destroy();
+      await service.destroy();
       expect(mockEmitter.subscribers.size).toBe(0);
     });
   });

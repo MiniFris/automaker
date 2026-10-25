@@ -126,36 +126,3 @@ export function useUpdateProjectSettings(projectPath?: string) {
     },
   });
 }
-
-/**
- * Save credentials (API keys)
- *
- * @returns Mutation for saving credentials
- */
-export function useSaveCredentials() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (credentials: { anthropic?: string; google?: string; openai?: string }) => {
-      const api = getElectronAPI();
-      if (!api.settings) {
-        throw new Error('Settings API not available');
-      }
-      const result = await api.settings.updateCredentials({ apiKeys: credentials });
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to save credentials');
-      }
-      return result;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.settings.credentials() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.cli.apiKeys() });
-      toast.success(translate('Credentials saved'));
-    },
-    onError: (error: Error) => {
-      toast.error(translate('Failed to save credentials'), {
-        description: error.message,
-      });
-    },
-  });
-}

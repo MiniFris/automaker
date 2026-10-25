@@ -1,5 +1,4 @@
 import { translate, useUiLocale } from '@/lib/i18n';
-import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { SkeletonPulse } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
@@ -8,8 +7,8 @@ import { cn } from '@/lib/utils';
 import type { CliStatus } from '../shared/types';
 import type { ClaudeAuthStatus } from '@/store/setup-store';
 import { AnthropicIcon } from '@/components/ui/provider-icon';
-import { getElectronAPI } from '@/lib/electron';
-import { toast } from 'sonner';
+import { ProviderDisconnectButton, ProviderReconnectButton } from './provider-connection-button';
+import { PassiveAuthStatus } from './passive-auth-status';
 
 interface CliStatusProps {
   status: CliStatus | null;
@@ -85,79 +84,6 @@ function ClaudeCliStatusSkeleton() {
 
 export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: CliStatusProps) {
   useUiLocale();
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [isDeauthenticating, setIsDeauthenticating] = useState(false);
-
-  const handleSignIn = useCallback(async () => {
-    setIsAuthenticating(true);
-    try {
-      const api = getElectronAPI();
-      // Check if authClaude method exists on the API
-      const authClaude = (api.setup as Record<string, unknown> | undefined)?.authClaude as
-        | (() => Promise<{ success: boolean; error?: string }>)
-        | undefined;
-      if (!authClaude) {
-        toast.error(translate('Authentication Failed'), {
-          description: translate('Claude authentication is not available'),
-        });
-        return;
-      }
-      const result = await authClaude();
-
-      if (result.success) {
-        toast.success(translate('Signed In'), {
-          description: translate('Successfully authenticated Claude CLI'),
-        });
-        onRefresh();
-      } else if (result.error) {
-        toast.error(translate('Authentication Failed'), {
-          description: result.error,
-        });
-      }
-    } catch (error) {
-      toast.error(translate('Authentication Failed'), {
-        description: error instanceof Error ? error.message : 'Unknown error',
-      });
-    } finally {
-      setIsAuthenticating(false);
-    }
-  }, [onRefresh]);
-
-  const handleSignOut = useCallback(async () => {
-    setIsDeauthenticating(true);
-    try {
-      const api = getElectronAPI();
-      // Check if deauthClaude method exists on the API
-      const deauthClaude = (api.setup as Record<string, unknown> | undefined)?.deauthClaude as
-        | (() => Promise<{ success: boolean; error?: string }>)
-        | undefined;
-      if (!deauthClaude) {
-        toast.error(translate('Sign Out Failed'), {
-          description: translate('Claude sign out is not available'),
-        });
-        return;
-      }
-      const result = await deauthClaude();
-
-      if (result.success) {
-        toast.success(translate('Signed Out'), {
-          description: translate('Successfully signed out from Claude CLI'),
-        });
-        // Refresh status after successful logout
-        onRefresh();
-      } else if (result.error) {
-        toast.error(translate('Sign Out Failed'), {
-          description: result.error,
-        });
-      }
-    } catch (error) {
-      toast.error(translate('Sign Out Failed'), {
-        description: error instanceof Error ? error.message : 'Unknown error',
-      });
-    } finally {
-      setIsDeauthenticating(false);
-    }
-  }, [onRefresh]);
 
   if (!status) return <ClaudeCliStatusSkeleton />;
 
@@ -236,7 +162,14 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
               </div>
             </div>
             {/* Authentication Status */}
-            {authStatus?.authenticated ? (
+            {authStatus?.authenticationChecked === false ? (
+              <PassiveAuthStatus
+                provider="claude"
+                hasCredentialsHint={authStatus.method !== 'none'}
+                hasConfigFile={authStatus.hasCredentialsFile}
+                onRefresh={onRefresh}
+              />
+            ) : authStatus?.authenticated ? (
               <div className="flex items-start gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
                 <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center border border-emerald-500/20 shrink-0">
                   <CheckCircle2 className="w-5 h-5 text-emerald-500" />
@@ -251,15 +184,7 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
                       <span className="font-mono">{getAuthMethodLabel(authStatus.method)}</span>
                     </p>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSignOut}
-                    disabled={isDeauthenticating}
-                    className="mt-3 h-8 text-xs"
-                  >
-                    {isDeauthenticating ? translate('Signing Out...') : translate('Sign Out')}
-                  </Button>
+                  <ProviderDisconnectButton provider="claude" onRefresh={onRefresh} />
                 </div>
               </div>
             ) : (
@@ -272,17 +197,11 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
                     {translate('Not Authenticated')}
                   </p>
                   <p className="text-xs text-amber-400/70 mt-1">
-                    {translate('Click Sign In below to get authentication instructions.')}
+                    {translate(
+                      'Reconnect to Automaker to use existing CLI credentials. CLI login is performed separately.'
+                    )}
                   </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSignIn}
-                    disabled={isAuthenticating}
-                    className="mt-3 h-8 text-xs"
-                  >
-                    {isAuthenticating ? translate('Requesting...') : translate('Sign In')}
-                  </Button>
+                  <ProviderReconnectButton provider="claude" onRefresh={onRefresh} />
                 </div>
               </div>
             )}

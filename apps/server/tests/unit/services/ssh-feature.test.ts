@@ -1,3 +1,8 @@
+import * as executionFilesystem from '../../../src/lib/secure-fs.js';
+import { PipelineService } from '../../../src/services/pipeline-service.js';
+const pipelineService = new PipelineService();
+import { NtfyService } from '../../../src/services/ntfy-service.js';
+import { createTestProviderRegistry } from '../../helpers/provider-registry.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -15,11 +20,10 @@ import { EnvironmentBindingStore } from '@/services/execution-environment/bindin
 import { WorktreeResolver } from '@/services/worktree-resolver.js';
 import { AutoModeServiceFacade } from '@/services/auto-mode/facade.js';
 import { FeatureLoader } from '@/services/feature-loader.js';
-import { pipelineService } from '@/services/pipeline-service.js';
+
 import { createEventEmitter } from '@/lib/events.js';
 import { EventHookService } from '@/services/event-hook-service.js';
-import { PipelineOrchestrator } from '@/services/pipeline-orchestrator.js';
-import { TypedEventBus } from '@/services/typed-event-bus.js';
+import { ApplicationEventBusAdapter } from '@/core/eventing/application-event-bus.adapter.js';
 import { sshPeer, testSSHKey } from '../../helpers/ssh-peer.js';
 
 const execute = promisify(execFile);
@@ -385,6 +389,9 @@ describe.skipIf(process.platform !== 'linux')(
         const seen: unknown[] = [];
         events.subscribe((_type, event) => seen.push(event));
         const facade = AutoModeServiceFacade.create(project, {
+          filesystem: executionFilesystem,
+          pipeline: pipelineService as never,
+          providerRegistry: createTestProviderRegistry(settings),
           events,
           settingsService: settings,
           featureLoader: loader,
@@ -412,40 +419,7 @@ describe.skipIf(process.platform !== 'linux')(
         expect(parseFrontmatter(await fs.readFile(memoryFile, 'utf8')).metadata.usageStats).toEqual(
           { loaded: 1, referenced: 1, successfulFeatures: 0 }
         );
-        const hostRunner = { startTests: vi.fn() };
-        const pipeline = new PipelineOrchestrator(
-          new TypedEventBus(events),
-          {} as never,
-          {} as never,
-          hostRunner as never,
-          new WorktreeResolver(settings),
-          {} as never,
-          settings,
-          vi.fn(),
-          vi.fn(),
-          vi.fn(),
-          vi.fn(),
-          vi.fn()
-        );
-        expect(
-          await pipeline.executeTestStep(
-            {
-              projectPath: project,
-              featureId: feature.id,
-              feature,
-              steps: [],
-              workDir: project,
-              worktreePath: null,
-              branchName: feature.branchName ?? null,
-              abortController: new AbortController(),
-              autoLoadClaudeMd: false,
-              testAttempts: 0,
-              maxTestAttempts: 1,
-            },
-            'npm test'
-          )
-        ).toMatchObject({ success: true, testsPassed: true });
-        expect(hostRunner.startTests).not.toHaveBeenCalled();
+
         expect(await facade.verifyFeature(feature.id)).toBe(true);
         for (const script of ['lint', 'typecheck', 'test', 'build'])
           expect(
@@ -459,6 +433,9 @@ describe.skipIf(process.platform !== 'linux')(
           executionEnvironment: { default: { mode: 'local' }, profiles: [] },
         });
         const restarted = AutoModeServiceFacade.create(project, {
+          filesystem: executionFilesystem,
+          pipeline: pipelineService as never,
+          providerRegistry: createTestProviderRegistry(settings),
           events,
           settingsService: settings,
           featureLoader: loader,
@@ -487,6 +464,9 @@ describe.skipIf(process.platform !== 'linux')(
           if ((event as { type?: string }).type === 'plan_approval_required') waiting = true;
         });
         const facade = AutoModeServiceFacade.create(project, {
+          filesystem: executionFilesystem,
+          pipeline: pipelineService as never,
+          providerRegistry: createTestProviderRegistry(settings),
           events,
           settingsService: settings,
           featureLoader: loader,
@@ -502,7 +482,19 @@ describe.skipIf(process.platform !== 'linux')(
         expect(bodies[0].tools?.map((tool) => tool.function.name)).not.toContain('Write');
         const run = (await service.prepare(project, feature, active(), false))!;
         await expect(fs.stat(path.join(run.environment.cwd, 'approved.txt'))).rejects.toThrow();
-        expect(await facade.resolvePlanApproval(feature.id, true)).toMatchObject({ success: true });
+        const approval = await facade.getPendingPlanApproval(feature.id);
+        expect(approval).not.toBeNull();
+        expect(
+          await facade.resolvePlanApproval(
+            feature.id,
+            true,
+            undefined,
+            undefined,
+            approval!.approvalToken,
+            approval!.planVersion,
+            approval!.approvalRunId
+          )
+        ).toMatchObject({ success: true });
         await execution;
         expect(await fs.readFile(path.join(run.environment.cwd, 'approved.txt'), 'utf8')).toBe(
           'approved'
@@ -526,6 +518,9 @@ describe.skipIf(process.platform !== 'linux')(
         await pipelineService.savePipelineConfig(project, { version: 1, steps: [step] });
         const events = createEventEmitter();
         const facade = AutoModeServiceFacade.create(project, {
+          filesystem: executionFilesystem,
+          pipeline: pipelineService as never,
+          providerRegistry: createTestProviderRegistry(settings),
           events,
           settingsService: settings,
           featureLoader: loader,
@@ -552,8 +547,8 @@ describe.skipIf(process.platform !== 'linux')(
       { timeout: 20000 },
       async () => {
         const run = (await service.prepare(project, feature, active()))!;
-        const hooks = new EventHookService();
-        hooks.initialize(createEventEmitter(), settings);
+        const hooks = new EventHookService(new NtfyService());
+        hooks.initialize(new ApplicationEventBusAdapter(createEventEmitter()), settings);
         const invoke = (id?: string) =>
           (
             hooks as unknown as {
@@ -578,7 +573,7 @@ describe.skipIf(process.platform !== 'linux')(
           await expect(invoke('unbound')).rejects.toThrow('Managed shell hooks require');
           await expect(fs.stat(path.join(project, 'hook-result'))).rejects.toThrow();
         } finally {
-          hooks.destroy();
+          await hooks.destroy();
         }
       }
     );
@@ -623,6 +618,9 @@ describe.skipIf(process.platform !== 'linux')(
       async () => {
         const events = createEventEmitter();
         const facade = AutoModeServiceFacade.create(project, {
+          filesystem: executionFilesystem,
+          pipeline: pipelineService as never,
+          providerRegistry: createTestProviderRegistry(settings),
           events,
           settingsService: settings,
           featureLoader: loader,
@@ -654,6 +652,9 @@ describe.skipIf(process.platform !== 'linux')(
       async () => {
         const events = createEventEmitter();
         const facade = AutoModeServiceFacade.create(project, {
+          filesystem: executionFilesystem,
+          pipeline: pipelineService as never,
+          providerRegistry: createTestProviderRegistry(settings),
           events,
           settingsService: settings,
           featureLoader: loader,

@@ -93,6 +93,9 @@ export type GeminiThinkingLevel = 'off' | 'low' | 'medium' | 'high';
  */
 export interface GeminiAuthStatus {
   authenticated: boolean;
+  authenticationChecked?: boolean;
+  hasConfigFile?: boolean;
+  hasVertexConfig?: boolean;
   method: 'google_login' | 'api_key' | 'vertex_ai' | 'none';
   hasApiKey?: boolean;
   hasEnvApiKey?: boolean;

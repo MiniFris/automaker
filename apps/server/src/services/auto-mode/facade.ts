@@ -1,3 +1,7 @@
+import {
+  unobservedOperation,
+  type ObserveOperation,
+} from '../../core/observability/operation-observer.js';
 /**
  * AutoModeServiceFacade - Clean interface for auto-mode functionality
  *
@@ -12,8 +16,6 @@
  */
 
 import path from 'path';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import type { Feature, PlanningMode, ThinkingLevel, ReasoningEffort } from '@automaker/types';
 import {
   DEFAULT_MAX_CONCURRENCY,
@@ -27,7 +29,7 @@ import {
 import { resolveModelString } from '@automaker/model-resolver';
 import { createLogger, loadContextFiles, classifyError } from '@automaker/utils';
 import { getFeatureDir } from '@automaker/platform';
-import * as secureFs from '../../lib/secure-fs.js';
+import type { ExecutionFilesystem } from '../execution-filesystem.js';
 import { validateWorkingDirectory, createAutoModeOptions } from '../../lib/sdk-options.js';
 import { hasRemoteEnvironment } from '../../providers/environment-execution.js';
 import { isRemoteCliModel, isRemoteSdkModel } from '@automaker/types';
@@ -40,17 +42,18 @@ import {
 import { execGitCommand } from '@automaker/git-utils';
 import { TypedEventBus } from '../typed-event-bus.js';
 import { ConcurrencyManager } from '../concurrency-manager.js';
+import type { RunningFeature } from '../concurrency-manager.js';
 import { WorktreeResolver } from '../worktree-resolver.js';
 import { FeatureStateManager } from '../feature-state-manager.js';
 import { PlanApprovalService } from '../plan-approval-service.js';
 import { AutoLoopCoordinator, type AutoModeConfig } from '../auto-loop-coordinator.js';
 import { ExecutionService } from '../execution-service.js';
 import { FeatureWorkspaceService } from '../execution-environment/feature-workspace.js';
+import { LocalExecutionEnvironment } from '../execution-environment/local.js';
+import { ConflictDomainError } from '../../core/errors/domain-errors.js';
 import { RecoveryService } from '../recovery-service.js';
 import { PipelineOrchestrator } from '../pipeline-orchestrator.js';
 import { AgentExecutor } from '../agent-executor.js';
-import { TestRunnerService } from '../test-runner-service.js';
-import { ProviderFactory } from '../../providers/provider-factory.js';
 import { FeatureLoader } from '../feature-loader.js';
 import type { SettingsService } from '../settings-service.js';
 import type { EventEmitter } from '../../lib/events.js';
@@ -64,7 +67,6 @@ import type {
   OrphanedFeatureInfo,
 } from './types.js';
 
-const execAsync = promisify(exec);
 const logger = createLogger('AutoModeServiceFacade');
 
 /**
@@ -74,6 +76,7 @@ const logger = createLogger('AutoModeServiceFacade');
  * to use clean names without requiring projectPath as a parameter.
  */
 export class AutoModeServiceFacade {
+  private stopping = false;
   private constructor(
     private readonly projectPath: string,
     private readonly events: EventEmitter,
@@ -86,8 +89,15 @@ export class AutoModeServiceFacade {
     private readonly autoLoopCoordinator: AutoLoopCoordinator,
     private readonly executionService: ExecutionService,
     private readonly recoveryService: RecoveryService,
-    private readonly pipelineOrchestrator: PipelineOrchestrator,
-    private readonly settingsService: SettingsService | null
+    private readonly settingsService: SettingsService | null,
+    private readonly filesystem: ExecutionFilesystem,
+    private readonly directoryValidator: (cwd: string) => void = validateWorkingDirectory,
+    private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv> = Object.freeze({
+      ...process.env,
+    }),
+    private readonly ownsFeatureStateManager = true,
+    private readonly observeOperation: ObserveOperation = unobservedOperation,
+    private readonly ownsWorktreeResolver = true
   ) {}
 
   /**
@@ -167,10 +177,17 @@ export class AutoModeServiceFacade {
    * @param options - Configuration options including events, settingsService, featureLoader
    */
   static create(projectPath: string, options: FacadeOptions): AutoModeServiceFacade {
+    const observeOperation = options.observeOperation ?? unobservedOperation;
+    const hostEnvironment = Object.freeze({ ...(options.hostEnvironment ?? process.env) });
     const {
       events,
       settingsService = null,
       featureLoader = new FeatureLoader(),
+      notificationService = null,
+      providerRegistry,
+      toolPolicy,
+      pipeline,
+      filesystem,
       sharedServices,
     } = options;
 
@@ -178,11 +195,14 @@ export class AutoModeServiceFacade {
     // Shared services allow multiple facades to share state (e.g., running features, auto loops)
     const eventBus = sharedServices?.eventBus ?? new TypedEventBus(events);
     const worktreeResolver =
-      sharedServices?.worktreeResolver ?? new WorktreeResolver(settingsService);
+      sharedServices?.worktreeResolver ??
+      new WorktreeResolver(settingsService, options.hostEnvironment ? hostEnvironment : undefined);
     const concurrencyManager =
       sharedServices?.concurrencyManager ??
       new ConcurrencyManager((p) => worktreeResolver.getCurrentBranch(p));
-    const featureStateManager = new FeatureStateManager(events, featureLoader);
+    const featureStateManager =
+      sharedServices?.featureStateManager ??
+      new FeatureStateManager(events, featureLoader, notificationService, pipeline);
     const planApprovalService = new PlanApprovalService(
       eventBus,
       featureStateManager,
@@ -192,9 +212,11 @@ export class AutoModeServiceFacade {
       eventBus,
       featureStateManager,
       planApprovalService,
-      settingsService
+      settingsService,
+      filesystem,
+      hostEnvironment,
+      options.checkpointRepository
     );
-    const testRunnerService = new TestRunnerService();
 
     // Helper for building feature prompts (used by pipeline orchestrator)
     const buildFeaturePrompt = (
@@ -262,156 +284,198 @@ export class AutoModeServiceFacade {
           status?: string; // Feature status for pipeline summary check
           [key: string]: unknown;
         }
-      ): Promise<void> => {
-        const resolvedModel = resolveModelString(model, DEFAULT_MODELS.claude);
-        const remoteCLI =
-          (isRemoteCliModel(resolvedModel) || isRemoteSdkModel(resolvedModel)) &&
-          settingsService &&
-          (await hasRemoteEnvironment(settingsService, pPath, `feature:${pPath}:${featureId}`));
-        const provider = remoteCLI
-          ? ProviderFactory.getProviderForModel(resolvedModel, { throwOnDisconnected: false })
-          : ProviderFactory.getProviderForModel(resolvedModel);
-        const effectiveBareModel = stripProviderPrefix(resolvedModel);
+      ): Promise<void> =>
+        observeOperation(
+          'feature_execution',
+          async () => {
+            const resolvedModel = resolveModelString(model, DEFAULT_MODELS.claude);
+            const remoteCLI =
+              (isRemoteCliModel(resolvedModel) || isRemoteSdkModel(resolvedModel)) &&
+              settingsService &&
+              (await hasRemoteEnvironment(
+                settingsService,
+                pPath,
+                `feature:${pPath}:${featureId}`,
+                hostEnvironment
+              ));
+            const provider = remoteCLI
+              ? providerRegistry.providerForModel(resolvedModel, { throwOnDisconnected: false })
+              : providerRegistry.providerForModel(resolvedModel);
+            const effectiveBareModel = stripProviderPrefix(resolvedModel);
 
-        // Resolve custom provider (GLM, MiniMax, etc.) for baseUrl and credentials
-        let claudeCompatibleProvider:
-          | import('@automaker/types').ClaudeCompatibleProvider
-          | undefined;
-        let credentials: import('@automaker/types').Credentials | undefined;
-        let providerResolvedModel: string | undefined;
+            // Resolve custom provider (GLM, MiniMax, etc.) for baseUrl and credentials
+            let claudeCompatibleProvider:
+              | import('@automaker/types').ClaudeCompatibleProvider
+              | undefined;
+            let credentials: import('@automaker/types').Credentials | undefined;
+            let providerResolvedModel: string | undefined;
 
-        if (settingsService) {
-          const providerId = opts?.providerId as string | undefined;
-          const result = await resolveProviderContext(
-            settingsService,
-            resolvedModel,
-            providerId,
-            '[AutoModeFacade]'
-          );
-          claudeCompatibleProvider = result.provider;
-          credentials = result.credentials;
-          providerResolvedModel = result.resolvedModel;
-        }
-
-        // Build sdkOptions with proper maxTurns and allowedTools for auto-mode.
-        // Without this, maxTurns would be undefined, causing providers to use their
-        // internal defaults which may be much lower than intended (e.g., Codex CLI's
-        // default turn limit can cause feature runs to stop prematurely).
-        const autoLoadClaudeMd = opts?.autoLoadClaudeMd ?? false;
-        const useClaudeCodeSystemPrompt = opts?.useClaudeCodeSystemPrompt ?? true;
-        let mcpServers: Record<string, unknown> | undefined;
-        try {
-          if (settingsService) {
-            const servers = await getMCPServersFromSettings(settingsService, '[AutoModeFacade]');
-            if (Object.keys(servers).length > 0) {
-              mcpServers = servers;
+            if (settingsService) {
+              const providerId = opts?.providerId as string | undefined;
+              const result = await resolveProviderContext(
+                settingsService,
+                resolvedModel,
+                providerId,
+                '[AutoModeFacade]'
+              );
+              claudeCompatibleProvider = result.provider;
+              credentials = result.credentials;
+              providerResolvedModel = result.resolvedModel;
             }
-          }
-        } catch {
-          // MCP servers are optional - continue without them
-        }
 
-        // Read user-configured max turns from settings
-        const userMaxTurns = await getDefaultMaxTurnsSetting(settingsService, '[AutoModeFacade]');
-
-        const sdkOpts = createAutoModeOptions({
-          cwd: workDir,
-          model: providerResolvedModel || resolvedModel,
-          systemPrompt: opts?.systemPrompt,
-          abortController,
-          autoLoadClaudeMd,
-          useClaudeCodeSystemPrompt,
-          thinkingLevel: opts?.thinkingLevel,
-          maxTurns: userMaxTurns,
-          mcpServers: mcpServers as
-            | Record<string, import('@automaker/types').McpServerConfig>
-            | undefined,
-        });
-
-        if (!sdkOpts) {
-          logger.error(
-            `[createRunAgentFn] sdkOpts is UNDEFINED! createAutoModeOptions type: ${typeof createAutoModeOptions}`
-          );
-        }
-
-        logger.info(
-          `[createRunAgentFn] Feature ${featureId}: model=${resolvedModel} (resolved=${providerResolvedModel || resolvedModel}), ` +
-            `maxTurns=${sdkOpts.maxTurns}, allowedTools=${(sdkOpts.allowedTools as string[])?.length ?? 'default'}, ` +
-            `provider=${provider.getName()}`
-        );
-
-        await agentExecutor.execute(
-          {
-            workDir,
-            featureId,
-            prompt,
-            projectPath: pPath,
-            abortController,
-            imagePaths,
-            model: resolvedModel,
-            providerId: opts?.providerId as string | undefined,
-            planningMode: opts?.planningMode as PlanningMode | undefined,
-            requirePlanApproval: opts?.requirePlanApproval as boolean | undefined,
-            previousContent: opts?.previousContent as string | undefined,
-            systemPrompt: opts?.systemPrompt as string | undefined,
-            autoLoadClaudeMd: opts?.autoLoadClaudeMd as boolean | undefined,
-            useClaudeCodeSystemPrompt,
-            thinkingLevel: opts?.thinkingLevel as ThinkingLevel | undefined,
-            reasoningEffort: opts?.reasoningEffort as ReasoningEffort | undefined,
-            branchName: opts?.branchName as string | null | undefined,
-            status: opts?.status as string | undefined,
-            provider,
-            effectiveBareModel,
-            credentials,
-            claudeCompatibleProvider,
-            mcpServers,
-            sdkOptions: {
-              maxTurns: sdkOpts.maxTurns,
-              allowedTools: sdkOpts.allowedTools as string[] | undefined,
-              systemPrompt: sdkOpts.systemPrompt,
-              settingSources: sdkOpts.settingSources as
-                | Array<'user' | 'project' | 'local'>
-                | undefined,
-            },
-          },
-          {
-            waitForApproval: (fId, projPath) => planApprovalService.waitForApproval(fId, projPath),
-            saveFeatureSummary: (projPath, fId, summary) =>
-              featureStateManager.saveFeatureSummary(projPath, fId, summary),
-            updateFeatureSummary: (projPath, fId, summary) =>
-              featureStateManager.saveFeatureSummary(projPath, fId, summary),
-            buildTaskPrompt: (task, allTasks, taskIndex, _planContent, template, feedback) => {
-              let taskPrompt = template
-                .replace(/\{\{taskName\}\}/g, task.description || `Task ${task.id}`)
-                .replace(/\{\{taskIndex\}\}/g, String(taskIndex + 1))
-                .replace(/\{\{totalTasks\}\}/g, String(allTasks.length))
-                .replace(/\{\{taskDescription\}\}/g, task.description || `Task ${task.id}`);
-              if (feedback) {
-                taskPrompt = taskPrompt.replace(/\{\{userFeedback\}\}/g, feedback);
+            // Build sdkOptions with proper maxTurns and allowedTools for auto-mode.
+            // Without this, maxTurns would be undefined, causing providers to use their
+            // internal defaults which may be much lower than intended (e.g., Codex CLI's
+            // default turn limit can cause feature runs to stop prematurely).
+            const autoLoadClaudeMd = opts?.autoLoadClaudeMd ?? false;
+            const useClaudeCodeSystemPrompt = opts?.useClaudeCodeSystemPrompt ?? true;
+            let mcpServers: Record<string, unknown> | undefined;
+            try {
+              if (settingsService) {
+                const servers = await getMCPServersFromSettings(
+                  settingsService,
+                  '[AutoModeFacade]'
+                );
+                if (Object.keys(servers).length > 0) {
+                  mcpServers = servers;
+                }
               }
-              return taskPrompt;
-            },
-          }
+            } catch {
+              // MCP servers are optional - continue without them
+            }
+
+            // Read user-configured max turns from settings
+            const userMaxTurns = await getDefaultMaxTurnsSetting(
+              settingsService,
+              '[AutoModeFacade]'
+            );
+
+            const sdkOpts = createAutoModeOptions({
+              cwd: workDir,
+              model: providerResolvedModel || resolvedModel,
+              systemPrompt: opts?.systemPrompt,
+              abortController,
+              autoLoadClaudeMd,
+              useClaudeCodeSystemPrompt,
+              thinkingLevel: opts?.thinkingLevel,
+              maxTurns: userMaxTurns,
+              validateWorkingDirectory:
+                typeof opts?.boundTargetCwd === 'string'
+                  ? (cwd) => {
+                      if (cwd !== opts.boundTargetCwd || cwd !== workDir)
+                        throw new Error('Feature execution target changed.');
+                    }
+                  : options.validateWorkingDirectory,
+              mcpServers: mcpServers as
+                | Record<string, import('@automaker/types').McpServerConfig>
+                | undefined,
+            });
+
+            if (!sdkOpts) {
+              logger.error(
+                `[createRunAgentFn] sdkOpts is UNDEFINED! createAutoModeOptions type: ${typeof createAutoModeOptions}`
+              );
+            }
+
+            logger.info(
+              `[createRunAgentFn] Feature ${featureId}: model=${resolvedModel} (resolved=${providerResolvedModel || resolvedModel}), ` +
+                `maxTurns=${sdkOpts.maxTurns}, allowedTools=${(sdkOpts.allowedTools as string[])?.length ?? 'default'}, ` +
+                `provider=${provider.getName()}`
+            );
+
+            const allowedTools = toolPolicy
+              ? toolPolicy.resolve({
+                  requested: sdkOpts.allowedTools as string[] | undefined,
+                  readOnly:
+                    opts?.planningMode !== undefined &&
+                    opts.planningMode !== 'skip' &&
+                    opts.requirePlanApproval === true,
+                  providerSupportsTools: claudeCompatibleProvider
+                    ? provider.getCapabilities().tools
+                    : providerRegistry.modelCapabilities(resolvedModel).tools,
+                })
+              : (sdkOpts.allowedTools as string[] | undefined);
+
+            await agentExecutor.execute(
+              {
+                runPort: opts?.runPort as
+                  | import('../agent-executor-types.js').FeatureRunPort
+                  | undefined,
+                workDir,
+                featureId,
+                prompt,
+                projectPath: pPath,
+                abortController,
+                imagePaths,
+                model: resolvedModel,
+                providerId: opts?.providerId as string | undefined,
+                planningMode: opts?.planningMode as PlanningMode | undefined,
+                requirePlanApproval: opts?.requirePlanApproval as boolean | undefined,
+                previousContent: opts?.previousContent as string | undefined,
+                systemPrompt: opts?.systemPrompt as string | undefined,
+                autoLoadClaudeMd: opts?.autoLoadClaudeMd as boolean | undefined,
+                useClaudeCodeSystemPrompt,
+                thinkingLevel: opts?.thinkingLevel as ThinkingLevel | undefined,
+                reasoningEffort: opts?.reasoningEffort as ReasoningEffort | undefined,
+                branchName: opts?.branchName as string | null | undefined,
+                status: opts?.status as string | undefined,
+                provider,
+                effectiveBareModel,
+                credentials,
+                claudeCompatibleProvider,
+                mcpServers,
+                sdkOptions: {
+                  maxTurns: sdkOpts.maxTurns,
+                  allowedTools,
+                  systemPrompt: sdkOpts.systemPrompt,
+                  settingSources: sdkOpts.settingSources as
+                    | Array<'user' | 'project' | 'local'>
+                    | undefined,
+                },
+              },
+              {
+                waitForApproval: (fId, projPath, ticket) =>
+                  planApprovalService.waitForApproval(fId, projPath, ticket),
+                saveFeatureSummary: (projPath, fId, summary) =>
+                  featureStateManager.saveFeatureSummary(projPath, fId, summary),
+                updateFeatureSummary: (projPath, fId, summary) =>
+                  featureStateManager.saveFeatureSummary(projPath, fId, summary),
+                buildTaskPrompt: (task, allTasks, taskIndex, _planContent, template, feedback) => {
+                  let taskPrompt = template
+                    .replace(/\{\{taskName\}\}/g, task.description || `Task ${task.id}`)
+                    .replace(/\{\{taskIndex\}\}/g, String(taskIndex + 1))
+                    .replace(/\{\{totalTasks\}\}/g, String(allTasks.length))
+                    .replace(/\{\{taskDescription\}\}/g, task.description || `Task ${task.id}`);
+                  if (feedback) {
+                    taskPrompt = taskPrompt.replace(/\{\{userFeedback\}\}/g, feedback);
+                  }
+                  return taskPrompt;
+                },
+              }
+            );
+          },
+          { featureId },
+          abortController.signal
         );
-      };
 
     // PipelineOrchestrator - runAgentFn delegates to AgentExecutor via shared helper
     const pipelineOrchestrator = new PipelineOrchestrator(
       eventBus,
       featureStateManager,
-      agentExecutor,
-      testRunnerService,
       worktreeResolver,
       concurrencyManager,
       settingsService,
-      // Callbacks
       (pPath, featureId, status) =>
         featureStateManager.updateFeatureStatus(pPath, featureId, status),
       loadContextFiles,
       buildFeaturePrompt,
       (pPath, featureId, useWorktrees, _isAutoMode, _model, opts) =>
         getFacade().executeFeature(featureId, useWorktrees, false, undefined, opts),
-      createRunAgentFn()
+      createRunAgentFn(),
+      pipeline,
+      filesystem,
+      options.validateWorkingDirectory,
+      hostEnvironment
     );
 
     // AutoLoopCoordinator - ALWAYS create new with proper execution callbacks
@@ -504,8 +568,8 @@ export class AutoModeServiceFacade {
         // use the supplied FeatureMemoryWriter for managed runs, not controller fs.
       },
       (pPath, featureId) => getFacade().contextExists(featureId),
-      (pPath, featureId, useWorktrees, _calledInternally) =>
-        getFacade().resumeFeature(featureId, useWorktrees, _calledInternally),
+      (pPath, featureId, useWorktrees, _calledInternally, expected) =>
+        getFacade().resumeFeature(featureId, useWorktrees, _calledInternally, expected),
       (errorInfo) => {
         // Track failure against ALL active worktrees for this project.
         // The ExecutionService callbacks don't receive branchName, so we
@@ -538,7 +602,12 @@ export class AutoModeServiceFacade {
         );
       },
       (_pPath) => getFacade().saveExecutionState(),
-      loadContextFiles
+      loadContextFiles,
+      providerRegistry,
+      pipeline,
+      filesystem,
+      options.validateWorkingDirectory,
+      hostEnvironment
     );
 
     // RecoveryService
@@ -549,14 +618,16 @@ export class AutoModeServiceFacade {
       // Callbacks
       (pPath, featureId, useWorktrees, isAutoMode, providedWorktreePath, opts) =>
         getFacade().executeFeature(featureId, useWorktrees, isAutoMode, providedWorktreePath, opts),
-      (pPath, featureId) => featureStateManager.loadFeature(pPath, featureId),
+      (pPath, featureId, strict) => featureLoader.get(pPath, featureId, { strict }),
       (pPath, featureId, status) =>
         pipelineOrchestrator.detectPipelineStatus(pPath, featureId, status),
-      (pPath, feature, useWorktrees, pipelineInfo) =>
-        pipelineOrchestrator.resumePipeline(pPath, feature, useWorktrees, pipelineInfo),
+      (pPath, feature, useWorktrees, pipelineInfo, expected) =>
+        pipelineOrchestrator.resumePipeline(pPath, feature, useWorktrees, pipelineInfo, expected),
       (featureId) => concurrencyManager.isRunning(featureId),
-      (opts) => concurrencyManager.acquire(opts),
-      (featureId) => concurrencyManager.release(featureId)
+      (opts) => concurrencyManager.acquireAsync(opts),
+      (featureId, expected) => concurrencyManager.release(featureId, { expected }),
+      filesystem,
+      () => getFacade().stopping
     );
 
     // Create the facade instance
@@ -572,8 +643,13 @@ export class AutoModeServiceFacade {
       autoLoopCoordinator,
       executionService,
       recoveryService,
-      pipelineOrchestrator,
-      settingsService
+      settingsService,
+      filesystem,
+      options.validateWorkingDirectory,
+      hostEnvironment,
+      !sharedServices?.featureStateManager,
+      observeOperation,
+      !sharedServices?.worktreeResolver
     );
 
     return facadeInstance;
@@ -650,8 +726,10 @@ export class AutoModeServiceFacade {
     options?: {
       continuationPrompt?: string;
       _calledInternally?: boolean;
+      _run?: RunningFeature;
     }
   ): Promise<void> {
+    if (this.stopping) throw new Error('Auto mode is shutting down.');
     try {
       return await this.executionService.executeFeature(
         this.projectPath,
@@ -673,9 +751,10 @@ export class AutoModeServiceFacade {
    */
   async stopFeature(featureId: string): Promise<boolean> {
     try {
-      // Cancel any pending plan approval for this feature
+      const stopped = await this.executionService.stopFeature(featureId);
+      // Persist interruption and close this lease before resolving its approval waiter.
       this.cancelPlanApproval(featureId);
-      return await this.executionService.stopFeature(featureId);
+      return stopped;
     } catch (error) {
       this.handleFacadeError(error, 'stopFeature', featureId);
       throw error;
@@ -691,7 +770,8 @@ export class AutoModeServiceFacade {
   async resumeFeature(
     featureId: string,
     useWorktrees = false,
-    _calledInternally = false
+    _calledInternally = false,
+    expected?: RunningFeature
   ): Promise<void> {
     // Note: ExecutionService.executeFeature catches its own errors internally and
     // does NOT re-throw them (it emits auto_mode_error and returns normally).
@@ -703,7 +783,8 @@ export class AutoModeServiceFacade {
         this.projectPath,
         featureId,
         useWorktrees,
-        _calledInternally
+        _calledInternally,
+        expected
       );
     } catch (error) {
       this.handleFacadeError(error, 'resumeFeature', featureId);
@@ -724,7 +805,7 @@ export class AutoModeServiceFacade {
     imagePaths?: string[],
     useWorktrees = true
   ): Promise<void> {
-    validateWorkingDirectory(this.projectPath);
+    this.directoryValidator(this.projectPath);
 
     try {
       // Load feature to build the prompt context
@@ -735,7 +816,7 @@ export class AutoModeServiceFacade {
       const featureDir = getFeatureDir(this.projectPath, featureId);
       let previousContext = '';
       try {
-        previousContext = (await secureFs.readFile(
+        previousContext = (await this.filesystem.readFile(
           path.join(featureDir, 'agent-output.md'),
           'utf-8'
         )) as string;
@@ -793,116 +874,118 @@ export class AutoModeServiceFacade {
    * @param featureId - The feature ID to verify
    */
   async verifyFeature(featureId: string): Promise<boolean> {
-    const feature = await this.featureStateManager.loadFeature(this.projectPath, featureId);
-    const remote =
-      feature && this.settingsService
-        ? await new FeatureWorkspaceService(this.settingsService).prepare(
-            this.projectPath,
-            feature,
-            new AbortController().signal,
-            false
-          )
-        : undefined;
-    let workDir = this.projectPath;
-
-    // Use worktreeResolver to find worktree path (consistent with commitFeature)
-    const branchName = feature?.branchName;
-    if (!remote && branchName) {
-      const resolved = await this.worktreeResolver.findWorktreeForBranch(
-        this.projectPath,
-        branchName
-      );
-      if (resolved) {
-        try {
-          await secureFs.access(resolved);
-          workDir = resolved;
-        } catch {
-          // Fall back to project path
+    if (this.concurrencyManager.isRunning(featureId))
+      throw new ConflictDomainError('Stop this feature before starting verification.');
+    const lease = await this.concurrencyManager
+      .acquireAsync({
+        featureId,
+        projectPath: this.projectPath,
+        isAutoMode: false,
+        retainUntilCleanup: true,
+      })
+      .catch((error) => {
+        if (error instanceof Error && error.message === 'already running')
+          throw new ConflictDomainError('Stop this feature before starting verification.');
+        throw error;
+      });
+    const port = this.concurrencyManager.coordinator.bind(this.concurrencyManager, lease);
+    const signal = lease.abortController.signal;
+    let cleanupUnconfirmed = false;
+    try {
+      port.transition('executing');
+      const feature = await this.featureStateManager.loadFeature(this.projectPath, featureId);
+      const remote =
+        feature && this.settingsService
+          ? await new FeatureWorkspaceService(
+              this.settingsService,
+              undefined,
+              this.hostEnvironment
+            ).prepare(this.projectPath, feature, signal, false)
+          : undefined;
+      port.assertCurrent();
+      signal.throwIfAborted();
+      let workDir = this.projectPath;
+      if (!remote && feature?.branchName) {
+        const resolved = await this.worktreeResolver.findWorktreeForBranch(
+          this.projectPath,
+          feature.branchName
+        );
+        if (resolved) {
+          try {
+            await this.filesystem.access(resolved);
+            workDir = resolved;
+          } catch {
+            /* Preserve project-directory fallback. */
+          }
         }
       }
-    }
-
-    const verificationChecks = [
-      { cmd: 'npm run lint', name: 'Lint' },
-      { cmd: 'npm run typecheck', name: 'Type check' },
-      { cmd: 'npm test', name: 'Tests' },
-      { cmd: 'npm run build', name: 'Build' },
-    ];
-
-    let allPassed = true;
-    const results: Array<{ check: string; passed: boolean; output?: string }> = [];
-    const verificationLease = remote
-      ? this.concurrencyManager.acquire({
-          featureId,
-          projectPath: this.projectPath,
-          isAutoMode: false,
-        })
-      : undefined;
-    if (verificationLease) {
-      verificationLease.remoteWorkspace = true;
-      verificationLease.worktreePath = remote!.environment.cwd;
-    }
-    try {
-      const verificationTimeout = modelTimeout(
+      port.assertCurrent();
+      signal.throwIfAborted();
+      if (!remote) this.directoryValidator(workDir);
+      const environment =
+        remote?.environment ??
+        (await LocalExecutionEnvironment.create(workDir, this.hostEnvironment));
+      lease.remoteWorkspace = !!remote;
+      lease.worktreePath = environment.cwd;
+      lease.branchName = feature?.branchName ?? null;
+      port.transition('testing');
+      const timeout = modelTimeout(
         providerModelTimeouts(
           await this.settingsService?.getGlobalSettings(),
           getModelProvider(feature?.model)
         ),
         'verificationTimeoutMs'
       );
-      for (const check of verificationChecks) {
+      const checks = ['npm run lint', 'npm run typecheck', 'npm test', 'npm run build'];
+      let allPassed = true;
+      for (const command of checks) {
+        port.assertCurrent();
+        signal.throwIfAborted();
         try {
-          if (remote) {
-            const result = await remote.environment.exec(
-              check.cmd,
-              verificationLease!.abortController.signal,
-              {
-                timeoutMs: verificationTimeout,
-              }
-            );
-            results.push({
-              check: check.name,
-              passed: result.exitCode === 0,
-              output: result.output,
-            });
-            if (result.exitCode !== 0) {
-              allPassed = false;
-              break;
-            }
-          } else {
-            const { stdout, stderr } = await execAsync(check.cmd, {
-              cwd: workDir,
-              timeout: verificationTimeout,
-            });
-            results.push({ check: check.name, passed: true, output: stdout || stderr });
+          const result = await this.observeOperation(
+            'execution_command',
+            () =>
+              environment.exec(command, signal, {
+                timeoutMs: timeout,
+                maxOutputBytes: 1_048_576,
+                windowsShell: 'cmd',
+              }),
+            { featureId, executionType: environment.type },
+            signal,
+            (value) => (signal.aborted ? 'cancelled' : value.exitCode === 0 ? 'completed' : 'error')
+          );
+          port.assertCurrent();
+          if (result.exitCode !== 0) {
+            allPassed = false;
+            break;
           }
         } catch (error) {
-          if (remote) throw error; // Unknown remote outcomes must not be converted into a retryable test failure.
+          const code =
+            error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
+          if (/CLEANUP_FAILED|OUTCOME_UNKNOWN/.test(code)) {
+            cleanupUnconfirmed = true;
+            throw error;
+          }
+          if (remote) throw error;
           allPassed = false;
-          results.push({ check: check.name, passed: false, output: (error as Error).message });
           break;
         }
       }
+      // Verification preserves persisted feature status; its own lease records the testing result.
+      if (!signal.aborted) port.transition(allPassed ? 'awaiting_review' : 'failed');
+      this.concurrencyManager.coordinator.acceptCompletion(
+        this.concurrencyManager,
+        lease,
+        'verification-complete'
+      );
+      return allPassed;
+    } catch (error) {
+      const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
+      if (/CLEANUP_FAILED|OUTCOME_UNKNOWN/.test(code)) cleanupUnconfirmed = true;
+      throw error;
     } finally {
-      if (verificationLease) this.concurrencyManager.release(featureId);
+      if (!cleanupUnconfirmed) this.concurrencyManager.release(featureId, { expected: lease });
     }
-
-    const runningEntryForVerify = this.concurrencyManager.getRunningFeature(featureId);
-    if (runningEntryForVerify?.isAutoMode) {
-      this.eventBus.emitAutoModeEvent('auto_mode_feature_complete', {
-        featureId,
-        featureName: feature?.title,
-        branchName: feature?.branchName ?? null,
-        executionMode: 'auto',
-        passes: allPassed,
-        message: allPassed
-          ? 'All verification checks passed'
-          : `Verification failed: ${results.find((r) => !r.passed)?.check || 'Unknown'}`,
-        projectPath: this.projectPath,
-      });
-    }
-
-    return allPassed;
   }
 
   /**
@@ -911,9 +994,14 @@ export class AutoModeServiceFacade {
    * @param providedWorktreePath - Optional worktree path
    */
   async commitFeature(featureId: string, providedWorktreePath?: string): Promise<string | null> {
+    const observedRun = this.concurrencyManager.getRunningFeature(featureId);
     const remoteFeature = await this.featureStateManager.loadFeature(this.projectPath, featureId);
     if (remoteFeature && this.settingsService) {
-      const service = new FeatureWorkspaceService(this.settingsService);
+      const service = new FeatureWorkspaceService(
+        this.settingsService,
+        undefined,
+        this.hostEnvironment
+      );
       const remote = await service.prepare(
         this.projectPath,
         remoteFeature,
@@ -927,7 +1015,7 @@ export class AutoModeServiceFacade {
           throw new Error(
             'The supplied path is not the pinned remote feature workspace. No local Git operation was performed.'
           );
-        const lease = this.concurrencyManager.acquire({
+        const lease = await this.concurrencyManager.acquireAsync({
           featureId,
           projectPath: this.projectPath,
           isAutoMode: false,
@@ -937,7 +1025,7 @@ export class AutoModeServiceFacade {
         try {
           return await service.commit(remote, remoteFeature, lease.abortController.signal);
         } finally {
-          this.concurrencyManager.release(featureId);
+          this.concurrencyManager.release(featureId, { expected: lease });
         }
       }
     }
@@ -945,7 +1033,7 @@ export class AutoModeServiceFacade {
 
     if (providedWorktreePath) {
       try {
-        await secureFs.access(providedWorktreePath);
+        await this.filesystem.access(providedWorktreePath);
         workDir = providedWorktreePath;
       } catch {
         // Use project path
@@ -980,8 +1068,14 @@ export class AutoModeServiceFacade {
       await execGitCommand(['commit', '-m', commitMessage], workDir);
       const hash = await execGitCommand(['rev-parse', 'HEAD'], workDir);
 
-      const runningEntryForCommit = this.concurrencyManager.getRunningFeature(featureId);
-      if (runningEntryForCommit?.isAutoMode) {
+      if (
+        observedRun?.isAutoMode &&
+        this.concurrencyManager.coordinator.acceptCompletion(
+          this.concurrencyManager,
+          observedRun,
+          'commit-complete'
+        )
+      ) {
         this.eventBus.emitAutoModeEvent('auto_mode_feature_complete', {
           featureId,
           featureName: feature?.title,
@@ -1010,13 +1104,17 @@ export class AutoModeServiceFacade {
       throw new Error('Stop this feature before merging its remote workspace.');
     const feature = await this.featureStateManager.loadFeature(this.projectPath, featureId);
     if (!feature) throw new Error('Feature not found.');
-    const lease = this.concurrencyManager.acquire({
+    const lease = await this.concurrencyManager.acquireAsync({
       featureId,
       projectPath: this.projectPath,
       isAutoMode: false,
     });
     try {
-      const service = new FeatureWorkspaceService(this.settingsService);
+      const service = new FeatureWorkspaceService(
+        this.settingsService,
+        undefined,
+        this.hostEnvironment
+      );
       const remote = await service.prepare(
         this.projectPath,
         feature,
@@ -1030,7 +1128,7 @@ export class AutoModeServiceFacade {
       lease.remoteWorkspace = true;
       await service.merge(remote, lease.abortController.signal);
     } finally {
-      this.concurrencyManager.release(featureId);
+      this.concurrencyManager.release(featureId, { expected: lease });
     }
   }
 
@@ -1181,29 +1279,29 @@ export class AutoModeServiceFacade {
     featureId: string,
     approved: boolean,
     editedPlan?: string,
-    feedback?: string
+    feedback?: string,
+    approvalToken?: string,
+    planVersion?: number,
+    approvalRunId?: string
   ): Promise<{ success: boolean; error?: string }> {
     const result = await this.planApprovalService.resolveApproval(featureId, approved, {
       editedPlan,
       feedback,
       projectPath: this.projectPath,
+      token: approvalToken,
+      planVersion,
+      runId: approvalRunId,
     });
 
-    // Handle recovery case
     if (result.success && result.needsRecovery) {
       const feature = await this.featureStateManager.loadFeature(this.projectPath, featureId);
       if (feature) {
         const prompts = await getPromptCustomization(this.settingsService, '[Facade]');
-        const planContent = editedPlan || feature.planSpec?.content || '';
-        let continuationPrompt = prompts.taskExecution.continuationAfterApprovalTemplate;
-        continuationPrompt = continuationPrompt.replace(/\{\{userFeedback\}\}/g, feedback || '');
-        continuationPrompt = continuationPrompt.replace(/\{\{approvedPlan\}\}/g, planContent);
-
-        // Start execution async
-        this.executeFeature(featureId, true, false, undefined, { continuationPrompt }).catch(
-          (error) => {
-            logger.error(`Recovery execution failed for feature ${featureId}:`, error);
-          }
+        const continuationPrompt = prompts.taskExecution.continuationAfterApprovalTemplate
+          .replace(/\{\{userFeedback\}\}/g, feedback || '')
+          .replace(/\{\{approvedPlan\}\}/g, editedPlan || feature.planSpec?.content || '');
+        void this.executeFeature(featureId, true, false, undefined, { continuationPrompt }).catch(
+          (error) => logger.error(`Recovery execution failed for feature ${featureId}:`, error)
         );
       }
     }
@@ -1229,31 +1327,44 @@ export class AutoModeServiceFacade {
     return this.planApprovalService.hasPendingApproval(featureId, this.projectPath);
   }
 
+  getPendingPlanApproval(featureId: string) {
+    return this.planApprovalService.getPendingApproval(
+      featureId,
+      this.projectPath,
+      () => !this.concurrencyManager.isRunning(featureId)
+    );
+  }
+
+  closeAdmission(): void {
+    this.stopping = true;
+    this.concurrencyManager.stopAdmission();
+  }
+
+  async drainRecoveryState(): Promise<void> {
+    await Promise.all([
+      this.recoveryService.close(),
+      ...(this.ownsWorktreeResolver ? [this.worktreeResolver.close()] : []),
+      ...(this.ownsFeatureStateManager ? [this.featureStateManager.destroy()] : []),
+    ]);
+  }
+
+  onModuleDestroy(): Promise<void> {
+    this.interruptForShutdown();
+    return this.drainRecoveryState();
+  }
+
+  interruptForShutdown(): void {
+    this.closeAdmission();
+    this.autoLoopCoordinator.interruptForShutdown();
+    this.planApprovalService.dispose();
+  }
+
   /**
    * Cancel a pending plan approval
    * @param featureId - The feature ID
    */
   cancelPlanApproval(featureId: string): void {
     this.planApprovalService.cancelApproval(featureId, this.projectPath);
-  }
-
-  // ===========================================================================
-  // ANALYSIS AND RECOVERY (3 methods)
-  // ===========================================================================
-
-  /**
-   * Analyze project to gather context
-   *
-   * NOTE: This method requires complex provider integration that is only available
-   * in AutoModeService. The facade exposes the method signature for API compatibility,
-   * but routes should use AutoModeService.analyzeProject() until migration is complete.
-   */
-  async analyzeProject(): Promise<void> {
-    // analyzeProject requires provider.execute which is complex to wire up
-    // For now, throw to indicate routes should use AutoModeService
-    throw new Error(
-      'analyzeProject not fully implemented in facade - use AutoModeService.analyzeProject instead'
-    );
   }
 
   /**

@@ -55,13 +55,17 @@ describe('execution environment in actual Project Settings navigation', () => {
   it('opens the shared editor with the current project path', async () => {
     open();
     fireEvent.click(screen.getByRole('button', { name: 'Execution Environment' }));
-    expect(await screen.findByLabelText('Project execution environment')).toHaveValue('inherit');
+    expect(
+      await screen.findByRole('combobox', { name: 'Project execution environment' })
+    ).toHaveTextContent('Inherit global default');
     expect(mocks.inspect).toHaveBeenCalledWith('/project-a');
   });
   it('supports a direct link to the environment section', async () => {
     mocks.section = 'execution-environment';
     open();
-    expect(await screen.findByLabelText('Project execution environment')).toHaveValue('inherit');
+    expect(
+      await screen.findByRole('combobox', { name: 'Project execution environment' })
+    ).toHaveTextContent('Inherit global default');
   });
   it('does not query project settings when no project is selected', () => {
     mocks.currentProject = null;

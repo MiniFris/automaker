@@ -7,6 +7,7 @@ import { GeminiCliStatus, GeminiCliStatusSkeleton } from '../cli-status/gemini-c
 import { GeminiModelConfiguration } from './gemini-model-configuration';
 import { ProviderToggle } from './provider-toggle';
 import { ProviderModelTimeoutSettings } from '@/components/shared/model-timeout-settings';
+import { GeminiCredentialsForm } from '@/components/shared/gemini-credentials-form';
 import { useGeminiCliStatus } from '@/hooks/queries';
 import { queryKeys } from '@/lib/query-keys';
 import type { CliStatus as SharedCliStatus } from '../shared/types';
@@ -37,13 +38,12 @@ export function GeminiSettingsTab() {
       success: cliStatusData.success ?? false,
       status: cliStatusData.installed ? 'installed' : 'not_installed',
       method: cliStatusData.auth?.method,
-      version: cliStatusData.version,
-      path: cliStatusData.path,
-      recommendation: cliStatusData.recommendation,
+      version: cliStatusData.version ?? undefined,
+      path: cliStatusData.path ?? undefined,
       // Server sends installCommand (singular), transform to expected format
       installCommands: cliStatusData.installCommand
         ? { npm: cliStatusData.installCommand }
-        : cliStatusData.installCommands,
+        : undefined,
     };
   }, [cliStatusData]);
 
@@ -52,6 +52,9 @@ export function GeminiSettingsTab() {
     if (!cliStatusData?.auth) return null;
     return {
       authenticated: cliStatusData.auth.authenticated,
+      authenticationChecked: cliStatusData.auth.authenticationChecked,
+      hasConfigFile: cliStatusData.auth.hasConfigFile,
+      hasVertexConfig: cliStatusData.auth.hasVertexConfig,
       method: (cliStatusData.auth.method as GeminiAuthStatus['method']) || 'none',
       hasApiKey: cliStatusData.auth.hasApiKey,
       hasEnvApiKey: cliStatusData.auth.hasEnvApiKey,
@@ -112,9 +115,14 @@ export function GeminiSettingsTab() {
 
       <GeminiCliStatus
         status={cliStatus}
+        connected={cliStatusData?.connected}
         authStatus={authStatus}
         isChecking={isCheckingGeminiCli}
         onRefresh={handleRefreshGeminiCli}
+      />
+      <GeminiCredentialsForm
+        configured={!!cliStatusData?.auth?.hasApiKey}
+        onChanged={handleRefreshGeminiCli}
       />
 
       {/* Model Configuration - Only show when CLI is installed */}

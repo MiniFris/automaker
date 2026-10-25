@@ -1,4 +1,11 @@
 import { translate, useUiLocale } from '@/lib/i18n';
+import { GEMINI_CLI_INSTALL_COMMAND } from '@automaker/contracts';
+import { canAttemptCliProvider } from '@/lib/provider-readiness';
+import { PassiveAuthenticationNotice } from '@/components/shared/passive-authentication-notice';
+import { CursorSetupPanel } from '@/components/shared/cursor-setup-panel';
+import { GeminiCredentialsForm } from '@/components/shared/gemini-credentials-form';
+import { getHttpApiClient } from '@/lib/http-api-client';
+import { verifyClaudeWithConsent } from '@/lib/claude-verification-consent';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -72,21 +79,18 @@ function ClaudeContent() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationError, setVerificationError] = useState<string | null>(null);
   const [isDeletingApiKey, setIsDeletingApiKey] = useState(false);
-  const hasVerifiedRef = useRef(false);
+  const verificationBusy = useRef(false);
 
   const installApi = useCallback(
-    () => getElectronAPI().setup?.installClaude() || Promise.reject(),
+    (signal?: AbortSignal) => getElectronAPI().setup?.installClaude(signal) || Promise.reject(),
     []
   );
   const getStoreState = useCallback(() => useSetupStore.getState().claudeCliStatus, []);
 
-  // Auto-verify CLI authentication
+  // Billable verification is only requested by an explicit user action.
   const verifyAuth = useCallback(async () => {
-    // Guard against duplicate verification
-    if (hasVerifiedRef.current) {
-      return;
-    }
-
+    if (verificationBusy.current) return;
+    verificationBusy.current = true;
     setIsVerifying(true);
     setClaudeIsVerifying(true); // Update store for parent to see
     setVerificationError(null);
@@ -95,13 +99,13 @@ function ClaudeContent() {
       if (!api.setup?.verifyClaudeAuth) {
         return;
       }
-      const result = await api.setup.verifyClaudeAuth('cli');
+      const result = await verifyClaudeWithConsent('cli');
+      if (!result) return;
       const hasLimitReachedError =
         result.error?.toLowerCase().includes('limit reached') ||
         result.error?.toLowerCase().includes('rate limit');
 
       if (result.authenticated && !hasLimitReachedError) {
-        hasVerifiedRef.current = true;
         // Use getState() to avoid dependency on claudeAuthStatus
         const currentAuthStatus = useSetupStore.getState().claudeAuthStatus;
         setClaudeAuthStatus({
@@ -119,17 +123,16 @@ function ClaudeContent() {
       const errorMessage = error instanceof Error ? error.message : 'Verification failed';
       setVerificationError(errorMessage);
     } finally {
+      verificationBusy.current = false;
       setIsVerifying(false);
       setClaudeIsVerifying(false); // Update store when done
     }
   }, [setClaudeAuthStatus, setClaudeIsVerifying]);
 
-  // Check status and auto-verify
+  // Passive status never starts a billable SDK query.
   const checkStatus = useCallback(async () => {
     setIsChecking(true);
     setVerificationError(null);
-    // Reset verification guard to allow fresh verification (for manual refresh)
-    hasVerifiedRef.current = false;
     try {
       const api = getElectronAPI();
       if (!api.setup?.getClaudeStatus) return;
@@ -144,10 +147,6 @@ function ClaudeContent() {
 
         if (result.installed) {
           toast.success(translate('Claude CLI installed!'));
-          // Auto-verify if CLI is installed
-          setIsChecking(false);
-          await verifyAuth();
-          return;
         }
       }
     } catch {
@@ -155,11 +154,10 @@ function ClaudeContent() {
     } finally {
       setIsChecking(false);
     }
-  }, [setClaudeCliStatus, verifyAuth]);
+  }, [setClaudeCliStatus]);
 
   const onInstallSuccess = useCallback(() => {
-    hasVerifiedRef.current = false;
-    checkStatus();
+    return checkStatus();
   }, [checkStatus]);
 
   const { isInstalling, installProgress, install } = useCliInstallation({
@@ -204,7 +202,6 @@ function ClaudeContent() {
           hasCredentialsFile: currentAuthStatus?.hasCredentialsFile || false,
         });
         // Reset verification guard so next check can verify again
-        hasVerifiedRef.current = false;
         toast.success(translate('API key deleted successfully'));
       }
     } catch {
@@ -254,13 +251,15 @@ function ClaudeContent() {
         </div>
         <CardDescription>
           {claudeCliStatus?.installed
-            ? claudeAuthStatus?.authenticated
-              ? translate('Authenticated{value1}', {
-                  value1: claudeCliStatus.version ? ` (v${claudeCliStatus.version})` : '',
-                })
-              : isVerifying
-                ? translate('Verifying authentication...')
-                : translate('Installed but not authenticated')
+            ? claudeAuthStatus?.authenticationChecked === false
+              ? translate('Authentication not checked')
+              : claudeAuthStatus?.authenticated
+                ? translate('Authenticated{value1}', {
+                    value1: claudeCliStatus.version ? ` (v${claudeCliStatus.version})` : '',
+                  })
+                : isVerifying
+                  ? translate('Verifying authentication...')
+                  : translate('Installed but not authenticated')
             : translate('Not installed on your system')}
         </CardDescription>
       </CardHeader>
@@ -301,6 +300,12 @@ function ClaudeContent() {
           </div>
         )}
 
+        {claudeCliStatus?.installed && !isChecking && (
+          <Button disabled={isVerifying} onClick={verifyAuth}>
+            {translate('Verify Claude connection')}
+          </Button>
+        )}
+
         {/* Not Installed */}
         {!claudeCliStatus?.installed && !isChecking && !isVerifying && (
           <div className="space-y-4">
@@ -334,7 +339,9 @@ function ClaudeContent() {
                   </Button>
                 </div>
               </div>
-              {isInstalling && <TerminalOutput lines={installProgress.output} />}
+              {installProgress.output.length > 0 && (
+                <TerminalOutput lines={installProgress.output} />
+              )}
               <Button
                 onClick={install}
                 disabled={isInstalling}
@@ -343,12 +350,12 @@ function ClaudeContent() {
                 {isInstalling ? (
                   <>
                     <Spinner size="sm" variant="foreground" className="mr-2" />
-                    {translate('Installing...')}
+                    {translate('Loading instructions...')}
                   </>
                 ) : (
                   <>
                     <Download className="w-4 h-4 mr-2" />
-                    {translate('Auto Install')}
+                    {translate('Show installation instructions')}
                   </>
                 )}
               </Button>
@@ -480,241 +487,7 @@ function ClaudeContent() {
 // Cursor Content
 // ============================================================================
 function CursorContent() {
-  useUiLocale();
-  const { cursorCliStatus, setCursorCliStatus } = useSetupStore();
-  const [isChecking, setIsChecking] = useState(false);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  const checkStatus = useCallback(async () => {
-    setIsChecking(true);
-    try {
-      const api = getElectronAPI();
-      if (!api.setup?.getCursorStatus) return;
-      const result = await api.setup.getCursorStatus();
-      if (result.success) {
-        setCursorCliStatus({
-          installed: result.installed ?? false,
-          version: result.version,
-          path: result.path,
-          auth: result.auth,
-          installCommand: result.installCommand,
-          loginCommand: result.loginCommand,
-        });
-        if (result.auth?.authenticated) {
-          toast.success(translate('Cursor CLI is ready!'));
-        }
-      }
-    } catch {
-      // Ignore errors
-    } finally {
-      setIsChecking(false);
-    }
-  }, [setCursorCliStatus]);
-
-  useEffect(() => {
-    checkStatus();
-    return () => {
-      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-    };
-  }, [checkStatus]);
-
-  const copyCommand = (command: string) => {
-    navigator.clipboard.writeText(command);
-    toast.success(translate('Command copied to clipboard'));
-  };
-
-  const handleLogin = async () => {
-    setIsLoggingIn(true);
-    try {
-      const loginCommand = cursorCliStatus?.loginCommand || 'cursor-agent login';
-      await navigator.clipboard.writeText(loginCommand);
-      toast.info(translate('Login command copied! Paste in terminal to authenticate.'));
-
-      let attempts = 0;
-      pollIntervalRef.current = setInterval(async () => {
-        attempts++;
-        try {
-          const api = getElectronAPI();
-          if (!api.setup?.getCursorStatus) return;
-          const result = await api.setup.getCursorStatus();
-          if (result.auth?.authenticated) {
-            if (pollIntervalRef.current) {
-              clearInterval(pollIntervalRef.current);
-              pollIntervalRef.current = null;
-            }
-            setCursorCliStatus({
-              ...cursorCliStatus,
-              installed: result.installed ?? true,
-              version: result.version,
-              path: result.path,
-              auth: result.auth,
-            });
-            setIsLoggingIn(false);
-            toast.success(translate('Successfully logged in to Cursor!'));
-          }
-        } catch {
-          // Ignore
-        }
-        if (attempts >= 60) {
-          if (pollIntervalRef.current) {
-            clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-          }
-          setIsLoggingIn(false);
-          toast.error(translate('Login timed out. Please try again.'));
-        }
-      }, 2000);
-    } catch {
-      toast.error(translate('Failed to start login process'));
-      setIsLoggingIn(false);
-    }
-  };
-
-  const isReady = cursorCliStatus?.installed && cursorCliStatus?.auth?.authenticated;
-
-  return (
-    <Card className="bg-card border-border">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <CursorIcon className="w-5 h-5" />
-            {translate('Cursor CLI Status')}
-          </CardTitle>
-          <Button variant="ghost" size="sm" onClick={checkStatus} disabled={isChecking}>
-            {isChecking ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
-          </Button>
-        </div>
-        <CardDescription>
-          {cursorCliStatus?.installed
-            ? cursorCliStatus.auth?.authenticated
-              ? translate('Authenticated{value1}', {
-                  value1: cursorCliStatus.version ? ` (v${cursorCliStatus.version})` : '',
-                })
-              : translate('Installed but not authenticated')
-            : translate('Not installed on your system')}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {isReady && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-              <div>
-                <p className="font-medium text-foreground">{translate('CLI Installed')}</p>
-                <p className="text-sm text-muted-foreground">
-                  {cursorCliStatus?.version &&
-                    translate('Version: {value1}', { value1: cursorCliStatus.version })}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-              <p className="font-medium text-foreground">{translate('Authenticated')}</p>
-            </div>
-          </div>
-        )}
-
-        {!cursorCliStatus?.installed && !isChecking && (
-          <div className="space-y-4">
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30 border border-border">
-              <XCircle className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-medium text-foreground">{translate('Cursor CLI not found')}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {translate('Install Cursor IDE to use Cursor AI agent.')}
-                </p>
-              </div>
-            </div>
-            <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
-              <p className="font-medium text-foreground text-sm">{translate('Install Cursor:')}</p>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground overflow-x-auto">
-                  {cursorCliStatus?.installCommand || 'npm install -g @anthropic/cursor-agent'}
-                </code>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() =>
-                    copyCommand(
-                      cursorCliStatus?.installCommand || 'npm install -g @anthropic/cursor-agent'
-                    )
-                  }
-                >
-                  <Copy className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {cursorCliStatus?.installed && !cursorCliStatus?.auth?.authenticated && !isChecking && (
-          <div className="space-y-4">
-            {/* Show CLI installed toast */}
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-              <div>
-                <p className="font-medium text-foreground">{translate('CLI Installed')}</p>
-                <p className="text-sm text-muted-foreground">
-                  {cursorCliStatus?.version &&
-                    translate('Version: {value1}', { value1: cursorCliStatus.version })}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
-              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-medium text-foreground">
-                  {translate('Cursor CLI not authenticated')}
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {translate('Run the login command to authenticate.')}
-                </p>
-              </div>
-            </div>
-            <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
-              <div className="flex items-center gap-2">
-                <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
-                  {cursorCliStatus?.loginCommand || 'cursor-agent login'}
-                </code>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => copyCommand(cursorCliStatus?.loginCommand || 'cursor-agent login')}
-                >
-                  <Copy className="w-4 h-4" />
-                </Button>
-              </div>
-              <Button
-                onClick={handleLogin}
-                disabled={isLoggingIn}
-                className="w-full bg-brand-500 hover:bg-brand-600 text-white"
-              >
-                {isLoggingIn ? (
-                  <>
-                    <Spinner size="sm" variant="foreground" className="mr-2" />
-                    {translate('Waiting for login...')}
-                  </>
-                ) : (
-                  translate('Copy Command & Wait for Login')
-                )}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {isChecking && (
-          <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
-            <Spinner size="md" />
-            <p className="font-medium text-foreground">
-              {translate('Checking Cursor CLI status...')}
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
+  return <CursorSetupPanel />;
 }
 
 // ============================================================================
@@ -729,7 +502,6 @@ function CodexContent() {
   const [apiKey, setApiKey] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const checkStatus = useCallback(async () => {
     setIsChecking(true);
@@ -744,7 +516,7 @@ function CodexContent() {
           path: result.path ?? null,
           method: 'none',
         });
-        if (result.auth?.authenticated) {
+        if (result.auth) {
           const validMethods = ['api_key_env', 'api_key', 'cli_authenticated', 'none'] as const;
           type CodexAuthMethod = (typeof validMethods)[number];
           const method: CodexAuthMethod = validMethods.includes(
@@ -753,10 +525,12 @@ function CodexContent() {
             ? (result.auth.method as CodexAuthMethod)
             : 'cli_authenticated';
           setCodexAuthStatus({
-            authenticated: true,
+            authenticated: result.auth.authenticated,
+            authenticationChecked: result.auth.authenticationChecked,
             method,
           });
-          toast.success(translate('Codex CLI is ready!'));
+          if (result.auth.authenticationChecked !== false && result.auth.authenticated)
+            toast.success(translate('Codex CLI is ready!'));
         }
       }
     } catch {
@@ -768,9 +542,6 @@ function CodexContent() {
 
   useEffect(() => {
     checkStatus();
-    return () => {
-      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-    };
   }, [checkStatus]);
 
   const copyCommand = (command: string) => {
@@ -790,7 +561,11 @@ function CodexContent() {
       const result = await api.setup.saveApiKey('openai', apiKey);
       if (result.success) {
         setApiKeys({ ...apiKeys, openai: apiKey });
-        setCodexAuthStatus({ authenticated: true, method: 'api_key' });
+        setCodexAuthStatus({
+          authenticated: false,
+          authenticationChecked: false,
+          method: 'api_key',
+        });
         toast.success(translate('API key saved successfully!'));
       }
     } catch {
@@ -806,34 +581,7 @@ function CodexContent() {
       await navigator.clipboard.writeText('codex login');
       toast.info(translate('Login command copied! Paste in terminal to authenticate.'));
 
-      let attempts = 0;
-      pollIntervalRef.current = setInterval(async () => {
-        attempts++;
-        try {
-          const api = getElectronAPI();
-          if (!api.setup?.getCodexStatus) return;
-          const result = await api.setup.getCodexStatus();
-          if (result.auth?.authenticated) {
-            if (pollIntervalRef.current) {
-              clearInterval(pollIntervalRef.current);
-              pollIntervalRef.current = null;
-            }
-            setCodexAuthStatus({ authenticated: true, method: 'cli_authenticated' });
-            setIsLoggingIn(false);
-            toast.success(translate('Successfully logged in to Codex!'));
-          }
-        } catch {
-          // Ignore
-        }
-        if (attempts >= 60) {
-          if (pollIntervalRef.current) {
-            clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-          }
-          setIsLoggingIn(false);
-          toast.error(translate('Login timed out. Please try again.'));
-        }
-      }, 2000);
+      setIsLoggingIn(false);
     } catch {
       toast.error(translate('Failed to start login process'));
       setIsLoggingIn(false);
@@ -856,11 +604,13 @@ function CodexContent() {
         </div>
         <CardDescription>
           {codexCliStatus?.installed
-            ? codexAuthStatus?.authenticated
-              ? translate('Authenticated{value1}', {
-                  value1: codexCliStatus.version ? ` (v${codexCliStatus.version})` : '',
-                })
-              : translate('Installed but not authenticated')
+            ? codexAuthStatus?.authenticationChecked === false
+              ? translate('Authentication not checked')
+              : codexAuthStatus?.authenticated
+                ? translate('Authenticated{value1}', {
+                    value1: codexCliStatus.version ? ` (v${codexCliStatus.version})` : '',
+                  })
+                : translate('Installed but not authenticated')
             : translate('Not installed on your system')}
         </CardDescription>
       </CardHeader>
@@ -1045,7 +795,6 @@ function OpencodeContent() {
   const { opencodeCliStatus, setOpencodeCliStatus } = useSetupStore();
   const [isChecking, setIsChecking] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const checkStatus = useCallback(async () => {
     setIsChecking(true);
@@ -1080,9 +829,6 @@ function OpencodeContent() {
 
   useEffect(() => {
     checkStatus();
-    return () => {
-      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-    };
   }, [checkStatus]);
 
   const copyCommand = (command: string) => {
@@ -1097,40 +843,7 @@ function OpencodeContent() {
       await navigator.clipboard.writeText(loginCommand);
       toast.info(translate('Login command copied! Paste in terminal to authenticate.'));
 
-      let attempts = 0;
-      pollIntervalRef.current = setInterval(async () => {
-        attempts++;
-        try {
-          const api = getElectronAPI();
-          if (!api.setup?.getOpencodeStatus) return;
-          const result = await api.setup.getOpencodeStatus();
-          if (result.auth?.authenticated) {
-            if (pollIntervalRef.current) {
-              clearInterval(pollIntervalRef.current);
-              pollIntervalRef.current = null;
-            }
-            setOpencodeCliStatus({
-              ...opencodeCliStatus,
-              installed: result.installed ?? true,
-              version: result.version,
-              path: result.path,
-              auth: result.auth,
-            });
-            setIsLoggingIn(false);
-            toast.success(translate('Successfully logged in to OpenCode!'));
-          }
-        } catch {
-          // Ignore
-        }
-        if (attempts >= 60) {
-          if (pollIntervalRef.current) {
-            clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-          }
-          setIsLoggingIn(false);
-          toast.error(translate('Login timed out. Please try again.'));
-        }
-      }, 2000);
+      setIsLoggingIn(false);
     } catch {
       toast.error(translate('Failed to start login process'));
       setIsLoggingIn(false);
@@ -1153,11 +866,13 @@ function OpencodeContent() {
         </div>
         <CardDescription>
           {opencodeCliStatus?.installed
-            ? opencodeCliStatus.auth?.authenticated
-              ? translate('Authenticated{value1}', {
-                  value1: opencodeCliStatus.version ? ` (v${opencodeCliStatus.version})` : '',
-                })
-              : translate('Installed but not authenticated')
+            ? opencodeCliStatus.auth?.authenticationChecked === false
+              ? translate('Authentication not checked')
+              : opencodeCliStatus.auth?.authenticated
+                ? translate('Authenticated{value1}', {
+                    value1: opencodeCliStatus.version ? ` (v${opencodeCliStatus.version})` : '',
+                  })
+                : translate('Installed but not authenticated')
             : translate('Not installed on your system')}
         </CardDescription>
       </CardHeader>
@@ -1297,125 +1012,44 @@ function OpencodeContent() {
 function GeminiContent() {
   useUiLocale();
   const { geminiCliStatus, setGeminiCliStatus } = useSetupStore();
-  const { setApiKeys, apiKeys } = useAppStore();
   const [isChecking, setIsChecking] = useState(false);
-  const [apiKey, setApiKey] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const checkStatus = useCallback(async () => {
     setIsChecking(true);
     try {
-      const api = getElectronAPI();
-      if (!api.setup?.getGeminiStatus) return;
-      const result = await api.setup.getGeminiStatus();
-      if (result.success) {
-        setGeminiCliStatus({
-          installed: result.installed ?? false,
-          version: result.version,
-          path: result.path,
-          auth: result.auth,
-          installCommand: result.installCommand,
-          loginCommand: result.loginCommand,
-        });
-        if (result.auth?.authenticated) {
-          toast.success(translate('Gemini CLI is ready!'));
-        }
-      }
+      const result = await getHttpApiClient().setup.getGeminiStatus();
+      setGeminiCliStatus({
+        installed: result.installed,
+        connected: result.connected,
+        version: result.version,
+        path: result.path,
+        auth: result.auth,
+        installCommand: result.installCommand,
+        loginCommand: result.loginCommand,
+      });
     } catch {
-      // Ignore
+      toast.error(translate('Failed to fetch Gemini CLI status'));
     } finally {
       setIsChecking(false);
     }
   }, [setGeminiCliStatus]);
 
   useEffect(() => {
-    checkStatus();
-    return () => {
-      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-    };
+    void checkStatus();
   }, [checkStatus]);
 
-  const copyCommand = (command: string) => {
-    navigator.clipboard.writeText(command);
-    toast.success(translate('Command copied to clipboard'));
-  };
-
-  const handleSaveApiKey = async () => {
-    if (!apiKey.trim()) return;
-    setIsSaving(true);
+  const copyCommand = async (command: string) => {
     try {
-      const api = getElectronAPI();
-      if (!api.setup?.saveApiKey) {
-        toast.error(translate('Save API not available'));
-        return;
-      }
-      const result = await api.setup.saveApiKey('google', apiKey);
-      if (result.success) {
-        setApiKeys({ ...apiKeys, google: apiKey });
-        setGeminiCliStatus({
-          ...geminiCliStatus,
-          installed: geminiCliStatus?.installed ?? false,
-          auth: { authenticated: true, method: 'api_key' },
-        });
-        toast.success(translate('API key saved successfully!'));
-      }
+      await navigator.clipboard.writeText(command);
+      toast.info(
+        translate(
+          'Login command copied. Run it in your terminal; status refresh does not verify authentication.'
+        )
+      );
     } catch {
-      toast.error(translate('Failed to save API key'));
-    } finally {
-      setIsSaving(false);
+      toast.error(translate('Failed to copy login command'));
     }
   };
-
-  const handleLogin = async () => {
-    setIsLoggingIn(true);
-    try {
-      const loginCommand = geminiCliStatus?.loginCommand || 'gemini auth login';
-      await navigator.clipboard.writeText(loginCommand);
-      toast.info(translate('Login command copied! Paste in terminal to authenticate.'));
-
-      let attempts = 0;
-      pollIntervalRef.current = setInterval(async () => {
-        attempts++;
-        try {
-          const api = getElectronAPI();
-          if (!api.setup?.getGeminiStatus) return;
-          const result = await api.setup.getGeminiStatus();
-          if (result.auth?.authenticated) {
-            if (pollIntervalRef.current) {
-              clearInterval(pollIntervalRef.current);
-              pollIntervalRef.current = null;
-            }
-            setGeminiCliStatus({
-              ...geminiCliStatus,
-              installed: result.installed ?? true,
-              version: result.version,
-              path: result.path,
-              auth: result.auth,
-            });
-            setIsLoggingIn(false);
-            toast.success(translate('Successfully logged in to Gemini!'));
-          }
-        } catch {
-          // Ignore
-        }
-        if (attempts >= 60) {
-          if (pollIntervalRef.current) {
-            clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-          }
-          setIsLoggingIn(false);
-          toast.error(translate('Login timed out. Please try again.'));
-        }
-      }, 2000);
-    } catch {
-      toast.error(translate('Failed to start login process'));
-      setIsLoggingIn(false);
-    }
-  };
-
-  const isReady = geminiCliStatus?.installed && geminiCliStatus?.auth?.authenticated;
 
   return (
     <Card className="bg-card border-border">
@@ -1425,194 +1059,50 @@ function GeminiContent() {
             <GeminiIcon className="w-5 h-5" />
             {translate('Gemini CLI Status')}
           </CardTitle>
-          <Button variant="ghost" size="sm" onClick={checkStatus} disabled={isChecking}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => void checkStatus()}
+            disabled={isChecking}
+            data-testid="refresh-gemini-setup"
+            aria-label={translate('Refresh Gemini CLI detection')}
+          >
             {isChecking ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
           </Button>
         </div>
         <CardDescription>
           {geminiCliStatus?.installed
-            ? geminiCliStatus.auth?.authenticated
-              ? translate('Authenticated{value1}', {
-                  value1: geminiCliStatus.version ? ` (v${geminiCliStatus.version})` : '',
-                })
-              : translate('Installed but not authenticated')
+            ? translate('Installed; authentication not checked')
             : translate('Not installed on your system')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {isReady && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-              <div>
-                <p className="font-medium text-foreground">{translate('CLI Installed')}</p>
-                <p className="text-sm text-muted-foreground">
-                  {geminiCliStatus?.version &&
-                    translate('Version: {value1}', { value1: geminiCliStatus.version })}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-              <p className="font-medium text-foreground">{translate('Authenticated')}</p>
-            </div>
-          </div>
-        )}
-
+        <PassiveAuthenticationNotice
+          hasCredentialsHint={
+            geminiCliStatus?.auth?.hasApiKey || geminiCliStatus?.auth?.hasVertexConfig
+          }
+          hasConfigFile={geminiCliStatus?.auth?.hasConfigFile}
+        />
         {!geminiCliStatus?.installed && !isChecking && (
-          <div className="space-y-4">
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30 border border-border">
-              <XCircle className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-medium text-foreground">{translate('Gemini CLI not found')}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {translate('Install the Gemini CLI to use Google Gemini models.')}
-                </p>
-              </div>
-            </div>
-            <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
-              <p className="font-medium text-foreground text-sm">
-                {translate('Install Gemini CLI:')}
-              </p>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground overflow-x-auto">
-                  {geminiCliStatus?.installCommand || 'npm install -g @google/gemini-cli'}
-                </code>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() =>
-                    copyCommand(
-                      geminiCliStatus?.installCommand || 'npm install -g @google/gemini-cli'
-                    )
-                  }
-                >
-                  <Copy className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
+          <div className="space-y-3 rounded-lg border border-border p-4">
+            <p>{translate('Install the Gemini CLI to use Google Gemini models.')}</p>
+            <code>{geminiCliStatus?.installCommand || GEMINI_CLI_INSTALL_COMMAND}</code>
           </div>
         )}
-
-        {geminiCliStatus?.installed && !geminiCliStatus?.auth?.authenticated && !isChecking && (
-          <div className="space-y-4">
-            {/* Show CLI installed toast */}
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-              <div>
-                <p className="font-medium text-foreground">{translate('CLI Installed')}</p>
-                <p className="text-sm text-muted-foreground">
-                  {geminiCliStatus?.version &&
-                    translate('Version: {value1}', { value1: geminiCliStatus.version })}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
-              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-medium text-foreground">
-                  {translate('Gemini CLI not authenticated')}
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {translate('Run the login command or provide a Google API key below.')}
-                </p>
-              </div>
-            </div>
-
-            <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="cli" className="border-border">
-                <AccordionTrigger className="hover:no-underline">
-                  <div className="flex items-center gap-3">
-                    <Terminal className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium">{translate('Google OAuth Login')}</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-4 space-y-4">
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
-                      {geminiCliStatus?.loginCommand || 'gemini auth login'}
-                    </code>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() =>
-                        copyCommand(geminiCliStatus?.loginCommand || 'gemini auth login')
-                      }
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <Button
-                    onClick={handleLogin}
-                    disabled={isLoggingIn}
-                    className="w-full bg-brand-500 hover:bg-brand-600 text-white"
-                  >
-                    {isLoggingIn ? (
-                      <>
-                        <Spinner size="sm" variant="foreground" className="mr-2" />
-                        {translate('Waiting for login...')}
-                      </>
-                    ) : (
-                      translate('Copy Command & Wait for Login')
-                    )}
-                  </Button>
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="api-key" className="border-border">
-                <AccordionTrigger className="hover:no-underline">
-                  <div className="flex items-center gap-3">
-                    <Key className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium">{translate('Google API Key')}</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-4 space-y-4">
-                  <div className="space-y-2">
-                    <Input
-                      type="password"
-                      placeholder={translate('AIza...')}
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      className="bg-input border-border text-foreground"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      <a
-                        href="https://aistudio.google.com/apikey"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-brand-500 hover:underline"
-                      >
-                        {translate('Get an API key from Google AI Studio')}
-                        <ExternalLink className="w-3 h-3 inline ml-1" />
-                      </a>
-                    </p>
-                  </div>
-                  <Button
-                    onClick={handleSaveApiKey}
-                    disabled={isSaving || !apiKey.trim()}
-                    className="w-full bg-brand-500 hover:bg-brand-600 text-white"
-                  >
-                    {isSaving ? (
-                      <Spinner size="sm" variant="foreground" />
-                    ) : (
-                      translate('Save API Key')
-                    )}
-                  </Button>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </div>
-        )}
-
-        {isChecking && (
-          <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
-            <Spinner size="md" />
-            <p className="font-medium text-foreground">
-              {translate('Checking Gemini CLI status...')}
-            </p>
-          </div>
-        )}
+        <div className="space-y-3 rounded-lg border border-border p-4">
+          <p className="font-medium">{translate('Google OAuth Login')}</p>
+          <code>{geminiCliStatus?.loginCommand || 'gemini'}</code>
+          <Button
+            variant="outline"
+            onClick={() => void copyCommand(geminiCliStatus?.loginCommand || 'gemini')}
+          >
+            {translate('Copy login command')}
+          </Button>
+        </div>
+        <GeminiCredentialsForm
+          configured={!!geminiCliStatus?.auth?.hasApiKey}
+          onChanged={checkStatus}
+        />
       </CardContent>
     </Card>
   );
@@ -1625,8 +1115,6 @@ function CopilotContent() {
   useUiLocale();
   const { copilotCliStatus, setCopilotCliStatus } = useSetupStore();
   const [isChecking, setIsChecking] = useState(false);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const checkStatus = useCallback(async () => {
     setIsChecking(true);
@@ -1656,9 +1144,6 @@ function CopilotContent() {
 
   useEffect(() => {
     checkStatus();
-    return () => {
-      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-    };
   }, [checkStatus]);
 
   const copyCommand = (command: string) => {
@@ -1667,49 +1152,15 @@ function CopilotContent() {
   };
 
   const handleLogin = async () => {
-    setIsLoggingIn(true);
     try {
-      const loginCommand = copilotCliStatus?.loginCommand || 'gh auth login';
-      await navigator.clipboard.writeText(loginCommand);
-      toast.info(translate('Login command copied! Paste in terminal to authenticate.'));
-
-      let attempts = 0;
-      pollIntervalRef.current = setInterval(async () => {
-        attempts++;
-        try {
-          const api = getElectronAPI();
-          if (!api.setup?.getCopilotStatus) return;
-          const result = await api.setup.getCopilotStatus();
-          if (result.auth?.authenticated) {
-            if (pollIntervalRef.current) {
-              clearInterval(pollIntervalRef.current);
-              pollIntervalRef.current = null;
-            }
-            setCopilotCliStatus({
-              ...copilotCliStatus,
-              installed: result.installed ?? true,
-              version: result.version,
-              path: result.path,
-              auth: result.auth,
-            });
-            setIsLoggingIn(false);
-            toast.success(translate('Successfully authenticated with GitHub!'));
-          }
-        } catch {
-          // Ignore
-        }
-        if (attempts >= 60) {
-          if (pollIntervalRef.current) {
-            clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-          }
-          setIsLoggingIn(false);
-          toast.error(translate('Login timed out. Please try again.'));
-        }
-      }, 2000);
+      await navigator.clipboard.writeText(copilotCliStatus?.loginCommand || 'gh auth login');
+      toast.info(
+        translate(
+          'Login command copied. Run it in your terminal; status refresh does not verify authentication.'
+        )
+      );
     } catch {
-      toast.error(translate('Failed to start login process'));
-      setIsLoggingIn(false);
+      toast.error(translate('Failed to copy login command'));
     }
   };
 
@@ -1729,11 +1180,13 @@ function CopilotContent() {
         </div>
         <CardDescription>
           {copilotCliStatus?.installed
-            ? copilotCliStatus.auth?.authenticated
-              ? translate('Authenticated{value1}', {
-                  value1: copilotCliStatus.version ? ` (v${copilotCliStatus.version})` : '',
-                })
-              : translate('Installed but not authenticated')
+            ? copilotCliStatus.auth?.authenticationChecked === false
+              ? translate('Installed; authentication not checked')
+              : copilotCliStatus.auth?.authenticated
+                ? translate('Authenticated{value1}', {
+                    value1: copilotCliStatus.version ? ` (v${copilotCliStatus.version})` : '',
+                  })
+                : translate('Installed but not authenticated')
             : translate('Not installed on your system')}
         </CardDescription>
       </CardHeader>
@@ -1814,17 +1267,10 @@ function CopilotContent() {
               </div>
             </div>
 
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
-              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-medium text-foreground">
-                  {translate('GitHub not authenticated')}
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {translate('Run the GitHub CLI login command to authenticate.')}
-                </p>
-              </div>
-            </div>
+            <PassiveAuthenticationNotice
+              hasCredentialsHint={copilotCliStatus.auth?.hasEnvToken}
+              hasConfigFile={copilotCliStatus.auth?.hasConfigFile}
+            />
             <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
               <div className="flex items-center gap-2">
                 <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
@@ -1840,17 +1286,9 @@ function CopilotContent() {
               </div>
               <Button
                 onClick={handleLogin}
-                disabled={isLoggingIn}
                 className="w-full bg-brand-500 hover:bg-brand-600 text-white"
               >
-                {isLoggingIn ? (
-                  <>
-                    <Spinner size="sm" variant="foreground" className="mr-2" />
-                    {translate('Waiting for login...')}
-                  </>
-                ) : (
-                  translate('Copy Command & Wait for Login')
-                )}
+                {translate('Copy login command')}
               </Button>
             </div>
           </div>
@@ -1937,6 +1375,7 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
         if (result.success) {
           setCursorCliStatus({
             installed: result.installed ?? false,
+            connected: result.connected,
             version: result.version,
             path: result.path,
             auth: result.auth,
@@ -1961,7 +1400,7 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
             path: result.path ?? null,
             method: 'none',
           });
-          if (result.auth?.authenticated) {
+          if (result.auth) {
             const validMethods = ['api_key_env', 'api_key', 'cli_authenticated', 'none'] as const;
             type CodexAuthMethodType = (typeof validMethods)[number];
             const method: CodexAuthMethodType = validMethods.includes(
@@ -1970,7 +1409,8 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
               ? (result.auth.method as CodexAuthMethodType)
               : 'cli_authenticated';
             setCodexAuthStatus({
-              authenticated: true,
+              authenticated: result.auth.authenticated,
+              authenticationChecked: result.auth.authenticationChecked,
               method,
             });
           }
@@ -2081,7 +1521,8 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
       claudeAuthStatus?.method === 'api_key_env');
 
   const isCursorInstalled = cursorCliStatus?.installed === true;
-  const isCursorAuthenticated = cursorCliStatus?.auth?.authenticated === true;
+  // Passive host hints never establish account authentication.
+  const isCursorAuthenticated = false;
 
   const isCodexInstalled = codexCliStatus?.installed === true;
   const isCodexAuthenticated = codexAuthStatus?.authenticated === true;
@@ -2090,21 +1531,28 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
   const isOpencodeAuthenticated = opencodeCliStatus?.auth?.authenticated === true;
 
   const isGeminiInstalled = geminiCliStatus?.installed === true;
-  const isGeminiAuthenticated = geminiCliStatus?.auth?.authenticated === true;
+  const isGeminiAuthenticated =
+    geminiCliStatus?.auth?.authenticationChecked === true &&
+    geminiCliStatus.auth.authenticated === true;
 
   const isCopilotInstalled = copilotCliStatus?.installed === true;
   const isCopilotAuthenticated = copilotCliStatus?.auth?.authenticated === true;
 
   const hasAtLeastOneProvider =
     hasConfiguredDirectEndpoint ||
-    isClaudeAuthenticated ||
+    canAttemptCliProvider(claudeCliStatus, claudeAuthStatus) ||
     isCursorAuthenticated ||
-    isCodexAuthenticated ||
-    isOpencodeAuthenticated ||
+    canAttemptCliProvider(codexCliStatus, codexAuthStatus) ||
+    canAttemptCliProvider(opencodeCliStatus, opencodeCliStatus?.auth) ||
     isGeminiAuthenticated ||
     isCopilotAuthenticated;
 
-  type ProviderStatus = 'not_installed' | 'installed_not_auth' | 'authenticated' | 'verifying';
+  type ProviderStatus =
+    | 'not_installed'
+    | 'installed_not_auth'
+    | 'authenticated'
+    | 'verifying'
+    | 'unverified';
 
   const getProviderStatus = (
     installed: boolean,
@@ -2122,48 +1570,70 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
       id: 'claude' as const,
       label: translate('Claude'),
       icon: AnthropicIcon,
-      status: getProviderStatus(isClaudeInstalled, isClaudeAuthenticated, claudeIsVerifying),
+      status:
+        isClaudeInstalled && !claudeIsVerifying && claudeAuthStatus?.authenticationChecked === false
+          ? ('unverified' as const)
+          : getProviderStatus(isClaudeInstalled, isClaudeAuthenticated, claudeIsVerifying),
       color: 'text-brand-500',
     },
     {
       id: 'cursor' as const,
       label: translate('Cursor'),
       icon: CursorIcon,
-      status: getProviderStatus(isCursorInstalled, isCursorAuthenticated),
+      status: isCursorInstalled ? ('unverified' as const) : ('not_installed' as const),
       color: 'text-blue-500',
     },
     {
       id: 'codex' as const,
       label: translate('Codex'),
       icon: OpenAIIcon,
-      status: getProviderStatus(isCodexInstalled, isCodexAuthenticated),
+      status:
+        isCodexInstalled && codexAuthStatus?.authenticationChecked === false
+          ? ('unverified' as const)
+          : getProviderStatus(isCodexInstalled, isCodexAuthenticated),
       color: 'text-emerald-500',
     },
     {
       id: 'opencode' as const,
       label: translate('OpenCode'),
       icon: OpenCodeIcon,
-      status: getProviderStatus(isOpencodeInstalled, isOpencodeAuthenticated),
+      status:
+        isOpencodeInstalled && opencodeCliStatus?.auth?.authenticationChecked === false
+          ? ('unverified' as const)
+          : getProviderStatus(isOpencodeInstalled, isOpencodeAuthenticated),
       color: 'text-green-500',
     },
     {
       id: 'gemini' as const,
       label: translate('Gemini'),
       icon: GeminiIcon,
-      status: getProviderStatus(isGeminiInstalled, isGeminiAuthenticated),
+      status:
+        isGeminiInstalled && geminiCliStatus?.auth?.authenticationChecked === false
+          ? ('unverified' as const)
+          : getProviderStatus(isGeminiInstalled, isGeminiAuthenticated),
       color: 'text-blue-500',
     },
     {
       id: 'copilot' as const,
       label: translate('Copilot'),
       icon: CopilotIcon,
-      status: getProviderStatus(isCopilotInstalled, isCopilotAuthenticated),
+      status:
+        isCopilotInstalled && copilotCliStatus?.auth?.authenticationChecked === false
+          ? ('unverified' as const)
+          : getProviderStatus(isCopilotInstalled, isCopilotAuthenticated),
       color: 'text-violet-500',
     },
   ];
 
   const renderStatusIcon = (status: ProviderStatus) => {
     switch (status) {
+      case 'unverified':
+        return (
+          <AlertCircle
+            aria-label={translate('Authentication not checked')}
+            className="w-3 h-3 text-amber-500 absolute -top-1 -right-1.5 bg-background rounded-full"
+          />
+        );
       case 'authenticated':
         return (
           <CheckCircle2 className="w-3 h-3 text-green-500 absolute -top-1 -right-1.5 bg-background rounded-full" />

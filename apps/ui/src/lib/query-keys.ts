@@ -199,6 +199,7 @@ export const queryKeys = {
   // Cursor Permissions
   // ============================================
   cursorPermissions: {
+    all: ['cursorPermissions'] as const,
     /** Cursor permissions for a project */
     permissions: (projectPath?: string) => ['cursorPermissions', projectPath] as const,
   },

@@ -22,10 +22,13 @@ const OPENAI_API_KEY_ENV = 'OPENAI_API_KEY';
 const originalOpenAIKey = process.env[OPENAI_API_KEY_ENV];
 
 const codexRunMock = vi.fn();
+const codexOptionsMock = vi.fn();
 
 vi.mock('@openai/codex-sdk', () => ({
   Codex: class {
-    constructor(_opts: { apiKey: string }) {}
+    constructor(opts: { apiKey: string; env: Record<string, string> }) {
+      codexOptionsMock(opts);
+    }
     startThread() {
       return {
         id: 'thread-123',
@@ -314,6 +317,214 @@ describe('codex-provider.ts', () => {
 
       expect(codexRunMock).toHaveBeenCalled();
       expect(spawnJSONLProcess).not.toHaveBeenCalled();
+    });
+
+    it('keeps concurrent managed keys in separate SDK contexts without a process-wide override', async () => {
+      vi.mocked(getCodexAuthIndicators).mockResolvedValue({
+        hasAuthFile: false,
+        hasOAuthToken: false,
+        hasApiKey: false,
+      });
+      const before = { ...process.env };
+      const completions: Array<() => void> = [];
+      codexRunMock.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            completions.push(() => resolve({ finalResponse: 'offline' }));
+          })
+      );
+      const first = new CodexProvider(
+        {
+          getGlobalSettings: async () => ({}),
+          getCredentials: async () => ({ apiKeys: { openai: 'sk-first-private' } }),
+        } as never,
+        { PATH: '/first/bin', CODEX_HOME: '/first/profile' }
+      );
+      const second = new CodexProvider(
+        {
+          getGlobalSettings: async () => ({}),
+          getCredentials: async () => ({ apiKeys: { openai: 'sk-second-private' } }),
+        } as never,
+        { PATH: '/second/bin', CODEX_HOME: '/second/profile' }
+      );
+      const input = { prompt: 'offline', model: 'gpt-5.2', cwd: '/tmp', allowedTools: [] };
+      const pending = [
+        collectAsyncGenerator(first.executeQuery(input)),
+        collectAsyncGenerator(second.executeQuery(input)),
+      ];
+      try {
+        await vi.waitFor(() => expect(codexRunMock).toHaveBeenCalledTimes(2));
+        expect(process.env).toEqual(before);
+        expect(codexOptionsMock.mock.calls.map(([value]) => value)).toEqual(
+          expect.arrayContaining([
+            {
+              apiKey: 'sk-first-private',
+              env: {
+                OPENAI_API_KEY: 'sk-first-private',
+                CODEX_API_KEY: 'sk-first-private',
+                PATH: '/first/bin',
+                CODEX_HOME: '/first/profile',
+              },
+            },
+            {
+              apiKey: 'sk-second-private',
+              env: {
+                OPENAI_API_KEY: 'sk-second-private',
+                CODEX_API_KEY: 'sk-second-private',
+                PATH: '/second/bin',
+                CODEX_HOME: '/second/profile',
+              },
+            },
+          ])
+        );
+      } finally {
+        completions.forEach((finish) => finish());
+        await Promise.all(pending);
+        await first.dispose();
+        await second.dispose();
+      }
+      expect(process.env).toEqual(before);
+    });
+
+    it('does not leave a managed key in process.env while a consumer holds the first SDK output', async () => {
+      vi.mocked(getCodexAuthIndicators).mockResolvedValue({
+        hasAuthFile: false,
+        hasOAuthToken: false,
+        hasApiKey: false,
+      });
+      codexRunMock.mockResolvedValue({ finalResponse: 'offline' });
+      const before = { ...process.env };
+      const managed = new CodexProvider({
+        getGlobalSettings: async () => ({}),
+        getCredentials: async () => ({ apiKeys: { openai: 'sk-private-stored' } }),
+      } as never);
+      const stream = managed.executeQuery({
+        prompt: 'offline',
+        model: 'gpt-5.2',
+        cwd: '/tmp',
+        allowedTools: [],
+      });
+      try {
+        expect((await stream.next()).value).toMatchObject({ type: 'assistant' });
+        expect(process.env).toEqual(before);
+      } finally {
+        await stream.return(undefined);
+        await managed.dispose();
+      }
+      expect(codexRunMock.mock.calls[0][1].signal.aborted).toBe(false);
+      expect(process.env).toEqual(before);
+    });
+
+    it('forwards cancellation only while the SDK run is pending', async () => {
+      vi.mocked(getCodexAuthIndicators).mockResolvedValue({
+        hasAuthFile: false,
+        hasOAuthToken: false,
+        hasApiKey: false,
+      });
+      codexRunMock.mockImplementation(
+        (_prompt, { signal }) =>
+          new Promise((_resolve, reject) => {
+            signal.addEventListener('abort', () => reject(new Error('Offline cancellation')), {
+              once: true,
+            });
+          })
+      );
+      const before = { ...process.env };
+      const managed = new CodexProvider(undefined, { OPENAI_API_KEY: 'sk-private-bootstrap' });
+      const controller = new AbortController();
+      const pending = collectAsyncGenerator(
+        managed.executeQuery({
+          prompt: 'offline',
+          model: 'gpt-5.2',
+          cwd: '/tmp',
+          allowedTools: [],
+          abortController: controller,
+        })
+      );
+      const cancelled = expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+      await vi.waitFor(() => expect(codexRunMock).toHaveBeenCalledOnce());
+      controller.abort();
+      await cancelled;
+      expect(codexRunMock.mock.calls[0][1].signal.aborted).toBe(true);
+      expect(process.env).toEqual(before);
+      await managed.dispose();
+    });
+
+    it('captures the supplied environment before asynchronous query preparation', async () => {
+      vi.mocked(getCodexAuthIndicators).mockResolvedValue({
+        hasAuthFile: false,
+        hasOAuthToken: false,
+        hasApiKey: false,
+      });
+      codexRunMock.mockResolvedValue({ finalResponse: 'offline' });
+      let prepare!: () => void;
+      const settings = {
+        getGlobalSettings: vi.fn(
+          () =>
+            new Promise((resolve) => {
+              prepare = () => resolve({});
+            })
+        ),
+      };
+      const environment = { OPENAI_API_KEY: 'sk-original-query', CODEX_HOME: '/original/profile' };
+      const managed = new CodexProvider(settings as never, environment);
+      const pending = collectAsyncGenerator(
+        managed.executeQuery({ prompt: 'offline', model: 'gpt-5.2', cwd: '/tmp', allowedTools: [] })
+      );
+      await vi.waitFor(() => expect(settings.getGlobalSettings).toHaveBeenCalledOnce());
+      environment.OPENAI_API_KEY = 'sk-changed-later';
+      environment.CODEX_HOME = '/changed/profile';
+      prepare();
+      await pending;
+      expect(codexOptionsMock.mock.calls[0][0]).toMatchObject({
+        apiKey: 'sk-original-query',
+        env: { OPENAI_API_KEY: 'sk-original-query', CODEX_HOME: '/original/profile' },
+      });
+      await managed.dispose();
+    });
+
+    it('uses the captured context for CLI execution without ambient inheritance', async () => {
+      const context = {
+        OPENAI_API_KEY: 'sk-cli-context',
+        CODEX_API_KEY: 'sk-other-context',
+        CODEX_HOME: '/owned/cli-profile',
+        PATH: '/owned/bin',
+      };
+      const cli = new CodexProvider(undefined, context);
+      vi.mocked(spawnJSONLProcess).mockReturnValue((async function* () {})());
+      await collectAsyncGenerator(
+        cli.executeQuery({
+          prompt: 'offline',
+          model: 'gpt-5.2',
+          cwd: '/tmp',
+          mcpServers: { fixture: { command: 'offline' } },
+        })
+      );
+      expect(vi.mocked(spawnJSONLProcess).mock.calls[0][0]).toMatchObject({
+        inheritEnv: false,
+        env: { ...context, CODEX_API_KEY: 'sk-cli-context' },
+      });
+      await cli.dispose();
+    });
+    it('treats an empty application snapshot as authoritative instead of re-reading credentials later', async () => {
+      vi.mocked(findCodexCliPath).mockResolvedValue(null);
+      vi.mocked(getCodexAuthIndicators).mockResolvedValue({
+        hasAuthFile: false,
+        hasApiKey: false,
+        hasOAuthToken: false,
+      });
+      const settings = {
+        getGlobalSettings: async () => ({}),
+        getCredentials: vi.fn().mockResolvedValue({ apiKeys: { openai: 'sk-later-key' } }),
+      };
+      const scoped = new CodexProvider(settings as never, async () => ({}));
+      const messages = await collectAsyncGenerator(
+        scoped.executeQuery({ prompt: 'offline', cwd: '/tmp', model: 'gpt-5.2', allowedTools: [] })
+      );
+      expect(settings.getCredentials).not.toHaveBeenCalled();
+      expect(codexRunMock).not.toHaveBeenCalled();
+      expect(messages.some((message) => message.type === 'error')).toBe(true);
+      await scoped.dispose();
     });
 
     it('falls back to CLI when no tools are requested and no API key is available', async () => {

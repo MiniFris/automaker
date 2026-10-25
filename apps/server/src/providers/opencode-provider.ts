@@ -1,3 +1,4 @@
+import type { HostCliDiscovery } from '../core/platform/host-cli-discovery.js';
 /**
  * OpenCode Provider - Executes queries using opencode CLI
  *
@@ -11,10 +12,9 @@
  */
 
 import * as path from 'path';
-import * as os from 'os';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
-import { CliProvider, type CliSpawnConfig } from './cli-provider.js';
+import { CliProvider, type CliSpawnConfig, type CliErrorInfo } from './cli-provider.js';
 
 const execFileAsync = promisify(execFile);
 import type {
@@ -264,6 +264,9 @@ export function resetToolUseIdCounter(): void {
  * Anthropic, OpenAI, and more based on user authentication.
  */
 export class OpencodeProvider extends CliProvider {
+  protected featureCapabilities() {
+    return { vision: false, tools: true, reasoning: false, mcp: false, remoteExecution: true };
+  }
   // ==========================================================================
   // Dynamic Model Cache
   // ==========================================================================
@@ -283,8 +286,12 @@ export class OpencodeProvider extends CliProvider {
   /** Promise that resolves when current refresh completes */
   private refreshPromise: Promise<ModelDefinition[]> | null = null;
 
-  constructor(config: ProviderConfig = {}) {
-    super(config);
+  constructor(
+    config: ProviderConfig = {},
+    environment?: import('./cli-provider.js').CliEnvironmentReader,
+    hostDiscovery?: HostCliDiscovery
+  ) {
+    super(config, environment, hostDiscovery);
   }
 
   // ==========================================================================
@@ -305,24 +312,24 @@ export class OpencodeProvider extends CliProvider {
       npxPackage: 'opencode-ai@latest',
       commonPaths: {
         linux: [
-          path.join(os.homedir(), '.opencode/bin/opencode'),
-          path.join(os.homedir(), '.npm-global/bin/opencode'),
+          path.join(this.hostHome(), '.opencode/bin/opencode'),
+          path.join(this.hostHome(), '.npm-global/bin/opencode'),
           '/usr/local/bin/opencode',
           '/usr/bin/opencode',
-          path.join(os.homedir(), '.local/bin/opencode'),
+          path.join(this.hostHome(), '.local/bin/opencode'),
         ],
         darwin: [
-          path.join(os.homedir(), '.opencode/bin/opencode'),
-          path.join(os.homedir(), '.npm-global/bin/opencode'),
+          path.join(this.hostHome(), '.opencode/bin/opencode'),
+          path.join(this.hostHome(), '.npm-global/bin/opencode'),
           '/usr/local/bin/opencode',
           '/opt/homebrew/bin/opencode',
-          path.join(os.homedir(), '.local/bin/opencode'),
+          path.join(this.hostHome(), '.local/bin/opencode'),
         ],
         win32: [
-          path.join(os.homedir(), '.opencode', 'bin', 'opencode.exe'),
-          path.join(os.homedir(), 'AppData', 'Roaming', 'npm', 'opencode.cmd'),
-          path.join(os.homedir(), 'AppData', 'Roaming', 'npm', 'opencode'),
-          path.join(process.env.APPDATA || '', 'npm', 'opencode.cmd'),
+          path.join(this.hostHome(), '.opencode', 'bin', 'opencode.exe'),
+          path.join(this.hostHome(), 'AppData', 'Roaming', 'npm', 'opencode.cmd'),
+          path.join(this.hostHome(), 'AppData', 'Roaming', 'npm', 'opencode'),
+          path.join(this.hostValue('APPDATA') || '', 'npm', 'opencode.cmd'),
         ],
       },
     };
@@ -445,6 +452,19 @@ export class OpencodeProvider extends CliProvider {
    * @param errorText - Raw error text (may contain ANSI codes)
    * @returns true if the error indicates the session was not found
    */
+  protected override mapError(stderr: string, exitCode: number | null): CliErrorInfo {
+    // Classify privately before discarding diagnostics: the retry loop only needs
+    // this stable session marker, never the raw profile/credential-bearing text.
+    if (OpencodeProvider.isSessionNotFoundError(stderr)) {
+      return {
+        code: 'SESSION_NOT_FOUND',
+        message: 'OpenCode session not found',
+        recoverable: true,
+      };
+    }
+    return super.mapError(stderr, exitCode);
+  }
+
   private static isSessionNotFoundError(errorText: string): boolean {
     const cleaned = OpencodeProvider.stripAnsiCodes(errorText).toLowerCase();
 
@@ -533,19 +553,19 @@ export class OpencodeProvider extends CliProvider {
    * session_id from the fresh stream events, which it persists to metadata —
    * replacing the stale sdkSessionId and preventing repeated failures.
    */
-  async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+  protected async *execute(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
     // Remote sessions never replay automatically, even on a session-not-found-looking error.
     if (
       options.executionEnvironmentBinding?.type === 'ssh' ||
       options.executionEnvironmentBinding?.type === 'docker'
     ) {
-      yield* super.executeQuery(options);
+      yield* super.execute(options);
       return;
     }
     // When no sdkSessionId is set, there is nothing to "retry without" — just
     // stream normally and clean error messages as they pass through.
     if (!options.sdkSessionId) {
-      for await (const msg of super.executeQuery(options)) {
+      for await (const msg of super.execute(options)) {
         // Clean error messages so consumers don't get ANSI or double "Error:" prefix
         if (msg.type === 'error' && msg.error && typeof msg.error === 'string') {
           msg.error = OpencodeProvider.cleanErrorMessage(msg.error);
@@ -568,7 +588,7 @@ export class OpencodeProvider extends CliProvider {
     let seenHealthyMessage = false;
 
     try {
-      for await (const msg of super.executeQuery(options)) {
+      for await (const msg of super.execute(options)) {
         if (msg.type === 'error') {
           const errorText = msg.error || '';
           if (OpencodeProvider.isSessionNotFoundError(errorText)) {
@@ -628,7 +648,7 @@ export class OpencodeProvider extends CliProvider {
       // If the retry also fails, it's a genuine error (not session-related)
       // and should be surfaced as-is rather than masked with a misleading
       // "session could not be created" message.
-      for await (const retryMsg of super.executeQuery(retryOptions)) {
+      for await (const retryMsg of super.execute(retryOptions)) {
         if (retryMsg.type === 'error' && retryMsg.error && typeof retryMsg.error === 'string') {
           retryMsg.error = OpencodeProvider.cleanErrorMessage(retryMsg.error);
         }
@@ -903,23 +923,16 @@ export class OpencodeProvider extends CliProvider {
   /**
    * Get available models for OpenCode
    *
-   * Returns cached models if available and not expired.
-   * Falls back to default models if cache is empty or CLI is unavailable.
+   * Returns the latest cached snapshot, including an expired one, without I/O.
+   * Falls back to default models if cache is empty.
    *
    * Use `refreshModels()` to force a fresh fetch from the CLI.
    */
   getAvailableModels(): ModelDefinition[] {
-    // Return cached models if available and not expired
-    if (this.cachedModels && Date.now() < this.modelsCacheExpiry) {
-      return this.cachedModels;
-    }
-
-    // Return cached models even if expired (better than nothing)
+    // Catalog access must be offline, including expired snapshots. The native
+    // catalog service explicitly awaits refresh instead of starting an unowned
+    // background CLI process from a synchronous metadata getter.
     if (this.cachedModels) {
-      // Trigger background refresh
-      this.refreshModels().catch((err) => {
-        opencodeLogger.debug(`Background model refresh failed: ${err}`);
-      });
       return this.cachedModels;
     }
 
@@ -1080,8 +1093,13 @@ export class OpencodeProvider extends CliProvider {
         encoding: 'utf-8',
         timeout: 30000,
         windowsHide: true,
-        // Use shell on Windows for .cmd files
-        shell: process.platform === 'win32' && command.endsWith('.cmd'),
+        env: await this.readEnvironment(),
+        cwd: this.hostDiscovery?.workingDirectory,
+        // Preserve .cmd argv handling while selecting the owning app's shell.
+        shell:
+          process.platform === 'win32' && command.endsWith('.cmd')
+            ? (this.hostDiscovery?.shell ?? true)
+            : false,
       });
 
       opencodeLogger.debug(
@@ -1333,8 +1351,13 @@ export class OpencodeProvider extends CliProvider {
         encoding: 'utf-8',
         timeout: 15000,
         windowsHide: true,
-        // Use shell on Windows for .cmd files
-        shell: process.platform === 'win32' && command.endsWith('.cmd'),
+        env: await this.readEnvironment(),
+        cwd: this.hostDiscovery?.workingDirectory,
+        // Preserve .cmd argv handling while selecting the owning app's shell.
+        shell:
+          process.platform === 'win32' && command.endsWith('.cmd')
+            ? (this.hostDiscovery?.shell ?? true)
+            : false,
       });
 
       opencodeLogger.debug(
@@ -1450,10 +1473,14 @@ export class OpencodeProvider extends CliProvider {
   }
 
   /**
-   * Check if we have cached models (not just defaults)
+   * Check if we have fresh cached models (not just defaults)
    */
   hasCachedModels(): boolean {
-    return this.cachedModels !== null && this.cachedModels.length > 0;
+    return (
+      this.cachedModels !== null &&
+      this.cachedModels.length > 0 &&
+      Date.now() < this.modelsCacheExpiry
+    );
   }
 
   // ==========================================================================

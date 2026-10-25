@@ -7,6 +7,22 @@ import { getAllowedRootDirectory, getDataDirectory, validatePath } from '@automa
 import { OpenAICompatibleError } from './errors.js';
 import { checkAbort, ToolError } from './runtime.js';
 
+/** Server-owned path authority; never supplied through model/request options. */
+export interface WorkspaceAccessPolicy {
+  validatePath(candidate: string): string;
+  readonly allowedRootDirectory?: string | null;
+  readonly dataDirectory: string;
+}
+
+/** Standalone compatibility only. Native provider factories always supply their own policy. */
+function legacyWorkspaceAccess(): WorkspaceAccessPolicy {
+  return {
+    validatePath,
+    allowedRootDirectory: getAllowedRootDirectory(),
+    dataDirectory: getDataDirectory() ?? process.env.DATA_DIR ?? path.join(process.cwd(), 'data'),
+  };
+}
+
 const BLOCKED = new Set([
   '.git',
   '.automaker',
@@ -41,32 +57,37 @@ function denied(): never {
 export class ReadOnlyWorkspace {
   private constructor(
     readonly root: string,
-    private readonly protectedPaths: string[]
+    private readonly protectedPaths: string[],
+    private readonly access: WorkspaceAccessPolicy
   ) {}
 
-  static async create(cwd: string, signal?: AbortSignal): Promise<ReadOnlyWorkspace> {
+  static async create(
+    cwd: string,
+    signal?: AbortSignal,
+    policy?: WorkspaceAccessPolicy
+  ): Promise<ReadOnlyWorkspace> {
     checkAbort(signal);
     if (process.platform !== 'linux')
       throw new OpenAICompatibleError('Read tools currently require the Linux descriptor backend.');
     try {
       await fs.access('/proc/self/fd');
-      const root = validatePath(await fs.realpath(validatePath(cwd)));
+      const access = policy ?? legacyWorkspaceAccess();
+      const root = access.validatePath(await fs.realpath(access.validatePath(cwd)));
       if (root === path.parse(root).root || !(await fs.stat(root)).isDirectory()) denied();
       if (
         root.split(path.sep).some((part) => part.toLowerCase() === '.git') ||
         BLOCKED.has(path.basename(root).toLowerCase())
       )
         denied();
-      const allowed = getAllowedRootDirectory();
+      const allowed = access.allowedRootDirectory;
       // The app DATA_DIR exception must not grant the model access to server data.
       if (allowed && !within(path.resolve(allowed), root)) denied();
-      const dataDirectory =
-        getDataDirectory() ?? process.env.DATA_DIR ?? path.join(process.cwd(), 'data');
+      const dataDirectory = access.dataDirectory;
       const protectedPaths = [path.resolve(dataDirectory)];
       protectedPaths.push(
         await fs.realpath(dataDirectory).catch(() => path.resolve(dataDirectory))
       );
-      const workspace = new ReadOnlyWorkspace(root, protectedPaths);
+      const workspace = new ReadOnlyWorkspace(root, protectedPaths, access);
       workspace.checkPath(root);
       checkAbort(signal);
       return workspace;
@@ -92,7 +113,7 @@ export class ReadOnlyWorkspace {
       )
     )
       denied();
-    validatePath(target);
+    this.access.validatePath(target);
   }
 
   private resolve(input: string): string {

@@ -12,7 +12,8 @@ import { ManagedSSH, SSHExecutionEnvironment } from './ssh.js';
 /** Resolve capabilities from a verified server binding, never from request JSON. */
 export async function boundRuntime(
   binding: ExecutionEnvironmentBinding,
-  settings: SettingsService
+  settings: SettingsService,
+  hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
 ): Promise<ExecutionEnvironment> {
   if (binding.type === 'ssh') {
     if (!binding.ssh || !binding.runtimeCwd)
@@ -39,6 +40,6 @@ export async function boundRuntime(
     );
   }
   return issueEnvironment(
-    await LocalExecutionEnvironment.create(binding.runtimeCwd ?? binding.cwd)
+    await LocalExecutionEnvironment.create(binding.runtimeCwd ?? binding.cwd, hostEnvironment)
   );
 }

@@ -1,3 +1,8 @@
+import {
+  createOwnedLocalChild,
+  OwnedLocalChildCleanupError,
+  type OwnedLocalChild,
+} from './owned-local-child.js';
 /**
  * Test Runner Service
  *
@@ -12,8 +17,14 @@
  */
 
 import { spawn, execSync, type ChildProcess } from 'child_process';
+import { localComspec } from './execution-environment/local.js';
 import * as secureFs from '../lib/secure-fs.js';
 import { createLogger } from '@automaker/utils';
+import {
+  drainLocalProcessWork,
+  localDirectoryExists,
+  type LocalProcessPreflight,
+} from './local-process-preflight.js';
 import type { EventEmitter } from '../lib/events.js';
 
 const logger = createLogger('TestRunnerService');
@@ -44,6 +55,11 @@ export interface TestRunSession {
   command: string;
   /** The spawned child process */
   process: ChildProcess | null;
+  canonicalWorktreePath?: string;
+  owner?: OwnedLocalChild;
+  cleanupUnknown?: boolean;
+  stop?: Promise<void>;
+  finish?: () => void;
   /** When the test run started */
   startedAt: Date;
   /** When the test run finished (if completed) */
@@ -85,6 +101,18 @@ export interface TestRunResult {
  * Manages test execution processes across worktrees
  */
 class TestRunnerService {
+  private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>;
+  private readonly acceptedStarts = new Set<Promise<unknown>>();
+  private readonly startingWorktrees = new Set<string>();
+  private closing = false;
+  private cleanupPromise?: Promise<void>;
+  private get nativeOwnership(): boolean {
+    return Boolean(this.runtime) && process.platform === 'linux';
+  }
+  constructor(private readonly runtime?: LocalProcessPreflight) {
+    this.hostEnvironment = Object.freeze({ ...(runtime?.hostEnvironment ?? process.env) });
+  }
+
   private sessions: Map<string, TestRunSession> = new Map();
   private emitter: EventEmitter | null = null;
 
@@ -187,7 +215,11 @@ class TestRunnerService {
     try {
       if (process.platform === 'win32') {
         // Windows: use taskkill to kill process tree
-        execSync(`taskkill /F /T /PID ${pid}`, { stdio: 'ignore' });
+        execSync(`taskkill /F /T /PID ${pid}`, {
+          stdio: 'ignore',
+          env: { ...this.hostEnvironment },
+          shell: localComspec(this.hostEnvironment) || 'cmd.exe',
+        });
       } else {
         // Unix: kill the process group
         try {
@@ -226,32 +258,90 @@ class TestRunnerService {
    * @param options - Configuration for the test run
    * @returns TestRunResult with session info or error
    */
-  async startTests(
+  startTests(
+    worktreePath: string,
+    options: { command: string; testFile?: string }
+  ): Promise<TestRunResult> {
+    if (this.runtime && this.closing)
+      return Promise.resolve({ success: false, error: 'Test runner is shutting down' });
+    let canonical: string | undefined;
+    if (this.runtime) {
+      try {
+        canonical = this.runtime.resolvePath(worktreePath);
+      } catch (error) {
+        return Promise.reject(error);
+      }
+      const existing = [...this.sessions.values()].find(
+        (session) =>
+          (session.canonicalWorktreePath === canonical || session.worktreePath === worktreePath) &&
+          (session.status === 'pending' || session.status === 'running' || session.cleanupUnknown)
+      );
+      if (existing) {
+        if (existing.cleanupUnknown || existing.owner?.closing)
+          return Promise.reject(new OwnedLocalChildCleanupError());
+        return Promise.resolve({
+          success: false,
+          error: `Tests are already running for this worktree (session: ${existing.id})`,
+        });
+      }
+      if (this.startingWorktrees.has(canonical) || this.startingWorktrees.has(worktreePath))
+        return Promise.resolve({
+          success: false,
+          error: 'Tests are already starting for this worktree',
+        });
+      this.startingWorktrees.add(canonical);
+      this.startingWorktrees.add(worktreePath);
+    }
+    const accepted = this.startTestsInternal(worktreePath, options, canonical);
+    if (this.runtime) {
+      this.acceptedStarts.add(accepted);
+      const release = () => {
+        this.acceptedStarts.delete(accepted);
+        this.startingWorktrees.delete(canonical!);
+        this.startingWorktrees.delete(worktreePath);
+      };
+      void accepted.then(release, release);
+    }
+    return accepted;
+  }
+
+  private async startTestsInternal(
     worktreePath: string,
     options: {
       command: string;
       testFile?: string;
-    }
+    },
+    nativeCwd?: string
   ): Promise<TestRunResult> {
     const { command, testFile } = options;
 
     // Check if already running
     const existingSession = this.getActiveSession(worktreePath);
     if (existingSession) {
+      if (this.runtime && (existingSession.cleanupUnknown || existingSession.owner?.closing))
+        throw new OwnedLocalChildCleanupError();
       return {
         success: false,
         error: `Tests are already running for this worktree (session: ${existingSession.id})`,
       };
     }
 
-    // Verify the worktree exists
-    if (!(await this.fileExists(worktreePath))) {
+    const canonicalCwd = nativeCwd ?? worktreePath;
+    if (
+      !(this.runtime
+        ? await localDirectoryExists(this.runtime, canonicalCwd)
+        : await this.fileExists(worktreePath))
+    ) {
       return {
         success: false,
         error: `Worktree path does not exist: ${worktreePath}`,
       };
     }
 
+    if (this.runtime && this.closing)
+      return { success: false, error: 'Test runner is shutting down' };
+    if (this.runtime && this.getActiveSession(worktreePath))
+      return { success: false, error: 'Tests are already running for this worktree' };
     if (!command) {
       return {
         success: false,
@@ -279,6 +369,7 @@ class TestRunnerService {
     const session: TestRunSession = {
       id: sessionId,
       worktreePath,
+      canonicalWorktreePath: nativeCwd,
       command: finalCommand,
       process: null,
       startedAt: new Date(),
@@ -294,7 +385,7 @@ class TestRunnerService {
 
     // Spawn the test process using shell
     const env = {
-      ...process.env,
+      ...this.hostEnvironment,
       FORCE_COLOR: '1',
       COLORTERM: 'truecolor',
       TERM: 'xterm-256color',
@@ -302,15 +393,15 @@ class TestRunnerService {
     };
 
     const testProcess = spawn(finalCommand, [], {
-      cwd: worktreePath,
+      cwd: canonicalCwd,
       env,
-      shell: true,
+      shell: process.platform === 'win32' ? localComspec(this.hostEnvironment) || 'cmd.exe' : true,
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: process.platform !== 'win32', // Use process groups on Unix for cleanup
     });
 
     session.process = testProcess;
-    session.status = 'running';
+    session.status = this.nativeOwnership ? 'pending' : 'running';
 
     // Track if process failed early
     const status = { error: null as string | null, exited: false };
@@ -321,6 +412,7 @@ class TestRunnerService {
       finalStatus: TestRunStatus,
       errorMessage?: string
     ) => {
+      if (this.nativeOwnership && session.finishedAt !== null) return;
       session.finishedAt = new Date();
       session.exitCode = exitCode;
       session.status = finalStatus;
@@ -342,7 +434,7 @@ class TestRunnerService {
       }
 
       // Emit completed event
-      if (this.emitter && !session.stopping) {
+      if (this.emitter && (this.nativeOwnership || !session.stopping)) {
         this.emitter.emit('test-runner:completed', {
           sessionId: session.id,
           worktreePath: session.worktreePath,
@@ -373,7 +465,7 @@ class TestRunnerService {
     testProcess.on('error', (error) => {
       logger.error(`Process error for ${sessionId}:`, error);
       status.error = error.message;
-      cleanupAndFinish(null, 'error', error.message);
+      if (!this.nativeOwnership) cleanupAndFinish(null, 'error', error.message);
     });
 
     testProcess.on('exit', (code) => {
@@ -390,15 +482,65 @@ class TestRunnerService {
         finalStatus = 'failed';
       }
 
-      cleanupAndFinish(code, finalStatus);
+      if (!this.nativeOwnership) cleanupAndFinish(code, finalStatus);
     });
 
-    // Store session
+    // Retain identity before async ownership proof; no caller may replay this job.
     this.sessions.set(sessionId, session);
+    if (this.nativeOwnership) {
+      const owner = (this.runtime!.supervise ?? createOwnedLocalChild)(testProcess);
+      session.owner = owner;
+      session.finish = () =>
+        cleanupAndFinish(
+          testProcess.exitCode,
+          session.stopping
+            ? 'cancelled'
+            : status.error
+              ? 'error'
+              : testProcess.exitCode === 0
+                ? 'passed'
+                : 'failed',
+          status.error ?? undefined
+        );
+      void owner.completion().then(
+        () => session.finish!(),
+        () => this.markNativeSessionUnknown(session)
+      );
+      try {
+        await owner.ready();
+      } catch {
+        try {
+          await owner.close();
+        } catch {
+          this.markNativeSessionUnknown(session);
+          throw new OwnedLocalChildCleanupError();
+        }
+        session.finish();
+        return {
+          success: false,
+          error: 'Test process exited immediately. Check output for details.',
+        };
+      }
+      if (session.finishedAt === null) session.status = 'running';
+      if (this.closing) {
+        await this.stopTests(sessionId);
+        return { success: false, error: 'Test runner is shutting down' };
+      }
+    }
 
     // Wait a moment to see if the process fails immediately
     await new Promise((resolve) => setTimeout(resolve, 200));
 
+    if (this.runtime && this.closing) {
+      await this.stopTests(sessionId);
+      return { success: false, error: 'Test runner is shutting down' };
+    }
+    if (this.nativeOwnership && session.cleanupUnknown) throw new OwnedLocalChildCleanupError();
+    if (this.nativeOwnership && session.stopping) {
+      await session.owner!.completion();
+      return { success: false, error: 'Test run stopped before startup completed' };
+    }
+    if (this.nativeOwnership && (status.error || status.exited)) await session.owner!.completion();
     if (status.error) {
       return {
         success: false,
@@ -418,7 +560,7 @@ class TestRunnerService {
     }
 
     // Emit started event
-    if (this.emitter) {
+    if (this.emitter && (!this.runtime || session.finishedAt === null)) {
       this.emitter.emit('test-runner:started', {
         sessionId,
         worktreePath,
@@ -459,6 +601,28 @@ class TestRunnerService {
         success: false,
         error: `Test session not found: ${sessionId}`,
       };
+    }
+
+    if (
+      this.nativeOwnership &&
+      (session.status === 'running' || session.status === 'pending' || session.cleanupUnknown)
+    ) {
+      if (!session.owner) throw new OwnedLocalChildCleanupError();
+      session.stopping = true;
+      if (session.flushTimeout) clearTimeout(session.flushTimeout);
+      session.flushTimeout = null;
+      if (!session.stop)
+        session.stop = (async () => {
+          try {
+            await session.owner!.close();
+          } catch {
+            this.markNativeSessionUnknown(session);
+            throw new OwnedLocalChildCleanupError();
+          }
+          session.finish!();
+        })();
+      await session.stop;
+      return { success: true, result: { sessionId, message: 'Test run cancelled' } };
     }
 
     if (session.status !== 'running') {
@@ -517,7 +681,11 @@ class TestRunnerService {
    */
   getActiveSession(worktreePath: string): TestRunSession | undefined {
     for (const session of this.sessions.values()) {
-      if (session.worktreePath === worktreePath && session.status === 'running') {
+      if (
+        session.worktreePath === worktreePath &&
+        (session.status === 'running' ||
+          (this.nativeOwnership && (session.status === 'pending' || session.cleanupUnknown)))
+      ) {
         return session;
       }
     }
@@ -569,6 +737,21 @@ class TestRunnerService {
   /**
    * List all test sessions (optionally filter by worktree)
    */
+  /** In-memory owned state only; completed history is not an active process. */
+  runtimeDiagnostics(): { active: number; pending: number; unknownCleanup: number } {
+    const sessions = [...this.sessions.values()];
+    return {
+      active: sessions.filter(
+        (session) =>
+          session.status === 'running' || session.status === 'pending' || session.cleanupUnknown
+      ).length,
+      pending: this.runtime
+        ? this.acceptedStarts.size
+        : sessions.filter((session) => session.status === 'pending').length,
+      unknownCleanup: sessions.filter((session) => session.cleanupUnknown).length,
+    };
+  }
+
   listSessions(worktreePath?: string): {
     success: boolean;
     result: {
@@ -632,7 +815,27 @@ class TestRunnerService {
   /**
    * Cancel all running test sessions (for cleanup)
    */
+  private markNativeSessionUnknown(session: TestRunSession): void {
+    session.cleanupUnknown = true;
+    session.stopping = true;
+    if (session.flushTimeout) clearTimeout(session.flushTimeout);
+    session.flushTimeout = null;
+  }
+
   async cancelAll(): Promise<void> {
+    if (this.runtime) {
+      const results = await Promise.allSettled(
+        [...this.sessions.values()]
+          .filter(
+            (session) =>
+              session.status === 'running' || session.status === 'pending' || session.cleanupUnknown
+          )
+          .map((session) => this.stopTests(session.id))
+      );
+      if (results.some((result) => result.status === 'rejected'))
+        throw new OwnedLocalChildCleanupError();
+      return;
+    }
     logger.info(`Cancelling all ${this.sessions.size} test sessions`);
 
     for (const session of this.sessions.values()) {
@@ -645,38 +848,25 @@ class TestRunnerService {
   /**
    * Cleanup service resources
    */
-  async cleanup(): Promise<void> {
+  cleanup(): Promise<void> {
+    if (!this.runtime) return this.cleanupInternal();
+    this.closing = true;
+    return (this.cleanupPromise ??= (async () => {
+      let failed = false;
+      try {
+        await drainLocalProcessWork([...this.acceptedStarts]);
+      } catch {
+        failed = true;
+      }
+      await this.cleanupInternal();
+      if (failed) throw new Error('Local test runner cleanup could not be confirmed.');
+    })());
+  }
+
+  private async cleanupInternal(): Promise<void> {
     await this.cancelAll();
     this.sessions.clear();
   }
 }
 
-// Singleton instance
-let testRunnerServiceInstance: TestRunnerService | null = null;
-
-export function getTestRunnerService(): TestRunnerService {
-  if (!testRunnerServiceInstance) {
-    testRunnerServiceInstance = new TestRunnerService();
-  }
-  return testRunnerServiceInstance;
-}
-
-// Cleanup on process exit
-process.on('SIGTERM', () => {
-  if (testRunnerServiceInstance) {
-    testRunnerServiceInstance.cleanup().catch((err) => {
-      logger.error('Cleanup failed on SIGTERM:', err);
-    });
-  }
-});
-
-process.on('SIGINT', () => {
-  if (testRunnerServiceInstance) {
-    testRunnerServiceInstance.cleanup().catch((err) => {
-      logger.error('Cleanup failed on SIGINT:', err);
-    });
-  }
-});
-
-// Export the class for testing purposes
 export { TestRunnerService };

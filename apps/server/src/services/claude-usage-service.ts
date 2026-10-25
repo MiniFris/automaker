@@ -1,7 +1,7 @@
 import { spawn } from 'child_process';
 import * as os from 'os';
 import * as pty from 'node-pty';
-import { ClaudeUsage } from '../routes/claude/types.js';
+import type { ClaudeUsage } from '../types/claude-usage.js';
 import { createLogger } from '@automaker/utils';
 
 /**
@@ -11,9 +11,8 @@ import { createLogger } from '@automaker/utils';
  * This approach doesn't require any API keys - it relies on the user
  * having already authenticated via `claude login`.
  *
- * Platform-specific implementations:
- * - macOS: Uses 'expect' command for PTY
- * - Windows/Linux: Uses node-pty for PTY
+ * Uses node-pty on all platforms: direct argv on POSIX, cmd/winpty on Windows.
+ * The older expect implementation is not used by the public usage path.
  */
 const logger = createLogger('ClaudeUsage');
 
@@ -22,13 +21,14 @@ export class ClaudeUsageService {
   private timeout = 30000; // 30 second timeout
   private isWindows = os.platform() === 'win32';
   private isLinux = os.platform() === 'linux';
-  // On Windows, ConPTY requires AttachConsole which fails in Electron/service mode
-  // Detect Electron by checking for electron-specific env vars or process properties
-  // When in Electron, always use winpty to avoid ConPTY's AttachConsole errors
-  private isElectron =
-    !!(process.versions && (process.versions as Record<string, string>).electron) ||
-    !!process.env.ELECTRON_RUN_AS_NODE;
   private useConptyFallback = false; // Track if we need to use winpty fallback on Windows
+
+  constructor(
+    private readonly environmentReader: () => Promise<Readonly<NodeJS.ProcessEnv>> = async () => ({
+      ...process.env,
+    }),
+    private readonly workingDirectory: string = process.cwd()
+  ) {}
 
   /**
    * Kill a PTY process with platform-specific handling.
@@ -50,9 +50,13 @@ export class ClaudeUsageService {
    * Check if Claude CLI is available on the system
    */
   async isAvailable(): Promise<boolean> {
+    const environment = { ...(await this.environmentReader()) };
     return new Promise((resolve) => {
       const checkCmd = this.isWindows ? 'where' : 'which';
-      const proc = spawn(checkCmd, [this.claudeBinary]);
+      const proc = spawn(checkCmd, [this.claudeBinary], {
+        env: environment,
+        cwd: this.workingDirectory,
+      });
       proc.on('close', (code) => {
         resolve(code === 0);
       });
@@ -82,14 +86,15 @@ export class ClaudeUsageService {
   /**
    * macOS implementation using 'expect' command
    */
-  private executeClaudeUsageCommandMac(): Promise<string> {
+  private async executeClaudeUsageCommandMac(): Promise<string> {
+    const environment = { ...(await this.environmentReader()) };
     return new Promise((resolve, reject) => {
       let stdout = '';
       let stderr = '';
       let settled = false;
 
       // Use current working directory - likely already trusted by Claude CLI
-      const workingDirectory = process.cwd();
+      const workingDirectory = this.workingDirectory;
 
       // Use 'expect' with an inline script to run claude /usage with a PTY
       // Running from cwd which should already be trusted
@@ -126,7 +131,7 @@ export class ClaudeUsageService {
       const proc = spawn('expect', ['-c', expectScript], {
         cwd: workingDirectory,
         env: {
-          ...process.env,
+          ...environment,
           TERM: 'xterm-256color',
         },
       });
@@ -186,7 +191,8 @@ export class ClaudeUsageService {
   /**
    * Windows/Linux implementation using node-pty
    */
-  private executeClaudeUsageCommandPty(): Promise<string> {
+  private async executeClaudeUsageCommandPty(): Promise<string> {
+    const environment = { ...(await this.environmentReader()) };
     return new Promise((resolve, reject) => {
       let output = '';
       let settled = false;
@@ -194,15 +200,15 @@ export class ClaudeUsageService {
       let hasSeenTrustPrompt = false;
 
       // Use current working directory (project dir) - most likely already trusted by Claude CLI
-      const workingDirectory = process.cwd();
+      const workingDirectory = this.workingDirectory;
 
-      // Use platform-appropriate shell and command
-      const shell = this.isWindows ? 'cmd.exe' : '/bin/sh';
-      // Use --add-dir to whitelist the current directory and bypass the trust prompt
+      // POSIX paths are argv data, never shell source.
+      const command = this.isWindows ? 'cmd.exe' : this.claudeBinary;
+      // Include the working directory; trust prompts require explicit user approval.
       // We don't pass /usage here, we'll type it into the REPL
       const args = this.isWindows
         ? ['/c', 'claude', '--add-dir', workingDirectory]
-        : ['-c', `claude --add-dir "${workingDirectory}"`];
+        : ['--add-dir', workingDirectory];
 
       // Using 'any' for ptyProcess because node-pty types don't include 'killed' property
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -215,7 +221,7 @@ export class ClaudeUsageService {
         rows: 30,
         cwd: workingDirectory,
         env: {
-          ...process.env,
+          ...environment,
           TERM: 'xterm-256color',
         } as Record<string, string>,
       };
@@ -234,7 +240,7 @@ export class ClaudeUsageService {
       }
 
       try {
-        ptyProcess = pty.spawn(shell, args, ptyOptions);
+        ptyProcess = pty.spawn(command, args, ptyOptions);
       } catch (spawnError) {
         const errorMessage = spawnError instanceof Error ? spawnError.message : String(spawnError);
 
@@ -249,7 +255,7 @@ export class ClaudeUsageService {
 
             try {
               (ptyOptions as pty.IWindowsPtyForkOptions).useConpty = false;
-              ptyProcess = pty.spawn(shell, args, ptyOptions);
+              ptyProcess = pty.spawn(command, args, ptyOptions);
               logger.info(
                 '[executeClaudeUsageCommandPty] Successfully spawned with winpty fallback'
               );
@@ -322,7 +328,6 @@ export class ClaudeUsageService {
       }, 45000); // 45 second timeout
 
       let hasSentCommand = false;
-      let hasApprovedTrust = false;
 
       ptyProcess.onData((data: string) => {
         output += data;
@@ -396,23 +401,23 @@ export class ClaudeUsageService {
         // - "Do you want to work in this folder?"
         // - "Ready to code here?" / "I'll need permission to work with your files"
         // - "Quick safety check" / "Yes, I trust this folder"
-        // Since we are running in cwd (project dir), it is safe to approve.
         if (
-          !hasApprovedTrust &&
-          (cleanOutput.includes('Do you want to work in this folder?') ||
-            cleanOutput.includes('Ready to code here') ||
-            cleanOutput.includes('permission to work with your files') ||
-            cleanOutput.includes('trust this folder') ||
-            cleanOutput.includes('safety check'))
+          cleanOutput.includes('Do you want to work in this folder?') ||
+          cleanOutput.includes('Ready to code here') ||
+          cleanOutput.includes('permission to work with your files') ||
+          cleanOutput.includes('trust this folder') ||
+          cleanOutput.includes('safety check')
         ) {
-          hasApprovedTrust = true;
           hasSeenTrustPrompt = true;
-          // Wait a tiny bit to ensure prompt is ready, then send Enter
-          setTimeout(() => {
-            if (!settled && ptyProcess && !ptyProcess.killed) {
-              ptyProcess.write('\r');
-            }
-          }, 1000);
+          if (!settled) {
+            settled = true;
+            clearTimeout(timeoutId);
+            this.killPtyProcess(ptyProcess);
+            reject(
+              new Error('TRUST_PROMPT_PENDING: Approve the folder explicitly in the Claude CLI.')
+            );
+          }
+          return;
         }
 
         // Detect REPL prompt and send /usage command

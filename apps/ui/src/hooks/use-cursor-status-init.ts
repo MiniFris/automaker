@@ -35,13 +35,9 @@ export function useCursorStatusInit() {
         if (statusResult.success) {
           setCursorCliStatus({
             installed: statusResult.installed ?? false,
+            connected: statusResult.connected,
             version: statusResult.version ?? undefined,
-            auth: statusResult.auth?.authenticated
-              ? {
-                  authenticated: true,
-                  method: statusResult.auth.method || 'unknown',
-                }
-              : undefined,
+            auth: statusResult.auth,
           });
         }
       } catch (error) {

@@ -161,6 +161,10 @@ export const DEFAULT_COPILOT_MODEL: CopilotModelId = 'copilot-claude-sonnet-4.6'
  */
 export interface CopilotAuthStatus {
   authenticated: boolean;
+  /** False for passive status; local hints never prove account/entitlement. */
+  authenticationChecked?: boolean;
+  hasEnvToken?: boolean;
+  hasConfigFile?: boolean;
   method: 'oauth' | 'cli' | 'none';
   authType?: string;
   login?: string;

@@ -4,7 +4,8 @@ import { exec } from 'child_process';
 import path from 'path';
 
 // Mock child_process
-vi.mock('child_process', () => ({
+vi.mock('child_process', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('child_process')>()),
   exec: vi.fn(),
 }));
 

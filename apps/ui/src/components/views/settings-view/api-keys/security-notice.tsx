@@ -10,7 +10,7 @@ interface SecurityNoticeProps {
 export function SecurityNotice({
   title = translate('Security Notice'),
   message = translate(
-    "API keys are stored in your browser's local storage. Never share your API keys or commit them to version control."
+    'Saved keys are stored unencrypted in the backend private credentials file. Protect backend and browser data, and never commit credentials to version control.'
   ),
 }: SecurityNoticeProps) {
   useUiLocale();

@@ -8,6 +8,7 @@ on:
     branches:
       - main
       - master
+      - refactor/backend-nestjs-migration
 
 jobs:
   test:
@@ -22,6 +23,14 @@ jobs:
         with:
           check-lockfile: 'true'
           rebuild-node-pty-path: 'apps/server'
+
+      - name: Check backend architecture and storage guards
+        run: |
+          npm run lint:server:errors
+          npm run test:backend:architecture
+          npm run test:backend:downgrade
+          npm run inventory:server:check
+          npm run check:backend:openapi
 
       - name: Run package tests
         run: npm run test:packages
@@ -42,3 +51,20 @@ jobs:
       #     name: server-coverage
       #   env:
       #     CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  ssh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup project
+        uses: ./.github/actions/setup-project
+        with:
+          check-lockfile: 'true'
+          rebuild-node-pty-path: 'apps/server'
+
+      - name: Run isolated SSH and target-process tests
+        run: npm run test:server:ssh
+        env:
+          NODE_ENV: test

@@ -17,7 +17,7 @@ describe.skipIf(process.platform !== 'linux')('fixed target-side Git worker with
     expect(
       (
         await environment.exec(
-          'git init -qb main && git add . && git -c user.name=Fixture -c user.email=fixture@example.invalid commit -qm base',
+          'git init -qb main && git config --local user.name Fixture && git config --local user.email fixture@example.invalid && git add . && git commit -qm base',
           active()
         )
       ).exitCode
@@ -94,10 +94,21 @@ describe.skipIf(process.platform !== 'linux')('fixed target-side Git worker with
       code: 'GIT_FILE_INVALID',
     });
   });
-  it('creates a separate worktree from a fixed local base without fetch or init script, and can query it by branch', async () => {
-    const created = await run('create', { branchName: 'feature/ui', baseBranch: 'main' });
+  it('creates a separate worktree, copies configured target files, and can query it by branch', async () => {
+    await fs.mkdir(path.join(root, 'config'));
+    await fs.writeFile(path.join(root, 'config', 'local.env'), 'TARGET=1\n');
+    const created = await run('create', {
+      branchName: 'feature/ui',
+      baseBranch: 'main',
+      copyFiles: ['config/local.env'],
+    });
     expect(created.success).toBe(true);
-    expect(created.initScriptSkipped).toBe(true);
+    expect(created.copyResults).toEqual([
+      { path: 'config/local.env', status: 'copied', type: 'file' },
+    ]);
+    expect(await fs.readFile(path.join(created.worktree.path, 'config', 'local.env'), 'utf8')).toBe(
+      'TARGET=1\n'
+    );
     const list = await run('list');
     expect(list.worktrees).toHaveLength(2);
     expect((await run('info', { workspaceBranch: 'feature/ui' })).worktreePath).toBe(
@@ -107,6 +118,130 @@ describe.skipIf(process.platform !== 'linux')('fixed target-side Git worker with
     expect((await run('status', { workspaceBranch: 'missing' })).code).toBe(
       'GIT_WORKSPACE_REQUIRED'
     );
+  });
+  it('deletes only an exactly registered non-main worktree and optionally its branch', async () => {
+    const created = await run('create', { branchName: 'feature/delete', baseBranch: 'main' });
+    expect(
+      (
+        await run('delete', {
+          worktreePath: created.worktree.path,
+          deleteBranch: true,
+        })
+      ).deleted
+    ).toMatchObject({
+      worktreePath: created.worktree.path,
+      branchName: 'feature/delete',
+      branchDeleted: true,
+      worktreeDeleted: true,
+    });
+    await expect(fs.stat(created.worktree.path)).rejects.toThrow();
+    expect(await run('delete', { worktreePath: root })).toMatchObject({
+      success: false,
+      code: 'GIT_MAIN_WORKTREE',
+    });
+  });
+  it('stores and executes init scripts inside the selected target only', async () => {
+    const created = await run('create', { branchName: 'feature/init', baseBranch: 'main' });
+    const script = 'printf "hello-$AUTOMAKER_BRANCH\\n"; printf "ready\\n" > initialized.txt\n';
+    expect((await run('init-script-put', { content: script })).path).toBe(
+      path.join(root, '.automaker', 'worktree-init.sh')
+    );
+    expect((await run('init-script-get')).content).toBe(script);
+
+    const executed = await run(
+      'run-init-script',
+      { branch: 'feature/init' },
+      created.worktree.path
+    );
+    expect(executed.initScript).toMatchObject({
+      success: true,
+      stdout: 'hello-feature/init\n',
+      exitCode: 0,
+    });
+    expect(await fs.readFile(path.join(created.worktree.path, 'initialized.txt'), 'utf8')).toBe(
+      'ready\n'
+    );
+    expect((await run('init-script-delete')).success).toBe(true);
+    expect(await run('init-script-get')).toMatchObject({ exists: false, content: '' });
+  });
+  it('initializes a non-git target directory with a deterministic initial commit', async () => {
+    const empty = path.join(root, 'empty-target');
+    await fs.mkdir(empty);
+    const local = await LocalExecutionEnvironment.create(empty);
+    const response = await local.exec(
+      nodeCommand(PROJECT_GIT_WORKER, [
+        JSON.stringify({
+          root: empty,
+          cwd: empty,
+          controllerRoot: empty,
+          action: 'init-git',
+          body: {},
+        }),
+      ]),
+      active()
+    );
+
+    expect(JSON.parse(response.output)).toMatchObject({
+      success: true,
+      result: { initialized: true },
+    });
+    expect((await local.exec('git branch --show-current', active())).output.trim()).toBe('main');
+    expect((await local.exec('git rev-list --count HEAD', active())).output.trim()).toBe('1');
+  });
+  it('collects bounded AI context on the selected target without provider access', async () => {
+    await fs.writeFile(path.join(root, 'source.txt'), 'working tree change\n');
+    expect((await run('commit-message-context')).diff).toContain('working tree change');
+
+    const created = await run('create', { branchName: 'feature/context', baseBranch: 'main' });
+    await fs.writeFile(path.join(created.worktree.path, 'context.txt'), 'context\n');
+    expect(
+      (
+        await run(
+          'commit',
+          { message: 'context commit', files: ['context.txt'] },
+          created.worktree.path
+        )
+      ).success
+    ).toBe(true);
+    const context = await run(
+      'pr-description-context',
+      { baseBranch: 'main' },
+      created.worktree.path
+    );
+    expect(context).toMatchObject({
+      success: true,
+      branch: 'feature/context',
+      baseBranch: 'main',
+    });
+    expect(context.diff).toContain('context.txt');
+    expect(context.commitLog).toContain('context commit');
+  });
+  it('runs PR metadata and push operations on the selected target', async () => {
+    const bare = path.join(root, 'pr-remote.git');
+    await fs.appendFile(path.join(root, '.git', 'info', 'exclude'), '\npr-remote.git/\n');
+    expect((await environment.exec(`git init --bare -q ${bare}`, active())).exitCode).toBe(0);
+    expect((await environment.exec(`git remote add origin ${bare}`, active())).exitCode).toBe(0);
+    expect((await run('checkout-branch', { branchName: 'feature/pr' })).success).toBe(true);
+    await fs.writeFile(path.join(root, 'pr.txt'), 'pull request\n');
+
+    const created = await run('create-pr', {
+      commitMessage: 'prepare pr',
+      prTitle: 'Prepare PR',
+      baseBranch: 'main',
+      remote: 'origin',
+    });
+    if (!created.success) throw new Error(JSON.stringify(created));
+    expect(created.result).toMatchObject({
+      branch: 'feature/pr',
+      committed: true,
+      pushed: true,
+    });
+    const tracked = await run('update-pr-number', { prNumber: 42 });
+    expect(tracked.result).toMatchObject({ branch: 'feature/pr', prInfo: { number: 42 } });
+    expect(await run('pr-info', { branchName: 'feature/pr' })).toMatchObject({
+      success: true,
+      result: { hasPR: false },
+    });
   });
   it('lists cached remote refs without running fetch or credential helpers', async () => {
     await environment.exec(
@@ -118,6 +253,132 @@ describe.skipIf(process.platform !== 'linux')('fixed target-side Git worker with
     expect(branches.remoteRefsCached).toBe(true);
     expect((await run('list-remotes')).result.remotes[0].name).toBe('origin');
     await expect(fs.stat(path.join(root, 'credential-leak'))).rejects.toThrow();
+  });
+  it('round-trips selected changes through the fixed stash API', async () => {
+    await fs.writeFile(path.join(root, 'source.txt'), 'stashed\n');
+    expect(
+      (await run('stash-push', { message: 'target stash', files: ['source.txt'] })).result
+    ).toMatchObject({ stashed: true, branch: 'main', message: 'target stash' });
+    expect(await fs.readFile(path.join(root, 'source.txt'), 'utf8')).toBe('base\n');
+    expect((await run('stash-list')).result).toMatchObject({
+      total: 1,
+      stashes: [expect.objectContaining({ index: 0, message: 'On main: target stash' })],
+    });
+    expect((await run('stash-apply', { stashIndex: 0 })).result).toMatchObject({
+      applied: true,
+      hasConflicts: false,
+    });
+    expect(await fs.readFile(path.join(root, 'source.txt'), 'utf8')).toBe('stashed\n');
+    expect((await run('stash-drop', { stashIndex: 0 })).result.dropped).toBe(true);
+    expect((await run('stash-list')).result.total).toBe(0);
+  });
+  it('validates remote configuration inside the target worker', async () => {
+    expect(
+      await run('add-remote', { remoteName: '--upload-pack', remoteUrl: 'https://example.invalid' })
+    ).toMatchObject({ success: false, code: 'GIT_REMOTE_INVALID' });
+    const added = await run('add-remote', {
+      remoteName: 'upstream',
+      remoteUrl: 'https://127.0.0.1:1/repository.git',
+    });
+    expect(added).toMatchObject({
+      success: true,
+      result: { remoteName: 'upstream', fetched: false },
+    });
+  });
+  it('creates and switches branches from cached refs without fetching', async () => {
+    const created = await run('checkout-branch', {
+      branchName: 'feature/branch-api',
+      baseBranch: 'main',
+    });
+    expect(created.result).toMatchObject({
+      previousBranch: 'main',
+      newBranch: 'feature/branch-api',
+    });
+    const switched = await run('switch-branch', { branchName: 'main' });
+    expect(switched.result).toMatchObject({
+      previousBranch: 'feature/branch-api',
+      currentBranch: 'main',
+    });
+  });
+  it('discards selected paths before an explicit full cleanup', async () => {
+    await fs.writeFile(path.join(root, 'source.txt'), 'changed\n');
+    await fs.writeFile(path.join(root, 'untracked.txt'), 'untracked\n');
+    expect((await run('discard-changes', { files: ['source.txt'] })).result).toMatchObject({
+      discarded: true,
+      filesDiscarded: 1,
+      filesRemaining: 1,
+    });
+    expect(await fs.readFile(path.join(root, 'source.txt'), 'utf8')).toBe('base\n');
+    expect((await run('discard-changes')).result).toMatchObject({
+      discarded: true,
+      filesRemaining: 0,
+    });
+    await expect(fs.stat(path.join(root, 'untracked.txt'))).rejects.toThrow();
+  });
+  it('runs explicit network operations against the selected target remote', async () => {
+    const bare = path.join(root, 'remote.git');
+    await fs.appendFile(path.join(root, '.git', 'info', 'exclude'), '\nremote.git/\n');
+    expect((await environment.exec(`git init --bare -q ${bare}`, active())).exitCode).toBe(0);
+    expect((await environment.exec(`git remote add origin ${bare}`, active())).exitCode).toBe(0);
+
+    expect((await run('push', { remote: 'origin' })).result).toMatchObject({
+      branch: 'main',
+      pushed: true,
+    });
+    expect((await run('pull', { remote: 'origin' })).result).toMatchObject({
+      branch: 'main',
+      pulled: true,
+      hasConflicts: false,
+    });
+    expect((await run('sync', { remote: 'origin' })).result).toMatchObject({
+      branch: 'main',
+      pulled: true,
+      pushed: true,
+    });
+    expect((await run('checkout-branch', { branchName: 'rebase-me' })).success).toBe(true);
+    expect((await run('rebase', { ontoBranch: 'main' })).result).toMatchObject({
+      branch: 'rebase-me',
+      ontoBranch: 'main',
+    });
+  });
+  it('cherry-picks verified target commits and aborts conflicts atomically', async () => {
+    expect((await run('checkout-branch', { branchName: 'source' })).success).toBe(true);
+    await fs.writeFile(path.join(root, 'picked.txt'), 'picked\n');
+    expect((await run('commit', { message: 'pick me', files: ['picked.txt'] })).success).toBe(true);
+    const oid = (await environment.exec('git rev-parse HEAD', active())).output.trim();
+    expect((await run('switch-branch', { branchName: 'main' })).success).toBe(true);
+    expect((await run('cherry-pick', { commitHashes: [oid] })).result).toMatchObject({
+      cherryPicked: true,
+      branch: 'main',
+      hasConflicts: false,
+    });
+    expect(await fs.readFile(path.join(root, 'picked.txt'), 'utf8')).toBe('picked\n');
+    expect(await run('cherry-pick', { commitHashes: ['deadbeef'] })).toMatchObject({
+      success: false,
+      code: 'GIT_COMMIT_MISSING',
+    });
+  });
+  it('merges a registered source worktree into the checked-out target branch', async () => {
+    const created = await run('create', { branchName: 'feature/merge', baseBranch: 'main' });
+    const worktreePath = created.worktree.path as string;
+    await fs.writeFile(path.join(worktreePath, 'merged.txt'), 'merged\n');
+    expect(
+      (await run('commit', { message: 'feature commit', files: ['merged.txt'] }, worktreePath))
+        .success
+    ).toBe(true);
+
+    const merged = await run('merge', {
+      branchName: 'feature/merge',
+      worktreePath,
+      targetBranch: 'main',
+    });
+
+    expect(merged.result).toMatchObject({
+      mergedBranch: 'feature/merge',
+      targetBranch: 'main',
+      hasConflicts: false,
+    });
+    expect(await fs.readFile(path.join(root, 'merged.txt'), 'utf8')).toBe('merged\n');
   });
   it('does not invoke external diff commands or fsmonitor hooks', async () => {
     await environment.exec(

@@ -1,3 +1,13 @@
+import * as executionFilesystem from '../../src/lib/secure-fs.js';
+import { PipelineService } from '../../src/services/pipeline-service.js';
+import { NtfyService } from '../../src/services/ntfy-service.js';
+import { createTestProviderRegistry } from '../helpers/provider-registry.js';
+import {
+  createTestAgentState,
+  createTestAgentProviders,
+  createTestAgentEvents,
+} from '../helpers/agent-state.js';
+import { AgentService } from '@/services/agent-service.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -21,16 +31,14 @@ import {
   prepareDirectExecution,
   runDirectShellCommand,
 } from '@/providers/openai-compatible/execution.js';
-import { ProviderFactory } from '@/providers/provider-factory.js';
 import { ProviderSetupService } from '@/services/execution-environment/provider-setup.js';
 import { providerManifest } from '@/services/execution-environment/provider-catalog.js';
 import { FeatureWorkspaceService } from '@/services/execution-environment/feature-workspace.js';
 import { FeatureLoader } from '@/services/feature-loader.js';
 import { AutoModeServiceFacade } from '@/services/auto-mode/facade.js';
 import { WorktreeResolver } from '@/services/worktree-resolver.js';
-import { PipelineOrchestrator } from '@/services/pipeline-orchestrator.js';
-import { TypedEventBus } from '@/services/typed-event-bus.js';
 import { EventHookService } from '@/services/event-hook-service.js';
+import { ApplicationEventBusAdapter } from '@/core/eventing/application-event-bus.adapter.js';
 import { createEventEmitter } from '@/lib/events.js';
 import { ProjectGitService } from '@/services/execution-environment/project-git.js';
 import { ManagedTerminalPty } from '@/services/execution-environment/terminal.js';
@@ -98,7 +106,15 @@ describe.skipIf(!base || process.platform !== 'linux')('real managed Docker Engi
       '{{.ID}}',
     ]);
     expect(remaining.stdout.trim()).toBe('');
-    expect((await runDocker(['image', 'rm', tag])).code).toBe(0);
+    const builtImage = await runDocker(['image', 'inspect', tag]);
+    if (builtImage.code === 0) {
+      expect(JSON.parse(builtImage.stdout)[0].Config.Labels['dev.automaker.worker']).toBe('1');
+      expect((await runDocker(['image', 'rm', tag])).code).toBe(0);
+    } else {
+      // A failed bootstrap may never create its image. That must not skip the
+      // independent owned volume/directory cleanup below; daemon errors still fail.
+      expect(builtImage.stderr).toMatch(/No such image:/i);
+    }
     if (volumeCreated) {
       const inspected = await runDocker(['volume', 'inspect', volume]);
       expect(JSON.parse(inspected.stdout)[0].Labels['dev.automaker.test']).toBe(tag);
@@ -252,7 +268,7 @@ describe.skipIf(!base || process.platform !== 'linux')('real managed Docker Engi
       vi.unstubAllEnvs();
     }
   }, 30000);
-  it('runs a complete Direct-model tool cycle and pipeline command in the pinned Docker environment', async () => {
+  it('runs Direct tools, real chat/restart and a pipeline command in the pinned Docker environment', async () => {
     let count = 0;
     const endpoint = createServer((req, res) => {
       req.resume();
@@ -332,7 +348,9 @@ describe.skipIf(!base || process.platform !== 'linux')('real managed Docker Engi
       );
       expect(prepared.executionEnvironmentBinding?.type).toBe('docker');
       const messages = [];
-      for await (const message of ProviderFactory.getProviderForModel(model).executeQuery(prepared))
+      for await (const message of createTestProviderRegistry(settings)
+        .providerForModel(model)
+        .executeQuery(prepared))
         messages.push(message);
       expect(messages.at(-1)).toMatchObject({ type: 'result', subtype: 'success' });
       expect(count).toBe(4);
@@ -346,6 +364,64 @@ describe.skipIf(!base || process.platform !== 'linux')('real managed Docker Engi
           { projectPath: project, runKey: 'feature:real-direct' }
         )
       ).toMatchObject({ exitCode: 0, output: 'pipeline-ok' });
+
+      const events = createEventEmitter();
+      const streamed: Array<{ sessionId: string; type: string; content?: string }> = [];
+      const unsubscribe = events.subscribe((type, payload) => {
+        if (type === 'agent:stream') streamed.push(payload as (typeof streamed)[number]);
+      });
+      const chat = () =>
+        new AgentService(
+          ...createTestAgentState(settings.getDataDirectory(), createTestAgentEvents(events)),
+          settings,
+          ...createTestAgentProviders(createTestProviderRegistry(settings))
+        );
+      const service = chat();
+      await service.initialize();
+      const session = await service.createSession('Docker chat', project, project, model, 'test');
+      count = 0;
+      expect(
+        (await service.sendMessage({ sessionId: session.id, message: 'Work in Docker' })).success
+      ).toBe(true);
+      expect(count).toBe(4);
+      const chatBinding = (await service.listSessions()).find(
+        (item) => item.id === session.id
+      )!.executionEnvironment!;
+      expect(chatBinding.type).toBe('docker');
+      expect(chatBinding.docker?.containerId).toBe(bindings[0].containerId);
+      await settings.updateProjectSettings(project, { executionEnvironment: { mode: 'local' } });
+      try {
+        const restarted = chat();
+        await restarted.initialize();
+        count = 0;
+        expect(
+          (
+            await restarted.sendMessage({
+              sessionId: session.id,
+              message: 'Continue in pinned Docker',
+            })
+          ).success
+        ).toBe(true);
+        expect(count).toBe(4);
+        expect(
+          (await restarted.listSessions()).find((item) => item.id === session.id)!
+            .executionEnvironment
+        ).toEqual(chatBinding);
+        expect(
+          (await restarted.getHistory(session.id)).messages?.filter(
+            (item) => item.role === 'assistant'
+          )
+        ).toHaveLength(2);
+        expect(streamed.filter((event) => event.type === 'stream')).toEqual([
+          expect.objectContaining({ sessionId: session.id, content: 'Docker workflow complete' }),
+          expect.objectContaining({ sessionId: session.id, content: 'Docker workflow complete' }),
+        ]);
+        expect(streamed.filter((event) => event.type === 'complete')).toHaveLength(2);
+        expect(await fs.readFile(path.join(project, 'direct.txt'), 'utf8')).toBe('42');
+      } finally {
+        unsubscribe();
+        await settings.updateProjectSettings(project, { executionEnvironment: { mode: 'auto' } });
+      }
     } finally {
       endpoint.closeAllConnections();
       await new Promise<void>((resolve) => endpoint.close(() => resolve()));
@@ -437,9 +513,11 @@ process.stdout.write(JSON.stringify({type:'result',subtype:'success'})+'\\n');
       );
       expect(prepared.executionEnvironmentBinding?.type).toBe('docker');
       const messages = [];
-      for await (const message of ProviderFactory.getProviderForModel('cursor-auto', {
-        throwOnDisconnected: false,
-      }).executeQuery(prepared))
+      for await (const message of createTestProviderRegistry(settings)
+        .providerForModel('cursor-auto', {
+          throwOnDisconnected: false,
+        })
+        .executeQuery(prepared))
         messages.push(message);
       expect(messages.at(-1)).toMatchObject({ type: 'result' });
       expect(await fs.readFile(path.join(project, 'docker-cli.txt'), 'utf8')).toBe(
@@ -554,6 +632,9 @@ process.stdout.write(JSON.stringify({type:'result',subtype:'success'})+'\\n');
     const events = createEventEmitter();
     const service = new FeatureWorkspaceService(settings);
     const facade = AutoModeServiceFacade.create(featureProject, {
+      filesystem: executionFilesystem,
+      pipeline: new PipelineService(),
+      providerRegistry: createTestProviderRegistry(settings),
       events,
       settingsService: settings,
       featureLoader: loader,
@@ -563,8 +644,8 @@ process.stdout.write(JSON.stringify({type:'result',subtype:'success'})+'\\n');
       .mockRejectedValue(new Error('controller worktree lookup forbidden'));
     vi.stubEnv('AUTOMAKER_MOCK_AGENT', 'false');
     vi.stubEnv('AUTOMAKER_API_KEY', 'controller-only');
-    const hooks = new EventHookService();
-    hooks.initialize(events, settings);
+    const hooks = new EventHookService(new NtfyService());
+    hooks.initialize(new ApplicationEventBusAdapter(events), settings);
     try {
       await facade.executeFeature(feature.id, true, false);
       expect((await loader.get(featureProject, feature.id))!.status).toBe('waiting_approval');
@@ -590,40 +671,7 @@ process.stdout.write(JSON.stringify({type:'result',subtype:'success'})+'\\n');
           )
         ).metadata.usageStats
       ).toEqual({ loaded: 1, referenced: 1, successfulFeatures: 0 });
-      const hostRunner = { startTests: vi.fn() };
-      const pipeline = new PipelineOrchestrator(
-        new TypedEventBus(events),
-        {} as never,
-        {} as never,
-        hostRunner as never,
-        new WorktreeResolver(settings),
-        {} as never,
-        settings,
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn(),
-        vi.fn()
-      );
-      expect(
-        await pipeline.executeTestStep(
-          {
-            projectPath: featureProject,
-            featureId: feature.id,
-            feature,
-            steps: [],
-            workDir: featureProject,
-            worktreePath: null,
-            branchName: 'main',
-            abortController: new AbortController(),
-            autoLoadClaudeMd: false,
-            testAttempts: 0,
-            maxTestAttempts: 1,
-          },
-          'npm test'
-        )
-      ).toMatchObject({ success: true, testsPassed: true });
-      expect(hostRunner.startTests).not.toHaveBeenCalled();
+
       expect(await facade.verifyFeature(feature.id)).toBe(true);
       for (const name of ['lint', 'typecheck', 'test', 'build'])
         expect(await fs.readFile(path.join(run.environment.cwd, `verified-${name}`), 'utf8')).toBe(
@@ -778,9 +826,9 @@ process.stdout.write(JSON.stringify({type:'result',subtype:'success'})+'\\n');
         );
         expect(options.cwd).toBe(run.environment.cwd);
         const messages = [];
-        for await (const message of ProviderFactory.getProviderForModel(model).executeQuery(
-          options
-        ))
+        for await (const message of createTestProviderRegistry(settings)
+          .providerForModel(model)
+          .executeQuery(options))
           messages.push(message);
         expect(messages.at(-1)).toMatchObject({ type: 'result', subtype: 'success' });
         expect(calls).toBe(3);
@@ -796,7 +844,7 @@ process.stdout.write(JSON.stringify({type:'result',subtype:'success'})+'\\n');
         await new Promise<void>((resolve) => endpoint.close(() => resolve()));
       }
     } finally {
-      hooks.destroy();
+      await hooks.destroy();
       localWorktrees.mockRestore();
       vi.unstubAllEnvs();
     }
@@ -852,9 +900,11 @@ process.stdout.write(JSON.stringify({type:'result',subtype:'success'})+'\\n');
           { model, projectPath: sdkProject, runKey: `chat:${provider}:docker` }
         );
         const messages = [];
-        for await (const message of ProviderFactory.getProviderForModel(model, {
-          throwOnDisconnected: false,
-        }).executeQuery(options))
+        for await (const message of createTestProviderRegistry(settings)
+          .providerForModel(model, {
+            throwOnDisconnected: false,
+          })
+          .executeQuery(options))
           messages.push(message);
         expect(messages.at(-1)).toMatchObject({
           type: 'result',
@@ -880,9 +930,11 @@ process.stdout.write(JSON.stringify({type:'result',subtype:'success'})+'\\n');
           }
         );
         expect(featureOptions.cwd).toBe(run.environment.cwd);
-        for await (const _message of ProviderFactory.getProviderForModel(model, {
-          throwOnDisconnected: false,
-        }).executeQuery(featureOptions)) {
+        for await (const _message of createTestProviderRegistry(settings)
+          .providerForModel(model, {
+            throwOnDisconnected: false,
+          })
+          .executeQuery(featureOptions)) {
           /* drain */
         }
         expect(await fs.readFile(path.join(run.environment.cwd, 'sdk-result.txt'), 'utf8')).toBe(
@@ -923,7 +975,7 @@ process.stdout.write(JSON.stringify({type:'result',subtype:'success'})+'\\n');
       service.run(target, 'commit', { message: 'No target approval' }, active())
     ).rejects.toMatchObject({ code: 'GIT_TARGET_CHANGED' });
     await expect(service.run(target, 'push', {}, active())).rejects.toMatchObject({
-      code: 'GIT_OPERATION_UNSUPPORTED',
+      code: 'GIT_TARGET_CHANGED',
     });
     const token = { environmentTargetId: target.environment.targetId };
     expect(

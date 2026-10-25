@@ -6,6 +6,10 @@ import type { PipelineConfig } from '@automaker/types';
 import { ReactFlowProvider } from '@xyflow/react';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { GraphFilterControls } from '@/components/views/graph-view/components/graph-filter-controls';
+import { TaskNode } from '@/components/views/graph-view/components/task-node';
+import { getFeatureCategoryLabel } from '@/lib/feature-category-labels';
+import { ApiKeyField } from '@/components/views/settings-view/api-keys/api-key-field';
+import { buildProviderConfigs, type ProviderConfigParams } from '@/config/api-providers';
 import { IssuesFilterControls } from '@/components/views/github-issues-view/components/issues-filter-controls';
 import { StatusBadge } from '@/components/views/board-view/components/list-view/status-badge';
 import { STEP_TEMPLATES } from '@/components/views/board-view/dialogs/pipeline-step-templates';
@@ -247,6 +251,119 @@ it('localizes graph filter controls while preserving category names and status I
   expect(screen.getByText('Статусов: 2')).toBeInTheDocument();
   act(() => setUiLocale('en'));
   expect(screen.getByText('Statuses: 2')).toBeInTheDocument();
+});
+
+it('localizes API key field descriptions and preserves provider URLs and entered keys', () => {
+  const provider = {
+    value: 'test-key-not-a-real-secret',
+    setValue: vi.fn(),
+    show: false,
+    setShow: vi.fn(),
+    testing: false,
+    onTest: vi.fn(),
+    result: null,
+  };
+  const params: ProviderConfigParams = {
+    apiKeys: { anthropic: '', openai: '', google: '', zai: '' },
+    anthropic: { ...provider },
+    openai: { ...provider },
+    google: { ...provider },
+    zai: { ...provider },
+  };
+  function Fields() {
+    useUiLocale();
+    return (
+      <>
+        {buildProviderConfigs(params).map((config) => (
+          <ApiKeyField key={config.key} config={config} />
+        ))}
+      </>
+    );
+  }
+  render(<Fields />);
+  act(() => setUiLocale('ru'));
+  for (const config of buildProviderConfigs(params)) {
+    expect(config.descriptionPrefix).not.toMatch(/^Used for/);
+    expect(screen.getByText(config.descriptionPrefix, { exact: false })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: config.descriptionLinkText })).toHaveAttribute(
+      'href',
+      config.descriptionLinkHref
+    );
+    expect(screen.getByTestId(config.inputTestId)).toHaveValue(provider.value);
+  }
+  expect(screen.getByText(/Используется для функций Claude/)).toBeInTheDocument();
+  expect(screen.getByText(/Используется для функций Codex и OpenAI/)).toBeInTheDocument();
+  expect(screen.getByText(/Используется для отслеживания использования z.ai/)).toBeInTheDocument();
+  act(() => setUiLocale('en'));
+  expect(screen.getByText(/Used for Claude AI features/)).toBeInTheDocument();
+  expect(params.anthropic.value).toBe(provider.value);
+  expect(provider.setValue).not.toHaveBeenCalled();
+});
+
+it('localizes built-in graph task categories without changing content or filter values', () => {
+  const onCategoriesChange = vi.fn();
+  const data = {
+    id: 'task',
+    category: 'feature',
+    title: 'Project feature title',
+    description: 'User description',
+    steps: [],
+    status: 'backlog' as const,
+    isBlocked: false,
+    isRunning: false,
+    blockingDependencies: [],
+  };
+  const original = JSON.stringify(data);
+  render(
+    <ReactFlowProvider>
+      <TooltipProvider>
+        <TaskNode
+          id="task"
+          data={data}
+          type="task"
+          selected={false}
+          dragging={false}
+          zIndex={0}
+          selectable
+          draggable
+          deletable
+          isConnectable
+          positionAbsoluteX={0}
+          positionAbsoluteY={0}
+        />
+        <GraphFilterControls
+          filterState={{
+            selectedCategories: ['enhancement'],
+            selectedStatuses: [],
+            isNegativeFilter: false,
+          }}
+          availableCategories={['feature', 'enhancement', 'Save']}
+          hasActiveFilter
+          searchQuery=""
+          onSearchQueryChange={vi.fn()}
+          onCategoriesChange={onCategoriesChange}
+          onStatusesChange={vi.fn()}
+          onNegativeFilterChange={vi.fn()}
+          onClearFilters={vi.fn()}
+        />
+      </TooltipProvider>
+    </ReactFlowProvider>
+  );
+  act(() => setUiLocale('ru'));
+  expect(screen.getByText('Новая функциональность')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Улучшение' })).toBeInTheDocument();
+  expect(screen.getByText('Project feature title')).toBeInTheDocument();
+  expect(screen.getByText('User description')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Улучшение' }));
+  fireEvent.click(screen.getAllByText('Новая функциональность').at(-1)!);
+  expect(onCategoriesChange).toHaveBeenCalledWith(['enhancement', 'feature']);
+  expect(screen.getByText('Save')).toBeInTheDocument();
+  expect(getFeatureCategoryLabel('bug')).toBe('Исправление ошибки');
+  expect(getFeatureCategoryLabel('bug-fix')).toBe('Исправление ошибки');
+  expect(getFeatureCategoryLabel('refactor')).toBe('Рефакторинг');
+  act(() => setUiLocale('en'));
+  expect(screen.getAllByText('New feature')).toHaveLength(2);
+  expect(JSON.stringify(data)).toBe(original);
 });
 
 it('uses status-specific issue filter labels and preserves API values', async () => {

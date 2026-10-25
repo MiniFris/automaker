@@ -9,12 +9,15 @@ import path from 'path';
  * Create a directory, handling symlinks safely to avoid ELOOP errors.
  * If the path already exists as a directory or symlink, returns success.
  */
-export async function mkdirSafe(dirPath: string): Promise<void> {
+export async function mkdirSafe(
+  dirPath: string,
+  filesystem: Pick<typeof secureFs, 'lstat' | 'mkdir'> = secureFs
+): Promise<void> {
   const resolvedPath = path.resolve(dirPath);
 
   // Check if path already exists using lstat (doesn't follow symlinks)
   try {
-    const stats = await secureFs.lstat(resolvedPath);
+    const stats = await filesystem.lstat(resolvedPath);
     // Guard: some environments (e.g. mocked fs) may return undefined
     if (stats == null) {
       // Treat as path does not exist, fall through to create
@@ -40,7 +43,7 @@ export async function mkdirSafe(dirPath: string): Promise<void> {
 
   // Path doesn't exist, create it
   try {
-    await secureFs.mkdir(resolvedPath, { recursive: true });
+    await filesystem.mkdir(resolvedPath, { recursive: true });
   } catch (error: any) {
     // Handle race conditions and symlink issues
     if (error.code === 'EEXIST' || error.code === 'ELOOP') {

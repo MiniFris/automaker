@@ -1,10 +1,32 @@
 import path from 'path';
+import { randomUUID } from 'node:crypto';
+import { performance } from 'node:perf_hooks';
 import { secureFs } from '@automaker/platform';
 import { createLogger } from '@automaker/utils';
 import type { AppServerModel } from '@automaker/types';
-import type { CodexAppServerService } from './codex-app-server-service.js';
+import {
+  CodexAppServerCleanupError,
+  type CodexAppServerService,
+} from './codex-app-server-service.js';
+import type { OnApplicationShutdown } from '@nestjs/common';
+import { UnavailableDomainError } from '../core/errors/domain-errors.js';
 
 const logger = createLogger('CodexModelCache');
+export type CodexModelCacheFilesystem = Pick<
+  typeof secureFs,
+  'readFile' | 'writeFile' | 'rename' | 'unlink' | 'mkdir'
+>;
+export class CodexModelCacheStorageError extends UnavailableDomainError {
+  constructor(readonly operation: 'read' | 'write') {
+    super('Codex model cache storage unavailable.');
+  }
+}
+export class CodexModelCacheCleanupError extends Error {
+  readonly code = 'CODEX_MODEL_CACHE_CLEANUP_FAILED';
+  constructor() {
+    super('Codex model cache cleanup could not be confirmed.');
+  }
+}
 
 /**
  * Codex model with UI-compatible format
@@ -37,19 +59,23 @@ interface CodexModelCache {
  * - 1-hour TTL (configurable)
  * - Atomic file writes (temp file + rename)
  * - Thread-safe (deduplicates concurrent refresh requests)
- * - Auto-bootstrap on service creation
- * - Graceful fallback (returns empty array on errors)
+ * - Optional background warmup owned by the Nest provider lifecycle
+ * - Missing/malformed cache fallback and empty results when the provider is unavailable
+ * - Storage failures propagate without reporting a successful refresh
  */
-export class CodexModelCacheService {
+export class CodexModelCacheService implements OnApplicationShutdown {
   private cacheFilePath: string;
   private ttl: number;
   private appServerService: CodexAppServerService;
   private inFlightRefresh: Promise<CodexModel[]> | null = null;
+  private readonly active = new Set<Promise<unknown>>();
+  private closing: Promise<void> | undefined;
 
   constructor(
     dataDir: string,
     appServerService: CodexAppServerService,
-    ttl: number = 3600000 // 1 hour default
+    ttl: number = 3600000, // 1 hour default
+    private readonly filesystem: CodexModelCacheFilesystem = secureFs
   ) {
     this.cacheFilePath = path.join(dataDir, 'codex-models-cache.json');
     this.ttl = ttl;
@@ -62,10 +88,14 @@ export class CodexModelCacheService {
    * @param forceRefresh - If true, bypass cache and fetch fresh data
    * @returns Array of Codex models (empty array if unavailable)
    */
-  async getModels(forceRefresh = false): Promise<CodexModel[]> {
+  getModels(forceRefresh = false): Promise<CodexModel[]> {
+    return this.track(() => this.getModelsInternal(forceRefresh));
+  }
+
+  private async getModelsInternal(forceRefresh: boolean): Promise<CodexModel[]> {
     // If force refresh, skip cache
     if (forceRefresh) {
-      return this.refreshModels();
+      return this.refreshModelsInternal();
     }
 
     // Try to load from cache
@@ -83,7 +113,7 @@ export class CodexModelCacheService {
     }
 
     // Cache is stale or missing, refresh
-    return this.refreshModels();
+    return this.refreshModelsInternal();
   }
 
   /**
@@ -92,16 +122,16 @@ export class CodexModelCacheService {
    * @param forceRefresh - If true, bypass cache and fetch fresh data
    * @returns Object containing models and cache timestamp
    */
-  async getModelsWithMetadata(
-    forceRefresh = false
-  ): Promise<{ models: CodexModel[]; cachedAt: number }> {
-    const models = await this.getModels(forceRefresh);
+  getModelsWithMetadata(forceRefresh = false): Promise<{ models: CodexModel[]; cachedAt: number }> {
+    return this.track(async () => {
+      const models = await this.getModelsInternal(forceRefresh);
 
-    // Try to get the actual cache timestamp
-    const cached = await this.loadFromCache();
-    const cachedAt = cached?.cachedAt ?? Date.now();
+      // Try to get the actual cache timestamp
+      const cached = await this.loadFromCache();
+      const cachedAt = cached?.cachedAt ?? Date.now();
 
-    return { models, cachedAt };
+      return { models, cachedAt };
+    });
   }
 
   /**
@@ -109,7 +139,11 @@ export class CodexModelCacheService {
    *
    * Thread-safe: Deduplicates concurrent refresh requests
    */
-  async refreshModels(): Promise<CodexModel[]> {
+  refreshModels(): Promise<CodexModel[]> {
+    return this.track(() => this.refreshModelsInternal());
+  }
+
+  private async refreshModelsInternal(): Promise<CodexModel[]> {
     // Deduplicate concurrent refresh requests
     if (this.inFlightRefresh) {
       return this.inFlightRefresh;
@@ -129,17 +163,57 @@ export class CodexModelCacheService {
   /**
    * Clear the cache file
    */
-  async clearCache(): Promise<void> {
+  clearCache(): Promise<void> {
+    return this.track(() => this.clearCacheInternal());
+  }
+
+  private async clearCacheInternal(): Promise<void> {
     logger.info('[clearCache] Clearing cache...');
 
     try {
-      await secureFs.unlink(this.cacheFilePath);
+      await this.filesystem.unlink(this.cacheFilePath);
       logger.info('[clearCache] Cache cleared');
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        logger.error('[clearCache] Failed to clear cache:', error);
+        logger.error('[clearCache] Failed to clear cache.');
+        throw new CodexModelCacheStorageError('write');
       }
     }
+  }
+
+  onApplicationShutdown(): Promise<void> {
+    return this.close();
+  }
+
+  private close(): Promise<void> {
+    if (this.closing) return this.closing;
+    const deadline = performance.now() + 5000;
+    let timer: NodeJS.Timeout | undefined;
+    this.closing = Promise.race([
+      Promise.allSettled([...this.active]).then((results) => {
+        if (performance.now() >= deadline) throw new CodexModelCacheCleanupError();
+        const failure = results.find((result) => result.status === 'rejected');
+        if (failure?.status === 'rejected') throw failure.reason;
+      }),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new CodexModelCacheCleanupError()), 5000);
+      }),
+    ]).finally(() => clearTimeout(timer));
+    return this.closing;
+  }
+  beforeApplicationShutdown(): Promise<void> {
+    return this.close();
+  }
+
+  private track<T>(operation: () => Promise<T>): Promise<T> {
+    if (this.closing) return Promise.reject(new Error('Codex model cache is shutting down.'));
+    const pending = Promise.resolve().then(operation);
+    this.active.add(pending);
+    void pending.then(
+      () => this.active.delete(pending),
+      () => this.active.delete(pending)
+    );
+    return pending;
   }
 
   /**
@@ -169,6 +243,11 @@ export class CodexModelCacheService {
 
       return models;
     } catch (error) {
+      if (
+        error instanceof CodexAppServerCleanupError ||
+        error instanceof CodexModelCacheStorageError
+      )
+        throw error;
       logger.error('[doRefresh] Refresh failed:', error);
       return [];
     }
@@ -211,21 +290,20 @@ export class CodexModelCacheService {
    */
   private async loadFromCache(): Promise<CodexModelCache | null> {
     try {
-      const content = await secureFs.readFile(this.cacheFilePath, 'utf-8');
+      const content = await this.filesystem.readFile(this.cacheFilePath, 'utf-8');
       const cache = JSON.parse(content.toString()) as CodexModelCache;
 
       // Validate cache structure
-      if (!Array.isArray(cache.models) || typeof cache.cachedAt !== 'number') {
+      if (!cache || !Array.isArray(cache.models) || typeof cache.cachedAt !== 'number') {
         logger.warn('[loadFromCache] Invalid cache structure, ignoring');
         return null;
       }
 
       return cache;
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        logger.warn('[loadFromCache] Failed to read cache:', error);
-      }
-      return null;
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT' || error instanceof SyntaxError)
+        return null;
+      throw new CodexModelCacheStorageError('read');
     }
   }
 
@@ -239,24 +317,30 @@ export class CodexModelCacheService {
       ttl: this.ttl,
     };
 
-    const tempPath = `${this.cacheFilePath}.tmp.${Date.now()}`;
+    const tempPath = `${this.cacheFilePath}.tmp.${randomUUID()}`;
 
     try {
       // Write to temp file
+      await this.filesystem.mkdir(path.dirname(this.cacheFilePath), { recursive: true });
       const content = JSON.stringify(cache, null, 2);
-      await secureFs.writeFile(tempPath, content, 'utf-8');
+      await this.filesystem.writeFile(tempPath, content, {
+        encoding: 'utf8',
+        mode: 0o600,
+        flag: 'wx',
+      });
 
       // Atomic rename
-      await secureFs.rename(tempPath, this.cacheFilePath);
-    } catch (error) {
-      logger.error('[saveToCache] Failed to save cache:', error);
+      await this.filesystem.rename(tempPath, this.cacheFilePath);
+    } catch {
+      logger.error('[saveToCache] Failed to save cache.');
 
       // Clean up temp file
       try {
-        await secureFs.unlink(tempPath);
+        await this.filesystem.unlink(tempPath);
       } catch {
         // Ignore cleanup errors
       }
+      throw new CodexModelCacheStorageError('write');
     }
   }
 }

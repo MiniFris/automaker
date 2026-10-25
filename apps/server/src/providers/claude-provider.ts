@@ -17,6 +17,8 @@ import {
   type ClaudeApiProfile,
   type ClaudeCompatibleProvider,
   type Credentials,
+  CLAUDE_MODEL_MAP,
+  CLAUDE_CANONICAL_MAP,
 } from '@automaker/types';
 import type {
   ExecuteOptions,
@@ -74,9 +76,10 @@ function isClaudeCompatibleProvider(config: ProviderConfig): config is ClaudeCom
  * @param credentials - Optional credentials object for resolving 'credentials' apiKeySource
  */
 function buildEnv(
-  providerConfig?: ProviderConfig,
-  credentials?: Credentials,
-  requestTimeoutMs?: number
+  providerConfig: ProviderConfig | undefined,
+  credentials: Credentials | undefined,
+  requestTimeoutMs: number | undefined,
+  environment: Readonly<NodeJS.ProcessEnv>
 ): Record<string, string | undefined> {
   const env: Record<string, string | undefined> = {};
 
@@ -98,7 +101,7 @@ function buildEnv(
         apiKey = providerConfig.apiKey;
         break;
       case 'env':
-        apiKey = process.env.ANTHROPIC_API_KEY;
+        apiKey = environment.ANTHROPIC_API_KEY;
         break;
       case 'credentials':
         apiKey = credentials?.apiKeys?.anthropic;
@@ -155,18 +158,20 @@ function buildEnv(
     // control are NOT passed (those require a profile for explicit configuration).
     if (credentials?.apiKeys?.anthropic) {
       env['ANTHROPIC_API_KEY'] = credentials.apiKeys.anthropic;
-    } else if (process.env.ANTHROPIC_API_KEY) {
-      env['ANTHROPIC_API_KEY'] = process.env.ANTHROPIC_API_KEY;
+    } else if (environment.ANTHROPIC_API_KEY) {
+      env['ANTHROPIC_API_KEY'] = environment.ANTHROPIC_API_KEY;
     }
     // If using Claude Max plan via CLI auth, the SDK handles auth automatically
     // when no API key is provided. We don't set ANTHROPIC_AUTH_TOKEN here
     // unless it was explicitly set in process.env (rare edge case).
-    if (process.env.ANTHROPIC_AUTH_TOKEN) {
-      env['ANTHROPIC_AUTH_TOKEN'] = process.env.ANTHROPIC_AUTH_TOKEN;
+    if (environment.ANTHROPIC_AUTH_TOKEN) {
+      env['ANTHROPIC_AUTH_TOKEN'] = environment.ANTHROPIC_AUTH_TOKEN;
     }
+    if (!env.ANTHROPIC_API_KEY && !env.ANTHROPIC_AUTH_TOKEN && environment.CLAUDE_CODE_OAUTH_TOKEN)
+      env.CLAUDE_CODE_OAUTH_TOKEN = environment.CLAUDE_CODE_OAUTH_TOKEN;
     // Pass through ANTHROPIC_BASE_URL if set in environment (backward compatibility)
-    if (process.env.ANTHROPIC_BASE_URL) {
-      env['ANTHROPIC_BASE_URL'] = process.env.ANTHROPIC_BASE_URL;
+    if (environment.ANTHROPIC_BASE_URL) {
+      env['ANTHROPIC_BASE_URL'] = environment.ANTHROPIC_BASE_URL;
     }
   }
 
@@ -176,8 +181,8 @@ function buildEnv(
 
   // Always add system vars from process.env
   for (const key of SYSTEM_ENV_VARS) {
-    if (process.env[key]) {
-      env[key] = process.env[key];
+    if (environment[key]) {
+      env[key] = environment[key];
     }
   }
 
@@ -185,6 +190,20 @@ function buildEnv(
 }
 
 export class ClaudeProvider extends BaseProvider {
+  constructor(
+    private readonly environmentReader: () => Promise<Readonly<NodeJS.ProcessEnv>> = async () => ({
+      ...process.env,
+    })
+  ) {
+    super();
+  }
+  protected featureCapabilities() {
+    return { vision: true, tools: true, reasoning: true, mcp: true, remoteExecution: true };
+  }
+  protected resolveCapabilityModelId(modelId: string): string {
+    const aliases: Record<string, string> = { ...CLAUDE_MODEL_MAP, ...CLAUDE_CANONICAL_MAP };
+    return Object.hasOwn(aliases, modelId) ? aliases[modelId] : modelId;
+  }
   getName(): string {
     return 'claude';
   }
@@ -192,7 +211,7 @@ export class ClaudeProvider extends BaseProvider {
   /**
    * Execute a query using Claude Agent SDK
    */
-  async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+  protected async *execute(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
     // Validate that model doesn't have a provider prefix
     // AgentService should strip prefixes before passing to providers
     // Claude doesn't use a provider prefix, so we don't need to specify an expected provider
@@ -237,7 +256,12 @@ export class ClaudeProvider extends BaseProvider {
       // Pass only explicitly allowed environment variables to SDK
       // When a provider is active, uses provider settings (clean switch)
       // When no provider, uses direct Anthropic API (from process.env or CLI OAuth)
-      env: buildEnv(providerConfig, credentials, options.modelTimeouts?.requestTimeoutMs),
+      env: buildEnv(
+        providerConfig,
+        credentials,
+        options.modelTimeouts?.requestTimeoutMs,
+        await this.environmentReader()
+      ),
       // Pass through allowedTools if provided by caller (decided by sdk-options.ts)
       ...(allowedTools && { allowedTools }),
       // Restrict available built-in tools if specified (tools: [] disables all tools)
@@ -348,8 +372,11 @@ export class ClaudeProvider extends BaseProvider {
     // 2. ANTHROPIC_AUTH_TOKEN environment variable
     // 3. credentials?.apiKeys?.anthropic (credentials file, checked via platform indicators)
     // 4. Claude Max CLI OAuth (SDK handles this automatically; detected via getClaudeAuthIndicators)
-    const hasEnvApiKey = !!process.env.ANTHROPIC_API_KEY;
-    const hasEnvAuthToken = !!process.env.ANTHROPIC_AUTH_TOKEN;
+    const environment = await this.environmentReader();
+    const hasEnvApiKey = !!environment.ANTHROPIC_API_KEY;
+    const hasEnvAuthToken = !!(
+      environment.ANTHROPIC_AUTH_TOKEN || environment.CLAUDE_CODE_OAUTH_TOKEN
+    );
 
     // Check credentials file and CLI OAuth indicators (same sources used by buildEnv)
     let hasCredentialsApiKey = false;

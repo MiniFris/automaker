@@ -83,24 +83,42 @@ export function useMCPServers() {
       const result = await api.mcp.testServer(server.id);
 
       if (result.success) {
+        // Connection testing and catalog discovery are separate server operations.
+        // A missing/failed catalog is unknown, not an authoritative empty catalog.
+        const discovery = await api.mcp.listTools(server.id).catch(() => ({
+          success: false,
+          tools: undefined,
+          error: translate('Tool discovery is unavailable'),
+        }));
+        const tools =
+          discovery.success && Array.isArray(discovery.tools) ? discovery.tools : undefined;
+        const toolsError = tools
+          ? undefined
+          : discovery.error || translate('Tool discovery is unavailable');
         setServerTestStates((prev) => ({
           ...prev,
           [server.id]: {
             status: 'success',
-            tools: result.tools,
+            tools,
+            toolsError,
             connectionTime: result.connectionTime,
           },
         }));
         // Only auto-expand on manual test, not on auto-test (silent)
         if (!silent) {
           setExpandedServers((prev) => new Set([...prev, server.id]));
-          toast.success(
-            translate('Connected to {value1} ({value2} tools, {value3}ms)', {
-              value1: server.name,
-              value2: result.tools?.length || 0,
-              value3: result.connectionTime,
-            })
-          );
+          if (!tools)
+            toast.warning(
+              translate('Connected to {value1}; tools are unavailable', { value1: server.name })
+            );
+          else
+            toast.success(
+              translate('Connected to {value1} ({value2} tools, {value3}ms)', {
+                value1: server.name,
+                value2: tools.length,
+                value3: result.connectionTime,
+              })
+            );
         }
       } else {
         setServerTestStates((prev) => ({

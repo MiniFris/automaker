@@ -21,6 +21,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Copy all libs package.json files (centralized - add new libs here)
+COPY libs/contracts/package*.json ./libs/contracts/
 COPY libs/types/package*.json ./libs/types/
 COPY libs/utils/package*.json ./libs/utils/
 COPY libs/prompts/package*.json ./libs/prompts/
@@ -29,10 +30,6 @@ COPY libs/spec-parser/package*.json ./libs/spec-parser/
 COPY libs/model-resolver/package*.json ./libs/model-resolver/
 COPY libs/dependency-resolver/package*.json ./libs/dependency-resolver/
 COPY libs/git-utils/package*.json ./libs/git-utils/
-COPY libs/spec-parser/package*.json ./libs/spec-parser/
-
-# Copy scripts (needed by npm workspace)
-COPY scripts ./scripts
 
 # =============================================================================
 # SERVER BUILD STAGE
@@ -43,17 +40,28 @@ FROM base AS server-builder
 COPY apps/server/package*.json ./apps/server/
 
 # Install dependencies (--ignore-scripts to skip husky/prepare, then rebuild native modules)
-RUN npm ci --ignore-scripts && npm rebuild node-pty
+RUN --mount=type=cache,id=automaker-server-npm-node22,target=/root/.npm,sharing=locked \
+    npm ci --ignore-scripts && npm rebuild node-pty
+
+# Browser assets depend on the lockfile, not application source. Keep downloads
+# cached when only backend/libs/scripts change.
+RUN --mount=type=cache,id=automaker-server-playwright,target=/tmp/playwright-cache,sharing=locked \
+    PLAYWRIGHT_BROWSERS_PATH=/tmp/playwright-cache ./node_modules/.bin/playwright install chromium && \
+    mkdir -p /opt/playwright-browsers && cp -a /tmp/playwright-cache/. /opt/playwright-browsers/
 
 # Ensure nested workspace node_modules exists (npm may nest conflicting deps here; COPY below requires the path)
 RUN mkdir -p /app/apps/server/node_modules
 
 # Copy all source files
+COPY scripts ./scripts
 COPY libs ./libs
 COPY apps/server ./apps/server
 
 # Build packages in dependency order, then build server
 RUN npm run build:packages && npm run build --workspace=apps/server
+
+# Runtime artifacts must not depend on the builder's TypeScript/test toolchain.
+RUN npm prune --omit=dev --ignore-scripts
 
 # =============================================================================
 # SERVER PRODUCTION STAGE
@@ -154,14 +162,8 @@ COPY --from=server-builder /app/node_modules ./node_modules
 # Copy nested workspace dependencies (e.g. ajv v8 for the OpenAI-compatible provider; not hoisted to root due to version conflict)
 COPY --from=server-builder /app/apps/server/node_modules ./apps/server/node_modules
 
-# Install Playwright Chromium browser for AI agent verification tests
-# This adds ~300MB to the image but enables automated testing mode out of the box
-# Using the locally installed playwright ensures we use the pinned version from package-lock.json
-USER automaker
-RUN ./node_modules/.bin/playwright install chromium && \
-    echo "=== Playwright Chromium installed ===" && \
-    ls -la /home/automaker/.cache/ms-playwright/
-USER root
+# Runtime browser cache remains available without shipping the builder's dev dependencies.
+COPY --from=server-builder --chown=automaker:automaker /opt/playwright-browsers /home/automaker/.cache/ms-playwright
 
 # Create data and projects directories
 RUN mkdir -p /data /projects && chown automaker:automaker /data /projects
@@ -197,7 +199,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 # Start server
-CMD ["node", "apps/server/dist/index.js"]
+CMD ["node", "apps/server/dist/main.js"]
 
 # Opt-in controller image. The ordinary server target keeps its existing isolation.
 # Only CLI/buildx binaries are copied; no daemon is started inside Automaker.
@@ -218,6 +220,7 @@ COPY apps/ui/package*.json ./apps/ui/
 RUN npm ci --ignore-scripts
 
 # Copy all source files
+COPY scripts ./scripts
 COPY libs ./libs
 COPY apps/ui ./apps/ui
 

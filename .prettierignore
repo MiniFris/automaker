@@ -25,12 +25,15 @@ pnpm-lock.yaml
 *.min.css
 routeTree.gen.ts
 apps/ui/src/routeTree.gen.ts
+docs/backend-nestjs-migration/artifacts/*.json
 
 # Test artifacts
 test-results/
 coverage/
 playwright-report/
 blob-report/
+# Generated Playwright authentication state (also ignored by Git)
+apps/ui/tests/.auth/
 
 # IDE/Editor
 .vscode/

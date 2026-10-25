@@ -215,6 +215,9 @@ export const CURSOR_PERMISSION_PROFILES: CursorPermissionProfileConfig[] = [
  */
 export interface CursorAuthStatus {
   authenticated: boolean;
+  authenticationChecked?: boolean;
+  scope?: 'host';
+  hasEnvApiKey?: boolean;
   method: 'login' | 'api_key' | 'none';
   hasCredentialsFile?: boolean;
   error?: string;

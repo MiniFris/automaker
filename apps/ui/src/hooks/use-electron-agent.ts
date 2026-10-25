@@ -29,6 +29,7 @@ interface QueuedPrompt {
   providerId?: string;
   thinkingLevel?: string;
   addedAt: string;
+  deliveryStatus?: 'interrupted';
 }
 
 interface UseElectronAgentResult {
@@ -84,6 +85,7 @@ export function useElectronAgent({
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [serverQueue, setServerQueue] = useState<QueuedPrompt[]>([]);
+  const queueRevisionRef = useRef(0);
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const currentMessageRef = useRef<Message | null>(null);
 
@@ -189,6 +191,8 @@ export function useElectronAgent({
     if (!sessionId) {
       // No session selected - reset state
       setMessages([]);
+      setServerQueue([]);
+      queueRevisionRef.current++;
       setIsConnected(false);
       setIsProcessing(false);
       setError(null);
@@ -200,6 +204,8 @@ export function useElectronAgent({
     const initialize = async () => {
       // Reset error state when switching sessions
       setError(null);
+      setServerQueue([]);
+      queueRevisionRef.current++;
 
       try {
         logger.info('Starting session:', sessionId);
@@ -218,6 +224,24 @@ export function useElectronAgent({
             const isRunning = historyResult.isRunning || false;
             logger.info('Session running state:', isRunning);
             setIsProcessing(isRunning);
+          }
+          if (!mounted) return;
+          if (api.agent!.queueList) {
+            try {
+              const revision = queueRevisionRef.current;
+              const queued = await api.agent!.queueList(sessionId);
+              if (mounted && queued.success && queueRevisionRef.current === revision)
+                setServerQueue(queued.queue || []);
+              else if (mounted && !queued.success)
+                setError(queued.error || translate('Failed to load queued prompts'));
+            } catch (queueError) {
+              if (mounted)
+                setError(
+                  queueError instanceof Error
+                    ? queueError.message
+                    : translate('Failed to load queued prompts')
+                );
+            }
           }
         } else {
           setError(result.error || translate('Failed to start session'));
@@ -253,6 +277,7 @@ export function useElectronAgent({
     if (!sessionId) return; // Don't subscribe if no session
 
     logger.info('Subscribing to stream events for session:', sessionId);
+    let subscribed = true;
 
     const handleStream = (event: StreamEvent) => {
       // CRITICAL: Only process events for our specific session
@@ -359,6 +384,7 @@ export function useElectronAgent({
         case 'queue_updated':
           // Server queue was updated
           logger.info('Queue updated:', event.queue);
+          queueRevisionRef.current++;
           setServerQueue(event.queue || []);
           break;
 
@@ -366,6 +392,16 @@ export function useElectronAgent({
           // Error processing a queued prompt
           logger.error('Queue error:', event.error);
           setError(event.error);
+          if (api.agent!.queueList) {
+            const revision = queueRevisionRef.current;
+            void api
+              .agent!.queueList(sessionId)
+              .then((queued) => {
+                if (subscribed && queued.success && queueRevisionRef.current === revision)
+                  setServerQueue(queued.queue || []);
+              })
+              .catch((error) => logger.error('Failed to refresh queued requests:', error));
+          }
           break;
       }
     };
@@ -373,6 +409,7 @@ export function useElectronAgent({
     unsubscribeRef.current = api.agent!.onStream(handleStream as (data: unknown) => void);
 
     return () => {
+      subscribed = false;
       if (unsubscribeRef.current) {
         logger.info('Unsubscribing from stream events for session:', sessionId);
         unsubscribeRef.current();

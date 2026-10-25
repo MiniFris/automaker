@@ -37,9 +37,8 @@ export function CopilotSettingsTab() {
       success: cliStatusData.success ?? false,
       status: cliStatusData.installed ? 'installed' : 'not_installed',
       method: cliStatusData.auth?.method,
-      version: cliStatusData.version,
-      path: cliStatusData.path,
-      recommendation: cliStatusData.recommendation,
+      version: cliStatusData.version ?? undefined,
+      path: cliStatusData.path ?? undefined,
       // Server sends installCommand (singular), transform to expected format
       installCommands: cliStatusData.installCommand
         ? { npm: cliStatusData.installCommand }
@@ -52,9 +51,10 @@ export function CopilotSettingsTab() {
     if (!cliStatusData?.auth) return null;
     return {
       authenticated: cliStatusData.auth.authenticated,
+      authenticationChecked: cliStatusData.auth.authenticationChecked,
+      hasEnvToken: cliStatusData.auth.hasEnvToken,
+      hasConfigFile: cliStatusData.auth.hasConfigFile,
       method: (cliStatusData.auth.method as CopilotAuthStatus['method']) || 'none',
-      login: cliStatusData.auth.login,
-      host: cliStatusData.auth.host,
       error: cliStatusData.auth.error,
     };
   }, [cliStatusData]);
@@ -112,6 +112,7 @@ export function CopilotSettingsTab() {
 
       <CopilotCliStatus
         status={cliStatus}
+        connected={cliStatusData?.connected}
         authStatus={authStatus}
         isChecking={isCheckingCopilotCli}
         onRefresh={handleRefreshCopilotCli}

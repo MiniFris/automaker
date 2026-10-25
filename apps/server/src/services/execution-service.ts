@@ -1,3 +1,4 @@
+import { uncertainExecution, FEATURE_UNCERTAIN_REASON } from './feature-execution-uncertainty.js';
 /**
  * ExecutionService - Feature execution lifecycle coordination
  */
@@ -8,8 +9,8 @@ import { isDirectModel } from '@automaker/types';
 import { createLogger, classifyError, loadContextFiles, recordMemoryUsage } from '@automaker/utils';
 import { resolveModelString, DEFAULT_MODELS } from '@automaker/model-resolver';
 import { getFeatureDir } from '@automaker/platform';
-import { ProviderFactory } from '../providers/provider-factory.js';
-import * as secureFs from '../lib/secure-fs.js';
+import type { ProviderRegistry } from '../modules/providers/provider-registry.service.js';
+import { capturedExecutionFilesystem, type ExecutionFilesystem } from './execution-filesystem.js';
 import {
   getPromptCustomization,
   getAutoLoadClaudeMdSetting,
@@ -22,7 +23,7 @@ import type { TypedEventBus } from './typed-event-bus.js';
 import type { ConcurrencyManager, RunningFeature } from './concurrency-manager.js';
 import type { WorktreeResolver } from './worktree-resolver.js';
 import type { SettingsService } from './settings-service.js';
-import { pipelineService } from './pipeline-service.js';
+import type { PipelineService } from './pipeline-service.js';
 import { FeatureWorkspaceService } from './execution-environment/feature-workspace.js';
 
 // Re-export callback types from execution-types.ts for backward compatibility
@@ -69,6 +70,7 @@ const TOOL_USE_MARKER = '🔧 Tool:';
 const MIN_MEANINGFUL_OUTPUT_LENGTH = 200;
 
 export class ExecutionService {
+  private readonly hostEnvironment: Readonly<NodeJS.ProcessEnv>;
   constructor(
     private eventBus: TypedEventBus,
     private concurrencyManager: ConcurrencyManager,
@@ -88,19 +90,30 @@ export class ExecutionService {
     private signalPauseFn: SignalPauseFn,
     private recordSuccessFn: RecordSuccessFn,
     private saveExecutionStateFn: SaveExecutionStateFn,
-    private loadContextFilesFn: LoadContextFilesFn
-  ) {}
+    private loadContextFilesFn: LoadContextFilesFn,
+    private readonly providerRegistry: ProviderRegistry,
+    private readonly pipeline: PipelineService,
+    private readonly filesystem: ExecutionFilesystem,
+    private readonly directoryValidator: (cwd: string) => void = validateWorkingDirectory,
+    hostEnvironment: Readonly<NodeJS.ProcessEnv> = process.env
+  ) {
+    this.hostEnvironment = Object.freeze({ ...hostEnvironment });
+  }
 
   private acquireRunningFeature(options: {
     featureId: string;
     projectPath: string;
     isAutoMode: boolean;
     allowReuse?: boolean;
-  }): RunningFeature {
-    return this.concurrencyManager.acquire(options);
+    expected?: RunningFeature;
+  }): Promise<RunningFeature> {
+    return this.concurrencyManager.acquireAsync(options);
   }
 
-  private releaseRunningFeature(featureId: string, options?: { force?: boolean }): void {
+  private releaseRunningFeature(
+    featureId: string,
+    options?: { force?: boolean; expected?: RunningFeature }
+  ): void {
     this.concurrencyManager.release(featureId, options);
   }
 
@@ -170,25 +183,39 @@ ${feature.spec}
     useWorktrees = false,
     isAutoMode = false,
     providedWorktreePath?: string,
-    options?: { continuationPrompt?: string; _calledInternally?: boolean }
+    options?: { continuationPrompt?: string; _calledInternally?: boolean; _run?: RunningFeature }
   ): Promise<void> {
-    const tempRunningFeature = this.acquireRunningFeature({
+    const tempRunningFeature = await this.acquireRunningFeature({
       featureId,
       projectPath,
       isAutoMode,
       allowReuse: options?._calledInternally,
+      expected: options?._run,
     });
     const abortController = tempRunningFeature.abortController;
+    const runPort = this.concurrencyManager.coordinator.bind(
+      this.concurrencyManager,
+      tempRunningFeature
+    );
+    const localFilesystem = capturedExecutionFilesystem(this.filesystem, runPort);
+    const current = () => this.concurrencyManager.isCurrent(tempRunningFeature);
+    const updateStatus = (status: string) =>
+      this.concurrencyManager.coordinator.status(
+        this.concurrencyManager,
+        tempRunningFeature,
+        status,
+        () => this.updateFeatureStatusFn(projectPath, featureId, status)
+      );
     if (isAutoMode) await this.saveExecutionStateFn(projectPath);
     let feature: Feature | null = null;
     let pipelineCompleted = false;
 
     try {
-      validateWorkingDirectory(projectPath);
+      this.directoryValidator(projectPath);
       feature = await this.loadFeatureFn(projectPath, featureId);
       if (!feature) throw new Error(`Feature ${featureId} not found`);
       const remoteService = this.settingsService
-        ? new FeatureWorkspaceService(this.settingsService)
+        ? new FeatureWorkspaceService(this.settingsService, undefined, this.hostEnvironment)
         : undefined;
       const remote = await remoteService?.prepare(projectPath, feature, abortController.signal);
       tempRunningFeature.remoteWorkspace = !!remote;
@@ -212,7 +239,7 @@ ${feature.spec}
           feature.status === 'ready' ||
           feature.status === 'interrupted')
       ) {
-        await this.updateFeatureStatusFn(projectPath, featureId, 'in_progress');
+        if (!(await updateStatus('in_progress'))) return;
       }
 
       if (!options?.continuationPrompt) {
@@ -228,11 +255,17 @@ ${feature.spec}
             useWorktrees,
             isAutoMode,
             providedWorktreePath,
-            { continuationPrompt, _calledInternally: true }
+            { continuationPrompt, _calledInternally: true, _run: tempRunningFeature }
           );
         }
         if (await this.contextExistsFn(projectPath, featureId)) {
-          return await this.resumeFeatureFn(projectPath, featureId, useWorktrees, true);
+          return await this.resumeFeatureFn(
+            projectPath,
+            featureId,
+            useWorktrees,
+            true,
+            tempRunningFeature
+          );
         }
       }
 
@@ -252,7 +285,7 @@ ${feature.spec}
         : worktreePath
           ? path.resolve(worktreePath)
           : path.resolve(projectPath);
-      validateWorkingDirectory(workDir);
+      if (!remote) this.directoryValidator(workDir);
       tempRunningFeature.worktreePath = remote?.environment.cwd ?? worktreePath;
       tempRunningFeature.branchName =
         (remote?.binding.sshWorkspace ?? remote?.binding.featureWorkspace)?.baseBranch ??
@@ -268,7 +301,7 @@ ${feature.spec}
           feature.status === 'ready' ||
           feature.status === 'interrupted')
       ) {
-        await this.updateFeatureStatusFn(projectPath, featureId, 'in_progress');
+        if (!(await updateStatus('in_progress'))) return;
       }
       this.eventBus.emitAutoModeEvent('auto_mode_feature_start', {
         featureId,
@@ -298,7 +331,7 @@ ${feature.spec}
         ? await remoteService!.context(remote, abortController.signal)
         : await this.loadContextFilesFn({
             projectPath,
-            fsModule: secureFs as Parameters<typeof loadContextFiles>[0]['fsModule'],
+            fsModule: localFilesystem as Parameters<typeof loadContextFiles>[0]['fsModule'],
             taskContext: {
               title: feature.title ?? '',
               description: feature.description ?? '',
@@ -334,29 +367,34 @@ ${feature.spec}
         typeof img === 'string' ? img : img.path
       );
       const model = resolveModelString(feature.model, DEFAULT_MODELS.claude);
+      runPort.assertCurrent();
       tempRunningFeature.model = model;
-      tempRunningFeature.provider = ProviderFactory.getProviderNameForModel(model);
+      tempRunningFeature.provider = this.providerRegistry.providerNameForModel(model);
 
-      await this.runAgentFn(
-        workDir,
-        featureId,
-        prompt,
-        abortController,
-        projectPath,
-        imagePaths,
-        model,
-        {
+      await this.concurrencyManager.executeOwned(tempRunningFeature, 'execution', () =>
+        this.runAgentFn(
+          workDir,
+          featureId,
+          prompt,
+          abortController,
           projectPath,
-          planningMode: feature.planningMode,
-          requirePlanApproval: feature.requirePlanApproval,
-          systemPrompt: combinedSystemPrompt || undefined,
-          autoLoadClaudeMd,
-          useClaudeCodeSystemPrompt,
-          thinkingLevel: feature.thinkingLevel,
-          reasoningEffort: feature.reasoningEffort,
-          providerId: feature.providerId,
-          branchName: feature.branchName ?? null,
-        }
+          imagePaths,
+          model,
+          {
+            projectPath,
+            planningMode: feature!.planningMode,
+            runPort,
+            boundTargetCwd: remote?.binding.cwd,
+            requirePlanApproval: feature!.requirePlanApproval,
+            systemPrompt: combinedSystemPrompt || undefined,
+            autoLoadClaudeMd,
+            useClaudeCodeSystemPrompt,
+            thinkingLevel: feature!.thinkingLevel,
+            reasoningEffort: feature!.reasoningEffort,
+            providerId: feature!.providerId,
+            branchName: feature!.branchName ?? null,
+          }
+        )
       );
 
       abortController.signal.throwIfAborted();
@@ -405,26 +443,30 @@ ${remainingTasksList}
 
 Please continue from where you left off and complete all remaining tasks. Use the same [TASK_START:ID] and [TASK_COMPLETE:ID] markers for each task.`;
 
-        await this.runAgentFn(
-          workDir,
-          featureId,
-          continuationPrompt,
-          abortController,
-          projectPath,
-          undefined,
-          model,
-          {
+        await this.concurrencyManager.executeOwned(tempRunningFeature, 'execution', () =>
+          this.runAgentFn(
+            workDir,
+            featureId,
+            continuationPrompt,
+            abortController,
             projectPath,
-            planningMode: 'skip',
-            requirePlanApproval: false,
-            systemPrompt: combinedSystemPrompt || undefined,
-            autoLoadClaudeMd,
-            useClaudeCodeSystemPrompt,
-            thinkingLevel: feature.thinkingLevel,
-            reasoningEffort: feature.reasoningEffort,
-            providerId: feature.providerId,
-            branchName: feature.branchName ?? null,
-          }
+            undefined,
+            model,
+            {
+              projectPath,
+              planningMode: 'skip',
+              runPort,
+              boundTargetCwd: remote?.binding.cwd,
+              requirePlanApproval: false,
+              systemPrompt: combinedSystemPrompt || undefined,
+              autoLoadClaudeMd,
+              useClaudeCodeSystemPrompt,
+              thinkingLevel: feature!.thinkingLevel,
+              reasoningEffort: feature!.reasoningEffort,
+              providerId: feature!.providerId,
+              branchName: feature!.branchName ?? null,
+            }
+          )
         );
       }
 
@@ -442,13 +484,14 @@ Please continue from where you left off and complete all remaining tasks. Use th
       }
 
       abortController.signal.throwIfAborted();
-      const pipelineConfig = await pipelineService.getPipelineConfig(projectPath);
+      const pipelineConfig = await this.pipeline.getPipelineConfig(projectPath);
       const excludedStepIds = new Set(feature.excludedPipelineSteps || []);
       const sortedSteps = [...(pipelineConfig?.steps || [])]
         .sort((a, b) => a.order - b.order)
         .filter((step) => !excludedStepIds.has(step.id));
       if (sortedSteps.length > 0) {
         await this.executePipelineFn({
+          run: tempRunningFeature,
           projectPath,
           featureId,
           feature,
@@ -459,8 +502,7 @@ Please continue from where you left off and complete all remaining tasks. Use th
           abortController,
           autoLoadClaudeMd,
           useClaudeCodeSystemPrompt,
-          testAttempts: 0,
-          maxTestAttempts: 5,
+          boundTargetCwd: remote?.binding.cwd,
         });
         pipelineCompleted = true;
         // Check if pipeline set a terminal status (e.g., merge_conflict) — don't overwrite it
@@ -479,7 +521,7 @@ Please continue from where you left off and complete all remaining tasks. Use th
       const outputPath = path.join(getFeatureDir(projectPath, featureId), 'agent-output.md');
       let agentOutput = '';
       try {
-        agentOutput = (await secureFs.readFile(outputPath, 'utf-8')) as string;
+        agentOutput = (await this.filesystem.readFile(outputPath, 'utf-8')) as string;
       } catch {
         /* */
       }
@@ -508,7 +550,8 @@ Please continue from where you left off and complete all remaining tasks. Use th
         finalStatus = 'verified';
       }
 
-      await this.updateFeatureStatusFn(projectPath, featureId, finalStatus);
+      if (!(await updateStatus(finalStatus))) return;
+      if (!current()) return;
       this.recordSuccessFn();
 
       // Check final task completion state for accurate reporting
@@ -524,7 +567,15 @@ Please continue from where you left off and complete all remaining tasks. Use th
         // The agent-executor already extracts and saves summaries during execution
         if (agentOutput && !completedFeature?.summary) {
           const summary = extractSummary(agentOutput);
-          if (summary) await this.saveFeatureSummaryFn(projectPath, featureId, summary);
+          if (
+            summary &&
+            !(await this.concurrencyManager.coordinator.mutate(
+              this.concurrencyManager,
+              tempRunningFeature,
+              () => this.saveFeatureSummaryFn(projectPath, featureId, summary)
+            ))
+          )
+            return;
         }
         if (contextResult.memoryFiles.length > 0 && agentOutput) {
           if (remote)
@@ -542,7 +593,7 @@ Please continue from where you left off and complete all remaining tasks. Use th
               contextResult.memoryFiles,
               agentOutput,
               true,
-              secureFs as Parameters<typeof recordMemoryUsage>[4]
+              localFilesystem as Parameters<typeof recordMemoryUsage>[4]
             );
         }
         if (remote)
@@ -563,7 +614,14 @@ Please continue from where you left off and complete all remaining tasks. Use th
       if (hasIncompleteTasks)
         completionMessage += ` (${completedTasks}/${totalTasks} tasks completed)`;
 
-      if (isAutoMode) {
+      if (
+        isAutoMode &&
+        this.concurrencyManager.coordinator.acceptCompletion(
+          this.concurrencyManager,
+          tempRunningFeature,
+          'execution-complete'
+        )
+      ) {
         this.eventBus.emitAutoModeEvent('auto_mode_feature_complete', {
           featureId,
           featureName: feature.title,
@@ -577,10 +635,28 @@ Please continue from where you left off and complete all remaining tasks. Use th
         });
       }
     } catch (error) {
+      if (!current()) return;
+      if (uncertainExecution(error) || tempRunningFeature.executionUncertain) {
+        await this.concurrencyManager.markExecutionUncertain(tempRunningFeature);
+        this.eventBus.emitAutoModeEvent('auto_mode_error', {
+          featureId,
+          projectPath,
+          error: FEATURE_UNCERTAIN_REASON,
+          errorType: 'unknown',
+        });
+        return;
+      }
       const errorInfo = classifyError(error);
       if (errorInfo.isAbort) {
-        await this.updateFeatureStatusFn(projectPath, featureId, 'interrupted');
-        if (isAutoMode) {
+        if (!(await updateStatus('interrupted'))) return;
+        if (
+          isAutoMode &&
+          this.concurrencyManager.coordinator.acceptCompletion(
+            this.concurrencyManager,
+            tempRunningFeature,
+            'execution-complete'
+          )
+        ) {
           this.eventBus.emitAutoModeEvent('auto_mode_feature_complete', {
             featureId,
             featureName: feature?.title,
@@ -615,8 +691,9 @@ Please continue from where you left off and complete all remaining tasks. Use th
           );
         }
         if (currentStatus !== 'merge_conflict') {
-          await this.updateFeatureStatusFn(projectPath, featureId, fallbackStatus);
+          if (!(await updateStatus(fallbackStatus))) return;
         }
+        if (!current()) return;
         this.eventBus.emitAutoModeEvent('auto_mode_error', {
           featureId,
           featureName: feature?.title,
@@ -630,7 +707,7 @@ Please continue from where you left off and complete all remaining tasks. Use th
         }
       }
     } finally {
-      this.releaseRunningFeature(featureId);
+      this.releaseRunningFeature(featureId, { expected: tempRunningFeature });
       if (isAutoMode && projectPath) await this.saveExecutionStateFn(projectPath);
     }
   }
@@ -647,7 +724,12 @@ Please continue from where you left off and complete all remaining tasks. Use th
     // eventually runs. By persisting and emitting the status change here, the
     // board updates immediately regardless of how long the subprocess takes to stop.
     try {
-      await this.updateFeatureStatusFn(projectPath, featureId, 'interrupted');
+      await this.concurrencyManager.coordinator.status(
+        this.concurrencyManager,
+        running,
+        'interrupted',
+        () => this.updateFeatureStatusFn(projectPath, featureId, 'interrupted')
+      );
     } catch (err) {
       // Non-fatal: the abort still proceeds and executeFeature's catch block
       // will attempt the same update once the subprocess terminates.
@@ -655,7 +737,8 @@ Please continue from where you left off and complete all remaining tasks. Use th
     }
 
     running.abortController.abort();
-    if (!running.remoteWorkspace) this.releaseRunningFeature(featureId, { force: true });
+    if (!running.remoteWorkspace && !running.retainUntilCleanup)
+      this.releaseRunningFeature(featureId, { force: true, expected: running });
     return true;
   }
 }

@@ -240,7 +240,7 @@ export class AutoLoopCoordinator {
             true
           ).catch((error) => {
             const errorInfo = classifyError(error);
-            logger.error(`Auto-loop feature ${nextFeature.id} failed:`, errorInfo.message);
+            logger.error('Auto-loop feature execution failed.', { featureId: nextFeature.id });
             if (this.trackFailureAndCheckPauseForProject(projectPath, branchName, errorInfo)) {
               this.signalShouldPauseForProject(projectPath, branchName, errorInfo);
             }
@@ -274,6 +274,15 @@ export class AutoLoopCoordinator {
       });
     this.autoLoopsByProject.delete(worktreeKey);
     return await this.getRunningCountForWorktree(projectPath, branchName);
+  }
+
+  /** Suspend scheduling while preserving the persisted execution state for restart. */
+  interruptForShutdown(): void {
+    for (const state of this.autoLoopsByProject.values()) {
+      state.isRunning = false;
+      state.abortController.abort();
+    }
+    this.autoLoopsByProject.clear();
   }
 
   isAutoLoopRunningForProject(projectPath: string, branchName: string | null = null): boolean {

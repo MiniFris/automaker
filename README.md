@@ -118,7 +118,7 @@ In the Discord, you can:
 
 ### Prerequisites
 
-- **Node.js 22+** (required: >=22.0.0 <23.0.0)
+- **Node.js 22** (required: >=22.22.3 <23.0.0)
 - **npm** (comes with Node.js)
 - **[Claude Code CLI](https://code.claude.com/docs/en/overview)** - Install and authenticate with your Anthropic subscription. Automaker integrates with your authenticated Claude Code CLI to access Claude models.
 
@@ -177,6 +177,11 @@ npm run dev:electron:wsl:gpu
 # Run in web browser (http://localhost:3007)
 npm run dev:web
 ```
+
+Browser login uses `AUTOMAKER_API_KEY` when configured, otherwise a key loaded from
+`DATA_DIR/.api-key` (generated on first startup). Keys and session tokens are not
+printed in server logs. Read the key file locally or configure your own secret;
+do not share it or commit it to the repository.
 
 ### Interactive TUI Launcher (Recommended for New Users)
 
@@ -427,18 +432,19 @@ npm run test:headed     # Browser visible E2E tests
 #### Unit Tests (Vitest)
 
 ```bash
-npm run test:server              # Server unit tests
-npm run test:server:coverage     # Server tests with coverage
+npm run test:server              # Server unit and contract tests
+npm run test:server:coverage     # Unit, contract and integration coverage
+npm run test:server:ssh          # SSH/target-process fixtures (Linux, separate CI job)
 npm run test:packages            # All shared package tests
 npm run test:all                 # Packages + server tests
 ```
 
 #### Test Configuration
 
-- E2E tests run on ports 3007 (UI) and 3008 (server)
+- E2E tests run on ports 3107 (UI) and 3108 (server)
 - Automatically starts test servers before running
 - Uses Chromium browser via Playwright
-- Mock agent mode available in CI with `AUTOMAKER_MOCK_AGENT=true`
+- Fake AI providers are registered only in the separate Nest E2E test composition
 
 ### Linting
 
@@ -459,7 +465,7 @@ npm run lint
 
 - `AUTOMAKER_API_KEY` - Optional API authentication for the server
 - `ALLOWED_ROOT_DIRECTORY` - Restrict file operations to specific directory
-- `CORS_ORIGIN` - CORS allowed origins (comma-separated list; defaults to localhost only)
+- `CORS_ORIGIN` - additional CORS allowed origins (comma-separated; localhost, loopback and private IPv4 origins remain allowed)
 
 #### Optional - Development
 
@@ -716,6 +722,7 @@ data/
 - [Contributing Guide](./CONTRIBUTING.md) - How to contribute to Automaker
 - [Project Documentation](./docs/) - Architecture guides, patterns, and developer docs
 - [Shared Packages Guide](./docs/llm-shared-packages.md) - Using monorepo packages
+- [Backend NestJS Migration Plan](./docs/backend-nestjs-migration/README.md) - Staged plan for the complete backend migration
 
 ### Community
 

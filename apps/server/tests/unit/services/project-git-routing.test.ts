@@ -6,7 +6,7 @@ import { SettingsService } from '@/services/settings-service.js';
 import { ProjectGitService } from '@/services/execution-environment/project-git.js';
 import { EnvironmentBindingStore } from '@/services/execution-environment/bindings.js';
 import { ManagedDocker } from '@/services/execution-environment/docker.js';
-import { AutoModeServiceCompat } from '@/services/auto-mode/compat.js';
+import { AutoModeServiceCompat } from '@/services/auto-mode/index.js';
 
 describe('saved project Git routing without runtime preparation', () => {
   let root: string, settings: SettingsService, service: ProjectGitService;

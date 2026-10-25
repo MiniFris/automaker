@@ -1,3 +1,4 @@
+import * as executionFilesystem from '../../../src/lib/secure-fs.js';
 /**
  * Unit tests for RecoveryService
  *
@@ -11,6 +12,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import path from 'path';
 import { RecoveryService, DEFAULT_EXECUTION_STATE } from '@/services/recovery-service.js';
+import { ConcurrencyManager } from '@/services/concurrency-manager.js';
 import type { Feature } from '@automaker/types';
 
 /**
@@ -20,7 +22,8 @@ import type { Feature } from '@automaker/types';
 const normalizePath = (p: string): string => path.normalize(p);
 
 // Mock dependencies
-vi.mock('@automaker/utils', () => ({
+vi.mock('@automaker/utils', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@automaker/utils')>()),
   createLogger: () => ({
     info: vi.fn(),
     warn: vi.fn(),
@@ -41,8 +44,11 @@ vi.mock('@automaker/platform', () => ({
 }));
 
 vi.mock('@/lib/secure-fs.js', () => ({
-  access: vi.fn().mockRejectedValue(new Error('ENOENT')),
-  readFile: vi.fn().mockRejectedValue(new Error('ENOENT')),
+  lstat: vi.fn().mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' })),
+  rename: vi.fn().mockResolvedValue(undefined),
+  mkdir: vi.fn().mockResolvedValue(undefined),
+  access: vi.fn().mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' })),
+  readFile: vi.fn().mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' })),
   writeFile: vi.fn().mockResolvedValue(undefined),
   unlink: vi.fn().mockResolvedValue(undefined),
   readdir: vi.fn().mockResolvedValue([]),
@@ -104,8 +110,12 @@ describe('recovery-service.ts', () => {
     utils = await import('@automaker/utils');
 
     // Reset secure-fs mocks to default behavior
-    vi.mocked(secureFs.access).mockRejectedValue(new Error('ENOENT'));
-    vi.mocked(secureFs.readFile).mockRejectedValue(new Error('ENOENT'));
+    vi.mocked(secureFs.access).mockRejectedValue(
+      Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    );
+    vi.mocked(secureFs.readFile).mockRejectedValue(
+      Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    );
     vi.mocked(secureFs.writeFile).mockResolvedValue(undefined);
     vi.mocked(secureFs.unlink).mockResolvedValue(undefined);
     vi.mocked(secureFs.readdir).mockResolvedValue([]);
@@ -134,17 +144,67 @@ describe('recovery-service.ts', () => {
       mockConcurrencyManager as any,
       mockSettingsService,
       mockExecuteFeature,
-      mockLoadFeature,
+      (project, id, strict) =>
+        strict
+          ? utils
+              .readJsonWithRecovery(`${project}/.automaker/features/${id}/feature.json`, null)
+              .then((result) => result.data)
+          : mockLoadFeature(project, id),
       mockDetectPipelineStatus,
       mockResumePipeline,
       mockIsFeatureRunning,
       mockAcquireRunningFeature,
-      mockReleaseRunningFeature
+      mockReleaseRunningFeature,
+      executionFilesystem
     );
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.resetAllMocks();
+  });
+
+  it('bounds accepted state IO and drains it before rejecting further admission', async () => {
+    let release!: (value: string) => void;
+    const pending = new Promise<string>((resolve) => {
+      release = resolve;
+    });
+    vi.mocked(secureFs.readFile)
+      .mockResolvedValue('{}')
+      .mockImplementationOnce(() => pending);
+    const accepted = Array.from({ length: 256 }, () => service.loadExecutionState('/test/project'));
+    await expect(service.loadExecutionState('/test/project')).rejects.toMatchObject({
+      statusCode: 503,
+    });
+    let closed = false;
+    const closing = service.close().then(() => {
+      closed = true;
+    });
+    await expect(service.loadExecutionState('/test/project')).rejects.toMatchObject({
+      statusCode: 503,
+    });
+    expect(closed).toBe(false);
+    release('{}');
+    await Promise.all(accepted);
+    await closing;
+  });
+
+  it('reports an unconfirmed state drain at the finite shutdown deadline', async () => {
+    vi.useFakeTimers();
+    let release!: (value: string) => void;
+    vi.mocked(secureFs.readFile).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        })
+    );
+    const reading = service.loadExecutionState('/test/project');
+    await Promise.resolve();
+    const closing = expect(service.close()).rejects.toThrow('cleanup could not be confirmed');
+    await vi.advanceTimersByTimeAsync(5000);
+    await closing;
+    release('{}');
+    await reading;
   });
 
   describe('DEFAULT_EXECUTION_STATE', () => {
@@ -172,7 +232,7 @@ describe('recovery-service.ts', () => {
       await service.saveExecutionStateForProject('/test/project', 'feature-branch', 3);
 
       expect(secureFs.writeFile).toHaveBeenCalledWith(
-        '/test/project/.automaker/execution-state.json',
+        expect.stringMatching(/^\/test\/project\/\.automaker\/execution-state\.json\.write\./),
         expect.any(String),
         'utf-8'
       );
@@ -256,12 +316,12 @@ describe('recovery-service.ts', () => {
       expect(result).toEqual(DEFAULT_EXECUTION_STATE);
     });
 
-    it('returns default state on other errors and logs', async () => {
+    it('preserves unexpected read errors instead of treating state as missing', async () => {
       vi.mocked(secureFs.readFile).mockRejectedValueOnce(new Error('Permission denied'));
 
-      const result = await service.loadExecutionState('/test/project');
-
-      expect(result).toEqual(DEFAULT_EXECUTION_STATE);
+      await expect(service.loadExecutionState('/test/project')).rejects.toThrow(
+        'Permission denied'
+      );
     });
   });
 
@@ -280,10 +340,12 @@ describe('recovery-service.ts', () => {
       await expect(service.clearExecutionState('/test/project')).resolves.not.toThrow();
     });
 
-    it('logs error on other failures', async () => {
+    it('propagates other failures', async () => {
       vi.mocked(secureFs.unlink).mockRejectedValueOnce(new Error('Permission denied'));
 
-      await expect(service.clearExecutionState('/test/project')).resolves.not.toThrow();
+      await expect(service.clearExecutionState('/test/project')).rejects.toThrow(
+        'Permission denied'
+      );
     });
   });
 
@@ -300,7 +362,9 @@ describe('recovery-service.ts', () => {
     });
 
     it('returns false when agent-output.md is missing', async () => {
-      vi.mocked(secureFs.access).mockRejectedValueOnce(new Error('ENOENT'));
+      vi.mocked(secureFs.access).mockRejectedValueOnce(
+        Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+      );
 
       const result = await service.contextExists('/test/project', 'feature-1');
 
@@ -309,6 +373,40 @@ describe('recovery-service.ts', () => {
   });
 
   describe('resumeFeature', () => {
+    it('releases only its own incarnation after a stopped recovery finishes late', async () => {
+      const manager = new ConcurrencyManager();
+      let finish!: () => void;
+      const held = new Promise<void>((resolve) => {
+        finish = resolve;
+      });
+      mockExecuteFeature.mockReturnValue(held);
+      mockLoadFeature.mockResolvedValue({ id: 'feature-1', status: 'interrupted' });
+      const recovery = new RecoveryService(
+        mockEventBus as never,
+        manager,
+        null,
+        mockExecuteFeature,
+        mockLoadFeature,
+        mockDetectPipelineStatus,
+        mockResumePipeline,
+        (id) => manager.isRunning(id),
+        (options) => manager.acquireAsync(options),
+        (id, expected) => manager.release(id, { expected }),
+        executionFilesystem
+      );
+      const resuming = recovery.resumeFeature('/test/project', 'feature-1');
+      await vi.waitFor(() => expect(mockExecuteFeature).toHaveBeenCalled());
+      const first = manager.getRunningFeature('feature-1')!;
+      manager.release('feature-1', { force: true, expected: first });
+      const second = await manager.acquireAsync({
+        projectPath: '/test/project',
+        featureId: 'feature-1',
+        isAutoMode: false,
+      });
+      finish();
+      await resuming;
+      expect(manager.getRunningFeature('feature-1')).toBe(second);
+    });
     const mockFeature: Feature = {
       id: 'feature-1',
       title: 'Test Feature',
@@ -330,7 +428,9 @@ describe('recovery-service.ts', () => {
     });
 
     it('detects pipeline status for feature', async () => {
-      vi.mocked(secureFs.access).mockRejectedValue(new Error('ENOENT'));
+      vi.mocked(secureFs.access).mockRejectedValue(
+        Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+      );
       await service.resumeFeature('/test/project', 'feature-1');
 
       expect(mockDetectPipelineStatus).toHaveBeenCalledWith(
@@ -363,7 +463,8 @@ describe('recovery-service.ts', () => {
         '/test/project',
         mockFeature,
         false,
-        pipelineInfo
+        pipelineInfo,
+        expect.objectContaining({ featureId: 'feature-1' })
       );
       expect(mockExecuteFeature).not.toHaveBeenCalled();
     });
@@ -406,7 +507,9 @@ describe('recovery-service.ts', () => {
     });
 
     it('calls executeFeature fresh when no context', async () => {
-      vi.mocked(secureFs.access).mockRejectedValueOnce(new Error('ENOENT'));
+      vi.mocked(secureFs.access).mockRejectedValueOnce(
+        Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+      );
 
       await service.resumeFeature('/test/project', 'feature-1');
 
@@ -434,7 +537,10 @@ describe('recovery-service.ts', () => {
 
       await expect(service.resumeFeature('/test/project', 'feature-1')).rejects.toThrow();
 
-      expect(mockReleaseRunningFeature).toHaveBeenCalledWith('feature-1');
+      expect(mockReleaseRunningFeature).toHaveBeenCalledWith(
+        'feature-1',
+        expect.objectContaining({ featureId: 'feature-1' })
+      );
     });
 
     it('throws error if feature not found', async () => {
@@ -446,7 +552,9 @@ describe('recovery-service.ts', () => {
     });
 
     it('acquires running feature with allowReuse when calledInternally', async () => {
-      vi.mocked(secureFs.access).mockRejectedValue(new Error('ENOENT'));
+      vi.mocked(secureFs.access).mockRejectedValue(
+        Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+      );
       await service.resumeFeature('/test/project', 'feature-1', false, true);
 
       expect(mockAcquireRunningFeature).toHaveBeenCalledWith({
@@ -460,10 +568,21 @@ describe('recovery-service.ts', () => {
 
   describe('resumeInterruptedFeatures', () => {
     it('does not automatically replay direct runs with unknown tool outcomes', async () => {
-      vi.mocked(secureFs.readdir).mockResolvedValueOnce([{ name: 'direct-feature', isDirectory: () => true } as never]);
-      vi.mocked(utils.readJsonWithRecovery).mockResolvedValueOnce({ data: { id: 'direct-feature', model: 'direct-Vendor/Model:Tag', providerId: 'endpoint', status: 'interrupted' }, wasRecovered: false });
+      vi.mocked(secureFs.readdir).mockResolvedValueOnce([
+        { name: 'direct-feature', isDirectory: () => true } as never,
+      ]);
+      vi.mocked(utils.readJsonWithRecovery).mockResolvedValueOnce({
+        data: {
+          id: 'direct-feature',
+          model: 'direct-Vendor/Model:Tag',
+          providerId: 'endpoint',
+          status: 'interrupted',
+        },
+        wasRecovered: false,
+      });
       await service.resumeInterruptedFeatures('/test/project');
-      expect(mockExecuteFeature).not.toHaveBeenCalled(); expect(mockResumePipeline).not.toHaveBeenCalled();
+      expect(mockExecuteFeature).not.toHaveBeenCalled();
+      expect(mockResumePipeline).not.toHaveBeenCalled();
     });
 
     it('finds features with in_progress status', async () => {
@@ -664,7 +783,7 @@ describe('recovery-service.ts', () => {
       // First feature has context, second doesn't
       vi.mocked(secureFs.access)
         .mockResolvedValueOnce(undefined) // feature-with has context
-        .mockRejectedValueOnce(new Error('ENOENT')); // feature-without doesn't
+        .mockRejectedValueOnce(Object.assign(new Error('ENOENT'), { code: 'ENOENT' })); // feature-without doesn't
 
       mockLoadFeature
         .mockResolvedValueOnce({

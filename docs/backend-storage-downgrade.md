@@ -1,0 +1,140 @@
+# Проверка DATA_DIR перед downgrade backend
+
+`scripts/check-backend-downgrade.mjs` проверяет agent storage перед запуском
+backend, который не понимает delivery ledgers, deletion tombstones и execution
+intents. Поддерживаемая цель называется `legacy-no-agent-ledgers`: это описание
+возможностей storage reader, а не версия приложения или обещание полной
+совместимости со всеми старыми backend.
+
+Проверяйте остановленный профиль или согласованный snapshot. Во время проверки
+никакой controller не должен изменять этот DATA_DIR. Скрипт не останавливает
+процессы и не блокирует каталог; проверка не заменяет остановку writer.
+
+```bash
+npm run preflight:backend:downgrade -- \
+  --data-dir /absolute/path/to/restored-profile \
+  --target legacy-no-agent-ledgers
+```
+
+Аргументы обязательны. `DATA_DIR` из environment и каталог по умолчанию не
+используются. Команда работает на Node 22 без запуска Nest, чтения `.env`,
+подключения providers или выполнения recovery. Она не создаёт snapshots, не
+удаляет маркеры и не преобразует данные.
+
+## Результат
+
+В stdout возвращается JSON с `schemaVersion`, `scope`, `target`, `status`, числом
+прочитанных файлов и findings. Finding содержит код причины, относительный путь,
+тип записи и известную фазу. Тексты prompts, история, credentials и содержимое
+повреждённых файлов не выводятся.
+
+| Exit code | Значение                                                                                             |
+| --------- | ---------------------------------------------------------------------------------------------------- |
+| `0`       | `passed`: в проверенном agent storage не обнаружены несовместимые safety artifacts                   |
+| `2`       | `blocked`: обнаружены известные safety ledgers или поля, которые цель не понимает                    |
+| `3`       | `unconfirmed`: неизвестный формат, повреждённый/недоступный файл, symlink или неоднозначный artifact |
+| `64`      | Отсутствуют обязательные аргументы или указана неподдерживаемая цель                                 |
+
+При любом ненулевом коде старый backend против этого профиля не запускается.
+Код `0` относится только к области `legacy-agent-storage-preflight`; он не
+проверяет остальные настройки, форматы проекта, SDK или совместимость бинарника.
+
+Проверяются:
+
+- `agent-session-deletions/<id>.json`: обе фазы `deleting` и `deleted`.
+- `agent-queue-deliveries/<id>.json`: claim и settled ledger, включая consumed и
+  interrupted. Даже завершённый ledger не объявляется совместимым с reader,
+  который не знает его семантики.
+- `agent-executions/<id>.json`: running, completing и settled records. Completing
+  может содержать terminal intent, ещё не подтверждённый основной историей.
+- `.legacy-electron-import/intent.json`: `staging`/`publishing` блокируют старую
+  цель; неизвестный, повреждённый или отсутствующий в существующем reserved
+  каталоге intent даёт `unconfirmed`. Валидный `complete` пропускается для этого
+  marker; это не означает совместимость остальных форматов приложения.
+- Основные файлы, `.bakN` и writer `.tmp.<timestamp>.<8hex>` artifacts в этих
+  каталогах и `agent-sessions`, включая вложенные writer suffixes. Quarantine
+  поля очереди и delivery/run поля истории блокируют downgrade без отдельного
+  журнала. Metadata snapshots проверяются на читаемый известный формат.
+
+Повреждённый основной файл не заменяется backup или temp. Symlinks внутри
+проверяемых storage paths не обходятся. Файлы не записываются; обычное чтение
+может обновлять filesystem access time согласно настройкам ОС.
+
+## Согласованный snapshot и восстановление
+
+1. До обновления сохраните используемый backend artifact, его launch command и
+   конфигурацию. Остановите единственный controller этого DATA_DIR и дождитесь
+   подтверждённого завершения cleanup. Не снимайте snapshot работающего writer.
+2. Сохраните **весь DATA_DIR** отдельным snapshot с сохранением прав доступа.
+   В него входят settings, credentials, metadata, session history, queues,
+   backups и любые safety artifacts. Проверьте полноту копии по manifest/hashes,
+   не выводя содержимое секретов. Сохраните соответствие snapshot и artifact.
+   Отдельно сохраните согласованные snapshots `.automaker` всех затронутых
+   проектов: project storage может находиться вне DATA_DIR. Для ideation conversion
+   это включает `.automaker/ideation/conversions/<sha256>.json` и связанные
+   `.automaker/features/<feature-id>/feature.json` с `ideationConversion` provenance.
+   Сохранение только одного из этих файлов не сохраняет границу conversion.
+3. Обновляйте рабочий профиль, сохраняя предыдущие snapshot и artifact. Ротация
+   `.bak1..3` отдельных JSON-файлов не является snapshot всего DATA_DIR.
+4. При rollback остановите новый controller с тем же требованием подтверждённого
+   cleanup. Сохраните текущий профиль отдельно для диагностики и последующего
+   восстановления новых данных.
+5. Восстановите **полный предыдущий snapshot в новый пустой каталог**. Не
+   накладывайте старые файлы поверх нового профиля: новые tombstones/ledgers и
+   stale snapshots иначе останутся в каталоге. Проверьте совпадение manifest и
+   прав доступа восстановленного профиля с выбранным snapshot.
+   Для project mutations восстановите соответствующие project snapshots из той
+   же остановленной точки. Старый backend не понимает новые conversion intents;
+   наличие feature не даёт ему знания о завершённом преобразовании идеи. Не
+   удаляйте intent/provenance ради обхода этого ограничения. DATA_DIR preflight
+   не сканирует внешние project roots и не подтверждает их совместимость.
+6. Выполните preflight для восстановленного каталога. При exit `0` запускайте
+   соответствующий сохранённый backend artifact с DATA_DIR этого каталога.
+   Оригинальный обновлённый профиль не используется одновременно другим
+   controller и остаётся сохранённым.
+
+Если предыдущего согласованного snapshot нет, этот инструмент не выполняет
+преобразование. Удаление journal/tombstone вручную не является downgrade:
+оно может вернуть удалённую сессию или отправить quarantined prompt повторно.
+Результаты новых действий после snapshot при его восстановлении отсутствуют.
+Изменения рабочих копий, удалённых сред и внешних систем восстановление DATA_DIR
+не отменяет.
+
+## Проверка на fixtures
+
+```bash
+npm run test:backend:downgrade
+```
+
+Offline fixtures создают только собственные временные профили. Контракт
+проверяет refusal без изменения bytes/modes, обхода symlink или вывода данных;
+затем демонстрирует отрицательный overlay и полное восстановление в fresh
+sibling с совпадающим hash/mode manifest и успешным preflight. Он не запускает
+старый production binary и не заменяет предусмотренную rollout-планом проверку
+конкретного artifact и rollback на staging.
+
+## Feature execution intents
+
+Native execution writes a private DATA_DIR ledger at
+`feature-execution-intents/<sha256>.json` before dispatching an implementation,
+custom pipeline step or merge. Version 1 stores canonical project/feature identity,
+an operation ID, kind, `pending`/`uncertain` phase and a fixed controlled reason.
+It stores no prompt, provider output or credentials. A pending record after a
+crash also requires inspection: restarting cannot establish whether its mutation
+completed. Normal confirmed settlement removes the record.
+
+Both phases block native asynchronous admission after restart and block downgrade
+to `legacy-no-agent-ledgers`. The stopped-profile preflight reports only the hashed
+artifact path and phase; malformed/unrecognized artifacts produce `unconfirmed`.
+Older binaries do not understand this gate. Do not delete a ledger to make
+preflight pass; use the full matched pre-upgrade snapshot and artifact procedure
+above. Restoring DATA_DIR does not undo workspace/remote effects.
+
+Recovery is deliberately an operator action with the controller stopped: retain
+a full profile/project snapshot, identify the affected private intent, verify the
+workspace outcome and that owned processes have stopped, then explicitly
+acknowledge that individual operation by archiving/removing its intent from the
+active profile. Unknown or unverifiable outcomes stay blocked. There is no HTTP
+"force resume" field, automatic replay or automatic clearing by a late completion.
+A new controller can then admit reviewed work. This is per-operation recovery for
+the current backend, not a downgrade conversion or a claim of power-loss durability.

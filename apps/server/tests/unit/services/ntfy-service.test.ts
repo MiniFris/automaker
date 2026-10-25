@@ -329,7 +329,8 @@ describe('NtfyService', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('403');
-      expect(result.error).toContain('Forbidden');
+      expect(result.error).toBe('HTTP 403');
+      expect(result.error).not.toContain('Forbidden');
     });
 
     it('should return error on timeout', async () => {
@@ -353,7 +354,7 @@ describe('NtfyService', () => {
       const result = await service.sendNotification(endpoint, {}, createContext());
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Network error');
+      expect(result.error).toBe('Notification request failed');
     });
 
     it('should handle server URL with trailing slash', async () => {
