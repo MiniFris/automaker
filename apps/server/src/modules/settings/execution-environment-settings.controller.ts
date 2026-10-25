@@ -1,3 +1,12 @@
+import {
+  ExecutionEnvironmentSettingsResponseSchema,
+  ExecutionEnvironmentFeatureResponseSchema,
+  ExecutionDockerDiagnosticResponseSchema,
+  ExecutionDockerPreparationResponseSchema,
+  ExecutionProviderStatusResponseSchema,
+  ExecutionSSHScanResponseSchema,
+  ExecutionSSHDiagnosticResponseSchema,
+} from '@automaker/contracts/domains/execution-environment-responses';
 import { Body, Controller, HttpCode, Inject, Post, Put, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
@@ -14,197 +23,235 @@ export class ExecutionEnvironmentSettingsController {
 
   @Post('inspect')
   @HttpCode(200)
-  inspect(
+  async inspect(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>
   ) {
-    return this.environments.inspect(body);
+    return ExecutionEnvironmentSettingsResponseSchema.parse(await this.environments.inspect(body));
   }
 
   @Post('feature/inspect')
   @HttpCode(200)
-  inspectFeature(
+  async inspectFeature(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>
   ) {
-    return this.environments.inspectFeature(body);
+    return ExecutionEnvironmentFeatureResponseSchema.parse(
+      await this.environments.inspectFeature(body)
+    );
   }
 
   @Put('global')
-  updateGlobal(
+  async updateGlobal(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>
   ) {
-    return this.environments.updateGlobal(body);
+    return ExecutionEnvironmentSettingsResponseSchema.parse(
+      await this.environments.updateGlobal(body)
+    );
   }
 
   @Put('project')
-  updateProject(
+  async updateProject(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>
   ) {
-    return this.environments.updateProject(body);
+    return ExecutionEnvironmentSettingsResponseSchema.parse(
+      await this.environments.updateProject(body)
+    );
   }
 
   @Post('local/confirm')
   @HttpCode(200)
-  confirmLocal(
+  async confirmLocal(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>
   ) {
-    return this.environments.updateConsent('local', 'confirm', body);
+    return ExecutionEnvironmentSettingsResponseSchema.parse(
+      await this.environments.updateConsent('local', 'confirm', body)
+    );
   }
 
   @Post('local/revoke')
   @HttpCode(200)
-  revokeLocal(
+  async revokeLocal(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>
   ) {
-    return this.environments.updateConsent('local', 'revoke', body);
+    return ExecutionEnvironmentSettingsResponseSchema.parse(
+      await this.environments.updateConsent('local', 'revoke', body)
+    );
   }
 
   @Post('auto/confirm')
   @HttpCode(200)
-  confirmAuto(
+  async confirmAuto(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>
   ) {
-    return this.environments.updateConsent('auto', 'confirm', body);
+    return ExecutionEnvironmentSettingsResponseSchema.parse(
+      await this.environments.updateConsent('auto', 'confirm', body)
+    );
   }
 
   @Post('auto/revoke')
   @HttpCode(200)
-  revokeAuto(
+  async revokeAuto(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>
   ) {
-    return this.environments.updateConsent('auto', 'revoke', body);
+    return ExecutionEnvironmentSettingsResponseSchema.parse(
+      await this.environments.updateConsent('auto', 'revoke', body)
+    );
   }
 
   @Post('docker/check')
   @HttpCode(200)
-  checkDocker(
+  async checkDocker(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.abortable(request, response, (signal) =>
-      this.environments.checkDocker(body, signal)
+    return ExecutionDockerDiagnosticResponseSchema.parse(
+      await this.abortable(request, response, (signal) =>
+        this.environments.checkDocker(body, signal)
+      )
     );
   }
 
   @Post('docker/prepare')
   @HttpCode(200)
-  prepareDocker(
+  async prepareDocker(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.abortable(request, response, (signal) =>
-      this.environments.prepareDocker(body, signal)
+    return ExecutionDockerPreparationResponseSchema.parse(
+      await this.abortable(request, response, (signal) =>
+        this.environments.prepareDocker(body, signal)
+      )
     );
   }
 
   @Post('providers/inspect')
   @HttpCode(200)
-  inspectProvider(
+  async inspectProvider(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.abortable(request, response, (signal) =>
-      this.environments.providerOperation('inspect', body, signal)
+    return ExecutionProviderStatusResponseSchema.parse(
+      await this.abortable(request, response, (signal) =>
+        this.environments.providerOperation('inspect', body, signal)
+      )
     );
   }
 
   @Post('providers/install')
   @HttpCode(200)
-  installProvider(
+  async installProvider(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.abortable(request, response, (signal) =>
-      this.environments.providerOperation('install', body, signal)
+    return ExecutionProviderStatusResponseSchema.parse(
+      await this.abortable(request, response, (signal) =>
+        this.environments.providerOperation('install', body, signal)
+      )
     );
   }
 
   @Post('providers/key')
   @HttpCode(200)
-  updateProviderKey(
+  async updateProviderKey(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.abortable(request, response, (signal) =>
-      this.environments.providerOperation('key', body, signal)
+    return ExecutionProviderStatusResponseSchema.parse(
+      await this.abortable(request, response, (signal) =>
+        this.environments.providerOperation('key', body, signal)
+      )
     );
   }
 
   @Post('ssh/scan')
   @HttpCode(200)
-  scanSSH(
+  async scanSSH(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.abortable(request, response, (signal) => this.environments.scanSSH(body, signal));
+    return ExecutionSSHScanResponseSchema.parse(
+      await this.abortable(request, response, (signal) => this.environments.scanSSH(body, signal))
+    );
   }
 
   @Post('ssh/trust')
   @HttpCode(200)
-  trustSSH(
+  async trustSSH(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.abortable(request, response, (signal) => this.environments.trustSSH(body, signal));
+    return ExecutionEnvironmentSettingsResponseSchema.parse(
+      await this.abortable(request, response, (signal) => this.environments.trustSSH(body, signal))
+    );
   }
 
   @Post('ssh/key')
   @HttpCode(200)
-  updateSSHKey(
+  async updateSSHKey(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>
   ) {
-    return this.environments.updateSSHKey(body);
+    return ExecutionEnvironmentSettingsResponseSchema.parse(
+      await this.environments.updateSSHKey(body)
+    );
   }
 
   @Post('ssh/check')
   @HttpCode(200)
-  checkSSH(
+  async checkSSH(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.abortable(request, response, (signal) => this.environments.checkSSH(body, signal));
+    return ExecutionSSHDiagnosticResponseSchema.parse(
+      await this.abortable(request, response, (signal) => this.environments.checkSSH(body, signal))
+    );
   }
 
   @Post('ssh/prepare')
   @HttpCode(200)
-  prepareSSH(
+  async prepareSSH(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.abortable(request, response, (signal) =>
-      this.environments.prepareSSH(body, signal)
+    return ExecutionEnvironmentSettingsResponseSchema.parse(
+      await this.abortable(request, response, (signal) =>
+        this.environments.prepareSSH(body, signal)
+      )
     );
   }
 
   @Post('ssh/project')
   @HttpCode(200)
-  prepareSSHProject(
+  async prepareSSHProject(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.abortable(request, response, (signal) =>
-      this.environments.prepareSSHProject(body, signal)
+    return ExecutionEnvironmentSettingsResponseSchema.parse(
+      await this.abortable(request, response, (signal) =>
+        this.environments.prepareSSHProject(body, signal)
+      )
     );
   }
 
   @Post('ssh/recover')
   @HttpCode(200)
-  recoverSSH(
+  async recoverSSH(
     @Body(new ZodValidationPipe(DirectSettingsMutationSchema)) body: Record<string, unknown>,
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.abortable(request, response, (signal) =>
-      this.environments.recoverSSH(body, signal)
+    return ExecutionEnvironmentSettingsResponseSchema.parse(
+      await this.abortable(request, response, (signal) =>
+        this.environments.recoverSSH(body, signal)
+      )
     );
   }
 

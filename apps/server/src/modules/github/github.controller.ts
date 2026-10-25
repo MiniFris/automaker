@@ -14,6 +14,20 @@ import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js'
 import { GithubDiscoveryService } from './github-discovery.service.js';
 import { GithubProjectSchema, type GithubProjectRequest } from './github-discovery.schemas.js';
 import {
+  GithubRemoteResponseSchema,
+  GithubIssuesResponseSchema,
+  GithubPRsResponseSchema,
+  GithubIssueCommentsResponseSchema,
+  GithubReviewCommentsResponseSchema,
+  GithubResolveThreadResponseSchema,
+  IssueValidationStartResponseSchema,
+  IssueValidationStatusResponseSchema,
+  IssueValidationStopResponseSchema,
+  IssueValidationsResponseSchema,
+  IssueValidationDeleteResponseSchema,
+  IssueValidationViewedResponseSchema,
+} from '@automaker/contracts/domains/integration-responses';
+import {
   IssueValidationRequestSchema,
   IssueValidationStatusSchema,
   IssueValidationStopSchema,
@@ -34,80 +48,80 @@ export class GithubController {
 
   @Post('check-remote')
   @HttpCode(200)
-  checkRemote(@Body(new ZodValidationPipe(GithubProjectSchema)) input: GithubProjectRequest) {
-    return this.discovery.remote(input.projectPath);
+  async checkRemote(@Body(new ZodValidationPipe(GithubProjectSchema)) input: GithubProjectRequest) {
+    return GithubRemoteResponseSchema.parse(await this.discovery.remote(input.projectPath));
   }
   @Post('issues')
   @HttpCode(200)
-  issues(@Body(new ZodValidationPipe(GithubProjectSchema)) input: GithubProjectRequest) {
-    return this.discovery.issues(input.projectPath);
+  async issues(@Body(new ZodValidationPipe(GithubProjectSchema)) input: GithubProjectRequest) {
+    return GithubIssuesResponseSchema.parse(await this.discovery.issues(input.projectPath));
   }
   @Post('prs')
   @HttpCode(200)
-  prs(@Body(new ZodValidationPipe(GithubProjectSchema)) input: GithubProjectRequest) {
-    return this.discovery.prs(input.projectPath);
+  async prs(@Body(new ZodValidationPipe(GithubProjectSchema)) input: GithubProjectRequest) {
+    return GithubPRsResponseSchema.parse(await this.discovery.prs(input.projectPath));
   }
   @Post('issue-comments')
   @HttpCode(200)
-  issueComments(
+  async issueComments(
     @Body(new ZodValidationPipe(GithubIssueCommentsSchema)) input: GithubIssueCommentsRequest
   ) {
-    return this.reviews.issueComments(input);
+    return GithubIssueCommentsResponseSchema.parse(await this.reviews.issueComments(input));
   }
   @Post('pr-review-comments')
   @HttpCode(200)
-  prReviewComments(
+  async prReviewComments(
     @Body(new ZodValidationPipe(GithubReviewCommentsSchema)) input: GithubReviewCommentsRequest
   ) {
-    return this.reviews.reviewComments(input);
+    return GithubReviewCommentsResponseSchema.parse(await this.reviews.reviewComments(input));
   }
   @Post('resolve-pr-comment')
   @HttpCode(200)
-  resolvePrComment(
+  async resolvePrComment(
     @Body(new ZodValidationPipe(GithubResolveThreadSchema)) input: GithubResolveThreadRequest
   ) {
-    return this.reviews.resolve(input);
+    return GithubResolveThreadResponseSchema.parse(await this.reviews.resolve(input));
   }
   @Post('validate-issue')
   @HttpCode(200)
-  validateIssue(
+  async validateIssue(
     @Body(new ZodValidationPipe(IssueValidationRequestSchema)) input: IssueValidationRequest
   ) {
-    return this.issueValidations.start(input);
+    return IssueValidationStartResponseSchema.parse(await this.issueValidations.start(input));
   }
   @Post('validation-status')
   @HttpCode(200)
-  validationStatus(
+  async validationStatus(
     @Body(new ZodValidationPipe(IssueValidationStatusSchema)) input: IssueValidationStatusRequest
   ) {
-    return this.issueValidations.status(input);
+    return IssueValidationStatusResponseSchema.parse(await this.issueValidations.status(input));
   }
   @Post('validation-stop')
   @HttpCode(200)
-  validationStop(
+  async validationStop(
     @Body(new ZodValidationPipe(IssueValidationStopSchema)) input: IssueValidationStopRequest
   ) {
-    return this.issueValidations.stop(input);
+    return IssueValidationStopResponseSchema.parse(await this.issueValidations.stop(input));
   }
   @Post('validations')
   @HttpCode(200)
-  validations(
+  async validations(
     @Body(new ZodValidationPipe(IssueValidationStatusSchema)) input: IssueValidationStatusRequest
   ) {
-    return this.issueValidations.stored(input);
+    return IssueValidationsResponseSchema.parse(await this.issueValidations.stored(input));
   }
   @Post('validation-delete')
   @HttpCode(200)
-  validationDelete(
+  async validationDelete(
     @Body(new ZodValidationPipe(IssueValidationStopSchema)) input: IssueValidationStopRequest
   ) {
-    return this.issueValidations.delete(input);
+    return IssueValidationDeleteResponseSchema.parse(await this.issueValidations.delete(input));
   }
   @Post('validation-mark-viewed')
   @HttpCode(200)
-  validationMarkViewed(
+  async validationMarkViewed(
     @Body(new ZodValidationPipe(IssueValidationStopSchema)) input: IssueValidationStopRequest
   ) {
-    return this.issueValidations.markViewed(input);
+    return IssueValidationViewedResponseSchema.parse(await this.issueValidations.markViewed(input));
   }
 }

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import ts from 'typescript';
 import { ownsResponseBody } from '../generate-backend-openapi.mjs';
 
-function owns(body, helper = '') {
+function owns(body, helper = '', allowStatus = false) {
   const ast = ts.createSourceFile(
     'fixture.ts',
     `class Controller { async endpoint(@Res({passthrough:true}) response: Response) { ${body} } ${helper} }`,
@@ -12,7 +12,12 @@ function owns(body, helper = '') {
   );
   const method = ast.statements[0].members[0];
   const parameter = method.parameters[0];
-  return ownsResponseBody(method, parameter, ts.getDecorators(parameter)[0].expression);
+  return ownsResponseBody(
+    method,
+    parameter,
+    ts.getDecorators(parameter)[0].expression,
+    allowStatus
+  );
 }
 test('header-only and inspected cancellation helpers preserve Nest response serialization', () => {
   assert.equal(owns("response.cookie('a','b'); return Schema.parse(value);"), false);
@@ -23,6 +28,27 @@ test('header-only and inspected cancellation helpers preserve Nest response seri
     ),
     false
   );
+});
+test('status-only passthrough is recognized without granting fluent body writes', () => {
+  assert.equal(owns('response.status(result.status); return Schema.parse(result.body);'), true);
+  assert.equal(
+    owns('response.status(result.status); return Schema.parse(result.body);', '', true),
+    false
+  );
+  assert.equal(
+    owns(
+      'return Schema.parse(await this.reply(response));',
+      'private async reply(res: Response) { res.status(value.status); return value.body; }',
+      true
+    ),
+    false
+  );
+  for (const body of [
+    'response.status(503).json(value); return Schema.parse(value);',
+    'const alias = response.status(503); alias.end(); return Schema.parse(value);',
+    'response.status(200).on("close", function () { this.end(); }); return Schema.parse(value);',
+  ])
+    assert.equal(owns(body, '', true), true, body);
 });
 test('manual body writes, fluent body writes and escaped response aliases stay unverified', () => {
   for (const body of [

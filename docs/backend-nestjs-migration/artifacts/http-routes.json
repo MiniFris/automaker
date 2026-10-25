@@ -254,7 +254,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 103,
+      "line": 127,
       "middleware": [
         "AutoModeController.analyzeProject"
       ],
@@ -269,7 +269,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 123,
+      "line": 151,
       "middleware": [
         "AutoModeController.approvePlan"
       ],
@@ -284,7 +284,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 117,
+      "line": 143,
       "middleware": [
         "AutoModeController.commitFeature"
       ],
@@ -299,7 +299,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 97,
+      "line": 119,
       "middleware": [
         "AutoModeController.contextExists"
       ],
@@ -314,7 +314,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 109,
+      "line": 135,
       "middleware": [
         "AutoModeController.followUpFeature"
       ],
@@ -329,7 +329,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 40,
+      "line": 54,
       "middleware": [
         "AutoModeController.mergeEnvironmentFeature"
       ],
@@ -344,7 +344,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 48,
+      "line": 62,
       "middleware": [
         "AutoModeController.mergeSshFeature"
       ],
@@ -359,7 +359,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 132,
+      "line": 160,
       "middleware": [
         "AutoModeController.pendingPlanApproval"
       ],
@@ -374,7 +374,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 148,
+      "line": 176,
       "middleware": [
         "AutoModeController.reconcile"
       ],
@@ -389,7 +389,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 91,
+      "line": 111,
       "middleware": [
         "AutoModeController.resumeFeature"
       ],
@@ -404,7 +404,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 140,
+      "line": 168,
       "middleware": [
         "AutoModeController.resumeInterrupted"
       ],
@@ -419,7 +419,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 79,
+      "line": 95,
       "middleware": [
         "AutoModeController.runFeature"
       ],
@@ -434,7 +434,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 54,
+      "line": 70,
       "middleware": [
         "AutoModeController.start"
       ],
@@ -449,7 +449,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 73,
+      "line": 89,
       "middleware": [
         "AutoModeController.status"
       ],
@@ -464,7 +464,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 66,
+      "line": 82,
       "middleware": [
         "AutoModeController.stopFeature"
       ],
@@ -479,7 +479,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 60,
+      "line": 76,
       "middleware": [
         "AutoModeController.stop"
       ],
@@ -494,7 +494,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/auto-mode/auto-mode.controller.ts",
-      "line": 85,
+      "line": 103,
       "middleware": [
         "AutoModeController.verifyFeature"
       ],
@@ -584,7 +584,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/providers/provider-usage.controller.ts",
-      "line": 18,
+      "line": 29,
       "middleware": [
         "ProviderUsageController.claude"
       ],
@@ -599,7 +599,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/providers/provider-usage.controller.ts",
-      "line": 28,
+      "line": 39,
       "middleware": [
         "ProviderUsageController.codexModels"
       ],
@@ -614,7 +614,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/providers/provider-usage.controller.ts",
-      "line": 23,
+      "line": 34,
       "middleware": [
         "ProviderUsageController.codex"
       ],
@@ -1274,7 +1274,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/providers/provider-usage.controller.ts",
-      "line": 42,
+      "line": 55,
       "middleware": [
         "ProviderUsageController.geminiStatus"
       ],
@@ -1289,7 +1289,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/providers/provider-usage.controller.ts",
-      "line": 37,
+      "line": 50,
       "middleware": [
         "ProviderUsageController.gemini"
       ],
@@ -1394,7 +1394,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/github/github.controller.ts",
-      "line": 35,
+      "line": 49,
       "middleware": [
         "GithubController.checkRemote"
       ],
@@ -1409,7 +1409,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/github/github.controller.ts",
-      "line": 50,
+      "line": 64,
       "middleware": [
         "GithubController.issueComments"
       ],
@@ -1424,7 +1424,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/github/github.controller.ts",
-      "line": 40,
+      "line": 54,
       "middleware": [
         "GithubController.issues"
       ],
@@ -1439,7 +1439,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/github/github.controller.ts",
-      "line": 57,
+      "line": 71,
       "middleware": [
         "GithubController.prReviewComments"
       ],
@@ -1454,7 +1454,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/github/github.controller.ts",
-      "line": 45,
+      "line": 59,
       "middleware": [
         "GithubController.prs"
       ],
@@ -1469,7 +1469,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/github/github.controller.ts",
-      "line": 64,
+      "line": 78,
       "middleware": [
         "GithubController.resolvePrComment"
       ],
@@ -1484,7 +1484,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/github/github.controller.ts",
-      "line": 71,
+      "line": 85,
       "middleware": [
         "GithubController.validateIssue"
       ],
@@ -1499,7 +1499,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/github/github.controller.ts",
-      "line": 99,
+      "line": 113,
       "middleware": [
         "GithubController.validationDelete"
       ],
@@ -1514,7 +1514,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/github/github.controller.ts",
-      "line": 106,
+      "line": 120,
       "middleware": [
         "GithubController.validationMarkViewed"
       ],
@@ -1529,7 +1529,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/github/github.controller.ts",
-      "line": 78,
+      "line": 92,
       "middleware": [
         "GithubController.validationStatus"
       ],
@@ -1544,7 +1544,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/github/github.controller.ts",
-      "line": 85,
+      "line": 99,
       "middleware": [
         "GithubController.validationStop"
       ],
@@ -1559,7 +1559,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/github/github.controller.ts",
-      "line": 92,
+      "line": 106,
       "middleware": [
         "GithubController.validations"
       ],
@@ -1889,7 +1889,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/mcp/mcp.controller.ts",
-      "line": 10,
+      "line": 14,
       "middleware": [
         "MCPController.test"
       ],
@@ -1904,7 +1904,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/mcp/mcp.controller.ts",
-      "line": 16,
+      "line": 20,
       "middleware": [
         "MCPController.tools"
       ],
@@ -2294,7 +2294,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 61,
+      "line": 80,
       "middleware": [
         "ExecutionEnvironmentSettingsController.confirmAuto"
       ],
@@ -2309,7 +2309,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 69,
+      "line": 90,
       "middleware": [
         "ExecutionEnvironmentSettingsController.revokeAuto"
       ],
@@ -2324,7 +2324,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 77,
+      "line": 100,
       "middleware": [
         "ExecutionEnvironmentSettingsController.checkDocker"
       ],
@@ -2339,7 +2339,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 89,
+      "line": 114,
       "middleware": [
         "ExecutionEnvironmentSettingsController.prepareDocker"
       ],
@@ -2354,7 +2354,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 23,
+      "line": 32,
       "middleware": [
         "ExecutionEnvironmentSettingsController.inspectFeature"
       ],
@@ -2369,7 +2369,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 31,
+      "line": 42,
       "middleware": [
         "ExecutionEnvironmentSettingsController.updateGlobal"
       ],
@@ -2384,7 +2384,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 15,
+      "line": 24,
       "middleware": [
         "ExecutionEnvironmentSettingsController.inspect"
       ],
@@ -2399,7 +2399,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 45,
+      "line": 60,
       "middleware": [
         "ExecutionEnvironmentSettingsController.confirmLocal"
       ],
@@ -2414,7 +2414,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 53,
+      "line": 70,
       "middleware": [
         "ExecutionEnvironmentSettingsController.revokeLocal"
       ],
@@ -2429,7 +2429,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 38,
+      "line": 51,
       "middleware": [
         "ExecutionEnvironmentSettingsController.updateProject"
       ],
@@ -2444,7 +2444,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 101,
+      "line": 128,
       "middleware": [
         "ExecutionEnvironmentSettingsController.inspectProvider"
       ],
@@ -2459,7 +2459,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 113,
+      "line": 142,
       "middleware": [
         "ExecutionEnvironmentSettingsController.installProvider"
       ],
@@ -2474,7 +2474,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 125,
+      "line": 156,
       "middleware": [
         "ExecutionEnvironmentSettingsController.updateProviderKey"
       ],
@@ -2489,7 +2489,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 165,
+      "line": 204,
       "middleware": [
         "ExecutionEnvironmentSettingsController.checkSSH"
       ],
@@ -2504,7 +2504,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 157,
+      "line": 194,
       "middleware": [
         "ExecutionEnvironmentSettingsController.updateSSHKey"
       ],
@@ -2519,7 +2519,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 175,
+      "line": 216,
       "middleware": [
         "ExecutionEnvironmentSettingsController.prepareSSH"
       ],
@@ -2534,7 +2534,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 187,
+      "line": 230,
       "middleware": [
         "ExecutionEnvironmentSettingsController.prepareSSHProject"
       ],
@@ -2549,7 +2549,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 199,
+      "line": 244,
       "middleware": [
         "ExecutionEnvironmentSettingsController.recoverSSH"
       ],
@@ -2564,7 +2564,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 137,
+      "line": 170,
       "middleware": [
         "ExecutionEnvironmentSettingsController.scanSSH"
       ],
@@ -2579,7 +2579,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/settings/execution-environment-settings.controller.ts",
-      "line": 147,
+      "line": 182,
       "middleware": [
         "ExecutionEnvironmentSettingsController.trustSSH"
       ],
@@ -4754,7 +4754,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/providers/provider-usage.controller.ts",
-      "line": 47,
+      "line": 62,
       "middleware": [
         "ProviderUsageController.configureZai"
       ],
@@ -4769,7 +4769,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/providers/provider-usage.controller.ts",
-      "line": 70,
+      "line": 87,
       "middleware": [
         "ProviderUsageController.zaiStatus"
       ],
@@ -4784,7 +4784,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/providers/provider-usage.controller.ts",
-      "line": 65,
+      "line": 82,
       "middleware": [
         "ProviderUsageController.zai"
       ],
@@ -4799,7 +4799,7 @@
       "owner": "nestjs",
       "access": "protected",
       "source": "apps/server/src/modules/providers/provider-usage.controller.ts",
-      "line": 56,
+      "line": 73,
       "middleware": [
         "ProviderUsageController.verifyZai"
       ],

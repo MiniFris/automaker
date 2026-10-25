@@ -47,6 +47,21 @@ test('shared input schemas describe actual strict request fields and constraints
   assert.equal(resize.properties.files.maxItems, 1000);
 });
 
+test('status-only passthrough documents a validated body without inventing a fixed status', () => {
+  for (const [path, method] of [
+    ['/claude/usage', 'get'],
+    ['/codex/models', 'get'],
+    ['/zai/verify', 'post'],
+  ]) {
+    const operation = document.paths[`/api${path}`][method];
+    assert.equal(operation['x-response-contract'], 'shared-runtime');
+    assert.ok(operation.responses.default.content['application/json'].schema.$ref);
+    assert.equal(operation.responses['200'], undefined);
+    assert.equal(operation.responses['4XX'].content, undefined);
+    assert.equal(operation.responses['5XX'].content, undefined);
+  }
+});
+
 test('unknown responses and raw request access remain explicitly incomplete', () => {
   const operation = document.paths['/api/setup/verify-claude-auth'].post;
   assert.equal(operation['x-request-contract'], 'incomplete');

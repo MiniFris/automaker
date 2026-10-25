@@ -1,3 +1,14 @@
+import {
+  ClaudeUsageResponseSchema,
+  CodexUsageResponseSchema,
+  CodexModelsResponseSchema,
+  GeminiUsageResponseSchema,
+  GeminiStatusResponseSchema,
+  ZaiConfigureResponseSchema,
+  ZaiVerifyResponseSchema,
+  ZaiUsageResponseSchema,
+  ZaiStatusResponseSchema,
+} from '@automaker/contracts/domains/provider-usage-responses';
 import { ProviderRefreshQuerySchema } from '@automaker/contracts/domains/setup-query';
 import { Body, Controller, Get, HttpCode, Inject, Post, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
@@ -16,60 +27,68 @@ export class ProviderUsageController {
   constructor(@Inject(ProviderUsageService) private readonly usage: ProviderUsageService) {}
 
   @Get('claude/usage')
-  claude(@Res({ passthrough: true }) response: Response) {
-    return this.respond(response, this.usage.claudeUsage());
+  async claude(@Res({ passthrough: true }) response: Response) {
+    return ClaudeUsageResponseSchema.parse(await this.respond(response, this.usage.claudeUsage()));
   }
 
   @Get('codex/usage')
-  codex(@Res({ passthrough: true }) response: Response) {
-    return this.respond(response, this.usage.codexUsage());
+  async codex(@Res({ passthrough: true }) response: Response) {
+    return CodexUsageResponseSchema.parse(await this.respond(response, this.usage.codexUsage()));
   }
 
   @Get('codex/models')
-  codexModels(
+  async codexModels(
     @Query('refresh', new ZodValidationPipe(ProviderRefreshQuerySchema))
     refresh: string | string[] | undefined,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.respond(response, this.usage.codexModelCatalog(refresh === 'true'));
+    return CodexModelsResponseSchema.parse(
+      await this.respond(response, this.usage.codexModelCatalog(refresh === 'true'))
+    );
   }
 
   @Get('gemini/usage')
-  gemini(@Res({ passthrough: true }) response: Response) {
-    return this.respond(response, this.usage.geminiUsage());
+  async gemini(@Res({ passthrough: true }) response: Response) {
+    return GeminiUsageResponseSchema.parse(await this.respond(response, this.usage.geminiUsage()));
   }
 
   @Get('gemini/status')
-  geminiStatus(@Res({ passthrough: true }) response: Response) {
-    return this.respond(response, this.usage.geminiStatus());
+  async geminiStatus(@Res({ passthrough: true }) response: Response) {
+    return GeminiStatusResponseSchema.parse(
+      await this.respond(response, this.usage.geminiStatus())
+    );
   }
 
   @Post('zai/configure')
   @HttpCode(200)
-  configureZai(
+  async configureZai(
     @Body(new ZodValidationPipe(ZaiConfigureSchema)) body: ZaiConfigureRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.respond(response, this.usage.zaiConfigure(body));
+    return ZaiConfigureResponseSchema.parse(
+      await this.respond(response, this.usage.zaiConfigure(body))
+    );
   }
 
   @Post('zai/verify')
   @HttpCode(200)
-  verifyZai(
+  async verifyZai(
     @Body(new ZodValidationPipe(ZaiVerifySchema)) body: ZaiVerifyRequest,
     @Res({ passthrough: true }) response: Response
   ) {
-    return this.respond(response, this.usage.zaiVerify(body));
+    return ZaiVerifyResponseSchema.parse(await this.respond(response, this.usage.zaiVerify(body)));
   }
 
   @Get('zai/usage')
-  zai(@Res({ passthrough: true }) response: Response) {
-    return this.respond(response, this.usage.zaiUsage());
+  async zai(@Res({ passthrough: true }) response: Response) {
+    return ZaiUsageResponseSchema.parse(await this.respond(response, this.usage.zaiUsage()));
   }
 
   @Get('zai/status')
-  zaiStatus(@Res({ passthrough: true }) response: Response) {
-    return this.respond(response, Promise.resolve(this.usage.zaiStatus()));
+  async zaiStatus(@Res({ passthrough: true }) response: Response) {
+    return ZaiStatusResponseSchema.parse(
+      await this.respond(response, Promise.resolve(this.usage.zaiStatus()))
+    );
   }
 
   private async respond(response: Response, result: Promise<ProviderHttpResult>) {

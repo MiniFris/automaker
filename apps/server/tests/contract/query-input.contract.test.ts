@@ -59,7 +59,24 @@ it('keeps refresh true only for a scalar literal, accepting repeated and bracket
     .mockResolvedValue({ success: true } as never);
   const usage = vi
     .spyOn(runtime.app.get(ProviderUsageService), 'codexModelCatalog')
-    .mockResolvedValue({ status: 200, body: { success: true } });
+    .mockResolvedValue({
+      status: 200,
+      body: {
+        success: true,
+        models: [
+          {
+            id: 'codex-fixture',
+            label: 'Fixture',
+            description: '',
+            hasThinking: false,
+            supportsVision: true,
+            tier: 'standard',
+            isDefault: true,
+          },
+        ],
+        cachedAt: 0,
+      },
+    });
   for (const [query, refresh] of [
     ['', false],
     ['?refresh=true', true],

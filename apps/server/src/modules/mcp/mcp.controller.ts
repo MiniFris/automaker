@@ -2,6 +2,10 @@ import { Body, Controller, HttpCode, Inject, Post } from '@nestjs/common';
 import { ZodValidationPipe } from '../../core/validation/zod-validation.pipe.js';
 import { MCPApplicationService } from './mcp-application.service.js';
 import { MCPServerRequestSchema, type MCPServerRequest } from './mcp.schemas.js';
+import {
+  MCPConnectionResponseSchema,
+  MCPToolsResponseSchema,
+} from '@automaker/contracts/domains/integration-responses';
 
 @Controller('mcp')
 export class MCPController {
@@ -9,13 +13,13 @@ export class MCPController {
 
   @Post('test')
   @HttpCode(200)
-  test(@Body(new ZodValidationPipe(MCPServerRequestSchema)) body: MCPServerRequest) {
-    return this.mcp.test(body);
+  async test(@Body(new ZodValidationPipe(MCPServerRequestSchema)) body: MCPServerRequest) {
+    return MCPConnectionResponseSchema.parse(await this.mcp.test(body));
   }
 
   @Post('tools')
   @HttpCode(200)
-  tools(@Body(new ZodValidationPipe(MCPServerRequestSchema)) body: MCPServerRequest) {
-    return this.mcp.tools(body);
+  async tools(@Body(new ZodValidationPipe(MCPServerRequestSchema)) body: MCPServerRequest) {
+    return MCPToolsResponseSchema.parse(await this.mcp.tools(body));
   }
 }

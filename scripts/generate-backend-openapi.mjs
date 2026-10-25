@@ -115,7 +115,7 @@ function guardedInputSchema(method, parameterName) {
   return undefined;
 }
 
-export function ownsResponseBody(method, parameter, decorator) {
+export function ownsResponseBody(method, parameter, decorator, allowStatus = false) {
   const options = decorator.arguments[0];
   const passthrough =
     options &&
@@ -138,6 +138,7 @@ export function ownsResponseBody(method, parameter, decorator) {
     'off',
     'removeListener',
   ]);
+  if (allowStatus) fluent.add('status');
   const reads = new Set(['writableEnded', 'writableFinished', 'destroyed', 'headersSent']);
   const seen = new Set();
   function usesBody(owner, name) {
@@ -300,14 +301,21 @@ async function operation(endpoint) {
   const status =
     statusDecorator?.arguments?.[0]?.getText(ast) ?? (endpoint.method === 'POST' ? '201' : '200');
   // Manual @Res methods own their status/content. Header-only passthrough remains serialized.
-  const ownsResponse = method.parameters.some((p) =>
-    decorators(p).some(
-      (d) =>
-        ts.isCallExpression(d.expression) &&
-        d.expression.expression.getText(ast) === 'Res' &&
-        ownsResponseBody(method, p, d.expression)
+  const responseParameters = method.parameters.flatMap((parameter) =>
+    decorators(parameter).flatMap((d) =>
+      ts.isCallExpression(d.expression) && d.expression.expression.getText(ast) === 'Res'
+        ? [{ parameter, decorator: d.expression }]
+        : []
     )
   );
+  const ownsResponse = responseParameters.some(({ parameter, decorator }) =>
+    ownsResponseBody(method, parameter, decorator, true)
+  );
+  const dynamicStatus =
+    !ownsResponse &&
+    responseParameters.some(({ parameter, decorator }) =>
+      ownsResponseBody(method, parameter, decorator)
+    );
   const returns = [];
   function collectReturns(node) {
     if (node !== method.body && ts.isFunctionLike(node)) return;
@@ -346,15 +354,32 @@ async function operation(endpoint) {
               'Status and body controlled by the handler; response contract not yet shared.',
           },
         }
-      : {
-          [status]: responseSchema
-            ? {
-                description: 'Response validated by the shared runtime schema.',
+      : dynamicStatus
+        ? {
+            default: {
+              description: responseSchema
+                ? 'Handler selects the status; Nest serializes the shared validated response body.'
+                : 'Handler selects the status; response schema not yet verified.',
+              ...(responseSchema && {
                 content: { 'application/json': { schema: responseSchema } },
-              }
-            : { description: 'Successful response; response schema not yet verified.' },
-          default: { description: 'Error response; see endpoint implementation.' },
-        },
+              }),
+            },
+            '4XX': {
+              description: 'Handler or middleware error; full error schema not yet verified.',
+            },
+            '5XX': {
+              description: 'Handler or middleware error; full error schema not yet verified.',
+            },
+          }
+        : {
+            [status]: responseSchema
+              ? {
+                  description: 'Response validated by the shared runtime schema.',
+                  content: { 'application/json': { schema: responseSchema } },
+                }
+              : { description: 'Successful response; response schema not yet verified.' },
+            default: { description: 'Error response; see endpoint implementation.' },
+          },
   };
 }
 
