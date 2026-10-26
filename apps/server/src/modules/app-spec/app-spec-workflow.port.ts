@@ -1,6 +1,9 @@
+import type { OutputLocale } from '@automaker/types';
+
 export type AppSpecOperation = 'spec_regeneration' | 'feature_generation' | 'sync';
 
 export interface AppSpecGenerationOptions {
+  outputLocale?: OutputLocale;
   projectPath: string;
   source: string;
   generateFeatures?: boolean;
@@ -15,7 +18,8 @@ export interface AppSpecWorkflowPort {
   generateFeatures(
     projectPath: string,
     maxFeatures: number | undefined,
-    abortController: AbortController
+    abortController: AbortController,
+    outputLocale?: OutputLocale
   ): Promise<void>;
   sync(projectPath: string, abortController: AbortController): Promise<void>;
 }

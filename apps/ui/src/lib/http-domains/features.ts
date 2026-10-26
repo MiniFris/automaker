@@ -1,3 +1,4 @@
+import { getUiLocale } from '../i18n';
 import type { HttpDomainTransport } from './transport';
 import type { FeaturesAPI } from '../electron';
 import type { Feature } from '@automaker/types';
@@ -114,7 +115,11 @@ export function createFeaturesClient(
     getAgentOutput: (projectPath: string, featureId: string) =>
       transport.post('/api/features/agent-output', { projectPath, featureId }),
     generateTitle: (description: string, projectPath?: string) =>
-      transport.post('/api/features/generate-title', { description, projectPath }),
+      transport.post('/api/features/generate-title', {
+        description,
+        projectPath,
+        outputLocale: getUiLocale(),
+      }),
     bulkUpdate: (projectPath: string, featureIds: string[], updates: Partial<Feature>) =>
       transport.post('/api/features/bulk-update', { projectPath, featureIds, updates }),
     bulkDelete: (projectPath: string, featureIds: string[]) =>

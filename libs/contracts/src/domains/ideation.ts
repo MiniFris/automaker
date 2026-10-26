@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { OutputLocaleSchema } from '../generation-language.js';
 
 // Category membership and its historical error belong to the ideation service.
 export const IdeaPromptCategoryParameterSchema = z.string();
@@ -20,6 +21,7 @@ const IdeaIdSchema = ProjectSchema.extend({ ideaId: z.string().min(1) }).strict(
 const level = z.enum(['low', 'medium', 'high']);
 
 export const SessionStartSchema = ProjectSchema.extend({
+  outputLocale: OutputLocaleSchema.optional(),
   options: z
     .object({
       promptId: z.string().optional(),
@@ -31,6 +33,7 @@ export const SessionStartSchema = ProjectSchema.extend({
 }).strict();
 export const SessionMessageSchema = z
   .object({
+    outputLocale: OutputLocaleSchema.optional(),
     sessionId: z.string().min(1),
     message: z.string().min(1),
     options: z
@@ -98,6 +101,7 @@ export const SuggestionSchema = z
   .strict();
 export const AddSuggestionSchema = ProjectSchema.extend({ suggestion: SuggestionSchema }).strict();
 export const GenerateSuggestionsSchema = ProjectSchema.extend({
+  outputLocale: OutputLocaleSchema.optional(),
   promptId: z.string().min(1),
   category: IdeaCategorySchema,
   count: z.number().int().optional(),

@@ -1,3 +1,4 @@
+import { withOutputLanguage } from '@automaker/prompts';
 import { Inject, Injectable } from '@nestjs/common';
 import { getAppSpecPath, getFeaturesDir } from '@automaker/platform';
 import path from 'node:path';
@@ -82,7 +83,10 @@ export class PromptEnhancementService {
     const result = await this.query({
       settingsService: this.settings,
       providerId: input.providerId,
-      prompt: [systemPrompts[mode], projectContext, userPrompt].filter(Boolean).join('\n\n'),
+      prompt: withOutputLanguage(
+        [systemPrompts[mode], projectContext, userPrompt].filter(Boolean).join('\n\n'),
+        input.outputLocale
+      ),
       model,
       cwd: this.paths.workingDirectory,
       maxTurns: 1,

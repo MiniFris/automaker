@@ -161,6 +161,7 @@ export interface StartSessionOptions {
 }
 
 export interface SendMessageOptions {
+  outputLocale?: import('./prompts.js').OutputLocale;
   imagePaths?: string[];
   model?: string;
   providerId?: string;

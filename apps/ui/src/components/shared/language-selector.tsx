@@ -40,7 +40,7 @@ export function LanguageSelector({ compact = false }: { compact?: boolean }) {
       {!compact && (
         <p id={descriptionId} className="text-sm text-muted-foreground">
           {translate(
-            'Choose the interface language. Project content and model responses are not translated.'
+            'Choose the interface language. Newly generated tasks use this language. Existing content stays unchanged.'
           )}
         </p>
       )}

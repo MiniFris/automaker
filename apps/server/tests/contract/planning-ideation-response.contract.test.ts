@@ -141,7 +141,7 @@ it('covers every specification accepted/duplicate/status/stop wire while held jo
         signal = (
           row.method === 'generate'
             ? (args[0] as { abortController: AbortController }).abortController
-            : (args.at(-1) as AbortController)
+            : (args[row.method === 'generateFeatures' ? 2 : 1] as AbortController)
         ).signal;
         return held.promise;
       });

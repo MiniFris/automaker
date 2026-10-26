@@ -205,7 +205,7 @@ export class FeaturesController {
   ) {
     return FeatureTitleResponseSchema.parse(
       await this.withCancellation(response, (controller) =>
-        this.titles.generate(input.description, input.projectPath, controller)
+        this.titles.generate(input.description, input.projectPath, controller, input.outputLocale)
       )
     );
   }

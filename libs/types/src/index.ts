@@ -118,6 +118,7 @@ export type { EnhancementMode, EnhancementExample } from './enhancement.js';
 
 // Prompt customization types
 export type {
+  OutputLocale,
   CustomPrompt,
   AutoModePrompts,
   AgentPrompts,

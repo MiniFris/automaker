@@ -1,3 +1,4 @@
+import type { OutputLocale } from '@automaker/types';
 import { DirectCheckpointRepository } from '../providers/direct-checkpoint.repository.js';
 import type { AgentCheckpointRepository } from '../../providers/openai-compatible/checkpoint.js';
 import { HOST_ENVIRONMENT } from '../../core/config/index.js';
@@ -19,6 +20,7 @@ export interface StoredBacklogPlan {
   result: BacklogPlanResult;
 }
 export interface PlanningRunContext {
+  readonly outputLocale?: OutputLocale;
   projectPath: string;
   check(): void;
   filesystem: Pick<typeof Filesystem, 'readFile'>;
@@ -41,7 +43,7 @@ export class PlanningWorkflowContext {
     private readonly checkpointRepository?: AgentCheckpointRepository
   ) {}
 
-  operation(project: string, signal: AbortSignal): PlanningRunContext {
+  operation(project: string, signal: AbortSignal, outputLocale?: OutputLocale): PlanningRunContext {
     const projectPath = this.security.validateLocalPath(project, 'planning workflow');
     const check = () => signal.throwIfAborted();
     const owned = async <T>(operation: () => Promise<T>): Promise<T> => {
@@ -55,6 +57,7 @@ export class PlanningWorkflowContext {
         throw new ValidationDomainError('Planning operation changed its project.');
     };
     return {
+      outputLocale,
       projectPath,
       check,
       filesystem: { readFile: (...args) => owned(() => this.filesystem.readFile(...args)) },

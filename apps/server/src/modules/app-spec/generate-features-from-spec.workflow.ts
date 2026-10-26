@@ -1,3 +1,4 @@
+import { withOutputLanguage } from '@automaker/prompts';
 /**
  * Generate features from existing app_spec.txt
  *
@@ -261,7 +262,7 @@ Your entire response should be valid JSON starting with { and ending with }. No 
     {
       settingsService,
       providerId: phaseModelEntry.providerId,
-      prompt: finalPrompt,
+      prompt: withOutputLanguage(finalPrompt, context.outputLocale),
       model,
       cwd: projectPath,
       maxTurns: 250,
