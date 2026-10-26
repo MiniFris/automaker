@@ -28,6 +28,7 @@ jobs:
         run: |
           npm run lint:server:errors
           npm run test:backend:architecture
+          node --test scripts/tests/docker-project-persistence.test.mjs
           npm run test:backend:downgrade
           npm run inventory:server:check
           npm run check:backend:openapi

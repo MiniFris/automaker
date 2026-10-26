@@ -15,13 +15,22 @@ describe('AppSpecApplicationService', () => {
       sync: vi.fn().mockResolvedValue(undefined),
     };
     const service = new AppSpecApplicationService(workflow, jobs, { emit: vi.fn() } as never);
-    const input = { projectPath: '/selected-alias', projectDefinition: 'Original' };
+    const input = {
+      projectPath: '/selected-alias',
+      projectDefinition: 'Original',
+      outputLocale: 'ru' as 'ru' | 'en',
+    };
     expect(service.generate(input).success).toBe(true);
     target = '/retargeted-project';
     input.projectDefinition = 'Changed after admission';
+    input.outputLocale = 'en';
     await Promise.resolve();
     expect(workflow.generate).toHaveBeenCalledWith(
-      expect.objectContaining({ projectPath: '/original-project', source: 'Original' })
+      expect.objectContaining({
+        projectPath: '/original-project',
+        source: 'Original',
+        outputLocale: 'ru',
+      })
     );
     await jobs.onModuleDestroy();
     expect(workflow.generate).not.toHaveBeenCalledWith(

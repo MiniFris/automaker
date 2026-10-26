@@ -36,13 +36,16 @@ export class IdeationApplicationService {
     return {
       success: true as const,
       session: await this.ideation.runAccepted(() =>
-        this.ideation.startSession(input.projectPath, input.options)
+        this.ideation.startSession(input.projectPath, input.options, input.outputLocale)
       ),
     };
   }
 
   message(input: SessionMessageInput) {
-    this.ideation.launchMessage(input.sessionId, input.message, input.options);
+    this.ideation.launchMessage(input.sessionId, input.message, {
+      ...input.options,
+      outputLocale: input.outputLocale,
+    });
     return { success: true as const };
   }
 
@@ -191,7 +194,8 @@ export class IdeationApplicationService {
       input.promptId,
       input.category,
       count,
-      input.contextSources
+      input.contextSources,
+      input.outputLocale
     );
     return { success: true as const, suggestions };
   }

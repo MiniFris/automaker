@@ -16337,6 +16337,13 @@
             "type": "string",
             "minLength": 1
           },
+          "outputLocale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "ru"
+            ]
+          },
           "promptId": {
             "type": "string",
             "minLength": 1
@@ -16626,6 +16633,13 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
+          "outputLocale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "ru"
+            ]
+          },
           "sessionId": {
             "type": "string",
             "minLength": 1
@@ -16666,6 +16680,13 @@
           "projectPath": {
             "type": "string",
             "minLength": 1
+          },
+          "outputLocale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "ru"
+            ]
           },
           "options": {
             "type": "object",
@@ -18691,6 +18712,13 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
+          "outputLocale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "ru"
+            ]
+          },
           "originalText": {
             "type": "string",
             "minLength": 1
@@ -22989,6 +23017,13 @@
             "minLength": 1,
             "maxLength": 2000000
           },
+          "outputLocale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "ru"
+            ]
+          },
           "generateFeatures": {
             "default": false,
             "type": "boolean"
@@ -23013,6 +23048,13 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
+          "outputLocale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "ru"
+            ]
+          },
           "projectPath": {
             "type": "string",
             "minLength": 1,
@@ -23042,6 +23084,13 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 2000000
+          },
+          "outputLocale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "ru"
+            ]
           },
           "generateFeatures": {
             "default": false,
@@ -23216,6 +23265,13 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
+          "outputLocale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "ru"
+            ]
+          },
           "projectPath": {
             "type": "string",
             "minLength": 1,
@@ -24292,6 +24348,13 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
+          "outputLocale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "ru"
+            ]
+          },
           "description": {
             "type": "string",
             "minLength": 1,

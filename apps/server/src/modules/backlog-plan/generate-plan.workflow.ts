@@ -1,3 +1,4 @@
+import { withOutputLanguage } from '@automaker/prompts';
 import type { AgentCheckpointRepository } from '../../providers/openai-compatible/checkpoint.js';
 /**
  * Generate backlog plan using Claude AI
@@ -211,7 +212,7 @@ export async function generateBacklogPlan(
     const prompts = await getPromptCustomization(settingsService, '[BacklogPlan]');
 
     // Build the system prompt
-    const systemPrompt = prompts.backlogPlan.systemPrompt;
+    const systemPrompt = withOutputLanguage(prompts.backlogPlan.systemPrompt, context.outputLocale);
 
     // Build the user prompt from template
     const currentFeatures = formatFeaturesForPrompt(features);

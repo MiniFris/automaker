@@ -238,7 +238,7 @@
   "Education": "Образовательный",
   "The agent can read, modify and delete files, access credentials/environment variables, use the network, install dependencies and execute commands with the permissions of the Automaker server user. There is no automatic privilege elevation: if the server already runs as root/Administrator, the agent inherits that access. Docker installation only limits it to what the Automaker container can access, including mounted volumes.": "Агент может читать, изменять и удалять файлы, получать доступ к учётным данным и переменным окружения, использовать сеть, устанавливать зависимости и выполнять команды с правами системного пользователя сервера Automaker. Автоматического повышения привилегий нет: если сервер уже работает от root/Administrator, агент наследует эти права. При установке через Docker доступ ограничен только тем, что доступно контейнеру Automaker, включая подключённые тома.",
   "Interface language": "Язык интерфейса",
-  "Choose the interface language. Project content and model responses are not translated.": "Выберите язык интерфейса. Содержимое проектов и ответы моделей не переводятся.",
+  "Choose the interface language. Newly generated tasks use this language. Existing content stays unchanged.": "Выберите язык интерфейса. Новые задачи создаются на этом языке. Существующее содержимое остаётся без изменений.",
   "Settings": "Настройки",
   "Global Settings": "Общие настройки",
   "Project Settings": "Настройки проекта",

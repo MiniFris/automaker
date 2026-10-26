@@ -1,3 +1,5 @@
+import type { OutputLocale } from '@automaker/types';
+
 /** Application-owned values. HTTP validation/defaults stay at the transport boundary. */
 export interface BacklogApplyInput {
   projectPath: string;
@@ -19,6 +21,7 @@ export interface BacklogApplyInput {
 }
 
 export interface BacklogGenerateInput {
+  outputLocale?: OutputLocale;
   projectPath: string;
   prompt: string;
   model?: string | undefined;

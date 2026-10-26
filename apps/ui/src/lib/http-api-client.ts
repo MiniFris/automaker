@@ -1,3 +1,4 @@
+import { withGitEnvironmentTarget } from './http-domains/git-environment-target';
 import { createSetupClient } from './http-domains/setup';
 import { createWorktreeClient } from './http-domains/worktree';
 import { createModelClient } from './http-domains/model';
@@ -1036,18 +1037,12 @@ export class HttpApiClient implements ElectronAPI {
   private async post<T>(endpoint: string, body?: unknown, signal?: AbortSignal): Promise<T> {
     // Ensure API key is initialized before making request
     await waitForApiKeyInit();
-    let requestBody = body;
-    if (
-      (endpoint.startsWith('/api/git/') || endpoint.startsWith('/api/worktree/')) &&
-      body &&
-      typeof body === 'object'
-    ) {
-      const source = body as Record<string, unknown>;
-      const alias = source.worktreePath ?? source.projectPath;
-      const target = typeof alias === 'string' ? this.gitEnvironmentTargets.get(alias) : undefined;
-      if (target && source.environmentTargetId === undefined)
-        requestBody = { ...source, environmentTargetId: target };
-    }
+    const requestBody = withGitEnvironmentTarget(
+      'POST',
+      endpoint,
+      body,
+      this.gitEnvironmentTargets
+    );
     const response = await fetch(`${this.serverUrl}${endpoint}`, {
       method: 'POST',
       headers: this.getHeaders(),
@@ -1135,11 +1130,12 @@ export class HttpApiClient implements ElectronAPI {
   async put<T>(endpoint: string, body?: unknown): Promise<T> {
     // Ensure API key is initialized before making request
     await waitForApiKeyInit();
+    const requestBody = withGitEnvironmentTarget('PUT', endpoint, body, this.gitEnvironmentTargets);
     const response = await fetch(`${this.serverUrl}${endpoint}`, {
       method: 'PUT',
       headers: this.getHeaders(),
       credentials: 'include', // Include cookies for session auth
-      body: body ? JSON.stringify(body) : undefined,
+      body: requestBody ? JSON.stringify(requestBody) : undefined,
     });
 
     if (response.status === 401 || response.status === 403) {
@@ -1166,11 +1162,17 @@ export class HttpApiClient implements ElectronAPI {
   private async httpDelete<T>(endpoint: string, body?: unknown): Promise<T> {
     // Ensure API key is initialized before making request
     await waitForApiKeyInit();
+    const requestBody = withGitEnvironmentTarget(
+      'DELETE',
+      endpoint,
+      body,
+      this.gitEnvironmentTargets
+    );
     const response = await fetch(`${this.serverUrl}${endpoint}`, {
       method: 'DELETE',
       headers: this.getHeaders(),
       credentials: 'include', // Include cookies for session auth
-      body: body ? JSON.stringify(body) : undefined,
+      body: requestBody ? JSON.stringify(requestBody) : undefined,
     });
 
     if (response.status === 401 || response.status === 403) {

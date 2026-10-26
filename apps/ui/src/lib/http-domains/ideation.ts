@@ -1,3 +1,4 @@
+import { getUiLocale } from '../i18n';
 import type { HttpDomainTransport } from './transport';
 import type {
   IdeationAPI,
@@ -20,7 +21,11 @@ export function createIdeationClient(
 ): IdeationAPI {
   return {
     startSession: (projectPath: string, options?: StartSessionOptions) =>
-      transport.post('/api/ideation/session/start', { projectPath, options }),
+      transport.post('/api/ideation/session/start', {
+        projectPath,
+        options,
+        outputLocale: getUiLocale(),
+      }),
 
     getSession: (projectPath: string, sessionId: string) =>
       transport.post('/api/ideation/session/get', { projectPath, sessionId }),
@@ -29,7 +34,13 @@ export function createIdeationClient(
       sessionId: string,
       message: string,
       options?: { imagePaths?: string[]; model?: string }
-    ) => transport.post('/api/ideation/session/message', { sessionId, message, options }),
+    ) =>
+      transport.post('/api/ideation/session/message', {
+        sessionId,
+        message,
+        options,
+        outputLocale: getUiLocale(),
+      }),
 
     stopSession: (sessionId: string) => transport.post('/api/ideation/session/stop', { sessionId }),
 
@@ -58,6 +69,7 @@ export function createIdeationClient(
       contextSources?: IdeationContextSources
     ) =>
       transport.post('/api/ideation/suggestions/generate', {
+        outputLocale: getUiLocale(),
         projectPath,
         promptId,
         category,

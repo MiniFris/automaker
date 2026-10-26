@@ -5,6 +5,9 @@
  * Allows users to modify prompts for Auto Mode, Agent Runner, and Backlog Planning.
  */
 
+/** Language of newly generated task content. */
+export type OutputLocale = 'en' | 'ru';
+
 /**
  * CustomPrompt - A custom prompt with its value and enabled state
  *

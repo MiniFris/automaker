@@ -1,3 +1,4 @@
+import { getUiLocale } from '../i18n';
 import type { HttpDomainTransport } from './transport';
 import type { SpecRegenerationAPI, SpecRegenerationEvent } from '../electron';
 import type { EventCallback } from '../http-api-client';
@@ -14,6 +15,7 @@ export function createSpecRegenerationClient(
       maxFeatures?: number
     ) =>
       transport.post('/api/spec-regeneration/create', {
+        outputLocale: getUiLocale(),
         projectPath,
         projectOverview,
         generateFeatures,
@@ -28,6 +30,7 @@ export function createSpecRegenerationClient(
       maxFeatures?: number
     ) =>
       transport.post('/api/spec-regeneration/generate', {
+        outputLocale: getUiLocale(),
         projectPath,
         projectDefinition,
         generateFeatures,
@@ -36,6 +39,7 @@ export function createSpecRegenerationClient(
       }),
     generateFeatures: (projectPath: string, maxFeatures?: number) =>
       transport.post('/api/spec-regeneration/generate-features', {
+        outputLocale: getUiLocale(),
         projectPath,
         maxFeatures,
       }),

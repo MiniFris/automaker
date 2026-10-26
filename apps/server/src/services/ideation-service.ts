@@ -1,3 +1,5 @@
+import { withOutputLanguage } from '@automaker/prompts';
+import type { OutputLocale } from '@automaker/types';
 import { IdeationIdeaRepository, ensureIdeationDirectories } from './ideation/idea-repository.js';
 import { IdeationProjectAnalysis } from './ideation/project-analysis.js';
 import { IdeationTextStream } from './ideation/text-stream.js';
@@ -143,7 +145,11 @@ export class IdeationService {
   /**
    * Start a new ideation session
    */
-  async startSession(projectPath: string, options?: StartSessionOptions): Promise<IdeationSession> {
+  async startSession(
+    projectPath: string,
+    options?: StartSessionOptions,
+    outputLocale?: OutputLocale
+  ): Promise<IdeationSession> {
     this.validateDirectory(projectPath);
     await ensureIdeationDirectories(this.filesystem, projectPath);
 
@@ -174,7 +180,7 @@ export class IdeationService {
 
     // If there's an initial message from a prompt, send it
     if (options?.initialMessage) {
-      await this.sendMessage(sessionId, options.initialMessage);
+      await this.sendMessage(sessionId, options.initialMessage, { outputLocale });
     }
 
     return session;
@@ -222,8 +228,15 @@ export class IdeationService {
     const controller = new AbortController();
     active.isRunning = true;
     active.abortController = controller;
+    const ownedOptions = {
+      ...options,
+      imagePaths: options?.imagePaths ? [...options.imagePaths] : undefined,
+    };
     const task = this.jobs
-      .run(() => this.sendMessageOwned(sessionId, message, options, active, controller), controller)
+      .run(
+        () => this.sendMessageOwned(sessionId, message, ownedOptions, active, controller),
+        controller
+      )
       .finally(() => {
         if (active.abortController === controller && !active.cleanupUnconfirmed) {
           active.isRunning = false;
@@ -281,11 +294,14 @@ export class IdeationService {
       const prompts = await getPromptCustomization(this.settingsService, '[IdeationService]');
 
       // Build system prompt for ideation
-      const systemPrompt = this.buildIdeationSystemPrompt(
-        prompts.ideation.ideationSystemPrompt,
-        contextResult.formattedPrompt,
-        activeSession.session.promptCategory,
-        existingWorkContext
+      const systemPrompt = withOutputLanguage(
+        this.buildIdeationSystemPrompt(
+          prompts.ideation.ideationSystemPrompt,
+          contextResult.formattedPrompt,
+          activeSession.session.promptCategory,
+          existingWorkContext
+        ),
+        options?.outputLocale
       );
 
       // Resolve model alias to canonical identifier (with prefix)
@@ -500,7 +516,8 @@ export class IdeationService {
     promptId: string,
     category: IdeaCategory,
     count = 10,
-    contextSources?: IdeationContextSources
+    contextSources?: IdeationContextSources,
+    outputLocale?: OutputLocale
   ): Promise<AnalysisSuggestion[]> {
     return this.jobs.run((controller) =>
       this.generateSuggestionsOwned(
@@ -509,7 +526,8 @@ export class IdeationService {
         category,
         count,
         contextSources,
-        controller
+        controller,
+        outputLocale
       )
     );
   }
@@ -520,7 +538,8 @@ export class IdeationService {
     category: IdeaCategory,
     count: number = 10,
     contextSources: IdeationContextSources | undefined,
-    controller: AbortController
+    controller: AbortController,
+    outputLocale?: OutputLocale
   ): Promise<AnalysisSuggestion[]> {
     const suggestionCount = Math.min(Math.max(Math.floor(count ?? 10), 1), 20);
     // Merge with defaults for backward compatibility
@@ -578,12 +597,15 @@ export class IdeationService {
       const prompts = await getPromptCustomization(this.settingsService, '[IdeationService]');
 
       // Build system prompt for structured suggestions
-      const systemPrompt = this.buildSuggestionsSystemPrompt(
-        prompts.ideation.suggestionsSystemPrompt,
-        contextPrompt,
-        category,
-        suggestionCount,
-        existingWorkContext
+      const systemPrompt = withOutputLanguage(
+        this.buildSuggestionsSystemPrompt(
+          prompts.ideation.suggestionsSystemPrompt,
+          contextPrompt,
+          category,
+          suggestionCount,
+          existingWorkContext
+        ),
+        outputLocale
       );
 
       // Get model from phase settings with provider info (ideationModel)

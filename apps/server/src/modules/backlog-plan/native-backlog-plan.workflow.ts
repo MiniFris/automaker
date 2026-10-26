@@ -23,7 +23,7 @@ export class NativeBacklogPlanWorkflow implements BacklogPlanWorkflow {
     private readonly checkpointRepository?: AgentCheckpointRepository
   ) {}
   generate(input: BacklogGenerateRequest, controller: AbortController) {
-    const run = this.context.operation(input.projectPath, controller.signal);
+    const run = this.context.operation(input.projectPath, controller.signal, input.outputLocale);
     return generateBacklogPlan(
       run.projectPath,
       input.prompt,
