@@ -22,7 +22,8 @@ text, built-in notifications and model descriptions are in the catalogs.
 
 Model/provider names, agent names, project names/descriptions, code, file paths, shell commands, prompt templates,
 terminal/log output, Git commit messages, remote-service errors and model output
-are content and are not automatically translated. Unknown interface keys fall
+are content and are not automatically translated after creation. New task text
+uses the selected language as described below. Unknown interface keys fall
 back to English. No text or user data is sent to a translation service at runtime.
 
 Built-in pipeline stage names are localized with `getPipelineStepLabel` at the
@@ -35,6 +36,33 @@ The Russian draft was prepared using machine translation of interface strings
 only, with the user's permission. Common terminology, permission/security text
 and timeout descriptions have a separate reviewed override layer. Some less-used
 long descriptions may still benefit from linguistic editing.
+
+## Language of generated tasks
+
+The UI sends its current language as optional `outputLocale: "en" | "ru"` on title
+and description enhancement, backlog planning, specification creation/regeneration,
+feature generation from a specification, and ideation initial messages, subsequent
+messages, and generated suggestions. Clients omitting it use English. Unsupported
+values are rejected by request validation. The language stays a personal browser
+preference; it is not stored in shared server/project settings.
+
+`withOutputLanguage` in `libs/prompts/src/output-language.ts` appends a common rule
+after prompt assembly, including custom prompts. Its built-in `{outputLanguage}`
+placeholder resolves to English or Russian; placeholders inside user content and
+custom prompts are left intact. Generated titles, descriptions, explanations,
+implementation details, user stories, rationales, acceptance criteria and readable
+specification text follow this rule. Code, commands, file paths, proper names,
+JSON/XML keys/tags, IDs and enum values retain their required representation.
+
+Accepted background jobs capture the request language. Specification generation
+and its subsequent feature generation share the same captured language. Switching
+the UI affects future requests; it neither restarts work nor translates existing
+tasks, cached results, imported issues, or manually entered text. Static project
+analysis suggestions are separate from model-generated ideation suggestions.
+
+The rule is an instruction to the model, not a separate translation request or
+an output-language validator. Automated tests verify propagation and formatting
+with offline providers; model compliance requires a live generation check.
 
 ## Maintaining translations
 
@@ -86,6 +114,8 @@ the app does not depend on its availability.
 
 ## Deployment
 
-Only the UI must be rebuilt/deployed. The server, API schemas, project data,
-credentials and model settings do not change. The Docker UI can be updated with
+For interface-only catalog updates, only the UI needs rebuilding. The generated
+task language feature changes both UI requests and backend prompt assembly, so
+rebuild/deploy both UI and server for that feature. Existing project data,
+credentials and model settings require no migration. The Docker UI can be updated with
 `docker compose -f docker-compose.yml up -d --no-deps ui` after building its image.

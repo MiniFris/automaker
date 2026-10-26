@@ -1,3 +1,5 @@
+import type { OutputLocale } from '@automaker/types';
+
 /** Application-owned values. HTTP validation/defaults stay at the transport boundary. */
 export interface AddSuggestionInput {
   projectPath: string;
@@ -31,6 +33,7 @@ export interface ConvertInput {
 }
 
 export interface GenerateSuggestionsInput {
+  outputLocale?: OutputLocale;
   projectPath: string;
   promptId: string;
   category:
@@ -120,6 +123,7 @@ export interface SessionGetInput {
 }
 
 export interface SessionMessageInput {
+  outputLocale?: OutputLocale;
   sessionId: string;
   message: string;
   options?:
@@ -132,6 +136,7 @@ export interface SessionMessageInput {
 }
 
 export interface SessionStartInput {
+  outputLocale?: OutputLocale;
   projectPath: string;
   options?:
     | {

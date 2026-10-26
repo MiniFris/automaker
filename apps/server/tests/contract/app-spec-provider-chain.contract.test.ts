@@ -17,9 +17,13 @@ import * as notificationFilesystem from '../../src/lib/secure-fs.js';
 import { FeatureLoader } from '../../src/services/feature-loader.js';
 
 describe('spec to features provider workflow', () => {
-  it.each([false, true])(
-    'uses the injected registry and preserves cancellation=%s across phases',
-    async (cancel) => {
+  it.each(
+    [false, true].flatMap((cancel) =>
+      [undefined, 'ru', 'en'].map((outputLocale) => ({ cancel, outputLocale }))
+    )
+  )(
+    'preserves cancellation=$cancel and language=$outputLocale across phases',
+    async ({ cancel, outputLocale }) => {
       const project = await mkdtemp(path.join(os.tmpdir(), 'automaker-spec-chain-'));
       const controller = new AbortController();
       const events = createEventEmitter();
@@ -81,6 +85,7 @@ describe('spec to features provider workflow', () => {
         const generated = workflow.generate({
           projectPath: project,
           source: 'Build a fixture app',
+          outputLocale: outputLocale as 'ru' | 'en' | undefined,
           generateFeatures: true,
           analyzeProject: false,
           maxFeatures: 1,
@@ -96,6 +101,10 @@ describe('spec to features provider workflow', () => {
           expect(query.abortController).not.toBe(controller);
           expect(query.abortController).toBeInstanceOf(AbortController);
           expect(query.readOnly).toBe(true);
+          expect(query.prompt).toContain(
+            `Output language: ${outputLocale === 'ru' ? 'Russian' : 'English'}.`
+          );
+          expect(query.prompt).not.toContain('{outputLanguage}');
         }
         expect(controller.signal.aborted).toBe(cancel);
         const features = await new FeatureLoader().getAll(project);

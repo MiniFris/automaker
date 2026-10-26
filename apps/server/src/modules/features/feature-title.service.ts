@@ -1,3 +1,5 @@
+import { withOutputLanguage } from '@automaker/prompts';
+import type { OutputLocale } from '@automaker/types';
 import { Inject, Injectable } from '@nestjs/common';
 import { CLAUDE_MODEL_MAP } from '@automaker/model-resolver';
 import { RuntimePathsService } from '../../core/config/index.js';
@@ -17,12 +19,16 @@ export class FeatureTitleService {
   async generate(
     description: string,
     projectPath: string | undefined,
-    abortController: AbortController
+    abortController: AbortController,
+    outputLocale?: OutputLocale
   ) {
     const prompts = await getPromptCustomization(this.settings, '[GenerateTitle]');
     const credentials = await this.settings.getCredentials();
     const result = await this.queries.execute({
-      prompt: `${prompts.titleGeneration.systemPrompt}\n\nGenerate a concise title for this feature:\n\n${description}`,
+      prompt: withOutputLanguage(
+        `${prompts.titleGeneration.systemPrompt}\n\nGenerate a concise title for this feature:\n\n${description}`,
+        outputLocale
+      ),
       model: CLAUDE_MODEL_MAP.haiku,
       cwd: projectPath ?? this.paths.workingDirectory,
       maxTurns: 1,

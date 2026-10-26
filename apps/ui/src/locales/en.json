@@ -760,7 +760,7 @@
   "Choose how to resolve:": "Choose how to resolve:",
   "Choose one of the following methods to authenticate with Claude:": "Choose one of the following methods to authenticate with Claude:",
   "Choose one of the following methods to authenticate:": "Choose one of the following methods to authenticate:",
-  "Choose the interface language. Project content and model responses are not translated.": "Choose the interface language. Project content and model responses are not translated.",
+  "Choose the interface language. Newly generated tasks use this language. Existing content stays unchanged.": "Choose the interface language. Newly generated tasks use this language. Existing content stays unchanged.",
   "Choose the parent directory where your new project will be created": "Choose the parent directory where your new project will be created",
   "Choose the parent directory where your project will be created": "Choose the parent directory where your project will be created",
   "Classic": "Classic",

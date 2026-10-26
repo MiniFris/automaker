@@ -129,18 +129,27 @@ docker compose -f docker-compose.yml -f docker-compose.execution.yml up -d --bui
 ```
 
 Override выбирает `server-docker` target (Docker CLI/buildx без daemon), предоставляет
-socket ТОЛЬКО server и создаёт persistent `/projects` volume. Entrypoint определяет
+socket ТОЛЬКО server. Постоянный том `automaker-projects` для `/projects`
+подключается уже в базовом `docker-compose.yml`. Entrypoint определяет
 фактический socket GID и добавляет пользователя automaker в эту группу **до gosu**.
 Не нужны `chmod 666`, privileged, ручной image SHA или отдельный контейнер на проект.
 Для rootless/Desktop задайте `AUTOMAKER_DOCKER_SOCKET` реальным путём socket на хосте.
 Сокет не создаётся как каталог при ошибочном пути. Для SSH/TLS contexts настройте
 CLI и credentials у backend отдельно; Unix-socket override для них не обязателен.
 
-**Существующая установка:** сначала сделайте backup/перенос проектов, если они лежат
-в старом writable layer `/projects`. Новый volume перекроет этот каталог, а пересоздание
-server удалит старый writable layer. Автоматическая миграция существующей установки
-этим override не выполняется; не включайте его вслепую поверх неперенесённых проектов.
-В этой разработке production server/UI не пересобирались и не перезапускались.
+**Обновление старой установки:** перед первым подключением `automaker-projects`
+остановите server и скопируйте содержимое `/projects` из существующего контейнера
+через `docker cp` в отдельный каталог резервной копии. Только после этого перенесите
+содержимое в именованный том и пересоздайте server. Проверьте наличие скрытых `.git`
+и `.automaker`, права пользователя automaker и чтение задач через API. Сохраните
+резервную копию до завершения проверки. Не создавайте пустые каталоги вместо
+потерянных проектов: настройки в `/data` содержат только ссылки на них.
+
+Это относится и к обновлению базового Compose, и к добавлению Docker override.
+Новый том перекрывает `/projects` старого контейнера, а пересоздание удаляет его
+writable layer; автоматическая миграция из этого слоя не выполняется. После переноса
+обычное пересоздание server сохраняет проекты в `automaker-projects`. Не удаляйте
+том через `docker compose down -v`, если хотите сохранить проекты.
 
 Docker socket даёт управляющей части широкие, фактически host-level полномочия.
 Read-only bind socket не ограничивает доступные Engine API. Это осознанное изменение

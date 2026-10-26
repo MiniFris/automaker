@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { OutputLocaleSchema } from './generation-language.js';
 import { ProjectPathSchema } from './common.js';
 
 // Settings and projects
@@ -196,6 +197,7 @@ export const FeatureImportSchema = z
   .strict();
 export const FeatureTitleSchema = z
   .object({
+    outputLocale: OutputLocaleSchema.optional(),
     description: z.string().trim().min(1).max(1_000_000),
     projectPath: ProjectPathSchema.optional(),
   })
@@ -273,6 +275,7 @@ export type SessionUpdateInput = z.input<typeof SessionUpdateSchema>;
 
 // App specification and backlog plan
 const generationOptions = {
+  outputLocale: OutputLocaleSchema.optional(),
   generateFeatures: z.boolean().optional().default(false),
   analyzeProject: z.boolean().optional().default(true),
   maxFeatures: z.number().int().min(1).max(1_000).optional(),
@@ -294,6 +297,7 @@ export const AppSpecGenerateSchema = z
 export const AppSpecProjectSchema = z.object({ projectPath: ProjectPathSchema }).strict();
 export const AppSpecFeaturesSchema = z
   .object({
+    outputLocale: OutputLocaleSchema.optional(),
     projectPath: ProjectPathSchema,
     maxFeatures: z.number().int().min(1).max(1_000).optional(),
   })
@@ -331,6 +335,7 @@ export const BacklogPlanSchema = z
   .strict();
 export const BacklogGenerateSchema = z
   .object({
+    outputLocale: OutputLocaleSchema.optional(),
     projectPath: ProjectPathSchema,
     prompt: z.string().trim().min(1).max(2_000_000),
     model: z.string().trim().min(1).max(255).optional(),

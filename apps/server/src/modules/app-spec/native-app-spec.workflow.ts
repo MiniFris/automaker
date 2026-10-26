@@ -1,3 +1,4 @@
+import type { OutputLocale } from '@automaker/types';
 import { Inject, Injectable } from '@nestjs/common';
 import { APPLICATION_EVENTS } from '../../core/eventing/application-events.js';
 import type { EventEmitter } from '../../lib/events.js';
@@ -20,7 +21,11 @@ export class NativeAppSpecWorkflow implements AppSpecWorkflowPort {
     @Inject(PlanningWorkflowContext) private readonly context: PlanningWorkflowContext
   ) {}
   generate(options: AppSpecGenerationOptions): Promise<void> {
-    const run = this.context.operation(options.projectPath, options.abortController.signal);
+    const run = this.context.operation(
+      options.projectPath,
+      options.abortController.signal,
+      options.outputLocale
+    );
     return generateSpec(
       run.projectPath,
       options.source,
@@ -38,9 +43,10 @@ export class NativeAppSpecWorkflow implements AppSpecWorkflowPort {
   generateFeatures(
     project: string,
     max: number | undefined,
-    controller: AbortController
+    controller: AbortController,
+    outputLocale?: OutputLocale
   ): Promise<void> {
-    const run = this.context.operation(project, controller.signal);
+    const run = this.context.operation(project, controller.signal, outputLocale);
     return generateFeaturesFromSpec(
       run.projectPath,
       this.events,

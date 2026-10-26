@@ -21,6 +21,7 @@ export class AppSpecApplicationService {
       this.workflow.generate({
         projectPath,
         source: input.projectOverview,
+        outputLocale: input.outputLocale,
         generateFeatures: input.generateFeatures,
         analyzeProject: input.analyzeProject,
         maxFeatures: input.maxFeatures,
@@ -35,6 +36,7 @@ export class AppSpecApplicationService {
       this.workflow.generate({
         projectPath,
         source: input.projectDefinition,
+        outputLocale: input.outputLocale,
         generateFeatures: input.generateFeatures,
         analyzeProject: input.analyzeProject,
         maxFeatures: input.maxFeatures,
@@ -46,7 +48,12 @@ export class AppSpecApplicationService {
   generateFeatures(source: AppSpecFeaturesInput) {
     const input = { ...source };
     return this.start(input.projectPath, 'feature_generation', (abortController, projectPath) =>
-      this.workflow.generateFeatures(projectPath, input.maxFeatures, abortController)
+      this.workflow.generateFeatures(
+        projectPath,
+        input.maxFeatures,
+        abortController,
+        input.outputLocale
+      )
     );
   }
 

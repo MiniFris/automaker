@@ -277,6 +277,14 @@ docker-compose logs -f
 docker-compose down
 ```
 
+Projects created inside `/projects` persist in the `automaker-projects` named volume;
+settings and sessions persist in `automaker-data`. Container recreation keeps these
+volumes. `docker-compose down -v` deletes them.
+
+When upgrading an older installation without a `/projects` mount, back up and
+migrate projects **before recreating the server**. See the
+[existing installation migration notes](docs/execution-environments-docker.md).
+
 ##### Authentication
 
 Automaker integrates with your authenticated Claude Code CLI. To use CLI authentication in Docker, mount your Claude CLI config directory (see [Claude CLI Authentication](#claude-cli-authentication) below).

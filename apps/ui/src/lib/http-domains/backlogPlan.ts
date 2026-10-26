@@ -1,3 +1,4 @@
+import { getUiLocale } from '../i18n';
 import type { HttpDomainTransport } from './transport';
 import type { BacklogApplyInput, BacklogGenerateInput } from '@automaker/contracts';
 import type { EventCallback } from '../http-api-client';
@@ -14,6 +15,7 @@ export function createBacklogPlanClient(
       providerId?: BacklogGenerateInput['providerId']
     ): Promise<{ success: boolean; error?: string }> =>
       transport.post('/api/backlog-plan/generate', {
+        outputLocale: getUiLocale(),
         projectPath,
         prompt,
         model,

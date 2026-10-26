@@ -900,7 +900,7 @@
   "Choose how to resolve:": "Выберите способ решения:",
   "Choose one of the following methods to authenticate with Claude:": "Выберите один из следующих методов аутентификации с помощью Claude:",
   "Choose one of the following methods to authenticate:": "Выберите один из следующих методов аутентификации:",
-  "Choose the interface language. Project content and model responses are not translated.": "Выберите язык интерфейса. Содержимое проектов и ответы моделей не переводятся.",
+  "Choose the interface language. Newly generated tasks use this language. Existing content stays unchanged.": "Выберите язык интерфейса. Новые задачи создаются на этом языке. Существующее содержимое остаётся без изменений.",
   "Choose the parent directory where your new project will be created": "Выберите родительский каталог, в котором будет создан ваш новый проект.",
   "Choose the parent directory where your project will be created": "Выберите родительский каталог, в котором будет создан ваш проект.",
   "Choose Your Theme": "Выберите свою тему",
