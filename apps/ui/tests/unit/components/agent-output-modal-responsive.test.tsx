@@ -13,6 +13,9 @@ import { useAgentOutput, useFeature } from '@automaker/ui/hooks/queries';
 import { getElectronAPI } from '@automaker/ui/lib/electron';
 
 // Mock dependencies
+vi.mock('@/hooks/queries/use-agent-conversation', () => ({
+  useAgentConversation: () => ({ data: undefined, isLoading: false, error: null }),
+}));
 vi.mock('@automaker/ui/hooks/queries');
 vi.mock('@automaker/ui/lib/electron');
 vi.mock('@automaker/ui/store/app-store');

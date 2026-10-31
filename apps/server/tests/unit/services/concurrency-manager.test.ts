@@ -5,6 +5,33 @@ import {
   type GetCurrentBranchFn,
 } from '@/services/concurrency-manager.js';
 
+it('captures locale per incarnation and does not overwrite it when reusing a lease', () => {
+  const manager = new ConcurrencyManager();
+  const ru = manager.acquire({
+    featureId: 'a',
+    projectPath: '/a',
+    isAutoMode: false,
+    outputLocale: 'ru',
+  });
+  const en = manager.acquire({
+    featureId: 'b',
+    projectPath: '/b',
+    isAutoMode: false,
+    outputLocale: 'en',
+  });
+  const same = manager.acquire({
+    featureId: 'a',
+    projectPath: '/a',
+    isAutoMode: false,
+    outputLocale: 'en',
+    allowReuse: true,
+    expected: ru,
+  });
+  expect(same).toBe(ru);
+  expect(manager.coordinator.bind(manager, same).outputLocale).toBe('ru');
+  expect(manager.coordinator.bind(manager, en).outputLocale).toBe('en');
+});
+
 describe('ConcurrencyManager', () => {
   let manager: ConcurrencyManager;
   let mockGetCurrentBranch: Mock<GetCurrentBranchFn>;

@@ -28,7 +28,7 @@ export const MODAL_CONSTANTS = {
   // View modes
   VIEW_MODES: {
     SUMMARY: 'summary',
-    PARSED: 'parsed',
+    CHAT: 'chat',
     RAW: 'raw',
     CHANGES: 'changes',
   } as const,

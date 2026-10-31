@@ -17,6 +17,7 @@ describe('BacklogPlanApplicationService', () => {
     const repository: FeatureRepository = {
       list: vi.fn().mockResolvedValue([existing]),
       get: vi.fn(),
+      getAgentConversation: vi.fn().mockResolvedValue([]),
       getAgentOutput: vi.fn(),
       getRawOutput: vi.fn(),
       create: vi.fn().mockImplementation(async (_path, feature) => ({ ...feature, id: 'new' })),

@@ -93,6 +93,28 @@ describe('auto-loop-coordinator.ts', () => {
     vi.useRealTimers();
   });
 
+  it('keeps independent languages for automatic queues on different branches', async () => {
+    vi.mocked(mockLoadPendingFeatures).mockResolvedValue([testFeature]);
+    await coordinator.startAutoLoopForProject('/test/project', 'russian', 1, 'ru');
+    await coordinator.startAutoLoopForProject('/test/project', 'english', 1, 'en');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mockExecuteFeature).toHaveBeenCalledWith(
+      '/test/project',
+      testFeature.id,
+      true,
+      true,
+      'ru'
+    );
+    expect(mockExecuteFeature).toHaveBeenCalledWith(
+      '/test/project',
+      testFeature.id,
+      true,
+      true,
+      'en'
+    );
+    coordinator.interruptForShutdown();
+  });
+
   it('interrupts scheduling for shutdown while preserving persisted recovery state', async () => {
     await coordinator.startAutoLoopForProject('/test/project', 'feature-branch');
     expect(coordinator.isAutoLoopRunningForProject('/test/project', 'feature-branch')).toBe(true);
@@ -273,7 +295,13 @@ describe('auto-loop-coordinator.ts', () => {
       // Stop the loop
       await coordinator.stopAutoLoopForProject('/test/project', null);
 
-      expect(mockExecuteFeature).toHaveBeenCalledWith('/test/project', 'feature-1', true, true);
+      expect(mockExecuteFeature).toHaveBeenCalledWith(
+        '/test/project',
+        'feature-1',
+        true,
+        true,
+        undefined
+      );
     });
 
     it('emits idle event when no work remains (running=0, pending=0)', async () => {
@@ -312,7 +340,13 @@ describe('auto-loop-coordinator.ts', () => {
       await coordinator.stopAutoLoopForProject('/test/project', null);
 
       // Should execute feature-2, not feature-1
-      expect(mockExecuteFeature).toHaveBeenCalledWith('/test/project', 'feature-2', true, true);
+      expect(mockExecuteFeature).toHaveBeenCalledWith(
+        '/test/project',
+        'feature-2',
+        true,
+        true,
+        undefined
+      );
     });
 
     it('stops when aborted', async () => {
@@ -382,7 +416,13 @@ describe('auto-loop-coordinator.ts', () => {
       await coordinator.stopAutoLoopForProject('/test/project', null);
 
       // Should execute after capacity freed
-      expect(mockExecuteFeature).toHaveBeenCalledWith('/test/project', 'feature-1', true, true);
+      expect(mockExecuteFeature).toHaveBeenCalledWith(
+        '/test/project',
+        'feature-1',
+        true,
+        true,
+        undefined
+      );
     });
 
     it('waits when manually started tasks already fill concurrency limit at auto mode activation', async () => {
@@ -418,7 +458,13 @@ describe('auto-loop-coordinator.ts', () => {
       await coordinator.stopAutoLoopForProject('/test/project', null);
 
       // Should execute after all tasks freed capacity
-      expect(mockExecuteFeature).toHaveBeenCalledWith('/test/project', 'feature-1', true, true);
+      expect(mockExecuteFeature).toHaveBeenCalledWith(
+        '/test/project',
+        'feature-1',
+        true,
+        true,
+        undefined
+      );
     });
   });
 
@@ -457,7 +503,13 @@ describe('auto-loop-coordinator.ts', () => {
       await coordinator.stopAutoLoopForProject('/test/project', null);
 
       // Should execute the highest priority feature (priority=1)
-      expect(mockExecuteFeature).toHaveBeenCalledWith('/test/project', 'feature-high', true, true);
+      expect(mockExecuteFeature).toHaveBeenCalledWith(
+        '/test/project',
+        'feature-high',
+        true,
+        true,
+        undefined
+      );
     });
 
     it('uses default priority of 2 when not specified', async () => {
@@ -478,7 +530,13 @@ describe('auto-loop-coordinator.ts', () => {
       await coordinator.stopAutoLoopForProject('/test/project', null);
 
       // High priority (1) should be selected over default priority (2)
-      expect(mockExecuteFeature).toHaveBeenCalledWith('/test/project', 'feature-high', true, true);
+      expect(mockExecuteFeature).toHaveBeenCalledWith(
+        '/test/project',
+        'feature-high',
+        true,
+        true,
+        undefined
+      );
     });
 
     it('selects first feature when priorities are equal', async () => {
@@ -504,7 +562,13 @@ describe('auto-loop-coordinator.ts', () => {
       await coordinator.stopAutoLoopForProject('/test/project', null);
 
       // When priorities equal, the first feature from the filtered list should be chosen
-      expect(mockExecuteFeature).toHaveBeenCalledWith('/test/project', 'feature-a', true, true);
+      expect(mockExecuteFeature).toHaveBeenCalledWith(
+        '/test/project',
+        'feature-a',
+        true,
+        true,
+        undefined
+      );
     });
   });
 
@@ -541,7 +605,13 @@ describe('auto-loop-coordinator.ts', () => {
       await coordinator.stopAutoLoopForProject('/test/project', null);
 
       // Should skip blocked feature (dependency not complete) and execute ready feature
-      expect(mockExecuteFeature).toHaveBeenCalledWith('/test/project', 'feature-ready', true, true);
+      expect(mockExecuteFeature).toHaveBeenCalledWith(
+        '/test/project',
+        'feature-ready',
+        true,
+        true,
+        undefined
+      );
       expect(mockExecuteFeature).not.toHaveBeenCalledWith(
         '/test/project',
         'feature-blocked',
@@ -578,7 +648,8 @@ describe('auto-loop-coordinator.ts', () => {
         '/test/project',
         'feature-unblocked',
         true,
-        true
+        true,
+        undefined
       );
     });
 
@@ -609,7 +680,8 @@ describe('auto-loop-coordinator.ts', () => {
         '/test/project',
         'feature-unblocked',
         true,
-        true
+        true,
+        undefined
       );
     });
 
@@ -663,7 +735,8 @@ describe('auto-loop-coordinator.ts', () => {
         '/test/project',
         'feature-unblocked-mp',
         true,
-        true
+        true,
+        undefined
       );
       expect(mockExecuteFeature).not.toHaveBeenCalledWith(
         '/test/project',
@@ -693,7 +766,8 @@ describe('auto-loop-coordinator.ts', () => {
         '/test/project',
         'feature-no-deps',
         true,
-        true
+        true,
+        undefined
       );
     });
   });
@@ -1051,7 +1125,8 @@ describe('auto-loop-coordinator.ts', () => {
         '/test/project',
         'feature-with-dep',
         true,
-        true
+        true,
+        undefined
       );
       // dep-feature is not executed because it is marked as running
       expect(mockExecuteFeature).not.toHaveBeenCalledWith(

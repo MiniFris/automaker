@@ -1757,7 +1757,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/feature-responses.FeatureOutputResponseSchema.Response"
+                  "$ref": "#/components/schemas/feature-responses.FeatureAgentOutputResponseSchema.Response"
                 }
               }
             }
@@ -12730,6 +12730,13 @@
             "type": "string",
             "minLength": 1
           },
+          "outputLocale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "ru"
+            ]
+          },
           "branchName": {
             "type": [
               "string",
@@ -12749,6 +12756,13 @@
           "projectPath": {
             "type": "string",
             "minLength": 1
+          },
+          "outputLocale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "ru"
+            ]
           },
           "featureId": {
             "type": "string",
@@ -12772,6 +12786,13 @@
             "type": "string",
             "minLength": 1
           },
+          "outputLocale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "ru"
+            ]
+          },
           "featureId": {
             "type": "string",
             "minLength": 1
@@ -12794,6 +12815,13 @@
             "type": "string",
             "minLength": 1
           },
+          "outputLocale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "ru"
+            ]
+          },
           "featureId": {
             "type": "string",
             "minLength": 1
@@ -12812,6 +12840,13 @@
           "projectPath": {
             "type": "string",
             "minLength": 1
+          },
+          "outputLocale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "ru"
+            ]
           },
           "featureId": {
             "type": "string",
@@ -12869,6 +12904,13 @@
           "projectPath": {
             "type": "string",
             "minLength": 1
+          },
+          "outputLocale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "ru"
+            ]
           }
         },
         "required": [
@@ -12883,6 +12925,13 @@
           "projectPath": {
             "type": "string",
             "minLength": 1
+          },
+          "outputLocale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "ru"
+            ]
           },
           "branchName": {
             "type": [
@@ -14085,6 +14134,90 @@
         "required": [
           "success",
           "hostKey"
+        ],
+        "additionalProperties": {}
+      },
+      "feature-responses.FeatureAgentOutputResponseSchema.Response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "content": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "conversation": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "runId": {
+                  "type": "string"
+                },
+                "sequence": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "timestamp": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "session_start",
+                    "assistant",
+                    "thinking",
+                    "tool_call",
+                    "tool_result",
+                    "error",
+                    "session_end",
+                    "legacy"
+                  ]
+                },
+                "content": {
+                  "type": "string"
+                },
+                "toolName": {
+                  "type": "string"
+                },
+                "toolCallId": {
+                  "type": "string"
+                },
+                "input": {},
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "failed",
+                    "interrupted"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "runId",
+                "sequence",
+                "timestamp",
+                "kind",
+                "content"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "success",
+          "content",
+          "conversation"
         ],
         "additionalProperties": {}
       },

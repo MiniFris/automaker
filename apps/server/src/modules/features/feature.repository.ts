@@ -1,4 +1,4 @@
-import type { Feature } from '@automaker/types';
+import type { Feature, AgentConversationEntry } from '@automaker/types';
 
 export const FEATURE_REPOSITORY = Symbol('FEATURE_REPOSITORY');
 
@@ -6,6 +6,7 @@ export interface FeatureRepository {
   list(projectPath: string): Promise<Feature[]>;
   get(projectPath: string, featureId: string): Promise<Feature | null>;
   getAgentOutput(projectPath: string, featureId: string): Promise<string | null>;
+  getAgentConversation(projectPath: string, featureId: string): Promise<AgentConversationEntry[]>;
   getRawOutput(projectPath: string, featureId: string): Promise<string | null>;
   create(projectPath: string, feature: Partial<Feature>): Promise<Feature>;
   update(

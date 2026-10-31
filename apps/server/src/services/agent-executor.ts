@@ -4,6 +4,7 @@ import type { AgentCheckpointRepository } from '../providers/openai-compatible/c
  */
 
 import path from 'path';
+import { withAgentOutputLanguage } from '@automaker/prompts';
 import { randomUUID } from 'node:crypto';
 import type { ExecuteOptions, ParsedTask, ProviderMessage } from '@automaker/types';
 import {
@@ -15,6 +16,7 @@ import {
 import { buildPromptWithImages, createLogger, isAuthenticationError } from '@automaker/utils';
 import { getFeatureDir } from '@automaker/platform';
 import type { ExecutionFilesystem } from './execution-filesystem.js';
+import { AgentConversationWriter } from './agent-conversation.js';
 import { TypedEventBus } from './typed-event-bus.js';
 import { FeatureStateManager } from './feature-state-manager.js';
 import { PlanApprovalService } from './plan-approval-service.js';
@@ -120,6 +122,54 @@ export class AgentExecutor {
     options: AgentExecutionOptions,
     callbacks: AgentExecutorCallbacks
   ): Promise<AgentExecutionResult> {
+    options = {
+      ...options,
+      outputLocale: options.outputLocale ?? options.runPort?.outputLocale ?? 'en',
+    };
+    const conversation = new AgentConversationWriter(
+      getFeatureDir(options.projectPath, options.featureId),
+      this.filesystem,
+      (operation) => this.write(options, operation),
+      (entry) =>
+        this.emitFor(options, 'auto_mode_conversation', {
+          projectPath: options.projectPath,
+          featureId: options.featureId,
+          entry,
+        })
+    );
+    await conversation.start(options.previousContent);
+    let status: 'completed' | 'failed' | 'interrupted' = 'completed';
+    let failure: string | undefined;
+    try {
+      const result = await this.executeWithConversation(
+        {
+          ...options,
+          captureConversation: (message, includeResult) =>
+            conversation.observe(message, includeResult),
+        },
+        callbacks
+      );
+      if (result.aborted) status = 'interrupted';
+      return result;
+    } catch (error) {
+      status = options.abortController.signal.aborted ? 'interrupted' : 'failed';
+      failure = error instanceof Error ? error.message : String(error);
+      throw error;
+    } finally {
+      // A stale run must never append to a newer incarnation's history.
+      try {
+        await conversation.finish(status, failure);
+      } catch (error) {
+        if (!(error instanceof Error && error.name === 'AbortError'))
+          logger.error('Failed to finalize agent conversation:', error);
+      }
+    }
+  }
+
+  private async executeWithConversation(
+    options: AgentExecutionOptions,
+    callbacks: AgentExecutorCallbacks
+  ): Promise<AgentExecutionResult> {
     options.runPort?.assertCurrent();
     const originalCallbacks = callbacks;
     callbacks = {
@@ -182,7 +232,7 @@ export class AgentExecutor {
         cwd: workDir,
         allowedTools: sdkOptions?.allowedTools as string[] | undefined,
         abortController,
-        systemPrompt: sdkOptions?.systemPrompt ?? options.systemPrompt,
+        systemPrompt: this.communicationSystemPrompt(options),
         settingSources: sdkOptions?.settingSources,
         mcpServers:
           mcpServers && Object.keys(mcpServers).length > 0
@@ -915,9 +965,17 @@ export class AgentExecutor {
     query: ExecuteOptions
   ): AsyncGenerator<ProviderMessage> {
     const names = new Map<string, string>();
+    let assistantText = '';
     options.runPort?.assertCurrent();
     for await (const message of options.provider.executeQuery(query)) {
       options.runPort?.assertCurrent();
+      await options.captureConversation?.(
+        message,
+        !assistantText.trimEnd().endsWith(message.result?.trimEnd() ?? '')
+      );
+      if (message.type === 'assistant')
+        for (const block of message.message?.content ?? [])
+          if (block.type === 'text') assistantText += block.text ?? '';
       if (isDirectModel(options.model ?? options.effectiveBareModel))
         for (const block of message.message?.content ?? []) {
           const id = block.tool_use_id ?? 'unknown';
@@ -930,6 +988,18 @@ export class AgentExecutor {
         }
       yield message;
     }
+  }
+
+  private communicationSystemPrompt(
+    options: AgentExecutionOptions
+  ): ExecuteOptions['systemPrompt'] {
+    const original = options.sdkOptions?.systemPrompt ?? options.systemPrompt;
+    return typeof original === 'object'
+      ? {
+          ...original,
+          append: withAgentOutputLanguage(original.append ?? '', options.outputLocale),
+        }
+      : withAgentOutputLanguage(original ?? '', options.outputLocale);
   }
 
   private async buildExecOpts(
@@ -959,7 +1029,7 @@ export class AgentExecutor {
         ...((isDirectModel(o.model ?? o.effectiveBareModel) ||
           isRemoteCliModel(o.model ?? o.effectiveBareModel) ||
           isRemoteSdkModel(o.model ?? o.effectiveBareModel)) && {
-          systemPrompt: o.sdkOptions?.systemPrompt ?? o.systemPrompt,
+          systemPrompt: this.communicationSystemPrompt(o),
         }),
       },
       this.settingsService,

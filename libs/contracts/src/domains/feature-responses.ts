@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { AgentConversationEntrySchema } from './agent-conversation.js';
 
 /** Feature storage deliberately permits user-defined fields and legacy field values. */
 export const PublicFeatureDataSchema = z.record(z.string(), z.unknown());
@@ -15,6 +16,9 @@ export const FeatureOutputResponseSchema = z
   .object({ success, content: z.string().nullable() })
   .passthrough();
 export const FeatureDeleteResponseSchema = z.object({ success: z.boolean() }).passthrough();
+export const FeatureAgentOutputResponseSchema = FeatureOutputResponseSchema.extend({
+  conversation: z.array(AgentConversationEntrySchema),
+});
 export const FeatureTitleResponseSchema = z
   .object({ success, title: z.string().min(1) })
   .passthrough();

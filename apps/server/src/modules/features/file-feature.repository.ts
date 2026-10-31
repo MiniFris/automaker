@@ -22,6 +22,10 @@ export class FileFeatureRepository implements FeatureRepository {
     return this.featureLoader.getRawOutput(projectPath, featureId);
   }
 
+  getAgentConversation(projectPath: string, featureId: string) {
+    return this.featureLoader.getAgentConversation(projectPath, featureId);
+  }
+
   create(projectPath: string, feature: Parameters<FeatureLoader['create']>[1]) {
     return this.featureLoader.create(projectPath, feature);
   }

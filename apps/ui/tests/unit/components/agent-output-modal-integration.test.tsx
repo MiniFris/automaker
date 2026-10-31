@@ -17,6 +17,10 @@ import {
 } from '@automaker/ui/hooks/queries';
 import { getElectronAPI } from '@automaker/ui/lib/electron';
 
+vi.mock('@/hooks/queries/use-agent-conversation', () => ({
+  useAgentConversation: () => ({ data: undefined, isLoading: false, error: null }),
+}));
+
 // Mock dependencies
 vi.mock('@automaker/ui/hooks/queries');
 vi.mock('@automaker/ui/lib/electron');
@@ -129,7 +133,7 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
       render(<AgentOutputModal {...defaultProps} />);
 
       // All view mode buttons should be present
-      expect(screen.getByTestId('view-mode-parsed')).toBeInTheDocument();
+      expect(screen.getByTestId('view-mode-chat')).toBeInTheDocument();
       expect(screen.getByTestId('view-mode-changes')).toBeInTheDocument();
       expect(screen.getByTestId('view-mode-raw')).toBeInTheDocument();
     });
@@ -137,7 +141,7 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
     it('should switch to logs view when logs button is clicked', async () => {
       render(<AgentOutputModal {...defaultProps} />);
 
-      const logsButton = screen.getByTestId('view-mode-parsed');
+      const logsButton = screen.getByTestId('view-mode-chat');
       fireEvent.click(logsButton);
 
       await waitFor(() => {
@@ -195,11 +199,11 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
       ).toBeInTheDocument();
     });
 
-    it('should display parsed output in LogViewer', () => {
+    it('should display the read-only Chat tab', () => {
       render(<AgentOutputModal {...defaultProps} />);
 
       // The button text is "Logs" (case-sensitive)
-      expect(screen.getByText('Logs')).toBeInTheDocument();
+      expect(screen.getByText('Chat')).toBeInTheDocument();
     });
   });
 
@@ -267,7 +271,7 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
 
       // Find the scroll container - the div with overflow-y-auto that contains the log output
       const modal = screen.getByTestId('agent-output-modal');
-      const scrollContainer = modal.querySelector('.overflow-y-auto.font-mono') as HTMLDivElement;
+      const scrollContainer = screen.getByTestId('agent-chat-history') as HTMLDivElement;
 
       expect(scrollContainer).toBeInTheDocument();
 
@@ -300,7 +304,7 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
       const { rerender } = render(<AgentOutputModal {...defaultProps} />);
 
       const modal = screen.getByTestId('agent-output-modal');
-      const scrollContainer = modal.querySelector('.overflow-y-auto.font-mono') as HTMLDivElement;
+      const scrollContainer = screen.getByTestId('agent-chat-history') as HTMLDivElement;
 
       expect(scrollContainer).toBeInTheDocument();
 
@@ -346,7 +350,7 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
 
       render(<AgentOutputModal {...backlogProps} />);
 
-      expect(screen.getByText('Agent Output')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Agent Output', level: 2 })).toBeInTheDocument();
     });
   });
 
@@ -355,7 +359,9 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
       const projectPath = '/custom/project/path';
       render(<AgentOutputModal {...defaultProps} projectPath={projectPath} />);
 
-      expect(screen.getByText('Implement a responsive navigation menu')).toBeInTheDocument();
+      expect(screen.getByTestId('chat-task')).toHaveTextContent(
+        'Implement a responsive navigation menu'
+      );
     });
 
     it('should fallback to window.__currentProject when projectPath is not provided', () => {
@@ -363,7 +369,9 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
       try {
         window.__currentProject = { path: '/fallback/project' };
         render(<AgentOutputModal {...defaultProps} />);
-        expect(screen.getByText('Implement a responsive navigation menu')).toBeInTheDocument();
+        expect(screen.getByTestId('chat-task')).toHaveTextContent(
+          'Implement a responsive navigation menu'
+        );
       } finally {
         window.__currentProject = previousProject;
       }

@@ -15,6 +15,7 @@ const current = {
 const createRepository = (): FeatureRepository => ({
   list: vi.fn(),
   get: vi.fn().mockResolvedValue(current),
+  getAgentConversation: vi.fn().mockResolvedValue([]),
   getAgentOutput: vi.fn(),
   getRawOutput: vi.fn(),
   create: vi.fn().mockResolvedValue(current),

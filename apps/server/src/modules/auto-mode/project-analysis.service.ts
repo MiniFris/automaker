@@ -1,3 +1,4 @@
+import { withAgentOutputLanguage } from '@automaker/prompts';
 import { performance } from 'node:perf_hooks';
 import { randomUUID } from 'node:crypto';
 import { resolvePhaseModel } from '@automaker/model-resolver';
@@ -44,6 +45,7 @@ export interface ProjectAnalysisPorts {
   observeOperation?: ObserveOperation;
 }
 interface AnalysisJob {
+  readonly outputLocale?: import('@automaker/types').OutputLocale;
   id: string;
   projectPath: string;
   controller: AbortController;
@@ -68,10 +70,11 @@ export class ProjectAnalysisService {
     private readonly ports: ProjectAnalysisPorts
   ) {}
 
-  launch(projectPath: string): void {
+  launch(projectPath: string, outputLocale?: import('@automaker/types').OutputLocale): void {
     if (this.stopping || this.uncertain || this.jobs.size >= PROJECT_ANALYSIS_MAX_JOBS)
       throw new UnavailableDomainError('Project analysis is unavailable.');
     const job: AnalysisJob = {
+      outputLocale,
       id: `analysis-${randomUUID()}`,
       projectPath: this.ports.canonicalProject(projectPath),
       controller: new AbortController(),
@@ -172,6 +175,7 @@ export class ProjectAnalysisService {
     const result = await this.ports.query(
       {
         prompt: prompts.taskExecution.projectAnalysisPrompt,
+        systemPrompt: withAgentOutputLanguage('', job.outputLocale),
         model,
         providerId: phaseModel.providerId,
         cwd: job.projectPath,

@@ -35,6 +35,7 @@ export type GetCurrentBranchFn = (projectPath: string) => Promise<string | null>
  * Represents a running feature execution with all tracking metadata
  */
 export interface RunningFeature {
+  readonly outputLocale?: import('@automaker/types').OutputLocale;
   executionUncertain?: boolean;
   ownedOperations?: number;
   /** Local verification also retains ownership until process-group cleanup is confirmed. */
@@ -63,6 +64,7 @@ export interface RunningFeature {
  * Parameters for acquiring a running feature slot
  */
 export interface AcquireParams {
+  outputLocale?: import('@automaker/types').OutputLocale;
   retainUntilCleanup?: boolean;
   expected?: RunningFeature;
   featureId: string;
@@ -131,6 +133,7 @@ export class ConcurrencyManager {
 
     const abortController = params.abortController ?? new AbortController();
     const entry: RunningFeature = {
+      outputLocale: params.outputLocale ?? 'en',
       retainUntilCleanup: params.retainUntilCleanup,
       incarnation: Symbol(params.featureId),
       state: 'queued',

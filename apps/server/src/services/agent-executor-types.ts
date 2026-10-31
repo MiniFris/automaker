@@ -9,21 +9,27 @@ import type {
   ParsedTask,
   ClaudeCompatibleProvider,
   Credentials,
+  ProviderMessage,
+  OutputLocale,
 } from '@automaker/types';
 import type { BaseProvider } from '../providers/base-provider.js';
 import type { FeatureRunState } from '../modules/orchestration/feature-run-state-machine.js';
 
 /** Internal incarnation capability; never stored or accepted through HTTP. */
 export interface FeatureRunPort {
+  readonly outputLocale?: OutputLocale;
   assertCurrent(): void;
   mutate(write: () => Promise<unknown>): Promise<void>;
   transition(state: FeatureRunState): void;
 }
 
 export interface AgentExecutionOptions {
+  outputLocale?: OutputLocale;
   runPort?: FeatureRunPort;
   /** Internal per-run observer; never persisted or accepted from request bodies. */
   captureToolResult?: (id: string, content: string) => void;
+  /** Task history observer shared by planning, task and continuation streams. */
+  captureConversation?: (message: ProviderMessage, includeResult: boolean) => Promise<void>;
   workDir: string;
   featureId: string;
   prompt: string;

@@ -22,6 +22,7 @@ const SLEEP_INTERVAL_NORMAL_MS = 2000;
 const SLEEP_INTERVAL_ERROR_MS = 5000;
 
 export interface AutoModeConfig {
+  readonly outputLocale?: import('@automaker/types').OutputLocale;
   maxConcurrency: number;
   useWorktrees: boolean;
   projectPath: string;
@@ -54,7 +55,8 @@ export type ExecuteFeatureFn = (
   projectPath: string,
   featureId: string,
   useWorktrees: boolean,
-  isAutoMode: boolean
+  isAutoMode: boolean,
+  outputLocale?: import('@automaker/types').OutputLocale
 ) => Promise<void>;
 export type LoadPendingFeaturesFn = (
   projectPath: string,
@@ -99,7 +101,8 @@ export class AutoLoopCoordinator {
   async startAutoLoopForProject(
     projectPath: string,
     branchName: string | null = null,
-    maxConcurrency?: number
+    maxConcurrency?: number,
+    outputLocale?: import('@automaker/types').OutputLocale
   ): Promise<number> {
     const resolvedMaxConcurrency = await this.resolveMaxConcurrency(
       projectPath,
@@ -122,6 +125,7 @@ export class AutoLoopCoordinator {
     // Create new project/worktree autoloop state
     const abortController = new AbortController();
     const config: AutoModeConfig = {
+      outputLocale,
       maxConcurrency: resolvedMaxConcurrency,
       useWorktrees: true,
       projectPath,
@@ -237,7 +241,8 @@ export class AutoLoopCoordinator {
             projectPath,
             nextFeature.id,
             projectState.config.useWorktrees,
-            true
+            true,
+            projectState.config.outputLocale
           ).catch((error) => {
             const errorInfo = classifyError(error);
             logger.error('Auto-loop feature execution failed.', { featureId: nextFeature.id });

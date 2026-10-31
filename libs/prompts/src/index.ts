@@ -3,7 +3,12 @@
  * AI prompt templates for AutoMaker
  */
 
-export { OUTPUT_LANGUAGE_RULE, withOutputLanguage } from './output-language.js';
+export {
+  OUTPUT_LANGUAGE_RULE,
+  withOutputLanguage,
+  AGENT_OUTPUT_LANGUAGE_RULE,
+  withAgentOutputLanguage,
+} from './output-language.js';
 
 // Enhancement prompts
 export {

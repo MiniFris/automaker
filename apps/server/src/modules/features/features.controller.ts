@@ -2,6 +2,7 @@ import {
   FeatureListResponseSchema,
   FeatureRecordResponseSchema,
   FeatureOutputResponseSchema,
+  FeatureAgentOutputResponseSchema,
   FeatureDeleteResponseSchema,
   FeatureTitleResponseSchema,
   FeatureExportResponseSchema,
@@ -94,7 +95,7 @@ export class FeaturesController {
   async agentOutput(
     @Body(new ZodValidationPipe(ProjectFeatureSchema)) input: ProjectFeatureRequest
   ) {
-    return FeatureOutputResponseSchema.parse(
+    return FeatureAgentOutputResponseSchema.parse(
       await this.queries.agentOutput(input.projectPath, input.featureId)
     );
   }

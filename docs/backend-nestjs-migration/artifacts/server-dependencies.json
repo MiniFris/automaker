@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceRoot": "apps/server/src",
   "summary": {
-    "files": 503,
-    "internalEdges": 1827,
+    "files": 504,
+    "internalEdges": 1830,
     "stronglyConnectedComponents": 2
   },
   "layerEdges": {
@@ -32,7 +32,7 @@
     "services -> lib": 70,
     "services -> modules": 18,
     "services -> providers": 21,
-    "services -> services": 348,
+    "services -> services": 351,
     "services -> types": 3,
     "tests -> lib": 2
   },
@@ -264,6 +264,7 @@
     "@anthropic-ai/claude-agent-sdk": 3,
     "@automaker/contracts": 19,
     "@automaker/contracts/domains/agent": 1,
+    "@automaker/contracts/domains/agent-conversation": 1,
     "@automaker/contracts/domains/auth": 1,
     "@automaker/contracts/domains/auto-mode-responses": 1,
     "@automaker/contracts/domains/context": 1,
@@ -295,8 +296,8 @@
     "@automaker/git-utils": 7,
     "@automaker/model-resolver": 18,
     "@automaker/platform": 54,
-    "@automaker/prompts": 8,
-    "@automaker/types": 170,
+    "@automaker/prompts": 10,
+    "@automaker/types": 173,
     "@automaker/utils": 119,
     "@automaker/utils/logger": 1,
     "@github/copilot-sdk": 1,
@@ -328,7 +329,7 @@
     "node:async_hooks": 2,
     "node:buffer": 1,
     "node:child_process": 18,
-    "node:crypto": 44,
+    "node:crypto": 45,
     "node:events": 2,
     "node:fs": 13,
     "node:fs/promises": 20,
@@ -336,7 +337,7 @@
     "node:module": 1,
     "node:net": 5,
     "node:os": 12,
-    "node:path": 69,
+    "node:path": 70,
     "node:perf_hooks": 27,
     "node:stream": 7,
     "node:stream/web": 3,
@@ -5641,6 +5642,10 @@
       "target": "apps/server/src/services/settings-service.ts"
     },
     {
+      "source": "apps/server/src/services/agent-conversation.ts",
+      "target": "apps/server/src/services/execution-filesystem.ts"
+    },
+    {
       "source": "apps/server/src/services/agent-executor-types.ts",
       "target": "apps/server/src/modules/orchestration/feature-run-state-machine.ts"
     },
@@ -5659,6 +5664,10 @@
     {
       "source": "apps/server/src/services/agent-executor.ts",
       "target": "apps/server/src/providers/openai-compatible/execution.ts"
+    },
+    {
+      "source": "apps/server/src/services/agent-executor.ts",
+      "target": "apps/server/src/services/agent-conversation.ts"
     },
     {
       "source": "apps/server/src/services/agent-executor.ts",
@@ -7099,6 +7108,10 @@
     {
       "source": "apps/server/src/services/feature-loader.ts",
       "target": "apps/server/src/lib/xml-extractor.ts"
+    },
+    {
+      "source": "apps/server/src/services/feature-loader.ts",
+      "target": "apps/server/src/services/agent-conversation.ts"
     },
     {
       "source": "apps/server/src/services/feature-state-manager.ts",

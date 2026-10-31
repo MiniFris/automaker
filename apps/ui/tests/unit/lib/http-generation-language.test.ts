@@ -5,6 +5,7 @@ import { createEnhancePromptClient } from '@/lib/http-domains/enhancePrompt';
 import { createBacklogPlanClient } from '@/lib/http-domains/backlogPlan';
 import { createSpecRegenerationClient } from '@/lib/http-domains/specRegeneration';
 import { createIdeationClient } from '@/lib/http-domains/ideation';
+import { createAutoModeClient } from '@/lib/http-domains/autoMode';
 
 const original = getUiLocale();
 afterEach(() => setUiLocale(original));
@@ -43,5 +44,22 @@ it('captures the current language for every task-generation entry point, even on
       projectPath: '/project',
       outputLocale: locale,
     });
+  }
+});
+
+it('captures the current UI language when starting or continuing a task or auto loop', async () => {
+  const post = vi.fn().mockResolvedValue({ success: true });
+  const auto = createAutoModeClient({ post, subscribeToEvent: vi.fn() });
+  for (const locale of ['ru', 'en'] as const) {
+    setUiLocale(locale);
+    post.mockClear();
+    await auto.start('/project');
+    await auto.runFeature('/project', 'task');
+    await auto.resumeFeature('/project', 'task');
+    await auto.followUpFeature('/project', 'task', 'Continue');
+    await auto.resumeInterrupted('/project');
+    await auto.analyzeProject('/project');
+    expect(post).toHaveBeenCalledTimes(6);
+    for (const [, body] of post.mock.calls) expect(body.outputLocale).toBe(locale);
   }
 });

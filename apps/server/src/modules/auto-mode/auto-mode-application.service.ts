@@ -52,7 +52,8 @@ export class AutoModeApplicationService {
     const concurrency = await this.scheduler.startAutoLoopForProject(
       project,
       branchName,
-      input.maxConcurrency
+      input.maxConcurrency,
+      input.outputLocale
     );
     return {
       success: true,
@@ -107,20 +108,35 @@ export class AutoModeApplicationService {
     return { success: true, stopped: await this.workflows.stopFeature(input.featureId) };
   }
   runFeature(input: AutoModeExecuteInput) {
+    const outputLocale = input.outputLocale;
     const project = this.contexts.canonicalProject(input.projectPath);
     this.contexts.launch(project, () =>
-      this.workflows.executeFeature(project, input.featureId, input.useWorktrees ?? false, false)
+      this.workflows.executeFeature(
+        project,
+        input.featureId,
+        input.useWorktrees ?? false,
+        false,
+        undefined,
+        { outputLocale }
+      )
     );
     return { success: true };
   }
   resumeFeature(input: AutoModeExecuteInput) {
+    const outputLocale = input.outputLocale;
     const project = this.contexts.canonicalProject(input.projectPath);
     this.contexts.launch(project, () =>
-      this.workflows.resumeFeature(project, input.featureId, input.useWorktrees ?? false)
+      this.workflows.resumeFeature(
+        project,
+        input.featureId,
+        input.useWorktrees ?? false,
+        outputLocale
+      )
     );
     return { success: true };
   }
   followUpFeature(input: AutoModeFollowUpInput) {
+    const outputLocale = input.outputLocale;
     const project = this.contexts.canonicalProject(input.projectPath);
     this.contexts.launch(project, () =>
       this.workflows.followUpFeature(
@@ -128,7 +144,8 @@ export class AutoModeApplicationService {
         input.featureId,
         input.prompt,
         input.imagePaths,
-        input.useWorktrees ?? false
+        input.useWorktrees ?? false,
+        outputLocale
       )
     );
     return { success: true };
@@ -137,7 +154,7 @@ export class AutoModeApplicationService {
     const project = this.contexts.canonicalProject(input.projectPath);
     if (this.contexts.isStopping())
       throw new UnavailableDomainError('Project analysis is unavailable.');
-    this.analysis.launch(project);
+    this.analysis.launch(project, input.outputLocale);
     return { success: true, message: 'Project analysis started' };
   }
   async verifyFeature(input: AutoModeFeatureInput) {
@@ -176,7 +193,7 @@ export class AutoModeApplicationService {
     }
   }
   async resumeInterrupted(input: AutoModeProjectInput) {
-    await this.recovery.resumeInterruptedFeatures(input.projectPath);
+    await this.recovery.resumeInterruptedFeatures(input.projectPath, input.outputLocale);
     return { success: true, message: 'Resume check completed' };
   }
   async reconcile(input: AutoModeProjectInput) {

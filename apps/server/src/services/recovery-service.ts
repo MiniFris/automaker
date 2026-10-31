@@ -74,6 +74,7 @@ export type ResumePipelineFn = (
 ) => Promise<void>;
 export type IsFeatureRunningFn = (featureId: string) => boolean;
 export type AcquireRunningFeatureFn = (options: {
+  outputLocale?: import('@automaker/types').OutputLocale;
   featureId: string;
   projectPath: string;
   isAutoMode: boolean;
@@ -276,11 +277,13 @@ export class RecoveryService {
     featureId: string,
     useWorktrees = false,
     _calledInternally = false,
-    expected?: RunningFeature
+    expected?: RunningFeature,
+    outputLocale?: import('@automaker/types').OutputLocale
   ): Promise<void> {
     if (this.isStopping()) return;
     if (!_calledInternally && this.isFeatureRunningFn(featureId)) return;
     const lease = await this.acquireRunningFeatureFn({
+      outputLocale,
       featureId,
       projectPath,
       isAutoMode: false,
@@ -334,7 +337,10 @@ export class RecoveryService {
     }
   }
 
-  async resumeInterruptedFeatures(projectPath: string): Promise<void> {
+  async resumeInterruptedFeatures(
+    projectPath: string,
+    outputLocale?: import('@automaker/types').OutputLocale
+  ): Promise<void> {
     if (this.isStopping()) return;
     const featuresDir = getFeaturesDir(projectPath);
     try {
@@ -409,7 +415,7 @@ export class RecoveryService {
         if (this.isStopping()) return;
         try {
           if (!this.isFeatureRunningFn(feature.id))
-            await this.resumeFeature(projectPath, feature.id, true);
+            await this.resumeFeature(projectPath, feature.id, true, false, undefined, outputLocale);
         } catch (error) {
           if (unsafeIo(error)) throw error;
         }

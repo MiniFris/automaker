@@ -1,4 +1,4 @@
-import type { Feature } from '@automaker/types';
+import type { OutputLocale, Feature } from '@automaker/types';
 import type {
   AutoModeStatus,
   ProjectAutoModeStatus,
@@ -26,7 +26,7 @@ export interface FeatureOrphanQuery {
 export const AUTO_MODE_LIFECYCLE = Symbol('AUTO_MODE_LIFECYCLE');
 export interface AutoModeLifecycle {
   reconcileFeatureStates(projectPath: string): Promise<number>;
-  resumeInterruptedFeatures(projectPath: string): Promise<void>;
+  resumeInterruptedFeatures(projectPath: string, outputLocale?: OutputLocale): Promise<void>;
   closeAdmission(): void;
   markAllRunningFeaturesInterrupted(reason?: string): Promise<void>;
   interruptForShutdown(): void;
@@ -39,7 +39,8 @@ export interface AutoModeScheduler {
   startAutoLoopForProject(
     projectPath: string,
     branchName?: string | null,
-    maxConcurrency?: number
+    maxConcurrency?: number,
+    outputLocale?: OutputLocale
   ): Promise<number>;
   stopAutoLoopForProject(projectPath: string, branchName?: string | null): Promise<number>;
   getStatus(): AutoModeStatus;
@@ -56,16 +57,24 @@ export interface FeatureWorkflow {
     projectPath: string,
     featureId: string,
     useWorktrees?: boolean,
-    isAutoMode?: boolean
+    isAutoMode?: boolean,
+    providedWorktreePath?: string,
+    options?: { outputLocale?: OutputLocale }
   ): Promise<void>;
   stopFeature(featureId: string): Promise<boolean>;
-  resumeFeature(projectPath: string, featureId: string, useWorktrees?: boolean): Promise<void>;
+  resumeFeature(
+    projectPath: string,
+    featureId: string,
+    useWorktrees?: boolean,
+    outputLocale?: OutputLocale
+  ): Promise<void>;
   followUpFeature(
     projectPath: string,
     featureId: string,
     prompt: string,
     imagePaths?: string[],
-    useWorktrees?: boolean
+    useWorktrees?: boolean,
+    outputLocale?: OutputLocale
   ): Promise<void>;
   verifyFeature(projectPath: string, featureId: string): Promise<boolean>;
   contextExists(projectPath: string, featureId: string): Promise<boolean>;
