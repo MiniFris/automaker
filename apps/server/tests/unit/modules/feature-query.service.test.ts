@@ -12,6 +12,7 @@ const feature = {
 const createRepository = (): FeatureRepository => ({
   list: vi.fn().mockResolvedValue([feature]),
   get: vi.fn().mockResolvedValue(feature),
+  getAgentConversation: vi.fn().mockResolvedValue([]),
   getAgentOutput: vi.fn().mockResolvedValue('agent output'),
   getRawOutput: vi.fn().mockResolvedValue('{"type":"result"}'),
   create: vi.fn(),
@@ -39,6 +40,7 @@ describe('FeatureQueryService', () => {
     await expect(service.agentOutput('/project', 'feature-1')).resolves.toEqual({
       success: true,
       content: 'agent output',
+      conversation: [],
     });
     finishDetection?.();
   });

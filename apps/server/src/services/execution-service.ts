@@ -101,6 +101,7 @@ export class ExecutionService {
   }
 
   private acquireRunningFeature(options: {
+    outputLocale?: import('@automaker/types').OutputLocale;
     featureId: string;
     projectPath: string;
     isAutoMode: boolean;
@@ -183,9 +184,15 @@ ${feature.spec}
     useWorktrees = false,
     isAutoMode = false,
     providedWorktreePath?: string,
-    options?: { continuationPrompt?: string; _calledInternally?: boolean; _run?: RunningFeature }
+    options?: {
+      continuationPrompt?: string;
+      _calledInternally?: boolean;
+      _run?: RunningFeature;
+      outputLocale?: import('@automaker/types').OutputLocale;
+    }
   ): Promise<void> {
     const tempRunningFeature = await this.acquireRunningFeature({
+      outputLocale: options?.outputLocale,
       featureId,
       projectPath,
       isAutoMode,

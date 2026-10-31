@@ -260,6 +260,8 @@ export interface ExecuteOptions {
  * Content block in a provider message (matches Claude SDK format)
  */
 export interface ContentBlock {
+  id?: string;
+  is_error?: boolean;
   type: 'text' | 'tool_use' | 'thinking' | 'tool_result';
   text?: string;
   thinking?: string;

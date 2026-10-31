@@ -15,6 +15,7 @@ import type {
   MergeStateInfo,
   ProjectGitEnvironment,
   DevServerEnvironmentMetadata,
+  AgentConversationEntry,
 } from '@automaker/types';
 export type { MergeStateInfo } from '@automaker/types';
 
@@ -220,6 +221,12 @@ export type AutoModeEvent =
       projectPath?: string;
       branchName?: string | null;
       feature: unknown;
+    }
+  | {
+      type: 'auto_mode_conversation';
+      featureId: string;
+      projectPath: string;
+      entry: AgentConversationEntry;
     }
   | {
       type: 'auto_mode_progress';

@@ -1,3 +1,4 @@
+import { getUiLocale } from '../i18n';
 import type { HttpDomainTransport } from './transport';
 import type { PendingPlanApprovalResponse } from '@automaker/contracts';
 import type { AutoModeAPI, AutoModeEvent } from '../electron';
@@ -8,7 +9,12 @@ export function createAutoModeClient(
 ): AutoModeAPI {
   return {
     start: (projectPath: string, branchName?: string | null, maxConcurrency?: number) =>
-      transport.post('/api/auto-mode/start', { projectPath, branchName, maxConcurrency }),
+      transport.post('/api/auto-mode/start', {
+        projectPath,
+        branchName,
+        maxConcurrency,
+        outputLocale: getUiLocale(),
+      }),
     stop: (projectPath: string, branchName?: string | null) =>
       transport.post('/api/auto-mode/stop', { projectPath, branchName }),
     stopFeature: (featureId: string) =>
@@ -22,6 +28,7 @@ export function createAutoModeClient(
       worktreePath?: string
     ) =>
       transport.post('/api/auto-mode/run-feature', {
+        outputLocale: getUiLocale(),
         projectPath,
         featureId,
         useWorktrees,
@@ -31,6 +38,7 @@ export function createAutoModeClient(
       transport.post('/api/auto-mode/verify-feature', { projectPath, featureId }),
     resumeFeature: (projectPath: string, featureId: string, useWorktrees?: boolean) =>
       transport.post('/api/auto-mode/resume-feature', {
+        outputLocale: getUiLocale(),
         projectPath,
         featureId,
         useWorktrees,
@@ -38,7 +46,10 @@ export function createAutoModeClient(
     contextExists: (projectPath: string, featureId: string) =>
       transport.post('/api/auto-mode/context-exists', { projectPath, featureId }),
     analyzeProject: (projectPath: string) =>
-      transport.post('/api/auto-mode/analyze-project', { projectPath }),
+      transport.post('/api/auto-mode/analyze-project', {
+        projectPath,
+        outputLocale: getUiLocale(),
+      }),
     followUpFeature: (
       projectPath: string,
       featureId: string,
@@ -47,6 +58,7 @@ export function createAutoModeClient(
       useWorktrees?: boolean
     ) =>
       transport.post('/api/auto-mode/follow-up-feature', {
+        outputLocale: getUiLocale(),
         projectPath,
         featureId,
         prompt,
@@ -103,7 +115,10 @@ export function createAutoModeClient(
         approvalRunId,
       }),
     resumeInterrupted: (projectPath: string) =>
-      transport.post('/api/auto-mode/resume-interrupted', { projectPath }),
+      transport.post('/api/auto-mode/resume-interrupted', {
+        projectPath,
+        outputLocale: getUiLocale(),
+      }),
     onEvent: (callback: (event: AutoModeEvent) => void) => {
       return transport.subscribeToEvent('auto-mode:event', callback as EventCallback);
     },

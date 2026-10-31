@@ -487,8 +487,10 @@ export class AutoModeServiceFacade {
       concurrencyManager,
       settingsService,
       // Callbacks
-      (pPath, featureId, useWorktrees, isAutoMode) =>
-        getFacade().executeFeature(featureId, useWorktrees, isAutoMode),
+      (pPath, featureId, useWorktrees, isAutoMode, outputLocale) =>
+        getFacade().executeFeature(featureId, useWorktrees, isAutoMode, undefined, {
+          outputLocale,
+        }),
       async (pPath, branchName) => {
         const features = await featureLoader.getAll(pPath);
         // For main worktree (branchName === null), resolve the actual primary branch name
@@ -664,12 +666,17 @@ export class AutoModeServiceFacade {
    * @param branchName - The branch name for worktree scoping, null for main worktree
    * @param maxConcurrency - Maximum concurrent features
    */
-  async startAutoLoop(branchName: string | null = null, maxConcurrency?: number): Promise<number> {
+  async startAutoLoop(
+    branchName: string | null = null,
+    maxConcurrency?: number,
+    outputLocale?: import('@automaker/types').OutputLocale
+  ): Promise<number> {
     try {
       return await this.autoLoopCoordinator.startAutoLoopForProject(
         this.projectPath,
         branchName,
-        maxConcurrency
+        maxConcurrency,
+        outputLocale
       );
     } catch (error) {
       this.handleFacadeError(error, 'startAutoLoop');
@@ -727,6 +734,7 @@ export class AutoModeServiceFacade {
       continuationPrompt?: string;
       _calledInternally?: boolean;
       _run?: RunningFeature;
+      outputLocale?: import('@automaker/types').OutputLocale;
     }
   ): Promise<void> {
     if (this.stopping) throw new Error('Auto mode is shutting down.');
@@ -771,7 +779,8 @@ export class AutoModeServiceFacade {
     featureId: string,
     useWorktrees = false,
     _calledInternally = false,
-    expected?: RunningFeature
+    expected?: RunningFeature,
+    outputLocale?: import('@automaker/types').OutputLocale
   ): Promise<void> {
     // Note: ExecutionService.executeFeature catches its own errors internally and
     // does NOT re-throw them (it emits auto_mode_error and returns normally).
@@ -784,7 +793,8 @@ export class AutoModeServiceFacade {
         featureId,
         useWorktrees,
         _calledInternally,
-        expected
+        expected,
+        outputLocale
       );
     } catch (error) {
       this.handleFacadeError(error, 'resumeFeature', featureId);
@@ -803,7 +813,8 @@ export class AutoModeServiceFacade {
     featureId: string,
     prompt: string,
     imagePaths?: string[],
-    useWorktrees = true
+    useWorktrees = true,
+    outputLocale?: import('@automaker/types').OutputLocale
   ): Promise<void> {
     this.directoryValidator(this.projectPath);
 
@@ -852,6 +863,7 @@ export class AutoModeServiceFacade {
       // Delegate to executeFeature with the built continuation prompt
       await this.executeFeature(featureId, useWorktrees, false, undefined, {
         continuationPrompt,
+        outputLocale,
       });
     } catch (error) {
       const errorInfo = classifyError(error);
@@ -1370,8 +1382,10 @@ export class AutoModeServiceFacade {
   /**
    * Resume interrupted features after server restart
    */
-  async resumeInterruptedFeatures(): Promise<void> {
-    return this.recoveryService.resumeInterruptedFeatures(this.projectPath);
+  async resumeInterruptedFeatures(
+    outputLocale?: import('@automaker/types').OutputLocale
+  ): Promise<void> {
+    return this.recoveryService.resumeInterruptedFeatures(this.projectPath, outputLocale);
   }
 
   /**

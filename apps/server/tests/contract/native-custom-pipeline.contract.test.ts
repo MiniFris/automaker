@@ -51,7 +51,11 @@ const step = (id: string, order: number): PipelineStep => ({
 });
 async function fixture(
   control?: (stage: string, options: ExecuteOptions, index: number) => Promise<void>,
-  fixtureOptions: { root?: string; finalize?: (stage: string) => Promise<void> } = {}
+  fixtureOptions: {
+    root?: string;
+    finalize?: (stage: string) => Promise<void>;
+    response?: (stage: string, options: ExecuteOptions) => string;
+  } = {}
 ) {
   vi.stubEnv('GIT_CONFIG_GLOBAL', '/dev/null');
   vi.stubEnv('GIT_CONFIG_SYSTEM', '/dev/null');
@@ -79,7 +83,9 @@ async function fixture(
             content: [
               {
                 type: 'text' as const,
-                text: `<summary>\n## ${stage}\n${`NATIVE_RESULT_${stage} explicit offline implementation details. `.repeat(12)}\n</summary>`,
+                text:
+                  fixtureOptions.response?.(stage, options) ??
+                  `<summary>\n## ${stage}\n${`NATIVE_RESULT_${stage} explicit offline implementation details. `.repeat(12)}\n</summary>`,
               },
             ],
           },
@@ -513,3 +519,88 @@ it('keeps typed unknown merge outcome at its current pipeline step and never rep
     vi.restoreAllMocks();
   }
 });
+
+it.each(['ru', 'en', undefined] as const)(
+  'carries %s from native task admission through all pipeline reports and adopts the next continuation language',
+  async (outputLocale) => {
+    const f = await fixture(undefined, {
+      response: (stage, options) => {
+        const russian = JSON.stringify(options.systemPrompt).includes(
+          'Agent communication language: Russian.'
+        );
+        const progress = russian
+          ? 'Проверяю промежуточный этап.'
+          : 'Checking the intermediate stage.';
+        const report = russian
+          ? 'Итоговый отчёт: задача выполнена.'
+          : 'Final report: task completed.';
+        return `${progress}\n\n<summary>\n${(report + ' ').repeat(14)}\n${stage}\n</summary>`;
+      },
+    });
+    await f.config([step('report', 0)]);
+    const feature = await f.feature('language');
+    await f.post('auto-mode/run-feature', {
+      projectPath: f.project,
+      featureId: feature.id,
+      outputLocale,
+    });
+    await f.idle(feature.id);
+    expect(f.calls.map((call) => call.stage)).toEqual(['implementation', 'report']);
+    const assertLanguage = (start: number, locale?: string) => {
+      for (const call of f.calls.slice(start)) {
+        expect(JSON.stringify(call.options.systemPrompt)).toContain(
+          `Agent communication language: ${locale === 'ru' ? 'Russian' : 'English'}.`
+        );
+        expect(JSON.stringify(call.options.systemPrompt)).toContain('<summary>...</summary>');
+      }
+    };
+    assertLanguage(0, outputLocale);
+    expect((await f.read(feature.id)).summary).toContain(
+      outputLocale === 'ru' ? 'Итоговый отчёт' : 'Final report'
+    );
+    const before = await f.post('features/agent-output', {
+      projectPath: f.project,
+      featureId: feature.id,
+    });
+    const nextLocale = outputLocale === 'ru' ? 'en' : 'ru';
+    const firstCalls = f.calls.length;
+    await f.post('auto-mode/follow-up-feature', {
+      projectPath: f.project,
+      featureId: feature.id,
+      prompt: 'Continue the task',
+      outputLocale: nextLocale,
+    });
+    await expect.poll(() => f.calls.length).toBeGreaterThan(firstCalls);
+    await f.idle(feature.id);
+    assertLanguage(firstCalls, nextLocale);
+    expect((await f.read(feature.id)).summary).toContain(
+      nextLocale === 'ru' ? 'Итоговый отчёт' : 'Final report'
+    );
+    const continued = await f.post('features/agent-output', {
+      projectPath: f.project,
+      featureId: feature.id,
+    });
+    expect(continued.conversation.slice(0, before.conversation.length)).toEqual(
+      before.conversation
+    );
+    expect(
+      continued.conversation
+        .slice(before.conversation.length)
+        .filter((e: { kind: string; content: string }) => e.kind === 'assistant')
+        .every((e: { content: string }) =>
+          e.content.includes(
+            nextLocale === 'ru' ? 'Проверяю промежуточный этап' : 'Checking the intermediate stage'
+          )
+        )
+    ).toBe(true);
+    const resumedAt = f.calls.length;
+    await f.post('auto-mode/resume-feature', {
+      projectPath: f.project,
+      featureId: feature.id,
+      outputLocale,
+    });
+    await expect.poll(() => f.calls.length).toBeGreaterThan(resumedAt);
+    await f.idle(feature.id);
+    assertLanguage(resumedAt, outputLocale);
+  }
+);

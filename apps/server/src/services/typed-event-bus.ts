@@ -26,6 +26,7 @@ export type AutoModeEventType =
   | 'auto_mode_feature_complete'
   | 'auto_mode_feature_resuming'
   | 'auto_mode_progress'
+  | 'auto_mode_conversation'
   | 'auto_mode_tool'
   | 'auto_mode_task_started'
   | 'auto_mode_task_complete'

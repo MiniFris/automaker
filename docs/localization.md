@@ -60,6 +60,34 @@ the UI affects future requests; it neither restarts work nor translates existing
 tasks, cached results, imported issues, or manually entered text. Static project
 analysis suggestions are separate from model-generated ideation suggestions.
 
+## Language of agent progress and final reports
+
+Task execution, resume/follow-up, interrupted-task recovery, automatic queues and
+model-based project analysis also accept `outputLocale`. The UI captures it at
+each start or continuation. Switching the interface during a run takes effect on
+the next start/continuation, without translating earlier chat history. An automatic
+queue retains the language selected when that queue starts.
+
+The execution lease owns a language snapshot; nested recovery, approved-plan tasks,
+retries and custom pipeline stages reuse it. Separate runs and queues can use different
+languages. Every model query appends `withAgentOutputLanguage` to the final system
+prompt, preserving custom instructions and the SDK system-prompt preset. This rule
+covers progress messages, intermediate explanations, available reasoning summaries,
+and final reports, including the narrative inside `<summary>...</summary>`.
+Protocol markers, tags, required structural headings, code and tool output stay intact.
+
+## Built-in quick task templates
+
+The six built-in task templates localize their menu/settings names and task prompts
+at display and selection time. Selecting a template creates a task with the localized
+description and title. Shared settings retain canonical defaults, so another browser
+can use its own language. Models, enabled state and order remain unchanged.
+
+Each field is localized only when it still matches that template's built-in default.
+Custom templates and user-edited names/prompts remain literal user content. The template
+editor shows localized defaults, but saving only a model change preserves the original
+stored text instead of creating permanent language-specific overrides.
+
 The rule is an instruction to the model, not a separate translation request or
 an output-language validator. Automated tests verify propagation and formatting
 with offline providers; model compliance requires a live generation check.

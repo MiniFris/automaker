@@ -1,3 +1,4 @@
+import type { AgentConversationEntry } from '@automaker/types';
 import { translate } from '@/lib/i18n';
 import { GEMINI_CLI_INSTALL_COMMAND } from '@automaker/contracts';
 import type { CursorSetupStatus } from '@automaker/contracts';
@@ -535,7 +536,12 @@ export interface FeaturesAPI {
   getAgentOutput: (
     projectPath: string,
     featureId: string
-  ) => Promise<{ success: boolean; content?: string | null; error?: string }>;
+  ) => Promise<{
+    success: boolean;
+    content?: string | null;
+    conversation?: AgentConversationEntry[];
+    error?: string;
+  }>;
   generateTitle: (
     description: string,
     projectPath?: string

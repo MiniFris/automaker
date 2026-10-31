@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { localizeFeatureTemplate } from '@/lib/feature-template-localization';
 import type { FeatureTemplate, PhaseModelEntry } from '@automaker/types';
 import { PhaseModelSelector } from '../model-defaults/phase-model-selector';
 import { useAppStore } from '@/store/app-store';
@@ -85,6 +86,7 @@ function SortableTemplateItem({
   };
 
   const isEnabled = template.enabled !== false;
+  const localized = localizeFeatureTemplate(template);
 
   return (
     <div
@@ -111,7 +113,7 @@ function SortableTemplateItem({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-          <span className="font-medium truncate">{template.name}</span>
+          <span className="font-medium truncate">{localized.name}</span>
           {template.isBuiltIn && (
             <span title={translate('Built-in template')}>
               <Lock className="w-3 h-3 text-muted-foreground" />
@@ -123,13 +125,18 @@ function SortableTemplateItem({
             </span>
           )}
         </div>
-        <p className="text-xs text-muted-foreground truncate mt-0.5">{template.prompt}</p>
+        <p className="text-xs text-muted-foreground truncate mt-0.5">{localized.prompt}</p>
       </div>
 
       {/* Actions */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            data-testid={`template-actions-${template.id}`}
+          >
             <MoreHorizontal className="w-4 h-4" />
           </Button>
         </DropdownMenuTrigger>
@@ -177,6 +184,7 @@ export function TemplatesSection({
   });
   const [nameError, setNameError] = useState(false);
   const [promptError, setPromptError] = useState(false);
+  const [initialText, setInitialText] = useState({ name: '', prompt: '' });
 
   const defaultFeatureModel = useAppStore((s) => s.defaultFeatureModel);
 
@@ -201,9 +209,11 @@ export function TemplatesSection({
 
   const handleEdit = (template: FeatureTemplate) => {
     setEditingTemplate(template);
+    const localized = localizeFeatureTemplate(template);
+    setInitialText({ name: localized.name, prompt: localized.prompt });
     setFormData({
-      name: template.name,
-      prompt: template.prompt,
+      name: localized.name,
+      prompt: localized.prompt,
       model: template.model,
     });
     setNameError(false);
@@ -240,8 +250,14 @@ export function TemplatesSection({
     if (editingTemplate) {
       // Update existing
       await onUpdateTemplate(editingTemplate.id, {
-        name: formData.name.trim(),
-        prompt: formData.prompt.trim(),
+        name:
+          formData.name.trim() === initialText.name.trim()
+            ? editingTemplate.name
+            : formData.name.trim(),
+        prompt:
+          formData.prompt.trim() === initialText.prompt.trim()
+            ? editingTemplate.prompt
+            : formData.prompt.trim(),
         model: formData.model,
       });
       toast.success(translate('Template updated'));

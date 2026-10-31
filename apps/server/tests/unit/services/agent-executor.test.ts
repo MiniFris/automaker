@@ -32,13 +32,15 @@ import type { BaseProvider } from '../../../src/providers/base-provider.js';
  * and auto-mode-service tests.
  */
 describe('AgentExecutor', () => {
+  let projectPath: string;
   // Mock dependencies
   let mockEventBus: TypedEventBus;
   let mockFeatureStateManager: FeatureStateManager;
   let mockPlanApprovalService: PlanApprovalService;
   let mockSettingsService: SettingsService | null;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    projectPath = await mkdtemp(path.join(os.tmpdir(), 'automaker-executor-unit-'));
     // Reset mocks
     mockEventBus = {
       emitAutoModeEvent: vi.fn(),
@@ -57,7 +59,8 @@ describe('AgentExecutor', () => {
     mockSettingsService = null;
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await rm(projectPath, { recursive: true, force: true });
     vi.clearAllMocks();
   });
 
@@ -137,7 +140,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: {} as BaseProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -302,7 +305,7 @@ describe('AgentExecutor', () => {
         editedPlan: undefined,
       });
 
-      const result = await waitForApproval('feature-123', '/project');
+      const result = await waitForApproval('feature-123', projectPath);
       expect(result.approved).toBe(true);
       expect(result.feedback).toBe('Looks good');
     });
@@ -314,7 +317,7 @@ describe('AgentExecutor', () => {
         editedPlan: '## Revised Plan\n...',
       });
 
-      const result = await waitForApproval('feature-123', '/project');
+      const result = await waitForApproval('feature-123', projectPath);
       expect(result.approved).toBe(false);
       expect(result.feedback).toBe('Please add more tests');
       expect(result.editedPlan).toBeDefined();
@@ -323,15 +326,15 @@ describe('AgentExecutor', () => {
     it('SaveFeatureSummaryFn should accept parameters', async () => {
       const saveSummary: SaveFeatureSummaryFn = vi.fn().mockResolvedValue(undefined);
 
-      await saveSummary('/project', 'feature-123', 'Feature summary text');
-      expect(saveSummary).toHaveBeenCalledWith('/project', 'feature-123', 'Feature summary text');
+      await saveSummary(projectPath, 'feature-123', 'Feature summary text');
+      expect(saveSummary).toHaveBeenCalledWith(projectPath, 'feature-123', 'Feature summary text');
     });
 
     it('UpdateFeatureSummaryFn should accept parameters', async () => {
       const updateSummary: UpdateFeatureSummaryFn = vi.fn().mockResolvedValue(undefined);
 
-      await updateSummary('/project', 'feature-123', 'Updated summary');
-      expect(updateSummary).toHaveBeenCalledWith('/project', 'feature-123', 'Updated summary');
+      await updateSummary(projectPath, 'feature-123', 'Updated summary');
+      expect(updateSummary).toHaveBeenCalledWith(projectPath, 'feature-123', 'Updated summary');
     });
 
     it('BuildTaskPromptFn should return prompt string', () => {
@@ -401,6 +404,73 @@ describe('AgentExecutor', () => {
       expect(executor).toBeInstanceOf(AgentExecutor);
     });
   });
+
+  it.each(['ru', 'en', undefined] as const)(
+    'keeps captured %s in custom preset prompts across task streams',
+    async (outputLocale) => {
+      const queries: import('@automaker/types').ExecuteOptions[] = [];
+      const executor = new AgentExecutor(
+        mockEventBus,
+        mockFeatureStateManager,
+        mockPlanApprovalService,
+        null,
+        executionFilesystem
+      );
+      const options: AgentExecutionOptions = {
+        outputLocale,
+        projectPath,
+        workDir: projectPath,
+        featureId: 'language',
+        prompt: 'Task in another language',
+        model: 'gemini-2.5-flash',
+        effectiveBareModel: '2.5-flash',
+        abortController: new AbortController(),
+        sdkOptions: {
+          systemPrompt: {
+            type: 'preset',
+            preset: 'claude_code',
+            append: 'Custom {outputLanguage} src/app.ts',
+          },
+        },
+        existingApprovedPlanContent: 'Approved task plan',
+        persistedTasks: [
+          { id: 'T001', description: 'First', status: 'pending' },
+          { id: 'T002', description: 'Second', status: 'pending' },
+        ],
+        provider: {
+          getName: () => 'gemini',
+          executeQuery: async function* (query: import('@automaker/types').ExecuteOptions) {
+            queries.push(query);
+            options.outputLocale = outputLocale === 'ru' ? 'en' : 'ru';
+            yield {
+              type: 'assistant',
+              message: {
+                role: 'assistant',
+                content: [{ type: 'text', text: '<summary>Task report</summary>' }],
+              },
+            };
+            yield { type: 'result', subtype: 'success' };
+          },
+        } as unknown as BaseProvider,
+      };
+      await executor.execute(options, {
+        waitForApproval: vi.fn(),
+        saveFeatureSummary: vi.fn(),
+        updateFeatureSummary: vi.fn(),
+        buildTaskPrompt: () => 'Continue',
+      });
+      expect(queries).toHaveLength(2);
+      for (const query of queries) {
+        expect(query.systemPrompt).toMatchObject({ type: 'preset', preset: 'claude_code' });
+        const prompt = (query.systemPrompt as { append: string }).append;
+        expect(prompt).toContain('Custom {outputLanguage} src/app.ts');
+        expect(prompt).toContain(
+          `Agent communication language: ${outputLocale === 'ru' ? 'Russian' : 'English'}.`
+        );
+        expect(prompt).toContain('task completion reports');
+      }
+    }
+  );
 
   describe('execute() behavior', () => {
     it.each([
@@ -478,7 +548,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController,
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -521,7 +591,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -568,7 +638,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -620,7 +690,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -681,7 +751,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -735,7 +805,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -776,7 +846,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -817,7 +887,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -865,7 +935,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -908,7 +978,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -950,7 +1020,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -993,7 +1063,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -1042,7 +1112,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -1087,7 +1157,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -1139,7 +1209,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -1187,7 +1257,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -1233,7 +1303,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -1281,7 +1351,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -1330,7 +1400,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -1389,7 +1459,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -1440,7 +1510,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -1495,7 +1565,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -1516,7 +1586,7 @@ describe('AgentExecutor', () => {
       // Should save the extracted summary, not the full content
       expect(saveFeatureSummary).toHaveBeenCalledTimes(1);
       expect(saveFeatureSummary).toHaveBeenCalledWith(
-        '/project',
+        projectPath,
         'test-feature',
         'Extracted summary here'
       );
@@ -1550,7 +1620,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -1603,7 +1673,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -1656,7 +1726,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -1707,7 +1777,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -1758,7 +1828,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',
@@ -1811,7 +1881,7 @@ describe('AgentExecutor', () => {
         workDir: '/test',
         featureId: 'test-feature',
         prompt: 'Test prompt',
-        projectPath: '/project',
+        projectPath: projectPath,
         abortController: new AbortController(),
         provider: mockProvider,
         effectiveBareModel: 'claude-sonnet-4-6',

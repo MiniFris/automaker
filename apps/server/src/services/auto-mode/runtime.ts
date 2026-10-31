@@ -199,10 +199,11 @@ export class AutoModeRuntime {
   async startAutoLoopForProject(
     projectPath: string,
     branchName: string | null = null,
-    maxConcurrency?: number
+    maxConcurrency?: number,
+    outputLocale?: import('@automaker/types').OutputLocale
   ): Promise<number> {
     const facade = this.createFacade(projectPath);
-    return facade.startAutoLoop(branchName, maxConcurrency);
+    return facade.startAutoLoop(branchName, maxConcurrency, outputLocale);
   }
 
   async stopAutoLoopForProject(
@@ -219,7 +220,11 @@ export class AutoModeRuntime {
     useWorktrees = false,
     isAutoMode = false,
     providedWorktreePath?: string,
-    options?: { continuationPrompt?: string; _calledInternally?: boolean }
+    options?: {
+      continuationPrompt?: string;
+      _calledInternally?: boolean;
+      outputLocale?: import('@automaker/types').OutputLocale;
+    }
   ): Promise<void> {
     const facade = this.createFacade(projectPath);
     return facade.executeFeature(
@@ -243,9 +248,14 @@ export class AutoModeRuntime {
     return false;
   }
 
-  async resumeFeature(projectPath: string, featureId: string, useWorktrees = false): Promise<void> {
+  async resumeFeature(
+    projectPath: string,
+    featureId: string,
+    useWorktrees = false,
+    outputLocale?: import('@automaker/types').OutputLocale
+  ): Promise<void> {
     const facade = this.createFacade(projectPath);
-    return facade.resumeFeature(featureId, useWorktrees);
+    return facade.resumeFeature(featureId, useWorktrees, false, undefined, outputLocale);
   }
 
   async followUpFeature(
@@ -253,10 +263,11 @@ export class AutoModeRuntime {
     featureId: string,
     prompt: string,
     imagePaths?: string[],
-    useWorktrees = true
+    useWorktrees = true,
+    outputLocale?: import('@automaker/types').OutputLocale
   ): Promise<void> {
     const facade = this.createFacade(projectPath);
-    return facade.followUpFeature(featureId, prompt, imagePaths, useWorktrees);
+    return facade.followUpFeature(featureId, prompt, imagePaths, useWorktrees, outputLocale);
   }
 
   async verifyFeature(projectPath: string, featureId: string): Promise<boolean> {
@@ -312,10 +323,13 @@ export class AutoModeRuntime {
     return this.createFacade(projectPath).getPendingPlanApproval(featureId);
   }
 
-  async resumeInterruptedFeatures(projectPath: string): Promise<void> {
+  async resumeInterruptedFeatures(
+    projectPath: string,
+    outputLocale?: import('@automaker/types').OutputLocale
+  ): Promise<void> {
     if (this.contexts.isStopping()) return;
     const facade = this.createFacade(projectPath);
-    return facade.resumeInterruptedFeatures();
+    return facade.resumeInterruptedFeatures(outputLocale);
   }
 
   async checkWorktreeCapacity(

@@ -345,7 +345,7 @@ test.describe('AgentOutputModal Responsive Behavior', () => {
       await page.waitForTimeout(200);
 
       // Logs button should be visible and clickable
-      const logsButton = page.getByTestId('view-mode-parsed');
+      const logsButton = page.getByTestId('view-mode-chat');
       await expect(logsButton).toBeVisible();
 
       // Raw button should be visible

@@ -14,6 +14,7 @@ export class FeatureRunCoordinator {
       }
     };
     return {
+      outputLocale: run.outputLocale,
       assertCurrent,
       mutate: async (write) => {
         assertCurrent();

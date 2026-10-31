@@ -10,6 +10,7 @@ import {
 import { Plus, ChevronDown, Zap, FileText } from 'lucide-react';
 import type { FeatureTemplate } from '@automaker/types';
 import { cn } from '@/lib/utils';
+import { localizeFeatureTemplate } from '@/lib/feature-template-localization';
 
 interface AddFeatureButtonProps {
   /** Handler for the primary "Add Feature" action (opens full dialog) */
@@ -53,7 +54,7 @@ export function AddFeatureButton({
 
   const handleTemplateClick = (template: FeatureTemplate) => {
     setDropdownOpen(false);
-    onTemplateSelect(template);
+    onTemplateSelect(localizeFeatureTemplate(template));
   };
 
   if (compact) {
@@ -104,7 +105,12 @@ export function AddFeatureButton({
                   data-testid={`template-menu-item-${template.id}`}
                 >
                   <FileText className="w-4 h-4 mr-2" />
-                  <span className="truncate max-w-[200px]">{template.name}</span>
+                  <span
+                    className="truncate max-w-[200px]"
+                    title={localizeFeatureTemplate(template).name}
+                  >
+                    {localizeFeatureTemplate(template).name}
+                  </span>
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -175,7 +181,12 @@ export function AddFeatureButton({
                 data-testid={`template-menu-item-${template.id}`}
               >
                 <FileText className="w-4 h-4 mr-2" />
-                <span className="truncate max-w-[200px]">{template.name}</span>
+                <span
+                  className="truncate max-w-[200px]"
+                  title={localizeFeatureTemplate(template).name}
+                >
+                  {localizeFeatureTemplate(template).name}
+                </span>
               </DropdownMenuItem>
             ))
           ) : (

@@ -3,6 +3,9 @@
  * Each feature is stored in .automaker/features/{featureId}/feature.json
  */
 
+import { AgentConversationEntrySchema } from '@automaker/contracts/domains/agent-conversation';
+import type { AgentConversationEntry } from '@automaker/types';
+import { CONVERSATION_FILE } from './agent-conversation.js';
 import path from 'path';
 import { performance } from 'node:perf_hooks';
 import { randomUUID } from 'node:crypto';
@@ -741,6 +744,33 @@ export class FeatureLoader {
       logger.error(`Failed to get agent output for ${featureId}:`, error);
       throw error;
     }
+  }
+
+  async getAgentConversation(
+    projectPath: string,
+    featureId: string
+  ): Promise<AgentConversationEntry[]> {
+    let content: string;
+    try {
+      content = (await this.filesystem.readFile(
+        path.join(this.getFeatureDir(projectPath, featureId), CONVERSATION_FILE),
+        'utf-8'
+      )) as string;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
+      throw error;
+    }
+    const entries: AgentConversationEntry[] = [];
+    for (const line of content.split('\n')) {
+      if (!line.trim()) continue;
+      try {
+        const parsed = AgentConversationEntrySchema.safeParse(JSON.parse(line));
+        if (parsed.success) entries.push(parsed.data);
+      } catch {
+        /* A process termination can leave an incomplete final record. */
+      }
+    }
+    return entries;
   }
 
   /**

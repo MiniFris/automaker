@@ -33,9 +33,14 @@ export class FeatureQueryService {
   }
 
   async agentOutput(projectPath: string, featureId: string) {
+    const [content, conversation] = await Promise.all([
+      this.features.getAgentOutput(projectPath, featureId),
+      this.features.getAgentConversation(projectPath, featureId),
+    ]);
     return {
       success: true as const,
-      content: await this.features.getAgentOutput(projectPath, featureId),
+      content,
+      conversation,
     };
   }
 

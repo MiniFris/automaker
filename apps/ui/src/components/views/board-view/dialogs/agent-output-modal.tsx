@@ -9,10 +9,18 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { List, FileText, GitBranch, ClipboardList, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  MessageSquare,
+  FileText,
+  GitBranch,
+  ClipboardList,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { getElectronAPI } from '@/lib/electron';
-import { LogViewer } from '@/components/ui/log-viewer';
+import { AgentConversation } from '@/components/ui/agent-conversation';
+import { useAgentConversation } from '@/hooks/queries/use-agent-conversation';
 import { GitDiffPanel } from '@/components/ui/git-diff-panel';
 import { TaskProgressPanel } from '@/components/ui/task-progress-panel';
 import { Markdown } from '@/components/ui/markdown';
@@ -29,6 +37,7 @@ import { cn } from '@/lib/utils';
 import { MODAL_CONSTANTS } from '@/components/views/board-view/dialogs/agent-output-modal.constants';
 import type { AutoModeEvent } from '@/types/electron';
 import type { BacklogPlanEvent } from '@automaker/types';
+import { isPipelineStatus } from '@automaker/types';
 
 interface AgentOutputModalProps {
   open: boolean;
@@ -178,6 +187,7 @@ export function AgentOutputModal({
   // Track view mode state
   const [viewMode, setViewMode] = useState<ViewMode | null>(null);
   const [streamedContent, setStreamedContent] = useState<string>('');
+  const conversation = useAgentConversation(resolvedProjectPath, featureId, open && !isBacklogPlan);
 
   // Use React Query for initial output loading
   const {
@@ -204,8 +214,9 @@ export function AgentOutputModal({
   useEffect(() => {
     if (open) {
       setStreamedContent('');
+      setViewMode(null);
     }
-  }, [open, featureId]);
+  }, [open, featureId, resolvedProjectPath]);
 
   // Combine initial output from query with streamed content from WebSocket
   const output = initialOutput + streamedContent;
@@ -236,9 +247,7 @@ export function AgentOutputModal({
     setActivePhaseIndex(0);
   }, [normalizedSummary]);
 
-  // Determine the effective view mode - default to summary if available, otherwise parsed
-  const effectiveViewMode =
-    viewMode ?? (summary ? MODAL_CONSTANTS.VIEW_MODES.SUMMARY : MODAL_CONSTANTS.VIEW_MODES.PARSED);
+  const effectiveViewMode = viewMode ?? MODAL_CONSTANTS.VIEW_MODES.CHAT;
   const scrollRef = useRef<HTMLDivElement>(null);
   const autoScrollRef = useRef(true);
   const useWorktrees = useAppStore((state) => state.useWorktrees);
@@ -300,23 +309,10 @@ export function AgentOutputModal({
     const api = getElectronAPI();
     if (!api?.autoMode || isBacklogPlan) return;
 
-    console.log('[AgentOutputModal] Subscribing to events for featureId:', featureId);
-
     const unsubscribe = api.autoMode.onEvent((event) => {
-      console.log(
-        '[AgentOutputModal] Received event:',
-        event.type,
-        'featureId:',
-        'featureId' in event ? event.featureId : 'none',
-        'modalFeatureId:',
-        featureId
-      );
-
-      // Filter events for this specific feature only (skip events without featureId)
-      if ('featureId' in event && event.featureId !== featureId) {
-        console.log('[AgentOutputModal] Skipping event - featureId mismatch');
+      if (!('featureId' in event) || event.featureId !== featureId) return;
+      if ('projectPath' in event && event.projectPath && event.projectPath !== resolvedProjectPath)
         return;
-      }
 
       let newContent = '';
 
@@ -439,13 +435,6 @@ export function AgentOutputModal({
           const emoji = event.passes ? '✅' : '⚠️';
           newContent = `\n${emoji} Task completed: ${event.message}\n`;
 
-          // Close the modal when the feature is verified (passes = true)
-          if (event.passes) {
-            // Small delay to show the completion message before closing
-            setTimeout(() => {
-              onClose();
-            }, 1500);
-          }
           break;
         }
       }
@@ -459,7 +448,7 @@ export function AgentOutputModal({
     return () => {
       unsubscribe();
     };
-  }, [open, featureId, isBacklogPlan, onClose]);
+  }, [open, featureId, isBacklogPlan, resolvedProjectPath]);
 
   // Listen to backlog plan events and update output
   useEffect(() => {
@@ -556,16 +545,16 @@ export function AgentOutputModal({
                 </button>
               )}
               <button
-                onClick={() => setViewMode('parsed')}
+                onClick={() => setViewMode('chat')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
-                  effectiveViewMode === 'parsed'
+                  effectiveViewMode === 'chat'
                     ? 'bg-primary/20 text-primary shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                 }`}
-                data-testid="view-mode-parsed"
+                data-testid="view-mode-chat"
               >
-                <List className="w-3.5 h-3.5" />
-                {translate('Logs')}
+                <MessageSquare className="w-3.5 h-3.5" />
+                {translate('Chat')}
               </button>
               <button
                 onClick={() => setViewMode('changes')}
@@ -594,7 +583,11 @@ export function AgentOutputModal({
             </div>
           </div>
           <DialogDescription
-            className="mt-1 max-h-24 overflow-y-auto wrap-break-word"
+            className={
+              effectiveViewMode === 'chat'
+                ? 'sr-only'
+                : 'mt-1 max-h-24 overflow-y-auto wrap-break-word'
+            }
             data-testid="agent-output-description"
           >
             {resolvedDescription}
@@ -610,7 +603,23 @@ export function AgentOutputModal({
           />
         )}
 
-        {effectiveViewMode === 'changes' ? (
+        {effectiveViewMode === 'chat' ? (
+          <div className="flex h-[55dvh] min-h-0 shrink flex-col overflow-hidden rounded-lg border border-border/50">
+            <AgentConversation
+              key={`${resolvedProjectPath}:${featureId}`}
+              entries={conversation.data?.conversation ?? []}
+              taskDescription={resolvedDescription}
+              legacyOutput={conversation.data?.content || output}
+              loading={isLoading || conversation.isLoading}
+              error={conversation.error?.message}
+              active={
+                resolvedStatus === 'running' ||
+                resolvedStatus === 'in_progress' ||
+                isPipelineStatus(resolvedStatus ?? '')
+              }
+            />
+          </div>
+        ) : effectiveViewMode === 'changes' ? (
           <div
             className={`flex-1 min-h-0 ${MODAL_CONSTANTS.COMPONENT_HEIGHTS.SMALL_MIN} ${MODAL_CONSTANTS.COMPONENT_HEIGHTS.SMALL_MAX} overflow-y-auto scrollbar-visible`}
           >
@@ -689,8 +698,6 @@ export function AgentOutputModal({
                 <div className="flex items-center justify-center h-full text-muted-foreground">
                   {translate('No output yet. The agent will stream output here as it works.')}
                 </div>
-              ) : effectiveViewMode === 'parsed' ? (
-                <LogViewer output={output} />
               ) : (
                 <div className="whitespace-pre-wrap wrap-break-word text-foreground/80">
                   {output}

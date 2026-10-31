@@ -15,3 +15,21 @@ export function withOutputLanguage(prompt: string, locale: OutputLocale = 'en'):
   const rule = OUTPUT_LANGUAGE_RULE.replace(/\{outputLanguage\}/g, language);
   return `${prompt}\n\n${rule}`;
 }
+
+export const AGENT_OUTPUT_LANGUAGE_RULE = `Agent communication language: {outputLanguage}.
+Write all user-facing progress updates, intermediate explanations, planning narratives,
+available reasoning summaries, task completion reports, and the narrative content inside
+<summary>...</summary> in {outputLanguage}, even when the task, previous session, tool output,
+or examples use another language. Apply this to every stage of this execution.
+Preserve code, commands, file paths, API identifiers, proper names, JSON/XML keys and tags,
+enum values, task IDs, required structural section names, and machine-readable markers
+such as [SPEC_GENERATED], [TASK_START], [TASK_COMPLETE], and [PHASE_COMPLETE] exactly.
+Do not translate tool output or rewrite earlier messages. Keep the required output structure.`;
+
+export function withAgentOutputLanguage(prompt: string, locale: OutputLocale = 'en'): string {
+  const rule = AGENT_OUTPUT_LANGUAGE_RULE.replace(
+    /\{outputLanguage\}/g,
+    locale === 'ru' ? 'Russian' : 'English'
+  );
+  return `${prompt}\n\n${rule}`;
+}

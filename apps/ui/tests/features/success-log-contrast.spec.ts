@@ -127,7 +127,7 @@ test.describe('Success log output contrast', () => {
     await expect(modal).toBeVisible({ timeout: 10000 });
 
     // The modal opens in Logs view by default. Verify the Logs tab is active.
-    const parsedButton = page.getByTestId('view-mode-parsed');
+    const parsedButton = page.getByTestId('view-mode-chat');
     await expect(parsedButton).toBeVisible({ timeout: 5000 });
   }
 

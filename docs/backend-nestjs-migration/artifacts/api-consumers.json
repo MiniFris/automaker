@@ -113,97 +113,97 @@
       "method": "POST",
       "path": "/api/auto-mode/analyze-project",
       "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-      "line": 41
+      "line": 49
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/approve-plan",
       "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-      "line": 95
+      "line": 107
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/commit-feature",
       "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-      "line": 75
+      "line": 87
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/context-exists",
       "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-      "line": 39
+      "line": 47
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/follow-up-feature",
       "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-      "line": 49
+      "line": 60
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/merge-environment-feature",
       "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-      "line": 60
+      "line": 72
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/merge-ssh-feature",
       "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-      "line": 69
+      "line": 81
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/pending-plan-approval",
       "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-      "line": 81
+      "line": 93
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/resume-feature",
       "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-      "line": 33
+      "line": 40
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/resume-interrupted",
       "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-      "line": 106
+      "line": 118
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/run-feature",
       "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-      "line": 24
+      "line": 30
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/start",
       "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-      "line": 11
+      "line": 12
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/status",
       "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-      "line": 17
+      "line": 23
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/stop-feature",
       "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-      "line": 15
+      "line": 21
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/stop",
       "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-      "line": 13
+      "line": 19
     },
     {
       "method": "POST",
       "path": "/api/auto-mode/verify-feature",
       "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-      "line": 31
+      "line": 38
     },
     {
       "method": "POST",
@@ -605,7 +605,7 @@
       "method": "GET",
       "path": "/api/health",
       "source": "apps/ui/src/lib/electron.ts",
-      "line": 1143
+      "line": 1149
     },
     {
       "method": "GET",
@@ -1990,7 +1990,7 @@
           "method": "POST",
           "path": "/api/auto-mode/analyze-project",
           "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-          "line": 41
+          "line": 49
         }
       ]
     },
@@ -2002,7 +2002,7 @@
           "method": "POST",
           "path": "/api/auto-mode/approve-plan",
           "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-          "line": 95
+          "line": 107
         }
       ]
     },
@@ -2014,7 +2014,7 @@
           "method": "POST",
           "path": "/api/auto-mode/commit-feature",
           "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-          "line": 75
+          "line": 87
         }
       ]
     },
@@ -2026,7 +2026,7 @@
           "method": "POST",
           "path": "/api/auto-mode/context-exists",
           "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-          "line": 39
+          "line": 47
         }
       ]
     },
@@ -2038,7 +2038,7 @@
           "method": "POST",
           "path": "/api/auto-mode/follow-up-feature",
           "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-          "line": 49
+          "line": 60
         }
       ]
     },
@@ -2050,7 +2050,7 @@
           "method": "POST",
           "path": "/api/auto-mode/merge-environment-feature",
           "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-          "line": 60
+          "line": 72
         }
       ]
     },
@@ -2062,7 +2062,7 @@
           "method": "POST",
           "path": "/api/auto-mode/merge-ssh-feature",
           "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-          "line": 69
+          "line": 81
         }
       ]
     },
@@ -2074,7 +2074,7 @@
           "method": "POST",
           "path": "/api/auto-mode/pending-plan-approval",
           "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-          "line": 81
+          "line": 93
         }
       ]
     },
@@ -2091,7 +2091,7 @@
           "method": "POST",
           "path": "/api/auto-mode/resume-feature",
           "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-          "line": 33
+          "line": 40
         }
       ]
     },
@@ -2103,7 +2103,7 @@
           "method": "POST",
           "path": "/api/auto-mode/resume-interrupted",
           "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-          "line": 106
+          "line": 118
         }
       ]
     },
@@ -2115,7 +2115,7 @@
           "method": "POST",
           "path": "/api/auto-mode/run-feature",
           "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-          "line": 24
+          "line": 30
         }
       ]
     },
@@ -2127,7 +2127,7 @@
           "method": "POST",
           "path": "/api/auto-mode/start",
           "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-          "line": 11
+          "line": 12
         }
       ]
     },
@@ -2139,7 +2139,7 @@
           "method": "POST",
           "path": "/api/auto-mode/status",
           "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-          "line": 17
+          "line": 23
         }
       ]
     },
@@ -2151,7 +2151,7 @@
           "method": "POST",
           "path": "/api/auto-mode/stop-feature",
           "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-          "line": 15
+          "line": 21
         }
       ]
     },
@@ -2163,7 +2163,7 @@
           "method": "POST",
           "path": "/api/auto-mode/stop",
           "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-          "line": 13
+          "line": 19
         }
       ]
     },
@@ -2175,7 +2175,7 @@
           "method": "POST",
           "path": "/api/auto-mode/verify-feature",
           "source": "apps/ui/src/lib/http-domains/autoMode.ts",
-          "line": 31
+          "line": 38
         }
       ]
     },
@@ -3023,7 +3023,7 @@
           "method": "GET",
           "path": "/api/health",
           "source": "apps/ui/src/lib/electron.ts",
-          "line": 1143
+          "line": 1149
         },
         {
           "method": "GET",

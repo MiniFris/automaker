@@ -25,7 +25,7 @@ describe('MODAL_CONSTANTS', () => {
     it('should define all four view modes', () => {
       expect(MODAL_CONSTANTS.VIEW_MODES).toEqual({
         SUMMARY: 'summary',
-        PARSED: 'parsed',
+        CHAT: 'chat',
         RAW: 'raw',
         CHANGES: 'changes',
       });
@@ -33,7 +33,7 @@ describe('MODAL_CONSTANTS', () => {
 
     it('should have string values for each mode', () => {
       expect(typeof MODAL_CONSTANTS.VIEW_MODES.SUMMARY).toBe('string');
-      expect(typeof MODAL_CONSTANTS.VIEW_MODES.PARSED).toBe('string');
+      expect(typeof MODAL_CONSTANTS.VIEW_MODES.CHAT).toBe('string');
       expect(typeof MODAL_CONSTANTS.VIEW_MODES.RAW).toBe('string');
       expect(typeof MODAL_CONSTANTS.VIEW_MODES.CHANGES).toBe('string');
     });

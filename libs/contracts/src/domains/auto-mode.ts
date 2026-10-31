@@ -1,8 +1,11 @@
 import { z } from 'zod';
+import { OutputLocaleSchema } from '../generation-language.js';
 
 const project = z.string().min(1);
 const feature = z.string().min(1);
-export const AutoModeProjectSchema = z.object({ projectPath: project }).passthrough();
+export const AutoModeProjectSchema = z
+  .object({ projectPath: project, outputLocale: OutputLocaleSchema.optional() })
+  .passthrough();
 export const AutoModeBranchSchema = AutoModeProjectSchema.extend({
   branchName: z.string().nullable().optional(),
 });

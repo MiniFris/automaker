@@ -1,3 +1,5 @@
+import type { OutputLocale } from '@automaker/types';
+
 /** Application-owned values. HTTP validation/defaults stay at the transport boundary. */
 export interface AutoModeBranchInput {
   projectPath: string;
@@ -11,6 +13,7 @@ export interface AutoModeCommitInput {
 }
 
 export interface AutoModeExecuteInput {
+  outputLocale?: OutputLocale;
   projectPath: string;
   featureId: string;
   useWorktrees?: boolean | undefined;
@@ -22,6 +25,7 @@ export interface AutoModeFeatureInput {
 }
 
 export interface AutoModeFollowUpInput {
+  outputLocale?: OutputLocale;
   projectPath: string;
   featureId: string;
   prompt: string;
@@ -35,10 +39,12 @@ export interface AutoModeMergeInput {
 }
 
 export interface AutoModeProjectInput {
+  outputLocale?: OutputLocale;
   projectPath: string;
 }
 
 export interface AutoModeStartInput {
+  outputLocale?: OutputLocale;
   projectPath: string;
   branchName?: string | null | undefined;
   maxConcurrency?: number | undefined;

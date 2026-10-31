@@ -62,7 +62,45 @@ describe('typed auto mode application service', () => {
       runningFeaturesCount: 0,
     });
     expect(await service.stop({ projectPath: '/project' })).toMatchObject({ wasRunning: false });
-    expect(runtime.startAutoLoopForProject).toHaveBeenCalledWith('/project', null, undefined);
+    expect(runtime.startAutoLoopForProject).toHaveBeenCalledWith(
+      '/project',
+      null,
+      undefined,
+      undefined
+    );
     await contexts.onModuleDestroy();
   });
+});
+
+it('captures each admitted request language before asynchronous execution and changes it on continuation', async () => {
+  const runtime = { executeFeature: vi.fn(), resumeFeature: vi.fn(), followUpFeature: vi.fn() };
+  const contexts = new ProjectRunContextRegistry();
+  const service = new AutoModeApplicationService(
+    {} as never,
+    runtime as never,
+    {} as never,
+    contexts,
+    {} as never
+  );
+  const request = { projectPath: '/project', featureId: 'task', outputLocale: 'ru' as 'ru' | 'en' };
+  service.runFeature(request);
+  request.outputLocale = 'en';
+  await Promise.resolve();
+  expect(runtime.executeFeature).toHaveBeenCalledWith('/project', 'task', false, false, undefined, {
+    outputLocale: 'ru',
+  });
+  service.resumeFeature(request);
+  await Promise.resolve();
+  expect(runtime.resumeFeature).toHaveBeenCalledWith('/project', 'task', false, 'en');
+  service.followUpFeature({ ...request, prompt: 'More detail', outputLocale: 'ru' });
+  await Promise.resolve();
+  expect(runtime.followUpFeature).toHaveBeenCalledWith(
+    '/project',
+    'task',
+    'More detail',
+    undefined,
+    false,
+    'ru'
+  );
+  await contexts.onModuleDestroy();
 });

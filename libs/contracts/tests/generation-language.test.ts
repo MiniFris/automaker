@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  AutoModeProjectSchema,
+  AutoModeStartSchema,
+  AutoModeExecuteSchema,
+  AutoModeFollowUpSchema,
+} from '../src/domains/auto-mode.js';
+import {
   FeatureTitleSchema,
   AppSpecCreateSchema,
   AppSpecGenerateSchema,
@@ -14,6 +20,10 @@ import {
 } from '../src/domains/ideation.js';
 
 const endpoints = [
+  [AutoModeProjectSchema, { projectPath: '/project' }],
+  [AutoModeStartSchema, { projectPath: '/project' }],
+  [AutoModeExecuteSchema, { projectPath: '/project', featureId: 'task' }],
+  [AutoModeFollowUpSchema, { projectPath: '/project', featureId: 'task', prompt: 'Continue' }],
   [FeatureTitleSchema, { description: 'Draft' }],
   [PromptEnhancementRequestSchema, { originalText: 'Draft', enhancementMode: 'technical' }],
   [AppSpecCreateSchema, { projectPath: '/project', projectOverview: 'Draft' }],
